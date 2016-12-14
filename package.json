@@ -8,18 +8,29 @@
         "vscode": "^1.5.0"
     },
     "categories": [
-        "Other"
+        "Languages"
     ],
-    "activationEvents": [
-        "onCommand:extension.sayHello"
-    ],
-    "main": "./out/src/extension",
     "contributes": {
+        "languages": [{
+            "id": "lean",
+            "aliases": ["Lean", "lean"],
+            "extensions": [".lean"],
+            "configuration": "./language-configuration.json"
+        }],
+        "grammars": [{
+            "language": "lean",
+            "scopeName": "source.lean",
+            "path": "./syntaxes/lean.tmLanguage"
+        }],
         "commands": [{
             "command": "extension.sayHello",
             "title": "Hello World"
         }]
     },
+    "activationEvents": [
+        "onCommand:extension.sayHello"
+    ],
+    "main": "./out/src/extension",
     "scripts": {
         "vscode:prepublish": "tsc -p ./",
         "compile": "tsc -watch -p ./",
