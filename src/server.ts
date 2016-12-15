@@ -28,6 +28,17 @@ function infoMessage(file_name : string, line : number, column : number) : InfoM
     };
 }
 
+type CommandMessage  = { command : string, file_name : string, line : number, pattern : string };
+
+function completeMessage(file_name : string, line : number, pattern : string) : CommandMessage {
+    return {
+        command : "complete",
+        file_name : file_name,
+        line : line,
+        pattern : pattern
+    };
+}
+
 class SequenceMap {
     [index : number] : (a : any) => any;
 }
@@ -53,17 +64,17 @@ class Server {
 
         carrier.carry(this.process.stdout, (line) => {
             let message = JSON.parse(line);
-            console.log(message);
             let response = message['response'];
             if (response === "ok") {
                 let seq_num = message['seq_num'];
                 let callback = this.senders[seq_num];
                 callback(message);
             } else if (response === "all_messages") {
-                this.handle_all_messages(message);
+                this.handleAllMessages(message);
             } else if (response === "additional_message") {
-                this.handle_additional_message(message);
+                this.handleAdditionalMessage(message);
             } else {
+                console.log(line);
                 console.log("unsupported")
             }
         });
@@ -78,14 +89,14 @@ class Server {
         });
     }
 
-    handle_all_messages(all_messages) {
+    handleAllMessages(all_messages) {
         this.messages = all_messages.msgs;
         if (this.on_message_callback) {
             this.on_message_callback(this.messages);
         }
     }
 
-    handle_additional_message(additional_message) {
+    handleAdditionalMessage(additional_message) {
         this.messages.push(additional_message.msg);
         if (this.on_message_callback) {
             this.on_message_callback(this.messages);
@@ -115,6 +126,13 @@ class Server {
         return new Promise((resolve, reject) => {
             this.send(message, resolve);
         })
+    }
+
+    complete(file, line, pattern) {
+        let message = completeMessage(file, line, pattern);
+        return new Promise((resolve, reject) => {
+            this.send(message, resolve);
+        });
     }
 
     onMessage(callback) {

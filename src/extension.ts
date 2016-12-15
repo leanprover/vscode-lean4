@@ -4,6 +4,7 @@
 import * as vscode from 'vscode';
 import { Server } from './server';
 import { LeanHoverProvider } from './hover';
+import { LeanCompletionItemProvider } from './completion';
 
 const LEAN_MODE : vscode.DocumentFilter = {
     language: "lean",
@@ -38,14 +39,7 @@ function updateDiagnostics(collection : vscode.DiagnosticCollection, messages : 
     });
 }
 
-// this method is called when your extension is activated
-// your extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) {
-
-    // Use the console to output diagnostic information (console.log) and errors (console.error)
-    // This line of code will only be executed once when your extension is activated
-    console.log('Congratulations, your extension "lean" is now active!');
-
     // The command has been defined in the package.json file
     // Now provide the implementation of the command with  registerCommand
     // The commandId parameter must match the command field in package.json
@@ -58,29 +52,39 @@ export function activate(context: vscode.ExtensionContext) {
 
     context.subscriptions.push(disposable);
 
-    let server = new Server('', '');
+    let working_directory = vscode.workspace.rootPath;
+    console.log("Starting server in " + working_directory);
 
-    vscode.workspace.onDidChangeTextDocument((event) => {
-        if (event.document.languageId === "lean") {
-            let file_name = event.document.fileName;
-            let contents = event.document.getText();
-            server.sync(file_name, contents);
-        }
+    let server = new Server('', working_directory);
+
+    // Have the server update diagnostics when we
+    // receive new messages.    
+    server.onMessage((messages) => {
+        diagnosticCollection.clear();
+        updateDiagnostics(diagnosticCollection, messages);
     });
+
+    // Register the support for diagnostics.
+    diagnosticCollection = vscode.languages.createDiagnosticCollection('lean');
+    context.subscriptions.push(diagnosticCollection);
 
     // Register the support for hovering.
     context.subscriptions.push(
         vscode.languages.registerHoverProvider(LEAN_MODE,
             new LeanHoverProvider(server)));
     
-    // Register the support for diagnostics.
-    diagnosticCollection = vscode.languages.createDiagnosticCollection('lean');
+    // Register support for completetion.
+    context.subscriptions.push(
+        vscode.languages.registerCompletionItemProvider(
+            LEAN_MODE, new LeanCompletionItemProvider(server), '.'));
 
-    context.subscriptions.push(diagnosticCollection);
-
-    server.onMessage((messages) => {
-        diagnosticCollection.clear();
-        updateDiagnostics(diagnosticCollection, messages);
+    // Send a sync message when the editor changes.
+    vscode.workspace.onDidChangeTextDocument((event) => {
+        if (event.document.languageId === "lean") {
+            let file_name = event.document.fileName;
+            let contents = event.document.getText();
+            server.sync(file_name, contents);
+        }
     });
 }
 
