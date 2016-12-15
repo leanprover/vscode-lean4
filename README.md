@@ -4,7 +4,8 @@ This extension adds support for [Lean](https://github.com/leanprover/lean).
 
 ## Features
 
-We currently support:
+We currently support:  
+
     - hovering 
     - completions
     - diagnostics
