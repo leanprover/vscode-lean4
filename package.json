@@ -28,6 +28,7 @@
         }]
     },
     "activationEvents": [
+        "onLanguage:lean",
         "onCommand:extension.sayHello"
     ],
     "main": "./out/src/extension",
@@ -36,6 +37,9 @@
         "compile": "tsc -watch -p ./",
         "postinstall": "node ./node_modules/vscode/bin/install",
         "test": "node ./node_modules/vscode/bin/test"
+    },
+    "dependencies": {
+        "carrier": "0.3.0"
     },
     "devDependencies": {
         "typescript": "^2.0.3",
