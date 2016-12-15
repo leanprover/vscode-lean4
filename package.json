@@ -2,7 +2,7 @@
     "name": "lean",
     "displayName": "lean",
     "description": "An extension for VS Code which provides support for the Lean language.",
-    "version": "0.0.1",
+    "version": "0.1.0",
     "publisher": "jroesch",
     "engines": {
         "vscode": "^1.5.0"
@@ -11,21 +11,32 @@
         "Languages"
     ],
     "contributes": {
-        "languages": [{
-            "id": "lean",
-            "aliases": ["Lean", "lean"],
-            "extensions": [".lean"],
-            "configuration": "./language-configuration.json"
-        }],
-        "grammars": [{
-            "language": "lean",
-            "scopeName": "source.lean",
-            "path": "./syntaxes/lean.tmLanguage"
-        }],
-        "commands": [{
-            "command": "extension.sayHello",
-            "title": "Hello World"
-        }]
+        "languages": [
+            {
+                "id": "lean",
+                "aliases": [
+                    "Lean",
+                    "lean"
+                ],
+                "extensions": [
+                    ".lean"
+                ],
+                "configuration": "./language-configuration.json"
+            }
+        ],
+        "grammars": [
+            {
+                "language": "lean",
+                "scopeName": "source.lean",
+                "path": "./syntaxes/lean.tmLanguage"
+            }
+        ],
+        "commands": [
+            {
+                "command": "extension.sayHello",
+                "title": "Hello World"
+            }
+        ]
     },
     "activationEvents": [
         "onLanguage:lean",
