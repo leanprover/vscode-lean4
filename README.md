@@ -38,6 +38,10 @@ Users appreciate release notes as you update your extension.
 
 Initial release of the package.
 
+### 0.3.0
+
+Published with basic integration with the Lean server.
+
 -----------------------------------------------------------------------------------------------------------
 
 ## Contact
