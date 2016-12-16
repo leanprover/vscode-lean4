@@ -52,11 +52,11 @@ class Server {
     on_message_callback : (a : any) => any;
 
     constructor(executable_path : string, project_root : string) {
-        if (executable_path !== '') {
-            this.process = child.spawn(executable_path, defaultServerOptions);
-        } else {
-            this.process = child.spawn("lean", defaultServerOptions);
+        if (executable_path == '') {
+            executable_path = "lean";
         }
+        this.process = child.spawn(executable_path, defaultServerOptions,
+            { cwd: project_root });
 
         this.sequence_number = 0;
         this.senders = {};
