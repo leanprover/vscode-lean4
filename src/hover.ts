@@ -12,16 +12,14 @@ export class LeanHoverProvider implements HoverProvider {
     }
 
     public provideHover(document : TextDocument, position : Position, CancellationToken) : Thenable<Hover> {
-        return this.server.sync(document.fileName, document.getText()).then((sync_response) => {
-            return this.server.info(document.fileName, position.line + 1, position.character).then((response) => {
-                if (response.record) {
-                    let msg = response.record['full-id'] + ' : ' + response.record['type'];
-                    let marked = { language: 'lean', value: msg };
-                    return new Hover(marked, new vscode.Range(position.line, position.character, position.line, position.character));
-                } else {
-                    return null;
-                }
-            });
+        return this.server.info(document.fileName, position.line + 1, position.character).then((response) => {
+            if (response.record) {
+                let msg = response.record['full-id'] + ' : ' + response.record['type'];
+                let marked = { language: 'lean', value: msg };
+                return new Hover(marked, new vscode.Range(position.line, position.character, position.line, position.character));
+            } else {
+                return null;
+            }
         });
     }
 }
