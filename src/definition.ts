@@ -1,4 +1,3 @@
-'use strict';
 import * as vscode from 'vscode'
 import {DefinitionProvider, TextDocument, Position, Definition, Location, Uri} from 'vscode'
 import {Server} from './server'

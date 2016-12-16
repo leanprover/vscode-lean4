@@ -1,5 +1,3 @@
-'use strict';
-
 import * as child from 'child_process';
 import * as carrier from 'carrier';
 

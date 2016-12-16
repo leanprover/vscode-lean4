@@ -1,5 +1,3 @@
-'use strict';
-
 import * as vscode from 'vscode';
 import {Server} from './server';
 import {HoverProvider, Hover, TextDocument, Position, CancellationToken} from 'vscode';
