@@ -18,6 +18,8 @@ function toSeverity(lean_severity : string) : vscode.DiagnosticSeverity {
         return vscode.DiagnosticSeverity.Warning;
     } else if (lean_severity == 'error') {
         return vscode.DiagnosticSeverity.Error;
+    } else if (lean_severity == 'information') {
+        return vscode.DiagnosticSeverity.Information;
     } else {
         throw "unknown severity";
     }
