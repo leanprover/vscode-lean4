@@ -7,7 +7,7 @@ const defaultServerOptions = [
     "--server",
 ];
 
-type SyncMessage = { command : string, file_name : string, content : string }
+type SyncMessage = { command : "sync", file_name : string, content : string }
 
 function syncMessage(file_name : string , contents : string) : SyncMessage {
     return {
