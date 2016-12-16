@@ -5,6 +5,7 @@ import * as vscode from 'vscode';
 import { Server } from './server';
 import { LeanHoverProvider } from './hover';
 import { LeanCompletionItemProvider } from './completion';
+import { LeanDefinitionProvider } from './definition'
 
 const LEAN_MODE : vscode.DocumentFilter = {
     language: "lean",
@@ -79,6 +80,11 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(
         vscode.languages.registerCompletionItemProvider(
             LEAN_MODE, new LeanCompletionItemProvider(server), '.'));
+
+    // Register support for definitions
+    context.subscriptions.push(
+        vscode.languages.registerDefinitionProvider(
+            LEAN_MODE, new LeanDefinitionProvider(server)));
 
     // Send a sync message when the editor changes.
     vscode.workspace.onDidChangeTextDocument((event) => {
