@@ -84,15 +84,26 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(
         vscode.languages.registerDefinitionProvider(
             LEAN_MODE, new LeanDefinitionProvider(server)));
-
-    // Send a sync message when the editor changes.
-    vscode.workspace.onDidChangeTextDocument((event) => {
+    
+    let syncLeanFiles = (event) => {
         if (event.document.languageId === "lean") {
             let file_name = event.document.fileName;
             let contents = event.document.getText();
             server.sync(file_name, contents);
         }
-    });
+    };
+
+    // Send a sync message when the editor changes.
+    vscode.workspace.onDidChangeTextDocument(syncLeanFiles);
+
+    // Send a sync message when the editor opens.
+    vscode.workspace.onDidOpenTextDocument(syncLeanFiles)
+
+    // Send a sync message when the editor closes.
+    vscode.workspace.onDidCloseTextDocument(syncLeanFiles)
+
+    // Send a sync message when the editor saves.
+    vscode.workspace.onDidSaveTextDocument(syncLeanFiles);
 }
 
 // this method is called when your extension is deactivated
