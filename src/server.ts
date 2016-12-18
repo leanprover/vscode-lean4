@@ -1,5 +1,3 @@
-'use strict';
-
 import * as child from 'child_process';
 import * as carrier from 'carrier';
 
@@ -43,11 +41,13 @@ class SequenceMap {
     [index : number] : (a : any) => any;
 }
 
+type Message = { file_name : string, pos_line : number, pos_col : number, severity : string, caption : string, text : string };
+
 // A class for interacting with the Lean server protoccol.
 class Server {
     process : child.ChildProcess;
     sequence_number : number;
-    messages : Array<any>;
+    messages : Array<Message>;
     senders : SequenceMap;
     on_message_callback : (a : any) => any;
 
