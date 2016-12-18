@@ -10,7 +10,10 @@ export class LeanHoverProvider implements HoverProvider {
     }
 
     public provideHover(document : TextDocument, position : Position, CancellationToken) : Thenable<Hover> {
-        return this.server.info(document.fileName, position.line + 1, position.character).then((response) => {
+        let wordRange = document.getWordRangeAtPosition(position);
+        let startPos = wordRange.start;
+        
+        return this.server.info(document.fileName, startPos.line + 1, startPos.character).then((response) => {
             if (response.record) {
                 let msg = response.record['full-id'] + ' : ' + response.record['type'];
                 let marked = { language: 'lean', value: msg };

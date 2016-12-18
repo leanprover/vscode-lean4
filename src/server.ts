@@ -15,7 +15,7 @@ function syncMessage(file_name : string , contents : string) : SyncMessage {
     };
 }
 
-type InfoMessage = { command : string, file_name : string, line : number, column : number };
+type InfoMessage = { command : "info", file_name : string, line : number, column : number };
 
 function infoMessage(file_name : string, line : number, column : number) : InfoMessage {
     return {
@@ -26,9 +26,9 @@ function infoMessage(file_name : string, line : number, column : number) : InfoM
     };
 }
 
-type CommandMessage  = { command : string, file_name : string, line : number, pattern : string };
+type CompleteMessage  = { command : "complete", file_name : string, line : number, pattern : string };
 
-function completeMessage(file_name : string, line : number, pattern : string) : CommandMessage {
+function completeMessage(file_name : string, line : number, pattern : string) : CompleteMessage {
     return {
         command : "complete",
         file_name : file_name,
