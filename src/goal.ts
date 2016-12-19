@@ -15,9 +15,12 @@ export function displayGoalAtPosition(
     let cursor = editor.selection.active;
     let fileName = editor.document.fileName;
 
-    server.info(fileName, cursor.line + 1, cursor.character).then(() => {
-        outputChannel.append("HELLO!");
-        outputChannel.show();
-        console.log("here");
+    server.info(fileName, cursor.line + 1, cursor.character).then((response) => {
+        if (response.record.state) {
+            outputChannel.appendLine(response.record.state);
+            outputChannel.show();
+        } else {
+            return null;
+        }
     });
 }
