@@ -42,6 +42,14 @@ function updateDiagnostics(collection : vscode.DiagnosticCollection, messages : 
     });
 }
 
+type SyncEvent =
+  vscode.TextDocument |
+  vscode.TextDocumentChangeEvent;
+
+function isChangeEvent(e : SyncEvent) : e is vscode.TextDocumentChangeEvent {
+    return (e as vscode.TextDocumentChangeEvent).document !== undefined;
+}
+
 let server : Server;
 
 export function activate(context: vscode.ExtensionContext) {
@@ -95,10 +103,18 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.languages.registerDefinitionProvider(
             LEAN_MODE, new LeanDefinitionProvider(server)));
 
-    let syncLeanFiles = (event) => {
-        if (event.document.languageId === "lean") {
-            let file_name = event.document.fileName;
-            let contents = event.document.getText();
+    let syncLeanFiles = (event : SyncEvent) => {
+        let document;
+
+        if (isChangeEvent(event)) {
+            document = event.document;
+        } else {
+            document = event;
+        }
+
+        if (document.languageId === "lean") {
+            let file_name = document.fileName;
+            let contents = document.getText();
             server.sync(file_name, contents);
         }
     };
