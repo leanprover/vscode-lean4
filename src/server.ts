@@ -15,7 +15,12 @@ function syncMessage(file_name : string , contents : string) : SyncMessage {
     };
 }
 
-type InfoMessage = { command : "info", file_name : string, line : number, column : number };
+type InfoMessage = { 
+    command : "info", 
+    file_name : string, 
+    line : number, 
+    column : number 
+};
 
 function infoMessage(file_name : string, line : number, column : number) : InfoMessage {
     return {
@@ -26,7 +31,12 @@ function infoMessage(file_name : string, line : number, column : number) : InfoM
     };
 }
 
-type CompleteMessage  = { command : "complete", file_name : string, line : number, pattern : string };
+type CompleteMessage  = { 
+    command : "complete", 
+    file_name : string, 
+    line : number, 
+    pattern : string 
+};
 
 function completeMessage(file_name : string, line : number, pattern : string) : CompleteMessage {
     return {
@@ -41,7 +51,14 @@ class SequenceMap {
     [index : number] : (a : any) => any;
 }
 
-type Message = { file_name : string, pos_line : number, pos_col : number, severity : string, caption : string, text : string };
+type Message = { 
+    file_name : string, 
+    pos_line : number, 
+    pos_col : number, 
+    severity : string, 
+    caption : string, 
+    text : string 
+};
 
 // A class for interacting with the Lean server protoccol.
 class Server {
@@ -74,8 +91,7 @@ class Server {
             } else if (response === "additional_message") {
                 this.handleAdditionalMessage(message);
             } else {
-                console.log(line);
-                console.log("unsupported")
+                console.log("unsupported message: ", line);
             }
         });
 

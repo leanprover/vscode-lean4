@@ -10,7 +10,9 @@ export class LeanDefinitionProvider implements DefinitionProvider {
     }
 
     public provideDefinition(document: TextDocument, position: Position,  CancellationToken): Thenable<Definition> {
-        return this.server.info(document.fileName, position.line + 1, position.character).then((response) => {
+        let wordRange = document.getWordRangeAtPosition(position);
+        let startPos = wordRange.start;
+        return this.server.info(document.fileName, startPos.line + 1, startPos.character).then((response) => {
             if (response.record && response.record.source) {
                 let src = response.record.source;
                 let uri = src.file ? Uri.file(src.file) : document.uri;
