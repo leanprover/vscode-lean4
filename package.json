@@ -10,7 +10,7 @@
     "categories": [
         "Languages"
     ],
-    "repository": "https://github.com/jroesch/vscode-lean",
+    "repository": "https://github.com/leanprover/vscode-lean",
     "contributes": {
         "configuration": {
             "type": "object",
