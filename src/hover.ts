@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import {Server} from './server';
 import {HoverProvider, Hover, TextDocument, Position, CancellationToken} from 'vscode';
+import * as util from './util';
 
 export class LeanHoverProvider implements HoverProvider {
     server : Server;
@@ -10,9 +11,7 @@ export class LeanHoverProvider implements HoverProvider {
     }
 
     public provideHover(document : TextDocument, position : Position, CancellationToken) : Thenable<Hover> {
-        let wordRange = document.getWordRangeAtPosition(position);
-        let startPos = wordRange.start;
-        
+        let startPos = util.identifierStart(document, position);
         return this.server.info(document.fileName, startPos.line + 1, startPos.character).then((response) => {
             if (response.record) {
                 let msg = response.record['full-id'] + ' : ' + response.record['type'];

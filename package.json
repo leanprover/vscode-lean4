@@ -12,6 +12,29 @@
     ],
     "repository": "https://github.com/jroesch/vscode-lean",
     "contributes": {
+        "configuration" : {
+            "type" : "object",
+            "title" : "Lean configuration",
+            "properties": {
+                "lean.executablePath" : {
+                    "type" : "string",
+                    "default" : "",
+                    "description": "Path to the Lean executable to use."
+                }
+            }
+        },
+        "commands": [
+            {
+                "command": "lean.restartServer",
+                "title": "Lean: Restart",
+                "description": "Restart the Language Server"
+            },
+            {
+                "command": "lean.displayGoal",
+                "title": "Lean: Display Goal",
+                "description": "Display the goal at the current position."
+            }
+        ],
         "languages": [
             {
                 "id": "lean",
@@ -31,17 +54,11 @@
                 "scopeName": "source.lean",
                 "path": "./syntaxes/lean.tmLanguage"
             }
-        ],
-        "commands": [
-            {
-                "command": "extension.sayHello",
-                "title": "Hello World"
-            }
         ]
     },
     "activationEvents": [
         "onLanguage:lean",
-        "onCommand:extension.sayHello"
+        "onCommand:lean.displayGoal"
     ],
     "main": "./out/src/extension",
     "scripts": {

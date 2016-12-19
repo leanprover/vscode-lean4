@@ -15,11 +15,11 @@ function syncMessage(file_name : string , contents : string) : SyncMessage {
     };
 }
 
-type InfoMessage = { 
-    command : "info", 
-    file_name : string, 
-    line : number, 
-    column : number 
+type InfoMessage = {
+    command : "info",
+    file_name : string,
+    line : number,
+    column : number
 };
 
 function infoMessage(file_name : string, line : number, column : number) : InfoMessage {
@@ -31,11 +31,11 @@ function infoMessage(file_name : string, line : number, column : number) : InfoM
     };
 }
 
-type CompleteMessage  = { 
-    command : "complete", 
-    file_name : string, 
-    line : number, 
-    pattern : string 
+type CompleteMessage  = {
+    command : "complete",
+    file_name : string,
+    line : number,
+    pattern : string
 };
 
 function completeMessage(file_name : string, line : number, pattern : string) : CompleteMessage {
@@ -51,34 +51,42 @@ class SequenceMap {
     [index : number] : (a : any) => any;
 }
 
-type Message = { 
-    file_name : string, 
-    pos_line : number, 
-    pos_col : number, 
-    severity : string, 
-    caption : string, 
-    text : string 
+type Message = {
+    file_name : string,
+    pos_line : number,
+    pos_col : number,
+    severity : string,
+    caption : string,
+    text : string
 };
+
+
 
 // A class for interacting with the Lean server protoccol.
 class Server {
+    executablePath : string;
     process : child.ChildProcess;
-    sequence_number : number;
+    sequenceNumber : number;
     messages : Array<Message>;
     senders : SequenceMap;
-    on_message_callback : (a : any) => any;
+    onMessageCallback : (a : any) => any;
 
-    constructor(executable_path : string, project_root : string) {
-        if (executable_path == '') {
-            executable_path = "lean";
+    constructor(executablePath : string, projectRoot : string) {
+        if (executablePath == '') {
+            this.executablePath = "lean";
         }
-        this.process = child.spawn(executable_path, defaultServerOptions,
-            { cwd: project_root });
 
-        this.sequence_number = 0;
+        this.process = child.spawn(this.executablePath, defaultServerOptions,
+            { cwd: projectRoot });
+
+        this.sequenceNumber = 0;
         this.senders = {};
         this.messages = [];
 
+        this.attachEventHandlers();
+    }
+
+    attachEventHandlers() {
         carrier.carry(this.process.stdout, (line) => {
             let message = JSON.parse(line);
             let response = message['response'];
@@ -97,7 +105,6 @@ class Server {
 
         this.process.stderr.on('data', (data) => {
             console.log(`stderr: ${data}`);
-            // throw "unhandled error"
         });
 
         this.process.on('close', (code) => {
@@ -107,30 +114,30 @@ class Server {
 
     handleAllMessages(all_messages) {
         this.messages = all_messages.msgs;
-        if (this.on_message_callback) {
-            this.on_message_callback(this.messages);
+        if (this.onMessageCallback) {
+            this.onMessageCallback(this.messages);
         }
     }
 
     handleAdditionalMessage(additional_message) {
         this.messages.push(additional_message.msg);
-        if (this.on_message_callback) {
-            this.on_message_callback(this.messages);
+        if (this.onMessageCallback) {
+            this.onMessageCallback(this.messages);
         }
     }
 
     send(message, callback : (a : any) => any) {
         // console.log(message);
-        let seq_num = this.sequence_number;
-        message['seq_num'] = this.sequence_number;
+        let seq_num = this.sequenceNumber;
+        message['seq_num'] = this.sequenceNumber;
         let json = JSON.stringify(message);
-        this.sequence_number = this.sequence_number + 1;
+        this.sequenceNumber = this.sequenceNumber + 1;
         this.senders[seq_num] = callback;
         // console.log("about to send: " + json);
         this.process.stdin.write(json + "\n");
     }
 
-    info(file, line, column) : Promise<any> {
+    info(file : string, line : number, column : number) : Promise<any> {
         let message = infoMessage(file, line, column);
         return new Promise((resolve, reject) => {
             this.send(message, resolve);
@@ -152,7 +159,20 @@ class Server {
     }
 
     onMessage(callback) {
-        this.on_message_callback = callback;
+        this.onMessageCallback = callback;
+    }
+
+    restart(projectRoot : string) {
+        this.process.kill();
+        this.process = child.spawn(
+            this.executablePath,
+            defaultServerOptions,
+            { cwd: projectRoot });
+        this.attachEventHandlers();
+    }
+
+    dispose() {
+        this.process.kill();
     }
 };
 

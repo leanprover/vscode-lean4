@@ -5,6 +5,7 @@ import { Server } from './server';
 import { LeanHoverProvider } from './hover';
 import { LeanCompletionItemProvider } from './completion';
 import { LeanDefinitionProvider } from './definition'
+import { displayGoalAtPosition } from './goal';
 
 const LEAN_MODE : vscode.DocumentFilter = {
     language: "lean",
@@ -41,26 +42,31 @@ function updateDiagnostics(collection : vscode.DiagnosticCollection, messages : 
     });
 }
 
+let server : Server;
+
 export function activate(context: vscode.ExtensionContext) {
-    // The command has been defined in the package.json file
-    // Now provide the implementation of the command with  registerCommand
-    // The commandId parameter must match the command field in package.json
-    let disposable = vscode.commands.registerCommand('extension.sayHello', () => {
-        // The code you place here will be executed every time your command is executed
-
-        // Display a message box to the user
-        vscode.window.showInformationMessage('Hello World!');
-    });
-
-    context.subscriptions.push(disposable);
-
     let working_directory = vscode.workspace.rootPath;
     console.log("Starting server in " + working_directory);
+    server = new Server('', working_directory);
 
-    let server = new Server('', working_directory);
+    // Ensure that the server is disposed of.
+    context.subscriptions.push(server);
+
+    // Setup the commands.
+    let restartDisposable = vscode.commands.registerCommand('lean.restartServer', () => {
+        server.restart(vscode.workspace.rootPath);
+    });
+
+    let goalDisposable = vscode.commands.registerTextEditorCommand(
+        'lean.displayGoal',
+        (editor, edit, args) => { displayGoalAtPosition(server, editor, edit, args) });
+
+    // Register their disposable as well.
+    context.subscriptions.push(restartDisposable);
+    context.subscriptions.push(goalDisposable);
 
     // Have the server update diagnostics when we
-    // receive new messages.    
+    // receive new messages.
     server.onMessage((messages) => {
         diagnosticCollection.clear();
         updateDiagnostics(diagnosticCollection, messages);
@@ -74,7 +80,7 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(
         vscode.languages.registerHoverProvider(LEAN_MODE,
             new LeanHoverProvider(server)));
-    
+
     // Register support for completetion.
     context.subscriptions.push(
         vscode.languages.registerCompletionItemProvider(
@@ -84,7 +90,7 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(
         vscode.languages.registerDefinitionProvider(
             LEAN_MODE, new LeanDefinitionProvider(server)));
-    
+
     let syncLeanFiles = (event) => {
         if (event.document.languageId === "lean") {
             let file_name = event.document.fileName;
@@ -104,8 +110,4 @@ export function activate(context: vscode.ExtensionContext) {
 
     // Send a sync message when the editor saves.
     vscode.workspace.onDidSaveTextDocument(syncLeanFiles);
-}
-
-// this method is called when your extension is deactivated
-export function deactivate() {
 }
