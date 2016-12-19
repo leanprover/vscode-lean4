@@ -4,11 +4,11 @@ This extension adds support for [Lean](https://github.com/leanprover/lean).
 
 ## Features
 
-We currently support:  
+We currently support:
 
-    - hovering 
-    - completions
-    - diagnostics
+* hovering
+* completions
+* diagnostics
 
 <!--\!\[feature X\]\(images/feature-x.png\)-->
 
@@ -18,30 +18,36 @@ If you have any requirements or dependencies, add a section describing those and
 
 ## Extension Settings
 
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
-
-For example:
-
 This extension contributes the following settings:
 
-* `myExtension.enable`: enable/disable this extension
-* `myExtension.thing`: set to `blah` to do something
+* `lean.executablePath`: controls which Lean executable is used when starting the server
 
 ## Known Issues
 
-Calling out known issues can help limit users opening duplicate issues against your extension.
+* We currently don't support Unicode input.
+* Completion still behaves weirdly with hierarchial names
 
 ## Release Notes
 
-Users appreciate release notes as you update your extension.
+### 0.4.0
+
+Implement most features of the EMACS mode. We now support:
+
+- Hovering over definitions for type information
+- Go-to-definition & peeking for top-level constants
+- Goal support, with the ability to display the
+  goal at the current position in an output buffer.
+- Basic completion support
+- Diagnostics support, dispalying errors, information
+  & warnings.
+
+### 0.3.0
+
+Added basic integration with the Lean server.
 
 ### 0.1.0
 
 Initial release of the package.
-
-### 0.3.0
-
-Published with basic integration with the Lean server.
 
 -----------------------------------------------------------------------------------------------------------
 

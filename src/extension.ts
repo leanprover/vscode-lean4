@@ -46,8 +46,12 @@ let server : Server;
 
 export function activate(context: vscode.ExtensionContext) {
     let working_directory = vscode.workspace.rootPath;
-    console.log("Starting server in " + working_directory);
-    server = new Server('', working_directory);
+    let config = vscode.workspace.getConfiguration('lean')
+    let executablePath = config.get('executablePath') as string;
+
+    console.log("Starting server " + executablePath + " in " + working_directory)
+
+    server = new Server(executablePath, working_directory);
 
     // Ensure that the server is disposed of.
     context.subscriptions.push(server);

@@ -16,9 +16,10 @@ export function displayGoalAtPosition(
     let fileName = editor.document.fileName;
 
     server.info(fileName, cursor.line + 1, cursor.character).then((response) => {
-        if (response.record.state) {
+        if (response.record && response.record.state) {
             outputChannel.appendLine(response.record.state);
-            outputChannel.show();
+            // Ensure we perserve focus.
+            outputChannel.show(true)
         } else {
             return null;
         }

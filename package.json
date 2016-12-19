@@ -2,7 +2,7 @@
     "name": "lean",
     "displayName": "lean",
     "description": "An extension for VS Code which provides support for the Lean language.",
-    "version": "0.3.1",
+    "version": "0.3.4",
     "publisher": "jroesch",
     "engines": {
         "vscode": "^1.5.0"
@@ -12,13 +12,13 @@
     ],
     "repository": "https://github.com/jroesch/vscode-lean",
     "contributes": {
-        "configuration" : {
-            "type" : "object",
-            "title" : "Lean configuration",
+        "configuration": {
+            "type": "object",
+            "title": "Lean configuration",
             "properties": {
-                "lean.executablePath" : {
-                    "type" : "string",
-                    "default" : "",
+                "lean.executablePath": {
+                    "type": "string",
+                    "default": "",
                     "description": "Path to the Lean executable to use."
                 }
             }
@@ -54,7 +54,13 @@
                 "scopeName": "source.lean",
                 "path": "./syntaxes/lean.tmLanguage"
             }
-        ]
+        ],
+        "keybindings": [{
+            "command": "lean.displayGoal",
+            "key": "ctrl+shift+enter",
+            "mac": "cmd+shift+enter",
+            "when": "editorTextFocus"
+        }]
     },
     "activationEvents": [
         "onLanguage:lean",
