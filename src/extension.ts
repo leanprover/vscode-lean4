@@ -55,7 +55,7 @@ let server : Server;
 export function activate(context: vscode.ExtensionContext) {
     let working_directory = vscode.workspace.rootPath;
     let config = vscode.workspace.getConfiguration('lean')
-    let executablePath = config.get('executablePath') as string;
+    let executablePath = config.get('executablePath', "") as string;
 
     console.log("Starting server " + executablePath + " in " + working_directory)
 
