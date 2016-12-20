@@ -72,9 +72,7 @@ class Server {
     onMessageCallback : (a : any) => any;
 
     constructor(executablePath : string, projectRoot : string) {
-        if (executablePath == '') {
-            this.executablePath = "lean";
-        }
+        this.executablePath = executablePath || "lean";
 
         this.process = child.spawn(this.executablePath, defaultServerOptions,
             { cwd: projectRoot });
