@@ -10,13 +10,14 @@ export function displayGoalAtPosition(
     edit : TextEditorEdit,
     args : any[])
 {
-    outputChannel = vscode.window.createOutputChannel("Lean: Proof Context");
+    outputChannel = outputChannel || vscode.window.createOutputChannel("Lean: Proof Context");
 
     let cursor = editor.selection.active;
     let fileName = editor.document.fileName;
 
     server.info(fileName, cursor.line + 1, cursor.character).then((response) => {
         if (response.record && response.record.state) {
+            outputChannel.clear();
             outputChannel.appendLine(response.record.state);
             // Ensure we perserve focus.
             outputChannel.show(true)
