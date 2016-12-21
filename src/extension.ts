@@ -50,9 +50,21 @@ function isChangeEvent(e : SyncEvent) : e is vscode.TextDocumentChangeEvent {
     return (e as vscode.TextDocumentChangeEvent).document !== undefined;
 }
 
+
+// Seeing .olean files in the source tree is annoying, we should
+// just globally hide them.
+function ignoreOLeanFiles() {
+    let files : vscode.WorkspaceConfiguration = vscode.workspace.getConfiguration('files');
+    let exclude = files.get('exclude');
+    exclude["**/*.olean"] = true;
+    files.update('exclude', exclude, true);
+}
+
 let server : Server;
 
 export function activate(context: vscode.ExtensionContext) {
+    ignoreOLeanFiles();
+
     let working_directory = vscode.workspace.rootPath;
     let config = vscode.workspace.getConfiguration('lean')
     let executablePath = config.get('executablePath', "") as string;
@@ -73,7 +85,7 @@ export function activate(context: vscode.ExtensionContext) {
         'lean.displayGoal',
         (editor, edit, args) => { displayGoalAtPosition(server, editor, edit, args) });
 
-    // Register their disposable as well.
+    // Register their disposables as well.
     context.subscriptions.push(restartDisposable);
     context.subscriptions.push(goalDisposable);
 
