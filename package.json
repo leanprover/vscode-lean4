@@ -2,7 +2,7 @@
     "name": "lean",
     "displayName": "lean",
     "description": "An extension for VS Code which provides support for the Lean language.",
-    "version": "0.4.4",
+    "version": "0.5.1",
     "publisher": "jroesch",
     "engines": {
         "vscode": "^1.8.0"
@@ -87,7 +87,7 @@
     },
     "icon": "lean_logo.svg",
     "license": "Apache-2.0",
-    "extensionDependencies" : [
+    "extensionDependencies": [
         "jroesch.input-assist-lean"
     ]
 }
