@@ -53,17 +53,26 @@ function isChangeEvent(e : SyncEvent) : e is vscode.TextDocumentChangeEvent {
 
 // Seeing .olean files in the source tree is annoying, we should
 // just globally hide them.
-function ignoreOLeanFiles() {
-    let files : vscode.WorkspaceConfiguration = vscode.workspace.getConfiguration('files');
+function configExcludeOLean() {
+    let files = vscode.workspace.getConfiguration('files');
     let exclude = files.get('exclude');
     exclude["**/*.olean"] = true;
     files.update('exclude', exclude, true);
 }
 
+function configInputAssistLean() {
+    let inputAssist = vscode.workspace.getConfiguration('input-assist');
+    let languages = inputAssist.get('languages') as Array<string>;
+    languages = languages || [];
+    languages.push("lean");
+    inputAssist.update('languages', languages, true);
+}
+
 let server : Server;
 
 export function activate(context: vscode.ExtensionContext) {
-    ignoreOLeanFiles();
+    configExcludeOLean();
+    configInputAssistLean();
 
     let working_directory = vscode.workspace.rootPath;
     let config = vscode.workspace.getConfiguration('lean')

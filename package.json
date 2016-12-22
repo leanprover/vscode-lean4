@@ -86,5 +86,8 @@
         "@types/mocha": "^2.2.32"
     },
     "icon": "lean_logo.svg",
-    "license": "Apache-2.0"
+    "license": "Apache-2.0",
+    "extensionDependencies" : [
+        "jroesch.input-assist-lean"
+    ]
 }
