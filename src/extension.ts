@@ -1,9 +1,11 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
+import * as loadJsonFile from 'load-json-file';
 import { Server } from './server';
 import { LeanHoverProvider } from './hover';
 import { LeanCompletionItemProvider } from './completion';
+import { LeanInputCompletionProvider } from './input';
 import { LeanDefinitionProvider } from './definition'
 import { displayGoalAtPosition } from './goal';
 
@@ -118,6 +120,13 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(
         vscode.languages.registerCompletionItemProvider(
             LEAN_MODE, new LeanCompletionItemProvider(server), '.'));
+
+    // Input method
+    loadJsonFile(context.asAbsolutePath("translations.json")).then(json => {
+        context.subscriptions.push(
+            vscode.languages.registerCompletionItemProvider(
+                LEAN_MODE, new LeanInputCompletionProvider(json), '\\'));
+    });
 
     // Register support for definitions
     context.subscriptions.push(
