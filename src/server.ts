@@ -78,7 +78,7 @@ class Server {
     constructor(executablePath : string, projectRoot : string) {
         this.executablePath = executablePath || "lean";
 
-        this.process = child.spawn(executablePath, defaultServerOptions,
+        this.process = child.spawn(this.executablePath, defaultServerOptions,
             { cwd: projectRoot });
 
         this.sequenceNumber = 0;
