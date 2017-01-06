@@ -35,15 +35,19 @@ type CompleteMessage  = {
     command : "complete",
     file_name : string,
     line : number,
-    pattern : string
+    column : number,
+};
+type CompleteResponse = {
+    prefix: string,
+    completions: Array<{type: string, text: string,}>,
 };
 
-function completeMessage(file_name : string, line : number, pattern : string) : CompleteMessage {
+function completeMessage(file_name : string, line : number, column: number) : CompleteMessage {
     return {
         command : "complete",
         file_name : file_name,
         line : line,
-        pattern : pattern
+        column : column,
     };
 }
 
@@ -149,8 +153,8 @@ class Server {
         })
     }
 
-    complete(file, line, pattern) {
-        let message = completeMessage(file, line, pattern);
+    complete(file: string, line: number, column: number): Promise<CompleteResponse> {
+        let message = completeMessage(file, line, column);
         return new Promise((resolve, reject) => {
             this.send(message, resolve);
         });
