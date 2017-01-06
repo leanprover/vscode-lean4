@@ -72,6 +72,7 @@ class Server {
     process : child.ChildProcess;
     sequenceNumber : number;
     messages : Array<Message>;
+    tasks : Array<Message>;
     senders : SequenceMap;
     onMessageCallback : (a : any) => any;
 
@@ -84,6 +85,7 @@ class Server {
         this.sequenceNumber = 0;
         this.senders = {};
         this.messages = [];
+        this.tasks = [];
 
         this.attachEventHandlers();
     }
@@ -100,6 +102,8 @@ class Server {
                 this.handleAllMessages(message);
             } else if (response === "additional_message") {
                 this.handleAdditionalMessage(message);
+            } else if (response === "current_tasks") {
+                this.handleCurrentTasks(message);
             } else {
                 console.log("unsupported message: ", line);
             }
@@ -114,18 +118,32 @@ class Server {
         });
     }
 
-    handleAllMessages(all_messages) {
-        this.messages = all_messages.msgs;
+    messagesChanged() {
         if (this.onMessageCallback) {
-            this.onMessageCallback(this.messages);
+            this.onMessageCallback(this.messages.concat(this.tasks));
         }
+    }
+
+    handleAllMessages(all_messages) {
+        this.messages = all_messages.msgs || [];
+        this.messagesChanged();
     }
 
     handleAdditionalMessage(additional_message) {
         this.messages.push(additional_message.msg);
-        if (this.onMessageCallback) {
-            this.onMessageCallback(this.messages);
-        }
+        this.messagesChanged();
+    }
+
+    handleCurrentTasks(current_tasks) {
+        this.tasks = current_tasks.tasks.map((task) => <Message>{
+            file_name : task.file_name,
+            pos_line : task.pos_line,
+            pos_col : task.pos_col,
+            severity : "information",
+            caption : task.desc,
+            text : task.desc,
+        });
+        this.messagesChanged();
     }
 
     send(message, callback : (a : any) => any) {
