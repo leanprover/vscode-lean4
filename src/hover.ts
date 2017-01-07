@@ -19,10 +19,10 @@ export class LeanHoverProvider implements HoverProvider {
             if (response.record && response.record['full-id']) {
                 let msg = response.record['full-id'] + ' : ' + response.record['type'];
                 let marked = { language: 'lean', value: msg };
-                return new Hover(marked, new vscode.Range(position.line, position.character, position.line, position.character));
+                return new Hover(marked, new vscode.Range(position.line - 1, position.character, position.line - 1, position.character));
             } else if (response.record && response.record.state) {
                 let marked = { language: 'lean', value: response.record.state };
-                return new Hover(marked, new vscode.Range(position.line, position.character, position.line, position.character));
+                return new Hover(marked, new vscode.Range(position.line - 1, position.character, position.line - 1, position.character));
             } else {
                 return null;
             }

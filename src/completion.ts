@@ -13,11 +13,10 @@ export class LeanCompletionItemProvider implements vscode.CompletionItemProvider
     public provideCompletionItems(
         document: vscode.TextDocument, position: vscode.Position, token: vscode.CancellationToken):
         Thenable<vscode.CompletionItem[]> {
-            let wordRange = document.getWordRangeAtPosition(position);
-            let pattern = document.getText(wordRange);
-            return this.server.complete(document.fileName, position.line, pattern).then((message : { completions : Array<any>}) => {
+            return this.server.complete(document.fileName, position.line+1, position.character).then(message => {
                 return message.completions.map((completion) => {
-                    let item = new vscode.CompletionItem(completion.text, vscode.CompletionItemKind.Variable);
+                    let item = new vscode.CompletionItem(completion.text, vscode.CompletionItemKind.Function);
+                    item.range = new vscode.Range(position.translate(0, -message.prefix.length), position);
                     item.detail = completion.type;
                     return item;
                 });
