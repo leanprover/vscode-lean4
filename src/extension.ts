@@ -139,7 +139,7 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.languages.registerDefinitionProvider(
             LEAN_MODE, new LeanDefinitionProvider(server)));
 
-    let syncLeanFiles = (event : SyncEvent) => {
+    let syncLeanFile = (event : SyncEvent) => {
         let document;
 
         if (isChangeEvent(event)) {
@@ -156,14 +156,17 @@ export function activate(context: vscode.ExtensionContext) {
     };
 
     // Send a sync message when the editor changes.
-    vscode.workspace.onDidChangeTextDocument(syncLeanFiles);
+    vscode.workspace.onDidChangeTextDocument(syncLeanFile);
 
     // Send a sync message when the editor opens.
-    vscode.workspace.onDidOpenTextDocument(syncLeanFiles)
+    vscode.workspace.onDidOpenTextDocument(syncLeanFile);
 
     // Send a sync message when the editor closes.
-    vscode.workspace.onDidCloseTextDocument(syncLeanFiles)
+    vscode.workspace.onDidCloseTextDocument(syncLeanFile);
 
     // Send a sync message when the editor saves.
-    vscode.workspace.onDidSaveTextDocument(syncLeanFiles);
+    vscode.workspace.onDidSaveTextDocument(syncLeanFile);
+
+    // Sync files that are already open.
+    vscode.workspace.textDocuments.forEach(syncLeanFile);
 }
