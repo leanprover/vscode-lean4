@@ -22,6 +22,7 @@ export function displayGoalAtPosition(
             // Ensure we perserve focus.
             outputChannel.show(true)
         } else {
+            outputChannel.clear();
             return null;
         }
     });

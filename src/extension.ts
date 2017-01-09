@@ -8,6 +8,7 @@ import { LeanCompletionItemProvider } from './completion';
 import { LeanInputCompletionProvider } from './input';
 import { LeanDefinitionProvider } from './definition'
 import { displayGoalAtPosition } from './goal';
+import { batchExecuteFile } from './batch';
 
 const LEAN_MODE : vscode.DocumentFilter = {
     language: "lean",
@@ -96,9 +97,14 @@ export function activate(context: vscode.ExtensionContext) {
         'lean.displayGoal',
         (editor, edit, args) => { displayGoalAtPosition(server, editor, edit, args) });
 
+    let batchDisposable = vscode.commands.registerTextEditorCommand(
+        'lean.batchExecute',
+        (editor, edit, args) => { batchExecuteFile(editor, edit, args); });
+
     // Register their disposables as well.
     context.subscriptions.push(restartDisposable);
     context.subscriptions.push(goalDisposable);
+    context.subscriptions.push(batchDisposable);
 
     // Have the server update diagnostics when we
     // receive new messages.
@@ -121,14 +127,14 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.languages.registerCompletionItemProvider(
             LEAN_MODE, new LeanCompletionItemProvider(server), '.'));
 
-    // Input method
+    // Register support for unicode input.
     loadJsonFile(context.asAbsolutePath("translations.json")).then(json => {
         context.subscriptions.push(
             vscode.languages.registerCompletionItemProvider(
                 LEAN_MODE, new LeanInputCompletionProvider(json), '\\'));
     });
 
-    // Register support for definitions
+    // Register support for definition support.
     context.subscriptions.push(
         vscode.languages.registerDefinitionProvider(
             LEAN_MODE, new LeanDefinitionProvider(server)));

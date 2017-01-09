@@ -33,6 +33,11 @@
                 "command": "lean.displayGoal",
                 "title": "Lean: Display Goal",
                 "description": "Display the goal at the current position."
+            },
+            {
+                "command": "lean.batchExecute",
+                "title": "Lean: Batch Execute File",
+                "description": "Display the goal at the current position."
             }
         ],
         "languages": [
