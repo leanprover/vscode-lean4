@@ -1,9 +1,10 @@
 {
+  "name": "Lean",
+  "scopeName": "source.lean",
   "fileTypes": [
     "lean",
     "hlean"
   ],
-  "name": "Lean",
   "patterns": [
     {
       "include": "#dashComment"
@@ -53,27 +54,50 @@
     },
     {
       "match": "@\\[[^\\]]*\\]",
-      "name": "storage.modifier.lean"
+      "name": "comment.line.attribute.lean"
     },
     {
       "match": "attribute\\s*\\[[^\\]]*\\]",
       "name": "storage.modifier.lean"
     },
     {
-      "match": "\\b(import|prelude|theory|protected|private|noncomputable|mutual|meta|definition|def|instance|renaming|hiding|exposing|parameter|parameters|begin|conjecture|constant|constants|hypothesis|lemma|corollary|variable|variables|premise|premises|print|theorem|example|abbreviation|context|open|as|export|axiom|inductive|with|structure|record|universe|universes|alias|help|override|precedence|reserve|postfix|prefix|infix|infixl|infixr|notation|vm_eval|eval|check|exit|end|using|namespace|section|local|set_option|extends|include|omit|class|classes|instances|metaclasses|raw|run_command)\\b",
+      "match": "private|meta|mutual|protected|noncomputable|mutual",
+      "name": "keyword.control.definition.modifier.lean"
+    },
+    {
+      "match": "vm_eval|eval|check|exit",
+      "name": "keyword.other.command.lean"
+    },
+    {
+      "match": "\\b(import|prelude|theory|definition|def|instance|renaming|hiding|exposing|parameter|parameters|begin|conjecture|constant|constants|hypothesis|lemma|corollary|variable|variables|premise|premises|print|theorem|example|abbreviation|context|open|as|export|axiom|inductive|with|structure|record|universe|universes|alias|help|override|precedence|reserve|postfix|prefix|infix|infixl|infixr|notation|end|using|namespace|section|local|set_option|extends|include|omit|class|classes|instances|metaclasses|raw|run_command)\\b",
       "name": "keyword.other.lean"
     },
     {
-      "match": "\\b(calc|have|assert|suppose|this|match|obtains|do|suffices|show|by|in|at|let|forall|fun|exists|if|then|else|assume|take|obtain|from)\\b",
+      "begin": "\\b(def)\\b\\s+(\\b[^\\(\\)\\{\\}[:space:]=→λ∀?][^\\(\\)\\{\\}[:space:]]*)",
+      "beginCaptures": {
+         "0": {
+            "name": "keyword.other.lean"
+         },
+         "1": {
+            "name": "entity.name.definition.lean"
+         }
+      }
+    },
+    {
+      "match": "\\b(calc|have|assert|suppose|this|match|obtains|do|suffices|show|by|in|at|let|forall|fun|exists|assume|take|obtain|from)\\b",
       "name": "keyword.other.lean"
+    },
+    {
+      "match": "\\b(if|then|else)\\b",
+      "name": "keyword.control.lean"
     },
     {
       "match": "(->|==|:=|<->|\\\\/|/\\\\|<=|>=|⁻¹)",
-      "name": "constant.language.lua"
+      "name": "keyword.operator.lean"
     },
     {
       "match": "[#@∼↔/=∧∨≠<>≤≥¬⬝▸+*-]",
-      "name": "constant.language.lua"
+      "name": "keyword.operator.lean"
     },
     {
       "match": "(?<=\\s)[=→λ∀?]",
@@ -139,6 +163,5 @@
       "match": "\\b[^\\(\\)\\{\\}[:space:]=→λ∀?][^\\(\\)\\{\\}[:space:]]*",
       "name": "entity.name.function.lean"
     }
-  },
-  "scopeName": "source.lean"
+  }
 }

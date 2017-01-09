@@ -57,7 +57,7 @@
             {
                 "language": "lean",
                 "scopeName": "source.lean",
-                "path": "./syntaxes/lean.tmLanguage.json"
+                "path": "./syntaxes/lean.json"
             }
         ],
         "keybindings": [
