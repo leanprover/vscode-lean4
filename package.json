@@ -66,6 +66,12 @@
                 "key": "ctrl+shift+enter",
                 "mac": "cmd+shift+enter",
                 "when": "editorTextFocus"
+            },
+            {
+                "command": "lean.batchExecute",
+                "key": "ctrl+shift+r",
+                "mac": "cmd+shift+r",
+                "when": "editorTextFocus"
             }
         ]
     },
