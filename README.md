@@ -14,7 +14,8 @@ We currently support:
 
 ## Requirements
 
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
+This extension requires an installation of Lean. It is possible
+to customize the Lean executable path.
 
 ## Extension Settings
 
@@ -24,26 +25,30 @@ This extension contributes the following settings:
 
 ## Known Issues
 
-* We currently don't support Unicode input.
 * Completion still behaves weirdly with hierarchial names
 
 ## Release Notes
 
+### 0.6.0
+
+Bug fixes, stability, and a handful of feature improvements
+TBD
+
 ### 0.4.0
 
-Implement most features of the EMACS mode. We now support:
+Implement many features implemented by the EMACS mode. We now support:
 
-- Hovering over definitions for type information
-- Go-to-definition & peeking for top-level constants
+- Hovering over names for type information
+- Go-to-definition & peeking for constants
 - Goal support, with the ability to display the
-  goal at the current position in an output buffer.
-- Basic completion support
+  goal at the current position.
+- Basic auto-completion support
 - Diagnostics support, dispalying errors, information
   & warnings.
 
 ### 0.3.0
 
-Added basic integration with the Lean server.
+Add basic integration with the Lean server.
 
 ### 0.1.0
 

@@ -75,6 +75,7 @@ class Server {
     tasks : Array<Message>;
     senders : SequenceMap;
     onMessageCallback : (a : any) => any;
+    onTaskCallback : (a : any) => any;
 
     constructor(executablePath : string, projectRoot : string) {
         this.executablePath = executablePath || "lean";
@@ -180,6 +181,10 @@ class Server {
 
     onMessage(callback) {
         this.onMessageCallback = callback;
+    }
+
+    onTask(callback) {
+        this.onTaskCallback = callback;
     }
 
     restart(projectRoot : string) {

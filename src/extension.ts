@@ -53,7 +53,6 @@ function isChangeEvent(e : SyncEvent) : e is vscode.TextDocumentChangeEvent {
     return (e as vscode.TextDocumentChangeEvent).document !== undefined;
 }
 
-
 // Seeing .olean files in the source tree is annoying, we should
 // just globally hide them.
 function configExcludeOLean() {
@@ -63,19 +62,10 @@ function configExcludeOLean() {
     files.update('exclude', exclude, true);
 }
 
-function configInputAssistLean() {
-    let inputAssist = vscode.workspace.getConfiguration('input-assist');
-    let languages = inputAssist.get('languages') as Array<string>;
-    languages = languages || [];
-    languages.push("lean");
-    inputAssist.update('languages', languages, true);
-}
-
 let server : Server;
 
 export function activate(context: vscode.ExtensionContext) {
     configExcludeOLean();
-    configInputAssistLean();
 
     let working_directory = vscode.workspace.rootPath;
     let config = vscode.workspace.getConfiguration('lean')
@@ -169,4 +159,12 @@ export function activate(context: vscode.ExtensionContext) {
 
     // Sync files that are already open.
     vscode.workspace.textDocuments.forEach(syncLeanFile);
+
+    // Add item to the status bar.
+    let statusBar = vscode.window.createStatusBarItem();
+
+    statusBar.text = "Lean is Running";
+    statusBar.show();
+    // Remember to dispose of the status bar.
+    context.subscriptions.push(statusBar);
 }
