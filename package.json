@@ -37,7 +37,7 @@
             {
                 "command": "lean.batchExecute",
                 "title": "Lean: Batch Execute File",
-                "description": "Display the goal at the current position."
+                "description": "Execute the current file using Lean"
             }
         ],
         "languages": [
