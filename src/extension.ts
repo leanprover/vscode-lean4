@@ -8,6 +8,7 @@ import { LeanDefinitionProvider } from './definition'
 import { displayGoalAtPosition } from './goal';
 import { batchExecuteFile } from './batch';
 import { createLeanStatusBarItem } from './status';
+import { getExecutablePath } from './util';
 
 const LEAN_MODE : vscode.DocumentFilter = {
     language: "lean",
@@ -67,10 +68,9 @@ export function activate(context: vscode.ExtensionContext) {
     configExcludeOLean();
 
     let working_directory = vscode.workspace.rootPath;
-    let config = vscode.workspace.getConfiguration('lean')
-    let executablePath = config.get('executablePath', "") as string;
+    let executablePath = getExecutablePath();
 
-    console.log("Starting server " + executablePath + " in " + working_directory)
+    console.log("Starting server: " + executablePath + "; in directory: " + working_directory)
 
     try {
         server = new Server(executablePath, working_directory);
