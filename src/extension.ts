@@ -33,7 +33,8 @@ function updateDiagnostics(collection : vscode.DiagnosticCollection, messages : 
     let diagnosticMap : Map<string, vscode.Diagnostic[]> = new Map();
     messages.forEach((message) => {
         let file = vscode.Uri.file(message.file_name);
-        let range = new vscode.Range(message.pos_line - 1, message.pos_col, message.pos_line - 1, message.pos_col);
+        let line = Math.max(message.pos_line - 1, 0);
+        let range = new vscode.Range(line, message.pos_col, line, message.pos_col);
         let diagnostics = diagnosticMap.get(file.toString());
         if (!diagnostics) { diagnostics = []; }
         diagnostics.push(new vscode.Diagnostic(range, message.text, toSeverity(message.severity)));
