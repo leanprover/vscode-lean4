@@ -67,12 +67,12 @@ let server : Server;
 export function activate(context: vscode.ExtensionContext) {
     configExcludeOLean();
 
-    let working_directory = vscode.workspace.rootPath;
-    let executablePath = getExecutablePath();
-
-    console.log("Starting server: " + executablePath + "; in directory: " + working_directory)
-
     try {
+        let working_directory = vscode.workspace.rootPath;
+        let executablePath = getExecutablePath();
+
+        console.log("Starting server: " + executablePath + "; in directory: " + working_directory)
+
         server = new Server(executablePath, working_directory);
     } catch (e) {
         vscode.window.showErrorMessage(

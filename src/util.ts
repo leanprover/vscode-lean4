@@ -1,6 +1,9 @@
 import * as vscode from 'vscode';
+import * as fs from 'fs';
 
-export function getExecutablePath() {
+export function getExecutablePath() : string {
    let config = vscode.workspace.getConfiguration('lean');
-   return config.get('executablePath', "") as string;
+   let executablePath = config.get('executablePath', "") as string;
+   let stats = fs.accessSync(executablePath, fs.constants.F_OK);
+   return executablePath;
 }

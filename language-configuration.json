@@ -12,15 +12,15 @@
         ["{", "}"],
         ["[", "]"],
         ["(", ")"],
-        { "open": "'", "close": "'", "notIn": ["string", "comment"] },
+        // { "open": "'", "close": "'", "notIn": ["string", "comment"] },
         { "open": "/**", "close": " */", "notIn": ["string"] }
     ],
     "surroundingPairs": [
         ["{", "}"],
         ["[", "]"],
         ["(", ")"],
-        ["<", ">"],
-        ["'", "'"]
+        ["<", ">"]
+        // ["'", "'"]
     ]
     // this doesn't work right now: (https://github.com/Microsoft/vscode/issues/14221)"
     // wordPattern" : ""

@@ -3,6 +3,7 @@ import {TextEditor, OutputChannel, TextEditorEdit} from 'vscode';
 import * as vscode from 'vscode';
 import * as child from 'child_process';
 import * as carrier from 'carrier';
+import {getExecutablePath} from './util';
 
 let batchOutputChannel : OutputChannel;
 
@@ -16,8 +17,7 @@ export function batchExecuteFile(
 
     let fileName = editor.document.fileName;
 
-    let config = vscode.workspace.getConfiguration('lean')
-    let executablePath = config.get('executablePath', "") as string;
+    let executablePath = getExecutablePath();
 
     let lean = child.spawn(executablePath, [fileName]);
 
