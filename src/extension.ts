@@ -1,14 +1,13 @@
-// The module 'vscode' contains the VS Code extensibility API
-// Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
 import * as loadJsonFile from 'load-json-file';
-import { Server } from './server';
+import { Server, ServerStatus } from './server';
 import { LeanHoverProvider } from './hover';
 import { LeanCompletionItemProvider } from './completion';
 import { LeanInputCompletionProvider } from './input';
 import { LeanDefinitionProvider } from './definition'
 import { displayGoalAtPosition } from './goal';
 import { batchExecuteFile } from './batch';
+import { createLeanStatusBarItem } from './status';
 
 const LEAN_MODE : vscode.DocumentFilter = {
     language: "lean",
@@ -161,10 +160,22 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.workspace.textDocuments.forEach(syncLeanFile);
 
     // Add item to the status bar.
-    let statusBar = vscode.window.createStatusBarItem();
+    let statusBar = createLeanStatusBarItem();
 
-    statusBar.text = "Lean is Running";
-    statusBar.show();
     // Remember to dispose of the status bar.
     context.subscriptions.push(statusBar);
+
+    // Update the status bar when the server changes state.
+    server.onStatusChange((serverStatus : ServerStatus) => {
+        if (serverStatus.isRunning) {
+            statusBar.text = "Lean: $(sync) " + `${serverStatus.numberOfTasks}`;
+        } else if (serverStatus.stopped) {
+            statusBar.text = "Lean: $(x)";
+        } else {
+            statusBar.text = "Lean: $(check) ";
+        }
+
+        // Not sure if we need to reshow the the status bar here
+        statusBar.show();
+    });
 }

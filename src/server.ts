@@ -37,6 +37,7 @@ type CompleteMessage  = {
     line : number,
     column : number,
 };
+
 type CompleteResponse = {
     prefix: string,
     completions: Array<{type: string, text: string,}>,
@@ -64,7 +65,11 @@ type Message = {
     text : string
 };
 
-
+export type ServerStatus = {
+    stopped : boolean,
+    isRunning : boolean
+    numberOfTasks : number
+};
 
 // A class for interacting with the Lean server protoccol.
 class Server {
@@ -75,7 +80,7 @@ class Server {
     tasks : Array<Message>;
     senders : SequenceMap;
     onMessageCallback : (a : any) => any;
-    onTaskCallback : (a : any) => any;
+    onStatusChangeCallback : (serverStatus : ServerStatus) => any;
 
     constructor(executablePath : string, projectRoot : string) {
         this.executablePath = executablePath || "lean";
@@ -144,6 +149,13 @@ class Server {
             caption : task.desc,
             text : task.desc,
         });
+
+        this.onStatusChangeCallback({
+            isRunning: current_tasks.is_running,
+            numberOfTasks: current_tasks.tasks.length,
+            stopped: false
+        });
+
         this.messagesChanged();
     }
 
@@ -183,8 +195,8 @@ class Server {
         this.onMessageCallback = callback;
     }
 
-    onTask(callback) {
-        this.onTaskCallback = callback;
+    onStatusChange(callback) {
+        this.onStatusChangeCallback = callback;
     }
 
     restart(projectRoot : string) {

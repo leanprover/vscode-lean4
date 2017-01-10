@@ -4,7 +4,7 @@ This extension adds support for [Lean](https://github.com/leanprover/lean).
 
 ## Features
 
-We currently support:
+We currently support
 
 * hovering
 * completions
@@ -14,8 +14,7 @@ We currently support:
 
 ## Requirements
 
-This extension requires an installation of Lean. It is possible
-to customize the Lean executable path.
+This extension requires an installation of Lean.
 
 ## Extension Settings
 
@@ -44,7 +43,7 @@ Implement many features implemented by the EMACS mode. We now support:
   goal at the current position.
 - Basic auto-completion support
 - Diagnostics support, dispalying errors, information
-  & warnings.
+   & warnings.
 
 ### 0.3.0
 
@@ -58,4 +57,5 @@ Initial release of the package.
 
 ## Contact
 
-Feel free to report any issues on the tracker, email the Lean list, or me directly.
+Please report issues on Github, for questions or concerns you can email the
+Lean mailing list, or send @jroesch mail directly.
