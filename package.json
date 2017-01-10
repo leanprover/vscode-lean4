@@ -18,7 +18,7 @@
             "properties": {
                 "lean.executablePath": {
                     "type": "string",
-                    "default": "",
+                    "default": "lean",
                     "description": "Path to the Lean executable to use."
                 }
             }
