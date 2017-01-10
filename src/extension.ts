@@ -72,7 +72,14 @@ export function activate(context: vscode.ExtensionContext) {
 
     console.log("Starting server " + executablePath + " in " + working_directory)
 
-    server = new Server(executablePath, working_directory);
+    try {
+        server = new Server(executablePath, working_directory);
+    } catch (e) {
+        vscode.window.showErrorMessage(
+            "Unable to start the Lean server process. \
+            Note: your lean.executeblePath may be incorrect or not exist.");
+        return;
+    }
 
     // Ensure that the server is disposed of.
     context.subscriptions.push(server);

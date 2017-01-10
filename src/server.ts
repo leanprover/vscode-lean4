@@ -97,6 +97,10 @@ class Server {
     }
 
     attachEventHandlers() {
+        // this.process.on('error', (err) => {
+        //     throw "UNABLE TO START PROCESS";
+        // });
+
         carrier.carry(this.process.stdout, (line) => {
             let message = JSON.parse(line);
             let response = message['response'];
