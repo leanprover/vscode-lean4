@@ -10,6 +10,13 @@ export class LeanInputCompletionProvider implements CompletionItemProvider {
     }
 
     public provideCompletionItems(document: TextDocument, position: Position, token: CancellationToken): CompletionList {
+        const text = document.getText();
+        let offset = document.offsetAt(position);
+        do {
+            offset--;
+        } while (/[^\\\s]/.test(text.charAt(offset)));
+        if (text.charAt(offset) !== '\\')
+            return null;
         var items = [];
         for (var abbrev in this.translations) {
             var repl = this.translations[abbrev];

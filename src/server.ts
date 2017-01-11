@@ -38,9 +38,15 @@ type CompleteMessage  = {
     column : number,
 };
 
+type CompletionCandidate = {
+    type?: string,
+    text: string,
+    doc?: string,
+};
+
 type CompleteResponse = {
     prefix: string,
-    completions: Array<{type: string, text: string,}>,
+    completions: Array<CompletionCandidate>,
 };
 
 function completeMessage(file_name : string, line : number, column: number) : CompleteMessage {

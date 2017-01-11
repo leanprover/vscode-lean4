@@ -18,6 +18,7 @@ export class LeanCompletionItemProvider implements vscode.CompletionItemProvider
                     let item = new vscode.CompletionItem(completion.text, vscode.CompletionItemKind.Function);
                     item.range = new vscode.Range(position.translate(0, -message.prefix.length), position);
                     item.detail = completion.type;
+                    item.documentation = completion.doc;
                     return item;
                 });
             });
