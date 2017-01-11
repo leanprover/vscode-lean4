@@ -85,8 +85,23 @@ class Server {
     constructor(executablePath : string, projectRoot : string) {
         this.executablePath = executablePath || "lean";
 
+        // Note: on Windows the PATH variable must be set since
+        // the standard msys2 installation paths are not added to the
+        // Windows Path by msys2. We could instead people to set the
+        // path themselves but it seems like a lot of extra friction.
+        //
+        // This is also tricky since there is very little way to give
+        // feedback when shelling out to Lean fails. Node.js appears
+        // fail to start without writing any output to standard error.
+        //
+        // For now we just set the path with low priority and invoke the process.
+        let env = Object.create(process.env);
+        if (process.platform == 'win32') {
+           env.Path = `${env.Path};C:\\msys64\\mingw64\\bin;C:\\msys64\\usr\\local\\bin;C:\\msys64\\usr\\bin;C:\\msys64\\bin;C:\\msys64\\opt\\bin;`;
+        }
+
         this.process = child.spawn(this.executablePath, defaultServerOptions,
-            { cwd: projectRoot });
+            { cwd: projectRoot, env: env });
 
         this.sequenceNumber = 0;
         this.senders = {};
@@ -97,10 +112,7 @@ class Server {
     }
 
     attachEventHandlers() {
-        // this.process.on('error', (err) => {
-        //     throw "UNABLE TO START PROCESS";
-        // });
-
+        // Setup the output handler.
         carrier.carry(this.process.stdout, (line) => {
             let message = JSON.parse(line);
             let response = message['response'];
@@ -116,6 +128,7 @@ class Server {
                 this.handleCurrentTasks(message);
             } else {
                 console.log("unsupported message: ", line);
+                // TODO(jroesch): We should have a mechanism for asking to report errors like this directly to the mode.
             }
         });
 
@@ -125,6 +138,7 @@ class Server {
 
         this.process.on('close', (code) => {
             console.log(`child process exited with code ${code}`);
+            // TODO(jroesch): status change here // this.onStatusChange()
         });
     }
 
