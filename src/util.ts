@@ -8,3 +8,10 @@ export function getExecutablePath() : string {
        fs.accessSync(executablePath, fs.constants.F_OK);
    return executablePath;
 }
+
+export function isInputCompletion(document : vscode.TextDocument, position : vscode.Position) : boolean {
+    let text = document.getText();
+    let offset = document.offsetAt(position);
+    do { offset--; } while (/[^\\\s]/.test(text.charAt(offset)));
+    return text.charAt(offset) === '\\';
+}
