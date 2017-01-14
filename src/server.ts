@@ -1,5 +1,6 @@
 import * as child from 'child_process';
 import * as carrier from 'carrier';
+import * as vscode from 'vscode'
 
 const defaultServerOptions = [
     "--server",
@@ -140,6 +141,13 @@ class Server {
 
         this.process.stderr.on('data', (data) => {
             console.log(`stderr: ${data}`);
+        });
+
+        this.process.on('error', (e) => {
+            vscode.window.showErrorMessage(
+                "Unable to start the Lean server process: " + e);
+            vscode.window.showWarningMessage(
+                "The lean.executablePath may be incorrect, make sure it is a valid Lean executable");
         });
 
         this.process.on('close', (code) => {
