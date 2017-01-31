@@ -132,6 +132,14 @@ export function activate(context: vscode.ExtensionContext) {
                 LEAN_MODE, new LeanInputCompletionProvider(json), '\\'));
     });
 
+    // Load the language-configuration manually, so that we can set the wordPattern.
+    loadJsonFile(context.asAbsolutePath("language-configuration.json")).then(json => {
+        json.wordPattern = /(-?\d*\.\d\w*)|([^\`\~\!\@\#\$\%\^\&\*\(\)\-\=\+\[\{\]\}\\\|\;\:\'\"\,\.\/\?\s]+)/g;
+        context.subscriptions.push(
+            vscode.languages.setLanguageConfiguration(LEAN_MODE, json)
+        );
+    })
+    
     // Register support for definition support.
     context.subscriptions.push(
         vscode.languages.registerDefinitionProvider(
