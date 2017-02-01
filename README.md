@@ -28,6 +28,10 @@ This extension contributes the following settings:
 
 ## Release Notes
 
+### 0.6.2
+
+Consider angle brackets and parenthesis when completing unicode symbols.
+
 ### 0.6.0
 
 Bug fixes, stability, and a handful of feature improvements
