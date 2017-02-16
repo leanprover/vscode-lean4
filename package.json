@@ -2,7 +2,7 @@
     "name": "lean",
     "displayName": "lean",
     "description": "An extension for VS Code which provides support for the Lean language.",
-    "version": "0.6.1",
+    "version": "0.6.3",
     "publisher": "jroesch",
     "engines": {
         "vscode": "^1.8.0"
@@ -29,8 +29,7 @@
                 "lean.timeLimit": {
                     "type": "number",
                     "default": "100000",
-                    "description":
-                    "Set a Deterministic timeout (it is approximately the maximum number of memory allocations in thousands) for the Lean server."
+                    "description": "Set a Deterministic timeout (it is approximately the maximum number of memory allocations in thousands) for the Lean server."
                 }
             }
         },
