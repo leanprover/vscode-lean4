@@ -9,6 +9,18 @@ export function getExecutablePath() : string {
    return executablePath;
 }
 
+export function getMemoryLimit() : number {
+   let config = vscode.workspace.getConfiguration('lean');
+   let memoryLimit = config.get('memoryLimit') as number;
+   return memoryLimit;
+}
+
+export function getTimeLimit() : number {
+   let config = vscode.workspace.getConfiguration('lean');
+   let timeLimit = config.get('timeLimit') as number;
+   return timeLimit;
+}
+
 export function isInputCompletion(document : vscode.TextDocument, position : vscode.Position) : boolean {
     let text = document.getText();
     let offset = document.offsetAt(position);

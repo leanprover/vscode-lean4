@@ -8,7 +8,7 @@ import { LeanDefinitionProvider } from './definition'
 import { displayGoalAtPosition } from './goal';
 import { batchExecuteFile } from './batch';
 import { createLeanStatusBarItem } from './status';
-import { getExecutablePath } from './util';
+import { getExecutablePath, getMemoryLimit, getTimeLimit } from './util';
 
 const LEAN_MODE : vscode.DocumentFilter = {
     language: "lean",
@@ -74,7 +74,7 @@ export function activate(context: vscode.ExtensionContext) {
 
         console.log("Starting server: " + executablePath + "; in directory: " + working_directory)
 
-        server = new Server(executablePath, working_directory);
+        server = new Server(executablePath, working_directory, getMemoryLimit(), getTimeLimit());
     } catch (e) {
         vscode.window.showErrorMessage(
             "Unable to start the Lean server process: " + e);

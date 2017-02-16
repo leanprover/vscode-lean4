@@ -20,6 +20,17 @@
                     "type": "string",
                     "default": "lean",
                     "description": "Path to the Lean executable to use."
+                },
+                "lean.memoryLimit": {
+                    "type": "number",
+                    "default": "1024",
+                    "description": "Set a memory limit (in Megabytes) for the Lean server."
+                },
+                "lean.timeLimit": {
+                    "type": "number",
+                    "default": "100000",
+                    "description":
+                    "Set a Deterministic timeout (it is approximately the maximum number of memory allocations in thousands) for the Lean server."
                 }
             }
         },

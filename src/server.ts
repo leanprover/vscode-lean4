@@ -86,10 +86,11 @@ class Server {
     messages : Array<Message>;
     tasks : Array<Message>;
     senders : SequenceMap;
+    options : Array<string>;
     onMessageCallback : (a : any) => any;
     onStatusChangeCallback : (serverStatus : ServerStatus) => any;
 
-    constructor(executablePath : string, projectRoot : string) {
+    constructor(executablePath : string, projectRoot : string, memoryLimit : number, timeLimit : number) {
         this.executablePath = executablePath || "lean";
 
         // Note: on Windows the PATH variable must be set since
@@ -107,7 +108,14 @@ class Server {
            env.Path = `${env.Path};C:\\msys64\\mingw64\\bin;C:\\msys64\\usr\\local\\bin;C:\\msys64\\usr\\bin;C:\\msys64\\bin;C:\\msys64\\opt\\bin;`;
         }
 
-        this.process = child.spawn(this.executablePath, defaultServerOptions,
+        this.options = defaultServerOptions.slice(0);
+        this.options.push("-M")
+        this.options.push(memoryLimit.toString())
+
+        this.options.push("-T")
+        this.options.push(timeLimit.toString())
+
+        this.process = child.spawn(this.executablePath, this.options,
             { cwd: projectRoot, env: env });
 
         this.sequenceNumber = 0;
@@ -235,7 +243,7 @@ class Server {
         this.process.kill();
         this.process = child.spawn(
             this.executablePath,
-            defaultServerOptions,
+            this.options,
             { cwd: projectRoot });
         this.attachEventHandlers();
     }
