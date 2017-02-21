@@ -1,6 +1,7 @@
 import * as child from 'child_process';
 import * as carrier from 'carrier';
-import * as vscode from 'vscode'
+import * as vscode from 'vscode';
+import * as util from './util';
 
 const defaultServerOptions = [
     "--server",
@@ -78,7 +79,7 @@ export type ServerStatus = {
     numberOfTasks : number
 };
 
-// A class for interacting with the Lean server protoccol.
+// A class for interacting with the Lean server protocol.
 class Server {
     executablePath : string;
     process : child.ChildProcess;
@@ -103,20 +104,19 @@ class Server {
         // fail to start without writing any output to standard error.
         //
         // For now we just set the path with low priority and invoke the process.
-        let env = Object.create(process.env);
-        if (process.platform == 'win32') {
-           env.Path = `${env.Path};C:\\msys64\\mingw64\\bin;C:\\msys64\\usr\\local\\bin;C:\\msys64\\usr\\bin;C:\\msys64\\bin;C:\\msys64\\opt\\bin;`;
-        }
 
         this.options = defaultServerOptions.slice(0);
-        this.options.push("-M")
-        this.options.push(memoryLimit.toString())
 
-        this.options.push("-T")
-        this.options.push(timeLimit.toString())
+        if (util.atLeastLeanVersion("3.1.0")) {
+            this.options.push("-M")
+            this.options.push(memoryLimit.toString())
+
+            this.options.push("-T")
+            this.options.push(timeLimit.toString())
+        }
 
         this.process = child.spawn(this.executablePath, this.options,
-            { cwd: projectRoot, env: env });
+            { cwd: projectRoot, env: util.getEnv() });
 
         this.sequenceNumber = 0;
         this.senders = {};
