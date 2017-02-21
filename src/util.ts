@@ -55,8 +55,8 @@ export function atLeastLeanVersion(version : string) : boolean {
 
     // TODO(@jroesch): use proper semver library for comparing versions
     if (LEAN_VERSION <= version) {
-        return true;
-    } else {
         return false;
+    } else {
+        return true;
     }
 }

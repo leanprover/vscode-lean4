@@ -160,7 +160,15 @@ class Server {
 
         this.process.on('close', (code) => {
             console.log(`child process exited with code ${code}`);
-            // TODO(jroesch): status change here // this.onStatusChange()
+
+            vscode.window.showErrorMessage(
+                "The Lean server has stopped, due to an error.");
+
+             this.onStatusChangeCallback({
+                isRunning: false,
+                numberOfTasks: 0,
+                stopped: true
+            });
         });
     }
 

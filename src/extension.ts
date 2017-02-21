@@ -77,9 +77,9 @@ export function activate(context: vscode.ExtensionContext) {
         server = new Server(executablePath, working_directory, getMemoryLimit(), getTimeLimit());
     } catch (e) {
         vscode.window.showErrorMessage(
-            "Unable to start the Lean server process: " + e);
+            `Unable to start the Lean server process: ${e}`);
         vscode.window.showWarningMessage(
-            "The lean.executablePath may be incorrect, make sure it is a valid Lean executable");
+            "The lean.executablePath may be incorrect, ensure the variable is a valid Lean executable");
         return;
     }
 
