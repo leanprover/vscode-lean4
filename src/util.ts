@@ -42,7 +42,7 @@ export function getEnv() {
 let LEAN_VERSION : string = null;
 
 function detectVersion(executablePath? : string) : string {
-    executablePath = executablePath || "lean";
+    executablePath = getExecutablePath() || "lean";
     let output = child.execSync(`${executablePath} --version`, { env : getEnv() });
     let matchRegex = /Lean \(version ([0-9.]+)/;
     return output.toString().match(matchRegex)[1];
