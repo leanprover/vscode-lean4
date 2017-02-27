@@ -32,7 +32,9 @@ This extension contributes the following settings:
 
 ### 0.6.6
 
-Use `semver` for detecting and comparing versions.
+* Use `semver` for detecting and comparing versions.
+* Fix issue where diagnostics were not cleared on
+  server restart.
 
 ### 0.6.5
 
