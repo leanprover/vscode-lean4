@@ -3,6 +3,7 @@ import * as fs from 'fs';
 import * as carrier from 'carrier';
 import * as child from 'child_process';
 import * as stream from 'stream';
+import * as semver from 'semver';
 
 export function getExecutablePath() : string {
    let config = vscode.workspace.getConfiguration('lean');
@@ -41,22 +42,18 @@ export function getEnv() {
 
 let LEAN_VERSION : string = null;
 
-function detectVersion(executablePath? : string) : string {
-    executablePath = getExecutablePath() || "lean";
+function detectVersion() : string {
+    let executablePath = getExecutablePath() || "lean";
     let output = child.execSync(`${executablePath} --version`, { env : getEnv() });
     let matchRegex = /Lean \(version ([0-9.]+)/;
     return output.toString().match(matchRegex)[1];
 }
 
-export function atLeastLeanVersion(version : string) : boolean {
+export function atLeastLeanVersion(requiredVersion : string) : boolean {
     if (!LEAN_VERSION) {
         LEAN_VERSION = detectVersion();
     }
 
     // TODO(@jroesch): use proper semver library for comparing versions
-    if (LEAN_VERSION <= version) {
-        return false;
-    } else {
-        return true;
-    }
+    return semver.lte(requiredVersion, LEAN_VERSION);
 }

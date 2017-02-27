@@ -88,6 +88,9 @@ export function activate(context: vscode.ExtensionContext) {
 
     // Setup the commands.
     let restartDisposable = vscode.commands.registerCommand('lean.restartServer', () => {
+        // We need to ensure to reset anything stateful right here otherwise we will
+        // have ghost diagnostics
+        diagnosticCollection.clear();
         server.restart(vscode.workspace.rootPath);
     });
 
@@ -120,7 +123,7 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.languages.registerHoverProvider(LEAN_MODE,
             new LeanHoverProvider(server)));
 
-    // Register support for completetion.
+    // Register support for completion.
     context.subscriptions.push(
         vscode.languages.registerCompletionItemProvider(
             LEAN_MODE, new LeanCompletionItemProvider(server), '.'));

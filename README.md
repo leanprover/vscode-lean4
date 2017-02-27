@@ -21,12 +21,26 @@ This extension requires an installation of Lean.
 This extension contributes the following settings:
 
 * `lean.executablePath`: controls which Lean executable is used when starting the server
+* `lean.timeLimit`: controls the `-T` flag passed to the Lean executable
+* `lean.memoryLimit`: controls the `-M` flag passed to the Lean executable
 
 ## Known Issues
 
 * Completion still behaves weirdly with hierarchial names
 
 ## Release Notes
+
+### 0.6.6
+
+Use `semver` for detecting and comparing versions.
+
+### 0.6.5
+
+Add support for detecting Lean server versions.
+
+### 0.6.4
+
+Add support for time and memory limits.
 
 ### 0.6.2
 
@@ -46,7 +60,7 @@ Implement many features implemented by the EMACS mode. We now support:
 - Goal support, with the ability to display the
   goal at the current position.
 - Basic auto-completion support
-- Diagnostics support, dispalying errors, information
+- Diagnostics support, displaying errors, information
    & warnings.
 
 ### 0.3.0
