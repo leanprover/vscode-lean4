@@ -45,6 +45,26 @@
                 "description": "Display the goal at the current position."
             },
             {
+                "command": "lean.roiMode.nothing",
+                "title": "Lean: Check Nothing",
+                "description": "Disable automatic checking of Lean code"
+            },
+            {
+                "command": "lean.roiMode.visibleFiles",
+                "title": "Lean: Check Visible Files",
+                "description": "Automatically check all files that are visible"
+            },
+            {
+                "command": "lean.roiMode.openFiles",
+                "title": "Lean: Check Open Files",
+                "description": "Automatically check all opened files"
+            },
+            {
+                "command": "lean.roiMode.projectFiles",
+                "title": "Lean: Check Project Files",
+                "description": "Automatically check all files in the workspace"
+            },
+            {
                 "command": "lean.batchExecute",
                 "title": "Lean: Batch Execute File",
                 "description": "Execute the current file using Lean"

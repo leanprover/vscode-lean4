@@ -8,6 +8,7 @@ import { LeanDefinitionProvider } from './definition'
 import { displayGoalAtPosition } from './goal';
 import { batchExecuteFile } from './batch';
 import { createLeanStatusBarItem } from './status';
+import { RoiManager } from './roi';
 import { getExecutablePath, getMemoryLimit, getTimeLimit } from './util';
 
 const LEAN_MODE : vscode.DocumentFilter = {
@@ -163,26 +164,53 @@ export function activate(context: vscode.ExtensionContext) {
         }
     };
 
-    // Send a sync message when the editor changes.
-    vscode.workspace.onDidChangeTextDocument(syncLeanFile);
+    if (server.supportsROI)
+        server.roi("nothing", []); // activate ROI support
 
-    // Send a sync message when the editor opens.
-    vscode.workspace.onDidOpenTextDocument(syncLeanFile);
-
-    // Send a sync message when the editor closes.
-    vscode.workspace.onDidCloseTextDocument(syncLeanFile);
-
-    // Send a sync message when the editor saves.
-    vscode.workspace.onDidSaveTextDocument(syncLeanFile);
+    // Send a sync message on editor changes.
+    context.subscriptions.push(vscode.workspace.onDidChangeTextDocument(syncLeanFile));
+    context.subscriptions.push(vscode.workspace.onDidOpenTextDocument(syncLeanFile));
+    context.subscriptions.push(vscode.workspace.onDidCloseTextDocument(syncLeanFile));
+    context.subscriptions.push(vscode.workspace.onDidSaveTextDocument(syncLeanFile));
 
     // Sync files that are already open.
     vscode.workspace.textDocuments.forEach(syncLeanFile);
 
     // Add item to the status bar.
     let statusBar = createLeanStatusBarItem();
-
-    // Remember to dispose of the status bar.
     context.subscriptions.push(statusBar);
+
+    if (server.supportsROI) {
+        let roiManager = new RoiManager(server);
+        context.subscriptions.push(roiManager);
+        roiManager.statusBarItem.show();
+
+        let handler = (event: SyncEvent | vscode.TextEditor | vscode.TextEditor[]) => {
+            roiManager.send();
+        };
+        context.subscriptions.push(vscode.window.onDidChangeActiveTextEditor(handler));
+        context.subscriptions.push(vscode.window.onDidChangeVisibleTextEditors(handler));
+        // context.subscriptions.push(vscode.workspace.onDidChangeTextDocument(handler));
+        context.subscriptions.push(vscode.workspace.onDidOpenTextDocument(handler));
+        context.subscriptions.push(vscode.workspace.onDidCloseTextDocument(handler));
+
+        context.subscriptions.push(vscode.commands.registerTextEditorCommand(
+            "lean.roiMode.nothing",
+            (editor, edit, args) => roiManager.checkNothing()
+        ));
+        context.subscriptions.push(vscode.commands.registerTextEditorCommand(
+            "lean.roiMode.visibleFiles",
+            (editor, edit, args) => roiManager.checkVisibleFiles()
+        ));
+        context.subscriptions.push(vscode.commands.registerTextEditorCommand(
+            "lean.roiMode.openFiles",
+            (editor, edit, args) => roiManager.checkOpenFiles()
+        ));
+        context.subscriptions.push(vscode.commands.registerTextEditorCommand(
+            "lean.roiMode.projectFiles",
+            (editor, edit, args) => roiManager.checkProjectFiles()
+        ));
+    }
 
     // Update the status bar when the server changes state.
     server.onStatusChange((serverStatus : ServerStatus) => {

@@ -73,6 +73,24 @@ type Message = {
     text : string
 };
 
+
+export type LineRange = {
+    begin_line: number,
+    end_line: number,
+};
+export type FileRoi = {
+    file_name: string,
+    ranges: Array<LineRange>,
+};
+export type Roi = Array<FileRoi>;
+function roiMessage(mode: string, files: Array<FileRoi>) {
+    return {
+        command: "roi",
+        mode: mode,
+        files: files,
+    };
+}
+
 export type ServerStatus = {
     stopped : boolean,
     isRunning : boolean
@@ -90,6 +108,7 @@ class Server {
     options : Array<string>;
     onMessageCallback : (a : any) => any;
     onStatusChangeCallback : (serverStatus : ServerStatus) => any;
+    supportsROI : Boolean;
 
     constructor(executablePath : string, projectRoot : string, memoryLimit : number, timeLimit : number) {
         this.executablePath = executablePath || "lean";
@@ -114,6 +133,8 @@ class Server {
             this.options.push("-T")
             this.options.push(timeLimit.toString())
         }
+
+        this.supportsROI = util.atLeastLeanVersion("3.1.1");
 
         this.process = child.spawn(this.executablePath, this.options,
             { cwd: projectRoot, env: util.getEnv() });
@@ -237,6 +258,11 @@ class Server {
         return new Promise((resolve, reject) => {
             this.send(message, resolve);
         });
+    }
+
+    roi(mode: string, files: Array<FileRoi>): Promise<any> {
+        let message = roiMessage(mode, files);
+        return new Promise((resolve, reject) => this.send(message, resolve));
     }
 
     onMessage(callback) {
