@@ -2,8 +2,7 @@
   "name": "Lean",
   "scopeName": "source.lean",
   "fileTypes": [
-    "lean",
-    "hlean"
+    "lean"
   ],
   "patterns": [
     {
@@ -68,7 +67,7 @@
       "name": "keyword.control.definition.modifier.lean"
     },
     {
-      "match": "vm_eval|eval|check|exit",
+      "match": "#(eval|reduce|check|exit)",
       "name": "keyword.other.command.lean"
     },
     {

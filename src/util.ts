@@ -54,6 +54,5 @@ export function atLeastLeanVersion(requiredVersion : string) : boolean {
         LEAN_VERSION = detectVersion();
     }
 
-    // TODO(@jroesch): use proper semver library for comparing versions
     return semver.lte(requiredVersion, LEAN_VERSION);
 }
