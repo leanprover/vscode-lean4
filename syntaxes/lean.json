@@ -57,7 +57,7 @@
     },
     {
       "match": "@\\[[^\\]]*\\]",
-      "name": "comment.line.attribute.lean"
+      "name": "storage.modifier.lean"
     },
     {
       "match": "attribute\\s*\\[[^\\]]*\\]",
