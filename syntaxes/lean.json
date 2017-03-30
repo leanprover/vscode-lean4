@@ -13,6 +13,9 @@
       "include": "#blockComment"
     },
     {
+      "include": "#docComment"
+    },
+    {
       "begin": "^\\s*(import)\\b",
       "beginCaptures": {
         "1": {
@@ -24,13 +27,13 @@
       "patterns": []
     },
     {
-      "begin": "\\b(inductive|structure|record|theorem|proposition|axiom|axioms|lemma|hypothesis|definition|def|instance|class|constant)\\b[ \\t\\n\\r({\\[]+([^ \\t\\n\\r{(\\[]*)",
+      "begin": "\\b(inductive|structure|record|theorem|proposition|axiom|axioms|lemma|hypothesis|definition|def|instance|class|constant)\\b\\s+(\\{[^}]*\\}\\s+)?([^ \\t\\n\\r{(\\[]*)",
       "beginCaptures": {
         "1": {
           "name": "keyword.other.lean"
         },
-        "2": {
-          "name": "variable.language.lean"
+        "3": {
+          "name": "entity.name.function.lean"
         }
       },
       "end": "[ \\t\\n\\r{(\\[]",
@@ -139,14 +142,14 @@
   ],
   "repository": {
     "blockComment": {
-      "begin": "/-",
-      "captures": {
-        "0": {
-          "name": "punctuation.definition.comment.lean"
-        }
-      },
+      "begin": "/-[^-]",
       "end": "-/",
       "name": "comment.block.lean"
+    },
+    "docComment": {
+      "begin": "/--",
+      "end": "-/",
+      "name": "comment.block.documentation.lean"
     },
     "dashComment": {
       "begin": "(--)",
