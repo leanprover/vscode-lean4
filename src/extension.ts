@@ -212,8 +212,13 @@ export function activate(context: vscode.ExtensionContext) {
         ));
     }
 
-    // Update the status bar when the server changes state.
+    let taskDecoration = vscode.window.createTextEditorDecorationType({
+        overviewRulerLane: vscode.OverviewRulerLane.Right,
+        overviewRulerColor: "orange",
+    });
+
     server.onStatusChange((serverStatus : ServerStatus) => {
+        // Update the status bar when the server changes state.
         if (serverStatus.isRunning) {
             statusBar.text = "Lean: $(sync) " + `${serverStatus.numberOfTasks}`;
         } else if (serverStatus.stopped) {
@@ -221,8 +226,20 @@ export function activate(context: vscode.ExtensionContext) {
         } else {
             statusBar.text = "Lean: $(check) ";
         }
-
         // Not sure if we need to reshow the the status bar here
         statusBar.show();
+
+        for (let editor of vscode.window.visibleTextEditors) {
+            let ranges: vscode.Range[] = [];
+            for (let task of serverStatus.tasks) {
+                if (task.file_name == editor.document.fileName) {
+                    ranges.push(new vscode.Range(
+                        task.pos_line - 1, task.pos_col,
+                        task.end_pos_line - 1, task.end_pos_col,
+                    ));
+                }
+            }
+            editor.setDecorations(taskDecoration, ranges);
+        }
     });
 }

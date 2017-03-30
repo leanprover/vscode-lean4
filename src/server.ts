@@ -68,11 +68,21 @@ type Message = {
     file_name : string,
     pos_line : number,
     pos_col : number,
+    end_pos_line : number,
+    end_pos_col : number,
     severity : string,
     caption : string,
     text : string
 };
 
+type Task = {
+    file_name: string,
+    pos_line: number,
+    pos_col: number,
+    end_pos_line: number,
+    end_pos_col: number,
+    desc: string,
+};
 
 export type LineRange = {
     begin_line: number,
@@ -93,8 +103,9 @@ function roiMessage(mode: string, files: Array<FileRoi>) {
 
 export type ServerStatus = {
     stopped : boolean,
-    isRunning : boolean
-    numberOfTasks : number
+    isRunning : boolean,
+    numberOfTasks : number,
+    tasks: Array<Task>,
 };
 
 // A class for interacting with the Lean server protocol.
@@ -103,10 +114,10 @@ class Server {
     process : child.ChildProcess;
     sequenceNumber : number;
     messages : Array<Message>;
-    tasks : Array<Message>;
+    tasks : Array<Task>;
     senders : SequenceMap;
     options : Array<string>;
-    onMessageCallback : (a : any) => any;
+    onMessageCallback : (msgs: Message[]) => any;
     onStatusChangeCallback : (serverStatus : ServerStatus) => any;
     supportsROI : Boolean;
 
@@ -188,14 +199,15 @@ class Server {
              this.onStatusChangeCallback({
                 isRunning: false,
                 numberOfTasks: 0,
-                stopped: true
+                stopped: true,
+                tasks: [],
             });
         });
     }
 
     messagesChanged() {
         if (this.onMessageCallback) {
-            this.onMessageCallback(this.messages.concat(this.tasks));
+            this.onMessageCallback(this.messages);
         }
     }
 
@@ -210,22 +222,14 @@ class Server {
     }
 
     handleCurrentTasks(current_tasks) {
-        this.tasks = current_tasks.tasks.map((task) => <Message>{
-            file_name : task.file_name,
-            pos_line : task.pos_line,
-            pos_col : task.pos_col,
-            severity : "information",
-            caption : task.desc,
-            text : task.desc,
-        });
+        this.tasks = current_tasks.tasks;
 
         this.onStatusChangeCallback({
             isRunning: current_tasks.is_running,
             numberOfTasks: current_tasks.tasks.length,
-            stopped: false
+            stopped: false,
+            tasks: this.tasks,
         });
-
-        this.messagesChanged();
     }
 
     send(message, callback : (a : any) => any) {
@@ -265,7 +269,7 @@ class Server {
         return new Promise((resolve, reject) => this.send(message, resolve));
     }
 
-    onMessage(callback) {
+    onMessage(callback: (msgs: Message[]) => any) {
         this.onMessageCallback = callback;
     }
 
