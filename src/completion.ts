@@ -19,7 +19,11 @@ export class LeanCompletionItemProvider implements vscode.CompletionItemProvider
                     return message.completions.map((completion) => {
                         let item = new vscode.CompletionItem(completion.text, vscode.CompletionItemKind.Function);
                         item.range = new vscode.Range(position.translate(0, -message.prefix.length), position);
-                        item.detail = completion.type;
+                        if (completion.tactic_params) {
+                            item.detail = completion.tactic_params.join(' ');
+                        } else {
+                            item.detail = completion.type;
+                        }
                         item.documentation = completion.doc;
                         return item;
                     });

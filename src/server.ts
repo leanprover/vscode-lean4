@@ -42,6 +42,7 @@ type CompleteMessage  = {
 
 type CompletionCandidate = {
     type?: string,
+    tactic_params?: Array<string>,
     text: string,
     doc?: string,
 };

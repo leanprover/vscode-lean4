@@ -16,9 +16,14 @@ export class LeanHoverProvider implements HoverProvider {
             // Maybe use more sohpisticated typing here?
             let marked = [];
             if (response.record) {
-                if (response.record['full-id']) {
-                    let msg = response.record['full-id'] + ' : ' + response.record['type'];
-                    marked.push({ language: 'lean', value: msg });
+                let name = response.record['full-id'] || response.record['text'];
+                if (name) {
+                    let msg;
+                    if (response.record.tactic_params) {
+                        marked.push({ language: 'text', value: name + ' ' + response.record.tactic_params.join(' ') });
+                    } else {
+                        marked.push({ language: 'lean', value: name + ' : ' + response.record['type'] });
+                    }
                 }
                 if (response.record.doc) {
                     marked.push(response.record.doc);
