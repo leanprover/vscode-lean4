@@ -4,11 +4,15 @@ This extension adds support for [Lean](https://github.com/leanprover/lean).
 
 ## Features
 
-We currently support
+We currently support a variety of features.
 
-* hovering
-* completions
-* diagnostics
+* incremental recompilation and checking via the Lean server
+* server output on hover
+* auto-completion based on context and type via the Lean server
+* diagnostics based on the Lean server
+* Unicode input support
+* batch file execution
+* region of interest checking (i.e control over how much of the project we check)
 
 <!--\!\[feature X\]\(images/feature-x.png\)-->
 
