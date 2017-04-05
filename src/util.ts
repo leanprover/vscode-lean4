@@ -25,6 +25,12 @@ export function getTimeLimit() : number {
    return timeLimit;
 }
 
+export function getRoiModeDefault() : string {
+   let config = vscode.workspace.getConfiguration('lean');
+   let roiMode = config.get('roiModeDefault') as string;
+   return roiMode;
+}
+
 export function isInputCompletion(document : vscode.TextDocument, position : vscode.Position) : boolean {
     let text = document.getText();
     let offset = document.offsetAt(position);

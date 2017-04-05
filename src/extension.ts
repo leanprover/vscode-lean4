@@ -9,7 +9,7 @@ import { displayGoalAtPosition } from './goal';
 import { batchExecuteFile } from './batch';
 import { createLeanStatusBarItem } from './status';
 import { RoiManager } from './roi';
-import { getExecutablePath, getMemoryLimit, getTimeLimit } from './util';
+import { getExecutablePath, getRoiModeDefault, getMemoryLimit, getTimeLimit } from './util';
 
 const LEAN_MODE : vscode.DocumentFilter = {
     language: "lean",
@@ -210,6 +210,25 @@ export function activate(context: vscode.ExtensionContext) {
             "lean.roiMode.projectFiles",
             (editor, edit, args) => roiManager.checkProjectFiles()
         ));
+
+        let roiDefault = getRoiModeDefault();
+
+        switch (roiDefault) {
+            case "nothing":
+                roiManager.checkNothing();
+                break;
+            case "visible":
+                roiManager.checkVisibleFiles();
+                break;
+            case "open":
+                roiManager.checkOpenFiles();
+                break;
+            case "project":
+                roiManager.checkProjectFiles();
+                break;
+            default:
+                // do nothing, should probably set up the error reporting to be global, and log an error here.
+        }
     }
 
     let taskDecoration = vscode.window.createTextEditorDecorationType({

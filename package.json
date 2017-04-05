@@ -30,6 +30,11 @@
                     "type": "number",
                     "default": "100000",
                     "description": "Set a Deterministic timeout (it is approximately the maximum number of memory allocations in thousands) for the Lean server."
+                },
+                "lean.roiModeDefault": {
+                    "type": "string",
+                    "default": "visible",
+                    "description": "Set the default region of interest mode (nothing, visible, open or project) for the Lean extension."
                 }
             }
         },
