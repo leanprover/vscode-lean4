@@ -89,10 +89,12 @@ export type LineRange = {
     begin_line: number,
     end_line: number,
 };
+
 export type FileRoi = {
     file_name: string,
     ranges: Array<LineRange>,
 };
+
 export type Roi = Array<FileRoi>;
 function roiMessage(mode: string, files: Array<FileRoi>) {
     return {
@@ -108,6 +110,8 @@ export type ServerStatus = {
     numberOfTasks : number,
     tasks: Array<Task>,
 };
+
+let stderrOutput : vscode.OutputChannel = vscode.window.createOutputChannel("Lean Server Errors");
 
 // A class for interacting with the Lean server protocol.
 class Server {
@@ -180,8 +184,13 @@ class Server {
             }
         });
 
+        // When attaching event handlers ensure the global error log is clear.
+        stderrOutput = stderrOutput || vscode.window.createOutputChannel("Lean: Server Errors");
+        stderrOutput.clear();
+
         this.process.stderr.on('data', (data) => {
             console.log(`stderr: ${data}`);
+            stderrOutput.append(data.toString());
         });
 
         this.process.on('error', (e) => {
@@ -192,10 +201,13 @@ class Server {
         });
 
         this.process.on('close', (code) => {
-            console.log(`child process exited with code ${code}`);
-
             vscode.window.showErrorMessage(
-                "The Lean server has stopped, due to an error.");
+                `The Lean server has stopped with error code ${code}.`, "Show error log")
+            .then((action : string | undefined) => {
+                if (action === "Show error log") {
+                    stderrOutput.show();
+                }
+            });
 
              this.onStatusChangeCallback({
                 isRunning: false,
@@ -285,6 +297,8 @@ class Server {
             this.options,
             { cwd: projectRoot });
         this.attachEventHandlers();
+        stderrOutput.appendLine("User triggered restart");
+        stderrOutput.appendLine("----------------------");
     }
 
     dispose() {
