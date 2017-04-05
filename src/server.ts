@@ -111,7 +111,8 @@ export type ServerStatus = {
     tasks: Array<Task>,
 };
 
-let stderrOutput : vscode.OutputChannel = vscode.window.createOutputChannel("Lean Server Errors");
+// A global channel for storing the contents of stderr.
+let stderrOutput : vscode.OutputChannel;
 
 // A class for interacting with the Lean server protocol.
 class Server {
