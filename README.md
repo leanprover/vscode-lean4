@@ -39,6 +39,9 @@ This extension contributes the following settings:
 
 ## Release Notes
 
+### 0.7.1
+* Fixes issue with highlighting commands beginning with `#`.
+
 ### 0.7.0
 * Support for controlling the "region of interest", i.e which files
   are considered by the Lean server for checking and recompilation.
