@@ -138,7 +138,9 @@ export function activate(context: vscode.ExtensionContext) {
 
     // Load the language-configuration manually, so that we can set the wordPattern.
     let json = vscode.Uri.file(context.asAbsolutePath("language-configuration.json")).toJSON();
-    json.wordPattern = /(-?\d*\.\d\w*)|([^\`\~\!\@\$\%\^\&\*\(\)\-\=\+\[\{\]\}\\\|\;\:\'\"\,\.\/\?\s]+)/g;
+    json = { "comments": json.comments, "brackets": json.brackets,
+        "autoClosingPairs": json.autoClosingPairs, "surroundingPairs": json.surroundingPairs,
+        "wordPattern": /(-?\d*\.\d\w*)|([^`~!@$%^&*()-=+\[{\]}\\|;:",./?\s]+)/ };
     context.subscriptions.push(
         vscode.languages.setLanguageConfiguration("lean", json)
     );
