@@ -211,6 +211,7 @@ export function activate(context: vscode.ExtensionContext) {
             (editor, edit, args) => roiManager.checkProjectFiles()
         ));
 
+        // Read the default mode for starting the ROI manager.
         let roiDefault = getRoiModeDefault();
 
         switch (roiDefault) {
