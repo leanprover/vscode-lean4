@@ -67,7 +67,7 @@
       "name": "keyword.control.definition.modifier.lean"
     },
     {
-      "match": "#(eval|reduce|check|exit|print)",
+      "match": "#(print|eval|reduce|check|help|exit)",
       "name": "keyword.other.command.lean"
     },
     {
