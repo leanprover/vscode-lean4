@@ -37,14 +37,19 @@ export class RoiManager implements vscode.Disposable {
                     if (visibleRanges[path]) {
                         roi.push({file_name: path, ranges: visibleRanges[path]});
                     } else {
-                        roi.push({file_name: f.fsPath, ranges: []});
+                        roi.push({file_name: path, ranges: []});
                     }
                 }
                 return roi;
             });
         } else {
-            for (let f in visibleRanges) {
-                roi.push({file_name: f, ranges: visibleRanges[f]});
+            for (let d of vscode.workspace.textDocuments) {
+                let path = d.fileName;
+                if (visibleRanges[path]) {
+                    roi.push({file_name: path, ranges: visibleRanges[path]});
+                } else {
+                    roi.push({file_name: path, ranges: []});
+                }
             }
             return new Promise((resolve) => resolve(roi));
         }
