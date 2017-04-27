@@ -10,6 +10,7 @@ import { batchExecuteFile } from './batch';
 import { createLeanStatusBarItem } from './status';
 import { RoiManager } from './roi';
 import { getExecutablePath, getRoiModeDefault, getMemoryLimit, getTimeLimit } from './util';
+import {Message} from 'lean-client-js-node';
 
 const LEAN_MODE : vscode.DocumentFilter = {
     language: "lean",
@@ -30,9 +31,9 @@ function toSeverity(lean_severity : string) : vscode.DiagnosticSeverity {
     }
 }
 
-function updateDiagnostics(collection : vscode.DiagnosticCollection, messages : any) {
+function updateDiagnostics(collection : vscode.DiagnosticCollection, messages: Message[]) {
     let diagnosticMap : Map<string, vscode.Diagnostic[]> = new Map();
-    messages.forEach((message) => {
+    for (const message of messages) {
         let file = vscode.Uri.file(message.file_name);
         let line = Math.max(message.pos_line - 1, 0);
         let range = new vscode.Range(line, message.pos_col, line, message.pos_col);
@@ -40,7 +41,7 @@ function updateDiagnostics(collection : vscode.DiagnosticCollection, messages : 
         if (!diagnostics) { diagnostics = []; }
         diagnostics.push(new vscode.Diagnostic(range, message.text, toSeverity(message.severity)));
         diagnosticMap.set(file.toString(), diagnostics);
-    });
+    }
 
     diagnosticMap.forEach((diags, file) => {
         diagnosticCollection.set(vscode.Uri.parse(file), diags);
@@ -92,7 +93,7 @@ export function activate(context: vscode.ExtensionContext) {
         // We need to ensure to reset anything stateful right here otherwise we will
         // have ghost diagnostics
         diagnosticCollection.clear();
-        server.restart(vscode.workspace.rootPath);
+        server.restart();
     });
 
     let goalDisposable = vscode.commands.registerTextEditorCommand(
@@ -110,9 +111,9 @@ export function activate(context: vscode.ExtensionContext) {
 
     // Have the server update diagnostics when we
     // receive new messages.
-    server.onMessage((messages) => {
+    server.allMessages.on((messages) => {
         diagnosticCollection.clear();
-        updateDiagnostics(diagnosticCollection, messages);
+        updateDiagnostics(diagnosticCollection, messages.msgs);
     });
 
     // Register the support for diagnostics.
@@ -187,14 +188,13 @@ export function activate(context: vscode.ExtensionContext) {
         context.subscriptions.push(roiManager);
         roiManager.statusBarItem.show();
 
-        let handler = (event: SyncEvent | vscode.TextEditor | vscode.TextEditor[]) => {
-            roiManager.send();
-        };
+        let handler = (event) => roiManager.send();
         context.subscriptions.push(vscode.window.onDidChangeActiveTextEditor(handler));
         context.subscriptions.push(vscode.window.onDidChangeVisibleTextEditors(handler));
         // context.subscriptions.push(vscode.workspace.onDidChangeTextDocument(handler));
         context.subscriptions.push(vscode.workspace.onDidOpenTextDocument(handler));
         context.subscriptions.push(vscode.workspace.onDidCloseTextDocument(handler));
+        context.subscriptions.push(server.restarted.on(handler));
 
         context.subscriptions.push(vscode.commands.registerTextEditorCommand(
             "lean.roiMode.nothing",
@@ -234,12 +234,14 @@ export function activate(context: vscode.ExtensionContext) {
         }
     }
 
+    server.restarted.on(() => vscode.workspace.textDocuments.forEach(syncLeanFile));
+
     let taskDecoration = vscode.window.createTextEditorDecorationType({
         overviewRulerLane: vscode.OverviewRulerLane.Right,
         overviewRulerColor: "orange",
     });
 
-    server.onStatusChange((serverStatus : ServerStatus) => {
+    server.statusChanged.on((serverStatus) => {
         // Update the status bar when the server changes state.
         if (serverStatus.isRunning) {
             statusBar.text = "Lean: $(sync) " + `${serverStatus.numberOfTasks}`;

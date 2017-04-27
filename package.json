@@ -124,6 +124,7 @@
     "dependencies": {
         "carrier": "0.3.0",
         "load-json-file": "1.1.0",
+        "lean-client-js-node": "^1.2.1",
         "semver": "5.3.0"
     },
     "devDependencies": {
