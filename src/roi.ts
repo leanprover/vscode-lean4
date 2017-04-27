@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
-import {Server, Roi, FileRoi, LineRange} from './server';
+import {Server} from './server';
+import {CheckingMode, FileRoi, RoiRange} from 'lean-client-js-node';
 
 enum RoiMode {
     Nothing,
@@ -20,16 +21,16 @@ export class RoiManager implements vscode.Disposable {
         this.checkVisibleFiles();
     }
 
-    compute(): Thenable<Roi> {
+    compute(): Thenable<FileRoi[]> {
         // improve after https://github.com/Microsoft/vscode/issues/14756
-        let visibleRanges: {[fileName: string]: Array<LineRange>} = {};
+        let visibleRanges: {[fileName: string]: RoiRange[]} = {};
         for (let editor of vscode.window.visibleTextEditors) {
             if (editor.document.languageId === "lean")
                 visibleRanges[editor.document.fileName] =
                     [{begin_line: 1, end_line: editor.document.lineCount}];
         }
 
-        let roi: Roi = [];
+        let roi: FileRoi[] = [];
         if (this.mode == RoiMode.ProjectFiles) {
             return vscode.workspace.findFiles("**/*.lean").then(files => {
                 for (let f of files) {
@@ -55,7 +56,7 @@ export class RoiManager implements vscode.Disposable {
         }
     }
 
-    modeString(): string {
+    modeString(): CheckingMode {
         switch (this.mode) {
             case RoiMode.Nothing: return "nothing";
             case RoiMode.VisibleFiles: return "visible-files";
