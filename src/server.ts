@@ -68,7 +68,8 @@ class Server extends leanclient.Server {
                     break;
                 case 'connect':
                     vscode.window.showErrorMessage(
-                        "Lean: " + e + "\n" + "The lean.executablePath may be incorrect, make sure it is a valid Lean executable",
+                        `Lean: ${e.message}\n` +
+                        'The lean.executablePath may be incorrect, make sure it is a valid Lean executable',
                         'Restart server'
                     ).then((item) => {
                         if (item === 'Restart server') {

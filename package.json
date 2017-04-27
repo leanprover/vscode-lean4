@@ -31,6 +31,11 @@
                     "default": "100000",
                     "description": "Set a Deterministic timeout (it is approximately the maximum number of memory allocations in thousands) for the Lean server."
                 },
+                "lean.progressMessages": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Show error messages where Lean is still checking."
+                },
                 "lean.roiModeDefault": {
                     "type": "string",
                     "default": "visible",
@@ -124,7 +129,7 @@
     "dependencies": {
         "carrier": "0.3.0",
         "load-json-file": "1.1.0",
-        "lean-client-js-node": "^1.2.1",
+        "lean-client-js-node": "^1.2.3",
         "semver": "5.3.0"
     },
     "devDependencies": {

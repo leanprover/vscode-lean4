@@ -18,6 +18,7 @@ const LEAN_MODE : vscode.DocumentFilter = {
 }
 
 let diagnosticCollection: vscode.DiagnosticCollection;
+let taskMessages: vscode.DiagnosticCollection;
 
 function toSeverity(lean_severity : string) : vscode.DiagnosticSeverity {
     if (lean_severity == 'warning') {
@@ -90,9 +91,6 @@ export function activate(context: vscode.ExtensionContext) {
 
     // Setup the commands.
     let restartDisposable = vscode.commands.registerCommand('lean.restartServer', () => {
-        // We need to ensure to reset anything stateful right here otherwise we will
-        // have ghost diagnostics
-        diagnosticCollection.clear();
         server.restart();
     });
 
@@ -119,6 +117,31 @@ export function activate(context: vscode.ExtensionContext) {
     // Register the support for diagnostics.
     diagnosticCollection = vscode.languages.createDiagnosticCollection('lean');
     context.subscriptions.push(diagnosticCollection);
+
+    // We need to ensure to reset anything stateful right here otherwise we will
+    // have ghost diagnostics
+    server.restarted.on(() => diagnosticCollection.clear());
+
+    // Task messages.
+    taskMessages = vscode.languages.createDiagnosticCollection('lean-tasks');
+    context.subscriptions.push(taskMessages);
+    context.subscriptions.push(server.statusChanged.on((status) => {
+        const diagsPerFile = new Map<string, vscode.Diagnostic[]>();
+
+        if (vscode.workspace.getConfiguration('lean').get('progressMessages')) {
+            for (const task of status.tasks) {
+                let diags = diagsPerFile.get(task.file_name);
+                if (!diags) diagsPerFile.set(task.file_name, diags = []);
+                diags.push(new vscode.Diagnostic(
+                    new vscode.Range(task.pos_line - 1, task.pos_col, task.end_pos_line - 1, task.end_pos_col),
+                    task.desc, vscode.DiagnosticSeverity.Information,
+                ));
+            }
+        }
+
+        taskMessages.clear();
+        diagsPerFile.forEach((diags, file) => taskMessages.set(vscode.Uri.file(file), diags));
+    }));
 
     // Register the support for hovering.
     context.subscriptions.push(
