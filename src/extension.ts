@@ -264,8 +264,15 @@ export function activate(context: vscode.ExtensionContext) {
     server.restarted.on(() => vscode.workspace.textDocuments.forEach(syncLeanFile));
 
     let taskDecoration = vscode.window.createTextEditorDecorationType({
-        overviewRulerLane: vscode.OverviewRulerLane.Right,
-        overviewRulerColor: "orange",
+        overviewRulerLane: vscode.OverviewRulerLane.Left,
+        overviewRulerColor: 'rgba(255, 165, 0, 0.5)',
+        dark: {
+            gutterIconPath: context.asAbsolutePath('images/progress-dark.svg'),
+        },
+        light: {
+            gutterIconPath: context.asAbsolutePath('images/progress-light.svg'),
+        },
+        gutterIconSize: 'contain',
     });
 
     server.statusChanged.on((serverStatus) => {
@@ -281,13 +288,17 @@ export function activate(context: vscode.ExtensionContext) {
         statusBar.show();
 
         for (let editor of vscode.window.visibleTextEditors) {
-            let ranges: vscode.Range[] = [];
+            let ranges: vscode.DecorationOptions[] = [];
             for (let task of serverStatus.tasks) {
                 if (task.file_name == editor.document.fileName) {
-                    ranges.push(new vscode.Range(
+                    const range = new vscode.Range(
                         task.pos_line - 1, task.pos_col,
                         task.end_pos_line - 1, task.end_pos_col,
-                    ));
+                    );
+                    ranges.push({
+                        range,
+                        hoverMessage: task.desc,
+                    });
                 }
             }
             editor.setDecorations(taskDecoration, ranges);
