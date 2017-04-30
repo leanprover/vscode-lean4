@@ -39,6 +39,9 @@ This extension contributes the following settings:
 
 ## Release Notes
 
+### 0.7.2 (unreleased)
+* Add experimental new input mode for Unicode symbols.
+
 ### 0.7.1
 * Fixes issue with highlighting commands beginning with `#`.
 
