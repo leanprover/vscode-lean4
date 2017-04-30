@@ -92,13 +92,12 @@ export class LeanInputAbbreviator implements HoverProvider {
 
         const newEnd = beforeBackslash.translate(0, replacement.length);
 
-        editor.edit((builder) => {
-            builder.replace(new vscode.Range(beforeBackslash, end), replacement);
-        }).then(() => {
-            // Without this hack, inserting `\delta ` at the beginning of an
+        setTimeout(() => {
+            // Without the timeout hack, inserting `\delta ` at the beginning of an
             // existing line would leave the cursor four characters too far right.
-            editor.selections = editor.selections.slice(0);
-        });
+            // editor.selections = editor.selections.slice(0);
+            editor.edit((builder) => builder.replace(new vscode.Range(beforeBackslash, end), replacement));
+        }, 0);
     }
 
     getAbbrevations(symbol: string): string[] {
