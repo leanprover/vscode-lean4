@@ -76,7 +76,7 @@ export class LeanInputAbbreviator implements HoverProvider {
         const change = ev.contentChanges[0];
         if (change.rangeLength !== 0) return; // insert
 
-        if (change.text !== ' ') return; // space
+        if (!change.text.match(/^\s+|[)}⟩\\]$/)) return; // whitespace, closing parens, and backslash
 
         let editor = vscode.window.activeTextEditor;
         if (editor.document !== ev.document) return; // change happened in active editor
