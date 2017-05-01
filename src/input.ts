@@ -34,19 +34,32 @@ export class LeanInputCompletionProvider implements CompletionItemProvider {
     }
 }
 
-export class LeanInputAbbreviator implements HoverProvider {
-    translations: { [short: string]: string };
-    documentFilter: DocumentFilter;
-    private changedSubscription: Disposable;
-    private explainSubscription: Disposable;
+export class LeanInputExplanationHover implements HoverProvider {
+    constructor(private translations: Translations) {}
 
-    constructor(translations: Translations, documentFilter: DocumentFilter) {
-        this.translations = translations;
-        this.documentFilter = documentFilter;
+    getAbbrevations(symbol: string): string[] {
+        const abbrevs: string[] = [];
+        for (let k in this.translations) {
+            if (this.translations[k] === symbol) abbrevs.push(k);
+        }
+        return abbrevs;
+    }
 
-        this.changedSubscription =
-            vscode.workspace.onDidChangeTextDocument((ev) => this.onChanged(ev));
-        this.explainSubscription = vscode.languages.registerHoverProvider(documentFilter, this);
+    provideHover(document: vscode.TextDocument, pos: Position, token: vscode.CancellationToken): Hover | undefined {
+        const symbolRange = new vscode.Range(pos, pos.translate(0, 1));
+        const symbol = document.getText(symbolRange);
+        const abbrevs = this.getAbbrevations(symbol);
+        return abbrevs.length > 0 &&
+            new Hover(`Type ${symbol} using ${abbrevs.map((a) => `\\\\${a}`).join(' or ')}`, symbolRange);
+    }
+}
+
+export class LeanInputAbbreviator {
+    private subscriptions: Disposable[] = [];
+
+    constructor(private translations: Translations, private documentFilter: DocumentFilter) {
+        this.subscriptions.push(
+            vscode.workspace.onDidChangeTextDocument((ev) => this.onChanged(ev)));
     }
 
     private findBackslashPosition(document: TextDocument, position: Position): Position | undefined {
@@ -100,24 +113,8 @@ export class LeanInputAbbreviator implements HoverProvider {
         }, 0);
     }
 
-    getAbbrevations(symbol: string): string[] {
-        const abbrevs: string[] = [];
-        for (let k in this.translations) {
-            if (this.translations[k] === symbol) abbrevs.push(k);
-        }
-        return abbrevs;
-    }
-
-    provideHover(document: vscode.TextDocument, pos: Position, token: vscode.CancellationToken): Hover | undefined {
-        const symbolRange = new vscode.Range(pos, pos.translate(0, 1));
-        const symbol = document.getText(symbolRange);
-        const abbrevs = this.getAbbrevations(symbol);
-        return abbrevs.length > 0 &&
-            new Hover(`Type ${symbol} using ${abbrevs.map((a) => `\\\\${a}`).join(' or ')}`, symbolRange);
-    }
-
     dispose() {
-        this.changedSubscription.dispose();
-        this.explainSubscription.dispose();
+        for (const s of this.subscriptions)
+            s.dispose();
     }
 }

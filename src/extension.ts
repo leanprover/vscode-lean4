@@ -3,7 +3,7 @@ import * as loadJsonFile from 'load-json-file';
 import { Server, ServerStatus } from './server';
 import { LeanHoverProvider } from './hover';
 import { LeanCompletionItemProvider } from './completion';
-import { LeanInputCompletionProvider, LeanInputAbbreviator } from './input';
+import { LeanInputCompletionProvider, LeanInputExplanationHover, LeanInputAbbreviator } from './input';
 import { LeanDefinitionProvider } from './definition'
 import { displayGoalAtPosition } from './goal';
 import { batchExecuteFile } from './batch';
@@ -155,6 +155,8 @@ export function activate(context: vscode.ExtensionContext) {
 
     // Register support for unicode input.
     loadJsonFile(context.asAbsolutePath("translations.json")).then(json => {
+        context.subscriptions.push(vscode.languages.registerHoverProvider(LEAN_MODE,
+            new LeanInputExplanationHover(json)));
         if (vscode.workspace.getConfiguration('lean').get('newInput')) {
             context.subscriptions.push(new LeanInputAbbreviator(json, LEAN_MODE));
         } else {
