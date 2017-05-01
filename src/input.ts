@@ -1,6 +1,6 @@
 import {LEAN_MODE} from './constants'
 import * as vscode from 'vscode'
-import {CompletionItemProvider, Hover, Disposable, HoverProvider, DocumentFilter,
+import {CompletionItemProvider, Hover, Disposable, HoverProvider, DocumentFilter, TextEditor, TextEditorSelectionChangeEvent, TextEditorDecorationType,
     TextDocument,Position,CancellationToken,CompletionItem,CompletionItemKind,CompletionList,Range} from 'vscode'
 import {isInputCompletion} from './util'
 
@@ -57,16 +57,47 @@ export class LeanInputExplanationHover implements HoverProvider {
 export class LeanInputAbbreviator {
     private subscriptions: Disposable[] = [];
 
+    private activeEditor: TextEditor;
+    private range: Range;
+
+    private decorationType: TextEditorDecorationType;
+
     constructor(private translations: Translations, private documentFilter: DocumentFilter) {
-        this.subscriptions.push(
-            vscode.workspace.onDidChangeTextDocument((ev) => this.onChanged(ev)));
+        this.translations = Object.assign({}, translations);
+        this.translations['\\'] = '\\';
+
+        this.decorationType = vscode.window.createTextEditorDecorationType({
+            textDecoration: 'underline',
+        });
+
+        this.subscriptions.push(vscode.workspace.onDidChangeTextDocument((ev) => this.onChanged(ev)));
+        this.subscriptions.push(vscode.window.onDidChangeActiveTextEditor(() => this.updateRange()));
+        this.subscriptions.push(vscode.window.onDidChangeTextEditorSelection((ev) => this.onSelectionChanged(ev)));
     }
 
-    private findBackslashPosition(document: TextDocument, position: Position): Position | undefined {
-        const line = document.lineAt(position).text;
-        let offset = position.character;
-        do { offset--; } while (/[^\\\s]/.test(line.charAt(offset)));
-        return line.charAt(offset) === '\\' && new Position(position.line, offset);
+    active(): boolean {
+        return !!this.range;
+    }
+
+    private updateRange(range?: Range) {
+        if (this.activeEditor && (!range || this.activeEditor !== vscode.window.activeTextEditor)) {
+            this.activeEditor.setDecorations(this.decorationType, []);
+        }
+
+        if (range && range.isSingleLine) {
+            this.activeEditor = vscode.window.activeTextEditor;
+            this.range = range;
+
+            this.activeEditor.setDecorations(this.decorationType,
+                this.range ? [this.range] : []);
+        } else {
+            this.activeEditor = null;
+            this.range = null;
+        }
+    }
+
+    private rangeSize(): number {
+        return this.range.end.character - this.range.start.character;
     }
 
     private findReplacement(typedAbbrev: string): string | undefined {
@@ -82,38 +113,75 @@ export class LeanInputAbbreviator {
         return shortestExtension && this.translations[shortestExtension];
     }
 
-    private onChanged(ev: vscode.TextDocumentChangeEvent) {
-        if (!vscode.languages.match(this.documentFilter, ev.document)) return; // Lean file
+    private convertRange() {
+        if (!this.range || this.rangeSize() < 2) return this.updateRange();
 
-        if (ev.contentChanges.length !== 1) return; // single change
-        const change = ev.contentChanges[0];
-        if (change.rangeLength !== 0) return; // insert
+        const editor = this.activeEditor;
+        const range = this.range;
 
-        if (!change.text.match(/^\s+|[)}⟩\\]$/)) return; // whitespace, closing parens, and backslash
+        const toReplace = editor.document.getText(range);
+        if (toReplace[0] !== '\\') return this.updateRange();
 
-        let editor = vscode.window.activeTextEditor;
-        if (editor.document !== ev.document) return; // change happened in active editor
-
-        const end = change.range.end;
-        const beforeBackslash = this.findBackslashPosition(ev.document, end);
-        if (!beforeBackslash) return; // \abbrev left of insert
-        const afterBackslash = beforeBackslash.translate(0, 1);
-
-        const abbreviation = ev.document.getText(new vscode.Range(afterBackslash, end));
+        const abbreviation = toReplace.slice(1);
         const replacement = this.findReplacement(abbreviation);
-        if (!replacement) return; // unknown translation
 
-        const newEnd = beforeBackslash.translate(0, replacement.length);
+        if (replacement) {
+            setTimeout(() => {
+                // Without the timeout hack, inserting `\delta ` at the beginning of an
+                // existing line would leave the cursor four characters too far right.
+                editor.edit((builder) => builder.replace(range, replacement));
+            }, 0);
+        }
 
-        setTimeout(() => {
-            // Without the timeout hack, inserting `\delta ` at the beginning of an
-            // existing line would leave the cursor four characters too far right.
-            // editor.selections = editor.selections.slice(0);
-            editor.edit((builder) => builder.replace(new vscode.Range(beforeBackslash, end), replacement));
-        }, 0);
+        this.updateRange();
+    }
+
+    private onChanged(ev: vscode.TextDocumentChangeEvent) {
+        if (vscode.window.activeTextEditor.document !== ev.document) return; // change happened in active editor
+
+        if (!vscode.languages.match(this.documentFilter, ev.document)) return this.updateRange(); // Lean file
+
+        if (this.activeEditor !== vscode.window.activeTextEditor) this.updateRange();
+
+        if (ev.contentChanges.length !== 1) return this.updateRange(); // single change
+        const change = ev.contentChanges[0];
+
+        if (change.text.length === 1 && (change.rangeLength === 0 ||
+                                            (change.rangeLength === 1 &&
+                                                ev.document.getText(change.range) === change.text))) {
+            // insert (or right paren overwriting)
+            if (!this.range) {
+                if (change.text == '\\') {
+                    return this.updateRange(new vscode.Range(change.range.start, change.range.start.translate(0, 1)));
+                }
+            } else if (change.range.start.isEqual(this.range.end)) {
+                if (change.text === '\\' && this.rangeSize() === 1) { // \\
+                    this.range = new vscode.Range(this.range.start, change.range.start.translate(0, 1));
+                    this.convertRange();
+                } else if (change.text.match(/^\s+|[)}⟩]$/)) {
+                    // whitespace, closing parens
+                    this.convertRange();
+                }
+            }
+        }
+
+        if (this.range && this.range.contains(change.range) && this.range.start.isBefore(change.range.start)) {
+            // modification
+            return this.updateRange(new vscode.Range(this.range.start,
+                this.range.end.translate(0, change.text.length - change.rangeLength)));
+        }
+
+        this.updateRange();
+    }
+
+    private onSelectionChanged(ev: TextEditorSelectionChangeEvent) {
+        if (ev.selections.length !== 1 || !this.range.contains(ev.selections[0].active)) {
+            this.convertRange();
+        }
     }
 
     dispose() {
+        this.decorationType.dispose();
         for (const s of this.subscriptions)
             s.dispose();
     }

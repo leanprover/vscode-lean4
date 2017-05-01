@@ -38,7 +38,7 @@
                 },
                 "lean.newInput": {
                     "type": "boolean",
-                    "default": false,
+                    "default": true,
                     "description": "Enable experimental new input mode for unicode symbols (requires restart to take effect)."
                 },
                 "lean.roiModeDefault": {

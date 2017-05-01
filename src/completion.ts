@@ -14,6 +14,7 @@ export class LeanCompletionItemProvider implements vscode.CompletionItemProvider
     public provideCompletionItems(
         document: vscode.TextDocument, position: vscode.Position, token: vscode.CancellationToken):
         Thenable<vscode.CompletionItem[]> {
+            // TODO(gabriel): use LeanInputAbbreviator.active() instead
             if (!isInputCompletion(document, position)) {
                 return this.server.complete(document.fileName, position.line+1, position.character).then(message => {
                     return message.completions.map((completion) => {
