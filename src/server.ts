@@ -20,7 +20,7 @@ class Server extends leanclient.Server {
     executablePath: string;
     workingDirectory: string;
     options: string[];
-    statusChanged: Event<ServerStatus>;
+    statusChanged: util.LowPassFilter<ServerStatus>;
     restarted: Event<any>;
     supportsROI: Boolean;
 
@@ -38,7 +38,7 @@ class Server extends leanclient.Server {
         }
 
         super(new ProcessTransport(executablePath, workingDirectory, options));
-        this.statusChanged = new Event();
+        this.statusChanged = new util.LowPassFilter<ServerStatus>(300);
         this.restarted = new Event();
 
         this.executablePath = executablePath;
@@ -83,22 +83,22 @@ class Server extends leanclient.Server {
             }
 
             if (!this.alive()) {
-                this.statusChanged.fire({
+                this.statusChanged.input({
                     isRunning: false,
                     numberOfTasks: 0,
                     stopped: true,
                     tasks: [],
-                });
+                }, true);
             }
         });
 
         this.tasks.on((curTasks) =>
-            this.statusChanged.fire({
+            this.statusChanged.input({
                 isRunning: curTasks.is_running,
                 numberOfTasks: curTasks.tasks.length,
                 stopped: false,
                 tasks: curTasks.tasks,
-            }));
+            }, curTasks.tasks.length == 0));
     }
 
     restart() {
