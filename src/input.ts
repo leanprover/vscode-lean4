@@ -48,7 +48,7 @@ export class LeanInputExplanationHover implements HoverProvider {
     provideHover(document: vscode.TextDocument, pos: Position, token: vscode.CancellationToken): Hover | undefined {
         const symbolRange = new vscode.Range(pos, pos.translate(0, 1));
         const symbol = document.getText(symbolRange);
-        const abbrevs = this.getAbbrevations(symbol);
+        const abbrevs = this.getAbbrevations(symbol).sort((a,b) => a.length - b.length);
         return abbrevs.length > 0 &&
             new Hover(`Type ${symbol} using ${abbrevs.map((a) => `\\\\${a}`).join(' or ')}`, symbolRange);
     }
