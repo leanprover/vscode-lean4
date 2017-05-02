@@ -39,8 +39,10 @@ This extension contributes the following settings:
 
 ## Release Notes
 
-### 0.7.2 (unreleased)
+### 0.7.2
 * Add experimental new input mode for Unicode symbols.
+* Use new client library for interacting with the Lean
+  server.
 
 ### 0.7.1
 * Fixes issue with highlighting commands beginning with `#`.
