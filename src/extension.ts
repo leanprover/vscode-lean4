@@ -140,15 +140,7 @@ export function activate(context: vscode.ExtensionContext) {
     let roiManager: RoiManager | undefined = null;
     if (server.supportsROI) {
         roiManager = new RoiManager(server);
-    }
-
-    // Add item to the status bar.
-    context.subscriptions.push(new LeanStatusBarItem(server, roiManager));
-
-    if (server.supportsROI) {
-        let roiManager = new RoiManager(server);
-        context.subscriptions.push(roiManager);
-
+        context.subscriptions.push(roiManager)
         context.subscriptions.push(vscode.commands.registerCommand("lean.roiMode.nothing",
             () => roiManager.check(RoiMode.Nothing)));
         context.subscriptions.push(vscode.commands.registerCommand("lean.roiMode.visibleFiles",
@@ -158,6 +150,9 @@ export function activate(context: vscode.ExtensionContext) {
         context.subscriptions.push(vscode.commands.registerCommand("lean.roiMode.projectFiles",
             () => roiManager.check(RoiMode.ProjectFiles)));
     }
+
+    // Add item to the status bar.
+    context.subscriptions.push(new LeanStatusBarItem(server, roiManager));
 
     let taskDecoration = vscode.window.createTextEditorDecorationType({
         overviewRulerLane: vscode.OverviewRulerLane.Left,
