@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import {Disposable} from 'vscode';
 import {Server} from './server';
 import {CheckingMode, FileRoi, RoiRange} from 'lean-client-js-node';
 
@@ -10,15 +11,27 @@ enum RoiMode {
     ProjectFiles,
 }
 
-export class RoiManager implements vscode.Disposable {
+export class RoiManager implements Disposable {
     mode: RoiMode;
-    server: Server;
     statusBarItem: vscode.StatusBarItem;
+    private subscriptions: Disposable[] = [];
 
-    constructor(server: Server) {
-        this.server = server;
+    constructor(private server: Server) {
         this.statusBarItem = vscode.window.createStatusBarItem();
-        this.checkVisibleFiles();
+
+        this.subscriptions.push(vscode.window.onDidChangeActiveTextEditor(() => this.send()));
+        this.subscriptions.push(vscode.window.onDidChangeVisibleTextEditors(() => this.send()));
+        this.subscriptions.push(vscode.workspace.onDidOpenTextDocument(() => this.send()));
+        this.subscriptions.push(vscode.workspace.onDidCloseTextDocument(() => this.send()));
+        this.subscriptions.push(server.restarted.on(() => this.send()));
+
+        switch (vscode.workspace.getConfiguration('lean').get('roiModeDefault')) {
+            case 'nothing': this.checkNothing(); break;
+            case 'visible': this.checkVisibleFiles(); break;
+            case 'open': this.checkOpenFiles(); break;
+            case 'project': this.checkProjectFiles(); break;
+            default: this.checkVisibleFiles();
+        }
     }
 
     compute(): Thenable<FileRoi[]> {
@@ -52,7 +65,7 @@ export class RoiManager implements vscode.Disposable {
                     roi.push({file_name: path, ranges: []});
                 }
             }
-            return new Promise((resolve) => resolve(roi));
+            return Promise.resolve(roi);
         }
     }
 
@@ -90,6 +103,7 @@ export class RoiManager implements vscode.Disposable {
     }
 
     dispose() {
-        this.statusBarItem.dispose()
+        this.statusBarItem.dispose();
+        for (const s of this.subscriptions) s.dispose();
     }
 }

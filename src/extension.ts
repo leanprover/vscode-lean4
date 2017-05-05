@@ -137,6 +137,11 @@ export function activate(context: vscode.ExtensionContext) {
 
     context.subscriptions.push(new LeanSyncService(server, LEAN_MODE));
 
+    let roiManager: RoiManager | undefined = null;
+    if (server.supportsROI) {
+        roiManager = new RoiManager(server);
+    }
+
     // Add item to the status bar.
     let statusBar = createLeanStatusBarItem();
     context.subscriptions.push(statusBar);
@@ -146,50 +151,10 @@ export function activate(context: vscode.ExtensionContext) {
         context.subscriptions.push(roiManager);
         roiManager.statusBarItem.show();
 
-        let handler = (event) => roiManager.send();
-        context.subscriptions.push(vscode.window.onDidChangeActiveTextEditor(handler));
-        context.subscriptions.push(vscode.window.onDidChangeVisibleTextEditors(handler));
-        // context.subscriptions.push(vscode.workspace.onDidChangeTextDocument(handler));
-        context.subscriptions.push(vscode.workspace.onDidOpenTextDocument(handler));
-        context.subscriptions.push(vscode.workspace.onDidCloseTextDocument(handler));
-        context.subscriptions.push(server.restarted.on(handler));
-
-        context.subscriptions.push(vscode.commands.registerTextEditorCommand(
-            "lean.roiMode.nothing",
-            (editor, edit, args) => roiManager.checkNothing()
-        ));
-        context.subscriptions.push(vscode.commands.registerTextEditorCommand(
-            "lean.roiMode.visibleFiles",
-            (editor, edit, args) => roiManager.checkVisibleFiles()
-        ));
-        context.subscriptions.push(vscode.commands.registerTextEditorCommand(
-            "lean.roiMode.openFiles",
-            (editor, edit, args) => roiManager.checkOpenFiles()
-        ));
-        context.subscriptions.push(vscode.commands.registerTextEditorCommand(
-            "lean.roiMode.projectFiles",
-            (editor, edit, args) => roiManager.checkProjectFiles()
-        ));
-
-        // Read the default mode for starting the ROI manager.
-        let roiDefault = getRoiModeDefault();
-
-        switch (roiDefault) {
-            case "nothing":
-                roiManager.checkNothing();
-                break;
-            case "visible":
-                roiManager.checkVisibleFiles();
-                break;
-            case "open":
-                roiManager.checkOpenFiles();
-                break;
-            case "project":
-                roiManager.checkProjectFiles();
-                break;
-            default:
-                // do nothing, should probably set up the error reporting to be global, and log an error here.
-        }
+        context.subscriptions.push(vscode.commands.registerCommand("lean.roiMode.nothing", () => roiManager.checkNothing()));
+        context.subscriptions.push(vscode.commands.registerCommand("lean.roiMode.visibleFiles", () => roiManager.checkVisibleFiles()));
+        context.subscriptions.push(vscode.commands.registerCommand("lean.roiMode.openFiles", () => roiManager.checkOpenFiles()));
+        context.subscriptions.push(vscode.commands.registerCommand("lean.roiMode.projectFiles", () => roiManager.checkProjectFiles()));
     }
 
     let taskDecoration = vscode.window.createTextEditorDecorationType({
