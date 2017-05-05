@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { Disposable, Event, EventEmitter, DocumentFilter } from 'vscode';
+import { Disposable, Event, EventEmitter, DocumentFilter, QuickPickItem } from 'vscode';
 import {Server} from './server';
 import {CheckingMode, FileRoi, RoiRange} from 'lean-client-js-node';
 
@@ -32,6 +32,33 @@ export class RoiManager implements Disposable {
             default: this.mode = RoiMode.VisibleFiles;
         }
         this.send();
+
+        vscode.commands.registerCommand('lean.roiMode.select', () => {
+            let items: (QuickPickItem & {mode: RoiMode})[] = [
+                {
+                    label: 'nothing',
+                    description: 'disable checking',
+                    mode: RoiMode.Nothing,
+                },
+                {
+                    label: 'visible files',
+                    description: 'check files that are currently visible',
+                    mode: RoiMode.VisibleFiles,
+                },
+                {
+                    label: 'open files',
+                    description: 'check files that are opened',
+                    mode: RoiMode.OpenFiles,
+                },
+                {
+                    label: 'project files',
+                    description: 'check files that are in the current workspace',
+                    mode: RoiMode.ProjectFiles,
+                },
+            ];
+            vscode.window.showQuickPick(items).then((selected) =>
+                selected && this.check(selected.mode));
+        });
     }
 
     compute(): Thenable<FileRoi[]> {

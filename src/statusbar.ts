@@ -15,6 +15,7 @@ export class LeanStatusBarItem implements Disposable {
         );
         if (roiManager) {
             this.subscriptions.push(roiManager.onModeChanged(() => this.update()));
+            this.statusBarItem.command = 'lean.roiMode.select';
         }
 
         this.update();

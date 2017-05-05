@@ -65,6 +65,11 @@
                 "description": "Displays the errors in the current file in a separate file"
             },
             {
+                "command": "lean.roiMode.select",
+                "title": "Lean: Select region-of-interest",
+                "description": "Select what files are being checked by the Lean server."
+            },
+            {
                 "command": "lean.roiMode.nothing",
                 "title": "Lean: Check Nothing",
                 "description": "Disable automatic checking of Lean code"
