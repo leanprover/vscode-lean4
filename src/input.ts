@@ -69,7 +69,7 @@ class TextEditorAbbrevHandler {
         return this.range.end.character - this.range.start.character;
     }
 
-    private convertRange() {
+    private convertRange(newRange?: Range) {
         if (!this.range || this.rangeSize < 2) return this.updateRange();
 
         const range = this.range;
@@ -84,11 +84,16 @@ class TextEditorAbbrevHandler {
             setTimeout(() => {
                 // Without the timeout hack, inserting `\delta ` at the beginning of an
                 // existing line would leave the cursor four characters too far right.
-                this.editor.edit((builder) => builder.replace(range, replacement));
+                this.editor.edit((builder) => builder.replace(range, replacement)).then(() => {
+                    newRange && this.updateRange(new vscode.Range(
+                        newRange.start.translate(0, replacement.length - toReplace.length),
+                        newRange.end.translate(0, replacement.length - toReplace.length),
+                    ));
+                });
             }, 0);
         }
 
-        this.updateRange();
+        this.updateRange(newRange);
     }
 
     onChanged(ev: vscode.TextDocumentChangeEvent) {
@@ -107,9 +112,10 @@ class TextEditorAbbrevHandler {
                 if (change.text === '\\' && this.rangeSize === 1) { // \\
                     this.range = new vscode.Range(this.range.start, change.range.start.translate(0, 1));
                     return this.convertRange();
-                } else if (change.text.match(/^\s+|[)}⟩]$/)) {
-                    // whitespace, closing parens
-                    return this.convertRange();
+                } else if (change.text.match(/^\s+|[)}⟩\\]$/)) {
+                    // whitespace, closing parens, backslash
+                    return this.convertRange(change.text !== '\\' ? null :
+                        new vscode.Range(change.range.start, change.range.start.translate(0, 1)));
                 }
             }
         }
