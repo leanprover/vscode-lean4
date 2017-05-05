@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import {Disposable, Event, EventEmitter} from 'vscode';
+import { Disposable, Event, EventEmitter, DocumentFilter } from 'vscode';
 import {Server} from './server';
 import {CheckingMode, FileRoi, RoiRange} from 'lean-client-js-node';
 
@@ -17,7 +17,7 @@ export class RoiManager implements Disposable {
     onModeChanged = this.modeChangedEmitter.event;
     private subscriptions: Disposable[] = [];
 
-    constructor(private server: Server) {
+    constructor(private server: Server, private documentFilter: DocumentFilter) {
         this.subscriptions.push(vscode.window.onDidChangeActiveTextEditor(() => this.send()));
         this.subscriptions.push(vscode.window.onDidChangeVisibleTextEditors(() => this.send()));
         this.subscriptions.push(vscode.workspace.onDidOpenTextDocument(() => this.send()));
@@ -38,9 +38,10 @@ export class RoiManager implements Disposable {
         // improve after https://github.com/Microsoft/vscode/issues/14756
         let visibleRanges: {[fileName: string]: RoiRange[]} = {};
         for (let editor of vscode.window.visibleTextEditors) {
-            if (editor.document.languageId === "lean")
+            if (vscode.languages.match(this.documentFilter, editor.document)) {
                 visibleRanges[editor.document.fileName] =
                     [{begin_line: 1, end_line: editor.document.lineCount}];
+            }
         }
 
         let roi: FileRoi[] = [];

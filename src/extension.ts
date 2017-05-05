@@ -130,7 +130,7 @@ export function activate(context: vscode.ExtensionContext) {
 
     let roiManager: RoiManager | undefined = null;
     if (server.supportsROI) {
-        roiManager = new RoiManager(server);
+        roiManager = new RoiManager(server, LEAN_MODE);
         context.subscriptions.push(roiManager)
         context.subscriptions.push(vscode.commands.registerCommand("lean.roiMode.nothing",
             () => roiManager.check(RoiMode.Nothing)));
