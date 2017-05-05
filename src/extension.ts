@@ -11,6 +11,7 @@ import { createLeanStatusBarItem } from './status';
 import { RoiManager } from './roi';
 import { getExecutablePath, getRoiModeDefault, getMemoryLimit, getTimeLimit } from './util';
 import {ErrorViewProvider} from './errorview';
+import {LeanDiagnosticsProvider} from './diagnostics';
 import {Message} from 'lean-client-js-node';
 
 const LEAN_MODE : vscode.DocumentFilter = {
@@ -18,37 +19,7 @@ const LEAN_MODE : vscode.DocumentFilter = {
     scheme: 'file'
 }
 
-let diagnosticCollection: vscode.DiagnosticCollection;
 let taskMessages: vscode.DiagnosticCollection;
-
-function toSeverity(lean_severity : string) : vscode.DiagnosticSeverity {
-    if (lean_severity == 'warning') {
-        return vscode.DiagnosticSeverity.Warning;
-    } else if (lean_severity == 'error') {
-        return vscode.DiagnosticSeverity.Error;
-    } else if (lean_severity == 'information') {
-        return vscode.DiagnosticSeverity.Information;
-    } else {
-        throw "unknown severity";
-    }
-}
-
-function updateDiagnostics(collection : vscode.DiagnosticCollection, messages: Message[]) {
-    let diagnosticMap : Map<string, vscode.Diagnostic[]> = new Map();
-    for (const message of messages) {
-        let file = vscode.Uri.file(message.file_name);
-        let line = Math.max(message.pos_line - 1, 0);
-        let range = new vscode.Range(line, message.pos_col, line, message.pos_col);
-        let diagnostics = diagnosticMap.get(file.toString());
-        if (!diagnostics) { diagnostics = []; }
-        diagnostics.push(new vscode.Diagnostic(range, message.text, toSeverity(message.severity)));
-        diagnosticMap.set(file.toString(), diagnostics);
-    }
-
-    diagnosticMap.forEach((diags, file) => {
-        diagnosticCollection.set(vscode.Uri.parse(file), diags);
-    });
-}
 
 type SyncEvent =
   vscode.TextDocument |
@@ -108,20 +79,7 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(goalDisposable);
     context.subscriptions.push(batchDisposable);
 
-    // Have the server update diagnostics when we
-    // receive new messages.
-    server.allMessages.on((messages) => {
-        diagnosticCollection.clear();
-        updateDiagnostics(diagnosticCollection, messages.msgs);
-    });
-
-    // Register the support for diagnostics.
-    diagnosticCollection = vscode.languages.createDiagnosticCollection('lean');
-    context.subscriptions.push(diagnosticCollection);
-
-    // We need to ensure to reset anything stateful right here otherwise we will
-    // have ghost diagnostics
-    server.restarted.on(() => diagnosticCollection.clear());
+    context.subscriptions.push(new LeanDiagnosticsProvider(server));
 
     // Task messages.
     taskMessages = vscode.languages.createDiagnosticCollection('lean-tasks');
