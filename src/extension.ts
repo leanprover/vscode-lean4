@@ -55,22 +55,13 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(server);
 
     // Setup the commands.
-    let restartDisposable = vscode.commands.registerCommand('lean.restartServer', () => {
-        server.restart();
-    });
-
-    let goalDisposable = vscode.commands.registerTextEditorCommand(
-        'lean.displayGoal',
-        (editor, edit, args) => { displayGoalAtPosition(server, editor, edit, args) });
-
-    let batchDisposable = vscode.commands.registerTextEditorCommand(
-        'lean.batchExecute',
-        (editor, edit, args) => { batchExecuteFile(editor, edit, args); });
-
-    // Register their disposables as well.
-    context.subscriptions.push(restartDisposable);
-    context.subscriptions.push(goalDisposable);
-    context.subscriptions.push(batchDisposable);
+    context.subscriptions.push(
+        vscode.commands.registerCommand('lean.restartServer', () => server.restart()),
+        vscode.commands.registerTextEditorCommand('lean.displayGoal',
+            (editor, edit, args) => { displayGoalAtPosition(server, editor, edit, args) }),
+        vscode.commands.registerTextEditorCommand('lean.batchExecute',
+            (editor, edit, args) => { batchExecuteFile(editor, edit, args); }),
+    );
 
     context.subscriptions.push(new LeanDiagnosticsProvider(server));
 
