@@ -12,6 +12,7 @@ import { RoiManager } from './roi';
 import { getExecutablePath, getRoiModeDefault, getMemoryLimit, getTimeLimit } from './util';
 import {ErrorViewProvider} from './errorview';
 import {LeanDiagnosticsProvider} from './diagnostics';
+import {LeanSyncService} from './sync';
 import {Message} from 'lean-client-js-node';
 
 const LEAN_MODE : vscode.DocumentFilter = {
@@ -20,14 +21,6 @@ const LEAN_MODE : vscode.DocumentFilter = {
 }
 
 let taskMessages: vscode.DiagnosticCollection;
-
-type SyncEvent =
-  vscode.TextDocument |
-  vscode.TextDocumentChangeEvent;
-
-function isChangeEvent(e : SyncEvent) : e is vscode.TextDocumentChangeEvent {
-    return (e as vscode.TextDocumentChangeEvent).document !== undefined;
-}
 
 // Seeing .olean files in the source tree is annoying, we should
 // just globally hide them.
@@ -139,33 +132,10 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.languages.registerDefinitionProvider(
             LEAN_MODE, new LeanDefinitionProvider(server)));
 
-    let syncLeanFile = (event : SyncEvent) => {
-        let document;
-
-        if (isChangeEvent(event)) {
-            document = event.document;
-        } else {
-            document = event;
-        }
-
-        if (document.languageId === "lean") {
-            let file_name = document.fileName;
-            let contents = document.getText();
-            server.sync(file_name, contents);
-        }
-    };
-
     if (server.supportsROI)
         server.roi("nothing", []); // activate ROI support
 
-    // Send a sync message on editor changes.
-    context.subscriptions.push(vscode.workspace.onDidChangeTextDocument(syncLeanFile));
-    context.subscriptions.push(vscode.workspace.onDidOpenTextDocument(syncLeanFile));
-    context.subscriptions.push(vscode.workspace.onDidCloseTextDocument(syncLeanFile));
-    context.subscriptions.push(vscode.workspace.onDidSaveTextDocument(syncLeanFile));
-
-    // Sync files that are already open.
-    vscode.workspace.textDocuments.forEach(syncLeanFile);
+    context.subscriptions.push(new LeanSyncService(server, LEAN_MODE));
 
     // Add item to the status bar.
     let statusBar = createLeanStatusBarItem();
@@ -221,8 +191,6 @@ export function activate(context: vscode.ExtensionContext) {
                 // do nothing, should probably set up the error reporting to be global, and log an error here.
         }
     }
-
-    server.restarted.on(() => vscode.workspace.textDocuments.forEach(syncLeanFile));
 
     let taskDecoration = vscode.window.createTextEditorDecorationType({
         overviewRulerLane: vscode.OverviewRulerLane.Left,
