@@ -180,7 +180,16 @@ export class LeanInputAbbreviator {
             }
         }
 
-        return shortestExtension && this.translations[shortestExtension];
+        if (shortestExtension) {
+            return this.translations[shortestExtension];
+        } else if (typedAbbrev) {
+            const prefixReplacement = this.findReplacement(
+                typedAbbrev.slice(0, typedAbbrev.length-1));
+            if (prefixReplacement) {
+                return prefixReplacement + typedAbbrev.slice(typedAbbrev.length-1);
+            }
+        }
+        return null;
     }
 
     private onChanged(ev: vscode.TextDocumentChangeEvent) {
