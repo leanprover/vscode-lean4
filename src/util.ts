@@ -26,12 +26,6 @@ export function getTimeLimit() : number {
    return timeLimit;
 }
 
-export function getRoiModeDefault() : string {
-   let config = vscode.workspace.getConfiguration('lean');
-   let roiMode = config.get('roiModeDefault') as string;
-   return roiMode;
-}
-
 export function isInputCompletion(document : vscode.TextDocument, position : vscode.Position) : boolean {
     let text = document.getText();
     let offset = document.offsetAt(position);
@@ -70,7 +64,7 @@ export class LowPassFilter<T> {
     private emitter = new EventEmitter<T>();
     on: Event<T> = this.emitter.event;
 
-    private currentValue: T;
+    currentValue: T;
 
     // scheduledTimer is non-null iff we did not propagate a change yet.
     private scheduledTimer: NodeJS.Timer;

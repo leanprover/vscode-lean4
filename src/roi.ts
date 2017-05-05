@@ -1,9 +1,9 @@
 import * as vscode from 'vscode';
-import {Disposable} from 'vscode';
+import {Disposable, Event, EventEmitter} from 'vscode';
 import {Server} from './server';
 import {CheckingMode, FileRoi, RoiRange} from 'lean-client-js-node';
 
-enum RoiMode {
+export enum RoiMode {
     Nothing,
     VisibleFiles,
     // VisibleLines, // TODO(gabriel): depends on https://github.com/Microsoft/vscode/issues/14756
@@ -13,12 +13,11 @@ enum RoiMode {
 
 export class RoiManager implements Disposable {
     mode: RoiMode;
-    statusBarItem: vscode.StatusBarItem;
+    private modeChangedEmitter = new EventEmitter<RoiMode>();
+    onModeChanged = this.modeChangedEmitter.event;
     private subscriptions: Disposable[] = [];
 
     constructor(private server: Server) {
-        this.statusBarItem = vscode.window.createStatusBarItem();
-
         this.subscriptions.push(vscode.window.onDidChangeActiveTextEditor(() => this.send()));
         this.subscriptions.push(vscode.window.onDidChangeVisibleTextEditors(() => this.send()));
         this.subscriptions.push(vscode.workspace.onDidOpenTextDocument(() => this.send()));
@@ -26,12 +25,13 @@ export class RoiManager implements Disposable {
         this.subscriptions.push(server.restarted.on(() => this.send()));
 
         switch (vscode.workspace.getConfiguration('lean').get('roiModeDefault')) {
-            case 'nothing': this.checkNothing(); break;
-            case 'visible': this.checkVisibleFiles(); break;
-            case 'open': this.checkOpenFiles(); break;
-            case 'project': this.checkProjectFiles(); break;
-            default: this.checkVisibleFiles();
+            case 'nothing': this.mode = RoiMode.Nothing; break;
+            case 'visible': this.mode = RoiMode.VisibleFiles; break;
+            case 'open': this.mode = RoiMode.OpenFiles; break;
+            case 'project': this.mode = RoiMode.ProjectFiles; break;
+            default: this.mode = RoiMode.VisibleFiles;
         }
+        this.send();
     }
 
     compute(): Thenable<FileRoi[]> {
@@ -81,29 +81,13 @@ export class RoiManager implements Disposable {
 
     send() { this.compute().then(roi => this.server.roi(this.modeString(), roi)) }
 
-    checkNothing() {
-        this.mode = RoiMode.Nothing;
-        this.statusBarItem.text = "(no checking)";
-        this.send();
-    }
-    checkVisibleFiles() {
-        this.mode = RoiMode.VisibleFiles;
-        this.statusBarItem.text = "(checking visible files)";
-        this.send();
-    }
-    checkOpenFiles() {
-        this.mode = RoiMode.OpenFiles;
-        this.statusBarItem.text = "(checking open files)";
-        this.send();
-    }
-    checkProjectFiles() {
-        this.mode = RoiMode.ProjectFiles;
-        this.statusBarItem.text = "(checking all files)";
+    check(mode: RoiMode) {
+        this.mode = mode;
+        this.modeChangedEmitter.fire(mode);
         this.send();
     }
 
     dispose() {
-        this.statusBarItem.dispose();
         for (const s of this.subscriptions) s.dispose();
     }
 }

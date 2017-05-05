@@ -7,9 +7,9 @@ import { LeanInputCompletionProvider, LeanInputExplanationHover, LeanInputAbbrev
 import { LeanDefinitionProvider } from './definition'
 import { displayGoalAtPosition } from './goal';
 import { batchExecuteFile } from './batch';
-import { createLeanStatusBarItem } from './status';
-import { RoiManager } from './roi';
-import { getExecutablePath, getRoiModeDefault, getMemoryLimit, getTimeLimit } from './util';
+import { LeanStatusBarItem } from './statusbar';
+import { RoiManager, RoiMode } from './roi';
+import { getExecutablePath, getMemoryLimit, getTimeLimit } from './util';
 import {ErrorViewProvider} from './errorview';
 import {LeanDiagnosticsProvider} from './diagnostics';
 import {LeanSyncService} from './sync';
@@ -143,18 +143,20 @@ export function activate(context: vscode.ExtensionContext) {
     }
 
     // Add item to the status bar.
-    let statusBar = createLeanStatusBarItem();
-    context.subscriptions.push(statusBar);
+    context.subscriptions.push(new LeanStatusBarItem(server, roiManager));
 
     if (server.supportsROI) {
         let roiManager = new RoiManager(server);
         context.subscriptions.push(roiManager);
-        roiManager.statusBarItem.show();
 
-        context.subscriptions.push(vscode.commands.registerCommand("lean.roiMode.nothing", () => roiManager.checkNothing()));
-        context.subscriptions.push(vscode.commands.registerCommand("lean.roiMode.visibleFiles", () => roiManager.checkVisibleFiles()));
-        context.subscriptions.push(vscode.commands.registerCommand("lean.roiMode.openFiles", () => roiManager.checkOpenFiles()));
-        context.subscriptions.push(vscode.commands.registerCommand("lean.roiMode.projectFiles", () => roiManager.checkProjectFiles()));
+        context.subscriptions.push(vscode.commands.registerCommand("lean.roiMode.nothing",
+            () => roiManager.check(RoiMode.Nothing)));
+        context.subscriptions.push(vscode.commands.registerCommand("lean.roiMode.visibleFiles",
+            () => roiManager.check(RoiMode.VisibleFiles)));
+        context.subscriptions.push(vscode.commands.registerCommand("lean.roiMode.openFiles",
+            () => roiManager.check(RoiMode.OpenFiles)));
+        context.subscriptions.push(vscode.commands.registerCommand("lean.roiMode.projectFiles",
+            () => roiManager.check(RoiMode.ProjectFiles)));
     }
 
     let taskDecoration = vscode.window.createTextEditorDecorationType({
@@ -170,17 +172,6 @@ export function activate(context: vscode.ExtensionContext) {
     });
 
     server.statusChanged.on((serverStatus) => {
-        // Update the status bar when the server changes state.
-        if (serverStatus.isRunning) {
-            statusBar.text = "Lean: $(sync) " + `${serverStatus.numberOfTasks}`;
-        } else if (serverStatus.stopped) {
-            statusBar.text = "Lean: $(x)";
-        } else {
-            statusBar.text = "Lean: $(check) ";
-        }
-        // Not sure if we need to reshow the the status bar here
-        statusBar.show();
-
         for (let editor of vscode.window.visibleTextEditors) {
             let ranges: vscode.DecorationOptions[] = [];
             for (let task of serverStatus.tasks) {
