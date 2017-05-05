@@ -60,6 +60,11 @@
                 "description": "Display the goal at the current position."
             },
             {
+                "command": "lean.errorView",
+                "title": "Lean: View Errors in Error View",
+                "description": "Displays the errors in the current file in a separate file"
+            },
+            {
                 "command": "lean.roiMode.nothing",
                 "title": "Lean: Check Nothing",
                 "description": "Disable automatic checking of Lean code"
@@ -93,6 +98,7 @@
                     "lean"
                 ],
                 "extensions": [
+                    ".lean-errors",
                     ".lean"
                 ],
                 "configuration": "./language-configuration.json"

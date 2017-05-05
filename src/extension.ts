@@ -10,6 +10,7 @@ import { batchExecuteFile } from './batch';
 import { createLeanStatusBarItem } from './status';
 import { RoiManager } from './roi';
 import { getExecutablePath, getRoiModeDefault, getMemoryLimit, getTimeLimit } from './util';
+import {ErrorViewProvider} from './errorview';
 import {Message} from 'lean-client-js-node';
 
 const LEAN_MODE : vscode.DocumentFilter = {
@@ -306,4 +307,17 @@ export function activate(context: vscode.ExtensionContext) {
             editor.setDecorations(taskDecoration, ranges);
         }
     });
+
+    const errorViewProvider = new ErrorViewProvider(server);
+    context.subscriptions.push(
+        errorViewProvider,
+        vscode.workspace.registerTextDocumentContentProvider(
+            errorViewProvider.scheme, errorViewProvider),
+        vscode.commands.registerTextEditorCommand('lean.errorView', (editor) => {
+            const errorsUri = errorViewProvider.encodeUri(editor.document.uri.fsPath);
+            vscode.workspace.openTextDocument(errorsUri)
+                .then(doc => vscode.window.showTextDocument(
+                    doc, editor.viewColumn + 1));
+        }),
+    );
 }

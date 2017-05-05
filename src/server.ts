@@ -3,7 +3,8 @@ import * as carrier from 'carrier';
 import * as vscode from 'vscode';
 import * as util from './util';
 import * as leanclient from 'lean-client-js-node';
-import {Task, Event, ProcessTransport, ProcessConnection, CommandResponse, CompleteResponse, FileRoi, RoiRequest} from 'lean-client-js-node';
+import {Task, Event, ProcessTransport, ProcessConnection, Message,
+     CommandResponse, CompleteResponse, FileRoi, RoiRequest} from 'lean-client-js-node';
 
 export type ServerStatus = {
     stopped : boolean,
@@ -24,6 +25,8 @@ class Server extends leanclient.Server {
     restarted: Event<any>;
     supportsROI: Boolean;
 
+    messages: Message[];
+
     constructor(executablePath : string, workingDirectory : string, memoryLimit : number, timeLimit : number) {
         executablePath = executablePath || "lean";
 
@@ -40,6 +43,7 @@ class Server extends leanclient.Server {
         super(new ProcessTransport(executablePath, workingDirectory, options));
         this.statusChanged = new util.LowPassFilter<ServerStatus>(300);
         this.restarted = new Event();
+        this.messages = [];
 
         this.executablePath = executablePath;
         this.workingDirectory = workingDirectory;
@@ -91,6 +95,8 @@ class Server extends leanclient.Server {
                 }, true);
             }
         });
+
+        this.allMessages.on((msgs) => this.messages = msgs.msgs);
 
         this.tasks.on((curTasks) =>
             this.statusChanged.input({
