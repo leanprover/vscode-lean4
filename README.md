@@ -33,9 +33,11 @@ This extension contributes the following settings:
   - `open`: check all open files
   - `project`: check the entire project's files
 
-## Known Issues
+### Other potentially helpful settings
 
-- Diagnostics behave strangely with transient commands like `#check`.
+* Fonts with good unicode support (on Linux): `"editor.fontFamily": "Source Code Pro Medium, DejaVu Sans Mono"`
+* By default, vscode will complete `then` to `has_bind.and_then` when you press enter.  To disable this behavior, set `"editor.acceptSuggestionOnEnter": false`
+* If you like colored brackets, try out [Bracket Pair Colorizer](https://marketplace.visualstudio.com/items?itemName=CoenraadS.bracket-pair-colorizer).
 
 ## Release Notes
 
