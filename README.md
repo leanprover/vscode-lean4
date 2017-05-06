@@ -105,5 +105,5 @@ Initial release of the package.
 
 ## Contact
 
-Please report issues on Github, for questions or concerns you can email the
+Please report issues on [Github](https://github.com/leanprover/vscode-lean), for questions or concerns you can email the
 Lean mailing list, or send @jroesch mail directly.
