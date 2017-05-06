@@ -51,16 +51,6 @@
       ]
     },
     {
-      "begin": "'", "end": "'",
-      "name": "string.quoted.single.lean",
-      "patterns": [
-        {
-          "match": "\\\\.",
-          "name": "constant.character.escape.lean"
-        }
-      ]
-    },
-    {
       "match": "\\b(Prop|Type[\\'₊₀-₉]?)",
       "name": "storage.type.lean"
     },
