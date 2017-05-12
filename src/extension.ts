@@ -10,7 +10,7 @@ import { batchExecuteFile } from './batch';
 import { LeanStatusBarItem } from './statusbar';
 import { RoiManager, RoiMode } from './roi';
 import { getExecutablePath, getMemoryLimit, getTimeLimit } from './util';
-import {ErrorViewProvider} from './errorview';
+import {InfoProvider} from './infoview';
 import {LeanDiagnosticsProvider} from './diagnostics';
 import {LeanSyncService} from './sync';
 import {Message} from 'lean-client-js-node';
@@ -129,14 +129,13 @@ export function activate(context: vscode.ExtensionContext) {
     // Add item to the status bar.
     context.subscriptions.push(new LeanStatusBarItem(server, roiManager));
 
-    const errorViewProvider = new ErrorViewProvider(server);
+    const infoProvider = new InfoProvider(server, LEAN_MODE);
     context.subscriptions.push(
-        errorViewProvider,
+        infoProvider,
         vscode.workspace.registerTextDocumentContentProvider(
-            errorViewProvider.scheme, errorViewProvider),
-        vscode.commands.registerTextEditorCommand('lean.errorView', (editor) => {
-            const errorsUri = errorViewProvider.encodeUri(editor.document.uri.fsPath);
-            vscode.workspace.openTextDocument(errorsUri)
+            infoProvider.scheme, infoProvider),
+        vscode.commands.registerTextEditorCommand('lean.infoView', (editor) => {
+            vscode.workspace.openTextDocument(infoProvider.leanInfoUrl)
                 .then(doc => vscode.window.showTextDocument(
                     doc, editor.viewColumn + 1));
         }),

@@ -60,9 +60,19 @@
                 "description": "Display the goal at the current position."
             },
             {
-                "command": "lean.errorView",
-                "title": "Lean: View Errors in Error View",
-                "description": "Displays the errors in the current file in a separate file"
+                "command": "lean.infoView",
+                "title": "Lean: Open Info View",
+                "description": "Displays the goal and error messages in a separate window"
+            },
+            {
+                "command": "lean.infoDocument.togglePause",
+                "title": "Lean: Pause/Unpause Info View Updates",
+                "description": "Toggle updating of the Info View"
+            },
+            {
+                "command": "lean.infoDocument.toggleMessages",
+                "title": "Lean: Show/Hide Messages in Info View",
+                "description": "Toggle whether the Info View shows error messages"
             },
             {
                 "command": "lean.roiMode.select",
@@ -103,7 +113,7 @@
                     "lean"
                 ],
                 "extensions": [
-                    ".lean-errors",
+                    ".lean-info",
                     ".lean"
                 ],
                 "configuration": "./language-configuration.json"
