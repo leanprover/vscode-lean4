@@ -26,7 +26,7 @@
       "patterns": []
     },
     {
-      "begin": "\\b(inductive|structure|record|theorem|proposition|axiom|axioms|lemma|hypothesis|definition|def|instance|class|constant)\\b\\s+(\\{[^}]*\\}\\s+)?([^ \\t\\n\\r{(\\[]*)",
+      "begin": "\\b(inductive|structure|theorem|axiom|axioms|lemma|hypothesis|definition|def|instance|class|constant)\\b\\s+(\\{[^}]*\\}\\s+)?([^ \\t\\n\\r{(\\[]*)",
       "beginCaptures": {
         "1": {
           "name": "keyword.other.lean"
@@ -71,7 +71,7 @@
       "name": "keyword.other.command.lean"
     },
     {
-      "match": "\\b(import|prelude|theory|definition|def|instance|renaming|hiding|exposing|parameter|parameters|begin|conjecture|constant|constants|hypothesis|lemma|corollary|variable|variables|premise|premises|theorem|example|abbreviation|context|open|as|export|axiom|inductive|with|structure|record|universe|universes|alias|help|override|precedence|reserve|postfix|prefix|infix|infixl|infixr|notation|end|using|namespace|section|local|set_option|extends|include|omit|class|classes|instances|metaclasses|raw|run_command)\\b",
+      "match": "\\b(import|prelude|theory|definition|def|instance|renaming|hiding|exposing|parameter|parameters|begin|constant|constants|lemma|variable|variables|theorem|example|open|as|axiom|inductive|with|structure|universe|universes|alias|override|precedence|reserve|postfix|prefix|infix|infixl|infixr|notation|end|using|namespace|section|local|set_option|extends|include|omit|class|classes|instances|raw|run_cmd)\\b",
       "name": "keyword.other.lean"
     },
     {
