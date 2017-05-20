@@ -212,7 +212,7 @@ export class LeanInputAbbreviator {
 
         if (!vscode.languages.match(this.documentFilter, editor.document)) return; // Lean file
 
-        if (!this.handlers.has(editor)) {
+        if (this.handlers.has(editor)) {
             this.handlers.get(editor).onSelectionChanged(ev);
         }
     }
