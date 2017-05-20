@@ -161,8 +161,8 @@
     "devDependencies": {
         "typescript": "^2.3.2",
         "vscode": "^1.1.0",
-        "mocha": "^2.5.3",
-        "@types/node": "^6.0.73",
+        "mocha": "^3.4.1",
+        "@types/node": "^7.0.21",
         "@types/mocha": "^2.2.41"
     },
     "icon": "lean_logo.svg",
