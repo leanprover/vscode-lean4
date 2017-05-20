@@ -15,11 +15,7 @@ import {LeanDiagnosticsProvider} from './diagnostics';
 import {LeanSyncService} from './sync';
 import {Message} from 'lean-client-js-node';
 import { LeanTaskGutter, LeanTaskMessages } from "./taskgutter";
-
-const LEAN_MODE : vscode.DocumentFilter = {
-    language: "lean",
-    scheme: 'file'
-}
+import {LEAN_MODE} from './constants';
 
 // Seeing .olean files in the source tree is annoying, we should
 // just globally hide them.
