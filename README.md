@@ -6,19 +6,20 @@ This extension adds support for [Lean](https://github.com/leanprover/lean).
 
 We currently support a variety of features.
 
-* incremental recompilation and checking via the Lean server
-* server output on hover
-* auto-completion based on context and type via the Lean server
-* diagnostics based on the Lean server
+* Incremental compilation and checking via the Lean server
+* Hover shows documentation, types, and Unicode input help.
+* Auto-completion based on context and type via the Lean server
+* Error messages / diagnostics
 * Unicode input support
-* batch file execution
-* region of interest checking (i.e control over how much of the project we check)
+* Info view window to show goal and error messages ("Lean: Open Info View")
+* Batch file execution
+* Region of interest checking (i.e control over how much of the project we check)
 
 <!--\!\[feature X\]\(images/feature-x.png\)-->
 
 ## Requirements
 
-This extension requires an installation of [Lean](https://leanprover.github.io) programming language.
+This extension requires an installation of [Lean](https://leanprover.github.io).
 
 ## Extension Settings
 
@@ -27,7 +28,7 @@ This extension contributes the following settings:
 * `lean.executablePath`: controls which Lean executable is used when starting the server
 * `lean.timeLimit`: controls the `-T` flag passed to the Lean executable
 * `lean.memoryLimit`: controls the `-M` flag passed to the Lean executable
-* `roiModeDefault`: controls the default region of interest, the options are:
+* `lean.roiModeDefault`: controls the default region of interest, the options are:
   - `nothing`: check nothing
   - `visible`: check only visible files
   - `open`: check all open files
@@ -42,9 +43,9 @@ This extension contributes the following settings:
 ## Release Notes
 
 ### 0.7.2
-* Add experimental new input mode for Unicode symbols.
-* Use new client library for interacting with the Lean
-  server.
+* New input mode for Unicode symbols.
+* Info view showing the current goal and error messages.
+* Internally uses new client library to interact with the Lean server.
 
 ### 0.7.1
 * Fixes issue with highlighting commands beginning with `#`.
