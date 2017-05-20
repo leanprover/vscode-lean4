@@ -5,6 +5,7 @@ import {CheckingMode, FileRoi, RoiRange} from 'lean-client-js-node';
 
 export enum RoiMode {
     Nothing,
+    Cursor,
     VisibleFiles,
     // VisibleLines, // TODO(gabriel): depends on https://github.com/Microsoft/vscode/issues/14756
     OpenFiles,
@@ -19,6 +20,7 @@ export class RoiManager implements Disposable {
 
     constructor(private server: Server, private documentFilter: DocumentFilter) {
         this.subscriptions.push(vscode.window.onDidChangeActiveTextEditor(() => this.send()));
+        this.subscriptions.push(vscode.window.onDidChangeTextEditorSelection(() => this.send()));
         this.subscriptions.push(vscode.window.onDidChangeVisibleTextEditors(() => this.send()));
         this.subscriptions.push(vscode.workspace.onDidOpenTextDocument(() => this.send()));
         this.subscriptions.push(vscode.workspace.onDidCloseTextDocument(() => this.send()));
@@ -26,6 +28,7 @@ export class RoiManager implements Disposable {
 
         switch (vscode.workspace.getConfiguration('lean').get('roiModeDefault')) {
             case 'nothing': this.mode = RoiMode.Nothing; break;
+            case 'cursor': this.mode = RoiMode.Cursor; break;
             case 'visible': this.mode = RoiMode.VisibleFiles; break;
             case 'open': this.mode = RoiMode.OpenFiles; break;
             case 'project': this.mode = RoiMode.ProjectFiles; break;
@@ -39,6 +42,11 @@ export class RoiManager implements Disposable {
                     label: 'nothing',
                     description: 'disable checking',
                     mode: RoiMode.Nothing,
+                },
+                {
+                    label: 'cursor + 5 lines',
+                    description: 'only check until 5 lines below the cursor',
+                    mode: RoiMode.Cursor,
                 },
                 {
                     label: 'visible files',
@@ -64,10 +72,18 @@ export class RoiManager implements Disposable {
     compute(): Thenable<FileRoi[]> {
         // improve after https://github.com/Microsoft/vscode/issues/14756
         let visibleRanges: {[fileName: string]: RoiRange[]} = {};
-        for (let editor of vscode.window.visibleTextEditors) {
-            if (vscode.languages.match(this.documentFilter, editor.document)) {
+        if (this.mode == RoiMode.Cursor) {
+            const editor = vscode.window.activeTextEditor;
+            if (editor && vscode.languages.match(this.documentFilter, editor.document)) {
                 visibleRanges[editor.document.fileName] =
-                    [{begin_line: 1, end_line: editor.document.lineCount}];
+                    [{begin_line: 1, end_line: editor.selection.active.line+6}];
+            }
+        } else {
+            for (let editor of vscode.window.visibleTextEditors) {
+                if (vscode.languages.match(this.documentFilter, editor.document)) {
+                    visibleRanges[editor.document.fileName] =
+                        [{begin_line: 1, end_line: editor.document.lineCount}];
+                }
             }
         }
 
@@ -76,22 +92,14 @@ export class RoiManager implements Disposable {
             return vscode.workspace.findFiles("**/*.lean").then(files => {
                 for (let f of files) {
                     let path = f.fsPath;
-                    if (visibleRanges[path]) {
-                        roi.push({file_name: path, ranges: visibleRanges[path]});
-                    } else {
-                        roi.push({file_name: path, ranges: []});
-                    }
+                    roi.push({file_name: path, ranges: visibleRanges[path] || []});
                 }
                 return roi;
             });
         } else {
             for (let d of vscode.workspace.textDocuments) {
                 let path = d.fileName;
-                if (visibleRanges[path]) {
-                    roi.push({file_name: path, ranges: visibleRanges[path]});
-                } else {
-                    roi.push({file_name: path, ranges: []});
-                }
+                roi.push({file_name: path, ranges: visibleRanges[path] || []});
             }
             return Promise.resolve(roi);
         }
@@ -100,6 +108,7 @@ export class RoiManager implements Disposable {
     modeString(): CheckingMode {
         switch (this.mode) {
             case RoiMode.Nothing: return "nothing";
+            case RoiMode.Cursor: return "visible-lines";
             case RoiMode.VisibleFiles: return "visible-files";
             case RoiMode.OpenFiles: return "open-files";
             case RoiMode.ProjectFiles: return "open-files";

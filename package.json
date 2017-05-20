@@ -85,6 +85,11 @@
                 "description": "Disable automatic checking of Lean code"
             },
             {
+                "command": "lean.roiMode.cursor",
+                "title": "Lean: Check Cursor + 5 Lines",
+                "description": "Automatically check until 5 lines below the cursor"
+            },
+            {
                 "command": "lean.roiMode.visibleFiles",
                 "title": "Lean: Check Visible Files",
                 "description": "Automatically check all files that are visible"
