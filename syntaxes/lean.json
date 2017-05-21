@@ -51,7 +51,7 @@
       ]
     },
     {
-      "match": "\\b(Prop|Type[\\'₊₀-₉]?)",
+      "match": "\\b(Prop|Type)\\b",
       "name": "storage.type.lean"
     },
     {
@@ -59,15 +59,15 @@
       "name": "storage.modifier.lean"
     },
     {
-      "match": "attribute\\s*\\[[^\\]]*\\]",
+      "match": "\\battribute\\s*\\[[^\\]]*\\]",
       "name": "storage.modifier.lean"
     },
     {
-      "match": "private|meta|mutual|protected|noncomputable|mutual",
+      "match": "\\b(private|meta|mutual|protected|noncomputable|mutual)\\b",
       "name": "keyword.control.definition.modifier.lean"
     },
     {
-      "match": "#(print|eval|reduce|check|help|exit)",
+      "match": "#(print|eval|reduce|check|help|exit)\\b",
       "name": "keyword.other.command.lean"
     },
     {
@@ -134,6 +134,10 @@
         }
       ]
     },
+    {
+        "name": "string.quoted.single.lean",
+        "match": "'\\\\?.'"
+		},
     {
       "match": "\\b([0-9]+|0([xX][0-9a-fA-F]+))\\b",
       "name": "constant.numeric.lean"
