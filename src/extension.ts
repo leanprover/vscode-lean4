@@ -16,6 +16,7 @@ import {LeanSyncService} from './sync';
 import {Message} from 'lean-client-js-node';
 import { LeanTaskGutter, LeanTaskMessages } from "./taskgutter";
 import {LEAN_MODE} from './constants';
+import { LeanWorkspaceSymbolProvider } from "./search";
 
 // Seeing .olean files in the source tree is annoying, we should
 // just globally hide them.
@@ -102,6 +103,11 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(
         vscode.languages.registerDefinitionProvider(
             LEAN_MODE, new LeanDefinitionProvider(server)));
+
+    // Search
+    context.subscriptions.push(
+        vscode.languages.registerWorkspaceSymbolProvider(
+            new LeanWorkspaceSymbolProvider(server)));
 
     if (server.supportsROI)
         server.roi("nothing", []); // activate ROI support

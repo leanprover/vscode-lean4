@@ -13,6 +13,7 @@ We currently support a variety of features.
 * Unicode input support
 * Info view window to show goal and error messages ("Lean: Open Info View")
 * Batch file execution
+* Search for declarations in open files (ctrl+p #)
 * Region of interest checking (i.e control over how much of the project we check)
 
 <!--\!\[feature X\]\(images/feature-x.png\)-->
