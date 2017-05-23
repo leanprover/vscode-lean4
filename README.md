@@ -43,6 +43,9 @@ This extension contributes the following settings:
 
 ## Release Notes
 
+### 0.8.0
+TODO
+
 ### 0.7.2
 * New input mode for Unicode symbols.
 * Info view showing the current goal and error messages.
