@@ -42,6 +42,14 @@ This extension contributes the following settings:
 * By default, vscode will complete `then` to `has_bind.and_then` when you press enter.  To disable this behavior, set `"editor.acceptSuggestionOnEnter": false`
 * If you like colored brackets, try out [Bracket Pair Colorizer](https://marketplace.visualstudio.com/items?itemName=CoenraadS.bracket-pair-colorizer).
 
+## Development
+
+* Install `npm` (and for Ubuntu 17.04 `nodejs-legacy`)
+* Install `code` from http://code.visualstudio.com
+* Run `git clone https://github.com/leanprover/vscode-lean`
+* Run `npm install` in the `vscode-lean` directory
+* Open the `vscode-lean` in vscode and start developing (F5 starts the debugger)
+
 ## Release Notes
 
 ### 0.10.0 (unreleased)

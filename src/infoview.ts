@@ -1,5 +1,6 @@
-import {Server} from './server';
-import {TextDocumentContentProvider, Event, EventEmitter, Disposable, Uri, Range,
+import { Server } from './server';
+import {
+    TextDocumentContentProvider, Event, EventEmitter, Disposable, Uri, Range,
     CancellationToken, DocumentSelector, TextDocument, workspace, Position, window, commands, languages
 } from 'vscode';
 import { InfoRecord } from "lean-client-js-node";
@@ -7,10 +8,8 @@ import { InfoRecord } from "lean-client-js-node";
 class InfoDocument implements Disposable {
     private changedEmitter = new EventEmitter<any>();
     readonly onChanged = this.changedEmitter.event;
-    
-    private subscriptions: Disposable[] = [];
 
-    private lines: string[];
+    private subscriptions: Disposable[] = [];
 
     private paused: boolean = false;
     private showMessages: boolean = true;
@@ -20,6 +19,8 @@ class InfoDocument implements Disposable {
 
     private togglePauseCommand = 'lean.infoDocument.togglePause';
     private toggleMessagesCommand = 'lean.infoDocument.toggleMessages';
+
+    private contents: string = '';
 
     constructor(private server: Server, private leanDocs: DocumentSelector) {
         this.render();
@@ -36,7 +37,7 @@ class InfoDocument implements Disposable {
     }
 
     get text() {
-        return this.lines.join('\n');
+        return this.contents;
     }
 
     dispose() {
@@ -44,18 +45,14 @@ class InfoDocument implements Disposable {
     }
 
     private render() {
-        this.lines = [];
-        this.renderHeader();
-        this.renderGoal();
-        this.renderMessages();
+        this.contents = this.renderHeader() + this.renderGoal() + this.renderMessages();
     }
 
     private renderHeader() {
         const points: string[] = [];
         points.push(this.paused ? 'updates paused' : 'actively updating');
         points.push((this.showMessages ? 'showing' : 'hiding') + ' error messages');
-        
-        this.lines.push(' --' + points.map((p) => ` (${p})`).join(''), '');
+        return `<div style="text-align: right"> <span> ${points.map((p) => `(${p})`).join(' ')} </span> </div>`;
     }
 
     private updatePosition() {
@@ -86,17 +83,17 @@ class InfoDocument implements Disposable {
     private updateGoal() {
         if (this.fileName && this.goalPosition) {
             const file = this.fileName;
-            const line = this.goalPosition.line+1;
+            const line = this.goalPosition.line + 1;
             const column = this.goalPosition.character;
             this.server.info(file, line, column).then((info) => {
-                    if (info.record && info.record.state) {
-                        this.curGoal = {
-                            file, line, column,
-                            state: info.record.state,
-                        };
-                        this.rerender();
-                    }
-                });
+                if (info.record && info.record.state) {
+                    this.curGoal = {
+                        file, line, column,
+                        state: info.record.state,
+                    };
+                    this.rerender();
+                }
+            });
         } else {
             this.curGoal = null;
             this.rerender();
@@ -104,27 +101,22 @@ class InfoDocument implements Disposable {
     }
 
     private renderGoal() {
-        if (!this.curGoal) return;
-        const pos = this.goalPosition;
         const curGoal = this.curGoal;
-        this.lines.push('-- goal' +
-            (curGoal ? ` at ${curGoal.file}:${curGoal.line}:${curGoal.column}` : ''));
-        [].push.apply(this.lines, curGoal.state.split('\n'));
-        this.lines.push('');
+        if (!curGoal) return ``;
+        return (`<h1>Goal at ${curGoal.file}:${curGoal.line}:${curGoal.column} </h1>` +
+            `<pre>${curGoal.state}</pre>`);
     }
 
     private renderMessages() {
-        if (!this.fileName || !this.showMessages) return;
+        if (!this.fileName || !this.showMessages) return ``;
         const msgs = this.server.messages
             .filter((m) => m.file_name === this.fileName)
             .sort((a, b) => a.pos_line === b.pos_line
                 ? a.pos_col - b.pos_col
                 : a.pos_line - b.pos_line);
-        for (const m of msgs) {
-            this.lines.push(`-- ${m.file_name}:${m.pos_line}:${m.pos_col}: ${m.severity} ${m.caption}`);
-            [].push.apply(this.lines, m.text.split('\n'));
-            this.lines.push('');
-        }
+        return msgs.map((m) =>
+            `<h1>${m.file_name}:${m.pos_line}:${m.pos_col}: ${m.severity} ${m.caption}</h1>` +
+            `<pre>${m.text}</pre>`).join();
     }
 
     private rerender() {
@@ -141,14 +133,11 @@ class InfoDocument implements Disposable {
 }
 
 export class InfoProvider implements TextDocumentContentProvider, Disposable {
-    scheme = 'lean-info';
+    leanGoalsUri = Uri.parse('lean-info:goals');
 
     documentSelector: DocumentSelector = {
-        scheme: this.scheme,
+        scheme: this.leanGoalsUri.scheme,
     };
-
-    private leanInfoPath = '.lean-info';
-    leanInfoUrl = Uri.parse(`${this.scheme}:${this.leanInfoPath}`);
 
     private changedEmitter = new EventEmitter<Uri>();
     onDidChange = this.changedEmitter.event;
@@ -173,7 +162,7 @@ export class InfoProvider implements TextDocumentContentProvider, Disposable {
     provideTextDocumentContent(uri: Uri, token: CancellationToken): string {
         const uriString = uri.toString();
         if (!this.documents.has(uriString)) {
-            if (this.leanInfoUrl.toString() !== uriString) {
+            if (this.leanGoalsUri.toString() !== uriString) {
                 throw new Error(`unsupported uri: ${uri}`);
             }
             const doc = new InfoDocument(this.server, this.leanDocs);

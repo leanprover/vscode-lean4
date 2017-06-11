@@ -141,11 +141,12 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(
         infoProvider,
         vscode.workspace.registerTextDocumentContentProvider(
-            infoProvider.scheme, infoProvider),
+            infoProvider.leanGoalsUri.scheme, infoProvider),
         vscode.commands.registerTextEditorCommand('lean.infoView', (editor) => {
-            vscode.workspace.openTextDocument(infoProvider.leanInfoUrl)
-                .then(doc => vscode.window.showTextDocument(
-                    doc, editor.viewColumn + 1));
+            let column = editor.viewColumn + 1;
+            if (column = 4) column = vscode.ViewColumn.Three;
+            vscode.commands.executeCommand('vscode.previewHtml', infoProvider.leanGoalsUri, column,
+                "Lean Messages");
         }),
     );
 }
