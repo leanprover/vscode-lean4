@@ -43,13 +43,16 @@ This extension contributes the following settings:
 
 ## Release Notes
 
-### 0.8.0
-TODO
+### 0.9.0 (unreleased)
 * Only show commands acting on Lean files when a Lean file is open in the current editor
+
+### 0.8.0
+* Info view showing the current goal and error messages.
+* Search command (ctrl+p #)
+* Improved unicode input.
 
 ### 0.7.2
 * New input mode for Unicode symbols.
-* Info view showing the current goal and error messages.
 * Internally uses new client library to interact with the Lean server.
 
 ### 0.7.1
