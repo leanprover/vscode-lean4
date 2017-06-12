@@ -51,62 +51,74 @@
         "commands": [
             {
                 "command": "lean.restartServer",
-                "title": "Lean: Restart",
+                "category": "Lean",
+                "title": "Restart",
                 "description": "Restart the Language Server"
             },
             {
                 "command": "lean.displayGoal",
-                "title": "Lean: Display Goal",
+                "category": "Lean",
+                "title": "Display Goal",
                 "description": "Display the goal at the current position."
             },
             {
                 "command": "lean.infoView",
-                "title": "Lean: Open Info View",
+                "category": "Lean",
+                "title": "Open Info View",
                 "description": "Displays the goal and error messages in a separate window"
             },
             {
                 "command": "lean.infoDocument.togglePause",
-                "title": "Lean: Pause/Unpause Info View Updates",
+                "category": "Lean",
+                "title": "Pause/Unpause Info View Updates",
                 "description": "Toggle updating of the Info View"
             },
             {
                 "command": "lean.infoDocument.toggleMessages",
-                "title": "Lean: Show/Hide Messages in Info View",
+                "category": "Lean",
+                "title": "Show/Hide Messages in Info View",
                 "description": "Toggle whether the Info View shows error messages"
             },
             {
                 "command": "lean.roiMode.select",
-                "title": "Lean: Select region-of-interest",
+                "category": "Lean",
+                "title": "Select region-of-interest",
                 "description": "Select what files are being checked by the Lean server."
             },
             {
                 "command": "lean.roiMode.nothing",
-                "title": "Lean: Check Nothing",
+                "category": "Lean",
+                "title": "Check Nothing",
                 "description": "Disable automatic checking of Lean code"
             },
             {
                 "command": "lean.roiMode.cursor",
-                "title": "Lean: Check Cursor + 5 Lines",
+                "category": "Lean",
+                "title": "Check Cursor + 5 Lines",
                 "description": "Automatically check until 5 lines below the cursor"
             },
             {
                 "command": "lean.roiMode.visibleFiles",
-                "title": "Lean: Check Visible Files",
+                "category": "Lean",
+                "title": "Check Visible Files",
                 "description": "Automatically check all files that are visible"
             },
             {
                 "command": "lean.roiMode.openFiles",
-                "title": "Lean: Check Open Files",
+                "category": "Lean",
+                "title": "Check Open Files",
                 "description": "Automatically check all opened files"
             },
             {
                 "command": "lean.roiMode.projectFiles",
-                "title": "Lean: Check Project Files",
+                "category": "Lean",
+                "title": "Check Project Files",
                 "description": "Automatically check all files in the workspace"
             },
             {
                 "command": "lean.batchExecute",
-                "title": "Lean: Batch Execute File",
+                "category": "Lean",
+                "title": "Batch Execute File",
                 "description": "Execute the current file using Lean"
             }
         ],
@@ -136,19 +148,43 @@
                 "command": "lean.displayGoal",
                 "key": "ctrl+shift+enter",
                 "mac": "cmd+shift+enter",
-                "when": "editorTextFocus"
+                "when": "editorTextFocus && editorLangId == lean"
             },
             {
                 "command": "lean.batchExecute",
                 "key": "ctrl+shift+r",
                 "mac": "cmd+shift+r",
-                "when": "editorTextFocus"
+                "when": "editorTextFocus && editorLangId == lean"
             }
-        ]
+        ],
+        "menus": {
+            "commandPalette": [
+                {
+                    "command": "lean.displayGoal",
+                    "when": "editorLangId == lean"
+                },
+                {
+                    "command": "lean.infoView",
+                    "when": "editorLangId == lean"
+                },
+                {
+                    "command": "lean.batchExecute",
+                    "when": "editorLangId == lean"
+                }
+            ]
+        }
     },
     "activationEvents": [
         "onLanguage:lean",
-        "onCommand:lean.displayGoal"
+        "onCommand:lean.restartSever",
+        "onCommand:lean.infoDocument.togglePause",
+        "onCommand:lean.infoDocument.toggleMessages",
+        "onCommand:lean.roiMode.select",
+        "onCommand:lean.roiMode.nothing",
+        "onCommand:lean.roiMode.cursor",
+        "onCommand:lean.roiMode.visibleFiles",
+        "onCommand:lean.roiMode.openFiles",
+        "onCommand:lean.roiMode.projectFiles"
     ],
     "main": "./out/src/extension",
     "scripts": {

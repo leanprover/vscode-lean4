@@ -45,6 +45,7 @@ This extension contributes the following settings:
 
 ### 0.8.0
 TODO
+* Only show commands acting on Lean files when a Lean file is open in the current editor
 
 ### 0.7.2
 * New input mode for Unicode symbols.
