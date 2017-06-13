@@ -1,8 +1,9 @@
-import { Server } from './server';
+import { basename } from 'path';
 import {
     TextDocumentContentProvider, Event, EventEmitter, Disposable, Uri, Range,
     CancellationToken, DocumentSelector, TextDocument, workspace, Position, window, commands, languages
 } from 'vscode';
+import { Server } from './server';
 import { InfoRecord } from "lean-client-js-node";
 
 class InfoDocument implements Disposable {
@@ -48,11 +49,23 @@ class InfoDocument implements Disposable {
         this.contents = this.renderHeader() + this.renderGoal() + this.renderMessages();
     }
 
+    private stylesheet() {
+        return `#settings { display: block; text-align: right; }
+            h1 {
+                display: block;
+                background-color: blue;
+                margin-top: 2em;
+                margin-bottom: 3px;
+                width: 100%;
+            }`;
+    }
+
     private renderHeader() {
         const points: string[] = [];
         points.push(this.paused ? 'updates paused' : 'actively updating');
         points.push((this.showMessages ? 'showing' : 'hiding') + ' error messages');
-        return `<div style="text-align: right"> <span> ${points.map((p) => `(${p})`).join(' ')} </span> </div>`;
+        return `<style>${this.stylesheet()}</style>
+          <div id="settings"> <span> ${points.map((p) => `(${p})`).join(' ')} </span> </div>`;
     }
 
     private updatePosition() {
@@ -80,6 +93,7 @@ class InfoDocument implements Disposable {
         column: number,
         state: string,
     };
+
     private updateGoal() {
         if (this.fileName && this.goalPosition) {
             const file = this.fileName;
@@ -103,8 +117,10 @@ class InfoDocument implements Disposable {
     private renderGoal() {
         const curGoal = this.curGoal;
         if (!curGoal) return ``;
-        return (`<h1>Goal at ${curGoal.file}:${curGoal.line}:${curGoal.column} </h1>` +
-            `<pre>${curGoal.state}</pre>`);
+        return `<div class="goal">
+                <h1 title="${curGoal.file}:${curGoal.line}:${curGoal.column}">Goal at ${basename(curGoal.file)}:${curGoal.line}:${curGoal.column} </h1>
+                <pre>${curGoal.state}</pre>
+            </div>`;
     }
 
     private renderMessages() {
@@ -115,8 +131,12 @@ class InfoDocument implements Disposable {
                 ? a.pos_col - b.pos_col
                 : a.pos_line - b.pos_line);
         return msgs.map((m) =>
-            `<h1>${m.file_name}:${m.pos_line}:${m.pos_col}: ${m.severity} ${m.caption}</h1>` +
-            `<pre>${m.text}</pre>`).join();
+            `<div class="message ${m.severity}">
+                <h1 title="${m.file_name}:${m.pos_line}:${m.pos_col}">
+                    ${basename(m.file_name)}:${m.pos_line}:${m.pos_col}: ${m.severity} ${m.caption}
+                </h1>
+                <pre>${m.text}</pre>
+            </div>`).join();
     }
 
     private rerender() {
@@ -134,10 +154,6 @@ class InfoDocument implements Disposable {
 
 export class InfoProvider implements TextDocumentContentProvider, Disposable {
     leanGoalsUri = Uri.parse('lean-info:goals');
-
-    documentSelector: DocumentSelector = {
-        scheme: this.leanGoalsUri.scheme,
-    };
 
     private changedEmitter = new EventEmitter<Uri>();
     onDidChange = this.changedEmitter.event;

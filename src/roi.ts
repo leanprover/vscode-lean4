@@ -36,7 +36,7 @@ export class RoiManager implements Disposable {
         }
         this.send();
 
-        vscode.commands.registerCommand('lean.roiMode.select', () => {
+        this.subscriptions.push(vscode.commands.registerCommand('lean.roiMode.select', () => {
             let items: (QuickPickItem & {mode: RoiMode})[] = [
                 {
                     label: 'nothing',
@@ -66,7 +66,16 @@ export class RoiManager implements Disposable {
             ];
             vscode.window.showQuickPick(items).then((selected) =>
                 selected && this.check(selected.mode));
-        });
+        }));
+        this.subscriptions.push(vscode.commands.registerCommand("lean.roiMode.nothing",
+            () => this.check(RoiMode.Nothing)));
+        this.subscriptions.push(vscode.commands.registerCommand("lean.roiMode.visibleFiles",
+            () => this.check(RoiMode.VisibleFiles)));
+        this.subscriptions.push(vscode.commands.registerCommand("lean.roiMode.openFiles",
+            () => this.check(RoiMode.OpenFiles)));
+        this.subscriptions.push(vscode.commands.registerCommand("lean.roiMode.projectFiles",
+            () => this.check(RoiMode.ProjectFiles)));
+
     }
 
     compute(): Thenable<FileRoi[]> {

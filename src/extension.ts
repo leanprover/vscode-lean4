@@ -124,14 +124,6 @@ export function activate(context: vscode.ExtensionContext) {
     if (server.supportsROI) {
         roiManager = new RoiManager(server, LEAN_MODE);
         context.subscriptions.push(roiManager)
-        context.subscriptions.push(vscode.commands.registerCommand("lean.roiMode.nothing",
-            () => roiManager.check(RoiMode.Nothing)));
-        context.subscriptions.push(vscode.commands.registerCommand("lean.roiMode.visibleFiles",
-            () => roiManager.check(RoiMode.VisibleFiles)));
-        context.subscriptions.push(vscode.commands.registerCommand("lean.roiMode.openFiles",
-            () => roiManager.check(RoiMode.OpenFiles)));
-        context.subscriptions.push(vscode.commands.registerCommand("lean.roiMode.projectFiles",
-            () => roiManager.check(RoiMode.ProjectFiles)));
     }
 
     // Add item to the status bar.
@@ -144,7 +136,7 @@ export function activate(context: vscode.ExtensionContext) {
             infoProvider.leanGoalsUri.scheme, infoProvider),
         vscode.commands.registerTextEditorCommand('lean.infoView', (editor) => {
             let column = editor.viewColumn + 1;
-            if (column = 4) column = vscode.ViewColumn.Three;
+            if (column == 4) column = vscode.ViewColumn.Three;
             vscode.commands.executeCommand('vscode.previewHtml', infoProvider.leanGoalsUri, column,
                 "Lean Messages");
         }),
