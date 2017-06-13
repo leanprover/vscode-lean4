@@ -10,10 +10,10 @@ export class LeanTaskGutter implements Disposable {
             overviewRulerLane: OverviewRulerLane.Left,
             overviewRulerColor: 'rgba(255, 165, 0, 0.5)',
             dark: {
-                gutterIconPath: context.asAbsolutePath('images/progress-dark.svg'),
+                gutterIconPath: context.asAbsolutePath('media/progress-dark.svg'),
             },
             light: {
-                gutterIconPath: context.asAbsolutePath('images/progress-light.svg'),
+                gutterIconPath: context.asAbsolutePath('media/progress-light.svg'),
             },
             gutterIconSize: 'contain',
         });

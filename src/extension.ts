@@ -129,7 +129,7 @@ export function activate(context: vscode.ExtensionContext) {
     // Add item to the status bar.
     context.subscriptions.push(new LeanStatusBarItem(server, roiManager));
 
-    const infoProvider = new InfoProvider(server, LEAN_MODE);
+    const infoProvider = new InfoProvider(server, LEAN_MODE, context);
     context.subscriptions.push(
         infoProvider,
         vscode.workspace.registerTextDocumentContentProvider(

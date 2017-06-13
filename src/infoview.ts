@@ -1,6 +1,6 @@
-import { basename } from 'path';
+import { basename, join } from 'path';
 import {
-    TextDocumentContentProvider, Event, EventEmitter, Disposable, Uri, Range,
+    TextDocumentContentProvider, Event, EventEmitter, Disposable, Uri, Range, ExtensionContext,
     CancellationToken, DocumentSelector, TextDocument, workspace, Position, window, commands, languages
 } from 'vscode';
 import { Server } from './server';
@@ -23,7 +23,7 @@ class InfoDocument implements Disposable {
 
     private contents: string = '';
 
-    constructor(private server: Server, private leanDocs: DocumentSelector) {
+    constructor(private server: Server, private leanDocs: DocumentSelector, private context : ExtensionContext) {
         this.render();
         this.subscriptions.push(
             this.server.allMessages.on(() => this.rerender()),
@@ -49,22 +49,16 @@ class InfoDocument implements Disposable {
         this.contents = this.renderHeader() + this.renderGoal() + this.renderMessages();
     }
 
-    private stylesheet() {
-        return `#settings { display: block; text-align: right; }
-            h1 {
-                display: block;
-                background-color: blue;
-                margin-top: 2em;
-                margin-bottom: 3px;
-                width: 100%;
-            }`;
-    }
+	private getMediaPath(mediaFile: string): string {
+		return Uri.file(this.context.asAbsolutePath(join('media', mediaFile))).toString();
+	}
 
     private renderHeader() {
+        const cfg = workspace.getConfiguration("editor");
         const points: string[] = [];
         points.push(this.paused ? 'updates paused' : 'actively updating');
         points.push((this.showMessages ? 'showing' : 'hiding') + ' error messages');
-        return `<style>${this.stylesheet()}</style>
+        return `<link rel="stylesheet" type="text/css" href="${this.getMediaPath("infoview.css")}" >
           <div id="settings"> <span> ${points.map((p) => `(${p})`).join(' ')} </span> </div>`;
     }
 
@@ -136,7 +130,7 @@ class InfoDocument implements Disposable {
                     ${basename(m.file_name)}:${m.pos_line}:${m.pos_col}: ${m.severity} ${m.caption}
                 </h1>
                 <pre>${m.text}</pre>
-            </div>`).join();
+            </div>`).join("\n");
     }
 
     private rerender() {
@@ -160,7 +154,7 @@ export class InfoProvider implements TextDocumentContentProvider, Disposable {
     private documents = new Map<string, InfoDocument>();
     private subscriptions: Disposable[] = [];
 
-    constructor(private server: Server, private leanDocs: DocumentSelector) {
+    constructor(private server: Server, private leanDocs: DocumentSelector, private context : ExtensionContext) {
         this.subscriptions.push(workspace.onDidCloseTextDocument((doc) => {
             const uri = doc.uri.toString();
             if (this.documents.has(uri)) {
@@ -181,7 +175,7 @@ export class InfoProvider implements TextDocumentContentProvider, Disposable {
             if (this.leanGoalsUri.toString() !== uriString) {
                 throw new Error(`unsupported uri: ${uri}`);
             }
-            const doc = new InfoDocument(this.server, this.leanDocs);
+            const doc = new InfoDocument(this.server, this.leanDocs, this.context);
             doc.onChanged(() => this.changedEmitter.fire(uri));
             this.documents.set(uriString, doc);
         }

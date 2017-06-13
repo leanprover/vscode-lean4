@@ -1,0 +1,36 @@
+#settings
+{
+  display: block;
+  text-align: right;
+}
+
+h1
+{
+  display: block;
+  margin-top: 2em;
+  margin-bottom: 3px;
+  width: 100%;
+  font-size: 100%;
+  padding: 0px;
+  border-bottom: 1px solid grey;
+}
+
+div.error h1 {
+  color: red;
+}
+
+div.warning h1 {
+  color: yellow;
+}
+
+div.information h1 {
+  color: darkgreen;
+}
+
+.vscode-light h1 {
+  border-bottom: 1px solid black;
+}
+
+.vscode-dark h1 {
+  border-bottom: 1px solid white;
+}
