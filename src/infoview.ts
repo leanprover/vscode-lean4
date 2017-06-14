@@ -1,7 +1,8 @@
 import { basename, join } from 'path';
 import {
     TextDocumentContentProvider, Event, EventEmitter, Disposable, Uri, Range, ExtensionContext,
-    CancellationToken, DocumentSelector, TextDocument, workspace, Position, window, commands, languages
+    CancellationToken, DocumentSelector, TextDocument, TextEditorRevealType, Position, Selection,
+    workspace, window, commands, languages
 } from 'vscode';
 import { Server } from './server';
 import { InfoRecord } from "lean-client-js-node";
@@ -46,7 +47,18 @@ class InfoDocument implements Disposable {
     }
 
     private render() {
-        this.contents = this.renderHeader() + this.renderGoal() + this.renderMessages();
+        this.contents = `<!DOCTYPE html>
+            <html>
+            <head> 
+            <meta http-equiv="Content-type" content="text/html;charset=UTF-8">
+            <link rel="stylesheet" type="text/css" href="${this.getMediaPath("infoview.css")}">
+            <script src="${this.getMediaPath("infoview.js")}"></script>
+            </head>
+            <body class="scrollBeyondLastLine">` +
+                this.renderHeader() +
+                this.renderGoal() +
+                `<div id="messages">` + this.renderMessages() + `</div>`+
+            `</body></html>`;
     }
 
 	private getMediaPath(mediaFile: string): string {
@@ -56,10 +68,12 @@ class InfoDocument implements Disposable {
     private renderHeader() {
         const cfg = workspace.getConfiguration("editor");
         const points: string[] = [];
-        points.push(this.paused ? 'updates paused' : 'actively updating');
-        points.push((this.showMessages ? 'showing' : 'hiding') + ' error messages');
-        return `<link rel="stylesheet" type="text/css" href="${this.getMediaPath("infoview.css")}" >
-          <div id="settings"> <span> ${points.map((p) => `(${p})`).join(' ')} </span> </div>`;
+        points.push((this.paused ? 'updates paused' : 'actively updating') + 
+            ` <a href="command:${this.togglePauseCommand}">[${this.paused ? 'continue' : 'pause'}]</a>`);
+        points.push((this.showMessages ? 'showing' : 'hiding') + ' error messages' +
+            ` <a href="command:${this.toggleMessagesCommand}">[${this.showMessages ? 'hide' : 'show'}]</a>`);
+        return `<div id="debug"> </div>
+            <div id="settings"> <span> ${points.map((p) => `${p}`).join('<br>')} </span> </div>`;
     }
 
     private updatePosition() {
@@ -76,7 +90,7 @@ class InfoDocument implements Disposable {
             this.curGoal = null;
             this.rerender();
         }
-        if (!this.goalPosition.isEqual(oldPos)) {
+        else if (!this.goalPosition.isEqual(oldPos)) {
             this.updateGoal();
         }
     }
@@ -99,20 +113,42 @@ class InfoDocument implements Disposable {
                         file, line, column,
                         state: info.record.state,
                     };
-                    this.rerender();
+                    commands.executeCommand('_workbench.htmlPreview.postMessage',
+				        Uri.parse('lean-info:goals'),
+				        {
+                            command: 'goal',
+                            basename: basename(file),
+                            line: line,
+                            column: column,
+                            state: info.record.state
+				        });
+                } else {
+                    // there is no goal information maybe the infoview has some messages
+                    commands.executeCommand('_workbench.htmlPreview.postMessage',
+				        Uri.parse('lean-info:goals'),
+				        {
+                            command: 'reveal',
+                            line: this.goalPosition.line + 1,
+                            column: this.goalPosition.character
+				        });
                 }
             });
         } else {
             this.curGoal = null;
-            this.rerender();
+            commands.executeCommand('_workbench.htmlPreview.postMessage',
+                Uri.parse('lean-info:goals'),
+                {
+                    command: 'clear-goal'
+                });
         }
     }
 
     private renderGoal() {
         const curGoal = this.curGoal;
         if (!curGoal) return ``;
-        return `<div class="goal">
-                <h1 title="${curGoal.file}:${curGoal.line}:${curGoal.column}">Goal at ${basename(curGoal.file)}:${curGoal.line}:${curGoal.column} </h1>
+        const f = curGoal.file; const l = curGoal.line; const c = curGoal.column;
+        return `<div id="goal">
+                <h1>Current Goal at ${basename(f)}:${l}:${c}</a></h1>
                 <pre>${curGoal.state}</pre>
             </div>`;
     }
@@ -127,7 +163,9 @@ class InfoDocument implements Disposable {
         return msgs.map((m) =>
             `<div class="message ${m.severity}">
                 <h1 title="${m.file_name}:${m.pos_line}:${m.pos_col}">
+                  <a href="${encodeURI('command:lean.revealPosition?' + JSON.stringify([Uri.file(m.file_name), m.pos_line - 1, m.pos_col]))}">
                     ${basename(m.file_name)}:${m.pos_line}:${m.pos_col}: ${m.severity} ${m.caption}
+                  </a>
                 </h1>
                 <pre>${m.text}</pre>
             </div>`).join("\n");
@@ -162,6 +200,18 @@ export class InfoProvider implements TextDocumentContentProvider, Disposable {
                 this.documents.delete(uri);
             }
         }));
+        this.subscriptions.push(
+            commands.registerCommand('lean.revealPosition', (uri: Uri, line: number, column: number) => {
+        		for (let editor of window.visibleTextEditors) {
+		        	if (editor.document.uri.toString() === uri.toString()) {
+                        let pos = new Position(line, column);
+                        window.showTextDocument(editor.document);
+        				editor.revealRange(new Range(pos, pos), TextEditorRevealType.InCenterIfOutsideViewport);
+                        editor.selection = new Selection(pos, pos);
+                    }
+		        }
+            })
+        );
     }
 
     dispose() {
