@@ -1,3 +1,16 @@
+#debug { 
+  display: block;
+  position: fixed;
+  bottom: 0px; right: 0px; z-index: 2;
+  width: 25%; height: 25%; overflow: scroll;
+}
+
+body {
+  margin: 0px;
+  border: 0px;
+  padding: 0px;
+}
+
 div
 {
   display: block;
@@ -20,38 +33,56 @@ h1
   font-size: 100%;
 }
 
+#marker {
+  position: fixed;
+  left: 2px;
+  visibility: hidden;
+  font-size: 200%;
+}
+
+#messages div {
+  margin-left: 2em;
+}
+
+/* the default colors are for vscode-light color theme */
+
 div.error h1 {
-  color: red;
+  color: darkred;
 }
 
 div.warning h1 {
-  color: yellow;
+  color: darkorange;
 }
 
 div.information h1 {
   color: darkgreen;
 }
 
-#messages div {
-  border-top: 5px solid transparent;
+/* Theme categories, set by VS Code in the body element:
+- vscode-light
+- vscode-dark
+- vscode-high-contrast */
+
+.vscode-dark div.error h1 {
+  color: red;
 }
 
-div.highlight {
-  background: rgb(70%, 100%, 70%);
+.vscode-dark div.warning h1 {
+  color: orange;
 }
 
-div.highlight-sep {
-  border-top: 5px solid rgb(70%, 100%, 70%);
+.vscode-dark div.information h1 {
+  color: lightgreen;
 }
 
-.vscode-light h1 {
-  border-bottom: 1px solid black;
+.vscode-high-contrast div.error h1 {
+  color: lightpink;
 }
 
-.vscode-dark h1 {
-  border-bottom: 1px solid white;
+.vscode-high-contrast div.warning h1 {
+  color: yellow;
 }
 
-.vscode-dark div.highlight {
-  background: darkolivegreen;
+.vscode-high-contrast div.information h1 {
+  color: lightgreen;
 }

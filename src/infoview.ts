@@ -5,13 +5,28 @@ import {
     CancellationToken, DocumentSelector, TextDocument, TextEditorRevealType, Position, Selection,
     workspace, window, commands, languages
 } from 'vscode';
-import { Server } from './server';
 import { InfoRecord, Message } from "lean-client-js-node";
+import { Server } from './server';
 
-function compareMessages(m1: Message, m2: Message) : boolean {
+function compareMessages(m1: Message, m2: Message): boolean {
     return (m1.file_name == m2.file_name &&
         m1.pos_line == m2.pos_line && m1.pos_col == m2.pos_col &&
         m1.severity == m2.severity && m1.caption == m2.caption && m1.text == m2.text);
+}
+
+// https://stackoverflow.com/questions/6234773/can-i-escape-html-special-chars-in-javascript
+function escapeHtml(s: string): string {
+    return s
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+enum DisplayMode {
+    OnlyState, // only the state at the current cursor position including the tactic state
+    AllMessage // all messages 
 }
 
 export class InfoProvider implements TextDocumentContentProvider, Disposable {
@@ -22,20 +37,27 @@ export class InfoProvider implements TextDocumentContentProvider, Disposable {
 
     private subscriptions: Disposable[] = [];
 
-    private curFileName  : string = null;
-    private curPosition  : Position = null;
-    private curGoalState : string = null;
-    private curMessages  : Message[] = null;
+    private displayMode: DisplayMode = DisplayMode.AllMessage;
 
-    private stylesheet   : string = null;
+    private curFileName: string = null;
+    private curPosition: Position = null;
+    private curGoalState: string = null;
+    private curMessages: Message[] = null;
 
-    constructor(private server: Server, private leanDocs: DocumentSelector, private context : ExtensionContext) {
+    private stylesheet: string = null;
+
+    constructor(private server: Server, private leanDocs: DocumentSelector, private context: ExtensionContext) {
         this.subscriptions.push(
-            this.server.allMessages.on(() => this.updateMessages()),
-            this.server.statusChanged.on(() => this.updateGoal()),
+            this.server.allMessages.on(() => {
+                if (this.updateMessages()) this.fire();
+            }),
+            this.server.statusChanged.on(() => {
+                this.updateGoal().then((changed) => { if (changed && this.displayGoal()) this.fire(); })
+            }),
             window.onDidChangeTextEditorSelection(() => this.updatePosition())
         );
         let css = this.context.asAbsolutePath(join('media', `infoview.css`));
+        let js = this.context.asAbsolutePath(join('media', `infoview-ctrl.js`));
         // TODO: update stylesheet on configuration changes
         this.stylesheet = readFileSync(css, "utf-8") + `
             pre {
@@ -57,6 +79,24 @@ export class InfoProvider implements TextDocumentContentProvider, Disposable {
             return content;
         } else
             throw new Error(`unsupported uri: ${uri}`);
+    }
+
+    private displayGoal() : boolean {
+        return this.displayMode == DisplayMode.OnlyState;
+    }
+
+    private displayPosition() : boolean {
+        return this.displayMode == DisplayMode.AllMessage;
+    }
+
+    private sendPosition() {
+        commands.executeCommand('_workbench.htmlPreview.postMessage', this.leanGoalsUri,
+            {
+                command: 'position',
+                fileName: this.curFileName,
+                line: this.curPosition.line + 1,
+                column: this.curPosition.character
+            });
     }
 
     private fire() {
@@ -88,22 +128,45 @@ export class InfoProvider implements TextDocumentContentProvider, Disposable {
         const l = this.curPosition.line + 1;
         const c = this.curPosition.character;
         if (this.curFileName !== oldFileName || !this.curPosition.isEqual(oldPosition)) {
-            this.updateMessages();
-            this.updateGoal();
-            this.fire();
+            const chMsg = this.updateMessages();
+            switch (this.displayMode) {
+            case DisplayMode.OnlyState:
+                this.updateGoal().then((chGoal) => { if (chGoal || chMsg) this.fire() });
+                break;
+
+            case DisplayMode.AllMessage:
+                if (chMsg) {
+                    this.fire();
+                } else {
+                    this.sendPosition()
+                }
+                break;
+            }
         }
     }
 
-    private updateMessages() {
-        if (!this.curFileName) return;
-        const msgs = this.server.messages
-            .filter((m) => m.file_name === this.curFileName &&
-                m.pos_line == this.curPosition.line + 1 &&
-                m.pos_col == this.curPosition.character);
+    private updateMessages(): boolean {
+        if (!this.curFileName) return false;
+        let msgs;
+        switch (this.displayMode) {
+        case DisplayMode.OnlyState:
+            msgs = this.server.messages
+                .filter((m) => m.file_name === this.curFileName &&
+                    m.pos_line == this.curPosition.line + 1 &&
+                    m.pos_col == this.curPosition.character);
+            break;
+
+        case DisplayMode.AllMessage:
+            msgs = this.server.messages
+                .filter((m) => m.file_name === this.curFileName)
+                .sort((a, b) => a.pos_line === b.pos_line
+                        ? a.pos_col - b.pos_col
+                        : a.pos_line - b.pos_line);
+            break;
+        }
         if (!this.curMessages) {
             this.curMessages = msgs;
-            this.fire();
-            return;
+            return true;
         }
         const old_msgs = this.curMessages;
         if (msgs.length == old_msgs.length) {
@@ -114,60 +177,72 @@ export class InfoProvider implements TextDocumentContentProvider, Disposable {
                     break;
                 }
             }
-            if (eq) return;
+            if (eq) return false;
         }
         this.curMessages = msgs;
+        return true;
     }
 
-    private updateGoal() {
+    private updateGoal(): Promise<boolean> {
         const f = this.curFileName;
         const l = this.curPosition.line + 1;
         const c = this.curPosition.character;
-        this.server.info(f, l, c).then((info) => {
+
+        return this.server.info(f, l, c).then((info) => {
             if (info.record && info.record.state) {
                 if (this.curGoalState !== info.record.state) {
                     this.curGoalState = info.record.state;
-                    this.fire();
+                    return true;
                 }
             } else {
                 if (this.curGoalState) {
                     this.curGoalState = null;
-                    this.fire();
+                    return false;
                 }
             }
-        })
+        });
+    }
 
+    private getMediaPath(mediaFile: string): string {
+        return Uri.file(this.context.asAbsolutePath(join('media', mediaFile))).toString();
     }
 
     private render() {
         return `<!DOCTYPE html>
             <html>
             <head> 
-            <meta http-equiv="Content-type" content="text/html;charset=UTF-8">
-            <style>${this.stylesheet}</style>
+              <meta http-equiv="Content-type" content="text/html;charset=utf-8">
+              <style>${escapeHtml(this.stylesheet)}</style>
+              <script charset="utf-8" src="${this.getMediaPath("infoview-ctrl.js")}"></script>
             </head>
-            <body>` +
-                this.renderGoal() +
-                `<div id="messages">` + this.renderMessages() + `</div>`+
-            `</body></html>`;
+            <body
+                data-fileName="${escapeHtml(this.curFileName)}"
+                data-line="${(this.curPosition.line + 1).toString()}"
+                data-column="${this.curPosition.character.toString()}"
+                data-displyMode="${this.displayMode.toString()}">
+              <div id="debug"></div>
+              ${this.renderGoal()}
+              <div id="messages">${this.renderMessages()}</div>
+            </body></html>`;
     }
 
     private renderGoal() {
-        const goalState = this.curGoalState;
-        if (!goalState) return '';
-        return `<div id="goal"><h1>Tactic State</h1><pre>${goalState}</pre></div>`;
+        if (!this.curGoalState || this.displayMode !== DisplayMode.OnlyState) return '';
+        return `<div id="goal"><h1>Tactic State</h1><pre>${escapeHtml(this.curGoalState)}</pre></div>`;
     }
 
     private renderMessages() {
         if (!this.curFileName) return ``;
         return this.curMessages.map((m) => {
-            const i = m.text.indexOf("\n");
-            if (i == -1) {
-                return `<div class="message ${m.severity}"><h1>${m.severity}: ${m.caption}</h1><pre>${m.text}</pre></div>`
-            }
-            return `<div class="message ${m.severity}">
-                <h1>${m.severity}: ${m.caption} ${m.text.substring(0, i)}</h1>
-                <pre>${m.text.substring(i)}</pre>
-            </div>`}).join("\n");
+            let prefix = this.displayPosition()
+                ? `${escapeHtml(basename(m.file_name))}:${m.pos_line.toString()}:${m.pos_col.toString()}`
+                : "";
+            return `<div class="message ${m.severity}"
+                    data-line="${m.pos_line.toString()}"
+                    data-column="${m.pos_col.toString()}">
+                  <h1>${prefix} ${m.severity}: ${escapeHtml(m.caption)}</h1>
+                  <pre>${escapeHtml(m.text)}</pre>
+                </div>`
+        }).join("\n");
     }
 }
