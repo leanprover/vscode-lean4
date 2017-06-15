@@ -15,6 +15,7 @@ We currently support a variety of features.
 * Batch file execution
 * Search for declarations in open files (ctrl+p #)
 * Region of interest checking (i.e control over how much of the project we check)
+* Fill in `{! !}` holes using ctrl+.
 
 <!--\!\[feature X\]\(images/feature-x.png\)-->
 
@@ -45,6 +46,7 @@ This extension contributes the following settings:
 
 ### 0.9.0 (unreleased)
 * Only show commands acting on Lean files when a Lean file is open in the current editor
+* Hole support
 
 ### 0.8.0
 * Info view showing the current goal and error messages.
