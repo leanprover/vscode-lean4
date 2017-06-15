@@ -9,7 +9,7 @@ import { displayGoalAtPosition } from './goal';
 import { batchExecuteFile } from './batch';
 import { LeanStatusBarItem } from './statusbar';
 import { RoiManager, RoiMode } from './roi';
-import { getExecutablePath, getMemoryLimit, getTimeLimit } from './util';
+import { getExecutablePath, getMemoryLimit, getTimeLimit, atLeastLeanVersion } from './util';
 import {InfoProvider} from './infoview';
 import {LeanDiagnosticsProvider} from './diagnostics';
 import {LeanSyncService} from './sync';
@@ -17,6 +17,7 @@ import {Message} from 'lean-client-js-node';
 import { LeanTaskGutter, LeanTaskMessages } from "./taskgutter";
 import {LEAN_MODE} from './constants';
 import { LeanWorkspaceSymbolProvider } from "./search";
+import { LeanHoles } from "./holes";
 
 // Seeing .olean files in the source tree is annoying, we should
 // just globally hide them.
@@ -108,6 +109,11 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(
         vscode.languages.registerWorkspaceSymbolProvider(
             new LeanWorkspaceSymbolProvider(server)));
+
+    // Holes
+    if (atLeastLeanVersion('3.1.1')) {
+        context.subscriptions.push(new LeanHoles(server, LEAN_MODE));
+    }
 
     if (server.supportsROI)
         server.roi("nothing", []); // activate ROI support
