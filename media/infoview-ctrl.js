@@ -4,15 +4,17 @@
 
 (function () {
 const CLASS_MESSAGE = 'message';
-const ID_DEBUG = 'debug';
 const ID_GOAL = 'goal';
 const ID_MESSAGES = 'messages';
 const ID_MARKER = 'marker';
 
+/*
+const ID_DEBUG = 'debug';
 function debug(s) {
   const dbg = document.getElementById(ID_DEBUG);
   dbg.innerHTML = s + "<br>" + dbg.innerHTML;
 }
+*/
 
 function setupMarker() {
   const marker = document.createElement("span");
@@ -38,13 +40,11 @@ function hideMarker(y, t) {
 
 // TODO: implement throttling, see Markdown plugin
 function revealMessageElement(elem) {
-  debug("reveal");
   const rel = elem.getBoundingClientRect();
   const w = window;
   const start = w.scrollY;
   const height = w.innerHeight;
   const stop = start + height;
-  debug("st " + start + ", sp: " + stop + ", tp: " + rel.top + ", bt: " + rel.bottom);
   if (rel.top < 0 || height < rel.top) {
     // head of element is not visible
     if (height < rel.height) {
@@ -81,7 +81,6 @@ function isBefore(p1, p2) {
 }
 
 function onPosition(rpos) {
-  debug("position " + rpos.line + ":" + rpos.column);
   const elems = document.getElementsByClassName(CLASS_MESSAGE);
   let state   = 'before';
   let reveal  = null;
@@ -127,7 +126,7 @@ window.addEventListener('message', (event => {
 function onLoad() {
   setupMarker();
   onPosition(getPosition(document.body)); // current editor position is stored in body element
-  debug("body " + document.body.className);
+  /* document.getElementById(ID_DEBUG).style.visibility = "visible"; */
 }
 
 if (document.readyState === 'loading') {

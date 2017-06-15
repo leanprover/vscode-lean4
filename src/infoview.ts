@@ -54,7 +54,8 @@ export class InfoProvider implements TextDocumentContentProvider, Disposable {
             this.server.statusChanged.on(() => {
                 this.updateGoal().then((changed) => { if (changed && this.displayGoal()) this.fire(); })
             }),
-            window.onDidChangeTextEditorSelection(() => this.updatePosition())
+            window.onDidChangeTextEditorSelection(() => this.updatePosition()),
+            commands.registerCommand('_lean.revealPosition', this.revealEditorPosition)
         );
         let css = this.context.asAbsolutePath(join('media', `infoview.css`));
         let js = this.context.asAbsolutePath(join('media', `infoview-ctrl.js`));
@@ -234,13 +235,16 @@ export class InfoProvider implements TextDocumentContentProvider, Disposable {
     private renderMessages() {
         if (!this.curFileName) return ``;
         return this.curMessages.map((m) => {
-            let prefix = this.displayPosition()
-                ? `${escapeHtml(basename(m.file_name))}:${m.pos_line.toString()}:${m.pos_col.toString()}`
-                : "";
+            let header = this.displayPosition()
+                ? `<a href="${encodeURI('command:_lean.revealPosition?' +
+                  JSON.stringify([Uri.file(m.file_name), m.pos_line - 1, m.pos_col]))}">
+                  ${escapeHtml(basename(m.file_name))}:${m.pos_line.toString()}:${m.pos_col.toString()}:
+                  ${m.severity} ${escapeHtml(m.caption)}</a>`
+                : `${m.severity}: ${escapeHtml(m.caption)}`;
             return `<div class="message ${m.severity}"
                     data-line="${m.pos_line.toString()}"
                     data-column="${m.pos_col.toString()}">
-                  <h1>${prefix} ${m.severity}: ${escapeHtml(m.caption)}</h1>
+                  <h1>${header}</h1>
                   <pre>${escapeHtml(m.text)}</pre>
                 </div>`
         }).join("\n");

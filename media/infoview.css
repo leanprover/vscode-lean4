@@ -3,6 +3,7 @@
   position: fixed;
   bottom: 0px; right: 0px; z-index: 2;
   width: 25%; height: 25%; overflow: scroll;
+  visibility: hidden;
 }
 
 body {
@@ -46,15 +47,15 @@ h1
 
 /* the default colors are for vscode-light color theme */
 
-div.error h1 {
+div.error h1 a {
   color: darkred;
 }
 
-div.warning h1 {
+div.warning h1 a {
   color: darkorange;
 }
 
-div.information h1 {
+div.information h1 a {
   color: darkgreen;
 }
 
@@ -63,26 +64,26 @@ div.information h1 {
 - vscode-dark
 - vscode-high-contrast */
 
-.vscode-dark div.error h1 {
+.vscode-dark div.error h1 a {
   color: red;
 }
 
-.vscode-dark div.warning h1 {
+.vscode-dark div.warning h1 a {
   color: orange;
 }
 
-.vscode-dark div.information h1 {
+.vscode-dark div.information h1 a {
   color: lightgreen;
 }
 
-.vscode-high-contrast div.error h1 {
+.vscode-high-contrast div.error h1 a {
   color: lightpink;
 }
 
-.vscode-high-contrast div.warning h1 {
+.vscode-high-contrast div.warning h1 a {
   color: yellow;
 }
 
-.vscode-high-contrast div.information h1 {
+.vscode-high-contrast div.information h1 a {
   color: lightgreen;
 }
