@@ -27,7 +27,7 @@ h1
 
   margin-bottom: 1ex;
   margin-top: 1ex;
-  border-bottom: 1px solid black;
+  border-bottom: 1px solid;
   padding: 0px;
 
   font-weight: normal;
@@ -41,11 +41,19 @@ h1
   font-size: 200%;
 }
 
+#goal {
+  margin-left: 2em;
+}
+
 #messages div {
   margin-left: 2em;
 }
 
 /* the default colors are for vscode-light color theme */
+
+h1 {
+  border-bottom-color: black;
+}
 
 div.error h1 a {
   color: darkred;
@@ -64,6 +72,10 @@ div.information h1 a {
 - vscode-dark
 - vscode-high-contrast */
 
+.vscode-dark h1 {
+  border-bottom-color: lightgray;
+}
+
 .vscode-dark div.error h1 a {
   color: red;
 }
@@ -74,6 +86,23 @@ div.information h1 a {
 
 .vscode-dark div.information h1 a {
   color: lightgreen;
+}
+
+.vscode-dark div.error h1 {
+  color: red;
+}
+
+.vscode-dark div.warning h1 {
+  color: orange;
+}
+
+.vscode-dark div.information h1 {
+  color: lightgreen;
+}
+
+
+.vscode-high-contrast h1 {
+  border-bottom-color: white;
 }
 
 .vscode-high-contrast div.error h1 a {
@@ -87,3 +116,16 @@ div.information h1 a {
 .vscode-high-contrast div.information h1 a {
   color: lightgreen;
 }
+
+.vscode-high-contrast div.error h1 {
+  color: lightpink;
+}
+
+.vscode-high-contrast div.warning h1 {
+  color: yellow;
+}
+
+.vscode-high-contrast div.information h1 {
+  color: lightgreen;
+}
+

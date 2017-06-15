@@ -55,7 +55,10 @@ export class InfoProvider implements TextDocumentContentProvider, Disposable {
                 this.updateGoal().then((changed) => { if (changed && this.displayGoal()) this.fire(); })
             }),
             window.onDidChangeTextEditorSelection(() => this.updatePosition()),
-            commands.registerCommand('_lean.revealPosition', this.revealEditorPosition)
+            commands.registerCommand('_lean.revealPosition', this.revealEditorPosition),
+            commands.registerCommand('lean.infoView.toggleMode', (editor) => { 
+                this.toggleMode();
+            })
         );
         let css = this.context.asAbsolutePath(join('media', `infoview.css`));
         let js = this.context.asAbsolutePath(join('media', `infoview-ctrl.js`));
@@ -98,6 +101,22 @@ export class InfoProvider implements TextDocumentContentProvider, Disposable {
                 line: this.curPosition.line + 1,
                 column: this.curPosition.character
             });
+    }
+
+    private toggleMode() {
+        switch(this.displayMode) {
+        case DisplayMode.AllMessage:
+            this.displayMode = DisplayMode.OnlyState;
+            this.updateMessages();
+            this.fire();
+            break;
+        case DisplayMode.OnlyState:
+            this.displayMode = DisplayMode.AllMessage;
+            this.updateMessages();
+            this.updateGoal().then((changed) => { this.fire() });
+            break;
+        }
+        
     }
 
     private fire() {
@@ -220,7 +239,7 @@ export class InfoProvider implements TextDocumentContentProvider, Disposable {
                 data-fileName="${escapeHtml(this.curFileName)}"
                 data-line="${(this.curPosition.line + 1).toString()}"
                 data-column="${this.curPosition.character.toString()}"
-                data-displyMode="${this.displayMode.toString()}">
+                ${this.displayMode == DisplayMode.AllMessage ? "data-messages=''" : ""}">
               <div id="debug"></div>
               ${this.renderGoal()}
               <div id="messages">${this.renderMessages()}</div>

@@ -70,19 +70,13 @@
                 "command": "lean.infoView",
                 "category": "Lean",
                 "title": "Open Info View",
-                "description": "Displays the goal and error messages in a separate window"
+                "description": "Displays the goal state or messages in a separate window"
             },
             {
-                "command": "lean.infoDocument.togglePause",
+                "command": "lean.infoView.toggleMode",
                 "category": "Lean",
-                "title": "Pause/Unpause Info View Updates",
-                "description": "Toggle updating of the Info View"
-            },
-            {
-                "command": "lean.infoDocument.toggleMessages",
-                "category": "Lean",
-                "title": "Show/Hide Messages in Info View",
-                "description": "Toggle whether the Info View shows error messages"
+                "title": "Toggle Display Mode",
+                "description": "Switches the info view between current goal state and messages list"
             },
             {
                 "command": "lean.roiMode.select",
@@ -176,14 +170,19 @@
                     "command": "lean.batchExecute",
                     "when": "editorLangId == lean"
                 }
+            ],
+            "editor/title": [
+                {
+                    "command": "lean.infoView.toggleMode",
+                    "when": "resourceScheme == lean-info"
+                }
             ]
         }
     },
     "activationEvents": [
         "onLanguage:lean",
         "onCommand:lean.restartSever",
-        "onCommand:lean.infoDocument.togglePause",
-        "onCommand:lean.infoDocument.toggleMessages",
+        "onCommand:lean.infoDocument.toggleMode",
         "onCommand:lean.roiMode.select",
         "onCommand:lean.roiMode.nothing",
         "onCommand:lean.roiMode.cursor",

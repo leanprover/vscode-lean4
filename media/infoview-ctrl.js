@@ -124,8 +124,10 @@ window.addEventListener('message', (event => {
 }), false);
 
 function onLoad() {
-  setupMarker();
-  onPosition(getPosition(document.body)); // current editor position is stored in body element
+  if (document.body.hasAttribute("data-messages")) {
+    setupMarker();
+    onPosition(getPosition(document.body)); // current editor position is stored in body element
+  }
   /* document.getElementById(ID_DEBUG).style.visibility = "visible"; */
 }
 
