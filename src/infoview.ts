@@ -1,4 +1,5 @@
 import { basename, join } from 'path';
+import { readFileSync } from 'fs';
 import {
     TextDocumentContentProvider, Event, EventEmitter, Disposable, Uri, Range, ExtensionContext,
     CancellationToken, DocumentSelector, TextDocument, TextEditorRevealType, Position, Selection,
@@ -26,12 +27,23 @@ export class InfoProvider implements TextDocumentContentProvider, Disposable {
     private curGoalState : string = null;
     private curMessages  : Message[] = null;
 
+    private stylesheet   : string = null;
+
     constructor(private server: Server, private leanDocs: DocumentSelector, private context : ExtensionContext) {
         this.subscriptions.push(
             this.server.allMessages.on(() => this.updateMessages()),
             this.server.statusChanged.on(() => this.updateGoal()),
             window.onDidChangeTextEditorSelection(() => this.updatePosition())
         );
+        let css = this.context.asAbsolutePath(join('media', `infoview.css`));
+        // TODO: update stylesheet on configuration changes
+        this.stylesheet = readFileSync(css, "utf-8") + `
+            pre {
+                font-family: ${workspace.getConfiguration('editor').get('fontFamily')};
+                font-size: ${workspace.getConfiguration('editor').get('fontSize')}px;
+            }
+            ` +
+            workspace.getConfiguration('lean').get('infoViewStyle');
         this.updatePosition();
     }
 
@@ -127,67 +139,12 @@ export class InfoProvider implements TextDocumentContentProvider, Disposable {
 
     }
 
-	private getMediaPath(mediaFile: string): string {
-		return Uri.file(this.context.asAbsolutePath(join('media', mediaFile))).toString();
-	}
-
     private render() {
         return `<!DOCTYPE html>
             <html>
             <head> 
             <meta http-equiv="Content-type" content="text/html;charset=UTF-8">
-            <style>
-            div
-{
-  display: block;
-  width: 100%;
-  margin: 0px;
-  padding: 0px;
-}
-
-h1
-{
-  display: block;
-  width: 100%;
-
-  margin-bottom: 1ex;
-  margin-top: 1ex;
-  border-bottom: 1px solid black;
-  padding: 0px;
-
-  font-weight: normal;
-  font-size: 100%;
-}
-
-div.error h1 {
-  color: red;
-}
-
-div.warning h1 {
-  color: darkorange;
-}
-
-div.information h1 {
-  color: darkgreen;
-}
-
-#messages div {
-  border-top: 5px solid transparent;
-}
-
-.vscode-light h1 {
-  border-bottom: 1px solid black;
-}
-
-.vscode-dark h1 {
-  border-bottom: 1px solid white;
-}
-
-.vscode-dark div.highlight {
-  background: darkolivegreen;
-}
-
-            </style>
+            <style>${this.stylesheet}</style>
             </head>
             <body>` +
                 this.renderGoal() +

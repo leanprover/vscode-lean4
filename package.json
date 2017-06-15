@@ -45,6 +45,11 @@
                     "type": "string",
                     "default": "visible",
                     "description": "Set the default region of interest mode (nothing, visible, open or project) for the Lean extension."
+                },
+                "lean.infoViewStyle": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Add an additional CSS snippet to the info view."
                 }
             }
         },
