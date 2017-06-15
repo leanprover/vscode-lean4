@@ -64,7 +64,6 @@ export class LeanHoles implements Disposable, CodeActionProvider {
             window.showInformationMessage(res.message);
         }
         if (res.replacements && res.replacements.alternatives) {
-            console.log(res);
             // TODO(gabriel): ask user if more than one alternative
             for (const editor of window.visibleTextEditors) {
                 if (editor.document.fileName == file) {
