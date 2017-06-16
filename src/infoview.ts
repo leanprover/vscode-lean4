@@ -167,13 +167,32 @@ export class InfoProvider implements TextDocumentContentProvider, Disposable {
 
     private updateMessages(): boolean {
         if (!this.curFileName) return false;
-        let msgs;
+        let msgs : Message[];
         switch (this.displayMode) {
         case DisplayMode.OnlyState:
+            /* Heuristic: find first position to the left which has messages attached,
+               from that on show all messages in this line */
             msgs = this.server.messages
                 .filter((m) => m.file_name === this.curFileName &&
-                    m.pos_line == this.curPosition.line + 1 &&
-                    m.pos_col == this.curPosition.character);
+                    m.pos_line == this.curPosition.line + 1)
+                .sort((a, b) => a.pos_col - b.pos_col);
+            let startColumn = undefined;
+            let startPos = null;
+            for (let i = 0; i < msgs.length; i++) {
+                if (this.curPosition.character < msgs[i].pos_col) break;
+                if (this.curPosition.character == msgs[i].pos_col) {
+                    startColumn = this.curPosition.character;
+                    startPos = i;
+                    break;
+                }
+                if (startColumn == null || startColumn < msgs[i].pos_col) {
+                    startColumn = msgs[i].pos_col;
+                    startPos = i;
+                }
+            }
+            if (startPos) {
+                msgs = msgs.slice(startPos);
+            }
             break;
 
         case DisplayMode.AllMessage:
@@ -254,18 +273,15 @@ export class InfoProvider implements TextDocumentContentProvider, Disposable {
     private renderMessages() {
         if (!this.curFileName) return ``;
         return this.curMessages.map((m) => {
-            let header = this.displayPosition()
-                ? `<a href="${encodeURI('command:_lean.revealPosition?' +
-                  JSON.stringify([Uri.file(m.file_name), m.pos_line - 1, m.pos_col]))}">
-                  ${escapeHtml(basename(m.file_name))}:${m.pos_line.toString()}:${m.pos_col.toString()}:
-                  ${m.severity} ${escapeHtml(m.caption)}</a>`
-                : `${m.severity}: ${escapeHtml(m.caption)}`;
-            return `<div class="message ${m.severity}"
-                    data-line="${m.pos_line.toString()}"
-                    data-column="${m.pos_col.toString()}">
-                  <h1>${header}</h1>
-                  <pre>${escapeHtml(m.text)}</pre>
-                </div>`
+            const f = escapeHtml(m.file_name); const b = escapeHtml(basename(m.file_name));
+            const l = m.pos_line.toString(); const c = m.pos_col.toString();
+            const cmd = encodeURI('command:_lean.revealPosition?' +
+                JSON.stringify([Uri.file(m.file_name), m.pos_line - 1, m.pos_col]));
+            return `<div class="message ${m.severity}" data-line="${l}" data-column="${c}">
+                <h1 title="${f}:${l}:${c}"><a href="${cmd}">
+                    ${b}:${l}:${c}: ${m.severity} ${escapeHtml(m.caption)}
+                </a></h1>
+                <pre>${escapeHtml(m.text)}</pre></div>`
         }).join("\n");
     }
 }
