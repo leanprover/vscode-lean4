@@ -15,15 +15,16 @@ body {
 div
 {
   display: block;
-  width: 100%;
+  width: calc(100% - 3em);
   margin: 0px;
   padding: 0px;
+  position: relative;
 }
 
 h1
 {
   display: block;
-  width: 100%;
+  width: calc(100% - 3em);
 
   margin-bottom: 1ex;
   margin-top: 1ex;
@@ -35,18 +36,18 @@ h1
 }
 
 #marker {
-  position: fixed;
+  position: absolute;
   left: 2px;
-  visibility: hidden;
   font-size: 200%;
+  z-index: 2;
 }
 
 #goal {
-  margin-left: 2em;
+  padding-left: 2em;
 }
 
 #messages div {
-  margin-left: 2em;
+  padding-left: 2em;
 }
 
 /* the default colors are for vscode-light color theme */

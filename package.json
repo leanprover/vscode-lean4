@@ -76,7 +76,19 @@
                 "command": "lean.infoView.toggleMode",
                 "category": "Lean",
                 "title": "Toggle Display Mode",
-                "description": "Switches the info view between current goal state and messages list"
+                "icon":{
+                    "dark": "./media/display-toggle-dark.svg",
+                    "light": "./media/display-toggle.svg"
+                }
+            },
+            {
+                "command": "lean.infoView.startStop",
+                "category": "Lean",
+                "title": "Start and Stop Info View",
+                "icon":{
+                    "dark": "./media/start-stop-dark.svg",
+                    "light": "./media/start-stop.svg"
+                }
             },
             {
                 "command": "lean.roiMode.select",
@@ -174,6 +186,22 @@
             "editor/title": [
                 {
                     "command": "lean.infoView.toggleMode",
+                    "when": "resourceScheme == lean-info",
+                    "group": "navigation"
+                },
+                {
+                    "command": "lean.infoView.startStop",
+                    "when": "resourceScheme == lean-info",
+                    "group": "navigation"
+                }
+            ],
+            "editor/title/context": [
+                {
+                    "command": "lean.infoView.toggleMode",
+                    "when": "resourceScheme == lean-info"
+                },
+                {
+                    "command": "lean.infoView.startStop",
                     "when": "resourceScheme == lean-info"
                 }
             ]

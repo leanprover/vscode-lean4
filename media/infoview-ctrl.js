@@ -16,20 +16,19 @@ function debug(s) {
 }
 */
 
-function setupMarker() {
-  const marker = document.createElement("span");
-  marker.setAttribute("id", ID_MARKER);
-  document.body.appendChild(marker);
-}
-
-function setMarker(y, t) {
-  const m = document.getElementById(ID_MARKER);
-  if (!m) return;
+function setMarker(parent, atTop, t) {
+  const old_m = document.getElementById(ID_MARKER);
+  if (old_m) old_m.remove();
+  
+  const m = document.createElement("span");
+  m.setAttribute("id", ID_MARKER);
   m.innerText = t;
-  const r = m.getBoundingClientRect();
-  let d = r ? r.height / 2 : 0;
-  m.style.visibility = "visible";
-  m.style.top = y.toString() - d + "px";
+  if (atTop) {
+    m.style.top = "0px";
+  } else {
+    m.style.bottom = "0px";
+  }
+  parent.appendChild(m);
 }
 
 function hideMarker(y, t) {
@@ -105,13 +104,13 @@ function onPosition(rpos) {
   }
   if (reveal) {
     revealMessageElement(reveal);
-    setMarker(reveal.getBoundingClientRect().top, "⯈");
+    setMarker(reveal, true, "⯈");
   } else if (before) {
     revealMessageElement(before);
-    setMarker(before.getBoundingClientRect().bottom, "▹");
+    setMarker(before, false, "▹");
   } else if (elems.length > 0) {
     document.getElementById(ID_MESSAGES).scrollTop = 0;
-    setMarker(0, "▹");
+    setMarker(elems[0], true, "▹");
   } else {
     hideMarker();
   }
@@ -147,7 +146,6 @@ window.addEventListener('message', (event => {
 
 function onLoad() {
   if (document.body.hasAttribute("data-messages")) {
-    setupMarker();
     onPosition(getPosition(document.body)); // current editor position is stored in body element
   }
   setupHover();

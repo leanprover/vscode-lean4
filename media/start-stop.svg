@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="18"
+   height="18"
+   viewBox="0 0 18 18"
+   version="1.1"
+   id="svg8"
+   inkscape:version="0.92.1 r15371"
+   sodipodi:docname="start-stop.svg">
+  <defs
+     id="defs2" />
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="63.356767"
+     inkscape:cx="10.62169"
+     inkscape:cy="9.8516271"
+     inkscape:document-units="px"
+     inkscape:current-layer="layer1"
+     showgrid="false"
+     units="px"
+     inkscape:window-width="3200"
+     inkscape:window-height="1721"
+     inkscape:window-x="0"
+     inkscape:window-y="41"
+     inkscape:window-maximized="1" />
+  <metadata
+     id="metadata5">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Ebene 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(0,-292.23747)">
+    <path
+       sodipodi:type="star"
+       id="path12"
+       sodipodi:sides="3"
+       sodipodi:cx="4.372066"
+       sodipodi:cy="300.67258"
+       sodipodi:r1="4.5641727"
+       sodipodi:r2="2.2820864"
+       sodipodi:arg1="0"
+       sodipodi:arg2="1.0471976"
+       inkscape:flatsided="false"
+       inkscape:rounded="0"
+       inkscape:randomized="0"
+       d="m 8.9362388,300.67258 -3.4231297,1.97634 -3.4231295,1.97635 0,-3.95269 0,-3.95269 3.4231297,1.97634 z"
+       inkscape:transform-center-x="-1.4409325"
+       transform="matrix(1.2628201,0,0,1.1876775,-1.3700375,-56.110976)"
+       inkscape:transform-center-y="8.774115e-06" />
+    <rect
+       id="rect14"
+       width="1.6572815"
+       height="9.3754787"
+       x="11.721659"
+       y="296.31122" />
+    <rect
+       y="296.31122"
+       x="14.260512"
+       height="9.3754787"
+       width="1.6572815"
+       id="rect16-3" />
+  </g>
+</svg>

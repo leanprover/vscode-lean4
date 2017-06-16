@@ -39,6 +39,7 @@ export class InfoProvider implements TextDocumentContentProvider, Disposable {
 
     private displayMode: DisplayMode = DisplayMode.AllMessage;
 
+    private stopped: boolean = false;
     private curFileName: string = null;
     private curPosition: Position = null;
     private curGoalState: string = null;
@@ -67,6 +68,9 @@ export class InfoProvider implements TextDocumentContentProvider, Disposable {
             commands.registerCommand('_lean.stopHover', () => { this.stopHover() }),
             commands.registerCommand('lean.infoView.toggleMode', (editor) => { 
                 this.toggleMode();
+            }),
+            commands.registerCommand('lean.infoView.startStop', (editor) => { 
+                this.startStop();
             })
         );
         let css = this.context.asAbsolutePath(join('media', `infoview.css`));
@@ -112,20 +116,36 @@ export class InfoProvider implements TextDocumentContentProvider, Disposable {
             });
     }
 
-    private toggleMode() {
+    private startStop() {
+        this.stopped = !this.stopped;
+        if (!this.stopped) {
+            this.update();
+        }
+    }
+
+    private update() {
         switch(this.displayMode) {
         case DisplayMode.AllMessage:
-            this.displayMode = DisplayMode.OnlyState;
             this.updateMessages();
             this.fire();
             break;
         case DisplayMode.OnlyState:
-            this.displayMode = DisplayMode.AllMessage;
             this.updateMessages();
             this.updateGoal().then((changed) => { this.fire() });
             break;
         }
-        
+    }
+
+    private toggleMode() {
+        switch(this.displayMode) {
+        case DisplayMode.AllMessage:
+            this.displayMode = DisplayMode.OnlyState;
+            break;
+        case DisplayMode.OnlyState:
+            this.displayMode = DisplayMode.AllMessage;
+            break;
+        }
+        this.update();
     }
 
     private fire() {
@@ -135,7 +155,7 @@ export class InfoProvider implements TextDocumentContentProvider, Disposable {
     private revealEditorPosition(uri: Uri, line: number, column: number) {
         for (let editor of window.visibleTextEditors) {
             if (editor.document.uri.toString() === uri.toString()) {
-                let pos = new Position(line, column);
+                let pos = new Position(line - 1, column);
                 window.showTextDocument(editor.document);
                 editor.revealRange(new Range(pos, pos), TextEditorRevealType.InCenterIfOutsideViewport);
                 editor.selection = new Selection(pos, pos);
@@ -146,7 +166,7 @@ export class InfoProvider implements TextDocumentContentProvider, Disposable {
     private hoverEditorPosition(uri: string, line: number, column: number) {
         for (let editor of window.visibleTextEditors) {
             if (editor.document.uri.toString() === uri) {
-                let pos = new Position(line, column);
+                let pos = new Position(line - 1, column);
                 let range = new Range(pos, pos.translate(0, 1));
                 editor.setDecorations(this.hoverDecorationType, [range]);
             }
@@ -162,7 +182,7 @@ export class InfoProvider implements TextDocumentContentProvider, Disposable {
     }
 
     private updatePosition() {
-        if (!languages.match(this.leanDocs, window.activeTextEditor.document))
+        if (this.stopped || !languages.match(this.leanDocs, window.activeTextEditor.document))
             return;
 
         const oldFileName = this.curFileName;
@@ -193,7 +213,7 @@ export class InfoProvider implements TextDocumentContentProvider, Disposable {
     }
 
     private updateMessages(): boolean {
-        if (!this.curFileName) return false;
+        if (this.stopped || !this.curFileName) return false;
         let msgs : Message[];
         switch (this.displayMode) {
         case DisplayMode.OnlyState:
@@ -250,6 +270,8 @@ export class InfoProvider implements TextDocumentContentProvider, Disposable {
     }
 
     private updateGoal(): Promise<boolean> {
+        if (this.stopped) return Promise.resolve(false);
+
         const f = this.curFileName;
         const l = this.curPosition.line + 1;
         const c = this.curPosition.character;
@@ -302,10 +324,9 @@ export class InfoProvider implements TextDocumentContentProvider, Disposable {
         return this.curMessages.map((m) => {
             const f = escapeHtml(m.file_name); const b = escapeHtml(basename(m.file_name));
             const l = m.pos_line.toString(); const c = m.pos_col.toString();
-            const lz = (m.pos_line - 1).toString();
             const cmd = encodeURI('command:_lean.revealPosition?' +
-                JSON.stringify([Uri.file(m.file_name), m.pos_line - 1, m.pos_col]));
-            return `<div class="message ${m.severity}" data-line="${lz}" data-column="${c}">
+                JSON.stringify([Uri.file(m.file_name), m.pos_line, m.pos_col]));
+            return `<div class="message ${m.severity}" data-line="${l}" data-column="${c}">
                 <h1 title="${f}:${l}:${c}"><a href="${cmd}">
                     ${b}:${l}:${c}: ${m.severity} ${escapeHtml(m.caption)}
                 </a></h1>
