@@ -3,7 +3,7 @@ import { readFileSync } from 'fs';
 import {
     TextDocumentContentProvider, Event, EventEmitter, Disposable, Uri, Range, ExtensionContext,
     CancellationToken, DocumentSelector, TextDocument, TextEditorRevealType, Position, Selection,
-    workspace, window, commands, languages
+    TextEditorDecorationType, workspace, window, commands, languages
 } from 'vscode';
 import { InfoRecord, Message } from "lean-client-js-node";
 import { Server } from './server';
@@ -46,7 +46,14 @@ export class InfoProvider implements TextDocumentContentProvider, Disposable {
 
     private stylesheet: string = null;
 
+    private hoverDecorationType : TextEditorDecorationType;
+
     constructor(private server: Server, private leanDocs: DocumentSelector, private context: ExtensionContext) {
+        this.hoverDecorationType = window.createTextEditorDecorationType({
+            backgroundColor: 'red', // make configurable?
+            border: '3px solid red'
+        });
+
         this.subscriptions.push(
             this.server.allMessages.on(() => {
                 if (this.updateMessages()) this.fire();
@@ -56,6 +63,8 @@ export class InfoProvider implements TextDocumentContentProvider, Disposable {
             }),
             window.onDidChangeTextEditorSelection(() => this.updatePosition()),
             commands.registerCommand('_lean.revealPosition', this.revealEditorPosition),
+            commands.registerCommand('_lean.hoverPosition', (u, l, c) => { this.hoverEditorPosition(u, l, c); }),
+            commands.registerCommand('_lean.stopHover', () => { this.stopHover() }),
             commands.registerCommand('lean.infoView.toggleMode', (editor) => { 
                 this.toggleMode();
             })
@@ -130,6 +139,24 @@ export class InfoProvider implements TextDocumentContentProvider, Disposable {
                 window.showTextDocument(editor.document);
                 editor.revealRange(new Range(pos, pos), TextEditorRevealType.InCenterIfOutsideViewport);
                 editor.selection = new Selection(pos, pos);
+            }
+        }
+    }
+
+    private hoverEditorPosition(uri: string, line: number, column: number) {
+        for (let editor of window.visibleTextEditors) {
+            if (editor.document.uri.toString() === uri) {
+                let pos = new Position(line, column);
+                let range = new Range(pos, pos.translate(0, 1));
+                editor.setDecorations(this.hoverDecorationType, [range]);
+            }
+        }
+    }
+
+    private stopHover() {
+        for (let editor of window.visibleTextEditors) {
+            if (editor.document.languageId === 'lean') {
+                editor.setDecorations(this.hoverDecorationType, []);
             }
         }
     }
@@ -255,7 +282,7 @@ export class InfoProvider implements TextDocumentContentProvider, Disposable {
               <script charset="utf-8" src="${this.getMediaPath("infoview-ctrl.js")}"></script>
             </head>
             <body
-                data-fileName="${escapeHtml(this.curFileName)}"
+                data-uri="${encodeURI(Uri.file(this.curFileName).toString())}"
                 data-line="${(this.curPosition.line + 1).toString()}"
                 data-column="${this.curPosition.character.toString()}"
                 ${this.displayMode == DisplayMode.AllMessage ? "data-messages=''" : ""}">
@@ -275,9 +302,10 @@ export class InfoProvider implements TextDocumentContentProvider, Disposable {
         return this.curMessages.map((m) => {
             const f = escapeHtml(m.file_name); const b = escapeHtml(basename(m.file_name));
             const l = m.pos_line.toString(); const c = m.pos_col.toString();
+            const lz = (m.pos_line - 1).toString();
             const cmd = encodeURI('command:_lean.revealPosition?' +
                 JSON.stringify([Uri.file(m.file_name), m.pos_line - 1, m.pos_col]));
-            return `<div class="message ${m.severity}" data-line="${l}" data-column="${c}">
+            return `<div class="message ${m.severity}" data-line="${lz}" data-column="${c}">
                 <h1 title="${f}:${l}:${c}"><a href="${cmd}">
                     ${b}:${l}:${c}: ${m.severity} ${escapeHtml(m.caption)}
                 </a></h1>

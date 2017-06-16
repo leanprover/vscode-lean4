@@ -67,8 +67,8 @@ function revealMessageElement(elem) {
 function getPosition(elem) {
   if (!elem.hasAttribute("data-line") || !elem.hasAttribute("data-column")) return null;
   return {
-    line: elem.getAttribute("data-line"),
-    column: elem.getAttribute("data-column"),
+    line: Number.parseInt(elem.getAttribute("data-line")),
+    column: Number.parseInt(elem.getAttribute("data-column"))
   }
 }
 
@@ -117,6 +117,28 @@ function onPosition(rpos) {
   }
 }
 
+function setupHover() {
+  const msgs = document.getElementsByClassName("message");
+  for (let i = 0; i < msgs.length; i++) {
+    const m = msgs[i];
+    m.addEventListener("mouseenter", event => {
+      const data = [document.body.getAttribute('data-uri'),
+        Number.parseInt(m.getAttribute('data-line')),
+        Number.parseInt(m.getAttribute('data-column'))];
+			window.parent.postMessage({
+				command: "did-click-link",
+				data: `command:_lean.hoverPosition?${encodeURIComponent(JSON.stringify(data))}`
+			}, "file://");
+    });
+    m.addEventListener("mouseleave", event => {
+			window.parent.postMessage({
+				command: "did-click-link",
+				data: `command:_lean.stopHover`
+			}, "file://");
+    });
+  }
+}
+
 window.addEventListener('message', (event => {
   if (event.data.command == 'position') {
     onPosition({line: event.data.line, column: event.data.column});
@@ -128,6 +150,7 @@ function onLoad() {
     setupMarker();
     onPosition(getPosition(document.body)); // current editor position is stored in body element
   }
+  setupHover();
   /* document.getElementById(ID_DEBUG).style.visibility = "visible"; */
 }
 
