@@ -3,7 +3,7 @@ import { readFileSync } from 'fs';
 import {
     TextDocumentContentProvider, Event, EventEmitter, Disposable, Uri, Range, ExtensionContext,
     CancellationToken, DocumentSelector, TextDocument, TextEditorRevealType, Position, Selection,
-    TextEditorDecorationType, workspace, window, commands, languages
+    TextEditorDecorationType, ViewColumn, workspace, window, commands, languages
 } from 'vscode';
 import { InfoRecord, Message } from "lean-client-js-node";
 import { Server } from './server';
@@ -55,6 +55,18 @@ export class InfoProvider implements TextDocumentContentProvider, Disposable {
             border: '3px solid red'
         });
 
+        let css = this.context.asAbsolutePath(join('media', `infoview.css`));
+        let js = this.context.asAbsolutePath(join('media', `infoview-ctrl.js`));
+        // TODO: update stylesheet on configuration changes
+        this.stylesheet = readFileSync(css, "utf-8") + `
+            pre {
+                font-family: ${workspace.getConfiguration('editor').get('fontFamily')};
+                font-size: ${workspace.getConfiguration('editor').get('fontSize')}px;
+            }
+            ` +
+            workspace.getConfiguration('lean').get('infoViewStyle');
+        this.updatePosition();
+
         this.subscriptions.push(
             this.server.allMessages.on(() => {
                 if (this.updateMessages()) this.fire();
@@ -71,19 +83,15 @@ export class InfoProvider implements TextDocumentContentProvider, Disposable {
             }),
             commands.registerCommand('lean.infoView.startStop', (editor) => { 
                 this.startStop();
-            })
+            }),
+            commands.registerTextEditorCommand('lean.infoView', (editor) => {
+                let column = editor.viewColumn + 1;
+                if (column == 4) column = ViewColumn.Three;
+                commands.executeCommand('vscode.previewHtml', this.leanGoalsUri, column,
+                    "Lean Messages");
+            }),
+            workspace.registerTextDocumentContentProvider(this.leanGoalsUri.scheme, this)
         );
-        let css = this.context.asAbsolutePath(join('media', `infoview.css`));
-        let js = this.context.asAbsolutePath(join('media', `infoview-ctrl.js`));
-        // TODO: update stylesheet on configuration changes
-        this.stylesheet = readFileSync(css, "utf-8") + `
-            pre {
-                font-family: ${workspace.getConfiguration('editor').get('fontFamily')};
-                font-size: ${workspace.getConfiguration('editor').get('fontSize')}px;
-            }
-            ` +
-            workspace.getConfiguration('lean').get('infoViewStyle');
-        this.updatePosition();
     }
 
     dispose() {

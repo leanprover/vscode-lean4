@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import * as loadJsonFile from 'load-json-file';
+import {Message} from 'lean-client-js-node';
 import { Server, ServerStatus } from './server';
 import { LeanHoverProvider } from './hover';
 import { LeanCompletionItemProvider } from './completion';
@@ -13,7 +14,6 @@ import { getExecutablePath, getMemoryLimit, getTimeLimit, atLeastLeanVersion } f
 import {InfoProvider} from './infoview';
 import {LeanDiagnosticsProvider} from './diagnostics';
 import {LeanSyncService} from './sync';
-import {Message} from 'lean-client-js-node';
 import { LeanTaskGutter, LeanTaskMessages } from "./taskgutter";
 import {LEAN_MODE} from './constants';
 import { LeanWorkspaceSymbolProvider } from "./search";
@@ -129,16 +129,6 @@ export function activate(context: vscode.ExtensionContext) {
     // Add item to the status bar.
     context.subscriptions.push(new LeanStatusBarItem(server, roiManager));
 
-    const infoProvider = new InfoProvider(server, LEAN_MODE, context);
-    context.subscriptions.push(
-        infoProvider,
-        vscode.workspace.registerTextDocumentContentProvider(
-            infoProvider.leanGoalsUri.scheme, infoProvider),
-        vscode.commands.registerTextEditorCommand('lean.infoView', (editor) => {
-            let column = editor.viewColumn + 1;
-            if (column == 4) column = vscode.ViewColumn.Three;
-            vscode.commands.executeCommand('vscode.previewHtml', infoProvider.leanGoalsUri, column,
-                "Lean Messages");
-        }),
-    );
+    // Add info view: listing either the current goal state or a list of all error messages
+    context.subscriptions.push(new InfoProvider(server, LEAN_MODE, context));
 }
