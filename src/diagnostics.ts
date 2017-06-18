@@ -35,8 +35,10 @@ export class LeanDiagnosticsProvider implements Disposable {
             const range = new Range(pos, pos);
             let diagnostics = diagnosticMap.get(message.file_name);
             if (!diagnostics) diagnosticMap.set(message.file_name, diagnostics = []);
-            diagnostics.push(new Diagnostic(range, message.text,
-                toSeverity(message.severity)));
+            const d = new Diagnostic(range, message.text,
+                toSeverity(message.severity));
+            d.source = 'Lean';
+            diagnostics.push(d);
         }
 
         this.collection.clear();
