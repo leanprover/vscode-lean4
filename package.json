@@ -81,15 +81,6 @@
                 }
             },
             {
-                "command": "lean.stopUpdating",
-                "category": "Lean",
-                "title": "Info View: Stop Updating",
-                "icon":{
-                    "dark": "./media/stop-updating-dark.svg",
-                    "light": "./media/stop-updating-light.svg"
-                }
-            },
-            {
                 "command": "lean.infoView.displayGoal",
                 "category": "Lean",
                 "title": "Info View: Display Goal",
@@ -107,15 +98,6 @@
                 "icon":{
                     "dark": "./media/display-list-dark.svg",
                     "light": "./media/display-list-light.svg"
-                }
-            },
-            {
-                "command": "lean.infoView.stopUpdating",
-                "category": "Lean",
-                "title": "Info View: Stop Updating",
-                "icon":{
-                    "dark": "./media/stop-updating-dark.svg",
-                    "light": "./media/stop-updating-light.svg"
                 }
             },
             {
@@ -222,10 +204,6 @@
                 {
                     "command": "lean.infoView.displayList",
                     "when": "resourceSchema == lean-info"
-                },
-                {
-                    "command": "lean.infoView.stopUpdating",
-                    "when": "resourceSchema == lean-info"
                 }
             ],
             "editor/title": [
@@ -240,22 +218,12 @@
                     "group": "navigation"
                 },
                 {
-                    "command": "lean.stopUpdating",
-                    "when": "editorLangId == lean",
-                    "group": "navigation"
-                },
-                {
                     "command": "lean.infoView.displayList",
                     "when": "resourceScheme == lean-info",
                     "group": "navigation"
                 },
                 {
                     "command": "lean.infoView.displayGoal",
-                    "when": "resourceScheme == lean-info",
-                    "group": "navigation"
-                },
-                {
-                    "command": "lean.infoView.stopUpdating",
                     "when": "resourceScheme == lean-info",
                     "group": "navigation"
                 }

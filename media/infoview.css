@@ -35,13 +35,31 @@ h1
   font-size: 100%;
 }
 
-div#stopped {
+a {
+  text-decoration: none;
+}
+
+div#run-state {
   display: block;
   position: fixed;
   top: 0px;
   right: 0px;
-  width: auto; /* overwrite regular div */
+  width: auto;
+  padding: 3px 5px 1px 7px;
   z-index: 2;
+}
+
+div#run-state span {
+  vertical-align: middle;
+}
+
+div#run-state span a img {
+  position: relative;
+  top: 3px;
+}
+
+.disabled {
+  display: none;
 }
 
 #marker {
@@ -77,6 +95,10 @@ div.information h1 a {
   color: darkgreen;
 }
 
+div#run-state {
+  background-color: #f0f0f0;
+}
+
 /* Theme categories, set by VS Code in the body element:
 - vscode-light
 - vscode-dark
@@ -110,6 +132,10 @@ div.information h1 a {
   color: lightgreen;
 }
 
+.vscode-dark div#run-state {
+  background-color: #222;
+}
+
 
 .vscode-high-contrast h1 {
   border-bottom-color: white;
@@ -137,5 +163,9 @@ div.information h1 a {
 
 .vscode-high-contrast div.information h1 {
   color: lightgreen;
+}
+
+.vscode-high-contrast div#run-state {
+  background-color: #000;
 }
 

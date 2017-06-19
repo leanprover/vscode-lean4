@@ -80,6 +80,12 @@ export class InfoProvider implements TextDocumentContentProvider, Disposable {
             commands.registerCommand('_lean.revealPosition', this.revealEditorPosition),
             commands.registerCommand('_lean.hoverPosition', (u, l, c) => { this.hoverEditorPosition(u, l, c); }),
             commands.registerCommand('_lean.stopHover', () => { this.stopHover() }),
+            commands.registerCommand('_lean.infoView.pause', () => {
+                this.stopUpdating();
+            }),
+            commands.registerCommand('_lean.infoView.continue', () => {
+                this.setMode(this.displayMode);
+            }),
             commands.registerTextEditorCommand('lean.displayGoal', (editor) => {
                 this.setMode(DisplayMode.OnlyState);
                 this.openPreview(editor);
@@ -88,18 +94,11 @@ export class InfoProvider implements TextDocumentContentProvider, Disposable {
                 this.setMode(DisplayMode.AllMessage);
                 this.openPreview(editor);
             }),
-            commands.registerTextEditorCommand('lean.stopUpdating', (editor) => {
-                this.stopUpdating();
-                this.openPreview(editor);
-            }),
             commands.registerTextEditorCommand('lean.infoView.displayGoal', (editor) => {
                 this.setMode(DisplayMode.OnlyState);
             }),
             commands.registerTextEditorCommand('lean.infoView.displayList', (editor) => {
                 this.setMode(DisplayMode.AllMessage);
-            }),
-            commands.registerTextEditorCommand('lean.infoView.stopUpdating', (editor) => {
-                this.stopUpdating();
             }),
             workspace.registerTextDocumentContentProvider(this.leanGoalsUri.scheme, this)
         );
@@ -139,7 +138,7 @@ export class InfoProvider implements TextDocumentContentProvider, Disposable {
     private stopUpdating() {
         this.stopped = true;
         commands.executeCommand('_workbench.htmlPreview.postMessage', this.leanGoalsUri,
-            { command: 'stop' });
+            { command: 'pause' });
     }
 
     private setMode(mode : DisplayMode) {
@@ -197,13 +196,23 @@ export class InfoProvider implements TextDocumentContentProvider, Disposable {
     }
 
     private updatePosition(forceRefresh : boolean) {
-        if (this.stopped || (!this.changePosition() && !forceRefresh))
+        if (this.stopped) return;
+
+        const chPos = this.changePosition();
+        if (!chPos && !forceRefresh)
             return;
 
         const chMsg = this.updateMessages();
         switch (this.displayMode) {
         case DisplayMode.OnlyState:
-            this.updateGoal().then((chGoal) => { if (forceRefresh || chGoal || chMsg) this.fire() });
+            this.updateGoal().then((chGoal) => {
+                if (chPos || chGoal || chMsg) {
+                    this.fire();
+                } else if (forceRefresh) {
+                    commands.executeCommand('_workbench.htmlPreview.postMessage', this.leanGoalsUri,
+                        { command: 'continue' });
+                }
+            });
             break;
 
         case DisplayMode.AllMessage:
@@ -314,8 +323,14 @@ export class InfoProvider implements TextDocumentContentProvider, Disposable {
                 data-uri="${encodeURI(Uri.file(this.curFileName).toString())}"
                 data-line="${(this.curPosition.line + 1).toString()}"
                 data-column="${this.curPosition.character.toString()}"
-                ${this.displayMode == DisplayMode.AllMessage ? "data-messages=''" : ""}">
+                ${this.displayMode == DisplayMode.AllMessage ? "data-messages=''" : ""}>
               <div id="debug"></div>
+              <div id="run-state">
+                <span id="state-continue">Stopped <a href="command:_lean.infoView.continue?{}">
+                  <img title="Continue Updating" src="${this.getMediaPath("continue.svg")}"></a></span>
+                <span id="state-pause">Updating <a href="command:_lean.infoView.pause?{}">
+                  <img title="Stop Updating" src="${this.getMediaPath("pause.svg")}"></span></a>
+              </div>
               ${this.renderGoal()}
               <div id="messages">${this.renderMessages()}</div>
             </body></html>`;

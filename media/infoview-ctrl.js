@@ -116,12 +116,26 @@ function onPosition(rpos) {
   }
 }
 
-function onStop() {
-  const e = document.createElement("div");
-  e.setAttribute("id", "stopped");
-  e.innerText = "(stopped updating)"
-  document.body.appendChild(e);
+function onPause() {
+  document.getElementById("state-pause").classList.add("disabled");
+  document.getElementById("state-continue").classList.remove("disabled");
 }
+
+function onContinue() {
+  document.getElementById("state-pause").classList.remove("disabled");
+  document.getElementById("state-continue").classList.add("disabled");
+}
+
+window.addEventListener('message', (event => {
+  if (event.data.command == 'position') {
+    onPosition({line: event.data.line, column: event.data.column});
+    onContinue();
+  } else if (event.data.command == 'pause') {
+    onPause();
+  } else if (event.data.command == 'continue') {
+    onContinue();
+  }
+}), false);
 
 function setupHover() {
   const msgs = document.getElementsByClassName("message");
@@ -145,18 +159,11 @@ function setupHover() {
   }
 }
 
-window.addEventListener('message', (event => {
-  if (event.data.command == 'position') {
-    onPosition({line: event.data.line, column: event.data.column});
-  } else if (event.data.command == 'stop') {
-    onStop();
-  }
-}), false);
-
 function onLoad() {
   if (document.body.hasAttribute("data-messages")) {
     onPosition(getPosition(document.body)); // current editor position is stored in body element
   }
+  document.getElementById("state-continue").classList.add("disabled");
   setupHover();
   /* document.getElementById(ID_DEBUG).style.visibility = "visible"; */
 }
