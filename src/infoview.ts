@@ -1,9 +1,10 @@
 import { basename, join } from 'path';
 import { readFileSync } from 'fs';
 import {
-    TextDocumentContentProvider, Event, EventEmitter, Disposable, Uri, Range, ExtensionContext,
-    CancellationToken, DocumentSelector, TextDocument, TextEditorRevealType, Position, Selection,
-    TextEditorDecorationType, ViewColumn, workspace, window, commands, languages
+    CancellationToken, Disposable, DocumentSelector, Event, EventEmitter, ExtensionContext,
+    TextEditor, TextEditorRevealType, TextEditorDecorationType, TextDocument,
+    TextDocumentContentProvider, Position, Range, Selection, ViewColumn, Uri,
+    commands, languages, window, workspace
 } from 'vscode';
 import { InfoRecord, Message } from "lean-client-js-node";
 import { Server } from './server';
@@ -65,30 +66,31 @@ export class InfoProvider implements TextDocumentContentProvider, Disposable {
             }
             ` +
             workspace.getConfiguration('lean').get('infoViewStyle');
-        this.updatePosition();
 
         this.subscriptions.push(
             this.server.allMessages.on(() => {
                 if (this.updateMessages()) this.fire();
             }),
             this.server.statusChanged.on(() => {
-                this.updateGoal().then((changed) => { if (changed && this.displayGoal()) this.fire(); })
+                if (this.displayMode == DisplayMode.OnlyState) {
+                    this.updateGoal().then((changed) => { if (changed) this.fire(); })
+                }
             }),
-            window.onDidChangeTextEditorSelection(() => this.updatePosition()),
+            window.onDidChangeTextEditorSelection(() => this.updatePosition(false)),
             commands.registerCommand('_lean.revealPosition', this.revealEditorPosition),
             commands.registerCommand('_lean.hoverPosition', (u, l, c) => { this.hoverEditorPosition(u, l, c); }),
             commands.registerCommand('_lean.stopHover', () => { this.stopHover() }),
-            commands.registerCommand('lean.infoView.toggleMode', (editor) => { 
-                this.toggleMode();
+            commands.registerTextEditorCommand('lean.displayGoal', (editor) => {
+                this.setMode(DisplayMode.OnlyState);
+                this.openPreview(editor);
             }),
-            commands.registerCommand('lean.infoView.startStop', (editor) => { 
-                this.startStop();
+            commands.registerTextEditorCommand('lean.displayList', (editor) => {
+                this.setMode(DisplayMode.AllMessage);
+                this.openPreview(editor);
             }),
-            commands.registerTextEditorCommand('lean.infoView', (editor) => {
-                let column = editor.viewColumn + 1;
-                if (column == 4) column = ViewColumn.Three;
-                commands.executeCommand('vscode.previewHtml', this.leanGoalsUri, column,
-                    "Lean Messages");
+            commands.registerTextEditorCommand('lean.stopUpdating', (editor) => {
+                this.stopUpdating();
+                this.openPreview(editor);
             }),
             workspace.registerTextDocumentContentProvider(this.leanGoalsUri.scheme, this)
         );
@@ -106,12 +108,13 @@ export class InfoProvider implements TextDocumentContentProvider, Disposable {
             throw new Error(`unsupported uri: ${uri}`);
     }
 
-    private displayGoal() : boolean {
-        return this.displayMode == DisplayMode.OnlyState;
-    }
-
-    private displayPosition() : boolean {
-        return this.displayMode == DisplayMode.AllMessage;
+    private openPreview(editor : TextEditor) {
+        let column = editor.viewColumn + 1;
+        if (column == 4) column = ViewColumn.Three;
+        commands.executeCommand('vscode.previewHtml', this.leanGoalsUri, column, "Lean Messages")
+            .then((success) => { if (success) {
+                window.showTextDocument(editor.document); 
+            } })
     }
 
     private sendPosition() {
@@ -124,36 +127,17 @@ export class InfoProvider implements TextDocumentContentProvider, Disposable {
             });
     }
 
-    private startStop() {
-        this.stopped = !this.stopped;
-        if (!this.stopped) {
-            this.update();
-        }
+    private stopUpdating() {
+        this.stopped = true;
+        commands.executeCommand('_workbench.htmlPreview.postMessage', this.leanGoalsUri,
+            { command: 'stop' });
     }
 
-    private update() {
-        switch(this.displayMode) {
-        case DisplayMode.AllMessage:
-            this.updateMessages();
-            this.fire();
-            break;
-        case DisplayMode.OnlyState:
-            this.updateMessages();
-            this.updateGoal().then((changed) => { this.fire() });
-            break;
-        }
-    }
-
-    private toggleMode() {
-        switch(this.displayMode) {
-        case DisplayMode.AllMessage:
-            this.displayMode = DisplayMode.OnlyState;
-            break;
-        case DisplayMode.OnlyState:
-            this.displayMode = DisplayMode.AllMessage;
-            break;
-        }
-        this.update();
+    private setMode(mode : DisplayMode) {
+        if (this.displayMode == mode && !this.stopped) return;
+        this.displayMode = mode;
+        this.stopped = false;
+        this.updatePosition(true);
     }
 
     private fire() {
@@ -189,8 +173,9 @@ export class InfoProvider implements TextDocumentContentProvider, Disposable {
         }
     }
 
-    private updatePosition() {
-        if (this.stopped || !languages.match(this.leanDocs, window.activeTextEditor.document))
+    private changePosition() {
+        if (!window.activeTextEditor ||
+            !languages.match(this.leanDocs, window.activeTextEditor.document))
             return;
 
         const oldFileName = this.curFileName;
@@ -199,24 +184,26 @@ export class InfoProvider implements TextDocumentContentProvider, Disposable {
         this.curFileName = window.activeTextEditor.document.fileName;
         this.curPosition = window.activeTextEditor.selection.active;
 
-        const f = this.curFileName;
-        const l = this.curPosition.line + 1;
-        const c = this.curPosition.character;
-        if (this.curFileName !== oldFileName || !this.curPosition.isEqual(oldPosition)) {
-            const chMsg = this.updateMessages();
-            switch (this.displayMode) {
-            case DisplayMode.OnlyState:
-                this.updateGoal().then((chGoal) => { if (chGoal || chMsg) this.fire() });
-                break;
+        return (this.curFileName !== oldFileName || !this.curPosition.isEqual(oldPosition));
+    }
 
-            case DisplayMode.AllMessage:
-                if (chMsg) {
-                    this.fire();
-                } else {
-                    this.sendPosition()
-                }
-                break;
+    private updatePosition(forceRefresh : boolean) {
+        if (this.stopped || (!this.changePosition() && !forceRefresh))
+            return;
+
+        const chMsg = this.updateMessages();
+        switch (this.displayMode) {
+        case DisplayMode.OnlyState:
+            this.updateGoal().then((chGoal) => { if (forceRefresh || chGoal || chMsg) this.fire() });
+            break;
+
+        case DisplayMode.AllMessage:
+            if (forceRefresh || chMsg) {
+                this.fire();
+            } else {
+                this.sendPosition()
             }
+            break;
         }
     }
 
@@ -304,14 +291,17 @@ export class InfoProvider implements TextDocumentContentProvider, Disposable {
     }
 
     private render() {
-        return `<!DOCTYPE html>
+        const header = `<!DOCTYPE html>
             <html>
             <head> 
               <meta http-equiv="Content-type" content="text/html;charset=utf-8">
               <style>${escapeHtml(this.stylesheet)}</style>
               <script charset="utf-8" src="${this.getMediaPath("infoview-ctrl.js")}"></script>
-            </head>
-            <body
+            </head>`;
+        if (!this.curFileName)
+            return header + "<body>No Lean file active</body>";
+        return header +
+            `<body
                 data-uri="${encodeURI(Uri.file(this.curFileName).toString())}"
                 data-line="${(this.curPosition.line + 1).toString()}"
                 data-column="${this.curPosition.character.toString()}"
@@ -328,7 +318,7 @@ export class InfoProvider implements TextDocumentContentProvider, Disposable {
     }
 
     private renderMessages() {
-        if (!this.curFileName) return ``;
+        if (!this.curFileName || !this.curMessages) return ``;
         return this.curMessages.map((m) => {
             const f = escapeHtml(m.file_name); const b = escapeHtml(basename(m.file_name));
             const l = m.pos_line.toString(); const c = m.pos_col.toString();

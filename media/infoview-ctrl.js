@@ -116,6 +116,13 @@ function onPosition(rpos) {
   }
 }
 
+function onStop() {
+  const e = document.createElement("div");
+  e.setAttribute("id", "stopped");
+  e.innerText = "(stopped updating)"
+  document.body.appendChild(e);
+}
+
 function setupHover() {
   const msgs = document.getElementsByClassName("message");
   for (let i = 0; i < msgs.length; i++) {
@@ -141,6 +148,8 @@ function setupHover() {
 window.addEventListener('message', (event => {
   if (event.data.command == 'position') {
     onPosition({line: event.data.line, column: event.data.column});
+  } else if (event.data.command == 'stop') {
+    onStop();
   }
 }), false);
 

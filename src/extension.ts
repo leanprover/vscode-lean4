@@ -6,7 +6,6 @@ import { LeanHoverProvider } from './hover';
 import { LeanCompletionItemProvider } from './completion';
 import { LeanInputCompletionProvider, LeanInputExplanationHover, LeanInputAbbreviator } from './input';
 import { LeanDefinitionProvider } from './definition'
-import { displayGoalAtPosition } from './goal';
 import { batchExecuteFile } from './batch';
 import { LeanStatusBarItem } from './statusbar';
 import { RoiManager, RoiMode } from './roi';
@@ -54,8 +53,6 @@ export function activate(context: vscode.ExtensionContext) {
     // Setup the commands.
     context.subscriptions.push(
         vscode.commands.registerCommand('lean.restartServer', () => server.restart()),
-        vscode.commands.registerTextEditorCommand('lean.displayGoal',
-            (editor, edit, args) => { displayGoalAtPosition(server, editor, edit, args) }),
         vscode.commands.registerTextEditorCommand('lean.batchExecute',
             (editor, edit, args) => { batchExecuteFile(editor, edit, args); }),
     );

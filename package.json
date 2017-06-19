@@ -64,30 +64,29 @@
                 "command": "lean.displayGoal",
                 "category": "Lean",
                 "title": "Display Goal",
-                "description": "Display the goal at the current position."
-            },
-            {
-                "command": "lean.infoView",
-                "category": "Lean",
-                "title": "Open Info View",
-                "description": "Displays the goal state or messages in a separate window"
-            },
-            {
-                "command": "lean.infoView.toggleMode",
-                "category": "Lean",
-                "title": "Toggle Display Mode",
-                "icon":{
-                    "dark": "./media/display-toggle-dark.svg",
-                    "light": "./media/display-toggle.svg"
+                "description": "Display the goal at the current position.",
+                "icon": {
+                    "dark": "./media/display-goal-dark.svg",
+                    "light": "./media/display-goal-light.svg"
                 }
             },
             {
-                "command": "lean.infoView.startStop",
+                "command": "lean.displayList",
                 "category": "Lean",
-                "title": "Start and Stop Info View",
+                "title": "Display Messages",
+                "description": "Displays the goal state or messages in a separate window",
                 "icon":{
-                    "dark": "./media/start-stop-dark.svg",
-                    "light": "./media/start-stop.svg"
+                    "dark": "./media/display-list-dark.svg",
+                    "light": "./media/display-list-light.svg"
+                }
+            },
+            {
+                "command": "lean.stopUpdating",
+                "category": "Lean",
+                "title": "Stop Updating",
+                "icon":{
+                    "dark": "./media/stop-updating-dark.svg",
+                    "light": "./media/stop-updating-light.svg"
                 }
             },
             {
@@ -141,7 +140,6 @@
                     "lean"
                 ],
                 "extensions": [
-                    ".lean-info",
                     ".lean"
                 ],
                 "configuration": "./language-configuration.json"
@@ -162,6 +160,12 @@
                 "when": "editorTextFocus && editorLangId == lean"
             },
             {
+                "command": "lean.displayList",
+                "key": "ctrl+shift+alt+enter",
+                "mac": "cmd+shift+alt+enter",
+                "when": "editorTextFocus && editorLangId == lean"
+            },
+            {
                 "command": "lean.batchExecute",
                 "key": "ctrl+shift+r",
                 "mac": "cmd+shift+r",
@@ -175,7 +179,7 @@
                     "when": "editorLangId == lean"
                 },
                 {
-                    "command": "lean.infoView",
+                    "command": "lean.displayList",
                     "when": "editorLangId == lean"
                 },
                 {
@@ -185,24 +189,19 @@
             ],
             "editor/title": [
                 {
-                    "command": "lean.infoView.toggleMode",
-                    "when": "resourceScheme == lean-info",
+                    "command": "lean.displayList",
+                    "when": "editorLangId == lean",
                     "group": "navigation"
                 },
                 {
-                    "command": "lean.infoView.startStop",
-                    "when": "resourceScheme == lean-info",
+                    "command": "lean.displayGoal",
+                    "when": "editorLangId == lean",
                     "group": "navigation"
-                }
-            ],
-            "editor/title/context": [
-                {
-                    "command": "lean.infoView.toggleMode",
-                    "when": "resourceScheme == lean-info"
                 },
                 {
-                    "command": "lean.infoView.startStop",
-                    "when": "resourceScheme == lean-info"
+                    "command": "lean.stopUpdating",
+                    "when": "editorLangId == lean",
+                    "group": "navigation"
                 }
             ]
         }

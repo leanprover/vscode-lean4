@@ -35,6 +35,15 @@ h1
   font-size: 100%;
 }
 
+div#stopped {
+  display: block;
+  position: fixed;
+  top: 0px;
+  right: 0px;
+  width: auto; /* overwrite regular div */
+  z-index: 2;
+}
+
 #marker {
   position: absolute;
   left: 2px;
