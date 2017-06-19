@@ -92,6 +92,15 @@ export class InfoProvider implements TextDocumentContentProvider, Disposable {
                 this.stopUpdating();
                 this.openPreview(editor);
             }),
+            commands.registerTextEditorCommand('lean.infoView.displayGoal', (editor) => {
+                this.setMode(DisplayMode.OnlyState);
+            }),
+            commands.registerTextEditorCommand('lean.infoView.displayList', (editor) => {
+                this.setMode(DisplayMode.AllMessage);
+            }),
+            commands.registerTextEditorCommand('lean.infoView.stopUpdating', (editor) => {
+                this.stopUpdating();
+            }),
             workspace.registerTextDocumentContentProvider(this.leanGoalsUri.scheme, this)
         );
     }

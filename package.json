@@ -63,7 +63,7 @@
             {
                 "command": "lean.displayGoal",
                 "category": "Lean",
-                "title": "Display Goal",
+                "title": "Info View: Display Goal",
                 "description": "Display the goal at the current position.",
                 "icon": {
                     "dark": "./media/display-goal-dark.svg",
@@ -73,7 +73,7 @@
             {
                 "command": "lean.displayList",
                 "category": "Lean",
-                "title": "Display Messages",
+                "title": "Info View: Display Messages",
                 "description": "Displays the goal state or messages in a separate window",
                 "icon":{
                     "dark": "./media/display-list-dark.svg",
@@ -83,7 +83,36 @@
             {
                 "command": "lean.stopUpdating",
                 "category": "Lean",
-                "title": "Stop Updating",
+                "title": "Info View: Stop Updating",
+                "icon":{
+                    "dark": "./media/stop-updating-dark.svg",
+                    "light": "./media/stop-updating-light.svg"
+                }
+            },
+            {
+                "command": "lean.infoView.displayGoal",
+                "category": "Lean",
+                "title": "Info View: Display Goal",
+                "description": "Display the goal at the current position",
+                "icon": {
+                    "dark": "./media/display-goal-dark.svg",
+                    "light": "./media/display-goal-light.svg"
+                }
+            },
+            {
+                "command": "lean.infoView.displayList",
+                "category": "Lean",
+                "title": "Info View: Display Messages",
+                "description": "Displays the goal state or messages in a separate window",
+                "icon":{
+                    "dark": "./media/display-list-dark.svg",
+                    "light": "./media/display-list-light.svg"
+                }
+            },
+            {
+                "command": "lean.infoView.stopUpdating",
+                "category": "Lean",
+                "title": "Info View: Stop Updating",
                 "icon":{
                     "dark": "./media/stop-updating-dark.svg",
                     "light": "./media/stop-updating-light.svg"
@@ -185,6 +214,18 @@
                 {
                     "command": "lean.batchExecute",
                     "when": "editorLangId == lean"
+                },
+                {
+                    "command": "lean.infoView.displayGoal",
+                    "when": "resourceSchema == lean-info"
+                },
+                {
+                    "command": "lean.infoView.displayList",
+                    "when": "resourceSchema == lean-info"
+                },
+                {
+                    "command": "lean.infoView.stopUpdating",
+                    "when": "resourceSchema == lean-info"
                 }
             ],
             "editor/title": [
@@ -201,6 +242,21 @@
                 {
                     "command": "lean.stopUpdating",
                     "when": "editorLangId == lean",
+                    "group": "navigation"
+                },
+                {
+                    "command": "lean.infoView.displayList",
+                    "when": "resourceScheme == lean-info",
+                    "group": "navigation"
+                },
+                {
+                    "command": "lean.infoView.displayGoal",
+                    "when": "resourceScheme == lean-info",
+                    "group": "navigation"
+                },
+                {
+                    "command": "lean.infoView.stopUpdating",
+                    "when": "resourceScheme == lean-info",
                     "group": "navigation"
                 }
             ]
