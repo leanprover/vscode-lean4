@@ -55,6 +55,7 @@ This extension contributes the following settings:
 ### 0.10.0 (unreleased)
 
 ### 0.9.0
+* Extremely improved info view (ctrl+shift+enter)
 * Only show commands acting on Lean files when a Lean file is open in the current editor
 * Hole support
 
