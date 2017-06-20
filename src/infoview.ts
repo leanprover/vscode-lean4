@@ -66,6 +66,7 @@ export class InfoProvider implements TextDocumentContentProvider, Disposable {
             pre {
                 font-family: ${fontFamily};
                 font-size: ${workspace.getConfiguration('editor').get('fontSize')}px;
+                white-space: pre-wrap; // TODO(gabriel): make configurable
             }
             ` +
             workspace.getConfiguration('lean').get('infoViewStyle');
