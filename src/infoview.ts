@@ -61,7 +61,7 @@ export class InfoProvider implements TextDocumentContentProvider, Disposable {
         // TODO: update stylesheet on configuration changes
         const fontFamily =
             (workspace.getConfiguration('editor').get('fontFamily') as string).
-            replace(/['"]/, "");
+            replace(/['"]/g, "");
         this.stylesheet = readFileSync(css, "utf-8") + `
             pre {
                 font-family: ${fontFamily};
