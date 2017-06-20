@@ -59,9 +59,12 @@ export class InfoProvider implements TextDocumentContentProvider, Disposable {
         let css = this.context.asAbsolutePath(join('media', `infoview.css`));
         let js = this.context.asAbsolutePath(join('media', `infoview-ctrl.js`));
         // TODO: update stylesheet on configuration changes
+        const fontFamily =
+            (workspace.getConfiguration('editor').get('fontFamily') as string).
+            replace(/['"]/, "");
         this.stylesheet = readFileSync(css, "utf-8") + `
             pre {
-                font-family: ${workspace.getConfiguration('editor').get('fontFamily')};
+                font-family: ${fontFamily};
                 font-size: ${workspace.getConfiguration('editor').get('fontSize')}px;
             }
             ` +
