@@ -55,22 +55,7 @@ export class InfoProvider implements TextDocumentContentProvider, Disposable {
             backgroundColor: 'red', // make configurable?
             border: '3px solid red'
         });
-
-        let css = this.context.asAbsolutePath(join('media', `infoview.css`));
-        let js = this.context.asAbsolutePath(join('media', `infoview-ctrl.js`));
-        // TODO: update stylesheet on configuration changes
-        const fontFamily =
-            (workspace.getConfiguration('editor').get('fontFamily') as string).
-            replace(/['"]/g, "");
-        this.stylesheet = readFileSync(css, "utf-8") + `
-            pre {
-                font-family: ${fontFamily};
-                font-size: ${workspace.getConfiguration('editor').get('fontSize')}px;
-                white-space: pre-wrap; // TODO(gabriel): make configurable
-            }
-            ` +
-            workspace.getConfiguration('lean').get('infoViewStyle');
-
+        this.updateStylesheet()
         this.subscriptions.push(
             this.server.allMessages.on(() => {
                 if (this.updateMessages()) this.fire();
@@ -81,6 +66,10 @@ export class InfoProvider implements TextDocumentContentProvider, Disposable {
                 }
             }),
             window.onDidChangeTextEditorSelection(() => this.updatePosition(false)),
+            workspace.onDidChangeConfiguration((e) => {
+                this.updateStylesheet(); 
+                this.fire();
+            }),
             commands.registerCommand('_lean.revealPosition', this.revealEditorPosition),
             commands.registerCommand('_lean.hoverPosition', (u, l, c) => { this.hoverEditorPosition(u, l, c); }),
             commands.registerCommand('_lean.stopHover', () => { this.stopHover() }),
@@ -118,6 +107,21 @@ export class InfoProvider implements TextDocumentContentProvider, Disposable {
             return content;
         } else
             throw new Error(`unsupported uri: ${uri}`);
+    }
+
+    private updateStylesheet() {
+        let css = this.context.asAbsolutePath(join('media', `infoview.css`));
+        const fontFamily =
+            (workspace.getConfiguration('editor').get('fontFamily') as string).
+            replace(/['"]/g, "");
+        this.stylesheet = readFileSync(css, "utf-8") + `
+            pre {
+                font-family: ${fontFamily};
+                font-size: ${workspace.getConfiguration('editor').get('fontSize')}px;
+                white-space: pre-wrap; // TODO(gabriel): make configurable
+            }
+            ` +
+            workspace.getConfiguration('lean').get('infoViewStyle');
     }
 
     private openPreview(editor : TextEditor) {

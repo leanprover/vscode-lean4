@@ -89,11 +89,14 @@ function onPosition(rpos) {
     let pos = getPosition(elem);
     if (!pos) continue;
     let classes = elem.classList;
+    classes.remove("marked");
+    classes.remove("next-marked");
 
     if (isBefore(pos, rpos))
     {
       before = elem;
     } else if (isEqual(pos, rpos)) {
+      classes.add("marked");
       if (state == 'before') {
         reveal = elem;
         state = 'exact';
@@ -106,6 +109,7 @@ function onPosition(rpos) {
     revealMessageElement(reveal);
     setMarker(reveal, true, "⯈");
   } else if (before) {
+    before.classList.add("next-marked");
     revealMessageElement(before);
     setMarker(before, false, "▹");
   } else if (elems.length > 0) {
