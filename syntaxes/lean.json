@@ -26,7 +26,7 @@
       "patterns": []
     },
     {
-      "begin": "\\b(inductive|structure|theorem|axiom|axioms|lemma|hypothesis|definition|def|instance|class|constant)\\b\\s+(\\{[^}]*\\}\\s+)?([^ \\t\\n\\r{(\\[]*)",
+      "begin": "\\b(inductive|coinductive|structure|theorem|axiom|axioms|lemma|hypothesis|definition|def|instance|class|constant)\\b\\s+(\\{[^}]*\\}\\s+)?([^ \\t\\n\\r{(\\[]*)",
       "beginCaptures": {
         "1": {
           "name": "keyword.other.lean"
@@ -63,7 +63,7 @@
       "name": "storage.modifier.lean"
     },
     {
-      "match": "\\b(private|meta|mutual|protected|noncomputable|mutual)\\b",
+      "match": "\\b(private|meta|mutual|protected|noncomputable)\\b",
       "name": "keyword.control.definition.modifier.lean"
     },
     {
@@ -71,7 +71,7 @@
       "name": "keyword.other.command.lean"
     },
     {
-      "match": "\\b(import|prelude|theory|definition|def|instance|renaming|hiding|exposing|parameter|parameters|begin|constant|constants|lemma|variable|variables|theorem|example|open|axiom|inductive|with|structure|universe|universes|alias|override|precedence|reserve|postfix|prefix|infix|infixl|infixr|notation|end|using|namespace|section|local|set_option|extends|include|omit|class|classes|instances|raw|run_cmd)\\b",
+      "match": "\\b(import|prelude|theory|definition|def|instance|renaming|hiding|exposing|parameter|parameters|begin|constant|constants|lemma|variable|variables|theorem|example|open|axiom|inductive|coinductive|with|structure|universe|universes|alias|precedence|reserve|postfix|prefix|infix|infixl|infixr|notation|end|using|namespace|section|local|set_option|extends|include|omit|class|classes|instances|raw|run_cmd)\\b",
       "name": "keyword.other.lean"
     },
     {
@@ -86,7 +86,7 @@
       }
     },
     {
-      "match": "\\b(calc|have|assert|suppose|this|match|obtains|do|suffices|show|by|in|at|let|forall|fun|exists|assume|take|obtain|from)\\b",
+      "match": "\\b(calc|have|assert|suppose|this|match|do|suffices|show|by|in|at|let|forall|fun|exists|assume|take|from)\\b",
       "name": "keyword.other.lean"
     },
     {
