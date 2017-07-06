@@ -244,22 +244,24 @@ export class InfoProvider implements TextDocumentContentProvider, Disposable {
                 .filter((m) => m.file_name === this.curFileName &&
                     m.pos_line == this.curPosition.line + 1)
                 .sort((a, b) => a.pos_col - b.pos_col);
-            let startColumn = undefined;
-            let startPos = null;
-            for (let i = 0; i < msgs.length; i++) {
-                if (this.curPosition.character < msgs[i].pos_col) break;
-                if (this.curPosition.character == msgs[i].pos_col) {
-                    startColumn = this.curPosition.character;
-                    startPos = i;
-                    break;
+            if (!workspace.getConfiguration('lean').get('infoViewAllErrorsOnLine')) {
+                let startColumn = undefined;
+                let startPos = null;
+                for (let i = 0; i < msgs.length; i++) {
+                    if (this.curPosition.character < msgs[i].pos_col) break;
+                    if (this.curPosition.character == msgs[i].pos_col) {
+                        startColumn = this.curPosition.character;
+                        startPos = i;
+                        break;
+                    }
+                    if (startColumn == null || startColumn < msgs[i].pos_col) {
+                        startColumn = msgs[i].pos_col;
+                        startPos = i;
+                    }
                 }
-                if (startColumn == null || startColumn < msgs[i].pos_col) {
-                    startColumn = msgs[i].pos_col;
-                    startPos = i;
+                if (startPos) {
+                    msgs = msgs.slice(startPos);
                 }
-            }
-            if (startPos) {
-                msgs = msgs.slice(startPos);
             }
             break;
 

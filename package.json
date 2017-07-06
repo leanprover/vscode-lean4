@@ -46,6 +46,11 @@
                     "default": "visible",
                     "description": "Set the default region of interest mode (nothing, visible, open or project) for the Lean extension."
                 },
+                "lean.infoViewAllErrorsOnLine": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Info view: show all errors on the current line, instead of just the ones on the right of the cursor."
+                },
                 "lean.infoViewStyle": {
                     "type": "string",
                     "default": "",
