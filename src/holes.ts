@@ -57,7 +57,7 @@ export class LeanHoles implements Disposable, CodeActionProvider {
         try {
             res = await this.server.hole(file, line, column, action)
         } catch (e) {
-            return window.showErrorMessage(`Error while executing hole command:\n${e}`)
+            return window.showErrorMessage(`Error while executing hole command: ${e}`)
         }
 
         if (res.message) {
