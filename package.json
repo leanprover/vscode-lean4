@@ -80,7 +80,7 @@
                 "category": "Lean",
                 "title": "Info View: Display Messages",
                 "description": "Displays the goal state or messages in a separate window",
-                "icon":{
+                "icon": {
                     "dark": "./media/display-list-dark.svg",
                     "light": "./media/display-list-light.svg"
                 }
@@ -100,7 +100,7 @@
                 "category": "Lean",
                 "title": "Info View: Display Messages",
                 "description": "Displays the goal state or messages in a separate window",
-                "icon":{
+                "icon": {
                     "dark": "./media/display-list-dark.svg",
                     "light": "./media/display-list-light.svg"
                 }
