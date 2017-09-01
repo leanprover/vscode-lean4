@@ -16,8 +16,7 @@ We currently support a variety of features.
 * Search for declarations in open files (ctrl+p #)
 * Region of interest checking (i.e control over how much of the project we check)
 * Fill in `{! !}` holes using ctrl+.
-
-<!--\!\[feature X\]\(images/feature-x.png\)-->
+* Tasks for leanpkg (ctrl+p task configure)
 
 ## Requirements
 
@@ -129,5 +128,4 @@ Initial release of the package.
 
 ## Contact
 
-Please report issues on [Github](https://github.com/leanprover/vscode-lean), for questions or concerns you can email the
-Lean mailing list, or send @jroesch mail directly.
+Please report issues on [Github](https://github.com/leanprover/vscode-lean).
