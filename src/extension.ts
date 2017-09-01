@@ -9,7 +9,6 @@ import { LeanDefinitionProvider } from './definition'
 import { batchExecuteFile } from './batch';
 import { LeanStatusBarItem } from './statusbar';
 import { RoiManager, RoiMode } from './roi';
-import { getExecutablePath, getMemoryLimit, getTimeLimit, atLeastLeanVersion } from './util';
 import {InfoProvider} from './infoview';
 import {LeanDiagnosticsProvider} from './diagnostics';
 import {LeanSyncService} from './sync';
@@ -32,29 +31,15 @@ let server : Server;
 export function activate(context: vscode.ExtensionContext) {
     configExcludeOLean();
 
-    try {
-        let working_directory = vscode.workspace.rootPath;
-        let executablePath = getExecutablePath();
-
-        console.log("Starting server: " + executablePath + "; in directory: " + working_directory)
-
-        server = new Server(executablePath, working_directory, getMemoryLimit(), getTimeLimit());
-    } catch (e) {
-        vscode.window.showErrorMessage(
-            `Unable to start the Lean server process: ${e}`);
-        vscode.window.showWarningMessage(
-            "The lean.executablePath may be incorrect, ensure the variable is a valid Lean executable");
-        return;
-    }
-
-    // Ensure that the server is disposed of.
+    server = new Server();
     context.subscriptions.push(server);
+    server.connect();
 
     // Setup the commands.
     context.subscriptions.push(
         vscode.commands.registerCommand('lean.restartServer', () => server.restart()),
         vscode.commands.registerTextEditorCommand('lean.batchExecute',
-            (editor, edit, args) => { batchExecuteFile(editor, edit, args); }),
+            (editor, edit, args) => { batchExecuteFile(server, editor, edit, args); }),
     );
 
     context.subscriptions.push(new LeanDiagnosticsProvider(server));
@@ -108,7 +93,7 @@ export function activate(context: vscode.ExtensionContext) {
             new LeanWorkspaceSymbolProvider(server)));
 
     // Holes
-    if (atLeastLeanVersion('3.1.1')) {
+    if (server.atLeastLeanVersion('3.1.1')) {
         context.subscriptions.push(new LeanHoles(server, LEAN_MODE));
     }
 

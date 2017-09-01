@@ -3,11 +3,11 @@ import {TextEditor, OutputChannel, TextEditorEdit} from 'vscode';
 import * as vscode from 'vscode';
 import * as child from 'child_process';
 import * as carrier from 'carrier';
-import {getExecutablePath, getEnv} from './util';
 
 let batchOutputChannel : OutputChannel;
 
 export function batchExecuteFile(
+    server: Server,
     editor : TextEditor,
     edit : TextEditorEdit,
     args : any[])
@@ -17,10 +17,10 @@ export function batchExecuteFile(
 
     let fileName = editor.document.fileName;
 
-    let executablePath = getExecutablePath();
+    let executablePath = server.executablePath;
 
     let lean = child.spawn(executablePath, [fileName],
-        { cwd: vscode.workspace.rootPath, env: getEnv() });
+        { cwd: vscode.workspace.rootPath, env: {} /* TODO(gabriel): take from server */ });
 
     batchOutputChannel.clear();
 

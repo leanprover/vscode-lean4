@@ -3,6 +3,7 @@ import * as carrier from 'carrier';
 import * as vscode from 'vscode';
 import * as util from './util';
 import * as leanclient from 'lean-client-js-node';
+import * as semver from 'semver';
 import {Task, Event, ProcessTransport, ProcessConnection, Message,
      CommandResponse, CompleteResponse, FileRoi, RoiRequest} from 'lean-client-js-node';
 
@@ -17,49 +18,68 @@ export type ServerStatus = {
 let stderrOutput : vscode.OutputChannel;
 
 // A class for interacting with the Lean server protocol.
-class Server extends leanclient.Server {
+export class Server extends leanclient.Server {
+    transport: ProcessTransport;
     executablePath: string;
     workingDirectory: string;
     options: string[];
+    version: string;
+
     statusChanged: util.LowPassFilter<ServerStatus>;
     restarted: Event<any>;
     supportsROI: Boolean;
 
     messages: Message[];
 
-    constructor(executablePath : string, workingDirectory : string, memoryLimit : number, timeLimit : number) {
-        executablePath = executablePath || "lean";
-
-        const options: string[] = [];
-
-        if (util.atLeastLeanVersion("3.1.0")) {
-            options.push("-M")
-            options.push(memoryLimit.toString())
-
-            options.push("-T")
-            options.push(timeLimit.toString())
-        }
-
-        super(new ProcessTransport(executablePath, workingDirectory, options));
+    constructor() {
+        super(null); // TODO(gabriel): add support to lean-client-js
         this.statusChanged = new util.LowPassFilter<ServerStatus>(300);
         this.restarted = new Event();
         this.messages = [];
-
-        this.executablePath = executablePath;
-        this.workingDirectory = workingDirectory;
-        this.supportsROI = util.atLeastLeanVersion("3.1.1");
+        this.supportsROI = true;
+        this.version = '3.2.0';
 
         this.attachEventHandlers();
 
         this.connect();
     }
 
-    private attachEventHandlers() {
-        this.error.on((error) => {
-            console.log("unrelated error: ", error);
-            // TODO(jroesch): We should have a mechanism for asking to report errors like this directly to the mode.
-        });
+    atLeastLeanVersion(requiredVersion: string): boolean {
+        return semver.lte(requiredVersion, this.version);
+    }
 
+    connect() {
+        try {
+            this.messages = [];
+
+            let config = vscode.workspace.getConfiguration('lean');
+
+            // TODO(gabriel): unset LEAN_PATH environment variable
+
+            this.executablePath = config.get('executablePath') || 'lean';
+            this.workingDirectory = vscode.workspace.rootPath;
+            this.options = config.get('extraOptions') || [];
+
+            this.version = new ProcessTransport(this.executablePath, '.', []).getVersion();
+            if (this.atLeastLeanVersion('3.1.0')) {
+                this.options.push('-M')
+                this.options.push('' + config.get('memoryLimit'));
+
+                this.options.push('-T')
+                this.options.push('' + config.get('timeLimit'));
+            }
+
+            this.supportsROI = this.atLeastLeanVersion('3.1.1');
+
+            this.transport = new ProcessTransport(
+                this.executablePath, this.workingDirectory, this.options);
+            super.connect();
+        } catch (e) {
+            this.requestRestart(`Lean: ${e}`);
+        }
+    }
+
+    private attachEventHandlers() {
         // When attaching event handlers ensure the global error log is clear.
         stderrOutput = stderrOutput || vscode.window.createOutputChannel("Lean: Server Errors");
         stderrOutput.clear();
@@ -71,15 +91,9 @@ class Server extends leanclient.Server {
                     stderrOutput.show();
                     break;
                 case 'connect':
-                    vscode.window.showErrorMessage(
+                    this.requestRestart(
                         `Lean: ${e.message}\n` +
-                        'The lean.executablePath may be incorrect, make sure it is a valid Lean executable',
-                        'Restart server'
-                    ).then((item) => {
-                        if (item === 'Restart server') {
-                            this.restart();
-                        }
-                    });
+                        'The lean.executablePath may be incorrect, make sure it is a valid Lean executable');
                     break;
                 case 'unrelated':
                     vscode.window.showWarningMessage("Lean: " + e.message);
@@ -112,6 +126,13 @@ class Server extends leanclient.Server {
         this.restarted.fire(null);
         stderrOutput.appendLine("----- user triggered restart -----");
     }
-};
 
-export { Server };
+    async requestRestart(message: string, justWarning?: boolean) {
+        const restartItem = 'Restart server';
+        const showMsg = justWarning ? vscode.window.showWarningMessage : vscode.window.showErrorMessage;
+        const item = await showMsg(message, restartItem);
+        if (item === restartItem) {
+            this.restart();
+        }
+    }
+};
