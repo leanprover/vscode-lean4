@@ -51,7 +51,7 @@ This extension contributes the following settings:
 
 ## Release Notes
 
-### 0.10.0 (unreleased)
+### 0.10.0
 * New configuration option for extra command-line arguments. (`lean.extraOptions`)
 * Integration with leanpkg.
 
