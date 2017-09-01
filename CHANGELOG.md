@@ -1,3 +1,3 @@
 # Change Log
 
-Changes are listed in the [./README.md](README).
+Changes are listed in the [README](./README.md).
