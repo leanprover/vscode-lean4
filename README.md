@@ -53,6 +53,7 @@ This extension contributes the following settings:
 ## Release Notes
 
 ### 0.10.0 (unreleased)
+* New configuration option for extra command-line arguments. (`lean.extraOptions`)
 
 ### 0.9.0
 * Extremely improved info view (ctrl+shift+enter)
