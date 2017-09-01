@@ -1,280 +1,285 @@
 {
-    "name": "lean",
-    "displayName": "lean",
-    "description": "An extension for VS Code which provides support for the Lean language.",
-    "version": "0.9.1",
-    "publisher": "jroesch",
-    "engines": {
-        "vscode": "^1.8.0"
-    },
-    "categories": [
-        "Languages"
-    ],
-    "repository": "https://github.com/leanprover/vscode-lean",
-    "contributes": {
-        "configuration": {
-            "type": "object",
-            "title": "Lean configuration",
-            "properties": {
-                "lean.executablePath": {
-                    "type": "string",
-                    "default": "lean",
-                    "description": "Path to the Lean executable to use."
-                },
-                "lean.memoryLimit": {
-                    "type": "number",
-                    "default": "1024",
-                    "description": "Set a memory limit (in Megabytes) for the Lean server."
-                },
-                "lean.timeLimit": {
-                    "type": "number",
-                    "default": "100000",
-                    "description": "Set a Deterministic timeout (it is approximately the maximum number of memory allocations in thousands) for the Lean server."
-                },
-                "lean.extraOptions": {
-                    "type": "array",
-                    "default": [],
-                    "description": "Extra command-line options for the Lean server.",
-                    "items": {
-                        "type": "string",
-                        "description": "Single command-line argument."
-                    }
-                },
-                "lean.progressMessages": {
-                    "type": "boolean",
-                    "default": false,
-                    "description": "Show error messages where Lean is still checking."
-                },
-                "lean.newInput": {
-                    "type": "boolean",
-                    "default": true,
-                    "description": "Enable experimental new input mode for unicode symbols (requires restart to take effect)."
-                },
-                "lean.roiModeDefault": {
-                    "type": "string",
-                    "default": "visible",
-                    "description": "Set the default region of interest mode (nothing, visible, open or project) for the Lean extension."
-                },
-                "lean.infoViewAllErrorsOnLine": {
-                    "type": "boolean",
-                    "default": false,
-                    "description": "Info view: show all errors on the current line, instead of just the ones on the right of the cursor."
-                },
-                "lean.infoViewStyle": {
-                    "type": "string",
-                    "default": "",
-                    "description": "Add an additional CSS snippet to the info view."
-                }
-            }
+  "name": "lean",
+  "displayName": "lean",
+  "description": "An extension for VS Code which provides support for the Lean language.",
+  "version": "0.9.1",
+  "publisher": "jroesch",
+  "engines": {
+    "vscode": "^1.14.0"
+  },
+  "categories": [
+    "Languages"
+  ],
+  "repository": "https://github.com/leanprover/vscode-lean",
+  "contributes": {
+    "configuration": {
+      "type": "object",
+      "title": "Lean configuration",
+      "properties": {
+        "lean.executablePath": {
+          "type": "string",
+          "default": "lean",
+          "description": "Path to the Lean executable to use."
         },
-        "commands": [
-            {
-                "command": "lean.restartServer",
-                "category": "Lean",
-                "title": "Restart",
-                "description": "Restart the Language Server"
-            },
-            {
-                "command": "lean.displayGoal",
-                "category": "Lean",
-                "title": "Info View: Display Goal",
-                "description": "Display the goal at the current position.",
-                "icon": {
-                    "dark": "./media/display-goal-dark.svg",
-                    "light": "./media/display-goal-light.svg"
-                }
-            },
-            {
-                "command": "lean.displayList",
-                "category": "Lean",
-                "title": "Info View: Display Messages",
-                "description": "Displays the goal state or messages in a separate window",
-                "icon": {
-                    "dark": "./media/display-list-dark.svg",
-                    "light": "./media/display-list-light.svg"
-                }
-            },
-            {
-                "command": "lean.infoView.displayGoal",
-                "category": "Lean",
-                "title": "Info View: Display Goal",
-                "description": "Display the goal at the current position",
-                "icon": {
-                    "dark": "./media/display-goal-dark.svg",
-                    "light": "./media/display-goal-light.svg"
-                }
-            },
-            {
-                "command": "lean.infoView.displayList",
-                "category": "Lean",
-                "title": "Info View: Display Messages",
-                "description": "Displays the goal state or messages in a separate window",
-                "icon": {
-                    "dark": "./media/display-list-dark.svg",
-                    "light": "./media/display-list-light.svg"
-                }
-            },
-            {
-                "command": "lean.roiMode.select",
-                "category": "Lean",
-                "title": "Select region-of-interest",
-                "description": "Select what files are being checked by the Lean server."
-            },
-            {
-                "command": "lean.roiMode.nothing",
-                "category": "Lean",
-                "title": "Check Nothing",
-                "description": "Disable automatic checking of Lean code"
-            },
-            {
-                "command": "lean.roiMode.cursor",
-                "category": "Lean",
-                "title": "Check Cursor + 5 Lines",
-                "description": "Automatically check until 5 lines below the cursor"
-            },
-            {
-                "command": "lean.roiMode.visibleFiles",
-                "category": "Lean",
-                "title": "Check Visible Files",
-                "description": "Automatically check all files that are visible"
-            },
-            {
-                "command": "lean.roiMode.openFiles",
-                "category": "Lean",
-                "title": "Check Open Files",
-                "description": "Automatically check all opened files"
-            },
-            {
-                "command": "lean.roiMode.projectFiles",
-                "category": "Lean",
-                "title": "Check Project Files",
-                "description": "Automatically check all files in the workspace"
-            },
-            {
-                "command": "lean.batchExecute",
-                "category": "Lean",
-                "title": "Batch Execute File",
-                "description": "Execute the current file using Lean"
-            }
-        ],
-        "languages": [
-            {
-                "id": "lean",
-                "aliases": [
-                    "Lean",
-                    "lean"
-                ],
-                "extensions": [
-                    ".lean"
-                ],
-                "configuration": "./language-configuration.json"
-            }
-        ],
-        "grammars": [
-            {
-                "language": "lean",
-                "scopeName": "source.lean",
-                "path": "./syntaxes/lean.json"
-            }
-        ],
-        "keybindings": [
-            {
-                "command": "lean.displayGoal",
-                "key": "ctrl+shift+enter",
-                "mac": "cmd+shift+enter",
-                "when": "editorTextFocus && editorLangId == lean"
-            },
-            {
-                "command": "lean.displayList",
-                "key": "ctrl+shift+alt+enter",
-                "mac": "cmd+shift+alt+enter",
-                "when": "editorTextFocus && editorLangId == lean"
-            },
-            {
-                "command": "lean.batchExecute",
-                "key": "ctrl+shift+r",
-                "mac": "cmd+shift+r",
-                "when": "editorTextFocus && editorLangId == lean"
-            }
-        ],
-        "menus": {
-            "commandPalette": [
-                {
-                    "command": "lean.displayGoal",
-                    "when": "editorLangId == lean"
-                },
-                {
-                    "command": "lean.displayList",
-                    "when": "editorLangId == lean"
-                },
-                {
-                    "command": "lean.batchExecute",
-                    "when": "editorLangId == lean"
-                },
-                {
-                    "command": "lean.infoView.displayGoal",
-                    "when": "resourceSchema == lean-info"
-                },
-                {
-                    "command": "lean.infoView.displayList",
-                    "when": "resourceSchema == lean-info"
-                }
-            ],
-            "editor/title": [
-                {
-                    "command": "lean.displayList",
-                    "when": "editorLangId == lean",
-                    "group": "navigation"
-                },
-                {
-                    "command": "lean.displayGoal",
-                    "when": "editorLangId == lean",
-                    "group": "navigation"
-                },
-                {
-                    "command": "lean.infoView.displayList",
-                    "when": "resourceScheme == lean-info",
-                    "group": "navigation"
-                },
-                {
-                    "command": "lean.infoView.displayGoal",
-                    "when": "resourceScheme == lean-info",
-                    "group": "navigation"
-                }
-            ]
+        "lean.leanpkgPath": {
+          "type": "string",
+          "default": "leanpkg",
+          "description": "Path to the leanpkg executable to use."
+        },
+        "lean.memoryLimit": {
+          "type": "number",
+          "default": "1024",
+          "description": "Set a memory limit (in Megabytes) for the Lean server."
+        },
+        "lean.timeLimit": {
+          "type": "number",
+          "default": "100000",
+          "description": "Set a Deterministic timeout (it is approximately the maximum number of memory allocations in thousands) for the Lean server."
+        },
+        "lean.extraOptions": {
+          "type": "array",
+          "default": [],
+          "description": "Extra command-line options for the Lean server.",
+          "items": {
+            "type": "string",
+            "description": "Single command-line argument."
+          }
+        },
+        "lean.progressMessages": {
+          "type": "boolean",
+          "default": false,
+          "description": "Show error messages where Lean is still checking."
+        },
+        "lean.newInput": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable experimental new input mode for unicode symbols (requires restart to take effect)."
+        },
+        "lean.roiModeDefault": {
+          "type": "string",
+          "default": "visible",
+          "description": "Set the default region of interest mode (nothing, visible, open or project) for the Lean extension."
+        },
+        "lean.infoViewAllErrorsOnLine": {
+          "type": "boolean",
+          "default": false,
+          "description": "Info view: show all errors on the current line, instead of just the ones on the right of the cursor."
+        },
+        "lean.infoViewStyle": {
+          "type": "string",
+          "default": "",
+          "description": "Add an additional CSS snippet to the info view."
         }
+      }
     },
-    "activationEvents": [
-        "onLanguage:lean",
-        "onCommand:lean.restartSever",
-        "onCommand:lean.infoDocument.toggleMode",
-        "onCommand:lean.roiMode.select",
-        "onCommand:lean.roiMode.nothing",
-        "onCommand:lean.roiMode.cursor",
-        "onCommand:lean.roiMode.visibleFiles",
-        "onCommand:lean.roiMode.openFiles",
-        "onCommand:lean.roiMode.projectFiles"
+    "commands": [
+      {
+        "command": "lean.restartServer",
+        "category": "Lean",
+        "title": "Restart",
+        "description": "Restart the Language Server"
+      },
+      {
+        "command": "lean.displayGoal",
+        "category": "Lean",
+        "title": "Info View: Display Goal",
+        "description": "Display the goal at the current position.",
+        "icon": {
+          "dark": "./media/display-goal-dark.svg",
+          "light": "./media/display-goal-light.svg"
+        }
+      },
+      {
+        "command": "lean.displayList",
+        "category": "Lean",
+        "title": "Info View: Display Messages",
+        "description": "Displays the goal state or messages in a separate window",
+        "icon": {
+          "dark": "./media/display-list-dark.svg",
+          "light": "./media/display-list-light.svg"
+        }
+      },
+      {
+        "command": "lean.infoView.displayGoal",
+        "category": "Lean",
+        "title": "Info View: Display Goal",
+        "description": "Display the goal at the current position",
+        "icon": {
+          "dark": "./media/display-goal-dark.svg",
+          "light": "./media/display-goal-light.svg"
+        }
+      },
+      {
+        "command": "lean.infoView.displayList",
+        "category": "Lean",
+        "title": "Info View: Display Messages",
+        "description": "Displays the goal state or messages in a separate window",
+        "icon": {
+          "dark": "./media/display-list-dark.svg",
+          "light": "./media/display-list-light.svg"
+        }
+      },
+      {
+        "command": "lean.roiMode.select",
+        "category": "Lean",
+        "title": "Select region-of-interest",
+        "description": "Select what files are being checked by the Lean server."
+      },
+      {
+        "command": "lean.roiMode.nothing",
+        "category": "Lean",
+        "title": "Check Nothing",
+        "description": "Disable automatic checking of Lean code"
+      },
+      {
+        "command": "lean.roiMode.cursor",
+        "category": "Lean",
+        "title": "Check Cursor + 5 Lines",
+        "description": "Automatically check until 5 lines below the cursor"
+      },
+      {
+        "command": "lean.roiMode.visibleFiles",
+        "category": "Lean",
+        "title": "Check Visible Files",
+        "description": "Automatically check all files that are visible"
+      },
+      {
+        "command": "lean.roiMode.openFiles",
+        "category": "Lean",
+        "title": "Check Open Files",
+        "description": "Automatically check all opened files"
+      },
+      {
+        "command": "lean.roiMode.projectFiles",
+        "category": "Lean",
+        "title": "Check Project Files",
+        "description": "Automatically check all files in the workspace"
+      },
+      {
+        "command": "lean.batchExecute",
+        "category": "Lean",
+        "title": "Batch Execute File",
+        "description": "Execute the current file using Lean"
+      }
     ],
-    "main": "./out/src/extension",
-    "scripts": {
-        "vscode:prepublish": "tsc -p ./",
-        "compile": "tsc -watch -p ./",
-        "postinstall": "node ./node_modules/vscode/bin/install",
-        "test": "node ./node_modules/vscode/bin/test"
-    },
-    "dependencies": {
-        "carrier": "0.3.0",
-        "load-json-file": "2.0.0",
-        "lean-client-js-node": "^1.2.10",
-        "semver": "5.3.0"
-    },
-    "devDependencies": {
-        "typescript": "^2.3.2",
-        "vscode": "^1.1.0",
-        "mocha": "^3.4.1",
-        "@types/node": "^7.0.21",
-        "@types/mocha": "^2.2.41"
-    },
-    "icon": "images/lean_logo.png",
-    "license": "Apache-2.0"
+    "languages": [
+      {
+        "id": "lean",
+        "aliases": [
+          "Lean",
+          "lean"
+        ],
+        "extensions": [
+          ".lean"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "lean",
+        "scopeName": "source.lean",
+        "path": "./syntaxes/lean.json"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "lean.displayGoal",
+        "key": "ctrl+shift+enter",
+        "mac": "cmd+shift+enter",
+        "when": "editorTextFocus && editorLangId == lean"
+      },
+      {
+        "command": "lean.displayList",
+        "key": "ctrl+shift+alt+enter",
+        "mac": "cmd+shift+alt+enter",
+        "when": "editorTextFocus && editorLangId == lean"
+      },
+      {
+        "command": "lean.batchExecute",
+        "key": "ctrl+shift+r",
+        "mac": "cmd+shift+r",
+        "when": "editorTextFocus && editorLangId == lean"
+      }
+    ],
+    "menus": {
+      "commandPalette": [
+        {
+          "command": "lean.displayGoal",
+          "when": "editorLangId == lean"
+        },
+        {
+          "command": "lean.displayList",
+          "when": "editorLangId == lean"
+        },
+        {
+          "command": "lean.batchExecute",
+          "when": "editorLangId == lean"
+        },
+        {
+          "command": "lean.infoView.displayGoal",
+          "when": "resourceSchema == lean-info"
+        },
+        {
+          "command": "lean.infoView.displayList",
+          "when": "resourceSchema == lean-info"
+        }
+      ],
+      "editor/title": [
+        {
+          "command": "lean.displayList",
+          "when": "editorLangId == lean",
+          "group": "navigation"
+        },
+        {
+          "command": "lean.displayGoal",
+          "when": "editorLangId == lean",
+          "group": "navigation"
+        },
+        {
+          "command": "lean.infoView.displayList",
+          "when": "resourceScheme == lean-info",
+          "group": "navigation"
+        },
+        {
+          "command": "lean.infoView.displayGoal",
+          "when": "resourceScheme == lean-info",
+          "group": "navigation"
+        }
+      ]
+    }
+  },
+  "activationEvents": [
+    "onLanguage:lean",
+    "onCommand:lean.restartSever",
+    "onCommand:lean.infoDocument.toggleMode",
+    "onCommand:lean.roiMode.select",
+    "onCommand:lean.roiMode.nothing",
+    "onCommand:lean.roiMode.cursor",
+    "onCommand:lean.roiMode.visibleFiles",
+    "onCommand:lean.roiMode.openFiles",
+    "onCommand:lean.roiMode.projectFiles"
+  ],
+  "main": "./out/src/extension",
+  "scripts": {
+    "vscode:prepublish": "tsc -p ./",
+    "compile": "tsc -watch -p ./",
+    "postinstall": "node ./node_modules/vscode/bin/install",
+    "test": "node ./node_modules/vscode/bin/test"
+  },
+  "dependencies": {
+    "carrier": "0.3.0",
+    "lean-client-js-node": "^1.2.11",
+    "load-json-file": "3.0.0",
+    "semver": "5.4.1"
+  },
+  "devDependencies": {
+    "typescript": "^2.5.2",
+    "vscode": "^1.1.5",
+    "mocha": "^3.5.0",
+    "@types/node": "^8.0.26",
+    "@types/mocha": "^2.2.42"
+  },
+  "icon": "images/lean_logo.png",
+  "license": "Apache-2.0"
 }

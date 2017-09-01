@@ -16,6 +16,7 @@ import { LeanTaskGutter, LeanTaskMessages } from "./taskgutter";
 import {LEAN_MODE} from './constants';
 import { LeanWorkspaceSymbolProvider } from "./search";
 import { LeanHoles } from "./holes";
+import {LeanpkgService} from './leanpkg';
 
 // Seeing .olean files in the source tree is annoying, we should
 // just globally hide them.
@@ -113,4 +114,6 @@ export function activate(context: vscode.ExtensionContext) {
 
     // Add info view: listing either the current goal state or a list of all error messages
     context.subscriptions.push(new InfoProvider(server, LEAN_MODE, context));
+
+    context.subscriptions.push(new LeanpkgService(server));
 }

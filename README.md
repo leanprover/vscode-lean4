@@ -54,6 +54,7 @@ This extension contributes the following settings:
 
 ### 0.10.0 (unreleased)
 * New configuration option for extra command-line arguments. (`lean.extraOptions`)
+* Integration with leanpkg.
 
 ### 0.9.0
 * Extremely improved info view (ctrl+shift+enter)
