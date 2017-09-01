@@ -274,11 +274,12 @@
     "semver": "5.4.1"
   },
   "devDependencies": {
-    "typescript": "^2.5.2",
-    "vscode": "^1.1.5",
-    "mocha": "^3.5.0",
+    "@types/mocha": "^2.2.42",
     "@types/node": "^8.0.26",
-    "@types/mocha": "^2.2.42"
+    "mocha": "^3.5.0",
+    "typescript": "^2.5.2",
+    "vsce": "^1.30.0",
+    "vscode": "^1.1.5"
   },
   "icon": "images/lean_logo.png",
   "license": "Apache-2.0"
