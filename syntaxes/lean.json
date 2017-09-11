@@ -51,7 +51,7 @@
       ]
     },
     {
-      "match": "\\b(Prop|Type)\\b",
+      "match": "\\b(Prop|Type|Sort)\\b",
       "name": "storage.type.lean"
     },
     {
