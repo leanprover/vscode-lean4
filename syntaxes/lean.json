@@ -67,6 +67,10 @@
       "name": "keyword.control.definition.modifier.lean"
     },
     {
+      "match": "\\b(sorry)\\b",
+      "name": "invalid.illegal.lean"
+    },
+    {
       "match": "#(print|eval|reduce|check|help|exit)\\b",
       "name": "keyword.other.command.lean"
     },
@@ -86,7 +90,7 @@
       }
     },
     {
-      "match": "\\b(calc|have|assert|this|match|do|suffices|show|by|in|at|let|forall|fun|exists|assume|from)\\b",
+      "match": "\\b(calc|have|this|match|do|suffices|show|by|in|at|let|forall|fun|exists|assume|from)\\b",
       "name": "keyword.other.lean"
     },
     {
