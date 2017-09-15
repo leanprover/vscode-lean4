@@ -22,6 +22,8 @@ We currently support a variety of features.
 
 This extension requires an installation of [Lean](https://leanprover.github.io).
 
+On windows, you may need to add `c:\msys64\mingw64\bin` (or wherever you installed msys2) to the system PATH environment variable.
+
 ## Extension Settings
 
 This extension contributes the following settings:
