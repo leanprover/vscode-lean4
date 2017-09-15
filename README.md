@@ -14,7 +14,7 @@ We currently support a variety of features.
 * Info view window to show goal and error messages ("Lean: Open Info View")
 * Batch file execution
 * Search for declarations in open files (ctrl+p #)
-* Region of interest checking (i.e control over how much of the project we check)
+* Region of interest checking (i.e. control over how much of the project we check)
 * Fill in `{! !}` holes using ctrl+.
 * Tasks for leanpkg (ctrl+p task configure)
 
