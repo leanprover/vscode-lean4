@@ -22,7 +22,7 @@ We currently support a variety of features.
 
 This extension requires an installation of [Lean](https://leanprover.github.io).
 
-On windows, you may need to add `c:\msys64\mingw64\bin` (or wherever you installed msys2) to the system PATH environment variable.
+On Windows, you need to add both `C:\msys64\mingw64\bin` (or wherever you installed msys2) and `C:\projects\lean\bin` (or wherever you installed Lean) to the system PATH environment variable.  To do this, press windows-key + Pause > go to Advanced System Settings > go to Environment variables. Under system variables (not user variables) find the `Path` variable, and add these two folders.
 
 ## Extension Settings
 
