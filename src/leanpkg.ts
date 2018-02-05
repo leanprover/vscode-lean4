@@ -5,10 +5,14 @@ import { commands, Disposable, ProcessExecution, Task, TaskDefinition, TaskGroup
 import { Server } from './server';
 
 export class LeanpkgService implements TaskProvider, Disposable {
+    private leanpkgPathContents: string;
     private subscriptions: Disposable[] = [];
+    private leanpkgToml = path.join(workspace.rootPath, 'leanpkg.toml');
+    private leanpkgPath = path.join(workspace.rootPath, 'leanpkg.path');
 
     constructor(private server: Server) {
         this.checkLeanpkgPathFile();
+        this.checkLeanpkgPathContents();
         this.subscriptions.push(workspace.registerTaskProvider('leanpkg', this));
 
         const watcher = workspace.createFileSystemWatcher('**/leanpkg.*');
@@ -26,7 +30,7 @@ export class LeanpkgService implements TaskProvider, Disposable {
         if (uri.fsPath === path.join(workspace.rootPath, 'leanpkg.toml')) {
             this.checkLeanpkgPathFile();
         } else if (uri.fsPath === path.join(workspace.rootPath, 'leanpkg.path')) {
-            this.server.requestRestart('Lean: leanpkg.path changed.', true);
+            this.checkLeanpkgPathContents(true);
         }
     }
 
@@ -63,15 +67,21 @@ export class LeanpkgService implements TaskProvider, Disposable {
         return 'leanpkg';
     }
 
-    checkLeanpkgPathFile() {
-        const leanpkgToml = path.join(workspace.rootPath, 'leanpkg.toml');
-        const leanpkgPath = path.join(workspace.rootPath, 'leanpkg.path');
+    checkLeanpkgPathContents(promptForRestart?: boolean) {
+        const oldContents = this.leanpkgPathContents;
+        this.leanpkgPathContents = fs.existsSync(this.leanpkgPath) &&
+            fs.readFileSync(this.leanpkgPath).toString();
+        if (oldContents !== this.leanpkgPathContents && promptForRestart) {
+            this.server.requestRestart('Lean: leanpkg.path changed.', true);
+        }
+    }
 
-        if (!fs.existsSync(leanpkgToml)) {
+    checkLeanpkgPathFile() {
+        if (!fs.existsSync(this.leanpkgToml)) {
             // TODO(gabriel): encourage users to use leanpkg
-        } else if (!fs.existsSync(leanpkgPath)) {
+        } else if (!fs.existsSync(this.leanpkgPath)) {
             this.requestLeanpkgConfigure('Lean: leanpkg.path does not exist');
-        } else if (fs.statSync(leanpkgPath) < fs.statSync(leanpkgToml)) {
+        } else if (fs.statSync(this.leanpkgPath) < fs.statSync(this.leanpkgToml)) {
             this.requestLeanpkgConfigure('Lean: leanpkg.path out of date');
         }
     }
