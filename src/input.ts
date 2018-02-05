@@ -1,7 +1,7 @@
 import {LEAN_MODE} from './constants'
 import * as vscode from 'vscode'
 import {CompletionItemProvider, Hover, Disposable, HoverProvider, DocumentFilter, TextEditor, TextEditorSelectionChangeEvent, TextEditorDecorationType,
-    TextDocument,Position,CancellationToken,CompletionItem,CompletionItemKind,CompletionList,Range, Uri} from 'vscode'
+    TextDocument,Position,CancellationToken,CompletionItem,CompletionItemKind,CompletionList,Range, Uri, Selection} from 'vscode'
 import {isInputCompletion} from './util'
 
 export type Translations = { [abbrev: string]: string };
@@ -35,6 +35,16 @@ class TextEditorAbbrevHandler {
         if (range && !range.isSingleLine) range = null;
         this.range = range;
         this.editor.setDecorations(this.abbreviator.decorationType, range ? [range] : []);
+
+        // HACK: support \{{}}
+        if (range && this.editor.document.getText(range) === '\\{{}}') {
+            this.editor.edit(async (builder) => {
+                await builder.replace(range, '⦃⦄')
+                const pos = range.start.translate(0, 1);
+                this.editor.selection = new Selection(pos, pos);
+                this.updateRange();
+            });
+        }
     }
 
     get rangeSize(): number {
