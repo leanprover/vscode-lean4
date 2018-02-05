@@ -1,7 +1,8 @@
-import { Server } from "./server";
-import { workspace, window, TaskProvider, Disposable, Task, TaskDefinition, ProcessExecution, TaskGroup, commands, Uri } from 'vscode';
-import * as path from 'path';
 import * as fs from 'fs';
+import * as path from 'path';
+import { commands, Disposable, ProcessExecution, Task, TaskDefinition, TaskGroup, TaskProvider, Uri,
+    window, workspace } from 'vscode';
+import { Server } from './server';
 
 export class LeanpkgService implements TaskProvider, Disposable {
     private subscriptions: Disposable[] = [];
@@ -18,7 +19,7 @@ export class LeanpkgService implements TaskProvider, Disposable {
     }
 
     dispose() {
-        for (const s of this.subscriptions) s.dispose();
+        for (const s of this.subscriptions) { s.dispose(); }
     }
 
     private handleFileChanged(uri: Uri) {
@@ -51,12 +52,12 @@ export class LeanpkgService implements TaskProvider, Disposable {
         const config = workspace.getConfiguration('lean');
 
         const leanpkg = config.get<string>('leanpkgPath');
-        if (leanpkg) return leanpkg;
+        if (leanpkg) { return leanpkg; }
 
         const leanPath = config.get<string>('executablePath');
         if (leanPath) {
             const leanpkg2 = path.join(path.dirname(leanPath), 'lean');
-            if (fs.existsSync(leanpkg2)) return leanpkg2;
+            if (fs.existsSync(leanpkg2)) { return leanpkg2; }
         }
 
         return 'leanpkg';
@@ -76,7 +77,7 @@ export class LeanpkgService implements TaskProvider, Disposable {
     }
 
     async requestLeanpkgConfigure(message: string) {
-        const configureItem = 'Run leanpkg configure.'
+        const configureItem = 'Run leanpkg configure.';
         const chosen = await window.showErrorMessage(message, configureItem);
         if (chosen === configureItem) {
             await this.configure();

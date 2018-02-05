@@ -259,6 +259,7 @@
   "scripts": {
     "vscode:prepublish": "tsc -p ./",
     "compile": "tsc -watch -p ./",
+    "lint": "tslint -c tslint.json src/*.ts",
     "postinstall": "node ./node_modules/vscode/bin/install",
     "test": "node ./node_modules/vscode/bin/test"
   },
@@ -272,6 +273,7 @@
     "@types/mocha": "^2.2.42",
     "@types/node": "^8.0.26",
     "mocha": "^3.5.0",
+    "tslint": "^5.9.1",
     "typescript": "^2.5.2",
     "vsce": "^1.30.0",
     "vscode": "^1.1.5"

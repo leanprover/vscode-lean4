@@ -1,6 +1,6 @@
-import { StatusBarItem, Disposable, window, StatusBarAlignment } from 'vscode';
-import {Server} from './server';
+import { Disposable, StatusBarAlignment, StatusBarItem, window } from 'vscode';
 import { RoiManager, RoiMode } from './roi';
+import {Server} from './server';
 
 export class LeanStatusBarItem implements Disposable {
     statusBarItem: StatusBarItem;
@@ -47,6 +47,6 @@ export class LeanStatusBarItem implements Disposable {
 
     dispose() {
         this.statusBarItem.dispose();
-        for (const s of this.subscriptions) s.dispose();
+        for (const s of this.subscriptions) { s.dispose(); }
     }
 }

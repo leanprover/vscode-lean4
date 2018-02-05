@@ -1,4 +1,5 @@
-import { Disposable, TextEditorDecorationType, window, OverviewRulerLane, ExtensionContext, Range, DecorationOptions, Diagnostic, DiagnosticCollection, languages, workspace, DiagnosticSeverity, Uri } from 'vscode';
+import { DecorationOptions, Diagnostic, DiagnosticCollection, DiagnosticSeverity, Disposable, ExtensionContext,
+    languages, OverviewRulerLane, Range, TextEditorDecorationType, Uri, window, workspace } from 'vscode';
 import { Server, ServerStatus } from './server';
 
 export class LeanTaskGutter implements Disposable {
@@ -17,7 +18,7 @@ export class LeanTaskGutter implements Disposable {
             },
             gutterIconSize: 'contain',
         });
-    
+
         this.subscriptions.push(server.statusChanged.on(
             (status) => this.updateDecos(status)));
     }
@@ -38,7 +39,7 @@ export class LeanTaskGutter implements Disposable {
 
     dispose() {
         this.decoration.dispose();
-        for (const s of this.subscriptions) s.dispose();
+        for (const s of this.subscriptions) { s.dispose(); }
     }
 }
 
@@ -60,7 +61,7 @@ export class LeanTaskMessages implements Disposable {
         if (workspace.getConfiguration('lean').get('progressMessages')) {
             for (const task of status.tasks) {
                 let diags = diagsPerFile.get(task.file_name);
-                if (!diags) diagsPerFile.set(task.file_name, diags = []);
+                if (!diags) { diagsPerFile.set(task.file_name, diags = []); }
                 diags.push(new Diagnostic(
                     new Range(task.pos_line - 1, task.pos_col,
                         task.end_pos_line - 1, task.end_pos_col),
@@ -75,6 +76,6 @@ export class LeanTaskMessages implements Disposable {
 
     dispose() {
         this.collection.dispose();
-        for (const s of this.subscriptions) s.dispose();
+        for (const s of this.subscriptions) { s.dispose(); }
     }
 }

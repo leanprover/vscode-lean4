@@ -1,28 +1,26 @@
 'use strict';
 
-import * as vscode from 'vscode';
+import {CancellationToken, Hover, HoverProvider, Position, Range, TextDocument} from 'vscode';
 import {Server} from './server';
-import {HoverProvider, Hover, TextDocument, Position, CancellationToken} from 'vscode';
 
 export class LeanHoverProvider implements HoverProvider {
-    server : Server;
+    server: Server;
 
-    public constructor(server : Server) {
+    constructor(server: Server) {
         this.server = server;
     }
 
-    public provideHover(document : TextDocument, position : Position, CancellationToken) : Thenable<Hover> {
+    provideHover(document: TextDocument, position: Position): Thenable<Hover> {
         return this.server.info(document.fileName, position.line + 1, position.character).then((response) => {
             // Maybe use more sohpisticated typing here?
-            let marked = [];
+            const marked = [];
             if (response.record) {
-                let name = response.record['full-id'] || response.record['text'];
+                const name = response.record['full-id'] || response.record.text;
                 if (name) {
-                    let msg;
                     if (response.record.tactic_params) {
                         marked.push({ language: 'text', value: name + ' ' + response.record.tactic_params.join(' ') });
                     } else {
-                        marked.push({ language: 'lean', value: name + ' : ' + response.record['type'] });
+                        marked.push({ language: 'lean', value: name + ' : ' + response.record.type });
                     }
                 }
                 if (response.record.doc) {
@@ -33,7 +31,8 @@ export class LeanHoverProvider implements HoverProvider {
                 }
             }
             if (marked) {
-                return new Hover(marked, new vscode.Range(position.line - 1, position.character, position.line - 1, position.character));
+                const pos = new Position(position.line - 1, position.character);
+                return new Hover(marked, new Range(pos, pos));
             } else {
                 return null;
             }

@@ -1,11 +1,13 @@
-import {Server} from './server'
-import { Disposable, CodeActionProvider, DiagnosticCollection, Range, TextDocument, CodeActionContext, Command, Position, commands, window, DocumentSelector, languages, Uri, DiagnosticSeverity, Diagnostic } from "vscode";
 import { HoleCommands, HoleResponse } from 'lean-client-js-core';
+import { CodeActionContext, CodeActionProvider, Command, commands, Diagnostic,
+    DiagnosticCollection, DiagnosticSeverity, Disposable, DocumentSelector, languages,
+    Position, Range, TextDocument, Uri, window } from 'vscode';
+import {Server} from './server';
 
 interface Pos { line: number; column: number; }
 interface Ran { start: Pos; end: Pos; }
 function mkRange(r: Ran): Range {
-    return new Range(r.start.line-1, r.start.column, r.end.line-1, r.end.column);
+    return new Range(r.start.line - 1, r.start.column, r.end.line - 1, r.end.column);
 }
 
 export class LeanHoles implements Disposable, CodeActionProvider {
@@ -27,7 +29,7 @@ export class LeanHoles implements Disposable, CodeActionProvider {
     }
 
     private async refresh() {
-        let ress = await Promise.all(window.visibleTextEditors
+        const ress = await Promise.all(window.visibleTextEditors
             .filter((editor) => languages.match(this.leanDocs, editor.document))
             .map((editor) => this.server.allHoleCommands(editor.document.fileName)));
 
@@ -38,7 +40,7 @@ export class LeanHoles implements Disposable, CodeActionProvider {
 
         const holesPerFile = new Map<string, HoleCommands[]>();
         for (const hole of this.holes) {
-            if (!holesPerFile.get(hole.file)) holesPerFile.set(hole.file, []);
+            if (!holesPerFile.get(hole.file)) { holesPerFile.set(hole.file, []); }
             holesPerFile.get(hole.file).push(hole);
         }
 
@@ -55,9 +57,9 @@ export class LeanHoles implements Disposable, CodeActionProvider {
     private async execute(file: string, line: number, column: number, action: string) {
         let res: HoleResponse;
         try {
-            res = await this.server.hole(file, line, column, action)
+            res = await this.server.hole(file, line, column, action);
         } catch (e) {
-            return window.showErrorMessage(`Error while executing hole command: ${e}`)
+            return window.showErrorMessage(`Error while executing hole command: ${e}`);
         }
 
         if (res.message) {
@@ -66,7 +68,7 @@ export class LeanHoles implements Disposable, CodeActionProvider {
         if (res.replacements && res.replacements.alternatives) {
             // TODO(gabriel): ask user if more than one alternative
             for (const editor of window.visibleTextEditors) {
-                if (editor.document.fileName == file) {
+                if (editor.document.fileName === file) {
                     editor.edit((builder) => {
                         builder.replace(mkRange(res.replacements),
                             res.replacements.alternatives[0].code);
@@ -75,11 +77,11 @@ export class LeanHoles implements Disposable, CodeActionProvider {
             }
         }
     }
-    
+
     provideCodeActions(document: TextDocument, range: Range, context: CodeActionContext): Command[] {
         const cmds: Command[] = [];
         for (const hole of this.holes) {
-            if (!range.intersection(mkRange(hole))) continue;
+            if (!range.intersection(mkRange(hole))) { continue; }
             for (const action of hole.results) {
                 cmds.push({
                     title: action.description,
@@ -92,6 +94,6 @@ export class LeanHoles implements Disposable, CodeActionProvider {
     }
 
     dispose() {
-        for (const s of this.subscriptions) s.dispose();
+        for (const s of this.subscriptions) { s.dispose(); }
     }
 }

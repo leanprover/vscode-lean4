@@ -1,4 +1,4 @@
-import { Disposable, DocumentFilter, TextDocument, workspace, languages } from 'vscode';
+import { Disposable, DocumentFilter, languages, TextDocument, workspace } from 'vscode';
 import {Server} from './server';
 
 export class LeanSyncService implements Disposable {
@@ -15,7 +15,7 @@ export class LeanSyncService implements Disposable {
 
         // Sync files that are already open.
         this.syncAll();
- 
+
         this.subscriptions.push(this.server.restarted.on(() => this.syncAll()));
     }
 
@@ -24,11 +24,11 @@ export class LeanSyncService implements Disposable {
     }
 
     private syncDoc(doc: TextDocument) {
-        if (!languages.match(this.documentFilter, doc)) return;
+        if (!languages.match(this.documentFilter, doc)) { return; }
         this.server.sync(doc.fileName, doc.getText());
     }
 
     dispose() {
-        for (const s of this.subscriptions) s.dispose();
+        for (const s of this.subscriptions) { s.dispose(); }
     }
 }

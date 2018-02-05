@@ -1,33 +1,33 @@
-import { basename, join } from 'path';
 import { readFileSync } from 'fs';
+import { InfoRecord, Message } from 'lean-client-js-node';
+import { basename, join } from 'path';
 import {
-    CancellationToken, Disposable, DocumentSelector, Event, EventEmitter, ExtensionContext,
-    TextEditor, TextEditorRevealType, TextEditorDecorationType, TextDocument,
-    TextDocumentContentProvider, Position, Range, Selection, ViewColumn, Uri,
-    commands, languages, window, workspace
+    CancellationToken, commands, Disposable, DocumentSelector, Event, EventEmitter,
+    ExtensionContext, languages, Position, Range,
+    Selection, TextDocument, TextDocumentContentProvider, TextEditor, TextEditorDecorationType, TextEditorRevealType,
+    Uri, ViewColumn, window, workspace,
 } from 'vscode';
-import { InfoRecord, Message } from "lean-client-js-node";
 import { Server } from './server';
 
 function compareMessages(m1: Message, m2: Message): boolean {
-    return (m1.file_name == m2.file_name &&
-        m1.pos_line == m2.pos_line && m1.pos_col == m2.pos_col &&
-        m1.severity == m2.severity && m1.caption == m2.caption && m1.text == m2.text);
+    return (m1.file_name === m2.file_name &&
+        m1.pos_line === m2.pos_line && m1.pos_col === m2.pos_col &&
+        m1.severity === m2.severity && m1.caption === m2.caption && m1.text === m2.text);
 }
 
 // https://stackoverflow.com/questions/6234773/can-i-escape-html-special-chars-in-javascript
 function escapeHtml(s: string): string {
     return s
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
 }
 
 enum DisplayMode {
     OnlyState, // only the state at the current cursor position including the tactic state
-    AllMessage // all messages 
+    AllMessage, // all messages
 }
 
 export class InfoProvider implements TextDocumentContentProvider, Disposable {
@@ -48,31 +48,31 @@ export class InfoProvider implements TextDocumentContentProvider, Disposable {
 
     private stylesheet: string = null;
 
-    private hoverDecorationType : TextEditorDecorationType;
+    private hoverDecorationType: TextEditorDecorationType;
 
     constructor(private server: Server, private leanDocs: DocumentSelector, private context: ExtensionContext) {
         this.hoverDecorationType = window.createTextEditorDecorationType({
             backgroundColor: 'red', // make configurable?
-            border: '3px solid red'
+            border: '3px solid red',
         });
-        this.updateStylesheet()
+        this.updateStylesheet();
         this.subscriptions.push(
             this.server.allMessages.on(() => {
-                if (this.updateMessages()) this.fire();
+                if (this.updateMessages()) { this.fire(); }
             }),
             this.server.statusChanged.on(() => {
-                if (this.displayMode == DisplayMode.OnlyState) {
-                    this.updateGoal().then((changed) => { if (changed) this.fire(); })
+                if (this.displayMode === DisplayMode.OnlyState) {
+                    this.updateGoal().then((changed) => { if (changed) { this.fire(); } });
                 }
             }),
             window.onDidChangeTextEditorSelection(() => this.updatePosition(false)),
             workspace.onDidChangeConfiguration((e) => {
-                this.updateStylesheet(); 
+                this.updateStylesheet();
                 this.fire();
             }),
             commands.registerCommand('_lean.revealPosition', this.revealEditorPosition),
             commands.registerCommand('_lean.hoverPosition', (u, l, c) => { this.hoverEditorPosition(u, l, c); }),
-            commands.registerCommand('_lean.stopHover', () => { this.stopHover() }),
+            commands.registerCommand('_lean.stopHover', () => { this.stopHover(); }),
             commands.registerCommand('_lean.infoView.pause', () => {
                 this.stopUpdating();
             }),
@@ -93,28 +93,29 @@ export class InfoProvider implements TextDocumentContentProvider, Disposable {
             commands.registerTextEditorCommand('lean.infoView.displayList', (editor) => {
                 this.setMode(DisplayMode.AllMessage);
             }),
-            workspace.registerTextDocumentContentProvider(this.leanGoalsUri.scheme, this)
+            workspace.registerTextDocumentContentProvider(this.leanGoalsUri.scheme, this),
         );
     }
 
     dispose() {
-        for (const s of this.subscriptions) s.dispose();
+        for (const s of this.subscriptions) { s.dispose(); }
     }
 
     provideTextDocumentContent(uri: Uri, token: CancellationToken): string {
-        if (uri.toString() == this.leanGoalsUri.toString()) {
+        if (uri.toString() === this.leanGoalsUri.toString()) {
             const content = this.render();
             return content;
-        } else
+        } else {
             throw new Error(`unsupported uri: ${uri}`);
+        }
     }
 
     private updateStylesheet() {
-        let css = this.context.asAbsolutePath(join('media', `infoview.css`));
+        const css = this.context.asAbsolutePath(join('media', `infoview.css`));
         const fontFamily =
             (workspace.getConfiguration('editor').get('fontFamily') as string).
-            replace(/['"]/g, "");
-        this.stylesheet = readFileSync(css, "utf-8") + `
+            replace(/['"]/g, '');
+        this.stylesheet = readFileSync(css, 'utf-8') + `
             pre {
                 font-family: ${fontFamily};
                 font-size: ${workspace.getConfiguration('editor').get('fontSize')}px;
@@ -124,13 +125,13 @@ export class InfoProvider implements TextDocumentContentProvider, Disposable {
             workspace.getConfiguration('lean').get('infoViewStyle');
     }
 
-    private openPreview(editor : TextEditor) {
+    private openPreview(editor: TextEditor) {
         let column = editor.viewColumn + 1;
-        if (column == 4) column = ViewColumn.Three;
-        commands.executeCommand('vscode.previewHtml', this.leanGoalsUri, column, "Lean Messages")
+        if (column === 4) { column = ViewColumn.Three; }
+        commands.executeCommand('vscode.previewHtml', this.leanGoalsUri, column, 'Lean Messages')
             .then((success) => { if (success) {
-                window.showTextDocument(editor.document); 
-            } })
+                window.showTextDocument(editor.document);
+            } });
     }
 
     private sendPosition() {
@@ -139,7 +140,7 @@ export class InfoProvider implements TextDocumentContentProvider, Disposable {
                 command: 'position',
                 fileName: this.curFileName,
                 line: this.curPosition.line + 1,
-                column: this.curPosition.character
+                column: this.curPosition.character,
             });
     }
 
@@ -149,8 +150,8 @@ export class InfoProvider implements TextDocumentContentProvider, Disposable {
             { command: 'pause' });
     }
 
-    private setMode(mode : DisplayMode) {
-        if (this.displayMode == mode && !this.stopped) return;
+    private setMode(mode: DisplayMode) {
+        if (this.displayMode === mode && !this.stopped) { return; }
         this.displayMode = mode;
         this.stopped = false;
         this.updatePosition(true);
@@ -161,9 +162,9 @@ export class InfoProvider implements TextDocumentContentProvider, Disposable {
     }
 
     private revealEditorPosition(uri: Uri, line: number, column: number) {
-        for (let editor of window.visibleTextEditors) {
+        for (const editor of window.visibleTextEditors) {
             if (editor.document.uri.toString() === uri.toString()) {
-                let pos = new Position(line - 1, column);
+                const pos = new Position(line - 1, column);
                 window.showTextDocument(editor.document);
                 editor.revealRange(new Range(pos, pos), TextEditorRevealType.InCenterIfOutsideViewport);
                 editor.selection = new Selection(pos, pos);
@@ -172,17 +173,17 @@ export class InfoProvider implements TextDocumentContentProvider, Disposable {
     }
 
     private hoverEditorPosition(uri: string, line: number, column: number) {
-        for (let editor of window.visibleTextEditors) {
+        for (const editor of window.visibleTextEditors) {
             if (editor.document.uri.toString() === uri) {
-                let pos = new Position(line - 1, column);
-                let range = new Range(pos, pos.translate(0, 1));
+                const pos = new Position(line - 1, column);
+                const range = new Range(pos, pos.translate(0, 1));
                 editor.setDecorations(this.hoverDecorationType, [range]);
             }
         }
     }
 
     private stopHover() {
-        for (let editor of window.visibleTextEditors) {
+        for (const editor of window.visibleTextEditors) {
             if (editor.document.languageId === 'lean') {
                 editor.setDecorations(this.hoverDecorationType, []);
             }
@@ -191,8 +192,9 @@ export class InfoProvider implements TextDocumentContentProvider, Disposable {
 
     private changePosition() {
         if (!window.activeTextEditor ||
-            !languages.match(this.leanDocs, window.activeTextEditor.document))
+            !languages.match(this.leanDocs, window.activeTextEditor.document)) {
             return;
+        }
 
         const oldFileName = this.curFileName;
         const oldPosition = this.curPosition;
@@ -203,12 +205,13 @@ export class InfoProvider implements TextDocumentContentProvider, Disposable {
         return (this.curFileName !== oldFileName || !this.curPosition.isEqual(oldPosition));
     }
 
-    private updatePosition(forceRefresh : boolean) {
-        if (this.stopped) return;
+    private updatePosition(forceRefresh: boolean) {
+        if (this.stopped) { return; }
 
         const chPos = this.changePosition();
-        if (!chPos && !forceRefresh)
+        if (!chPos && !forceRefresh) {
             return;
+        }
 
         const chMsg = this.updateMessages();
         switch (this.displayMode) {
@@ -227,29 +230,29 @@ export class InfoProvider implements TextDocumentContentProvider, Disposable {
             if (forceRefresh || chMsg) {
                 this.fire();
             } else {
-                this.sendPosition()
+                this.sendPosition();
             }
             break;
         }
     }
 
     private updateMessages(): boolean {
-        if (this.stopped || !this.curFileName) return false;
-        let msgs : Message[];
+        if (this.stopped || !this.curFileName) { return false; }
+        let msgs: Message[];
         switch (this.displayMode) {
         case DisplayMode.OnlyState:
             /* Heuristic: find first position to the left which has messages attached,
                from that on show all messages in this line */
             msgs = this.server.messages
                 .filter((m) => m.file_name === this.curFileName &&
-                    m.pos_line == this.curPosition.line + 1)
+                    m.pos_line === this.curPosition.line + 1)
                 .sort((a, b) => a.pos_col - b.pos_col);
             if (!workspace.getConfiguration('lean').get('infoViewAllErrorsOnLine')) {
-                let startColumn = undefined;
+                let startColumn;
                 let startPos = null;
                 for (let i = 0; i < msgs.length; i++) {
-                    if (this.curPosition.character < msgs[i].pos_col) break;
-                    if (this.curPosition.character == msgs[i].pos_col) {
+                    if (this.curPosition.character < msgs[i].pos_col) { break; }
+                    if (this.curPosition.character === msgs[i].pos_col) {
                         startColumn = this.curPosition.character;
                         startPos = i;
                         break;
@@ -277,23 +280,23 @@ export class InfoProvider implements TextDocumentContentProvider, Disposable {
             this.curMessages = msgs;
             return true;
         }
-        const old_msgs = this.curMessages;
-        if (msgs.length == old_msgs.length) {
+        const oldMsgs = this.curMessages;
+        if (msgs.length === oldMsgs.length) {
             let eq = true;
             for (let i = 0; i < msgs.length; i++) {
-                if (!compareMessages(msgs[i], old_msgs[i])) {
+                if (!compareMessages(msgs[i], oldMsgs[i])) {
                     eq = false;
                     break;
                 }
             }
-            if (eq) return false;
+            if (eq) { return false; }
         }
         this.curMessages = msgs;
         return true;
     }
 
     private updateGoal(): Promise<boolean> {
-        if (this.stopped) return Promise.resolve(false);
+        if (this.stopped) { return Promise.resolve(false); }
 
         const f = this.curFileName;
         const l = this.curPosition.line + 1;
@@ -321,25 +324,26 @@ export class InfoProvider implements TextDocumentContentProvider, Disposable {
     private render() {
         const header = `<!DOCTYPE html>
             <html>
-            <head> 
+            <head>
               <meta http-equiv="Content-type" content="text/html;charset=utf-8">
               <style>${escapeHtml(this.stylesheet)}</style>
-              <script charset="utf-8" src="${this.getMediaPath("infoview-ctrl.js")}"></script>
+              <script charset="utf-8" src="${this.getMediaPath('infoview-ctrl.js')}"></script>
             </head>`;
-        if (!this.curFileName)
-            return header + "<body>No Lean file active</body>";
+        if (!this.curFileName) {
+            return header + '<body>No Lean file active</body>';
+        }
         return header +
             `<body
                 data-uri="${encodeURI(Uri.file(this.curFileName).toString())}"
                 data-line="${(this.curPosition.line + 1).toString()}"
                 data-column="${this.curPosition.character.toString()}"
-                ${this.displayMode == DisplayMode.AllMessage ? "data-messages=''" : ""}>
+                ${this.displayMode === DisplayMode.AllMessage ? "data-messages=''" : ''}>
               <div id="debug"></div>
               <div id="run-state">
                 <span id="state-continue">Stopped <a href="command:_lean.infoView.continue?{}">
-                  <img title="Continue Updating" src="${this.getMediaPath("continue.svg")}"></a></span>
+                  <img title="Continue Updating" src="${this.getMediaPath('continue.svg')}"></a></span>
                 <span id="state-pause">Updating <a href="command:_lean.infoView.pause?{}">
-                  <img title="Stop Updating" src="${this.getMediaPath("pause.svg")}"></span></a>
+                  <img title="Stop Updating" src="${this.getMediaPath('pause.svg')}"></span></a>
               </div>
               ${this.renderGoal()}
               <div id="messages">${this.renderMessages()}</div>
@@ -347,12 +351,12 @@ export class InfoProvider implements TextDocumentContentProvider, Disposable {
     }
 
     private renderGoal() {
-        if (!this.curGoalState || this.displayMode !== DisplayMode.OnlyState) return '';
+        if (!this.curGoalState || this.displayMode !== DisplayMode.OnlyState) { return ''; }
         return `<div id="goal"><h1>Tactic State</h1><pre>${escapeHtml(this.curGoalState)}</pre></div>`;
     }
 
     private renderMessages() {
-        if (!this.curFileName || !this.curMessages) return ``;
+        if (!this.curFileName || !this.curMessages) { return ``; }
         return this.curMessages.map((m) => {
             const f = escapeHtml(m.file_name); const b = escapeHtml(basename(m.file_name));
             const l = m.pos_line.toString(); const c = m.pos_col.toString();
@@ -362,7 +366,7 @@ export class InfoProvider implements TextDocumentContentProvider, Disposable {
                 <h1 title="${f}:${l}:${c}"><a href="${cmd}">
                     ${b}:${l}:${c}: ${m.severity} ${escapeHtml(m.caption)}
                 </a></h1>
-                <pre>${escapeHtml(m.text)}</pre></div>`
-        }).join("\n");
+                <pre>${escapeHtml(m.text)}</pre></div>`;
+        }).join('\n');
     }
 }

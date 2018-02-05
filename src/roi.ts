@@ -1,7 +1,7 @@
-import * as vscode from 'vscode';
-import { Disposable, Event, EventEmitter, DocumentFilter, QuickPickItem } from 'vscode';
-import {Server} from './server';
 import {CheckingMode, FileRoi, RoiRange} from 'lean-client-js-node';
+import * as vscode from 'vscode';
+import { Disposable, DocumentFilter, Event, EventEmitter, QuickPickItem } from 'vscode';
+import {Server} from './server';
 
 export enum RoiMode {
     Nothing,
@@ -37,7 +37,7 @@ export class RoiManager implements Disposable {
         this.send();
 
         this.subscriptions.push(vscode.commands.registerCommand('lean.roiMode.select', () => {
-            let items: (QuickPickItem & {mode: RoiMode})[] = [
+            const items: Array<QuickPickItem & {mode: RoiMode}> = [
                 {
                     label: 'nothing',
                     description: 'disable checking',
@@ -67,28 +67,28 @@ export class RoiManager implements Disposable {
             vscode.window.showQuickPick(items).then((selected) =>
                 selected && this.check(selected.mode));
         }));
-        this.subscriptions.push(vscode.commands.registerCommand("lean.roiMode.nothing",
+        this.subscriptions.push(vscode.commands.registerCommand('lean.roiMode.nothing',
             () => this.check(RoiMode.Nothing)));
-        this.subscriptions.push(vscode.commands.registerCommand("lean.roiMode.visibleFiles",
+        this.subscriptions.push(vscode.commands.registerCommand('lean.roiMode.visibleFiles',
             () => this.check(RoiMode.VisibleFiles)));
-        this.subscriptions.push(vscode.commands.registerCommand("lean.roiMode.openFiles",
+        this.subscriptions.push(vscode.commands.registerCommand('lean.roiMode.openFiles',
             () => this.check(RoiMode.OpenFiles)));
-        this.subscriptions.push(vscode.commands.registerCommand("lean.roiMode.projectFiles",
+        this.subscriptions.push(vscode.commands.registerCommand('lean.roiMode.projectFiles',
             () => this.check(RoiMode.ProjectFiles)));
 
     }
 
     compute(): Thenable<FileRoi[]> {
         // improve after https://github.com/Microsoft/vscode/issues/14756
-        let visibleRanges: {[fileName: string]: RoiRange[]} = {};
-        if (this.mode == RoiMode.Cursor) {
+        const visibleRanges: {[fileName: string]: RoiRange[]} = {};
+        if (this.mode === RoiMode.Cursor) {
             const editor = vscode.window.activeTextEditor;
             if (editor && vscode.languages.match(this.documentFilter, editor.document)) {
                 visibleRanges[editor.document.fileName] =
-                    [{begin_line: 1, end_line: editor.selection.active.line+6}];
+                    [{begin_line: 1, end_line: editor.selection.active.line + 6}];
             }
         } else {
-            for (let editor of vscode.window.visibleTextEditors) {
+            for (const editor of vscode.window.visibleTextEditors) {
                 if (vscode.languages.match(this.documentFilter, editor.document)) {
                     visibleRanges[editor.document.fileName] =
                         [{begin_line: 1, end_line: editor.document.lineCount}];
@@ -96,18 +96,18 @@ export class RoiManager implements Disposable {
             }
         }
 
-        let roi: FileRoi[] = [];
-        if (this.mode == RoiMode.ProjectFiles) {
-            return vscode.workspace.findFiles("**/*.lean").then(files => {
-                for (let f of files) {
-                    let path = f.fsPath;
+        const roi: FileRoi[] = [];
+        if (this.mode === RoiMode.ProjectFiles) {
+            return vscode.workspace.findFiles('**/*.lean').then((files) => {
+                for (const f of files) {
+                    const path = f.fsPath;
                     roi.push({file_name: path, ranges: visibleRanges[path] || []});
                 }
                 return roi;
             });
         } else {
-            for (let d of vscode.workspace.textDocuments) {
-                let path = d.fileName;
+            for (const d of vscode.workspace.textDocuments) {
+                const path = d.fileName;
                 roi.push({file_name: path, ranges: visibleRanges[path] || []});
             }
             return Promise.resolve(roi);
@@ -116,16 +116,16 @@ export class RoiManager implements Disposable {
 
     modeString(): CheckingMode {
         switch (this.mode) {
-            case RoiMode.Nothing: return "nothing";
-            case RoiMode.Cursor: return "visible-lines";
-            case RoiMode.VisibleFiles: return "visible-files";
-            case RoiMode.OpenFiles: return "open-files";
-            case RoiMode.ProjectFiles: return "open-files";
-            default: throw "unknown roi mode";
+            case RoiMode.Nothing: return 'nothing';
+            case RoiMode.Cursor: return 'visible-lines';
+            case RoiMode.VisibleFiles: return 'visible-files';
+            case RoiMode.OpenFiles: return 'open-files';
+            case RoiMode.ProjectFiles: return 'open-files';
+            default: throw new Error('unknown roi mode');
         }
     }
 
-    send() { this.compute().then(roi => this.server.roi(this.modeString(), roi)) }
+    send() { this.compute().then((roi) => this.server.roi(this.modeString(), roi)); }
 
     check(mode: RoiMode) {
         this.mode = mode;
@@ -134,6 +134,6 @@ export class RoiManager implements Disposable {
     }
 
     dispose() {
-        for (const s of this.subscriptions) s.dispose();
+        for (const s of this.subscriptions) { s.dispose(); }
     }
 }

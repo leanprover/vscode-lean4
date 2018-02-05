@@ -1,18 +1,20 @@
-import {LEAN_MODE} from './constants'
-import * as vscode from 'vscode'
-import {CompletionItemProvider, Hover, Disposable, HoverProvider, DocumentFilter, TextEditor, TextEditorSelectionChangeEvent, TextEditorDecorationType,
-    TextDocument,Position,CancellationToken,CompletionItem,CompletionItemKind,CompletionList,Range, Uri, Selection} from 'vscode'
-import {isInputCompletion} from './util'
+import * as vscode from 'vscode';
+import {CancellationToken, CompletionItem, CompletionItemKind, CompletionItemProvider,
+    CompletionList, Disposable, DocumentFilter, Hover,
+    HoverProvider, Position, Range, Selection, TextDocument, TextEditor,
+    TextEditorDecorationType, TextEditorSelectionChangeEvent, Uri} from 'vscode';
+import {LEAN_MODE} from './constants';
+import {isInputCompletion} from './util';
 
-export type Translations = { [abbrev: string]: string };
+export interface Translations { [abbrev: string]: string; }
 
 export class LeanInputExplanationHover implements HoverProvider {
     constructor(private translations: Translations) {}
 
     getAbbrevations(symbol: string): string[] {
         const abbrevs: string[] = [];
-        for (let k in this.translations) {
-            if (this.translations[k] === symbol) abbrevs.push(k);
+        for (const k in this.translations) {
+            if (this.translations[k] === symbol) { abbrevs.push(k); }
         }
         return abbrevs;
     }
@@ -20,7 +22,7 @@ export class LeanInputExplanationHover implements HoverProvider {
     provideHover(document: vscode.TextDocument, pos: Position, token: vscode.CancellationToken): Hover | undefined {
         const symbolRange = new vscode.Range(pos, pos.translate(0, 1));
         const symbol = document.getText(symbolRange);
-        const abbrevs = this.getAbbrevations(symbol).sort((a,b) => a.length - b.length);
+        const abbrevs = this.getAbbrevations(symbol).sort((a, b) => a.length - b.length);
         return abbrevs.length > 0 &&
             new Hover(`Type ${symbol} using ${abbrevs.map((a) => `\\\\${a}`).join(' or ')}`, symbolRange);
     }
@@ -32,14 +34,14 @@ class TextEditorAbbrevHandler {
     constructor(public editor: TextEditor, private abbreviator: LeanInputAbbreviator) {}
 
     private updateRange(range?: Range) {
-        if (range && !range.isSingleLine) range = null;
+        if (range && !range.isSingleLine) { range = null; }
         this.range = range;
         this.editor.setDecorations(this.abbreviator.decorationType, range ? [range] : []);
 
         // HACK: support \{{}}
         if (range && this.editor.document.getText(range) === '\\{{}}') {
             this.editor.edit(async (builder) => {
-                await builder.replace(range, '⦃⦄')
+                await builder.replace(range, '⦃⦄');
                 const pos = range.start.translate(0, 1);
                 this.editor.selection = new Selection(pos, pos);
                 this.updateRange();
@@ -52,12 +54,12 @@ class TextEditorAbbrevHandler {
     }
 
     private convertRange(newRange?: Range) {
-        if (!this.range || this.rangeSize < 2) return this.updateRange();
+        if (!this.range || this.rangeSize < 2) { return this.updateRange(); }
 
         const range = this.range;
 
         const toReplace = this.editor.document.getText(range);
-        if (toReplace[0] !== '\\') return this.updateRange();
+        if (toReplace[0] !== '\\') { return this.updateRange(); }
 
         const abbreviation = toReplace.slice(1);
         const replacement = this.abbreviator.findReplacement(abbreviation);
@@ -66,11 +68,13 @@ class TextEditorAbbrevHandler {
             setTimeout(() => {
                 // Without the timeout hack, inserting `\delta ` at the beginning of an
                 // existing line would leave the cursor four characters too far right.
-                this.editor.edit((builder) => builder.replace(range, replacement)).then(() => {
-                    newRange && this.updateRange(new vscode.Range(
-                        newRange.start.translate(0, replacement.length - toReplace.length),
-                        newRange.end.translate(0, replacement.length - toReplace.length),
-                    ));
+                this.editor.edit(async (builder) => {
+                    await builder.replace(range, replacement);
+                    if (newRange) {
+                        this.updateRange(new vscode.Range(
+                            newRange.start.translate(0, replacement.length - toReplace.length),
+                            newRange.end.translate(0, replacement.length - toReplace.length)));
+                    }
                 });
             }, 0);
         }
@@ -79,7 +83,7 @@ class TextEditorAbbrevHandler {
     }
 
     onChanged(ev: vscode.TextDocumentChangeEvent) {
-        if (ev.contentChanges.length !== 1) return this.updateRange(); // single change
+        if (ev.contentChanges.length !== 1) { return this.updateRange(); } // single change
         const change = ev.contentChanges[0];
 
         if (change.text.length === 1 && (change.rangeLength === 0 ||
@@ -87,7 +91,7 @@ class TextEditorAbbrevHandler {
                                                 ev.document.getText(change.range) === change.text))) {
             // insert (or right paren overwriting)
             if (!this.range) {
-                if (change.text == '\\') {
+                if (change.text === '\\') {
                     return this.updateRange(new vscode.Range(change.range.start, change.range.start.translate(0, 1)));
                 }
             } else if (change.range.start.isEqual(this.range.end)) {
@@ -153,7 +157,7 @@ export class LeanInputAbbreviator {
     }
 
     findReplacement(typedAbbrev: string): string | undefined {
-        if (this.translations[typedAbbrev]) return this.translations[typedAbbrev];
+        if (this.translations[typedAbbrev]) { return this.translations[typedAbbrev]; }
 
         let shortestExtension: string = null;
         for (const abbrev in this.translations) {
@@ -166,9 +170,9 @@ export class LeanInputAbbreviator {
             return this.translations[shortestExtension];
         } else if (typedAbbrev) {
             const prefixReplacement = this.findReplacement(
-                typedAbbrev.slice(0, typedAbbrev.length-1));
+                typedAbbrev.slice(0, typedAbbrev.length - 1));
             if (prefixReplacement) {
-                return prefixReplacement + typedAbbrev.slice(typedAbbrev.length-1);
+                return prefixReplacement + typedAbbrev.slice(typedAbbrev.length - 1);
             }
         }
         return null;
@@ -177,9 +181,9 @@ export class LeanInputAbbreviator {
     private onChanged(ev: vscode.TextDocumentChangeEvent) {
         const editor = vscode.window.activeTextEditor;
 
-        if (editor.document !== ev.document) return; // change happened in active editor
+        if (editor.document !== ev.document) { return; } // change happened in active editor
 
-        if (!vscode.languages.match(this.documentFilter, ev.document)) return; // Lean file
+        if (!vscode.languages.match(this.documentFilter, ev.document)) { return; } // Lean file
 
         if (!this.handlers.has(editor)) {
             this.handlers.set(editor, new TextEditorAbbrevHandler(editor, this));
@@ -190,9 +194,9 @@ export class LeanInputAbbreviator {
     private onSelectionChanged(ev: TextEditorSelectionChangeEvent) {
         const editor = vscode.window.activeTextEditor;
 
-        if (editor !== ev.textEditor) return; // change happened in active editor
+        if (editor !== ev.textEditor) { return; } // change happened in active editor
 
-        if (!vscode.languages.match(this.documentFilter, editor.document)) return; // Lean file
+        if (!vscode.languages.match(this.documentFilter, editor.document)) { return; } // Lean file
 
         if (this.handlers.has(editor)) {
             this.handlers.get(editor).onSelectionChanged(ev);
@@ -201,7 +205,8 @@ export class LeanInputAbbreviator {
 
     dispose() {
         this.decorationType.dispose();
-        for (const s of this.subscriptions)
+        for (const s of this.subscriptions) {
             s.dispose();
+        }
     }
 }

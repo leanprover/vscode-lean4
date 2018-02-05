@@ -1,25 +1,24 @@
-import {Server} from './server';
-import {TextEditor, OutputChannel, TextEditorEdit} from 'vscode';
-import * as vscode from 'vscode';
-import * as child from 'child_process';
 import * as carrier from 'carrier';
+import * as child from 'child_process';
+import {OutputChannel, TextEditor, TextEditorEdit} from 'vscode';
+import * as vscode from 'vscode';
+import {Server} from './server';
 
-let batchOutputChannel : OutputChannel;
+let batchOutputChannel: OutputChannel;
 
 export function batchExecuteFile(
     server: Server,
-    editor : TextEditor,
-    edit : TextEditorEdit,
-    args : any[])
-{
+    editor: TextEditor,
+    edit: TextEditorEdit,
+    args: any[]) {
     batchOutputChannel = batchOutputChannel ||
-        vscode.window.createOutputChannel("Lean: Batch File Output");
+        vscode.window.createOutputChannel('Lean: Batch File Output');
 
-    let fileName = editor.document.fileName;
+    const fileName = editor.document.fileName;
 
-    let executablePath = server.executablePath;
+    const executablePath = server.executablePath;
 
-    let lean = child.spawn(executablePath, [fileName],
+    const lean = child.spawn(executablePath, [fileName],
         { cwd: vscode.workspace.rootPath, env: {} /* TODO(gabriel): take from server */ });
 
     batchOutputChannel.clear();
@@ -28,7 +27,7 @@ export function batchExecuteFile(
         batchOutputChannel.appendLine(line);
     });
 
-     carrier.carry(lean.stderr, (line) => {
+    carrier.carry(lean.stderr, (line) => {
         batchOutputChannel.appendLine(line);
     });
 
