@@ -4,7 +4,7 @@ import {Message} from 'lean-client-js-node';
 import { Server, ServerStatus } from './server';
 import { LeanHoverProvider } from './hover';
 import { LeanCompletionItemProvider } from './completion';
-import { LeanInputCompletionProvider, LeanInputExplanationHover, LeanInputAbbreviator } from './input';
+import { LeanInputExplanationHover, LeanInputAbbreviator } from './input';
 import { LeanDefinitionProvider } from './definition'
 import { batchExecuteFile } from './batch';
 import { LeanStatusBarItem } from './statusbar';
@@ -65,13 +65,7 @@ export function activate(context: vscode.ExtensionContext) {
     loadJsonFile(context.asAbsolutePath("translations.json")).then(json => {
         context.subscriptions.push(vscode.languages.registerHoverProvider(LEAN_MODE,
             new LeanInputExplanationHover(json)));
-        if (vscode.workspace.getConfiguration('lean').get('newInput')) {
-            context.subscriptions.push(new LeanInputAbbreviator(json, LEAN_MODE));
-        } else {
-            context.subscriptions.push(
-                vscode.languages.registerCompletionItemProvider(
-                    LEAN_MODE, new LeanInputCompletionProvider(json), '\\'));
-        }
+        context.subscriptions.push(new LeanInputAbbreviator(json, LEAN_MODE));
     });
 
     // Load the language-configuration manually, so that we can set the wordPattern.

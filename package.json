@@ -50,11 +50,6 @@
           "default": false,
           "description": "Show error messages where Lean is still checking."
         },
-        "lean.newInput": {
-          "type": "boolean",
-          "default": true,
-          "description": "Enable experimental new input mode for unicode symbols (requires restart to take effect)."
-        },
         "lean.roiModeDefault": {
           "type": "string",
           "default": "visible",

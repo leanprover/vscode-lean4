@@ -6,34 +6,6 @@ import {isInputCompletion} from './util'
 
 export type Translations = { [abbrev: string]: string };
 
-export class LeanInputCompletionProvider implements CompletionItemProvider {
-    translations: Translations;
-
-    public constructor(translations: Translations) {
-        this.translations = translations;
-    }
-
-    public provideCompletionItems(document: TextDocument, position: Position, token: CancellationToken): CompletionList {
-
-        // The idea here is to only provide Unicode input if you are using completion triggered by a `\'.
-        let offset = document.offsetAt(position);
-        if (!isInputCompletion(document, position)) {
-            return new CompletionList([]);
-        } else {
-            var items = [];
-            for (var abbrev in this.translations) {
-                var replacement = this.translations[abbrev];
-                var item = new CompletionItem(`\\${abbrev}`, CompletionItemKind.Text);
-                item.insertText = replacement;
-                item.range = new Range(position.translate(0, -1), position);
-                item.detail = replacement;
-                items.push(item);
-            }
-            return new CompletionList(items);
-        }
-    }
-}
-
 export class LeanInputExplanationHover implements HoverProvider {
     constructor(private translations: Translations) {}
 
