@@ -28,7 +28,7 @@
 				},
 				"lean.memoryLimit": {
 					"type": "number",
-					"default": "1024",
+					"default": "4096",
 					"description": "Set a memory limit (in Megabytes) for the Lean server."
 				},
 				"lean.timeLimit": {
