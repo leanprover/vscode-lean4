@@ -36,7 +36,8 @@ export class LeanStatusBarItem implements Disposable {
 
         switch (this.roiManager && this.roiManager.mode) {
             case RoiMode.Nothing: text += ' (checking nothing)'; break;
-            case RoiMode.Cursor: text += ' (checking cursor + 5 lines)'; break;
+            case RoiMode.VisibleLines: text += ' (checking visible lines)'; break;
+            case RoiMode.VisibleLinesAndAbove: text += ' (checking visible lines and above)'; break;
             case RoiMode.VisibleFiles: text += ' (checking visible files)'; break;
             case RoiMode.OpenFiles: text += ' (checking open files)'; break;
             case RoiMode.ProjectFiles: text += ' (checking project files)'; break;

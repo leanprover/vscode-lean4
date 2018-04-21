@@ -5,9 +5,9 @@ import {Server} from './server';
 
 export enum RoiMode {
     Nothing,
-    Cursor,
     VisibleFiles,
-    // VisibleLines, // TODO(gabriel): depends on https://github.com/Microsoft/vscode/issues/14756
+    VisibleLines,
+    VisibleLinesAndAbove,
     OpenFiles,
     ProjectFiles,
 }
@@ -19,20 +19,24 @@ export class RoiManager implements Disposable {
     private subscriptions: Disposable[] = [];
 
     constructor(private server: Server, private documentFilter: DocumentFilter) {
-        this.subscriptions.push(vscode.window.onDidChangeActiveTextEditor(() => this.send()));
-        this.subscriptions.push(vscode.window.onDidChangeTextEditorSelection(() => this.send()));
-        this.subscriptions.push(vscode.window.onDidChangeVisibleTextEditors(() => this.send()));
-        this.subscriptions.push(vscode.workspace.onDidOpenTextDocument(() => this.send()));
-        this.subscriptions.push(vscode.workspace.onDidCloseTextDocument(() => this.send()));
-        this.subscriptions.push(server.restarted.on(() => this.send()));
+        this.subscriptions.push(
+            vscode.window.onDidChangeActiveTextEditor(() => this.send()),
+            vscode.window.onDidChangeTextEditorSelection(() => this.send()),
+            vscode.window.onDidChangeVisibleTextEditors(() => this.send()),
+            vscode.window.onDidChangeTextEditorVisibleRanges(() => this.send()),
+            vscode.workspace.onDidOpenTextDocument(() => this.send()),
+            vscode.workspace.onDidCloseTextDocument(() => this.send()),
+            server.restarted.on(() => this.send()),
+        );
 
         switch (vscode.workspace.getConfiguration('lean').get('roiModeDefault')) {
             case 'nothing': this.mode = RoiMode.Nothing; break;
-            case 'cursor': this.mode = RoiMode.Cursor; break;
             case 'visible': this.mode = RoiMode.VisibleFiles; break;
+            case 'lines': this.mode = RoiMode.VisibleLines; break;
+            case 'linesAndAbove': this.mode = RoiMode.VisibleLinesAndAbove; break;
             case 'open': this.mode = RoiMode.OpenFiles; break;
             case 'project': this.mode = RoiMode.ProjectFiles; break;
-            default: this.mode = RoiMode.VisibleFiles;
+            default: this.mode = RoiMode.VisibleLinesAndAbove;
         }
         this.send();
 
@@ -44,9 +48,14 @@ export class RoiManager implements Disposable {
                     mode: RoiMode.Nothing,
                 },
                 {
-                    label: 'cursor + 5 lines',
-                    description: 'only check until 5 lines below the cursor',
-                    mode: RoiMode.Cursor,
+                    label: 'visible lines',
+                    description: 'check lines that are currently visible',
+                    mode: RoiMode.VisibleLines,
+                },
+                {
+                    label: 'visible lines and above',
+                    description: 'check visible lines and the file above it',
+                    mode: RoiMode.VisibleLinesAndAbove,
                 },
                 {
                     label: 'visible files',
@@ -79,20 +88,14 @@ export class RoiManager implements Disposable {
     }
 
     compute(): Thenable<FileRoi[]> {
-        // improve after https://github.com/Microsoft/vscode/issues/14756
         const visibleRanges: {[fileName: string]: RoiRange[]} = {};
-        if (this.mode === RoiMode.Cursor) {
-            const editor = vscode.window.activeTextEditor;
-            if (editor && vscode.languages.match(this.documentFilter, editor.document)) {
+        for (const editor of vscode.window.visibleTextEditors) {
+            if (vscode.languages.match(this.documentFilter, editor.document)) {
                 visibleRanges[editor.document.fileName] =
-                    [{begin_line: 1, end_line: editor.selection.active.line + 6}];
-            }
-        } else {
-            for (const editor of vscode.window.visibleTextEditors) {
-                if (vscode.languages.match(this.documentFilter, editor.document)) {
-                    visibleRanges[editor.document.fileName] =
-                        [{begin_line: 1, end_line: editor.document.lineCount}];
-                }
+                    editor.visibleRanges.map((r) => ({
+                        begin_line: r.start.line + 1,
+                        end_line: r.end.line + 1,
+                    }));
             }
         }
 
@@ -117,15 +120,19 @@ export class RoiManager implements Disposable {
     modeString(): CheckingMode {
         switch (this.mode) {
             case RoiMode.Nothing: return 'nothing';
-            case RoiMode.Cursor: return 'visible-lines';
             case RoiMode.VisibleFiles: return 'visible-files';
+            case RoiMode.VisibleLines: return 'visible-lines';
+            case RoiMode.VisibleLinesAndAbove: return 'visible-lines-and-above';
             case RoiMode.OpenFiles: return 'open-files';
             case RoiMode.ProjectFiles: return 'open-files';
             default: throw new Error('unknown roi mode');
         }
     }
 
-    send() { this.compute().then((roi) => this.server.roi(this.modeString(), roi)); }
+    async send() {
+        const roi = await this.compute();
+        await this.server.roi(this.modeString(), roi);
+    }
 
     check(mode: RoiMode) {
         this.mode = mode;
