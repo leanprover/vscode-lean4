@@ -38,14 +38,21 @@ class TextEditorAbbrevHandler {
         this.range = range;
         this.editor.setDecorations(this.abbreviator.decorationType, range ? [range] : []);
 
-        // HACK: support \{{}}
-        if (range && this.editor.document.getText(range) === '\\{{}}') {
-            this.editor.edit(async (builder) => {
-                await builder.replace(range, '⦃⦄');
-                const pos = range.start.translate(0, 1);
-                this.editor.selection = new Selection(pos, pos);
-                this.updateRange();
-            });
+        // HACK: support \{{}} and \[[]]
+        const hackyReplacements: {[input: string]: string} = {
+            '\\{{}}': '⦃⦄',
+            '\\[[]]': '⟦⟧',
+        };
+        if (range) {
+            const replacement = hackyReplacements[this.editor.document.getText(range)];
+            if (replacement) {
+                this.editor.edit(async (builder) => {
+                    await builder.replace(range, replacement);
+                    const pos = range.start.translate(0, 1);
+                    this.editor.selection = new Selection(pos, pos);
+                    this.updateRange();
+                });
+            }
         }
     }
 
