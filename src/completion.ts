@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import {CompletionItemProvider} from 'vscode';
+import {CompletionItemProvider, MarkdownString} from 'vscode';
 import {LEAN_MODE} from './constants';
 import {Server} from './server';
 import {isInputCompletion} from './util';
@@ -53,7 +53,7 @@ export class LeanCompletionItemProvider implements vscode.CompletionItemProvider
                 } else {
                     item.detail = completion.type;
                 }
-                item.documentation = completion.doc;
+                item.documentation = new MarkdownString(completion.doc);
                 completions.push(item);
             }
             for (const kw of keywords) {

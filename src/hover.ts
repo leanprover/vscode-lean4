@@ -1,6 +1,6 @@
 'use strict';
 
-import {CancellationToken, Hover, HoverProvider, MarkedString, Position, Range, TextDocument} from 'vscode';
+import {CancellationToken, Hover, HoverProvider, MarkdownString, Position, Range, TextDocument} from 'vscode';
 import {Server} from './server';
 
 export class LeanHoverProvider implements HoverProvider {
@@ -12,24 +12,28 @@ export class LeanHoverProvider implements HoverProvider {
 
     async provideHover(document: TextDocument, position: Position) {
         const response = await this.server.info(document.fileName, position.line + 1, position.character);
-        const marked: MarkedString[] = [];
         if (response.record) {
+            const contents: MarkdownString[] = [];
             const name = response.record['full-id'] || response.record.text;
             if (name) {
                 if (response.record.tactic_params) {
-                    marked.push({ language: 'text', value: name + ' ' + response.record.tactic_params.join(' ') });
+                    contents.push(new MarkdownString()
+                        .appendText(name + ' ' + response.record.tactic_params.join(' ')));
                 } else {
-                    marked.push({ language: 'lean', value: name + ' : ' + response.record.type });
+                    contents.push(new MarkdownString()
+                        .appendCodeblock(name + ' : ' + response.record.type, 'lean'));
                 }
             }
             if (response.record.doc) {
-                marked.push(response.record.doc);
+                contents.push(new MarkdownString()
+                    .appendMarkdown(response.record.doc));
             }
-            if (response.record.state && !marked) {
-                marked.push({ language: 'lean', value: response.record.state });
+            if (response.record.state && !contents) {
+                contents.push(new MarkdownString()
+                    .appendCodeblock(response.record.state, 'lean'));
             }
+            const pos = new Position(position.line - 1, position.character);
+            return new Hover(contents, new Range(pos, pos));
         }
-        const pos = new Position(position.line - 1, position.character);
-        return marked && new Hover(marked, new Range(pos, pos));
     }
 }
