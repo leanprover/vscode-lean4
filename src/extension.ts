@@ -62,11 +62,12 @@ export function activate(context: vscode.ExtensionContext) {
             LEAN_MODE, new LeanCompletionItemProvider(server), '.'));
 
     // Register support for unicode input.
-    loadJsonFile(context.asAbsolutePath('translations.json')).then((translations) => {
-        context.subscriptions.push(vscode.languages.registerHoverProvider(LEAN_MODE,
-            new LeanInputExplanationHover(translations)));
-        context.subscriptions.push(new LeanInputAbbreviator(translations, LEAN_MODE));
-    });
+    (async () => {
+        const translations = await loadJsonFile(context.asAbsolutePath('translations.json'));
+        context.subscriptions.push(
+            vscode.languages.registerHoverProvider(LEAN_MODE, new LeanInputExplanationHover(translations)),
+            new LeanInputAbbreviator(translations, LEAN_MODE));
+    })();
 
     // Load the language-configuration manually, so that we can set the wordPattern.
     let langConf = vscode.Uri.file(context.asAbsolutePath('language-configuration.json')).toJSON();

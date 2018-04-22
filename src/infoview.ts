@@ -60,9 +60,10 @@ export class InfoProvider implements TextDocumentContentProvider, Disposable {
             this.server.allMessages.on(() => {
                 if (this.updateMessages()) { this.fire(); }
             }),
-            this.server.statusChanged.on(() => {
+            this.server.statusChanged.on(async () => {
                 if (this.displayMode === DisplayMode.OnlyState) {
-                    this.updateGoal().then((changed) => { if (changed) { this.fire(); } });
+                    const changed = await this.updateGoal();
+                    if (changed) { this.fire(); }
                 }
             }),
             window.onDidChangeTextEditorSelection(() => this.updatePosition(false)),
@@ -125,13 +126,14 @@ export class InfoProvider implements TextDocumentContentProvider, Disposable {
             workspace.getConfiguration('lean').get('infoViewStyle');
     }
 
-    private openPreview(editor: TextEditor) {
+    private async openPreview(editor: TextEditor) {
         let column = editor.viewColumn + 1;
         if (column === 4) { column = ViewColumn.Three; }
-        commands.executeCommand('vscode.previewHtml', this.leanGoalsUri, column, 'Lean Messages')
-            .then((success) => { if (success) {
-                window.showTextDocument(editor.document);
-            } });
+        const success = await commands.executeCommand(
+            'vscode.previewHtml', this.leanGoalsUri, column, 'Lean Messages');
+        if (success) {
+            window.showTextDocument(editor.document);
+        }
     }
 
     private sendPosition() {
@@ -205,7 +207,7 @@ export class InfoProvider implements TextDocumentContentProvider, Disposable {
         return (this.curFileName !== oldFileName || !this.curPosition.isEqual(oldPosition));
     }
 
-    private updatePosition(forceRefresh: boolean) {
+    private async updatePosition(forceRefresh: boolean) {
         if (this.stopped) { return; }
 
         const chPos = this.changePosition();
@@ -216,14 +218,13 @@ export class InfoProvider implements TextDocumentContentProvider, Disposable {
         const chMsg = this.updateMessages();
         switch (this.displayMode) {
         case DisplayMode.OnlyState:
-            this.updateGoal().then((chGoal) => {
-                if (chPos || chGoal || chMsg) {
-                    this.fire();
-                } else if (forceRefresh) {
-                    commands.executeCommand('_workbench.htmlPreview.postMessage', this.leanGoalsUri,
-                        { command: 'continue' });
-                }
-            });
+            const chGoal = await this.updateGoal();
+            if (chPos || chGoal || chMsg) {
+                this.fire();
+            } else if (forceRefresh) {
+                await commands.executeCommand('_workbench.htmlPreview.postMessage', this.leanGoalsUri,
+                    { command: 'continue' });
+            }
             break;
 
         case DisplayMode.AllMessage:
@@ -295,26 +296,22 @@ export class InfoProvider implements TextDocumentContentProvider, Disposable {
         return true;
     }
 
-    private updateGoal(): Promise<boolean> {
-        if (this.stopped) { return Promise.resolve(false); }
+    private async updateGoal(): Promise<boolean> {
+        if (this.stopped) { return false; }
 
-        const f = this.curFileName;
-        const l = this.curPosition.line + 1;
-        const c = this.curPosition.character;
-
-        return this.server.info(f, l, c).then((info) => {
-            if (info.record && info.record.state) {
-                if (this.curGoalState !== info.record.state) {
-                    this.curGoalState = info.record.state;
-                    return true;
-                }
-            } else {
-                if (this.curGoalState) {
-                    this.curGoalState = null;
-                    return false;
-                }
+        const info = await this.server.info(
+            this.curFileName, this.curPosition.line + 1, this.curPosition.character);
+        if (info.record && info.record.state) {
+            if (this.curGoalState !== info.record.state) {
+                this.curGoalState = info.record.state;
+                return true;
             }
-        });
+        } else {
+            if (this.curGoalState) {
+                this.curGoalState = null;
+                return false;
+            }
+        }
     }
 
     private getMediaPath(mediaFile: string): string {

@@ -1,6 +1,6 @@
 'use strict';
 
-import {CancellationToken, Hover, HoverProvider, Position, Range, TextDocument} from 'vscode';
+import {CancellationToken, Hover, HoverProvider, MarkedString, Position, Range, TextDocument} from 'vscode';
 import {Server} from './server';
 
 export class LeanHoverProvider implements HoverProvider {
@@ -10,32 +10,26 @@ export class LeanHoverProvider implements HoverProvider {
         this.server = server;
     }
 
-    provideHover(document: TextDocument, position: Position): Thenable<Hover> {
-        return this.server.info(document.fileName, position.line + 1, position.character).then((response) => {
-            // Maybe use more sohpisticated typing here?
-            const marked = [];
-            if (response.record) {
-                const name = response.record['full-id'] || response.record.text;
-                if (name) {
-                    if (response.record.tactic_params) {
-                        marked.push({ language: 'text', value: name + ' ' + response.record.tactic_params.join(' ') });
-                    } else {
-                        marked.push({ language: 'lean', value: name + ' : ' + response.record.type });
-                    }
-                }
-                if (response.record.doc) {
-                    marked.push(response.record.doc);
-                }
-                if (response.record.state && !marked) {
-                    marked.push({ language: 'lean', value: response.record.state });
+    async provideHover(document: TextDocument, position: Position) {
+        const response = await this.server.info(document.fileName, position.line + 1, position.character);
+        const marked: MarkedString[] = [];
+        if (response.record) {
+            const name = response.record['full-id'] || response.record.text;
+            if (name) {
+                if (response.record.tactic_params) {
+                    marked.push({ language: 'text', value: name + ' ' + response.record.tactic_params.join(' ') });
+                } else {
+                    marked.push({ language: 'lean', value: name + ' : ' + response.record.type });
                 }
             }
-            if (marked) {
-                const pos = new Position(position.line - 1, position.character);
-                return new Hover(marked, new Range(pos, pos));
-            } else {
-                return null;
+            if (response.record.doc) {
+                marked.push(response.record.doc);
             }
-        });
+            if (response.record.state && !marked) {
+                marked.push({ language: 'lean', value: response.record.state });
+            }
+        }
+        const pos = new Position(position.line - 1, position.character);
+        return marked && new Hover(marked, new Range(pos, pos));
     }
 }

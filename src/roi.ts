@@ -40,7 +40,7 @@ export class RoiManager implements Disposable {
         }
         this.send();
 
-        this.subscriptions.push(vscode.commands.registerCommand('lean.roiMode.select', () => {
+        this.subscriptions.push(vscode.commands.registerCommand('lean.roiMode.select', async () => {
             const items: Array<QuickPickItem & {mode: RoiMode}> = [
                 {
                     label: 'nothing',
@@ -73,8 +73,8 @@ export class RoiManager implements Disposable {
                     mode: RoiMode.ProjectFiles,
                 },
             ];
-            vscode.window.showQuickPick(items).then((selected) =>
-                selected && this.check(selected.mode));
+            const selected = await vscode.window.showQuickPick(items);
+            if (selected) { this.check(selected.mode); }
         }));
         this.subscriptions.push(vscode.commands.registerCommand('lean.roiMode.nothing',
             () => this.check(RoiMode.Nothing)));
@@ -87,7 +87,15 @@ export class RoiManager implements Disposable {
 
     }
 
-    compute(): Thenable<FileRoi[]> {
+    async compute(): Promise<FileRoi[]> {
+        let paths: string[];
+        if (this.mode === RoiMode.ProjectFiles) {
+            const files = await vscode.workspace.findFiles('**/*.lean');
+            paths = files.map((f) => f.fsPath);
+        } else {
+            paths = vscode.workspace.textDocuments.map((d) => d.fileName);
+        }
+
         const visibleRanges: {[fileName: string]: RoiRange[]} = {};
         for (const editor of vscode.window.visibleTextEditors) {
             if (vscode.languages.match(this.documentFilter, editor.document)) {
@@ -99,22 +107,7 @@ export class RoiManager implements Disposable {
             }
         }
 
-        const roi: FileRoi[] = [];
-        if (this.mode === RoiMode.ProjectFiles) {
-            return vscode.workspace.findFiles('**/*.lean').then((files) => {
-                for (const f of files) {
-                    const path = f.fsPath;
-                    roi.push({file_name: path, ranges: visibleRanges[path] || []});
-                }
-                return roi;
-            });
-        } else {
-            for (const d of vscode.workspace.textDocuments) {
-                const path = d.fileName;
-                roi.push({file_name: path, ranges: visibleRanges[path] || []});
-            }
-            return Promise.resolve(roi);
-        }
+        return paths.map((path) => ({file_name: path, ranges: visibleRanges[path] || []}));
     }
 
     modeString(): CheckingMode {
