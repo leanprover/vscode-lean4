@@ -53,7 +53,7 @@ This extension contributes the following settings:
 
 ## Release Notes
 
-### 0.11.1
+### 0.11.2
 * Tactic state highlighting
 
 ### 0.11
