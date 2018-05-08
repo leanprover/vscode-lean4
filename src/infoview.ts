@@ -347,9 +347,18 @@ export class InfoProvider implements TextDocumentContentProvider, Disposable {
             </body></html>`;
     }
 
+    private formatTacticState(goal: string): string {
+        return goal
+            .replace(/^(\d+ goals)/mg, '<strong class="goal-goals">$1</strong>:')
+            .replace(/^(case) /mg, '<strong class="goal-case">$1</strong> ')
+            .replace(/^([^ :\n⊢]*) :/mg, '<strong class="goal-hyp">$1</strong> :')
+            .replace(/^⊢/mg, '<strong class="goal-vdash">⊢</strong>');
+    }
+
     private renderGoal() {
         if (!this.curGoalState || this.displayMode !== DisplayMode.OnlyState) { return ''; }
-        return `<div id="goal"><h1>Tactic State</h1><pre>${escapeHtml(this.curGoalState)}</pre></div>`;
+        return `<div id="goal"><h1>Tactic State</h1><pre>${
+            this.formatTacticState(escapeHtml(this.curGoalState))}</pre></div>`;
     }
 
     private renderMessages() {

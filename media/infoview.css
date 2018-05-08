@@ -1,4 +1,4 @@
-#debug { 
+#debug {
   display: block;
   position: fixed;
   bottom: 0px; right: 0px; z-index: 2;
@@ -169,3 +169,12 @@ div#run-state {
   background-color: #000;
 }
 
+.goal-goals { color: #569cd6; }
+.goal-vdash { color: #569cd6; }
+.goal-case { color: #a1df90; }
+.goal-hyp { color: #ffcc00; }
+
+.vscode-light .goal-goals { color: #367cb6; }
+.vscode-light .goal-vdash { color: #367cb6; }
+.vscode-light .goal-case { color: #1f7a1f; }
+.vscode-light .goal-hyp { color: #cc7a00; }

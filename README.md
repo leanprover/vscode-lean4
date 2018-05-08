@@ -53,6 +53,9 @@ This extension contributes the following settings:
 
 ## Release Notes
 
+### 0.11.1
+* Tactic state highlighting
+
 ### 0.11
 * Support for `visibleRanges` API in vscode.  Per default, only the currently visible lines and the rest of the file above are checked.
 
