@@ -349,10 +349,11 @@ export class InfoProvider implements TextDocumentContentProvider, Disposable {
 
     private formatTacticState(goal: string): string {
         return goal
-            .replace(/^(\d+ goals)/mg, '<strong class="goal-goals">$1</strong>:')
+            .replace(/^([|⊢]) /mg, '<strong class="goal-vdash">$1</strong> ')
+            .replace(/^(\d+ goals)/mg, '<strong class="goal-goals">$1</strong>')
             .replace(/^(case) /mg, '<strong class="goal-case">$1</strong> ')
-            .replace(/^([^ \n:][^:\n⊢]*) :/mg, '<strong class="goal-hyp">$1</strong> :')
-            .replace(/^([|⊢]) /mg, '<strong class="goal-vdash">$1</strong> ');
+            .replace(/^([^:\n⊢ ][^:\n⊢]*) :/mg, '<strong class="goal-hyp">$1</strong> :')
+            .replace(/^(no goals)$/g, '$1 🎉');
     }
 
     private renderGoal() {
