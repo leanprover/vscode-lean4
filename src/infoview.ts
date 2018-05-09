@@ -347,10 +347,11 @@ export class InfoProvider implements TextDocumentContentProvider, Disposable {
             </body></html>`;
     }
 
-    private formatTacticState(goal: string): string {
-        return goal
+    private colorizeMessage(goal: string): string {
+        return escapeHtml(goal)
             .replace(/^([|⊢]) /mg, '<strong class="goal-vdash">$1</strong> ')
             .replace(/^(\d+ goals)/mg, '<strong class="goal-goals">$1</strong>')
+            .replace(/^(context|state):/mg, '<strong class="goal-goals">$1</strong>:')
             .replace(/^(case) /mg, '<strong class="goal-case">$1</strong> ')
             .replace(/^([^:\n⊢ ][^:\n⊢]*) :/mg, '<strong class="goal-hyp">$1</strong> :')
             .replace(/^(no goals)$/g, '$1 🎉');
@@ -359,7 +360,7 @@ export class InfoProvider implements TextDocumentContentProvider, Disposable {
     private renderGoal() {
         if (!this.curGoalState || this.displayMode !== DisplayMode.OnlyState) { return ''; }
         return `<div id="goal"><h1>Tactic State</h1><pre>${
-            this.formatTacticState(escapeHtml(this.curGoalState))}</pre></div>`;
+            this.colorizeMessage(this.curGoalState)}</pre></div>`;
     }
 
     private renderMessages() {
@@ -373,7 +374,7 @@ export class InfoProvider implements TextDocumentContentProvider, Disposable {
                 <h1 title="${f}:${l}:${c}"><a href="${cmd}">
                     ${b}:${l}:${c}: ${m.severity} ${escapeHtml(m.caption)}
                 </a></h1>
-                <pre>${escapeHtml(m.text)}</pre></div>`;
+                <pre>${this.colorizeMessage(m.text)}</pre></div>`;
         }).join('\n');
     }
 }
