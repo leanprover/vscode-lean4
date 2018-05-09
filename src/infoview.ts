@@ -353,8 +353,7 @@ export class InfoProvider implements TextDocumentContentProvider, Disposable {
             .replace(/^(\d+ goals)/mg, '<strong class="goal-goals">$1</strong>')
             .replace(/^(context|state):/mg, '<strong class="goal-goals">$1</strong>:')
             .replace(/^(case) /mg, '<strong class="goal-case">$1</strong> ')
-            .replace(/^([^:\n⊢ ][^:\n⊢]*) :/mg, '<strong class="goal-hyp">$1</strong> :')
-            .replace(/^(no goals)$/g, '$1 🎉');
+            .replace(/^([^:\n⊢ ][^:\n⊢]*) :/mg, '<strong class="goal-hyp">$1</strong> :');
     }
 
     private renderGoal() {
