@@ -2,7 +2,7 @@
 	"name": "lean",
 	"displayName": "lean",
 	"description": "An extension for VS Code which provides support for the Lean language.",
-	"version": "0.11.5",
+	"version": "0.11.6",
 	"publisher": "jroesch",
 	"engines": {
 		"vscode": "^1.22.0"
