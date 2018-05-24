@@ -369,11 +369,14 @@ export class InfoProvider implements TextDocumentContentProvider, Disposable {
             const l = m.pos_line.toString(); const c = m.pos_col.toString();
             const cmd = encodeURI('command:_lean.revealPosition?' +
                 JSON.stringify([Uri.file(m.file_name), m.pos_line, m.pos_col]));
+            const shouldColorize = m.severity === 'error';
+            const colorized = shouldColorize ? this.colorizeMessage(m.text) :
+                escapeHtml(m.text);
             return `<div class="message ${m.severity}" data-line="${l}" data-column="${c}">
                 <h1 title="${f}:${l}:${c}"><a href="${cmd}">
                     ${b}:${l}:${c}: ${m.severity} ${escapeHtml(m.caption)}
                 </a></h1>
-                <pre>${this.colorizeMessage(m.text)}</pre></div>`;
+                <pre>${colorized}</pre></div>`;
         }).join('\n');
     }
 }
