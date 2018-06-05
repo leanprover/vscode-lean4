@@ -1,12 +1,9 @@
-import * as carrier from 'carrier';
-import * as child from 'child_process';
 import * as leanclient from 'lean-client-js-node';
-// tslint:disable-next-line:ordered-imports
-import {Task, Event, ProcessTransport, ProcessConnection, Message,
-     CommandResponse, CompleteResponse, FileRoi, RoiRequest} from 'lean-client-js-node';
+import { CommandResponse, CompleteResponse, Event, FileRoi, Message,
+     ProcessConnection, ProcessTransport, RoiRequest, Task } from 'lean-client-js-node';
 import * as semver from 'semver';
-import * as vscode from 'vscode';
-import * as util from './util';
+import { OutputChannel, window, workspace } from 'vscode';
+import { LowPassFilter } from './util';
 
 export interface ServerStatus {
     stopped: boolean;
@@ -16,7 +13,7 @@ export interface ServerStatus {
 }
 
 // A global channel for storing the contents of stderr.
-let stderrOutput: vscode.OutputChannel;
+let stderrOutput: OutputChannel;
 
 // A class for interacting with the Lean server protocol.
 export class Server extends leanclient.Server {
@@ -26,7 +23,7 @@ export class Server extends leanclient.Server {
     options: string[];
     version: string;
 
-    statusChanged: util.LowPassFilter<ServerStatus>;
+    statusChanged: LowPassFilter<ServerStatus>;
     restarted: Event<any>;
     supportsROI: boolean;
 
@@ -34,7 +31,7 @@ export class Server extends leanclient.Server {
 
     constructor() {
         super(null); // TODO(gabriel): add support to lean-client-js
-        this.statusChanged = new util.LowPassFilter<ServerStatus>(300);
+        this.statusChanged = new LowPassFilter<ServerStatus>(300);
         this.restarted = new Event();
         this.messages = [];
         this.supportsROI = true;
@@ -53,12 +50,12 @@ export class Server extends leanclient.Server {
         try {
             this.messages = [];
 
-            const config = vscode.workspace.getConfiguration('lean');
+            const config = workspace.getConfiguration('lean');
 
             // TODO(gabriel): unset LEAN_PATH environment variable
 
             this.executablePath = config.get('executablePath') || 'lean';
-            this.workingDirectory = vscode.workspace.rootPath;
+            this.workingDirectory = workspace.rootPath;
             this.options = config.get('extraOptions') || [];
 
             this.version = new ProcessTransport(this.executablePath, '.', []).getVersion();
@@ -82,7 +79,7 @@ export class Server extends leanclient.Server {
 
     private attachEventHandlers() {
         // When attaching event handlers ensure the global error log is clear.
-        stderrOutput = stderrOutput || vscode.window.createOutputChannel('Lean: Server Errors');
+        stderrOutput = stderrOutput || window.createOutputChannel('Lean: Server Errors');
         stderrOutput.clear();
 
         this.error.on((e) => {
@@ -97,7 +94,7 @@ export class Server extends leanclient.Server {
                         'The lean.executablePath may be incorrect, make sure it is a valid Lean executable');
                     break;
                 case 'unrelated':
-                    vscode.window.showWarningMessage('Lean: ' + e.message);
+                    window.showWarningMessage('Lean: ' + e.message);
                     break;
             }
 
@@ -130,7 +127,7 @@ export class Server extends leanclient.Server {
 
     async requestRestart(message: string, justWarning?: boolean) {
         const restartItem = 'Restart server';
-        const showMsg = justWarning ? vscode.window.showWarningMessage : vscode.window.showErrorMessage;
+        const showMsg = justWarning ? window.showWarningMessage : window.showErrorMessage;
         const item = await showMsg(message, restartItem);
         if (item === restartItem) {
             this.restart();

@@ -1,7 +1,6 @@
-import * as vscode from 'vscode';
-import {Disposable, Event, EventEmitter} from 'vscode';
+import { Disposable, Event, EventEmitter, Position, TextDocument } from 'vscode';
 
-export function isInputCompletion(document: vscode.TextDocument, position: vscode.Position): boolean {
+export function isInputCompletion(document: TextDocument, position: Position): boolean {
     const text = document.getText();
     let offset = document.offsetAt(position);
     do { offset--; } while (/[^\\\s]/.test(text.charAt(offset)));

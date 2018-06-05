@@ -1,27 +1,26 @@
-import {Message} from 'lean-client-js-node';
 import * as loadJsonFile from 'load-json-file';
-import * as vscode from 'vscode';
+import { commands, ExtensionContext, languages, Uri, workspace } from 'vscode';
 import { batchExecuteFile } from './batch';
 import { LeanCompletionItemProvider } from './completion';
-import {LEAN_MODE} from './constants';
+import { LEAN_MODE } from './constants';
 import { LeanDefinitionProvider } from './definition';
-import {LeanDiagnosticsProvider} from './diagnostics';
+import { LeanDiagnosticsProvider } from './diagnostics';
 import { LeanHoles } from './holes';
 import { LeanHoverProvider } from './hover';
-import {InfoProvider} from './infoview';
+import { InfoProvider } from './infoview';
 import { LeanInputAbbreviator, LeanInputExplanationHover } from './input';
-import {LeanpkgService} from './leanpkg';
-import { RoiManager, RoiMode } from './roi';
+import { LeanpkgService } from './leanpkg';
+import { RoiManager } from './roi';
 import { LeanWorkspaceSymbolProvider } from './search';
-import { Server, ServerStatus } from './server';
+import { Server } from './server';
 import { LeanStatusBarItem } from './statusbar';
-import {LeanSyncService} from './sync';
+import { LeanSyncService } from './sync';
 import { LeanTaskGutter, LeanTaskMessages } from './taskgutter';
 
 // Seeing .olean files in the source tree is annoying, we should
 // just globally hide them.
 function configExcludeOLean() {
-    const files = vscode.workspace.getConfiguration('files');
+    const files = workspace.getConfiguration('files');
     const exclude = files.get('exclude');
     exclude['**/*.olean'] = true;
     files.update('exclude', exclude, true);
@@ -29,7 +28,7 @@ function configExcludeOLean() {
 
 let server: Server;
 
-export function activate(context: vscode.ExtensionContext) {
+export function activate(context: ExtensionContext) {
     configExcludeOLean();
 
     server = new Server();
@@ -38,8 +37,8 @@ export function activate(context: vscode.ExtensionContext) {
 
     // Setup the commands.
     context.subscriptions.push(
-        vscode.commands.registerCommand('lean.restartServer', () => server.restart()),
-        vscode.commands.registerTextEditorCommand('lean.batchExecute',
+        commands.registerCommand('lean.restartServer', () => server.restart()),
+        commands.registerTextEditorCommand('lean.batchExecute',
             (editor, edit, args) => { batchExecuteFile(server, editor, edit, args); }),
     );
 
@@ -53,39 +52,39 @@ export function activate(context: vscode.ExtensionContext) {
 
     // Register the support for hovering.
     context.subscriptions.push(
-        vscode.languages.registerHoverProvider(LEAN_MODE,
+        languages.registerHoverProvider(LEAN_MODE,
             new LeanHoverProvider(server)));
 
     // Register support for completion.
     context.subscriptions.push(
-        vscode.languages.registerCompletionItemProvider(
+        languages.registerCompletionItemProvider(
             LEAN_MODE, new LeanCompletionItemProvider(server), '.'));
 
     // Register support for unicode input.
     (async () => {
         const translations = await loadJsonFile(context.asAbsolutePath('translations.json'));
         context.subscriptions.push(
-            vscode.languages.registerHoverProvider(LEAN_MODE, new LeanInputExplanationHover(translations)),
+            languages.registerHoverProvider(LEAN_MODE, new LeanInputExplanationHover(translations)),
             new LeanInputAbbreviator(translations, LEAN_MODE));
     })();
 
     // Load the language-configuration manually, so that we can set the wordPattern.
-    let langConf = vscode.Uri.file(context.asAbsolutePath('language-configuration.json')).toJSON();
+    let langConf = Uri.file(context.asAbsolutePath('language-configuration.json')).toJSON();
     langConf = { comments: langConf.comments, brackets: langConf.brackets,
         autoClosingPairs: langConf.autoClosingPairs, surroundingPairs: langConf.surroundingPairs,
         wordPattern: /(-?\d*\.\d\w*)|([^`~!@$%^&*()-=+\[{\]}\\|;:",./?\s]+)/ };
     context.subscriptions.push(
-        vscode.languages.setLanguageConfiguration('lean', langConf),
+        languages.setLanguageConfiguration('lean', langConf),
     );
 
     // Register support for definition support.
     context.subscriptions.push(
-        vscode.languages.registerDefinitionProvider(
+        languages.registerDefinitionProvider(
             LEAN_MODE, new LeanDefinitionProvider(server)));
 
     // Search
     context.subscriptions.push(
-        vscode.languages.registerWorkspaceSymbolProvider(
+        languages.registerWorkspaceSymbolProvider(
             new LeanWorkspaceSymbolProvider(server)));
 
     // Holes

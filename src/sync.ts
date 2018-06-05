@@ -1,5 +1,5 @@
 import { Disposable, DocumentFilter, languages, TextDocument, workspace } from 'vscode';
-import {Server} from './server';
+import { Server } from './server';
 
 export class LeanSyncService implements Disposable {
     private subscriptions: Disposable[] = [];

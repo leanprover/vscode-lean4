@@ -8,7 +8,7 @@
 		"vscode": "^1.22.0"
 	},
 	"categories": [
-		"Languages"
+		"Programming Languages"
 	],
 	"repository": "https://github.com/leanprover/vscode-lean",
 	"contributes": {
@@ -270,13 +270,15 @@
 		"semver": "5.5.0"
 	},
 	"devDependencies": {
-		"@types/mocha": "^5.2.0",
-		"@types/node": "^10.0.6",
-		"mocha": "^5.1.1",
+		"@types/load-json-file": "^2.0.7",
+		"@types/mocha": "^5.2.1",
+		"@types/node": "^10.3.1",
+		"@types/semver": "^5.5.0",
+		"mocha": "^5.2.0",
 		"tslint": "^5.10.0",
-		"typescript": "^2.8.3",
-		"vsce": "^1.40.0",
-		"vscode": "^1.1.17"
+		"typescript": "^2.9.1",
+		"vsce": "^1.42.0",
+		"vscode": "^1.1.18"
 	},
 	"icon": "images/lean_logo.png",
 	"license": "Apache-2.0",

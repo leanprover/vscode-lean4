@@ -1,6 +1,5 @@
-import * as vscode from 'vscode';
-import {Definition, DefinitionProvider, Location, Position, TextDocument, Uri} from 'vscode';
-import {Server} from './server';
+import { Definition, DefinitionProvider, Location, Position, TextDocument, Uri } from 'vscode';
+import { Server } from './server';
 
 export class LeanDefinitionProvider implements DefinitionProvider {
     server: Server;

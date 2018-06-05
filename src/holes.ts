@@ -2,7 +2,7 @@ import { HoleCommands, HoleResponse } from 'lean-client-js-core';
 import { CodeActionContext, CodeActionProvider, Command, commands, Diagnostic,
     DiagnosticCollection, DiagnosticSeverity, Disposable, DocumentSelector, languages,
     Position, Range, TextDocument, Uri, window } from 'vscode';
-import {Server} from './server';
+import { Server } from './server';
 
 interface Pos { line: number; column: number; }
 interface Ran { start: Pos; end: Pos; }

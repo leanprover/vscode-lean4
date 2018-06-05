@@ -1,10 +1,10 @@
-import * as vscode from 'vscode';
-import {CancellationToken, CompletionItem, CompletionItemKind, CompletionItemProvider,
+import { CancellationToken, CompletionItem, CompletionItemKind, CompletionItemProvider,
     CompletionList, Disposable, DocumentFilter, Hover,
-    HoverProvider, Position, Range, Selection, TextDocument, TextEditor,
-    TextEditorDecorationType, TextEditorSelectionChangeEvent, Uri} from 'vscode';
-import {LEAN_MODE} from './constants';
-import {isInputCompletion} from './util';
+    HoverProvider, languages, Position, Range, Selection, TextDocument,
+    TextDocumentChangeEvent, TextEditor, TextEditorDecorationType,
+    TextEditorSelectionChangeEvent, Uri, window, workspace } from 'vscode';
+import { LEAN_MODE } from './constants';
+import { isInputCompletion } from './util';
 
 export interface Translations { [abbrev: string]: string; }
 
@@ -19,8 +19,8 @@ export class LeanInputExplanationHover implements HoverProvider {
         return abbrevs;
     }
 
-    provideHover(document: vscode.TextDocument, pos: Position, token: vscode.CancellationToken): Hover | undefined {
-        const symbolRange = new vscode.Range(pos, pos.translate(0, 1));
+    provideHover(document: TextDocument, pos: Position, token: CancellationToken): Hover | undefined {
+        const symbolRange = new Range(pos, pos.translate(0, 1));
         const symbol = document.getText(symbolRange);
         const abbrevs = this.getAbbrevations(symbol).sort((a, b) => a.length - b.length);
         return abbrevs.length > 0 &&
@@ -78,7 +78,7 @@ class TextEditorAbbrevHandler {
                 this.editor.edit(async (builder) => {
                     await builder.replace(range, replacement);
                     if (newRange) {
-                        this.updateRange(new vscode.Range(
+                        this.updateRange(new Range(
                             newRange.start.translate(0, replacement.length - toReplace.length),
                             newRange.end.translate(0, replacement.length - toReplace.length)));
                     }
@@ -89,7 +89,7 @@ class TextEditorAbbrevHandler {
         this.updateRange(newRange);
     }
 
-    onChanged(ev: vscode.TextDocumentChangeEvent) {
+    onChanged(ev: TextDocumentChangeEvent) {
         if (ev.contentChanges.length !== 1) { return this.updateRange(); } // single change
         const change = ev.contentChanges[0];
 
@@ -99,23 +99,23 @@ class TextEditorAbbrevHandler {
             // insert (or right paren overwriting)
             if (!this.range) {
                 if (change.text === '\\') {
-                    return this.updateRange(new vscode.Range(change.range.start, change.range.start.translate(0, 1)));
+                    return this.updateRange(new Range(change.range.start, change.range.start.translate(0, 1)));
                 }
             } else if (change.range.start.isEqual(this.range.end)) {
                 if (change.text === '\\' && this.rangeSize === 1) { // \\
-                    this.range = new vscode.Range(this.range.start, change.range.start.translate(0, 1));
+                    this.range = new Range(this.range.start, change.range.start.translate(0, 1));
                     return this.convertRange();
                 } else if (change.text.match(/^\s+|[)}⟩\\]$/)) {
                     // whitespace, closing parens, backslash
                     return this.convertRange(change.text !== '\\' ? null :
-                        new vscode.Range(change.range.start, change.range.start.translate(0, 1)));
+                        new Range(change.range.start, change.range.start.translate(0, 1)));
                 }
             }
         }
 
         if (this.range && this.range.contains(change.range) && this.range.start.isBefore(change.range.start)) {
             // modification
-            return this.updateRange(new vscode.Range(this.range.start,
+            return this.updateRange(new Range(this.range.start,
                 this.range.end.translate(0, change.text.length - change.rangeLength)));
         }
 
@@ -140,14 +140,14 @@ export class LeanInputAbbreviator {
         this.translations = Object.assign({}, translations);
         this.translations['\\'] = '\\';
 
-        this.decorationType = vscode.window.createTextEditorDecorationType({
+        this.decorationType = window.createTextEditorDecorationType({
             textDecoration: 'underline',
         });
 
-        this.subscriptions.push(vscode.workspace.onDidChangeTextDocument((ev) => this.onChanged(ev)));
-        this.subscriptions.push(vscode.window.onDidChangeTextEditorSelection((ev) => this.onSelectionChanged(ev)));
+        this.subscriptions.push(workspace.onDidChangeTextDocument((ev) => this.onChanged(ev)));
+        this.subscriptions.push(window.onDidChangeTextEditorSelection((ev) => this.onSelectionChanged(ev)));
 
-        this.subscriptions.push(vscode.window.onDidChangeVisibleTextEditors((editors) => {
+        this.subscriptions.push(window.onDidChangeVisibleTextEditors((editors) => {
             // delete removed editors
             const handlers = new Map<TextEditor, TextEditorAbbrevHandler>();
             this.handlers.forEach((h, e) => {
@@ -160,7 +160,7 @@ export class LeanInputAbbreviator {
     }
 
     get active(): boolean {
-        return !!this.handlers.get(vscode.window.activeTextEditor);
+        return !!this.handlers.get(window.activeTextEditor);
     }
 
     findReplacement(typedAbbrev: string): string | undefined {
@@ -185,12 +185,12 @@ export class LeanInputAbbreviator {
         return null;
     }
 
-    private onChanged(ev: vscode.TextDocumentChangeEvent) {
-        const editor = vscode.window.activeTextEditor;
+    private onChanged(ev: TextDocumentChangeEvent) {
+        const editor = window.activeTextEditor;
 
         if (editor.document !== ev.document) { return; } // change happened in active editor
 
-        if (!vscode.languages.match(this.documentFilter, ev.document)) { return; } // Lean file
+        if (!languages.match(this.documentFilter, ev.document)) { return; } // Lean file
 
         if (!this.handlers.has(editor)) {
             this.handlers.set(editor, new TextEditorAbbrevHandler(editor, this));
@@ -199,11 +199,11 @@ export class LeanInputAbbreviator {
     }
 
     private onSelectionChanged(ev: TextEditorSelectionChangeEvent) {
-        const editor = vscode.window.activeTextEditor;
+        const editor = window.activeTextEditor;
 
         if (editor !== ev.textEditor) { return; } // change happened in active editor
 
-        if (!vscode.languages.match(this.documentFilter, editor.document)) { return; } // Lean file
+        if (!languages.match(this.documentFilter, editor.document)) { return; } // Lean file
 
         if (this.handlers.has(editor)) {
             this.handlers.get(editor).onSelectionChanged(ev);

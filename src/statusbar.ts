@@ -1,6 +1,6 @@
 import { Disposable, StatusBarAlignment, StatusBarItem, window } from 'vscode';
 import { RoiManager, RoiMode } from './roi';
-import {Server} from './server';
+import { Server } from './server';
 
 export class LeanStatusBarItem implements Disposable {
     statusBarItem: StatusBarItem;

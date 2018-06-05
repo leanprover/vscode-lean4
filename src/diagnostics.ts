@@ -1,7 +1,7 @@
-import {Message, Severity} from 'lean-client-js-node';
-import {Diagnostic, DiagnosticCollection, DiagnosticSeverity,
-    Disposable, languages, Position, Range, Uri} from 'vscode';
-import {Server} from './server';
+import { Message, Severity } from 'lean-client-js-node';
+import { Diagnostic, DiagnosticCollection, DiagnosticSeverity,
+    Disposable, languages, Position, Range, Uri } from 'vscode';
+import { Server } from './server';
 
 function toSeverity(severity: Severity): DiagnosticSeverity {
     switch (severity) {

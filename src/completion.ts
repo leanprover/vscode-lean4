@@ -1,8 +1,8 @@
-import * as vscode from 'vscode';
-import {CompletionItemProvider, MarkdownString} from 'vscode';
-import {LEAN_MODE} from './constants';
-import {Server} from './server';
-import {isInputCompletion} from './util';
+import { CompletionItem, CompletionItemKind, CompletionItemProvider,
+    MarkdownString, Position, Range, TextDocument } from 'vscode';
+import { LEAN_MODE } from './constants';
+import { Server } from './server';
+import { isInputCompletion } from './util';
 
 const keywords = [
     'theorem', 'lemma', 'axiom', 'axioms', 'variable', 'protected', 'private',
@@ -32,22 +32,22 @@ const keywords = [
     'renaming', 'extends',
 ];
 
-export class LeanCompletionItemProvider implements vscode.CompletionItemProvider {
+export class LeanCompletionItemProvider implements CompletionItemProvider {
     server: Server;
 
     constructor(server: Server) {
         this.server = server;
     }
 
-    async provideCompletionItems(document: vscode.TextDocument, position: vscode.Position):
-            Promise<vscode.CompletionItem[]> {
+    async provideCompletionItems(document: TextDocument, position: Position):
+            Promise<CompletionItem[]> {
         // TODO(gabriel): use LeanInputAbbreviator.active() instead
         if (!isInputCompletion(document, position)) {
             const message = await this.server.complete(document.fileName, position.line + 1, position.character);
-            const completions: vscode.CompletionItem[] = [];
+            const completions: CompletionItem[] = [];
             for (const completion of message.completions) {
-                const item = new vscode.CompletionItem(completion.text, vscode.CompletionItemKind.Function);
-                item.range = new vscode.Range(position.translate(0, -message.prefix.length), position);
+                const item = new CompletionItem(completion.text, CompletionItemKind.Function);
+                item.range = new Range(position.translate(0, -message.prefix.length), position);
                 if (completion.tactic_params) {
                     item.detail = completion.tactic_params.join(' ');
                 } else {
@@ -57,8 +57,7 @@ export class LeanCompletionItemProvider implements vscode.CompletionItemProvider
                 completions.push(item);
             }
             for (const kw of keywords) {
-                completions.push(
-                        new vscode.CompletionItem(kw, vscode.CompletionItemKind.Keyword));
+                completions.push(new CompletionItem(kw, CompletionItemKind.Keyword));
             }
             return completions;
         } else {

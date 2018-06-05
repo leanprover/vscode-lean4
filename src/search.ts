@@ -1,5 +1,5 @@
 import { Location, Position, SymbolInformation, SymbolKind, Uri, WorkspaceSymbolProvider } from 'vscode';
-import {Server} from './server';
+import { Server } from './server';
 
 export class LeanWorkspaceSymbolProvider implements WorkspaceSymbolProvider {
     constructor(private server: Server) {}

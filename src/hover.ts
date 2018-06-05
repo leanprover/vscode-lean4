@@ -1,7 +1,5 @@
-'use strict';
-
-import {CancellationToken, Hover, HoverProvider, MarkdownString, Position, Range, TextDocument} from 'vscode';
-import {Server} from './server';
+import { CancellationToken, Hover, HoverProvider, MarkdownString, Position, Range, TextDocument } from 'vscode';
+import { Server } from './server';
 
 export class LeanHoverProvider implements HoverProvider {
     server: Server;

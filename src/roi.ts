@@ -1,7 +1,7 @@
-import {CheckingMode, FileRoi, RoiRange} from 'lean-client-js-node';
-import * as vscode from 'vscode';
-import { Disposable, DocumentFilter, Event, EventEmitter, QuickPickItem } from 'vscode';
-import {Server} from './server';
+import { CheckingMode, FileRoi, RoiRange } from 'lean-client-js-node';
+import { commands, Disposable, DocumentFilter, Event, EventEmitter, languages,
+    QuickPickItem, window, workspace } from 'vscode';
+import { Server } from './server';
 
 export enum RoiMode {
     Nothing,
@@ -20,16 +20,16 @@ export class RoiManager implements Disposable {
 
     constructor(private server: Server, private documentFilter: DocumentFilter) {
         this.subscriptions.push(
-            vscode.window.onDidChangeActiveTextEditor(() => this.send()),
-            vscode.window.onDidChangeTextEditorSelection(() => this.send()),
-            vscode.window.onDidChangeVisibleTextEditors(() => this.send()),
-            vscode.window.onDidChangeTextEditorVisibleRanges(() => this.send()),
-            vscode.workspace.onDidOpenTextDocument(() => this.send()),
-            vscode.workspace.onDidCloseTextDocument(() => this.send()),
+            window.onDidChangeActiveTextEditor(() => this.send()),
+            window.onDidChangeTextEditorSelection(() => this.send()),
+            window.onDidChangeVisibleTextEditors(() => this.send()),
+            window.onDidChangeTextEditorVisibleRanges(() => this.send()),
+            workspace.onDidOpenTextDocument(() => this.send()),
+            workspace.onDidCloseTextDocument(() => this.send()),
             server.restarted.on(() => this.send()),
         );
 
-        switch (vscode.workspace.getConfiguration('lean').get('roiModeDefault')) {
+        switch (workspace.getConfiguration('lean').get('roiModeDefault')) {
             case 'nothing': this.mode = RoiMode.Nothing; break;
             case 'visible': this.mode = RoiMode.VisibleFiles; break;
             case 'lines': this.mode = RoiMode.VisibleLines; break;
@@ -40,7 +40,7 @@ export class RoiManager implements Disposable {
         }
         this.send();
 
-        this.subscriptions.push(vscode.commands.registerCommand('lean.roiMode.select', async () => {
+        this.subscriptions.push(commands.registerCommand('lean.roiMode.select', async () => {
             const items: Array<QuickPickItem & {mode: RoiMode}> = [
                 {
                     label: 'nothing',
@@ -73,16 +73,16 @@ export class RoiManager implements Disposable {
                     mode: RoiMode.ProjectFiles,
                 },
             ];
-            const selected = await vscode.window.showQuickPick(items);
+            const selected = await window.showQuickPick(items);
             if (selected) { this.check(selected.mode); }
         }));
-        this.subscriptions.push(vscode.commands.registerCommand('lean.roiMode.nothing',
+        this.subscriptions.push(commands.registerCommand('lean.roiMode.nothing',
             () => this.check(RoiMode.Nothing)));
-        this.subscriptions.push(vscode.commands.registerCommand('lean.roiMode.visibleFiles',
+        this.subscriptions.push(commands.registerCommand('lean.roiMode.visibleFiles',
             () => this.check(RoiMode.VisibleFiles)));
-        this.subscriptions.push(vscode.commands.registerCommand('lean.roiMode.openFiles',
+        this.subscriptions.push(commands.registerCommand('lean.roiMode.openFiles',
             () => this.check(RoiMode.OpenFiles)));
-        this.subscriptions.push(vscode.commands.registerCommand('lean.roiMode.projectFiles',
+        this.subscriptions.push(commands.registerCommand('lean.roiMode.projectFiles',
             () => this.check(RoiMode.ProjectFiles)));
 
     }
@@ -90,15 +90,15 @@ export class RoiManager implements Disposable {
     async compute(): Promise<FileRoi[]> {
         let paths: string[];
         if (this.mode === RoiMode.ProjectFiles) {
-            const files = await vscode.workspace.findFiles('**/*.lean');
+            const files = await workspace.findFiles('**/*.lean');
             paths = files.map((f) => f.fsPath);
         } else {
-            paths = vscode.workspace.textDocuments.map((d) => d.fileName);
+            paths = workspace.textDocuments.map((d) => d.fileName);
         }
 
         const visibleRanges: {[fileName: string]: RoiRange[]} = {};
-        for (const editor of vscode.window.visibleTextEditors) {
-            if (vscode.languages.match(this.documentFilter, editor.document)) {
+        for (const editor of window.visibleTextEditors) {
+            if (languages.match(this.documentFilter, editor.document)) {
                 visibleRanges[editor.document.fileName] =
                     editor.visibleRanges.map((r) => ({
                         begin_line: r.start.line + 1,

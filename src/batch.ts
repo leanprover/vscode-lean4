@@ -1,8 +1,7 @@
 import * as carrier from 'carrier';
 import * as child from 'child_process';
-import {OutputChannel, TextEditor, TextEditorEdit} from 'vscode';
-import * as vscode from 'vscode';
-import {Server} from './server';
+import { OutputChannel, TextEditor, TextEditorEdit, window, workspace } from 'vscode';
+import { Server } from './server';
 
 let batchOutputChannel: OutputChannel;
 
@@ -12,14 +11,14 @@ export function batchExecuteFile(
     edit: TextEditorEdit,
     args: any[]) {
     batchOutputChannel = batchOutputChannel ||
-        vscode.window.createOutputChannel('Lean: Batch File Output');
+        window.createOutputChannel('Lean: Batch File Output');
 
     const fileName = editor.document.fileName;
 
     const executablePath = server.executablePath;
 
     const lean = child.spawn(executablePath, [fileName],
-        { cwd: vscode.workspace.rootPath, env: {} /* TODO(gabriel): take from server */ });
+        { cwd: workspace.rootPath, env: {} /* TODO(gabriel): take from server */ });
 
     batchOutputChannel.clear();
 

@@ -13,6 +13,7 @@
         "unified-signatures": false,
         "member-ordering": false,
         "no-empty": false,
+        "whitespace": [true, "check-module"],
         "no-console": [false]
     },
     "rulesDirectory": []
