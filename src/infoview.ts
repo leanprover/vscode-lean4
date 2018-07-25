@@ -1,11 +1,11 @@
 import { readFileSync } from 'fs';
-import { InfoRecord, Message } from 'lean-client-js-node';
+import { Message } from 'lean-client-js-node';
 import { basename, join } from 'path';
 import {
-    CancellationToken, commands, Disposable, DocumentSelector, Event, EventEmitter,
+    commands, Disposable, DocumentSelector,
     ExtensionContext, languages, Position, Range,
-    Selection, TextDocument, TextDocumentContentProvider, TextEditor, TextEditorDecorationType, TextEditorRevealType,
-    Uri, ViewColumn, window, workspace,
+    Selection, TextEditor, TextEditorDecorationType, TextEditorRevealType,
+    Uri, ViewColumn, WebviewPanel, window, workspace,
 } from 'vscode';
 import { Server } from './server';
 
@@ -30,11 +30,8 @@ enum DisplayMode {
     AllMessage, // all messages
 }
 
-export class InfoProvider implements TextDocumentContentProvider, Disposable {
-    leanGoalsUri = Uri.parse('lean-info:goals');
-
-    private changedEmitter = new EventEmitter<Uri>();
-    onDidChange = this.changedEmitter.event;
+export class InfoProvider implements Disposable {
+    private webviewPanel: WebviewPanel;
 
     private subscriptions: Disposable[] = [];
 
@@ -58,18 +55,18 @@ export class InfoProvider implements TextDocumentContentProvider, Disposable {
         this.updateStylesheet();
         this.subscriptions.push(
             this.server.allMessages.on(() => {
-                if (this.updateMessages()) { this.fire(); }
+                if (this.updateMessages()) { this.rerender(); }
             }),
             this.server.statusChanged.on(async () => {
                 if (this.displayMode === DisplayMode.OnlyState) {
                     const changed = await this.updateGoal();
-                    if (changed) { this.fire(); }
+                    if (changed) { this.rerender(); }
                 }
             }),
             window.onDidChangeTextEditorSelection(() => this.updatePosition(false)),
             workspace.onDidChangeConfiguration((e) => {
                 this.updateStylesheet();
-                this.fire();
+                this.rerender();
             }),
             commands.registerCommand('_lean.revealPosition', this.revealEditorPosition),
             commands.registerCommand('_lean.hoverPosition', (u, l, c) => { this.hoverEditorPosition(u, l, c); }),
@@ -94,21 +91,11 @@ export class InfoProvider implements TextDocumentContentProvider, Disposable {
             commands.registerTextEditorCommand('lean.infoView.displayList', (editor) => {
                 this.setMode(DisplayMode.AllMessage);
             }),
-            workspace.registerTextDocumentContentProvider(this.leanGoalsUri.scheme, this),
         );
     }
 
     dispose() {
         for (const s of this.subscriptions) { s.dispose(); }
-    }
-
-    provideTextDocumentContent(uri: Uri, token: CancellationToken): string {
-        if (uri.toString() === this.leanGoalsUri.toString()) {
-            const content = this.render();
-            return content;
-        } else {
-            throw new Error(`unsupported uri: ${uri}`);
-        }
     }
 
     private updateStylesheet() {
@@ -126,30 +113,37 @@ export class InfoProvider implements TextDocumentContentProvider, Disposable {
             workspace.getConfiguration('lean').get('infoViewStyle');
     }
 
-    private async openPreview(editor: TextEditor) {
+    private openPreview(editor: TextEditor) {
         let column = editor.viewColumn + 1;
         if (column === 4) { column = ViewColumn.Three; }
-        const success = await commands.executeCommand(
-            'vscode.previewHtml', this.leanGoalsUri, column, 'Lean Messages');
-        if (success) {
-            window.showTextDocument(editor.document);
+        if (this.webviewPanel) {
+            this.webviewPanel.reveal(column, true);
+        } else {
+            this.webviewPanel = window.createWebviewPanel('lean', 'Lean Messages',
+                {viewColumn: column, preserveFocus: true},
+                {
+                    enableFindWidget: true,
+                    retainContextWhenHidden: true,
+                    enableScripts: true,
+                    enableCommandUris: true,
+                });
+            this.webviewPanel.webview.html = this.render();
+            this.webviewPanel.onDidDispose(() => this.webviewPanel = null);
         }
     }
 
     private sendPosition() {
-        commands.executeCommand('_workbench.htmlPreview.postMessage', this.leanGoalsUri,
-            {
-                command: 'position',
-                fileName: this.curFileName,
-                line: this.curPosition.line + 1,
-                column: this.curPosition.character,
-            });
+        this.postMessage({
+            command: 'position',
+            fileName: this.curFileName,
+            line: this.curPosition.line + 1,
+            column: this.curPosition.character,
+        });
     }
 
     private stopUpdating() {
         this.stopped = true;
-        commands.executeCommand('_workbench.htmlPreview.postMessage', this.leanGoalsUri,
-            { command: 'pause' });
+        this.postMessage({ command: 'pause' });
     }
 
     private setMode(mode: DisplayMode) {
@@ -159,8 +153,17 @@ export class InfoProvider implements TextDocumentContentProvider, Disposable {
         this.updatePosition(true);
     }
 
-    private fire() {
-        this.changedEmitter.fire(this.leanGoalsUri);
+    private rerender() {
+        if (this.webviewPanel) {
+            this.webviewPanel.webview.html = this.render();
+        }
+    }
+    private async postMessage(msg: any): Promise<boolean> {
+        if (this.webviewPanel) {
+            return this.webviewPanel.webview.postMessage(msg);
+        } else {
+            return false;
+        }
     }
 
     private revealEditorPosition(uri: Uri, line: number, column: number) {
@@ -220,16 +223,15 @@ export class InfoProvider implements TextDocumentContentProvider, Disposable {
         case DisplayMode.OnlyState:
             const chGoal = await this.updateGoal();
             if (chPos || chGoal || chMsg) {
-                this.fire();
+                this.rerender();
             } else if (forceRefresh) {
-                await commands.executeCommand('_workbench.htmlPreview.postMessage', this.leanGoalsUri,
-                    { command: 'continue' });
+                this.postMessage({ command: 'continue' });
             }
             break;
 
         case DisplayMode.AllMessage:
             if (forceRefresh || chMsg) {
-                this.fire();
+                this.rerender();
             } else {
                 this.sendPosition();
             }
@@ -315,7 +317,8 @@ export class InfoProvider implements TextDocumentContentProvider, Disposable {
     }
 
     private getMediaPath(mediaFile: string): string {
-        return Uri.file(this.context.asAbsolutePath(join('media', mediaFile))).toString();
+        return Uri.file(this.context.asAbsolutePath(join('media', mediaFile)))
+            .with({scheme: 'vscode-resource'}).toString();
     }
 
     private render() {
