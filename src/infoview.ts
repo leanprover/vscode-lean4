@@ -91,6 +91,8 @@ export class InfoProvider implements Disposable {
             commands.registerTextEditorCommand('lean.infoView.displayList', (editor) => {
                 this.setMode(DisplayMode.AllMessage);
             }),
+            commands.registerTextEditorCommand('lean.infoView.copyToComment',
+                (editor) => this.copyToComment(editor)),
         );
     }
 
@@ -381,5 +383,20 @@ export class InfoProvider implements Disposable {
                 </a></h1>
                 <pre>${colorized}</pre></div>`;
         }).join('\n');
+    }
+
+    private async copyToComment(editor: TextEditor) {
+        await editor.edit((builder) => {
+            builder.insert(editor.selection.end.with({character: 0}).translate({lineDelta: 1}),
+                '/-\n' + this.renderText() + '\n-/\n');
+        });
+    }
+    private renderText(): string {
+        const msgText = this.curMessages &&
+            this.curMessages.map((m) =>
+                `${basename(m.file_name)}:${m.pos_line}:${m.pos_col}: ${m.severity} ${m.caption}\n${m.text}`,
+            ).join('\n');
+        const goalText = this.curGoalState && `Tactic State:\n${this.curGoalState}\n`;
+        return goalText + msgText;
     }
 }
