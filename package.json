@@ -52,7 +52,7 @@
 				},
 				"lean.roiModeDefault": {
 					"type": "string",
-					"default": "linesAndAbove",
+					"default": "visible",
 					"description": "Set the default region of interest mode (nothing, visible, lines, linesAndAbove, open, or project) for the Lean extension."
 				},
 				"lean.infoViewAllErrorsOnLine": {
