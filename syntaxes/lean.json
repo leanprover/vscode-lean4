@@ -26,7 +26,7 @@
       "patterns": []
     },
     {
-      "begin": "\\b(inductive|coinductive|structure|theorem|axiom|axioms|lemma|hypothesis|definition|def|abbreviation|instance|class|constant)\\b\\s+(\\{[^}]*\\}\\s+)?(([^ \\t\\n\\r{(\\[,:]*(,\\s*)?)*)",
+      "begin": "\\b(inductive|coinductive|structure|theorem|axiom|axioms|lemma|hypothesis|definition|def|instance|class|constant)\\b\\s+(\\{[^}]*\\}\\s+)?([^ \\t\\n\\r{(\\[]*)",
       "beginCaptures": {
         "1": {
           "name": "keyword.other.lean"
