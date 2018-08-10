@@ -93,9 +93,7 @@ class TextEditorAbbrevHandler {
         if (ev.contentChanges.length !== 1) { return this.updateRange(); } // single change
         const change = ev.contentChanges[0];
 
-        if (change.text.length === 1 && (change.rangeLength === 0 ||
-                                            (change.rangeLength === 1 &&
-                                                ev.document.getText(change.range) === change.text))) {
+        if (change.text.length === 1) {
             // insert (or right paren overwriting)
             if (!this.range) {
                 if (change.text === '\\') {
