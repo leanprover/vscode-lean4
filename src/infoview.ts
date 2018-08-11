@@ -396,7 +396,7 @@ export class InfoProvider implements Disposable {
             this.curMessages.map((m) =>
                 `${basename(m.file_name)}:${m.pos_line}:${m.pos_col}: ${m.severity} ${m.caption}\n${m.text}`,
             ).join('\n');
-        const goalText = this.curGoalState && `Tactic State:\n${this.curGoalState}\n`;
+        const goalText = this.curGoalState ? `Tactic State:\n${this.curGoalState}\n` : '';
         return goalText + msgText;
     }
 }
