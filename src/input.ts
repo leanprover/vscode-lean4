@@ -1,10 +1,7 @@
-import { CancellationToken, CompletionItem, CompletionItemKind, CompletionItemProvider,
-    CompletionList, Disposable, DocumentFilter, Hover,
-    HoverProvider, languages, Position, Range, Selection, TextDocument,
-    TextDocumentChangeEvent, TextEditor, TextEditorDecorationType,
-    TextEditorSelectionChangeEvent, Uri, window, workspace } from 'vscode';
-import { LEAN_MODE } from './constants';
-import { isInputCompletion } from './util';
+import { CancellationToken, Disposable, DocumentFilter, Hover, HoverProvider,
+    languages, Position, Range, Selection, TextDocument, TextDocumentChangeEvent,
+    TextEditor, TextEditorDecorationType, TextEditorSelectionChangeEvent,
+    window, workspace } from 'vscode';
 
 export interface Translations { [abbrev: string]: string; }
 
@@ -90,6 +87,10 @@ class TextEditorAbbrevHandler {
     }
 
     onChanged(ev: TextDocumentChangeEvent) {
+        if (ev.contentChanges.length === 0) {
+            // This event is triggered by files.autoSave=onDelay
+            return;
+        }
         if (ev.contentChanges.length !== 1) { return this.updateRange(); } // single change
         const change = ev.contentChanges[0];
 
