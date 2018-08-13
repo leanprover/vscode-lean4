@@ -282,12 +282,12 @@
 	"devDependencies": {
 		"@types/load-json-file": "^2.0.7",
 		"@types/mocha": "^5.2.5",
-		"@types/node": "^10.5.7",
+		"@types/node": "^10.5.8",
 		"@types/semver": "^5.5.0",
 		"mocha": "^5.2.0",
 		"tslint": "^5.11.0",
 		"typescript": "^3.0.1",
-		"vsce": "^1.45.1",
+		"vsce": "^1.46.0",
 		"vscode": "^1.1.18"
 	},
 	"icon": "images/lean_logo.png",
