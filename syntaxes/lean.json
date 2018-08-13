@@ -5,65 +5,26 @@
   "patterns": [
     {"include": "#comments"},
     {
-      "begin": "^\\s*(import)\\b",
-      "beginCaptures": {
-        "1": {
-          "name": "keyword.other.lean"
-        }
-      },
-      "end": "$",
-      "name": "meta.import.lean",
-      "patterns": []
-    },
-    {
       "begin": "\\b(inductive|coinductive|structure|theorem|axiom|axioms|lemma|definition|def|instance|class|constant)\\b\\s+(\\{[^}]*\\})?",
       "beginCaptures": {
         "1": {"name": "keyword.other.definitioncommand.lean"}
       },
       "patterns": [
         {"include": "#comments"},
-        {"include": "#identifier"},
+        {"patterns": [{"include": "#definitionName"}]},
         {"match": ","}
       ],
       "end": "(?=\\bwith\\b|[:\\|\\(\\[\\{⦃])",
-      "name": "meta.definitioncommand.lean",
-      "pattern": []
+      "name": "meta.definitioncommand.lean"
     },
-    {
-      "begin": "\"",
-      "end": "\"",
-      "name": "string.quoted.double.lean",
-      "patterns": [
-        {
-          "match": "\\\\.",
-          "name": "constant.character.escape.lean"
-        }
-      ]
-    },
-    {
-      "match": "\\b(Prop|Type|Sort)\\b",
-      "name": "storage.type.lean"
-    },
-    {
-      "match": "@\\[[^\\]]*\\]",
-      "name": "storage.modifier.lean"
-    },
-    {
-      "match": "\\battribute\\s*\\[[^\\]]*\\]",
-      "name": "storage.modifier.lean"
-    },
+    { "match": "\\b(Prop|Type|Sort)\\b", "name": "storage.type.lean" },
+    { "match": "(@|\\battribute\\b)\\[[^\\]]*\\]", "name": "storage.modifier.lean" },
     {
       "match": "\\b(private|meta|mutual|protected|noncomputable)\\b",
       "name": "keyword.control.definition.modifier.lean"
     },
-    {
-      "match": "\\b(sorry)\\b",
-      "name": "invalid.illegal.lean"
-    },
-    {
-      "match": "#(print|eval|reduce|check|help|exit)\\b",
-      "name": "keyword.other.command.lean"
-    },
+    { "match": "\\b(sorry)\\b", "name": "invalid.illegal.lean" },
+    { "match": "#(print|eval|reduce|check|help|exit)\\b", "name": "keyword.other.command.lean" },
     {
       "match": "\\b(import|prelude|theory|definition|def|abbreviation|instance|renaming|hiding|exposing|parameter|parameters|begin|constant|constants|lemma|variable|variables|theorem|example|open|axiom|inductive|coinductive|with|structure|universe|universes|alias|precedence|reserve|postfix|prefix|infix|infixl|infixr|notation|end|using|namespace|section|local|set_option|extends|include|omit|class|classes|instances|raw|run_cmd)\\b",
       "name": "keyword.other.lean"
@@ -72,35 +33,15 @@
       "match": "\\b(calc|have|this|match|do|suffices|show|by|in|at|let|forall|fun|exists|assume|from)\\b",
       "name": "keyword.other.lean"
     },
+    {"begin": "«", "end": "»", "contentName": "entity.name.lean"},
+    { "match": "\\b(if|then|else)\\b", "name": "keyword.control.lean" },
+    { "match": "(->|==|:=|<->|\\\\/|/\\\\|<=|>=|⁻¹)", "name": "keyword.operator.lean" },
+    { "match": "[#@∼↔/=∧∨≠<>≤≥¬⬝▸+*-]", "name": "keyword.operator.lean" },
+    { "match": "(?<=\\s)[=→λ∀?]", "name": "keyword.operator.lean" },
     {
-      "match": "\\b(if|then|else)\\b",
-      "name": "keyword.control.lean"
-    },
-    {
-      "match": "(->|==|:=|<->|\\\\/|/\\\\|<=|>=|⁻¹)",
-      "name": "keyword.operator.lean"
-    },
-    {
-      "match": "[#@∼↔/=∧∨≠<>≤≥¬⬝▸+*-]",
-      "name": "keyword.operator.lean"
-    },
-    {
-      "match": "(?<=\\s)[=→λ∀?]",
-      "name": "keyword.operator.lean"
-    },
-    {
-      "begin": "\"",
-      "beginCaptures": {
-        "0": {
-          "name": "punctuation.definition.string.begin.lean"
-        }
-      },
-      "end": "\"",
-      "endCaptures": {
-        "0": {
-          "name": "punctuation.definition.string.end.lean"
-        }
-      },
+      "begin": "\"", "end": "\"",
+      "beginCaptures": {"0": {"name": "punctuation.definition.string.begin.lean"}},
+      "endCaptures": {"0": {"name": "punctuation.definition.string.end.lean"}},
       "name": "string.quoted.double.lean",
       "patterns": [
         {
@@ -117,34 +58,15 @@
         }
       ]
     },
-    {
-        "name": "string.quoted.single.lean",
-        "match": "'\\\\?.'"
-		},
-    {
-      "match": "\\b([0-9]+|0([xX][0-9a-fA-F]+))\\b",
-      "name": "constant.numeric.lean"
-    }
+    { "name": "string.quoted.single.lean", "match": "'\\\\?.'" },
+    { "match": "\\b([0-9]+|0([xX][0-9a-fA-F]+))\\b", "name": "constant.numeric.lean" }
   ],
   "repository": {
-    "blockComment": {
-      "begin": "/-[^-]",
-      "end": "-/",
-      "name": "comment.block.lean"
-    },
-    "docComment": {
-      "begin": "/--",
-      "end": "-/",
-      "name": "comment.block.documentation.lean"
-    },
+    "blockComment": { "begin": "/-[^-]", "end": "-/", "name": "comment.block.lean" },
+    "docComment": { "begin": "/--", "end": "-/", "name": "comment.block.documentation.lean" },
     "dashComment": {
-      "begin": "(--)",
-      "beginCaptures": {
-        "0": {
-          "name": "punctuation.definition.comment.lean"
-        }
-      },
-      "end": "$",
+      "begin": "(--)", "end": "$",
+      "beginCaptures": {"0": {"name": "punctuation.definition.comment.lean"}},
       "name": "comment.line.double-dash.lean"
     },
     "comments": {
@@ -154,19 +76,10 @@
         {"include": "#dashComment"}
       ]
     },
-    "universeParams": {
-      "begin": "\\{",
-      "end": "\\}",
-      "patterns": [
-        {"match": "\\S+", "name": "entity.name.definition.universe.lean"},
-        {"include": "#comments"}
-      ]
-    },
-    "identifier": {
+    "definitionName": {
       "patterns": [
         {"match": "\\b[^«»\\(\\)\\{\\}[:space:]=→λ∀?][^«»\\(\\)\\{\\}[:space:]]*", "name": "entity.name.function.lean"},
-        {"begin": "«", "end": "»",
-         "patterns": [{"match": "[^»]", "name": "entity.name.function.frenchquoted.lean"}]}
+        {"begin": "«", "end": "»", "contentName": "entity.name.function.lean"}
       ]
     }
   }
