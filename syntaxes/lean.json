@@ -1,19 +1,9 @@
 {
   "name": "Lean",
   "scopeName": "source.lean",
-  "fileTypes": [
-    "lean"
-  ],
+  "fileTypes": ["lean"],
   "patterns": [
-    {
-      "include": "#dashComment"
-    },
-    {
-      "include": "#blockComment"
-    },
-    {
-      "include": "#docComment"
-    },
+    {"include": "#comments"},
     {
       "begin": "^\\s*(import)\\b",
       "beginCaptures": {
@@ -26,17 +16,17 @@
       "patterns": []
     },
     {
-      "begin": "\\b(inductive|coinductive|structure|theorem|axiom|axioms|lemma|hypothesis|definition|def|instance|class|constant)\\b\\s+(\\{[^}]*\\}\\s+)?([^ \\t\\n\\r{(\\[]*)",
+      "begin": "\\b(inductive|coinductive|structure|theorem|axiom|axioms|lemma|definition|def|instance|class|constant)\\b\\s+(\\{[^}]*\\})?",
       "beginCaptures": {
-        "1": {
-          "name": "keyword.other.lean"
-        },
-        "3": {
-          "name": "entity.name.function.lean"
-        }
+        "1": {"name": "keyword.other.definitioncommand.lean"}
       },
-      "end": "[ \\t\\n\\r{(\\[]",
-      "name": "meta.names.lean",
+      "patterns": [
+        {"include": "#comments"},
+        {"include": "#identifier"},
+        {"match": ","}
+      ],
+      "end": "(?=\\bwith\\b|[:\\|\\(\\[\\{⦃])",
+      "name": "meta.definitioncommand.lean",
       "pattern": []
     },
     {
@@ -77,17 +67,6 @@
     {
       "match": "\\b(import|prelude|theory|definition|def|abbreviation|instance|renaming|hiding|exposing|parameter|parameters|begin|constant|constants|lemma|variable|variables|theorem|example|open|axiom|inductive|coinductive|with|structure|universe|universes|alias|precedence|reserve|postfix|prefix|infix|infixl|infixr|notation|end|using|namespace|section|local|set_option|extends|include|omit|class|classes|instances|raw|run_cmd)\\b",
       "name": "keyword.other.lean"
-    },
-    {
-      "begin": "\\b(def)\\b\\s+(\\b[^\\(\\)\\{\\}[:space:]=→λ∀?][^\\(\\)\\{\\}[:space:]]*)",
-      "beginCaptures": {
-         "0": {
-            "name": "keyword.other.lean"
-         },
-         "1": {
-            "name": "entity.name.definition.lean"
-         }
-      }
     },
     {
       "match": "\\b(calc|have|this|match|do|suffices|show|by|in|at|let|forall|fun|exists|assume|from)\\b",
@@ -168,10 +147,27 @@
       "end": "$",
       "name": "comment.line.double-dash.lean"
     },
+    "comments": {
+      "patterns": [
+        {"include": "#blockComment"},
+        {"include": "#docComment"},
+        {"include": "#dashComment"}
+      ]
+    },
+    "universeParams": {
+      "begin": "\\{",
+      "end": "\\}",
+      "patterns": [
+        {"match": "\\S+", "name": "entity.name.definition.universe.lean"},
+        {"include": "#comments"}
+      ]
+    },
     "identifier": {
-      "comment": "not so much here to be used as to be a reference",
-      "match": "\\b[^\\(\\)\\{\\}[:space:]=→λ∀?][^\\(\\)\\{\\}[:space:]]*",
-      "name": "entity.name.function.lean"
+      "patterns": [
+        {"match": "\\b[^«»\\(\\)\\{\\}[:space:]=→λ∀?][^«»\\(\\)\\{\\}[:space:]]*", "name": "entity.name.function.lean"},
+        {"begin": "«", "end": "»",
+         "patterns": [{"match": "[^»]", "name": "entity.name.function.frenchquoted.lean"}]}
+      ]
     }
   }
 }
