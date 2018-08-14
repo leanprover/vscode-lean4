@@ -5,13 +5,13 @@
   "patterns": [
     {"include": "#comments"},
     {
-      "begin": "\\b(inductive|coinductive|structure|theorem|axiom|axioms|lemma|definition|def|instance|class|constant)\\b\\s+(\\{[^}]*\\})?",
+      "begin": "\\b(inductive|coinductive|structure|theorem|axiom|axioms|abbreviation|lemma|definition|def|instance|class|constant)\\b\\s+(\\{[^}]*\\})?",
       "beginCaptures": {
         "1": {"name": "keyword.other.definitioncommand.lean"}
       },
       "patterns": [
         {"include": "#comments"},
-        {"patterns": [{"include": "#definitionName"}]},
+        {"include": "#definitionName"},
         {"match": ","}
       ],
       "end": "(?=\\bwith\\b|[:\\|\\(\\[\\{⦃])",
@@ -35,30 +35,20 @@
     },
     {"begin": "«", "end": "»", "contentName": "entity.name.lean"},
     { "match": "\\b(if|then|else)\\b", "name": "keyword.control.lean" },
-    { "match": "(->|==|:=|<->|\\\\/|/\\\\|<=|>=|⁻¹)", "name": "keyword.operator.lean" },
-    { "match": "[#@∼↔/=∧∨≠<>≤≥¬⬝▸+*-]", "name": "keyword.operator.lean" },
-    { "match": "(?<=\\s)[=→λ∀?]", "name": "keyword.operator.lean" },
     {
       "begin": "\"", "end": "\"",
       "beginCaptures": {"0": {"name": "punctuation.definition.string.begin.lean"}},
       "endCaptures": {"0": {"name": "punctuation.definition.string.end.lean"}},
       "name": "string.quoted.double.lean",
       "patterns": [
-        {
-          "match": "\\\\(NUL|SOH|STX|ETX|EOT|ENQ|ACK|BEL|BS|HT|LF|VT|FF|CR|SO|SI|DLE|DC1|DC2|DC3|DC4|NAK|SYN|ETB|CAN|EM|SUB|ESC|FS|GS|RS|US|SP|DEL|[abfnrtv\\\\\\\"'\\&])",
-          "name": "constant.character.escape.lean"
-        },
-        {
-          "match": "\\\\o[0-7]+|\\\\x[0-9A-Fa-f]+|\\\\[0-9]+",
-          "name": "constant.character.escape.octal.lean"
-        },
-        {
-          "match": "\\^[A-Z@\\[\\]\\\\\\^_]",
-          "name": "constant.character.escape.control.lean"
-        }
+        {"match": "\\\\[\\\\\"nt']", "name": "constant.character.escape.lean"},
+        {"match": "\\\\x[0-9A-Fa-f][0-9A-Fa-f]", "name": "constant.character.escape.lean"},
+        {"match": "\\\\u[0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f]", "name": "constant.character.escape.lean"}
       ]
     },
-    { "name": "string.quoted.single.lean", "match": "'\\\\?.'" },
+    { "name": "string.quoted.single.lean", "match": "'[^\\\\']'" },
+    { "name": "string.quoted.single.lean", "match": "'(\\\\(x..|u....|.))'",
+      "captures": {"1": {"name": "constant.character.escape.lean"}} },
     { "match": "\\b([0-9]+|0([xX][0-9a-fA-F]+))\\b", "name": "constant.numeric.lean" }
   ],
   "repository": {
