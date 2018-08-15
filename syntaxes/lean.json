@@ -52,8 +52,14 @@
     { "match": "\\b([0-9]+|0([xX][0-9a-fA-F]+))\\b", "name": "constant.numeric.lean" }
   ],
   "repository": {
-    "blockComment": { "begin": "/-[^-]", "end": "-/", "name": "comment.block.lean" },
-    "docComment": { "begin": "/--", "end": "-/", "name": "comment.block.documentation.lean" },
+    "blockComment": {
+      "begin": "/-[^-]", "end": "-/", "name": "comment.block.lean",
+      "patterns": [{"include": "#comments"}]
+    },
+    "docComment": {
+      "begin": "/--", "end": "-/", "name": "comment.block.documentation.lean",
+      "patterns": [{"include": "#comments"}]
+    },
     "dashComment": {
       "begin": "(--)", "end": "$",
       "beginCaptures": {"0": {"name": "punctuation.definition.comment.lean"}},
