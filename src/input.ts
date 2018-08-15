@@ -69,17 +69,15 @@ class TextEditorAbbrevHandler {
         const replacement = this.abbreviator.findReplacement(abbreviation);
 
         if (replacement) {
-            setTimeout(() => {
+            setTimeout(async () => {
                 // Without the timeout hack, inserting `\delta ` at the beginning of an
                 // existing line would leave the cursor four characters too far right.
-                this.editor.edit(async (builder) => {
-                    await builder.replace(range, replacement);
-                    if (newRange) {
-                        this.updateRange(new Range(
-                            newRange.start.translate(0, replacement.length - toReplace.length),
-                            newRange.end.translate(0, replacement.length - toReplace.length)));
-                    }
-                });
+                await this.editor.edit((builder) => builder.replace(range, replacement));
+                if (newRange) {
+                    this.updateRange(new Range(
+                        newRange.start.translate(0, replacement.length - toReplace.length),
+                        newRange.end.translate(0, replacement.length - toReplace.length)));
+                }
             }, 0);
         }
 
