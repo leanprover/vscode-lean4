@@ -75,6 +75,12 @@
 				"description": "Restart the Language Server"
 			},
 			{
+				"command": "lean.input.convert",
+				"category": "Lean",
+				"title": "Input: convert current abbreviation",
+				"description": "converts the current abbreviation (e.g. \\lam)"
+			},
+			{
 				"command": "lean.displayGoal",
 				"category": "Lean",
 				"title": "Info View: Display Goal",
@@ -197,6 +203,12 @@
 				"when": "editorTextFocus && editorLangId == lean"
 			},
 			{
+				"command": "lean.input.convert",
+				"key": "tab",
+				"mac": "tab",
+				"when": "editorTextFocus && editorLangId == lean && lean.input.isActive"
+			},
+			{
 				"command": "lean.batchExecute",
 				"key": "ctrl+shift+r",
 				"mac": "cmd+shift+r",
@@ -212,6 +224,10 @@
 				{
 					"command": "lean.displayList",
 					"when": "editorLangId == lean"
+				},
+				{
+					"command": "lean.input.convert",
+					"when": "editorLangId == lean && lean.input.isActive"
 				},
 				{
 					"command": "lean.batchExecute",

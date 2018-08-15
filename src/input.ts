@@ -1,7 +1,7 @@
-import { CancellationToken, Disposable, DocumentFilter, Hover, HoverProvider,
-    languages, Position, Range, Selection, TextDocument, TextDocumentChangeEvent,
-    TextEditor, TextEditorDecorationType, TextEditorSelectionChangeEvent,
-    window, workspace } from 'vscode';
+import { CancellationToken, commands, Disposable, DocumentFilter, Hover,
+    HoverProvider, languages, Position, Range, Selection, TextDocument,
+    TextDocumentChangeEvent, TextEditor, TextEditorDecorationType,
+    TextEditorSelectionChangeEvent, window, workspace } from 'vscode';
 
 export interface Translations { [abbrev: string]: string; }
 
@@ -34,6 +34,7 @@ class TextEditorAbbrevHandler {
         if (range && !range.isSingleLine) { range = null; }
         this.range = range;
         this.editor.setDecorations(this.abbreviator.decorationType, range ? [range] : []);
+        this.abbreviator.updateInputActive();
 
         // HACK: support \{{}} and \[[]]
         const hackyReplacements: {[input: string]: string} = {
@@ -57,7 +58,7 @@ class TextEditorAbbrevHandler {
         return this.range.end.character - this.range.start.character;
     }
 
-    private convertRange(newRange?: Range) {
+    convertRange(newRange?: Range) {
         if (!this.range || this.rangeSize < 2) { return this.updateRange(); }
 
         const range = this.range;
@@ -154,10 +155,28 @@ export class LeanInputAbbreviator {
             });
             this.handlers = handlers;
         }));
+
+        this.subscriptions.push(window.onDidChangeActiveTextEditor(() => this.updateInputActive()));
+
+        this.subscriptions.push(commands.registerTextEditorCommand('lean.input.convert', (editor, edit) => {
+            const handler = this.handlers.get(editor);
+            if (handler) {
+                handler.convertRange();
+            }
+        }));
+    }
+
+    private setInputActive(isActive: boolean) {
+        commands.executeCommand('setContext', 'lean.input.isActive', isActive);
     }
 
     get active(): boolean {
-        return !!this.handlers.get(window.activeTextEditor);
+        const handler = this.handlers.get(window.activeTextEditor);
+        return handler && !!handler.range;
+    }
+
+    updateInputActive() {
+        this.setInputActive(this.active);
     }
 
     findReplacement(typedAbbrev: string): string | undefined {
