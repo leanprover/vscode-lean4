@@ -14,7 +14,7 @@
         {"include": "#definitionName"},
         {"match": ","}
       ],
-      "end": "(?=\\bwith\\b|[:\\|\\(\\[\\{⦃])",
+      "end": "(?=\\bwith\\b|[:\\|\\(\\[\\{⦃<>])",
       "name": "meta.definitioncommand.lean"
     },
     { "match": "\\b(Prop|Type|Sort)\\b", "name": "storage.type.lean" },
@@ -49,6 +49,7 @@
     { "name": "string.quoted.single.lean", "match": "'[^\\\\']'" },
     { "name": "string.quoted.single.lean", "match": "'(\\\\(x..|u....|.))'",
       "captures": {"1": {"name": "constant.character.escape.lean"}} },
+    {"match": "`+[^\\[(]\\S+", "name": "entity.name.lean"},
     { "match": "\\b([0-9]+|0([xX][0-9a-fA-F]+))\\b", "name": "constant.numeric.lean" }
   ],
   "repository": {
