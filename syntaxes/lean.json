@@ -5,7 +5,7 @@
   "patterns": [
     {"include": "#comments"},
     {
-      "begin": "\\b(inductive|coinductive|structure|theorem|axiom|axioms|abbreviation|lemma|definition|def|instance|class|constant)\\b\\s+(\\{[^}]*\\})?",
+      "begin": "\\b(?<!\\.)(inductive|coinductive|structure|theorem|axiom|axioms|abbreviation|lemma|definition|def|instance|class|constant)\\b\\s+(\\{[^}]*\\})?",
       "beginCaptures": {
         "1": {"name": "keyword.other.definitioncommand.lean"}
       },
@@ -20,22 +20,22 @@
     { "match": "\\b(Prop|Type|Sort)\\b", "name": "storage.type.lean" },
     { "match": "(@|\\battribute\\b)\\[[^\\]]*\\]", "name": "storage.modifier.lean" },
     {
-      "match": "\\b(private|meta|mutual|protected|noncomputable)\\b",
+      "match": "\\b(?<!\\.)(private|meta|mutual|protected|noncomputable)\\b",
       "name": "keyword.control.definition.modifier.lean"
     },
     { "match": "\\b(sorry)\\b", "name": "invalid.illegal.lean" },
     { "match": "#print\\s+(def|definition|inductive|instance|structure|axiom|axioms|class)\\b", "name": "keyword.other.command.lean" },
     { "match": "#(print|eval|reduce|check|help|exit)\\b", "name": "keyword.other.command.lean" },
     {
-      "match": "\\b(import|prelude|theory|definition|def|abbreviation|instance|renaming|hiding|exposing|parameter|parameters|begin|constant|constants|lemma|variable|variables|theorem|example|open|axiom|inductive|coinductive|with|structure|universe|universes|alias|precedence|reserve|postfix|prefix|infix|infixl|infixr|notation|end|using|namespace|section|local|set_option|extends|include|omit|class|classes|instances|raw|run_cmd)\\b",
+      "match": "\\b(?<!\\.)(import|prelude|theory|definition|def|abbreviation|instance|renaming|hiding|exposing|parameter|parameters|begin|constant|constants|lemma|variable|variables|theorem|example|open|axiom|inductive|coinductive|with|structure|universe|universes|alias|precedence|reserve|postfix|prefix|infix|infixl|infixr|notation|end|using|namespace|section|local|set_option|extends|include|omit|class|classes|instances|raw|run_cmd)\\b",
       "name": "keyword.other.lean"
     },
     {
-      "match": "\\b(calc|have|this|match|do|suffices|show|by|in|at|let|forall|fun|exists|assume|from)\\b",
+      "match": "\\b(?<!\\.)(calc|have|this|match|do|suffices|show|by|in|at|let|forall|fun|exists|assume|from)\\b",
       "name": "keyword.other.lean"
     },
     {"begin": "«", "end": "»", "contentName": "entity.name.lean"},
-    { "match": "\\b(if|then|else)\\b", "name": "keyword.control.lean" },
+    { "match": "\\b(?<!\\.)(if|then|else)\\b", "name": "keyword.control.lean" },
     {
       "begin": "\"", "end": "\"",
       "beginCaptures": {"0": {"name": "punctuation.definition.string.begin.lean"}},
