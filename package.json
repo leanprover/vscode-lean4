@@ -55,6 +55,16 @@
 					"default": "visible",
 					"description": "Set the default region of interest mode (nothing, visible, lines, linesAndAbove, open, or project) for the Lean extension."
 				},
+				"lean.input.enabled": {
+					"type": "boolean",
+					"default": true,
+					"description": "Enable Lean input mode"
+				},
+				"lean.input.leader": {
+					"type": "string",
+					"default": "\\",
+					"description": "Leader key to trigger input mode"
+				},
 				"lean.infoViewAllErrorsOnLine": {
 					"type": "boolean",
 					"default": false,

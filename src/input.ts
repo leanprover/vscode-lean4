@@ -5,8 +5,22 @@ import { CancellationToken, commands, Disposable, DocumentFilter, Hover,
 
 export interface Translations { [abbrev: string]: string; }
 
-export class LeanInputExplanationHover implements HoverProvider {
-    constructor(private translations: Translations) {}
+function inputModeEnabled(): boolean {
+    return workspace.getConfiguration('lean.input').get('enabled', true);
+}
+
+function inputModeLeader(): string {
+    return workspace.getConfiguration('lean.input').get('leader', '\\');
+}
+
+export class LeanInputExplanationHover implements HoverProvider, Disposable {
+    private leader = inputModeLeader();
+    private subscriptions: Disposable[] = [];
+
+    constructor(private translations: Translations) {
+        this.subscriptions.push(
+            workspace.onDidChangeConfiguration(() => this.leader = inputModeLeader()));
+    }
 
     getAbbrevations(symbol: string): string[] {
         const abbrevs: string[] = [];
@@ -21,7 +35,11 @@ export class LeanInputExplanationHover implements HoverProvider {
         const symbol = document.getText(symbolRange);
         const abbrevs = this.getAbbrevations(symbol).sort((a, b) => a.length - b.length);
         return abbrevs.length > 0 &&
-            new Hover(`Type ${symbol} using ${abbrevs.map((a) => `\\\\${a}`).join(' or ')}`, symbolRange);
+            new Hover(`Type ${symbol} using ${abbrevs.map((a) => this.leader + a).join(' or ')}`, symbolRange);
+    }
+
+    dispose() {
+        for (const s of this.subscriptions) { s.dispose(); }
     }
 }
 
@@ -38,8 +56,8 @@ class TextEditorAbbrevHandler {
 
         // HACK: support \{{}} and \[[]]
         const hackyReplacements: {[input: string]: string} = {
-            '\\{{}}': '⦃⦄',
-            '\\[[]]': '⟦⟧',
+            [this.leader + '{{}}']: '⦃⦄',
+            [this.leader + '[[]]']: '⟦⟧',
         };
         if (range) {
             const replacement = hackyReplacements[this.editor.document.getText(range)];
@@ -54,6 +72,9 @@ class TextEditorAbbrevHandler {
         }
     }
 
+    get leader(): string { return this.abbreviator.leader; }
+    get enabled(): boolean { return this.abbreviator.enabled; }
+
     get rangeSize(): number {
         return this.range.end.character - this.range.start.character;
     }
@@ -64,7 +85,7 @@ class TextEditorAbbrevHandler {
         const range = this.range;
 
         const toReplace = this.editor.document.getText(range);
-        if (toReplace[0] !== '\\') { return this.updateRange(); }
+        if (toReplace[0] !== this.leader) { return this.updateRange(); }
 
         const abbreviation = toReplace.slice(1);
         const replacement = this.abbreviator.findReplacement(abbreviation);
@@ -96,17 +117,20 @@ class TextEditorAbbrevHandler {
         if (change.text.length === 1) {
             // insert (or right paren overwriting)
             if (!this.range) {
-                if (change.text === '\\') {
+                if (change.text === this.leader) {
                     return this.updateRange(new Range(change.range.start, change.range.start.translate(0, 1)));
                 }
             } else if (change.range.start.isEqual(this.range.end)) {
-                if (change.text === '\\' && this.rangeSize === 1) { // \\
-                    this.range = new Range(this.range.start, change.range.start.translate(0, 1));
-                    return this.convertRange();
-                } else if (change.text.match(/^\s+|[)}⟩\\]$/)) {
-                    // whitespace, closing parens, backslash
-                    return this.convertRange(change.text !== '\\' ? null :
+                if (change.text === this.leader && this.rangeSize === 1) {
+                    this.updateRange();
+                    return this.editor.edit((builder) =>
+                        builder.delete(new Range(change.range.start, change.range.end.translate(0, 1))));
+                } else if (change.text === this.leader) {
+                    return this.convertRange(
                         new Range(change.range.start, change.range.start.translate(0, 1)));
+                } else if (change.text.match(/^\s+|[)}⟩]$/)) {
+                    // whitespace, closing parens
+                    return this.convertRange();
                 }
             }
         }
@@ -129,6 +153,8 @@ class TextEditorAbbrevHandler {
 
 export class LeanInputAbbreviator {
     private subscriptions: Disposable[] = [];
+    leader = inputModeLeader();
+    enabled = inputModeEnabled();
 
     private handlers = new Map<TextEditor, TextEditorAbbrevHandler>();
 
@@ -136,7 +162,6 @@ export class LeanInputAbbreviator {
 
     constructor(private translations: Translations, public documentFilter: DocumentFilter) {
         this.translations = Object.assign({}, translations);
-        this.translations['\\'] = '\\';
 
         this.decorationType = window.createTextEditorDecorationType({
             textDecoration: 'underline',
@@ -163,6 +188,11 @@ export class LeanInputAbbreviator {
             if (handler) {
                 handler.convertRange();
             }
+        }));
+
+        this.subscriptions.push(workspace.onDidChangeConfiguration(() => {
+            this.leader = inputModeLeader();
+            this.enabled = inputModeEnabled();
         }));
     }
 
