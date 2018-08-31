@@ -18,7 +18,8 @@
       "name": "meta.definitioncommand.lean"
     },
     { "match": "\\b(Prop|Type|Sort)\\b", "name": "storage.type.lean" },
-    { "match": "(@|\\battribute\\b)\\[[^\\]]*\\]", "name": "storage.modifier.lean" },
+    { "match": "\\battribute\\b\\s*\\[[^\\]]*\\]", "name": "storage.modifier.lean" },
+    { "match": "@\\[[^\\]]*\\]", "name": "storage.modifier.lean" },
     {
       "match": "\\b(?<!\\.)(private|meta|mutual|protected|noncomputable)\\b",
       "name": "keyword.control.definition.modifier.lean"
