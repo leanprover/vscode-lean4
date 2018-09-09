@@ -57,21 +57,26 @@
   "repository": {
     "blockComment": {
       "begin": "/-[^-]", "end": "-/", "name": "comment.block.lean",
-      "patterns": [{"include": "#comments"}]
+      "patterns": [{"include": "#longComments"}]
     },
     "docComment": {
       "begin": "/--", "end": "-/", "name": "comment.block.documentation.lean",
-      "patterns": [{"include": "#comments"}]
+      "patterns": [{"include": "#longComments"}]
     },
     "dashComment": {
       "begin": "(--)", "end": "$",
       "beginCaptures": {"0": {"name": "punctuation.definition.comment.lean"}},
       "name": "comment.line.double-dash.lean"
     },
-    "comments": {
+    "longComments": {
       "patterns": [
         {"include": "#blockComment"},
-        {"include": "#docComment"},
+        {"include": "#docComment"}
+      ]
+    },
+    "comments": {
+      "patterns": [
+        {"include": "#longComments"},
         {"include": "#dashComment"}
       ]
     },
