@@ -55,23 +55,27 @@
     { "match": "\\b([0-9]+|0([xX][0-9a-fA-F]+))\\b", "name": "constant.numeric.lean" }
   ],
   "repository": {
-    "blockComment": {
-      "begin": "/-[^-]", "end": "-/", "name": "comment.block.lean",
-      "patterns": [{"include": "#blockComment"}]
-    },
-    "docComment": {
-      "begin": "/--", "end": "-/", "name": "comment.block.documentation.lean"
-    },
     "dashComment": {
       "begin": "(--)", "end": "$",
       "beginCaptures": {"0": {"name": "punctuation.definition.comment.lean"}},
       "name": "comment.line.double-dash.lean"
     },
+    "docComment": {
+      "begin": "/--", "end": "-/", "name": "comment.block.documentation.lean"
+    },
+    "modDocComment": {
+      "begin": "/-!", "end": "-/", "name": "comment.block.documentation.lean"
+    },
+    "blockComment": {
+      "begin": "/-", "end": "-/", "name": "comment.block.lean",
+      "patterns": [{"include": "#blockComment"}]
+    },
     "comments": {
       "patterns": [
-        {"include": "#blockComment"},
+        {"include": "#dashComment"},
         {"include": "#docComment"},
-        {"include": "#dashComment"}
+        {"include": "#modDocComment"},
+        {"include": "#blockComment"}
       ]
     },
     "definitionName": {
