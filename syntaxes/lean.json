@@ -32,7 +32,7 @@
       "name": "keyword.other.lean"
     },
     {
-      "match": "\\b(?<!\\.)(calc|have|this|match|do|suffices|show|by|in|at|let|forall|fun|exists|assume|from)\\b",
+      "match": "\\b(?<!\\.)(calc|have|this|match|do|suffices|show|by|in|at|let|forall|fun|exists|assume|from|λ)\\b",
       "name": "keyword.other.lean"
     },
     {"begin": "«", "end": "»", "contentName": "entity.name.lean"},
