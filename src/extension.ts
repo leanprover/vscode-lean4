@@ -2,7 +2,7 @@ import * as loadJsonFile from 'load-json-file';
 import { commands, ExtensionContext, languages, Uri, workspace } from 'vscode';
 import { batchExecuteFile } from './batch';
 import { LeanCompletionItemProvider } from './completion';
-import { LEAN_MODE } from './constants';
+import { LEAN_MODE, MARKDOWN_MODE } from './constants';
 import { LeanDefinitionProvider } from './definition';
 import { LeanDiagnosticsProvider } from './diagnostics';
 import { LeanHoles } from './holes';
@@ -63,9 +63,15 @@ export function activate(context: ExtensionContext) {
     // Register support for unicode input.
     (async () => {
         const translations = await loadJsonFile(context.asAbsolutePath('translations.json'));
+        const modes = [LEAN_MODE];
+        const input_markdown = workspace.getConfiguration('lean.input').get('markdown');
+        if (input_markdown) {modes.push(MARKDOWN_MODE);}
+        const hover_providers = modes.map(mode =>   
+            languages.registerHoverProvider(mode, new LeanInputExplanationHover(translations))
+        );
         context.subscriptions.push(
-            languages.registerHoverProvider(LEAN_MODE, new LeanInputExplanationHover(translations)),
-            new LeanInputAbbreviator(translations, LEAN_MODE));
+            ...hover_providers,
+            new LeanInputAbbreviator(translations, modes));
     })();
 
     // Load the language-configuration manually, so that we can set the wordPattern.

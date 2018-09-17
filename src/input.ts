@@ -160,7 +160,7 @@ export class LeanInputAbbreviator {
 
     decorationType: TextEditorDecorationType;
 
-    constructor(private translations: Translations, public documentFilter: DocumentFilter) {
+    constructor(private translations: Translations, public documentFilters: DocumentFilter[]) {
         this.translations = Object.assign({}, translations);
 
         this.decorationType = window.createTextEditorDecorationType({
@@ -231,12 +231,16 @@ export class LeanInputAbbreviator {
         return null;
     }
 
+    private isSupportedFile(document : TextDocument) {
+        return this.documentFilters.some(f => !!languages.match(f,document));
+    }
+
     private onChanged(ev: TextDocumentChangeEvent) {
         const editor = window.activeTextEditor;
 
         if (editor.document !== ev.document) { return; } // change happened in active editor
 
-        if (!languages.match(this.documentFilter, ev.document)) { return; } // Lean file
+        if (!this.isSupportedFile(ev.document)) { return; } // Not a supported file
 
         if (!this.handlers.has(editor)) {
             this.handlers.set(editor, new TextEditorAbbrevHandler(editor, this));
@@ -249,7 +253,7 @@ export class LeanInputAbbreviator {
 
         if (editor !== ev.textEditor) { return; } // change happened in active editor
 
-        if (!languages.match(this.documentFilter, editor.document)) { return; } // Lean file
+        if (!this.isSupportedFile(editor.document)) { return; } // Lean file
 
         if (this.handlers.has(editor)) {
             this.handlers.get(editor).onSelectionChanged(ev);

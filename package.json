@@ -60,6 +60,11 @@
 					"default": true,
 					"description": "Enable Lean input mode"
 				},
+				"lean.input.markdown" : {
+					"type" : "boolean",
+					"default" : true,
+					"description": "Enable Lean input mode in markdown files."
+				},
 				"lean.input.leader": {
 					"type": "string",
 					"default": "\\",
@@ -282,6 +287,7 @@
 	},
 	"activationEvents": [
 		"onLanguage:lean",
+		"onLanguage:markdown",
 		"onCommand:lean.restartSever",
 		"onCommand:lean.infoDocument.toggleMode",
 		"onCommand:lean.roiMode.select",
