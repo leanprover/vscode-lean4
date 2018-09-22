@@ -137,6 +137,12 @@
 				"description": "Copy the current contents of the info view into a new comment on the next line"
 			},
 			{
+				"command": "lean.infoView.toggleUpdating",
+				"category": "Lean",
+				"title": "Info View: toggle updating",
+				"description": "Pause / Continue the live updating in the info view"
+			},
+			{
 				"command": "lean.roiMode.select",
 				"category": "Lean",
 				"title": "Select region-of-interest",
