@@ -2,8 +2,13 @@ import * as leanclient from 'lean-client-js-node';
 import { CommandResponse, CompleteResponse, Event, FileRoi, Message,
      ProcessConnection, ProcessTransport, RoiRequest, Task } from 'lean-client-js-node';
 import * as semver from 'semver';
-import { OutputChannel, window, workspace } from 'vscode';
+import { commands, OutputChannel, window, workspace } from 'vscode';
 import { LowPassFilter } from './util';
+import { fstat } from 'fs';
+const path = require('path');
+const osHomedir = require('os-homedir');
+const fs = require('fs');
+const hasbin = require('hasbin');
 
 export interface ServerStatus {
     stopped: boolean;
@@ -19,6 +24,8 @@ let stderrOutput: OutputChannel;
 export class Server extends leanclient.Server {
     transport: ProcessTransport;
     executablePath: string;
+    overrideExecutablePath: string;
+    attemptedElan: boolean;
     workingDirectory: string;
     options: string[];
     version: string;
@@ -55,6 +62,20 @@ export class Server extends leanclient.Server {
             // TODO(gabriel): unset LEAN_PATH environment variable
 
             this.executablePath = config.get('executablePath') || 'lean';
+            if(this.executablePath === 'lean') {
+                if(!hasbin.sync('lean')) {
+                    // Let's try a little harder!
+                    var elanLean = path.resolve(osHomedir(), ".elan", "bin", "lean");
+                    if(fs.existsSync(elanLean)) {
+                        this.executablePath = elanLean
+                    } else {
+                        elanLean = path.resolve("C:", "msys64", "home", require('username').sync(), ".elan", "bin", "lean")
+                        if(fs.existsSync(elanLean)) {
+                            this.executablePath = elanLean
+                        }
+                    }
+                }
+            }
             this.workingDirectory = workspace.rootPath;
             this.options = config.get('extraOptions') || [];
 
@@ -125,12 +146,58 @@ export class Server extends leanclient.Server {
         stderrOutput.appendLine('----- user triggered restart -----');
     }
 
+    async install_elan() {
+        if(workspace.getConfiguration('lean').get<string>('executablePath') !== "lean") {
+            await window.showErrorMessage("It looks like you've modified the `lean.executablePath` user setting.\nPlease change it back to `lean` before installing elan.");
+        } else {
+            this.attemptedElan = true;
+           
+            const gitBashPath = "C:\\Program Files\\Git\\bin\\bash.exe"
+            const msysBashPath = "C:\\msys64\\usr\\bin\\bash.exe"
+
+            var bashPath;
+            var bashArguments;
+
+            const terminalName = `Lean installation via elan`;
+            if(process.platform === "win32") {
+              if(fs.existsSync(gitBashPath)) {
+                  bashPath = gitBashPath;
+                  bashArguments = [];
+              } else if(fs.existsSync(msysBashPath)) {
+                  bashPath = msysBashPath;
+                  bashArguments = ["--login", "-i"]
+              } else {
+                  await window.showErrorMessage("You'll need to install a terminal (e.g. Git for Windows, or MSYS2)\nbefore we can install elan.");
+                  return;
+              }
+            }
+            const terminal = (process.platform === "win32") 
+                ? window.createTerminal(terminalName, bashPath, bashArguments)
+                : window.createTerminal(terminalName);
+
+            // We register a listener, to restart the Lean extension once elan has finished.
+            window.onDidCloseTerminal((terminal) => {
+            if (terminal.name === terminalName) {
+                this.restart();
+            }});
+
+            // Now show the terminal and run elan.
+            terminal.show();
+            terminal.sendText('curl https://raw.githubusercontent.com/Kha/elan/master/elan-init.sh -sSf | sh && echo && read -n 1 -s -r -p "Press any key to start Lean" && exit\n');
+        }    
+    }
+
     async requestRestart(message: string, justWarning?: boolean) {
         const restartItem = 'Restart server';
+        const installElanItem = 'Install Lean using elan';
+
         const showMsg = justWarning ? window.showWarningMessage : window.showErrorMessage;
-        const item = await showMsg(message, restartItem);
+        const item = this.attemptedElan ? await showMsg(message, restartItem) 
+                                        : await showMsg(message, restartItem, installElanItem);
         if (item === restartItem) {
             this.restart();
+        } else if (item === installElanItem) {
+            this.install_elan();
         }
-    }
+    }    
 }
