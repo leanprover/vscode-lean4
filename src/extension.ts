@@ -62,7 +62,7 @@ export function activate(context: ExtensionContext) {
 
     // Register support for unicode input.
     (async () => {
-        const translations = await loadJsonFile(context.asAbsolutePath('translations.json'));
+        const translations: any = await loadJsonFile.default(context.asAbsolutePath('translations.json'));
         context.subscriptions.push(
             languages.registerHoverProvider(LEAN_MODE, new LeanInputExplanationHover(translations)),
             new LeanInputAbbreviator(translations, LEAN_MODE));
