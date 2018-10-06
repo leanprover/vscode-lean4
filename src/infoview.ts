@@ -99,7 +99,7 @@ export class InfoProvider implements Disposable {
                 } else {
                     this.stopUpdating();
                 }
-            })
+            }),
         );
     }
 
