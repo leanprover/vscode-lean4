@@ -53,6 +53,9 @@ This extension contributes the following settings:
 
 ## Release Notes
 
+### 0.12.1
+* Automated elan installation
+
 ### 0.11.2
 * Tactic state highlighting
 
