@@ -62,7 +62,7 @@ export function activate(context: ExtensionContext) {
 
     // Register support for unicode input.
     (async () => {
-        const translations = await loadJsonFile(context.asAbsolutePath('translations.json'));
+        const translations : any = await loadJsonFile.default(context.asAbsolutePath('translations.json'));
         const modes = [LEAN_MODE];
         const input_markdown = workspace.getConfiguration('lean.input').get('markdown');
         if (input_markdown) {modes.push(MARKDOWN_MODE);}
