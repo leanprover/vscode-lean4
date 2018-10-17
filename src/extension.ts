@@ -69,6 +69,7 @@ export function activate(context: ExtensionContext) {
         const hover_providers = modes.map(mode =>   
             languages.registerHoverProvider(mode, new LeanInputExplanationHover(translations))
         );
+
         context.subscriptions.push(
             ...hover_providers,
             new LeanInputAbbreviator(translations, modes));

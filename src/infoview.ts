@@ -93,6 +93,13 @@ export class InfoProvider implements Disposable {
             }),
             commands.registerTextEditorCommand('lean.infoView.copyToComment',
                 (editor) => this.copyToComment(editor)),
+            commands.registerTextEditorCommand('lean.infoView.toggleUpdating', (editor) => {
+                if (this.stopped) {
+                    this.setMode(this.displayMode);
+                } else {
+                    this.stopUpdating();
+                }
+            }),
         );
     }
 

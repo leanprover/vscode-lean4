@@ -114,7 +114,7 @@ class TextEditorAbbrevHandler {
         if (ev.contentChanges.length !== 1) { return this.updateRange(); } // single change
         const change = ev.contentChanges[0];
 
-        if (change.text.length === 1) {
+        if (change.text.length === 1 || change.text === '\r\n') {
             // insert (or right paren overwriting)
             if (!this.range) {
                 if (change.text === this.leader) {
@@ -210,6 +210,8 @@ export class LeanInputAbbreviator {
     }
 
     findReplacement(typedAbbrev: string): string | undefined {
+        if (typedAbbrev === '') { return undefined; }
+
         if (this.translations[typedAbbrev]) { return this.translations[typedAbbrev]; }
 
         let shortestExtension: string = null;
