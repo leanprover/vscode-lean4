@@ -24,7 +24,7 @@ export class Server extends leanclient.Server {
     transport: ProcessTransport;
     executablePath: string;
     overrideExecutablePath: string;
-    attemptedElan: boolean;
+    hasLean: boolean;
     workingDirectory: string;
     options: string[];
     version: string;
@@ -80,6 +80,7 @@ export class Server extends leanclient.Server {
             this.options = config.get('extraOptions') || [];
 
             this.version = new ProcessTransport(this.executablePath, '.', []).getVersion();
+            this.hasLean = true; // we don't need to ask to install lean if we got here
             if (this.atLeastLeanVersion('3.1.0')) {
                 this.options.push('-M');
                 this.options.push('' + config.get('memoryLimit'));
@@ -152,7 +153,7 @@ export class Server extends leanclient.Server {
               "It looks like you've modified the `lean.executablePath` user setting.\n" +
               'Please change it back to `lean` before installing elan.');
         } else {
-            this.attemptedElan = true;
+            this.hasLean = true;
 
             const gitBashPath = 'C:\\Program Files\\Git\\bin\\bash.exe';
             const msysBashPath = 'C:\\msys64\\usr\\bin\\bash.exe';
@@ -195,7 +196,7 @@ export class Server extends leanclient.Server {
         const installElanItem = 'Install Lean using elan';
 
         const showMsg = justWarning ? window.showWarningMessage : window.showErrorMessage;
-        const item = this.attemptedElan ? await showMsg(message, restartItem)
+        const item = this.hasLean ? await showMsg(message, restartItem)
                                         : await showMsg(message, restartItem, installElanItem);
         if (item === restartItem) {
             this.restart();
