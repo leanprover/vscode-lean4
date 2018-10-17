@@ -1,4 +1,4 @@
-import * as loadJsonFile from 'load-json-file';
+import loadJsonFile from 'load-json-file';
 import { commands, ExtensionContext, languages, Uri, workspace } from 'vscode';
 import { batchExecuteFile } from './batch';
 import { LeanCompletionItemProvider } from './completion';
@@ -8,7 +8,7 @@ import { LeanDiagnosticsProvider } from './diagnostics';
 import { LeanHoles } from './holes';
 import { LeanHoverProvider } from './hover';
 import { InfoProvider } from './infoview';
-import { LeanInputAbbreviator, LeanInputExplanationHover } from './input';
+import { LeanInputAbbreviator, LeanInputExplanationHover, Translations } from './input';
 import { LeanpkgService } from './leanpkg';
 import { RoiManager } from './roi';
 import { LeanWorkspaceSymbolProvider } from './search';
@@ -27,7 +27,7 @@ function configExcludeOLean() {
 }
 
 let server: Server;
-
+type translations = {[key : string] : string}
 export function activate(context: ExtensionContext) {
     configExcludeOLean();
 
@@ -62,7 +62,9 @@ export function activate(context: ExtensionContext) {
 
     // Register support for unicode input.
     (async () => {
-        const translations : any = await loadJsonFile.default(context.asAbsolutePath('translations.json'));
+        const translations : translations = await loadJsonFile<translations>(context.asAbsolutePath('translations.json'));
+        const custom_translations : translations = workspace.getConfiguration("lean.input").get("customTranslations") || {};
+        Object.assign (translations, custom_translations);
         const modes = [LEAN_MODE];
         const input_markdown = workspace.getConfiguration('lean.input').get('markdown');
         if (input_markdown) {modes.push(MARKDOWN_MODE);}

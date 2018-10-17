@@ -63,7 +63,12 @@
 				"lean.input.markdown" : {
 					"type" : "boolean",
 					"default" : true,
-					"description": "Enable Lean input mode in markdown files."
+					"description": "Enable Lean input mode in markdown files. (reload necessary)"
+				},
+				"lean.input.customTranslations" : {
+					"type" : "object",
+					"default" : {},
+					"description": "Add additional input unicode translations. Example: `{\"foo\": \"☺\"}` will correct `\\foo` to `☺`. (reload necessary)"
 				},
 				"lean.input.leader": {
 					"type": "string",
