@@ -49,6 +49,7 @@ This extension contributes the following settings:
 * Install `code` from http://code.visualstudio.com
 * Run `git clone https://github.com/leanprover/vscode-lean`
 * Run `npm install` in the `vscode-lean` directory
+* Install the [TSLint extension for vscode](https://marketplace.visualstudio.com/items?itemName=eg2.tslint)
 * Open the `vscode-lean` in vscode and start developing (F5 starts the debugger)
 
 ## Release Notes
