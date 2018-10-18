@@ -2,7 +2,7 @@
 	"name": "lean",
 	"displayName": "lean",
 	"description": "An extension for VS Code which provides support for the Lean language.",
-	"version": "0.12.2",
+	"version": "0.12.3",
 	"publisher": "jroesch",
 	"engines": {
 		"vscode": "^1.24.0"
@@ -60,13 +60,13 @@
 					"default": true,
 					"description": "Enable Lean input mode"
 				},
-				"lean.input.customTranslations" : {
-					"type" : "object",
-					"items" : {
-						"type" : "string",
+				"lean.input.customTranslations": {
+					"type": "object",
+					"items": {
+						"type": "string",
 						"description": "Unicode character to translate to."
 					},
-					"default" : {},
+					"default": {},
 					"description": "Add additional input unicode translations. Example: `{\"foo\": \"☺\"}` will correct `\\foo` to `☺`."
 				},
 				"lean.input.languages": {
