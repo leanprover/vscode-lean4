@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { commands, Disposable, ProcessExecution, Task, TaskDefinition, TaskGroup, TaskProvider, Uri,
+import { commands, Disposable, ProcessExecution, Task, TaskGroup, TaskProvider, Uri,
     window, workspace } from 'vscode';
 import { Server } from './server';
 

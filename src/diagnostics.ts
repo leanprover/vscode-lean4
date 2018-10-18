@@ -30,7 +30,6 @@ export class LeanDiagnosticsProvider implements Disposable {
         const diagnosticMap = new Map<string, Diagnostic[]>();
 
         for (const message of messages) {
-            const line = Math.max(message.pos_line - 1, 0);
             const pos = new Position(message.pos_line - 1, message.pos_col);
             const range = new Range(pos, pos);
             let diagnostics = diagnosticMap.get(message.file_name);

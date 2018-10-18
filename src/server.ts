@@ -1,12 +1,11 @@
 import { existsSync } from 'fs';
 import * as hasbin from 'hasbin';
 import * as leanclient from 'lean-client-js-node';
-import { CommandResponse, CompleteResponse, Event, FileRoi, Message,
-     ProcessConnection, ProcessTransport, RoiRequest, Task } from 'lean-client-js-node';
+import { Event, Message, ProcessTransport, Task } from 'lean-client-js-node';
 import { homedir } from 'os';
 import { resolve } from 'path';
 import * as semver from 'semver';
-import { commands, OutputChannel, TerminalOptions, window, workspace } from 'vscode';
+import { OutputChannel, TerminalOptions, window, workspace } from 'vscode';
 import { LowPassFilter } from './util';
 
 export interface ServerStatus {
