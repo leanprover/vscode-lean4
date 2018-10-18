@@ -60,20 +60,28 @@
 					"default": true,
 					"description": "Enable Lean input mode"
 				},
-				"lean.input.markdown" : {
-					"type" : "boolean",
-					"default" : true,
-					"description": "Enable Lean input mode in markdown files. (reload necessary)"
-				},
 				"lean.input.customTranslations" : {
 					"type" : "object",
+					"items" : {
+						"type" : "string",
+						"description": "unicode character to translate to"
+					},
 					"default" : {},
 					"description": "Add additional input unicode translations. Example: `{\"foo\": \"☺\"}` will correct `\\foo` to `☺`. (reload necessary)"
+				},
+				"lean.input.languages": {
+					"type": "array",
+					"default": ["lean"],
+					"description": "Enable Lean unicode input in other file types."
 				},
 				"lean.input.leader": {
 					"type": "string",
 					"default": "\\",
-					"description": "Leader key to trigger input mode"
+					"description": "Leader key to trigger input mode",
+					"items": {
+						"type":"string",
+						"description": "the name of a language. Eg: 'lean', 'markdown' "
+					}
 				},
 				"lean.infoViewAllErrorsOnLine": {
 					"type": "boolean",
