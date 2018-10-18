@@ -72,7 +72,7 @@
 				"lean.input.leader": {
 					"type": "string",
 					"default": "\\",
-					"description": "Leader key to trigger input mode",
+					"description": "Leader key to trigger input mode"
 				},
 				"lean.infoViewAllErrorsOnLine": {
 					"type": "boolean",
