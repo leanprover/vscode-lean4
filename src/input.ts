@@ -13,6 +13,11 @@ function inputModeLeader(): string {
     return workspace.getConfiguration('lean.input').get('leader', '\\');
 }
 
+function inputModeLanguages(): string[] {
+    return workspace.getConfiguration('lean.input').get('languages', ['lean']);
+}
+
+/** Adds hover behaviour for getting translations of unicode characters. Eg: "Type ⊓ using \glb or \sqcap"  */
 export class LeanInputExplanationHover implements HoverProvider, Disposable {
     private leader = inputModeLeader();
     private subscriptions: Disposable[] = [];
@@ -42,7 +47,7 @@ export class LeanInputExplanationHover implements HoverProvider, Disposable {
         for (const s of this.subscriptions) { s.dispose(); }
     }
 }
-
+/* Each editor has their own abbreviation handler. */
 class TextEditorAbbrevHandler {
     range: Range;
 
@@ -156,12 +161,13 @@ export class LeanInputAbbreviator {
     private subscriptions: Disposable[] = [];
     leader = inputModeLeader();
     enabled = inputModeEnabled();
+    languages = inputModeLanguages();
 
     private handlers = new Map<TextEditor, TextEditorAbbrevHandler>();
 
     decorationType: TextEditorDecorationType;
 
-    constructor(private translations: Translations, public documentFilters: DocumentFilter[]) {
+    constructor(private translations: Translations) {
         this.translations = Object.assign({}, translations);
 
         this.decorationType = window.createTextEditorDecorationType({
@@ -194,6 +200,7 @@ export class LeanInputAbbreviator {
         this.subscriptions.push(workspace.onDidChangeConfiguration(() => {
             this.leader = inputModeLeader();
             this.enabled = inputModeEnabled();
+            this.languages = inputModeLanguages();
         }));
     }
 
@@ -234,8 +241,8 @@ export class LeanInputAbbreviator {
         return null;
     }
 
-    private isSupportedFile(document : TextDocument) {
-        return this.documentFilters.some(f => !!languages.match(f,document));
+    private isSupportedFile(document: TextDocument) {
+        return !!languages.match(this.languages,document);
     }
 
     private onChanged(ev: TextDocumentChangeEvent) {
