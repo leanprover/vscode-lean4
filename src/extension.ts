@@ -27,7 +27,7 @@ function configExcludeOLean() {
 }
 
 let server: Server;
-type translations = {[key : string] : string}
+
 export function activate(context: ExtensionContext) {
     configExcludeOLean();
 

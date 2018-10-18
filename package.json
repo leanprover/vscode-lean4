@@ -64,10 +64,10 @@
 					"type" : "object",
 					"items" : {
 						"type" : "string",
-						"description": "unicode character to translate to"
+						"description": "Unicode character to translate to."
 					},
 					"default" : {},
-					"description": "Add additional input unicode translations. Example: `{\"foo\": \"☺\"}` will correct `\\foo` to `☺`. (reload necessary)"
+					"description": "Add additional input unicode translations. Example: `{\"foo\": \"☺\"}` will correct `\\foo` to `☺`."
 				},
 				"lean.input.languages": {
 					"type": "array",

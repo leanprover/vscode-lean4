@@ -17,8 +17,8 @@ function inputModeLanguages(): string[] {
     return workspace.getConfiguration('lean.input').get('languages', ['lean']);
 }
 
-function inputModeCustomTranslations() : Translations {
-    return workspace.getConfiguration('lean.input').get("customTranslations", {});
+function inputModeCustomTranslations(): Translations {
+    return workspace.getConfiguration('lean.input').get('customTranslations', {});
 }
 
 /** Adds hover behaviour for getting translations of unicode characters. Eg: "Type ⊓ using \glb or \sqcap"  */
@@ -175,7 +175,7 @@ export class LeanInputAbbreviator {
     enabled = inputModeEnabled();
     languages = inputModeLanguages();
     customTranslations = inputModeCustomTranslations();
-    allTranslations : Translations;
+    allTranslations: Translations;
 
     private handlers = new Map<TextEditor, TextEditorAbbrevHandler>();
 
@@ -217,7 +217,7 @@ export class LeanInputAbbreviator {
             this.enabled = inputModeEnabled();
             this.languages = inputModeLanguages();
             this.customTranslations = inputModeCustomTranslations();
-            this.allTranslations = {...this.translations, ...this.customTranslations}
+            this.allTranslations = {...this.translations, ...this.customTranslations};
         }));
     }
 
