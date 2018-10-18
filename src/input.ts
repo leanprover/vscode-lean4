@@ -17,19 +17,31 @@ export function inputModeLanguages(): string[] {
     return workspace.getConfiguration('lean.input').get('languages', ['lean']);
 }
 
+function inputModeCustomTranslations(): Translations {
+    return workspace.getConfiguration('lean.input').get('customTranslations', {});
+}
+
 /** Adds hover behaviour for getting translations of unicode characters. Eg: "Type ⊓ using \glb or \sqcap"  */
 export class LeanInputExplanationHover implements HoverProvider, Disposable {
     private leader = inputModeLeader();
+    private customTranslations = inputModeCustomTranslations();
     private subscriptions: Disposable[] = [];
 
     constructor(private translations: Translations) {
         this.subscriptions.push(
-            workspace.onDidChangeConfiguration(() => this.leader = inputModeLeader()));
+            workspace.onDidChangeConfiguration(() => {
+                this.leader = inputModeLeader();
+                this.customTranslations = inputModeCustomTranslations();
+            }));
     }
 
     getAbbrevations(symbol: string): string[] {
         const abbrevs: string[] = [];
+        for (const k in this.customTranslations) {
+            if (this.customTranslations[k] === symbol) { abbrevs.push(k); }
+        }
         for (const k in this.translations) {
+            if (this.customTranslations[k]) {continue;}
             if (this.translations[k] === symbol) { abbrevs.push(k); }
         }
         return abbrevs;
@@ -162,6 +174,8 @@ export class LeanInputAbbreviator {
     leader = inputModeLeader();
     enabled = inputModeEnabled();
     languages = inputModeLanguages();
+    customTranslations = inputModeCustomTranslations();
+    allTranslations: Translations;
 
     private handlers = new Map<TextEditor, TextEditorAbbrevHandler>();
 
@@ -169,6 +183,7 @@ export class LeanInputAbbreviator {
 
     constructor(private translations: Translations) {
         this.translations = Object.assign({}, translations);
+        this.allTranslations = {...this.translations, ...this.customTranslations};
 
         this.decorationType = window.createTextEditorDecorationType({
             textDecoration: 'underline',
@@ -201,6 +216,8 @@ export class LeanInputAbbreviator {
             this.leader = inputModeLeader();
             this.enabled = inputModeEnabled();
             this.languages = inputModeLanguages();
+            this.customTranslations = inputModeCustomTranslations();
+            this.allTranslations = {...this.translations, ...this.customTranslations};
         }));
     }
 
@@ -220,17 +237,17 @@ export class LeanInputAbbreviator {
     findReplacement(typedAbbrev: string): string | undefined {
         if (typedAbbrev === '') { return undefined; }
 
-        if (this.translations[typedAbbrev]) { return this.translations[typedAbbrev]; }
+        if (this.allTranslations[typedAbbrev]) { return this.allTranslations[typedAbbrev]; }
 
         let shortestExtension: string = null;
-        for (const abbrev in this.translations) {
+        for (const abbrev in this.allTranslations) {
             if (abbrev.startsWith(typedAbbrev) && (!shortestExtension || abbrev.length < shortestExtension.length)) {
                 shortestExtension = abbrev;
             }
         }
 
         if (shortestExtension) {
-            return this.translations[shortestExtension];
+            return this.allTranslations[shortestExtension];
         } else if (typedAbbrev) {
             const prefixReplacement = this.findReplacement(
                 typedAbbrev.slice(0, typedAbbrev.length - 1));
