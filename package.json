@@ -72,16 +72,16 @@
 				"lean.input.languages": {
 					"type": "array",
 					"default": ["lean"],
-					"description": "Enable Lean unicode input in other file types."
-				},
-				"lean.input.leader": {
-					"type": "string",
-					"default": "\\",
-					"description": "Leader key to trigger input mode",
+					"description": "Enable Lean unicode input in other file types.",
 					"items": {
 						"type":"string",
 						"description": "the name of a language. Eg: 'lean', 'markdown' "
 					}
+				},
+				"lean.input.leader": {
+					"type": "string",
+					"default": "\\",
+					"description": "Leader key to trigger input mode"
 				},
 				"lean.infoViewAllErrorsOnLine": {
 					"type": "boolean",

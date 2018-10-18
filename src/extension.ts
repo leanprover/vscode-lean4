@@ -8,7 +8,7 @@ import { LeanDiagnosticsProvider } from './diagnostics';
 import { LeanHoles } from './holes';
 import { LeanHoverProvider } from './hover';
 import { InfoProvider } from './infoview';
-import { LeanInputAbbreviator, LeanInputExplanationHover, Translations } from './input';
+import { inputModeLanguages, LeanInputAbbreviator, LeanInputExplanationHover } from './input';
 import { LeanpkgService } from './leanpkg';
 import { RoiManager } from './roi';
 import { LeanWorkspaceSymbolProvider } from './search';
@@ -63,7 +63,7 @@ export function activate(context: ExtensionContext) {
     // Register support for unicode input.
     (async () => {
         const translations: any = await loadJsonFile(context.asAbsolutePath('translations.json'));
-        const inputLanguages: string[] = workspace.getConfiguration('lean.input').get('languages', ['lean']);
+        const inputLanguages: string[] = inputModeLanguages();
         const hoverProvider =
             languages.registerHoverProvider(inputLanguages, new LeanInputExplanationHover(translations));
         context.subscriptions.push(
