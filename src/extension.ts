@@ -2,7 +2,7 @@ import loadJsonFile from 'load-json-file';
 import { commands, ExtensionContext, languages, Uri, workspace } from 'vscode';
 import { batchExecuteFile } from './batch';
 import { LeanCompletionItemProvider } from './completion';
-import { LEAN_MODE, MARKDOWN_MODE } from './constants';
+import { LEAN_MODE } from './constants';
 import { LeanDefinitionProvider } from './definition';
 import { LeanDiagnosticsProvider } from './diagnostics';
 import { LeanHoles } from './holes';
