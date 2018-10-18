@@ -60,6 +60,15 @@
 					"default": true,
 					"description": "Enable Lean input mode"
 				},
+				"lean.input.languages": {
+					"type": "array",
+					"default": ["lean"],
+					"description": "Enable Lean unicode input in other file types.",
+					"items": {
+						"type":"string",
+						"description": "the name of a language. Eg: 'lean', 'markdown' "
+					}
+				},
 				"lean.input.leader": {
 					"type": "string",
 					"default": "\\",
@@ -288,6 +297,7 @@
 	},
 	"activationEvents": [
 		"onLanguage:lean",
+		"onLanguage:markdown",
 		"onCommand:lean.restartSever",
 		"onCommand:lean.infoDocument.toggleMode",
 		"onCommand:lean.roiMode.select",
