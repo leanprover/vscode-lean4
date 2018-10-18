@@ -1,7 +1,7 @@
 import { HoleCommands, HoleResponse } from 'lean-client-js-core';
-import { CodeActionContext, CodeActionProvider, Command, commands, Diagnostic,
+import { CodeActionProvider, Command, commands, Diagnostic,
     DiagnosticCollection, DiagnosticSeverity, Disposable, DocumentSelector, languages,
-    Position, Range, TextDocument, Uri, window } from 'vscode';
+    Range, TextDocument, Uri, window } from 'vscode';
 import { Server } from './server';
 
 interface Pos { line: number; column: number; }
@@ -78,7 +78,7 @@ export class LeanHoles implements Disposable, CodeActionProvider {
         }
     }
 
-    provideCodeActions(document: TextDocument, range: Range, context: CodeActionContext): Command[] {
+    provideCodeActions(document: TextDocument, range: Range): Command[] {
         const cmds: Command[] = [];
         for (const hole of this.holes) {
             if (!range.intersection(mkRange(hole))) { continue; }

@@ -1,6 +1,5 @@
 import { CompletionItem, CompletionItemKind, CompletionItemProvider,
     MarkdownString, Position, Range, TextDocument } from 'vscode';
-import { LEAN_MODE } from './constants';
 import { Server } from './server';
 import { isInputCompletion } from './util';
 

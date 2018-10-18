@@ -1,12 +1,11 @@
 import { existsSync } from 'fs';
 import * as hasbin from 'hasbin';
 import * as leanclient from 'lean-client-js-node';
-import { CommandResponse, CompleteResponse, Event, FileRoi, Message,
-     ProcessConnection, ProcessTransport, RoiRequest, Task } from 'lean-client-js-node';
+import { Event, Message, ProcessTransport, Task } from 'lean-client-js-node';
 import { homedir } from 'os';
 import { resolve } from 'path';
 import * as semver from 'semver';
-import { commands, OutputChannel, TerminalOptions, window, workspace } from 'vscode';
+import { OutputChannel, TerminalOptions, window, workspace } from 'vscode';
 import { LowPassFilter } from './util';
 
 export interface ServerStatus {
@@ -24,7 +23,7 @@ export class Server extends leanclient.Server {
     transport: ProcessTransport;
     executablePath: string;
     overrideExecutablePath: string;
-    attemptedElan: boolean;
+    hasLean: boolean;
     workingDirectory: string;
     options: string[];
     version: string;
@@ -80,6 +79,7 @@ export class Server extends leanclient.Server {
             this.options = config.get('extraOptions') || [];
 
             this.version = new ProcessTransport(this.executablePath, '.', []).getVersion();
+            this.hasLean = true; // we don't need to ask to install lean if we got here
             if (this.atLeastLeanVersion('3.1.0')) {
                 this.options.push('-M');
                 this.options.push('' + config.get('memoryLimit'));
@@ -110,6 +110,12 @@ export class Server extends leanclient.Server {
                     stderrOutput.show();
                     break;
                 case 'connect':
+                    // json parsing errors
+                    if (e.message.startsWith('cannot parse: ')) {
+                        stderrOutput.append(e.message + '\n');
+                        stderrOutput.show();
+                        break;
+                    }
                     this.requestRestart(
                         `Lean: ${e.message}\n` +
                         'The lean.executablePath may be incorrect, make sure it is a valid Lean executable');
@@ -152,7 +158,7 @@ export class Server extends leanclient.Server {
               "It looks like you've modified the `lean.executablePath` user setting.\n" +
               'Please change it back to `lean` before installing elan.');
         } else {
-            this.attemptedElan = true;
+            this.hasLean = true;
 
             const gitBashPath = 'C:\\Program Files\\Git\\bin\\bash.exe';
             const msysBashPath = 'C:\\msys64\\usr\\bin\\bash.exe';
@@ -195,7 +201,7 @@ export class Server extends leanclient.Server {
         const installElanItem = 'Install Lean using elan';
 
         const showMsg = justWarning ? window.showWarningMessage : window.showErrorMessage;
-        const item = this.attemptedElan ? await showMsg(message, restartItem)
+        const item = this.hasLean ? await showMsg(message, restartItem)
                                         : await showMsg(message, restartItem, installElanItem);
         if (item === restartItem) {
             this.restart();

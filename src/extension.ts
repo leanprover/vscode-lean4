@@ -1,8 +1,7 @@
 import loadJsonFile from 'load-json-file';
-import { commands, ExtensionContext, languages, Uri, workspace } from 'vscode';
+import { commands, DocumentFilter, ExtensionContext, languages, Uri, workspace } from 'vscode';
 import { batchExecuteFile } from './batch';
 import { LeanCompletionItemProvider } from './completion';
-import { LEAN_MODE } from './constants';
 import { LeanDefinitionProvider } from './definition';
 import { LeanDiagnosticsProvider } from './diagnostics';
 import { LeanHoles } from './holes';
@@ -26,12 +25,15 @@ function configExcludeOLean() {
     files.update('exclude', exclude, true);
 }
 
-let server: Server;
+const LEAN_MODE: DocumentFilter = {
+    language: 'lean',
+    scheme: 'file',
+};
 
 export function activate(context: ExtensionContext) {
     configExcludeOLean();
 
-    server = new Server();
+    const server = new Server();
     context.subscriptions.push(server);
     server.connect();
 

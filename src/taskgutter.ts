@@ -1,4 +1,4 @@
-import { DecorationOptions, Diagnostic, DiagnosticCollection, DiagnosticSeverity, Disposable, ExtensionContext,
+import { Diagnostic, DiagnosticCollection, DiagnosticSeverity, Disposable, ExtensionContext,
     languages, OverviewRulerLane, Range, TextEditorDecorationType, Uri, window, workspace } from 'vscode';
 import { Server, ServerStatus } from './server';
 

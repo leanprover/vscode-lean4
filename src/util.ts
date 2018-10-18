@@ -1,4 +1,4 @@
-import { Disposable, Event, EventEmitter, Position, TextDocument } from 'vscode';
+import { Event, EventEmitter, Position, TextDocument } from 'vscode';
 
 export function isInputCompletion(document: TextDocument, position: Position): boolean {
     const text = document.getText();

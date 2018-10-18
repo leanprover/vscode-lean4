@@ -1,5 +1,5 @@
 import { CheckingMode, FileRoi, RoiRange } from 'lean-client-js-node';
-import { commands, Disposable, DocumentFilter, Event, EventEmitter, languages,
+import { commands, Disposable, DocumentFilter, EventEmitter, languages,
     QuickPickItem, window, workspace } from 'vscode';
 import { Server } from './server';
 
