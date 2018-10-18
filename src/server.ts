@@ -111,6 +111,12 @@ export class Server extends leanclient.Server {
                     stderrOutput.show();
                     break;
                 case 'connect':
+                    // json parsing errors
+                    if (e.message.startsWith('cannot parse: ')) {
+                        stderrOutput.append(e.message + '\n');
+                        stderrOutput.show();
+                        break;
+                    }
                     this.requestRestart(
                         `Lean: ${e.message}\n` +
                         'The lean.executablePath may be incorrect, make sure it is a valid Lean executable');
