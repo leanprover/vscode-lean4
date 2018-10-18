@@ -13,7 +13,7 @@ function inputModeLeader(): string {
     return workspace.getConfiguration('lean.input').get('leader', '\\');
 }
 
-function inputModeLanguages(): string[] {
+export function inputModeLanguages(): string[] {
     return workspace.getConfiguration('lean.input').get('languages', ['lean']);
 }
 
