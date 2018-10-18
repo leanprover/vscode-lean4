@@ -30,12 +30,10 @@ const LEAN_MODE: DocumentFilter = {
     scheme: 'file',
 };
 
-let server: Server;
-
 export function activate(context: ExtensionContext) {
     configExcludeOLean();
 
-    server = new Server();
+    const server = new Server();
     context.subscriptions.push(server);
     server.connect();
 
