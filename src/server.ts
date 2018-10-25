@@ -4,7 +4,6 @@ import * as leanclient from 'lean-client-js-node';
 import { Event, Message, ProcessTransport, Task } from 'lean-client-js-node';
 import { homedir } from 'os';
 import { resolve } from 'path';
-import * as semver from 'semver';
 import * as username from 'username';
 import { OutputChannel, TerminalOptions, window, workspace } from 'vscode';
 import { LowPassFilter } from './util';
@@ -27,11 +26,9 @@ export class Server extends leanclient.Server {
     hasLean: boolean;
     workingDirectory: string;
     options: string[];
-    version: string;
 
     statusChanged: LowPassFilter<ServerStatus>;
     restarted: Event<any>;
-    supportsROI: boolean;
 
     messages: Message[];
 
@@ -40,16 +37,8 @@ export class Server extends leanclient.Server {
         this.statusChanged = new LowPassFilter<ServerStatus>(300);
         this.restarted = new Event();
         this.messages = [];
-        this.supportsROI = true;
-        this.version = '3.2.0';
 
         this.attachEventHandlers();
-
-        this.connect();
-    }
-
-    atLeastLeanVersion(requiredVersion: string): boolean {
-        return semver.lte(requiredVersion, this.version);
     }
 
     connect() {
@@ -79,21 +68,17 @@ export class Server extends leanclient.Server {
             this.workingDirectory = workspace.rootPath;
             this.options = config.get('extraOptions') || [];
 
-            this.version = new ProcessTransport(this.executablePath, '.', []).getVersion();
             this.hasLean = true; // we don't need to ask to install lean if we got here
-            if (this.atLeastLeanVersion('3.1.0')) {
-                this.options.push('-M');
-                this.options.push('' + config.get('memoryLimit'));
 
-                this.options.push('-T');
-                this.options.push('' + config.get('timeLimit'));
-            }
-
-            this.supportsROI = this.atLeastLeanVersion('3.1.1');
+            this.options.push('-M');
+            this.options.push('' + config.get('memoryLimit'));
+            this.options.push('-T');
+            this.options.push('' + config.get('timeLimit'));
 
             this.transport = new ProcessTransport(
                 this.executablePath, this.workingDirectory, this.options);
             super.connect();
+            this.restarted.fire(null);
         } catch (e) {
             this.requestRestart(`Lean: ${e}`);
         }
@@ -149,7 +134,6 @@ export class Server extends leanclient.Server {
 
     restart() {
         super.restart();
-        this.restarted.fire(null);
         stderrOutput.appendLine('----- user triggered restart -----');
     }
 

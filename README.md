@@ -54,6 +54,9 @@ This extension contributes the following settings:
 
 ## Release Notes
 
+### 0.13.0
+* Dropped support for Lean versions older than 3.1.0.
+
 ### 0.12.1
 * Automated elan installation
 

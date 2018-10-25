@@ -331,7 +331,6 @@
 		"hasbin": "^1.2.3",
 		"lean-client-js-node": "^1.2.12",
 		"load-json-file": "5.1.0",
-		"semver": "5.6.0",
 		"username": "^4.0.0"
 	},
 	"devDependencies": {

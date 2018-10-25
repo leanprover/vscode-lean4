@@ -35,7 +35,13 @@ export function activate(context: ExtensionContext) {
 
     const server = new Server();
     context.subscriptions.push(server);
-    server.connect();
+
+    const roiManager = new RoiManager(server, LEAN_MODE);
+    context.subscriptions.push(roiManager);
+
+    // The sync service starts automatically starts
+    // the server when it sees a *.lean file.
+    context.subscriptions.push(new LeanSyncService(server, LEAN_MODE));
 
     // Setup the commands.
     context.subscriptions.push(
@@ -93,21 +99,7 @@ export function activate(context: ExtensionContext) {
             new LeanWorkspaceSymbolProvider(server)));
 
     // Holes
-    if (server.atLeastLeanVersion('3.1.1')) {
-        context.subscriptions.push(new LeanHoles(server, LEAN_MODE));
-    }
-
-    if (server.supportsROI) {
-        server.roi('nothing', []);
-    } // activate ROI support
-
-    context.subscriptions.push(new LeanSyncService(server, LEAN_MODE));
-
-    let roiManager: RoiManager | undefined = null;
-    if (server.supportsROI) {
-        roiManager = new RoiManager(server, LEAN_MODE);
-        context.subscriptions.push(roiManager);
-    }
+    context.subscriptions.push(new LeanHoles(server, LEAN_MODE));
 
     // Add item to the status bar.
     context.subscriptions.push(new LeanStatusBarItem(server, roiManager));

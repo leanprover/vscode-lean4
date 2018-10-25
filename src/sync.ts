@@ -3,6 +3,9 @@ import { Server } from './server';
 
 export class LeanSyncService implements Disposable {
     private subscriptions: Disposable[] = [];
+    // The sync service starts automatically starts
+    // the server when it sees a *.lean file.
+    private didAutoStartServer = false;
 
     constructor(private server: Server, private documentFilter: DocumentFilter) {
         this.subscriptions.push(workspace.onDidChangeTextDocument(
@@ -25,6 +28,11 @@ export class LeanSyncService implements Disposable {
 
     private syncDoc(doc: TextDocument) {
         if (!languages.match(this.documentFilter, doc)) { return; }
+        if (!this.didAutoStartServer && !this.server.alive()) {
+            this.didAutoStartServer = true;
+            this.server.connect();
+            return;
+        }
         this.server.sync(doc.fileName, doc.getText());
     }
 
