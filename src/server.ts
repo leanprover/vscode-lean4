@@ -5,6 +5,7 @@ import { Event, Message, ProcessTransport, Task } from 'lean-client-js-node';
 import { homedir } from 'os';
 import { resolve } from 'path';
 import * as semver from 'semver';
+import * as username from 'username';
 import { OutputChannel, TerminalOptions, window, workspace } from 'vscode';
 import { LowPassFilter } from './util';
 
@@ -67,7 +68,7 @@ export class Server extends leanclient.Server {
                 if(existsSync(elanLean)) {
                     this.executablePath = elanLean;
                 } else if(process.platform === 'win32') {
-                  elanLean = resolve('C:', 'msys64', 'home', require('username').sync(),
+                  elanLean = resolve('C:', 'msys64', 'home', username.sync(),
                     '.elan', 'bin', 'lean');
                   if(existsSync(elanLean)) {
                     this.executablePath = elanLean;
