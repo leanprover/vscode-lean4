@@ -356,7 +356,7 @@ export class InfoProvider implements Disposable {
         if (!this.curFileName) {
             return header + '<body>No Lean file active</body>';
         }
-        const reFilters: string[] = workspace.getConfiguration('lean').get('infoViewTacticStateFilters', []);
+        const reFilters = workspace.getConfiguration('lean').get('infoViewTacticStateFilters', []);
         const filterIndex = workspace.getConfiguration('lean').get('infoViewFilterIndex', -1);
         return header +
             `<body
@@ -368,8 +368,10 @@ export class InfoProvider implements Disposable {
                 ${reFilters.length > 0 ? `<div id="filter">
                     <select id="filterSelect" onchange="selectFilter(this.value);">
                         <option value="-1" ${filterIndex === -1 ? 'selected' : ''}>no filter</option>
-                        ${reFilters.map((str, i) =>
-                            `<option value="${i}" ${filterIndex === i ? 'selected' : ''}>/${str}/</option>`)}
+                        ${reFilters.map((obj, i) =>
+                            `<option value="${i}" ${filterIndex === i ? 'selected' : ''}>
+                            ${obj.name ? obj.name :
+                                `${obj.match ? 'show ' : 'hide '}/${obj.regex}/${obj.flags}`}</option>`)}
                     </select>
                 </div>` : ''}
               <div id="run-state">
@@ -394,10 +396,17 @@ export class InfoProvider implements Disposable {
 
     private renderGoal() {
         if (!this.curGoalState || this.displayMode !== DisplayMode.OnlyState) { return ''; }
-        const reFilters: string[] = workspace.getConfiguration('lean').get('infoViewTacticStateFilters', []);
+        const reFilters = workspace.getConfiguration('lean').get('infoViewTacticStateFilters', []);
         const filterIndex = workspace.getConfiguration('lean').get('infoViewFilterIndex', -1);
-        const filteredGoalState = filterIndex === -1 ? this.curGoalState : this.curGoalState.split(',\n')
-            .filter((line) => line.match(new RegExp(reFilters[filterIndex]))).join(',\n');
+        const filteredGoalState = reFilters.length === 0 || filterIndex === -1 ? this.curGoalState :
+            // this regex splits the goal state into (possibly multi-line) hypothesis and goal blocks
+            // by keeping indented lines with the most recent non-indented line
+            this.curGoalState.match(/(^(?!  ).*\n?(  .*\n?)*)/mg).map((line) => line.trim())
+                .filter((line) => {
+                    const filt = reFilters[filterIndex];
+                    const test = line.match(new RegExp(filt.regex, filt.flags)) !== null;
+                    return filt.match ? test : !test;
+                }).join('\n');
         return `<div id="goal"><h1>Tactic State</h1><pre>${
             this.colorizeMessage(filteredGoalState)}</pre></div>`;
     }
