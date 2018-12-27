@@ -138,6 +138,15 @@ export class InfoProvider implements Disposable {
                 });
             this.webviewPanel.webview.html = this.render();
             this.webviewPanel.onDidDispose(() => this.webviewPanel = null);
+            this.webviewPanel.webview.onDidReceiveMessage((message) => {
+                switch (message.command) {
+                    case 'selectFilter':
+                        workspace.getConfiguration('lean').update('infoViewFilterIndex',
+                            message.filterId, true);
+                        // the workspace configuration change already forces a rerender
+                        return;
+                }
+            }, undefined, this.subscriptions);
         }
     }
 
@@ -334,20 +343,35 @@ export class InfoProvider implements Disposable {
         const header = `<!DOCTYPE html>
             <html>
             <head>
-              <meta http-equiv="Content-type" content="text/html;charset=utf-8">
-              <style>${escapeHtml(this.stylesheet)}</style>
-              <script charset="utf-8" src="${this.getMediaPath('infoview-ctrl.js')}"></script>
+                <meta http-equiv="Content-type" content="text/html;charset=utf-8">
+                <style>${escapeHtml(this.stylesheet)}</style>
+                <script charset="utf-8" src="${this.getMediaPath('infoview-ctrl.js')}"></script>
+                <script>
+                    const vscode = acquireVsCodeApi();
+                    function selectFilter(value) {
+                        vscode.postMessage({command: 'selectFilter', filterId: parseInt(value)});
+                    }
+                </script>
             </head>`;
         if (!this.curFileName) {
             return header + '<body>No Lean file active</body>';
         }
+        const reFilters: string[] = workspace.getConfiguration('lean').get('infoViewTacticStateFilters', []);
+        const filterIndex = workspace.getConfiguration('lean').get('infoViewFilterIndex', -1);
         return header +
             `<body
                 data-uri="${encodeURI(Uri.file(this.curFileName).toString())}"
                 data-line="${(this.curPosition.line + 1).toString()}"
                 data-column="${this.curPosition.character.toString()}"
                 ${this.displayMode === DisplayMode.AllMessage ? "data-messages=''" : ''}>
-              <div id="debug"></div>
+                <div id="debug"></div>
+                ${reFilters.length > 0 ? `<div id="filter">
+                    <select id="filterSelect" onchange="selectFilter(this.value);">
+                        <option value="-1" ${filterIndex === -1 ? 'selected' : ''}>no filter</option>
+                        ${reFilters.map((str, i) =>
+                            `<option value="${i}" ${filterIndex === i ? 'selected' : ''}>/${str}/</option>`)}
+                    </select>
+                </div>` : ''}
               <div id="run-state">
                 <span id="state-continue">Stopped <a href="command:_lean.infoView.continue?{}">
                   <img title="Continue Updating" src="${this.getMediaPath('continue.svg')}"></a></span>
@@ -370,8 +394,12 @@ export class InfoProvider implements Disposable {
 
     private renderGoal() {
         if (!this.curGoalState || this.displayMode !== DisplayMode.OnlyState) { return ''; }
+        const reFilters: string[] = workspace.getConfiguration('lean').get('infoViewTacticStateFilters', []);
+        const filterIndex = workspace.getConfiguration('lean').get('infoViewFilterIndex', -1);
+        const filteredGoalState = filterIndex === -1 ? this.curGoalState : this.curGoalState.split(',\n')
+            .filter((line) => line.match(new RegExp(reFilters[filterIndex]))).join(',\n');
         return `<div id="goal"><h1>Tactic State</h1><pre>${
-            this.colorizeMessage(this.curGoalState)}</pre></div>`;
+            this.colorizeMessage(filteredGoalState)}</pre></div>`;
     }
 
     private renderMessages() {
