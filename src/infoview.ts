@@ -344,7 +344,7 @@ export class InfoProvider implements Disposable {
             <html>
             <head>
                 <meta http-equiv="Content-type" content="text/html;charset=utf-8">
-                <style>${escapeHtml(this.stylesheet)}</style>
+                <style>${this.stylesheet}</style>
                 <script charset="utf-8" src="${this.getMediaPath('infoview-ctrl.js')}"></script>
                 <script>
                     const vscode = acquireVsCodeApi();
