@@ -1,5 +1,3 @@
-// @ts-check
-
 'use strict';
 
 (function () {
@@ -19,7 +17,7 @@ function debug(s) {
 function setMarker(parent, atTop, t) {
   const old_m = document.getElementById(ID_MARKER);
   if (old_m) old_m.remove();
-  
+
   const m = document.createElement("span");
   m.setAttribute("id", ID_MARKER);
   m.innerText = t;
@@ -68,7 +66,7 @@ function getPosition(elem) {
   return {
     line: Number.parseInt(elem.getAttribute("data-line")),
     column: Number.parseInt(elem.getAttribute("data-column"))
-  }
+  };
 }
 
 function isEqual(p1, p2) {
@@ -76,7 +74,7 @@ function isEqual(p1, p2) {
 }
 
 function isBefore(p1, p2) {
-  return p1.line < p2.line || (p1.line == p2.line && p1.column < p2.column); 
+  return p1.line < p2.line || (p1.line == p2.line && p1.column < p2.column);
 }
 
 function onPosition(rpos) {
@@ -148,17 +146,16 @@ function setupHover() {
     m.addEventListener("mouseenter", event => {
       const data = [document.body.getAttribute('data-uri'),
         Number.parseInt(m.getAttribute('data-line')),
-        Number.parseInt(m.getAttribute('data-column'))];
-			window.parent.postMessage({
-				command: "did-click-link",
-				data: `command:_lean.hoverPosition?${encodeURIComponent(JSON.stringify(data))}`
-			}, "file://");
+        Number.parseInt(m.getAttribute('data-column')),
+        Number.parseInt(m.getAttribute('data-end-line')),
+        Number.parseInt(m.getAttribute('data-end-column'))];
+          vscode.postMessage({
+            command: "hoverPosition",
+            data: data
+          });
     });
     m.addEventListener("mouseleave", event => {
-			window.parent.postMessage({
-				command: "did-click-link",
-				data: `command:_lean.stopHover`
-			}, "file://");
+      vscode.postMessage({ command: "stopHover" });
     });
   }
 }
@@ -172,10 +169,16 @@ function onLoad() {
   /* document.getElementById(ID_DEBUG).style.visibility = "visible"; */
 }
 
+function selectFilter(value) {
+  vscode.postMessage({command: 'selectFilter', filterId: parseInt(value)});
+}
+
 if (document.readyState === 'loading') {
 	document.addEventListener('DOMContentLoaded', onLoad);
 } else {
 	onLoad();
 }
 
-})()
+const vscode = acquireVsCodeApi();
+
+})();

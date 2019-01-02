@@ -1,4 +1,4 @@
-# Lean for VSCode
+# Lean for VS Code
 
 This extension adds support for [Lean](https://github.com/leanprover/lean).
 
@@ -6,27 +6,28 @@ This extension adds support for [Lean](https://github.com/leanprover/lean).
 
 We currently support a variety of features.
 
+* Automatic installation of Lean via [elan](https://github.com/Kha/elan)
 * Incremental compilation and checking via the Lean server
-* Hover shows documentation, types, and Unicode input help.
+* Hover shows documentation, types, and Unicode input help
 * Auto-completion based on context and type via the Lean server
 * Error messages / diagnostics
-* Unicode input support
-* Info view window to show goal and error messages ("Lean: Open Info View")
+* Customizable Unicode input support (e.g. type `\la`+<kbd>tab</kbd> to input `λ`)
+* Info view window to show goal, tactic state, and error messages (ctrl+shift+enter for local goal view or ctrl+shift+alt+enter for all messages)
 * Batch file execution
-* Search for declarations in open files (ctrl+p #)
-* Region of interest checking (i.e. control over how much of the project we check)
-* Fill in `{! !}` holes using ctrl+.
-* Tasks for leanpkg (ctrl+p task configure)
+* Search for declarations in open files (<kbd>ctrl</kbd>+<kbd>p</kbd> #)
+* Region of interest checking (i.e. control how much of the project is checked automatically by Lean)
+* Fill in `{! !}` holes using <kbd>ctrl</kbd>+<kbd>.</kbd>
+* Tasks for leanpkg (<kbd>ctrl</kbd>+<kbd>p</kbd> task configure)
 
 ## Requirements
 
-This extension requires an installation of [Lean](https://leanprover.github.io).
+This extension requires an installation of [Lean](https://leanprover.github.io). As of version 0.12.1, the extension can install Lean for you using [elan](https://github.com/Kha/elan).
 
-On Windows, you need to add both `C:\msys64\mingw64\bin` (or wherever you installed msys2) and `C:\projects\lean\bin` (or wherever you installed Lean) to the system PATH environment variable.  To do this, press windows-key + Pause > go to Advanced System Settings > go to Environment variables. Under system variables (not user variables) find the `Path` variable, and add these two folders.
+On Windows, if you installed Lean using MSYS2, you need to add both `C:\msys64\mingw64\bin` (or wherever you installed MSYS2) and `C:\projects\lean\bin` (or wherever you installed Lean) to the system `PATH` environment variable. To do this, press <kbd>Win</kbd>+<kbd>Pause</kbd> > go to Advanced System Settings > go to Environment variables. Under system variables (not user variables) find the `Path` variable, and add these two folders.
 
 ## Extension Settings
 
-This extension contributes the following settings:
+This extension contributes the following settings (for a complete list, open the VS Code Settings and scroll to "Lean configuration"):
 
 * `lean.executablePath`: controls which Lean executable is used when starting the server
 * `lean.timeLimit`: controls the `-T` flag passed to the Lean executable
@@ -36,12 +37,24 @@ This extension contributes the following settings:
   - `visible`: check only visible files
   - `open`: check all open files
   - `project`: check the entire project's files
+* `lean.input.leader`: character to type to trigger Unicode input mode (`\` by default)
+* `lean.input.languages`: allows the Unicode input functionality to be used in other languages
+
+It also contributes the following commands, which can be bound to keys if desired:
+
+* `lean.input.convert`: converts the current Unicode abbreviation (bound to <kbd>tab</kbd> by default)
+* `lean.infoView.displayGoal`: show the tactic state and any messages (e.g. info, warning, error) at the current position in the info view window (bound to <kbd>ctrl</kbd>+<kbd>shift</kbd>+<kbd>enter</kbd> by default)
+* `lean.infoView.displayList`: show all messages for the current file from Lean in the info view window (bound to <kbd>ctrl</kbd>+<kbd>shift</kbd>+<kbd>alt</kbd>+<kbd>enter</kbd> by default)
+* `lean.infoView.copyToComment`: copy the current contents of the info view into a new comment on the next line
+* `lean.infoView.toggleUpdating`: pause / continue live updates of the info view
+* `lean.roiMode.select`: select the region of interest (files to be checked by the Lean server)
+* `lean.batchExecute`: execute the current file using Lean (bound to <kbd>ctrl</kbd>+<kbd>shift</kbd>+<kbd>r</kbd> by default)
 
 ### Other potentially helpful settings
 
-* Fonts with good unicode support (on Linux): `"editor.fontFamily": "Source Code Pro Medium, DejaVu Sans Mono"`
-* By default, vscode will complete `then` to `has_bind.and_then` when you press enter.  To disable this behavior, set `"editor.acceptSuggestionOnEnter": false`
-* If you like colored brackets, try out [Bracket Pair Colorizer](https://marketplace.visualstudio.com/items?itemName=CoenraadS.bracket-pair-colorizer).
+* Fonts with good Unicode support: `"editor.fontFamily": "Source Code Pro Medium, DejaVu Sans Mono"`. Note that for this configuration to work properly, both fonts must be specified in this order (so that characters that are not available in [Source Code Pro](https://github.com/adobe-fonts/source-code-pro) are rendered using [DejaVu Sans Mono](https://dejavu-fonts.github.io/).
+* By default, VS Code will complete `then` to `has_bind.and_then` when you press enter.  To disable this behavior, set `"editor.acceptSuggestionOnEnter": false`
+* If you like colored brackets, try out [Bracket Pair Colorizer 2](https://marketplace.visualstudio.com/items?itemName=CoenraadS.bracket-pair-colorizer-2).
 
 ## Development
 
@@ -50,7 +63,7 @@ This extension contributes the following settings:
 * Run `git clone https://github.com/leanprover/vscode-lean`
 * Run `npm install` in the `vscode-lean` directory
 * Install the [TSLint extension for vscode](https://marketplace.visualstudio.com/items?itemName=eg2.tslint)
-* Open the `vscode-lean` in vscode and start developing (F5 starts the debugger)
+* Open the `vscode-lean` directory in VS Code and start developing (<kbd>F5</kbd> starts the debugger)
 
 ## Release Notes
 

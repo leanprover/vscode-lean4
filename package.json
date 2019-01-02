@@ -10,7 +10,10 @@
 	"categories": [
 		"Programming Languages"
 	],
-	"repository": "https://github.com/leanprover/vscode-lean",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/leanprover/vscode-lean.git"
+	},
 	"contributes": {
 		"configuration": {
 			"type": "object",
@@ -42,7 +45,7 @@
 					"description": "Extra command-line options for the Lean server.",
 					"items": {
 						"type": "string",
-						"description": "Single command-line argument."
+						"description": "a single command-line argument"
 					}
 				},
 				"lean.progressMessages": {
@@ -58,32 +61,32 @@
 				"lean.input.enabled": {
 					"type": "boolean",
 					"default": true,
-					"description": "Enable Lean input mode"
+					"description": "Enable Lean input mode."
 				},
 				"lean.input.customTranslations": {
 					"type": "object",
 					"items": {
 						"type": "string",
-						"description": "Unicode character to translate to."
+						"description": "Unicode character to translate to"
 					},
 					"default": {},
-					"description": "Add additional input unicode translations. Example: `{\"foo\": \"☺\"}` will correct `\\foo` to `☺`."
+					"description": "Add additional input Unicode translations. Example: `{\"foo\": \"☺\"}` will correct `\\foo` to `☺`."
 				},
 				"lean.input.languages": {
 					"type": "array",
 					"default": [
 						"lean"
 					],
-					"description": "Enable Lean unicode input in other file types.",
+					"description": "Enable Lean Unicode input in other file types.",
 					"items": {
 						"type": "string",
-						"description": "the name of a language. Eg: 'lean', 'markdown' "
+						"description": "the name of a language, e.g. 'lean', 'markdown'"
 					}
 				},
 				"lean.input.leader": {
 					"type": "string",
 					"default": "\\",
-					"description": "Leader key to trigger input mode"
+					"description": "Leader key to trigger input mode."
 				},
 				"lean.infoViewAllErrorsOnLine": {
 					"type": "boolean",
@@ -151,19 +154,19 @@
 				"command": "lean.restartServer",
 				"category": "Lean",
 				"title": "Restart",
-				"description": "Restart the Language Server"
+				"description": "Restart the Language Server."
 			},
 			{
 				"command": "lean.input.convert",
 				"category": "Lean",
-				"title": "Input: convert current abbreviation",
-				"description": "converts the current abbreviation (e.g. \\lam)"
+				"title": "Input: Convert Current Abbreviation",
+				"description": "Converts the current abbreviation (e.g. \\lam)."
 			},
 			{
 				"command": "lean.displayGoal",
 				"category": "Lean",
 				"title": "Info View: Display Goal",
-				"description": "Display the goal at the current position.",
+				"description": "Display the goal and any messages at the current position in the info view.",
 				"icon": {
 					"dark": "./media/display-goal-dark.svg",
 					"light": "./media/display-goal-light.svg"
@@ -173,7 +176,7 @@
 				"command": "lean.displayList",
 				"category": "Lean",
 				"title": "Info View: Display Messages",
-				"description": "Displays the goal state or messages in a separate window",
+				"description": "Displays all messages for the current file in the info view.",
 				"icon": {
 					"dark": "./media/display-list-dark.svg",
 					"light": "./media/display-list-light.svg"
@@ -183,7 +186,7 @@
 				"command": "lean.infoView.displayGoal",
 				"category": "Lean",
 				"title": "Info View: Display Goal",
-				"description": "Display the goal at the current position",
+				"description": "Display the goal and any messages at the current position in the info view.",
 				"icon": {
 					"dark": "./media/display-goal-dark.svg",
 					"light": "./media/display-goal-light.svg"
@@ -193,7 +196,7 @@
 				"command": "lean.infoView.displayList",
 				"category": "Lean",
 				"title": "Info View: Display Messages",
-				"description": "Displays the goal state or messages in a separate window",
+				"description": "Displays all messages for the current file in the info view.",
 				"icon": {
 					"dark": "./media/display-list-dark.svg",
 					"light": "./media/display-list-light.svg"
@@ -202,56 +205,56 @@
 			{
 				"command": "lean.infoView.copyToComment",
 				"category": "Lean",
-				"title": "Info View: copy contents to comment",
-				"description": "Copy the current contents of the info view into a new comment on the next line"
+				"title": "Info View: Copy Contents to Comment",
+				"description": "Copy the current contents of the info view into a new comment on the next line."
 			},
 			{
 				"command": "lean.infoView.toggleUpdating",
 				"category": "Lean",
-				"title": "Info View: toggle updating",
-				"description": "Pause / Continue the live updating in the info view"
+				"title": "Info View: Toggle Updating",
+				"description": "Pause / Continue live updating of the info view."
 			},
 			{
 				"command": "lean.roiMode.select",
 				"category": "Lean",
-				"title": "Select region-of-interest",
-				"description": "Select what files are being checked by the Lean server."
+				"title": "Select Region-of-interest",
+				"description": "Select files to be checked by the Lean server."
 			},
 			{
 				"command": "lean.roiMode.nothing",
 				"category": "Lean",
 				"title": "Check Nothing",
-				"description": "Disable automatic checking of Lean code"
+				"description": "Disable automatic checking of Lean code."
 			},
 			{
 				"command": "lean.roiMode.cursor",
 				"category": "Lean",
 				"title": "Check Cursor + 5 Lines",
-				"description": "Automatically check until 5 lines below the cursor"
+				"description": "Automatically check until 5 lines below the cursor."
 			},
 			{
 				"command": "lean.roiMode.visibleFiles",
 				"category": "Lean",
 				"title": "Check Visible Files",
-				"description": "Automatically check all files that are visible"
+				"description": "Automatically check all files that are visible."
 			},
 			{
 				"command": "lean.roiMode.openFiles",
 				"category": "Lean",
 				"title": "Check Open Files",
-				"description": "Automatically check all opened files"
+				"description": "Automatically check all opened files."
 			},
 			{
 				"command": "lean.roiMode.projectFiles",
 				"category": "Lean",
 				"title": "Check Project Files",
-				"description": "Automatically check all files in the workspace"
+				"description": "Automatically check all files in the workspace."
 			},
 			{
 				"command": "lean.batchExecute",
 				"category": "Lean",
 				"title": "Batch Execute File",
-				"description": "Execute the current file using Lean"
+				"description": "Execute the current file using Lean."
 			}
 		],
 		"languages": [
@@ -328,6 +331,10 @@
 				},
 				{
 					"command": "lean.infoView.displayList",
+					"when": "resourceSchema == lean-info"
+				},
+				{
+					"command": "lean.infoView.toggleUpdating",
 					"when": "resourceSchema == lean-info"
 				}
 			],
