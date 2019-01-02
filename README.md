@@ -52,7 +52,7 @@ It also contributes the following commands, which can be bound to keys if desire
 
 ### Other potentially helpful settings
 
-* Fonts with good Unicode support: `"editor.fontFamily":` [`"Source Code Pro Medium`](https://github.com/adobe-fonts/source-code-pro), [`DejaVu Sans Mono"`](https://dejavu-fonts.github.io/)
+* Fonts with good Unicode support: `"editor.fontFamily": "Source Code Pro Medium, DejaVu Sans Mono"`. Note that for this configuration to work properly, both fonts must be specified in this order (so that characters that are not available in [Source Code Pro](https://github.com/adobe-fonts/source-code-pro) are rendered using [DejaVu Sans Mono](https://dejavu-fonts.github.io/).
 * By default, VS Code will complete `then` to `has_bind.and_then` when you press enter.  To disable this behavior, set `"editor.acceptSuggestionOnEnter": false`
 * If you like colored brackets, try out [Bracket Pair Colorizer 2](https://marketplace.visualstudio.com/items?itemName=CoenraadS.bracket-pair-colorizer-2).
 
