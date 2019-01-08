@@ -350,14 +350,12 @@ export class InfoProvider implements Disposable {
             <html>
             <head>
                 <meta http-equiv="Content-type" content="text/html;charset=utf-8">
-                <style>${escapeHtml(this.stylesheet)}</style>
+                <style>${this.stylesheet}</style>
                 <script charset="utf-8" src="${this.getMediaPath('infoview-ctrl.js')}"></script>
             </head>`;
         if (!this.curFileName) {
             return header + '<body>No Lean file active</body>';
         }
-        const reFilters = workspace.getConfiguration('lean').get('infoViewTacticStateFilters', []);
-        const filterIndex = workspace.getConfiguration('lean').get('infoViewFilterIndex', -1);
         return header +
             `<body
                 data-uri="${encodeURI(Uri.file(this.curFileName).toString())}"
@@ -365,15 +363,7 @@ export class InfoProvider implements Disposable {
                 data-column="${this.curPosition.character.toString()}"
                 ${this.displayMode === DisplayMode.AllMessage ? "data-messages=''" : ''}>
                 <div id="debug"></div>
-                ${reFilters.length > 0 ? `<div id="filter">
-                    <select id="filterSelect" onchange="selectFilter(this.value);">
-                        <option value="-1" ${filterIndex === -1 ? 'selected' : ''}>no filter</option>
-                        ${reFilters.map((obj, i) =>
-                            `<option value="${i}" ${filterIndex === i ? 'selected' : ''}>
-                            ${obj.name ? obj.name :
-                                `${obj.match ? 'show ' : 'hide '}/${obj.regex}/${obj.flags}`}</option>`)}
-                    </select>
-                </div>` : ''}
+                ${this.curGoalState ? this.renderFilter() : ''}
                 <div id="run-state">
                     <span id="state-continue">Stopped <a href="command:_lean.infoView.continue?{}">
                         <img title="Continue Updating" src="${this.getMediaPath('continue.svg')}"></a></span>
@@ -383,6 +373,21 @@ export class InfoProvider implements Disposable {
                 ${this.renderGoal()}
                 <div id="messages">${this.renderMessages()}</div>
             </body></html>`;
+    }
+
+    private renderFilter() {
+        const reFilters = workspace.getConfiguration('lean').get('infoViewTacticStateFilters', []);
+        const filterIndex = workspace.getConfiguration('lean').get('infoViewFilterIndex', -1);
+        return reFilters.length > 0 ?
+            `<div id="filter">
+            <select id="filterSelect" onchange="infoViewModule.selectFilter(this.value);">
+                <option value="-1" ${filterIndex === -1 ? 'selected' : ''}>no filter</option>
+                ${reFilters.map((obj, i) =>
+                    `<option value="${i}" ${filterIndex === i ? 'selected' : ''}>
+                    ${obj.name ||
+                        `${obj.match ? 'show ' : 'hide '}/${obj.regex}/${obj.flags}`}</option>`)}
+            </select>
+        </div>` : '';
     }
 
     private colorizeMessage(goal: string): string {

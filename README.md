@@ -18,6 +18,7 @@ We currently support a variety of features.
 * Region of interest checking (i.e. control how much of the project is checked automatically by Lean)
 * Fill in `{! !}` holes using <kbd>ctrl</kbd>+<kbd>.</kbd>
 * Tasks for leanpkg (<kbd>ctrl</kbd>+<kbd>p</kbd> task configure)
+* Tactic state filtering with regex
 
 ## Requirements
 
@@ -39,6 +40,12 @@ This extension contributes the following settings (for a complete list, open the
   - `project`: check the entire project's files
 * `lean.input.leader`: character to type to trigger Unicode input mode (`\` by default)
 * `lean.input.languages`: allows the Unicode input functionality to be used in other languages
+* `lean.infoViewTacticStateFilters`: An array of objects containing regular expression strings that can be used to filter (positively or negatively) the tactic state in the info view. Set to an empty array `[]` to hide the filter select dropdown. Each object must contain the following keys:
+  - `regex` is a properly-escaped regex string,
+  - `match` is a boolean, where `true` (`false`) means blocks in the tactic state matching `regex` will be included (excluded) in the info view,
+  - `flags` are additional flags passed to the [JavaScript RegExp constructor](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp).
+  - The `name` key is optional and may contain a string that is displayed in the dropdown instead of the full regex details.
+* `lean.infoViewFilterIndex`: index of the filter applied to the tactic state (in the array `lean.infoViewTacticStateFilters`). An index of -1 means no filter is applied.
 
 It also contributes the following commands, which can be bound to keys if desired:
 

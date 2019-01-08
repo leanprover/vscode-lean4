@@ -1,6 +1,6 @@
 'use strict';
 
-(function () {
+const infoViewModule = (function () {
 const CLASS_MESSAGE = 'message';
 const ID_GOAL = 'goal';
 const ID_MESSAGES = 'messages';
@@ -181,4 +181,5 @@ if (document.readyState === 'loading') {
 
 const vscode = acquireVsCodeApi();
 
+return ({selectFilter});
 })();
