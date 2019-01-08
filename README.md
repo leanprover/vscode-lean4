@@ -74,6 +74,9 @@ It also contributes the following commands, which can be bound to keys if desire
 
 ## Release Notes
 
+### 0.13.1
+* Dropdown to filter tactic states
+
 ### 0.13.0
 * Dropped support for Lean versions older than 3.1.0.
 
