@@ -26,9 +26,9 @@
     },
     { "match": "\\b(sorry)\\b", "name": "invalid.illegal.lean" },
     { "match": "#print\\s+(def|definition|inductive|instance|structure|axiom|axioms|class)\\b", "name": "keyword.other.command.lean" },
-    { "match": "#(print|eval|reduce|check|help|exit)\\b", "name": "keyword.other.command.lean" },
+    { "match": "#(print|eval|reduce|check|help|exit|find|where)\\b", "name": "keyword.other.command.lean" },
     {
-      "match": "\\b(?<!\\.)(import|prelude|theory|definition|def|abbreviation|instance|renaming|hiding|exposing|parameter|parameters|begin|constant|constants|lemma|variable|variables|theorem|example|open|axiom|inductive|coinductive|with|structure|universe|universes|alias|precedence|reserve|postfix|prefix|infix|infixl|infixr|notation|end|using|namespace|section|local|set_option|extends|include|omit|class|classes|instances|raw|run_cmd)(?!\\.)\\b",
+      "match": "\\b(?<!\\.)(import|prelude|theory|definition|def|abbreviation|instance|renaming|hiding|exposing|parameter|parameters|begin|constant|constants|lemma|variable|variables|theorem|example|open|axiom|inductive|coinductive|with|structure|universe|universes|alias|precedence|reserve|postfix|prefix|infix|infixl|infixr|notation|end|using|namespace|section|local|set_option|extends|include|omit|class|classes|instances|raw|run_cmd|restate_axiom)(?!\\.)\\b",
       "name": "keyword.other.lean"
     },
     {
