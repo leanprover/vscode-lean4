@@ -99,6 +99,11 @@ export class InfoProvider implements Disposable {
                 }
             }),
         );
+
+        if (workspace.getConfiguration('lean').get('infoViewAutoOpen')) {
+            this.openPreview(window.activeTextEditor);
+            this.updatePosition(false);
+        }
     }
 
     dispose() {
