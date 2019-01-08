@@ -1,6 +1,6 @@
 'use strict';
 
-(function () {
+const infoViewModule = (function () {
 const CLASS_MESSAGE = 'message';
 const ID_GOAL = 'goal';
 const ID_MESSAGES = 'messages';
@@ -169,6 +169,10 @@ function onLoad() {
   /* document.getElementById(ID_DEBUG).style.visibility = "visible"; */
 }
 
+function selectFilter(value) {
+  vscode.postMessage({command: 'selectFilter', filterId: parseInt(value)});
+}
+
 if (document.readyState === 'loading') {
 	document.addEventListener('DOMContentLoaded', onLoad);
 } else {
@@ -177,4 +181,5 @@ if (document.readyState === 'loading') {
 
 const vscode = acquireVsCodeApi();
 
+return ({selectFilter});
 })();

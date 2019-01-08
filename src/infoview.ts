@@ -138,6 +138,11 @@ export class InfoProvider implements Disposable {
             this.webviewPanel.onDidDispose(() => this.webviewPanel = null);
             this.webviewPanel.webview.onDidReceiveMessage((message) => {
                 switch (message.command) {
+                    case 'selectFilter':
+                        workspace.getConfiguration('lean').update('infoViewFilterIndex',
+                            message.filterId, true);
+                        // the workspace configuration change already forces a rerender
+                        return;
                     case 'hoverPosition':
                         this.hoverEditorPosition(message.data[0], message.data[1], message.data[2],
                             message.data[3], message.data[4]);
@@ -345,7 +350,7 @@ export class InfoProvider implements Disposable {
             <html>
             <head>
                 <meta http-equiv="Content-type" content="text/html;charset=utf-8">
-                <style>${escapeHtml(this.stylesheet)}</style>
+                <style>${this.stylesheet}</style>
                 <script charset="utf-8" src="${this.getMediaPath('infoview-ctrl.js')}"></script>
             </head>`;
         if (!this.curFileName) {
@@ -358,6 +363,7 @@ export class InfoProvider implements Disposable {
                 data-column="${this.curPosition.character.toString()}"
                 ${this.displayMode === DisplayMode.AllMessage ? "data-messages=''" : ''}>
                 <div id="debug"></div>
+                ${this.curGoalState ? this.renderFilter() : ''}
                 <div id="run-state">
                     <span id="state-continue">Stopped <a href="command:_lean.infoView.continue?{}">
                         <img title="Continue Updating" src="${this.getMediaPath('continue.svg')}"></a></span>
@@ -367,6 +373,21 @@ export class InfoProvider implements Disposable {
                 ${this.renderGoal()}
                 <div id="messages">${this.renderMessages()}</div>
             </body></html>`;
+    }
+
+    private renderFilter() {
+        const reFilters = workspace.getConfiguration('lean').get('infoViewTacticStateFilters', []);
+        const filterIndex = workspace.getConfiguration('lean').get('infoViewFilterIndex', -1);
+        return reFilters.length > 0 ?
+            `<div id="filter">
+            <select id="filterSelect" onchange="infoViewModule.selectFilter(this.value);">
+                <option value="-1" ${filterIndex === -1 ? 'selected' : ''}>no filter</option>
+                ${reFilters.map((obj, i) =>
+                    `<option value="${i}" ${filterIndex === i ? 'selected' : ''}>
+                    ${obj.name ||
+                        `${obj.match ? 'show ' : 'hide '}/${obj.regex}/${obj.flags}`}</option>`)}
+            </select>
+        </div>` : '';
     }
 
     private colorizeMessage(goal: string): string {
@@ -380,8 +401,19 @@ export class InfoProvider implements Disposable {
 
     private renderGoal() {
         if (!this.curGoalState || this.displayMode !== DisplayMode.OnlyState) { return ''; }
+        const reFilters = workspace.getConfiguration('lean').get('infoViewTacticStateFilters', []);
+        const filterIndex = workspace.getConfiguration('lean').get('infoViewFilterIndex', -1);
+        const filteredGoalState = reFilters.length === 0 || filterIndex === -1 ? this.curGoalState :
+            // this regex splits the goal state into (possibly multi-line) hypothesis and goal blocks
+            // by keeping indented lines with the most recent non-indented line
+            this.curGoalState.match(/(^(?!  ).*\n?(  .*\n?)*)/mg).map((line) => line.trim())
+                .filter((line) => {
+                    const filt = reFilters[filterIndex];
+                    const test = line.match(new RegExp(filt.regex, filt.flags)) !== null;
+                    return filt.match ? test : !test;
+                }).join('\n');
         return `<div id="goal"><h1>Tactic State</h1><pre>${
-            this.colorizeMessage(this.curGoalState)}</pre></div>`;
+            this.colorizeMessage(filteredGoalState)}</pre></div>`;
     }
 
     private renderMessages() {
