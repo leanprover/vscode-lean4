@@ -194,8 +194,4 @@ export class Server extends leanclient.Server {
             this.installElan();
         }
     }
-
-    dispose() {
-        super.dispose();
-    }
 }
