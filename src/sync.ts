@@ -31,7 +31,6 @@ export class LeanSyncService implements Disposable {
         if (!this.didAutoStartServer && !this.server.alive()) {
             this.didAutoStartServer = true;
             this.server.connect();
-            return;
         }
         this.server.sync(doc.fileName, doc.getText());
     }
