@@ -103,6 +103,9 @@ export class InfoProvider implements Disposable {
                 }
             }),
         );
+        if (this.server.alive()) {
+            this.autoOpen();
+        }
     }
 
     dispose() {
