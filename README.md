@@ -75,6 +75,9 @@ It also contributes the following commands, which can be bound to keys if desire
 
 ## Release Notes
 
+### 0.13.3
+* Info view opens automatically
+
 ### 0.13.1
 * Dropdown to filter tactic states
 
