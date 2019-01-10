@@ -67,6 +67,7 @@ export class InfoProvider implements Disposable {
             this.server.restarted.on(() => {
                 this.autoOpen();
             }),
+            window.onDidChangeActiveTextEditor(() => this.updatePosition(false)),
             window.onDidChangeTextEditorSelection(() => this.updatePosition(false)),
             workspace.onDidChangeConfiguration((e) => {
                 this.updateStylesheet();
