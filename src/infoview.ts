@@ -37,6 +37,7 @@ export class InfoProvider implements Disposable {
 
     private displayMode: DisplayMode = DisplayMode.AllMessage;
 
+    private started: boolean = false;
     private stopped: boolean = false;
     private curFileName: string = null;
     private curPosition: Position = null;
@@ -63,14 +64,16 @@ export class InfoProvider implements Disposable {
                     if (changed) { this.rerender(); }
                 }
             }),
+            this.server.restarted.on(() => {
+                this.autoOpen();
+            }),
+            window.onDidChangeActiveTextEditor(() => this.updatePosition(false)),
             window.onDidChangeTextEditorSelection(() => this.updatePosition(false)),
             workspace.onDidChangeConfiguration((e) => {
                 this.updateStylesheet();
                 this.rerender();
             }),
             commands.registerCommand('_lean.revealPosition', this.revealEditorPosition),
-            commands.registerCommand('_lean.hoverPosition', (u, l, c) => { this.hoverEditorPosition(u, l, c); }),
-            commands.registerCommand('_lean.stopHover', () => { this.stopHover(); }),
             commands.registerCommand('_lean.infoView.pause', () => {
                 this.stopUpdating();
             }),
@@ -101,6 +104,9 @@ export class InfoProvider implements Disposable {
                 }
             }),
         );
+        if (this.server.alive()) {
+            this.autoOpen();
+        }
     }
 
     dispose() {
@@ -122,6 +128,14 @@ export class InfoProvider implements Disposable {
             workspace.getConfiguration('lean').get('infoViewStyle');
     }
 
+    private autoOpen() {
+        if (!this.started && workspace.getConfiguration('lean').get('infoViewAutoOpen')) {
+            this.started = true;
+            this.openPreview(window.activeTextEditor);
+            this.updatePosition(false);
+        }
+    }
+
     private openPreview(editor: TextEditor) {
         let column = editor.viewColumn + 1;
         if (column === 4) { column = ViewColumn.Three; }
@@ -138,6 +152,22 @@ export class InfoProvider implements Disposable {
                 });
             this.webviewPanel.webview.html = this.render();
             this.webviewPanel.onDidDispose(() => this.webviewPanel = null);
+            this.webviewPanel.webview.onDidReceiveMessage((message) => {
+                switch (message.command) {
+                    case 'selectFilter':
+                        workspace.getConfiguration('lean').update('infoViewFilterIndex',
+                            message.filterId, true);
+                        // the workspace configuration change already forces a rerender
+                        return;
+                    case 'hoverPosition':
+                        this.hoverEditorPosition(message.data[0], message.data[1], message.data[2],
+                            message.data[3], message.data[4]);
+                        return;
+                    case 'stopHover':
+                        this.stopHover();
+                        return;
+                }
+            }, undefined, this.subscriptions);
         }
     }
 
@@ -179,18 +209,19 @@ export class InfoProvider implements Disposable {
         for (const editor of window.visibleTextEditors) {
             if (editor.document.uri.toString() === uri.toString()) {
                 const pos = new Position(line - 1, column);
-                window.showTextDocument(editor.document);
                 editor.revealRange(new Range(pos, pos), TextEditorRevealType.InCenterIfOutsideViewport);
                 editor.selection = new Selection(pos, pos);
             }
         }
     }
 
-    private hoverEditorPosition(uri: string, line: number, column: number) {
+    private hoverEditorPosition(uri: string, line: number, column: number,
+                                endLine: number, endColumn: number) {
         for (const editor of window.visibleTextEditors) {
             if (editor.document.uri.toString() === uri) {
                 const pos = new Position(line - 1, column);
-                const range = new Range(pos, pos.translate(0, 1));
+                const endPos = new Position(endLine - 1, endColumn);
+                const range = new Range(pos, endPos);
                 editor.setDecorations(this.hoverDecorationType, [range]);
             }
         }
@@ -334,9 +365,9 @@ export class InfoProvider implements Disposable {
         const header = `<!DOCTYPE html>
             <html>
             <head>
-              <meta http-equiv="Content-type" content="text/html;charset=utf-8">
-              <style>${escapeHtml(this.stylesheet)}</style>
-              <script charset="utf-8" src="${this.getMediaPath('infoview-ctrl.js')}"></script>
+                <meta http-equiv="Content-type" content="text/html;charset=utf-8">
+                <style>${this.stylesheet}</style>
+                <script charset="utf-8" src="${this.getMediaPath('infoview-ctrl.js')}"></script>
             </head>`;
         if (!this.curFileName) {
             return header + '<body>No Lean file active</body>';
@@ -347,16 +378,32 @@ export class InfoProvider implements Disposable {
                 data-line="${(this.curPosition.line + 1).toString()}"
                 data-column="${this.curPosition.character.toString()}"
                 ${this.displayMode === DisplayMode.AllMessage ? "data-messages=''" : ''}>
-              <div id="debug"></div>
-              <div id="run-state">
-                <span id="state-continue">Stopped <a href="command:_lean.infoView.continue?{}">
-                  <img title="Continue Updating" src="${this.getMediaPath('continue.svg')}"></a></span>
-                <span id="state-pause">Updating <a href="command:_lean.infoView.pause?{}">
-                  <img title="Stop Updating" src="${this.getMediaPath('pause.svg')}"></span></a>
-              </div>
-              ${this.renderGoal()}
-              <div id="messages">${this.renderMessages()}</div>
+                <div id="debug"></div>
+                ${this.curGoalState ? this.renderFilter() : ''}
+                <div id="run-state">
+                    <span id="state-continue">Stopped <a href="command:_lean.infoView.continue?{}">
+                        <img title="Continue Updating" src="${this.getMediaPath('continue.svg')}"></a></span>
+                    <span id="state-pause">Updating <a href="command:_lean.infoView.pause?{}">
+                        <img title="Stop Updating" src="${this.getMediaPath('pause.svg')}"></span></a>
+                </div>
+                ${this.renderGoal()}
+                <div id="messages">${this.renderMessages()}</div>
             </body></html>`;
+    }
+
+    private renderFilter() {
+        const reFilters = workspace.getConfiguration('lean').get('infoViewTacticStateFilters', []);
+        const filterIndex = workspace.getConfiguration('lean').get('infoViewFilterIndex', -1);
+        return reFilters.length > 0 ?
+            `<div id="filter">
+            <select id="filterSelect" onchange="infoViewModule.selectFilter(this.value);">
+                <option value="-1" ${filterIndex === -1 ? 'selected' : ''}>no filter</option>
+                ${reFilters.map((obj, i) =>
+                    `<option value="${i}" ${filterIndex === i ? 'selected' : ''}>
+                    ${obj.name ||
+                        `${obj.match ? 'show ' : 'hide '}/${obj.regex}/${obj.flags}`}</option>`)}
+            </select>
+        </div>` : '';
     }
 
     private colorizeMessage(goal: string): string {
@@ -370,21 +417,35 @@ export class InfoProvider implements Disposable {
 
     private renderGoal() {
         if (!this.curGoalState || this.displayMode !== DisplayMode.OnlyState) { return ''; }
+        const reFilters = workspace.getConfiguration('lean').get('infoViewTacticStateFilters', []);
+        const filterIndex = workspace.getConfiguration('lean').get('infoViewFilterIndex', -1);
+        const filteredGoalState = reFilters.length === 0 || filterIndex === -1 ? this.curGoalState :
+            // this regex splits the goal state into (possibly multi-line) hypothesis and goal blocks
+            // by keeping indented lines with the most recent non-indented line
+            this.curGoalState.match(/(^(?!  ).*\n?(  .*\n?)*)/mg).map((line) => line.trim())
+                .filter((line) => {
+                    const filt = reFilters[filterIndex];
+                    const test = line.match(new RegExp(filt.regex, filt.flags)) !== null;
+                    return filt.match ? test : !test;
+                }).join('\n');
         return `<div id="goal"><h1>Tactic State</h1><pre>${
-            this.colorizeMessage(this.curGoalState)}</pre></div>`;
+            this.colorizeMessage(filteredGoalState)}</pre></div>`;
     }
 
     private renderMessages() {
         if (!this.curFileName || !this.curMessages) { return ``; }
         return this.curMessages.map((m) => {
             const f = escapeHtml(m.file_name); const b = escapeHtml(basename(m.file_name));
-            const l = m.pos_line.toString(); const c = m.pos_col.toString();
+            const l = m.pos_line; const c = m.pos_col;
+            const el = m.end_pos_line || l;
+            const ec = m.end_pos_col || c;
             const cmd = encodeURI('command:_lean.revealPosition?' +
                 JSON.stringify([Uri.file(m.file_name), m.pos_line, m.pos_col]));
             const shouldColorize = m.severity === 'error';
             const colorized = shouldColorize ? this.colorizeMessage(m.text) :
                 escapeHtml(m.text);
-            return `<div class="message ${m.severity}" data-line="${l}" data-column="${c}">
+            return `<div class="message ${m.severity}" data-line="${l}" data-column="${c}"
+                data-end-line="${el}" data-end-column="${ec}">
                 <h1 title="${f}:${l}:${c}"><a href="${cmd}">
                     ${b}:${l}:${c}: ${m.severity} ${escapeHtml(m.caption)}
                 </a></h1>

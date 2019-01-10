@@ -2,7 +2,7 @@
 	"name": "lean",
 	"displayName": "lean",
 	"description": "An extension for VS Code which provides support for the Lean language.",
-	"version": "0.13.0",
+	"version": "0.13.3",
 	"publisher": "jroesch",
 	"engines": {
 		"vscode": "^1.24.0"
@@ -10,7 +10,10 @@
 	"categories": [
 		"Programming Languages"
 	],
-	"repository": "https://github.com/leanprover/vscode-lean",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/leanprover/vscode-lean.git"
+	},
 	"contributes": {
 		"configuration": {
 			"type": "object",
@@ -42,7 +45,7 @@
 					"description": "Extra command-line options for the Lean server.",
 					"items": {
 						"type": "string",
-						"description": "Single command-line argument."
+						"description": "a single command-line argument"
 					}
 				},
 				"lean.progressMessages": {
@@ -58,42 +61,96 @@
 				"lean.input.enabled": {
 					"type": "boolean",
 					"default": true,
-					"description": "Enable Lean input mode"
+					"description": "Enable Lean input mode."
 				},
 				"lean.input.customTranslations": {
 					"type": "object",
 					"items": {
 						"type": "string",
-						"description": "Unicode character to translate to."
+						"description": "Unicode character to translate to"
 					},
 					"default": {},
-					"description": "Add additional input unicode translations. Example: `{\"foo\": \"☺\"}` will correct `\\foo` to `☺`."
+					"description": "Add additional input Unicode translations. Example: `{\"foo\": \"☺\"}` will correct `\\foo` to `☺`."
 				},
 				"lean.input.languages": {
 					"type": "array",
 					"default": [
 						"lean"
 					],
-					"description": "Enable Lean unicode input in other file types.",
+					"description": "Enable Lean Unicode input in other file types.",
 					"items": {
 						"type": "string",
-						"description": "the name of a language. Eg: 'lean', 'markdown' "
+						"description": "the name of a language, e.g. 'lean', 'markdown'"
 					}
 				},
 				"lean.input.leader": {
 					"type": "string",
 					"default": "\\",
-					"description": "Leader key to trigger input mode"
+					"description": "Leader key to trigger input mode."
 				},
 				"lean.infoViewAllErrorsOnLine": {
 					"type": "boolean",
 					"default": false,
 					"description": "Info view: show all errors on the current line, instead of just the ones on the right of the cursor."
 				},
+				"lean.infoViewAutoOpen": {
+					"type": "boolean",
+					"default": true,
+					"description": "Info view: open info view when Lean extension is activated."
+				},
 				"lean.infoViewStyle": {
 					"type": "string",
 					"default": "",
 					"description": "Add an additional CSS snippet to the info view."
+				},
+				"lean.infoViewTacticStateFilters": {
+					"type": "array",
+					"default": [
+						{
+							"regex": "^_",
+							"match": false,
+							"flags": ""
+						},
+						{
+							"name": "goals only",
+							"regex": "^(⊢|\\d+ goals|case|$)",
+							"match": true,
+							"flags": ""
+						}
+					],
+					"description": "An array of objects containing regular expression strings that can be used to filter (positively or negatively) the tactic state in the info view. Set to an empty array '[]' to hide the filter select dropdown.\n \n Each object must contain the following keys: 'regex': string, 'match': boolean, 'flags': string.\n 'regex' is a properly-escaped regex string,\n 'match' = true (false) means blocks in the tactic state matching 'regex' will be included (excluded) in the info view, \n 'flags' are additional flags passed to the JavaScript RegExp constructor.\n The 'name' key is optional and may contain a string that is displayed in the dropdown instead of the full regex details.",
+					"items": {
+						"type": "object",
+						"description": "an object with required properties 'regex': string, 'match': boolean, and 'flags': string, and optional property 'name': string",
+						"properties": {
+							"name": {
+								"type": "string",
+								"description": "name displayed in the dropdown"
+							},
+							"regex": {
+								"type": "string",
+								"description": "a properly-escaped regex string, e.g. '^_' matches any string beginning with an underscore"
+							},
+							"match": {
+								"type": "boolean",
+								"description": "whether tactic state lines matching the value of 'regex' should be included (true) or excluded (false)"
+							},
+							"flags": {
+								"type": "string",
+								"description": "additional flags passed to the RegExp constructor, e.g. 'i' for ignore case"
+							}
+						},
+						"required": [
+							"regex",
+							"match",
+							"flags"
+						]
+					}
+				},
+				"lean.infoViewFilterIndex": {
+					"type": "number",
+					"default": -1,
+					"description": "Index of the filter applied to the tactic state (in the array infoViewTacticStateFilters). An index of -1 means no filter is applied."
 				}
 			}
 		},
@@ -102,19 +159,19 @@
 				"command": "lean.restartServer",
 				"category": "Lean",
 				"title": "Restart",
-				"description": "Restart the Language Server"
+				"description": "Restart the Language Server."
 			},
 			{
 				"command": "lean.input.convert",
 				"category": "Lean",
-				"title": "Input: convert current abbreviation",
-				"description": "converts the current abbreviation (e.g. \\lam)"
+				"title": "Input: Convert Current Abbreviation",
+				"description": "Converts the current abbreviation (e.g. \\lam)."
 			},
 			{
 				"command": "lean.displayGoal",
 				"category": "Lean",
 				"title": "Info View: Display Goal",
-				"description": "Display the goal at the current position.",
+				"description": "Display the goal and any messages at the current position in the info view.",
 				"icon": {
 					"dark": "./media/display-goal-dark.svg",
 					"light": "./media/display-goal-light.svg"
@@ -124,7 +181,7 @@
 				"command": "lean.displayList",
 				"category": "Lean",
 				"title": "Info View: Display Messages",
-				"description": "Displays the goal state or messages in a separate window",
+				"description": "Displays all messages for the current file in the info view.",
 				"icon": {
 					"dark": "./media/display-list-dark.svg",
 					"light": "./media/display-list-light.svg"
@@ -134,7 +191,7 @@
 				"command": "lean.infoView.displayGoal",
 				"category": "Lean",
 				"title": "Info View: Display Goal",
-				"description": "Display the goal at the current position",
+				"description": "Display the goal and any messages at the current position in the info view.",
 				"icon": {
 					"dark": "./media/display-goal-dark.svg",
 					"light": "./media/display-goal-light.svg"
@@ -144,7 +201,7 @@
 				"command": "lean.infoView.displayList",
 				"category": "Lean",
 				"title": "Info View: Display Messages",
-				"description": "Displays the goal state or messages in a separate window",
+				"description": "Displays all messages for the current file in the info view.",
 				"icon": {
 					"dark": "./media/display-list-dark.svg",
 					"light": "./media/display-list-light.svg"
@@ -153,56 +210,56 @@
 			{
 				"command": "lean.infoView.copyToComment",
 				"category": "Lean",
-				"title": "Info View: copy contents to comment",
-				"description": "Copy the current contents of the info view into a new comment on the next line"
+				"title": "Info View: Copy Contents to Comment",
+				"description": "Copy the current contents of the info view into a new comment on the next line."
 			},
 			{
 				"command": "lean.infoView.toggleUpdating",
 				"category": "Lean",
-				"title": "Info View: toggle updating",
-				"description": "Pause / Continue the live updating in the info view"
+				"title": "Info View: Toggle Updating",
+				"description": "Pause / Continue live updating of the info view."
 			},
 			{
 				"command": "lean.roiMode.select",
 				"category": "Lean",
-				"title": "Select region-of-interest",
-				"description": "Select what files are being checked by the Lean server."
+				"title": "Select Region-of-interest",
+				"description": "Select files to be checked by the Lean server."
 			},
 			{
 				"command": "lean.roiMode.nothing",
 				"category": "Lean",
 				"title": "Check Nothing",
-				"description": "Disable automatic checking of Lean code"
+				"description": "Disable automatic checking of Lean code."
 			},
 			{
 				"command": "lean.roiMode.cursor",
 				"category": "Lean",
 				"title": "Check Cursor + 5 Lines",
-				"description": "Automatically check until 5 lines below the cursor"
+				"description": "Automatically check until 5 lines below the cursor."
 			},
 			{
 				"command": "lean.roiMode.visibleFiles",
 				"category": "Lean",
 				"title": "Check Visible Files",
-				"description": "Automatically check all files that are visible"
+				"description": "Automatically check all files that are visible."
 			},
 			{
 				"command": "lean.roiMode.openFiles",
 				"category": "Lean",
 				"title": "Check Open Files",
-				"description": "Automatically check all opened files"
+				"description": "Automatically check all opened files."
 			},
 			{
 				"command": "lean.roiMode.projectFiles",
 				"category": "Lean",
 				"title": "Check Project Files",
-				"description": "Automatically check all files in the workspace"
+				"description": "Automatically check all files in the workspace."
 			},
 			{
 				"command": "lean.batchExecute",
 				"category": "Lean",
 				"title": "Batch Execute File",
-				"description": "Execute the current file using Lean"
+				"description": "Execute the current file using Lean."
 			}
 		],
 		"languages": [
@@ -280,6 +337,10 @@
 				{
 					"command": "lean.infoView.displayList",
 					"when": "resourceSchema == lean-info"
+				},
+				{
+					"command": "lean.infoView.toggleUpdating",
+					"when": "resourceSchema == lean-info"
 				}
 			],
 			"editor/title": [
@@ -336,14 +397,14 @@
 	"devDependencies": {
 		"@types/load-json-file": "^2.0.7",
 		"@types/mocha": "^5.2.5",
-		"@types/node": "^10.12.0",
+		"@types/node": "^10.12.18",
 		"@types/semver": "^5.5.0",
 		"@types/username": "^3.0.0",
 		"mocha": "^5.2.0",
-		"tslint": "^5.11.0",
-		"typescript": "^3.1.3",
-		"vsce": "^1.52.0",
-		"vscode": "^1.1.21"
+		"tslint": "^5.12.0",
+		"typescript": "^3.2.2",
+		"vsce": "^1.54.0",
+		"vscode": "^1.1.26"
 	},
 	"icon": "images/lean_logo.png",
 	"license": "Apache-2.0",
