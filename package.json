@@ -93,6 +93,11 @@
 					"default": false,
 					"description": "Info view: show all errors on the current line, instead of just the ones on the right of the cursor."
 				},
+				"lean.infoViewAutoOpen": {
+					"type": "boolean",
+					"default": true,
+					"description": "Info view: open info view when Lean extension is activated."
+				},
 				"lean.infoViewStyle": {
 					"type": "string",
 					"default": "",

@@ -4,6 +4,8 @@ import { Server } from './server';
 
 export class LeanStatusBarItem implements Disposable {
     statusBarItem: StatusBarItem;
+    private shown: boolean = false;
+
     private subscriptions: Disposable[] = [];
 
     constructor(private server: Server, private roiManager: RoiManager) {
@@ -18,8 +20,9 @@ export class LeanStatusBarItem implements Disposable {
             this.statusBarItem.command = 'lean.roiMode.select';
         }
 
-        this.update();
-        this.statusBarItem.show();
+        if (this.server.alive()) {
+            this.update();
+        }
     }
 
     update() {
@@ -43,6 +46,10 @@ export class LeanStatusBarItem implements Disposable {
             case RoiMode.ProjectFiles: text += ' (checking project files)'; break;
         }
 
+        if (!this.shown) {
+            this.statusBarItem.show();
+            this.shown = true;
+        }
         this.statusBarItem.text = text;
     }
 

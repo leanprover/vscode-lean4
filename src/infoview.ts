@@ -37,6 +37,7 @@ export class InfoProvider implements Disposable {
 
     private displayMode: DisplayMode = DisplayMode.AllMessage;
 
+    private started: boolean = false;
     private stopped: boolean = false;
     private curFileName: string = null;
     private curPosition: Position = null;
@@ -63,6 +64,10 @@ export class InfoProvider implements Disposable {
                     if (changed) { this.rerender(); }
                 }
             }),
+            this.server.restarted.on(() => {
+                this.autoOpen();
+            }),
+            window.onDidChangeActiveTextEditor(() => this.updatePosition(false)),
             window.onDidChangeTextEditorSelection(() => this.updatePosition(false)),
             workspace.onDidChangeConfiguration((e) => {
                 this.updateStylesheet();
@@ -99,6 +104,9 @@ export class InfoProvider implements Disposable {
                 }
             }),
         );
+        if (this.server.alive()) {
+            this.autoOpen();
+        }
     }
 
     dispose() {
@@ -118,6 +126,14 @@ export class InfoProvider implements Disposable {
             }
             ` +
             workspace.getConfiguration('lean').get('infoViewStyle');
+    }
+
+    private autoOpen() {
+        if (!this.started && workspace.getConfiguration('lean').get('infoViewAutoOpen')) {
+            this.started = true;
+            this.openPreview(window.activeTextEditor);
+            this.updatePosition(false);
+        }
     }
 
     private openPreview(editor: TextEditor) {

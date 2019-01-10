@@ -12,7 +12,7 @@ We currently support a variety of features.
 * Auto-completion based on context and type via the Lean server
 * Error messages / diagnostics
 * Customizable Unicode input support (e.g. type `\la`+<kbd>tab</kbd> to input `λ`)
-* Info view window to show goal, tactic state, and error messages (ctrl+shift+enter for local goal view or ctrl+shift+alt+enter for all messages)
+* Info view window to show goal, tactic state, and error messages (<kbd>ctrl</kbd>+<kbd>shift</kbd>+<kbd>enter</kbd> for local goal view or <kbd>ctrl</kbd>+<kbd>shift</kbd>+<kbd>alt</kbd>+<kbd>enter</kbd> for all messages)
 * Batch file execution
 * Search for declarations in open files (<kbd>ctrl</kbd>+<kbd>p</kbd> #)
 * Region of interest checking (i.e. control how much of the project is checked automatically by Lean)
@@ -40,6 +40,7 @@ This extension contributes the following settings (for a complete list, open the
   - `project`: check the entire project's files
 * `lean.input.leader`: character to type to trigger Unicode input mode (`\` by default)
 * `lean.input.languages`: allows the Unicode input functionality to be used in other languages
+* `lean.infoViewAutoOpen`: controls whether the info view is automatically displayed when the Lean extension is activated (`true` by default).
 * `lean.infoViewTacticStateFilters`: An array of objects containing regular expression strings that can be used to filter (positively or negatively) the tactic state in the info view. Set to an empty array `[]` to hide the filter select dropdown. Each object must contain the following keys:
   - `regex` is a properly-escaped regex string,
   - `match` is a boolean, where `true` (`false`) means blocks in the tactic state matching `regex` will be included (excluded) in the info view,
@@ -59,7 +60,7 @@ It also contributes the following commands, which can be bound to keys if desire
 
 ### Other potentially helpful settings
 
-* Fonts with good Unicode support: `"editor.fontFamily": "Source Code Pro Medium, DejaVu Sans Mono"`. Note that for this configuration to work properly, both fonts must be specified in this order (so that characters that are not available in [Source Code Pro](https://github.com/adobe-fonts/source-code-pro) are rendered using [DejaVu Sans Mono](https://dejavu-fonts.github.io/).
+* Fonts with good Unicode support: `"editor.fontFamily": "Source Code Pro Medium, DejaVu Sans Mono"`. Note that for this configuration to work properly, both fonts must be specified in this order (so that characters that are not available in [Source Code Pro](https://github.com/adobe-fonts/source-code-pro) are rendered using [DejaVu Sans Mono](https://dejavu-fonts.github.io/)).
 * By default, VS Code will complete `then` to `has_bind.and_then` when you press enter.  To disable this behavior, set `"editor.acceptSuggestionOnEnter": false`
 * If you like colored brackets, try out [Bracket Pair Colorizer 2](https://marketplace.visualstudio.com/items?itemName=CoenraadS.bracket-pair-colorizer-2).
 
