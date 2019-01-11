@@ -1,6 +1,6 @@
 import { Message, Severity } from 'lean-client-js-node';
 import { Diagnostic, DiagnosticCollection, DiagnosticSeverity,
-    Disposable, languages, Position, Range, Uri } from 'vscode';
+    Disposable, languages, Position, Range, Uri, window, workspace } from 'vscode';
 import { Server } from './server';
 
 function toSeverity(severity: Severity): DiagnosticSeverity {
@@ -40,9 +40,14 @@ export class LeanDiagnosticsProvider implements Disposable {
             diagnostics.push(d);
         }
 
+        const fileNameToUri = new Map<string, Uri>();
+        for (const doc of workspace.textDocuments) {
+            fileNameToUri.set(doc.fileName, doc.uri);
+        }
+
         this.collection.clear();
         diagnosticMap.forEach((diags, file) =>
-            this.collection.set(Uri.file(file), diags));
+            this.collection.set(fileNameToUri.get(file), diags));
     }
 
     dispose() {

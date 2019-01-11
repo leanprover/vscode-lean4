@@ -27,7 +27,8 @@ function configExcludeOLean() {
 
 const LEAN_MODE: DocumentFilter = {
     language: 'lean',
-    scheme: 'file',
+    // The doc view uses the untitled scheme.
+    // scheme: 'file',
 };
 
 export function activate(context: ExtensionContext) {
