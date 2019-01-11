@@ -4,6 +4,7 @@ import { batchExecuteFile } from './batch';
 import { LeanCompletionItemProvider } from './completion';
 import { LeanDefinitionProvider } from './definition';
 import { LeanDiagnosticsProvider } from './diagnostics';
+import { DocViewProvider } from './docview';
 import { LeanHoles } from './holes';
 import { LeanHoverProvider } from './hover';
 import { InfoProvider } from './infoview';
@@ -109,4 +110,6 @@ export function activate(context: ExtensionContext) {
     context.subscriptions.push(new InfoProvider(server, LEAN_MODE, context));
 
     context.subscriptions.push(new LeanpkgService(server));
+
+    context.subscriptions.push(new DocViewProvider());
 }

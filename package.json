@@ -208,6 +208,12 @@
 				}
 			},
 			{
+				"command": "lean.openDocView",
+				"category": "Lean",
+				"title": "Open Documentation View",
+				"description": "Opens the online version of TPIL"
+			},
+			{
 				"command": "lean.infoView.copyToComment",
 				"category": "Lean",
 				"title": "Info View: Copy Contents to Comment",
@@ -388,7 +394,9 @@
 		"test": "node ./node_modules/vscode/bin/test"
 	},
 	"dependencies": {
+		"axios": "^0.18.0",
 		"carrier": "0.3.0",
+		"cheerio": "^1.0.0-rc.2",
 		"hasbin": "^1.2.3",
 		"lean-client-js-node": "^1.2.12",
 		"load-json-file": "5.1.0",
