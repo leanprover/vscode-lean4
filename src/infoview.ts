@@ -131,6 +131,9 @@ export class InfoProvider implements Disposable {
     private autoOpen() {
         if (!this.started && workspace.getConfiguration('lean').get('infoViewAutoOpen')) {
             this.started = true;
+            this.setMode(
+                workspace.getConfiguration('lean').get('infoViewAutoOpenShowGoal', true) ?
+                DisplayMode.OnlyState : DisplayMode.AllMessage);
             this.openPreview(window.activeTextEditor);
             this.updatePosition(false);
         }

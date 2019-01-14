@@ -98,6 +98,11 @@
 					"default": true,
 					"description": "Info view: open info view when Lean extension is activated."
 				},
+				"lean.infoViewAutoOpenShowGoal": {
+					"type": "boolean",
+					"default": true,
+					"description": "Info view: auto open shows goal and messages for the current line (instead of all messages for the whole file)"
+				},
 				"lean.infoViewStyle": {
 					"type": "string",
 					"default": "",
