@@ -17,7 +17,7 @@
 	"contributes": {
 		"configuration": {
 			"type": "object",
-			"title": "Lean configuration",
+			"title": "Lean",
 			"properties": {
 				"lean.executablePath": {
 					"type": "string",
