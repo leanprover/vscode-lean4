@@ -80,7 +80,7 @@
     },
     "definitionName": {
       "patterns": [
-        {"match": "\\b[^«»\\(\\)\\{\\}[:space:]=→λ∀?][^«»\\(\\)\\{\\}[:space:]]*", "name": "entity.name.function.lean"},
+        {"match": "\\b[^:«»\\(\\)\\{\\}[:space:]=→λ∀?][^:«»\\(\\)\\{\\}[:space:]]*", "name": "entity.name.function.lean"},
         {"begin": "«", "end": "»", "contentName": "entity.name.function.lean"}
       ]
     }
