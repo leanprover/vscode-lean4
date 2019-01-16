@@ -11,14 +11,15 @@ export function mkCommandUri(commandName: string, ...args: any): string {
 
 export class DocViewProvider implements Disposable {
     private subscriptions: Disposable[] = [];
-    private currentHtml : string = "";
-    private backstack : string[] = [];
-    private forwardstack : string[] = [];
+    private currentHtml: string = '';
+    private backstack: string[] = [];
+    private forwardstack: string[] = [];
     constructor() {
         this.subscriptions.push(
             commands.registerCommand('lean.openDocView', (url) => this.open(url)),
+            commands.registerCommand('lean.backDocView', () => this.back()),
+            commands.registerCommand('lean.forwardDocView', () => this.forward()),
             commands.registerCommand('lean.openTryIt', (code) => this.tryIt(code)),
-            //commands.registerCommand("workbench.action.navigateBack", () => this.back()),
         );
     }
 
@@ -72,10 +73,11 @@ export class DocViewProvider implements Disposable {
                 link.attribs.href = mkCommandUri('lean.openDocView', href);
             }
         }
-        let button = $('<input type="button" value="back"/>');
-        button.attribs.href = mkCommandUri("lean.backDocView");
-        $("body").prepend(button)
-        if (this.currentHtml) {this.backstack.push(this.currentHtml);}
+        $(`<nav style="box-sizing: border-box; position : sticky; top : 0px; padding : 4px; background : white">
+        <a class="btn" href="${mkCommandUri('lean.backDocView')}">back</a>
+        <a class="btn" href="${mkCommandUri('lean.forwardDocView')}">forward</a>
+        </nav>`).prependTo('body');
+        if (this.currentHtml) {this.backstack.push(this.currentHtml); this.forwardstack = [];}
         this.currentHtml = $.html();
         this.getWebview().webview.html = this.currentHtml;
     }
