@@ -11,7 +11,7 @@ export function mkCommandUri(commandName: string, ...args: any): string {
 
 export class DocViewProvider implements Disposable {
     private subscriptions: Disposable[] = [];
-    private currentHtml: string = '';
+    private currentURL: string | undefined = undefined;
     private backstack: string[] = [];
     private forwardstack: string[] = [];
     constructor() {
@@ -55,7 +55,8 @@ export class DocViewProvider implements Disposable {
         }
     }
 
-    async open(url?: string) {
+    async setHtml() {
+        const url = this.currentURL;
         const $ = cheerio.load(await this.fetch(url));
         for (const style of $('link[rel=stylesheet]').get()) {
             style.attribs.href = new URL(style.attribs.href, url).toString();
@@ -73,27 +74,36 @@ export class DocViewProvider implements Disposable {
                 link.attribs.href = mkCommandUri('lean.openDocView', href);
             }
         }
-        $(`<nav style="box-sizing: border-box; position : sticky; top : 0px; padding : 4px; background : white">
-        <a class="btn" href="${mkCommandUri('lean.backDocView')}">back</a>
-        <a class="btn" href="${mkCommandUri('lean.forwardDocView')}">forward</a>
+        $(`<nav style="width:100vw; position : fixed; top : 0px; left : 0px; padding : 4px; background : #f3f3f3; z-index:100">
+            <a href="${mkCommandUri('lean.backDocView')}" title="back">← back</a>
+            <a href="${mkCommandUri('lean.forwardDocView')}" title="forward">→ forward</a>
         </nav>`).prependTo('body');
-        if (this.currentHtml) {this.backstack.push(this.currentHtml); this.forwardstack = [];}
-        this.currentHtml = $.html();
-        this.getWebview().webview.html = this.currentHtml;
+        $('nav+*').css('margin-top','3em');
+        this.getWebview().webview.html = $.html();
+    }
+
+   /** Called by the user clicking a link. */
+    async open(url? : string) {
+        if (url) {
+            this.backstack.push(this.currentURL); 
+            this.forwardstack = [];
+        }
+        this.currentURL = url;
+        await this.setHtml();
     }
 
     async back() {
         if (this.backstack.length === 0) {return;}
-        this.forwardstack.push(this.currentHtml);
-        this.currentHtml = this.backstack.pop();
-        this.getWebview().webview.html = this.currentHtml;
+        this.forwardstack.push(this.currentURL);
+        this.currentURL = this.backstack.pop();
+        await this.setHtml();
     }
 
     async forward() {
         if (this.forwardstack.length === 0) {return;}
-        this.backstack.push(this.currentHtml);
-        this.currentHtml = this.forwardstack.pop();
-        this.getWebview().webview.html = this.currentHtml;
+        this.backstack.push(this.currentURL);
+        this.currentURL = this.forwardstack.pop();
+        await this.setHtml();
     }
 
     dispose() {
