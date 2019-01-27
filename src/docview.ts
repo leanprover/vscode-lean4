@@ -74,7 +74,10 @@ export class DocViewProvider implements Disposable {
                 link.attribs.href = mkCommandUri('lean.openDocView', href);
             }
         }
-        $(`<nav style="width:100vw; position : fixed; top : 0px; left : 0px; padding : 4px; background : #f3f3f3; z-index:100">
+        $(`<nav style="
+                width:100vw; position : fixed; top : 0px; left : 0px;
+                padding : 4px; background : #f3f3f3; z-index:100
+              ">
             <a href="${mkCommandUri('lean.backDocView')}" title="back">← back</a>
             <a href="${mkCommandUri('lean.forwardDocView')}" title="forward">→ forward</a>
         </nav>`).prependTo('body');
@@ -82,10 +85,10 @@ export class DocViewProvider implements Disposable {
         this.getWebview().webview.html = $.html();
     }
 
-   /** Called by the user clicking a link. */
-    async open(url? : string) {
+    /** Called by the user clicking a link. */
+    async open(url?: string) {
         if (url) {
-            this.backstack.push(this.currentURL); 
+            this.backstack.push(this.currentURL);
             this.forwardstack = [];
         }
         this.currentURL = url;
