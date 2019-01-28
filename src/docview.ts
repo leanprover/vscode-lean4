@@ -11,10 +11,14 @@ export function mkCommandUri(commandName: string, ...args: any): string {
 
 export class DocViewProvider implements Disposable {
     private subscriptions: Disposable[] = [];
-
+    private currentURL: string | undefined = undefined;
+    private backstack: string[] = [];
+    private forwardstack: string[] = [];
     constructor() {
         this.subscriptions.push(
             commands.registerCommand('lean.openDocView', (url) => this.open(url)),
+            commands.registerCommand('lean.backDocView', () => this.back()),
+            commands.registerCommand('lean.forwardDocView', () => this.forward()),
             commands.registerCommand('lean.openTryIt', (code) => this.tryIt(code)),
         );
     }
@@ -51,7 +55,8 @@ export class DocViewProvider implements Disposable {
         }
     }
 
-    async open(url?: string) {
+    async setHtml() {
+        const url = this.currentURL;
         const $ = cheerio.load(await this.fetch(url));
         for (const style of $('link[rel=stylesheet]').get()) {
             style.attribs.href = new URL(style.attribs.href, url).toString();
@@ -69,7 +74,39 @@ export class DocViewProvider implements Disposable {
                 link.attribs.href = mkCommandUri('lean.openDocView', href);
             }
         }
+        $(`<nav style="
+                width:100vw; position : fixed; top : 0px; left : 0px;
+                padding : 4px; background : #f3f3f3; z-index:100
+              ">
+            <a href="${mkCommandUri('lean.backDocView')}" title="back">← back</a>
+            <a href="${mkCommandUri('lean.forwardDocView')}" title="forward">→ forward</a>
+        </nav>`).prependTo('body');
+        $('nav+*').css('margin-top','3em');
         this.getWebview().webview.html = $.html();
+    }
+
+    /** Called by the user clicking a link. */
+    async open(url?: string) {
+        if (url) {
+            this.backstack.push(this.currentURL);
+            this.forwardstack = [];
+        }
+        this.currentURL = url;
+        await this.setHtml();
+    }
+
+    async back() {
+        if (this.backstack.length === 0) {return;}
+        this.forwardstack.push(this.currentURL);
+        this.currentURL = this.backstack.pop();
+        await this.setHtml();
+    }
+
+    async forward() {
+        if (this.forwardstack.length === 0) {return;}
+        this.backstack.push(this.currentURL);
+        this.currentURL = this.forwardstack.pop();
+        await this.setHtml();
     }
 
     dispose() {
