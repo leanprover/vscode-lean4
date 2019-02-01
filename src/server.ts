@@ -23,7 +23,7 @@ export class Server extends leanclient.Server {
     transport: ProcessTransport;
     executablePath: string;
     overrideExecutablePath: string;
-    hasLean: boolean;
+    hasLean: boolean;        // have we found a usable copy of Lean yet?
     workingDirectory: string;
     options: string[];
 
@@ -76,6 +76,10 @@ export class Server extends leanclient.Server {
             this.transport = new ProcessTransport(
                 this.executablePath, this.workingDirectory, this.options);
             super.connect();
+
+            this.hasLean = true; // mark that we've successfully started Lean,
+                                 // so that any later crashes do not prompt
+                                 // to install elan
             this.restarted.fire(null);
         } catch (e) {
             this.requestRestart(`Lean: ${e}`);
@@ -141,7 +145,7 @@ export class Server extends leanclient.Server {
               "It looks like you've modified the `lean.executablePath` user setting.\n" +
               'Please change it back to `lean` before installing elan.');
         } else {
-            this.hasLean = true;
+            this.hasLean = true; // make sure we only prompt to install elan once
 
             const gitBashPath = 'C:\\Program Files\\Git\\bin\\bash.exe';
             const msysBashPath = 'C:\\msys64\\usr\\bin\\bash.exe';
