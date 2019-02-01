@@ -68,8 +68,6 @@ export class Server extends leanclient.Server {
             this.workingDirectory = workspace.rootPath;
             this.options = config.get('extraOptions') || [];
 
-            this.hasLean = true; // we don't need to ask to install lean if we got here
-
             this.options.push('-M');
             this.options.push('' + config.get('memoryLimit'));
             this.options.push('-T');
