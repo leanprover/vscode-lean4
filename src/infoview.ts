@@ -412,7 +412,7 @@ export class InfoProvider implements Disposable {
     private colorizeMessage(goal: string): string {
         return escapeHtml(goal)
             .replace(/^([|⊢]) /mg, '<strong class="goal-vdash">$1</strong> ')
-            .replace(/^(\d+ goals)/mg, '<strong class="goal-goals">$1</strong>')
+            .replace(/^(\d+ goals|1 goal)/mg, '<strong class="goal-goals">$1</strong>')
             .replace(/^(context|state):/mg, '<strong class="goal-goals">$1</strong>:')
             .replace(/^(case) /mg, '<strong class="goal-case">$1</strong> ')
             .replace(/^([^:\n< ][^:\n⊢]*) :/mg, '<strong class="goal-hyp">$1</strong> :');
@@ -422,10 +422,13 @@ export class InfoProvider implements Disposable {
         if (!this.curGoalState || this.displayMode !== DisplayMode.OnlyState) { return ''; }
         const reFilters = workspace.getConfiguration('lean').get('infoViewTacticStateFilters', []);
         const filterIndex = workspace.getConfiguration('lean').get('infoViewFilterIndex', -1);
-        const filteredGoalState = reFilters.length === 0 || filterIndex === -1 ? this.curGoalState :
+        let goalString: string = this.curGoalState.replace(/^(no goals)/mg, '0 goals\n proof completed');
+        goalString = RegExp('^\\d+ goals', 'mg').test(goalString) ? goalString :
+            '1 goal\n'.concat(goalString);
+        const filteredGoalState = reFilters.length === 0 || filterIndex === -1 ? goalString :
             // this regex splits the goal state into (possibly multi-line) hypothesis and goal blocks
             // by keeping indented lines with the most recent non-indented line
-            this.curGoalState.match(/(^(?!  ).*\n?(  .*\n?)*)/mg).map((line) => line.trim())
+            goalString.match(/(^(?!  ).*\n?(  .*\n?)*)/mg).map((line) => line.trim())
                 .filter((line) => {
                     const filt = reFilters[filterIndex];
                     const test = line.match(new RegExp(filt.regex, filt.flags)) !== null;
