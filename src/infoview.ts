@@ -422,8 +422,8 @@ export class InfoProvider implements Disposable {
         if (!this.curGoalState || this.displayMode !== DisplayMode.OnlyState) { return ''; }
         const reFilters = workspace.getConfiguration('lean').get('infoViewTacticStateFilters', []);
         const filterIndex = workspace.getConfiguration('lean').get('infoViewFilterIndex', -1);
-        let goalString: string = this.curGoalState.replace(/^(no goals)/mg, '0 goals\n proof completed');
-        goalString = RegExp('^\\d+ goals', 'mg').test(goalString) ? goalString :
+        let goalString: string = this.curGoalState.replace(/^(no goals)/mg, 'goals accomplished');
+        goalString = RegExp('^\\d+ goals|goals accomplished', 'mg').test(goalString) ? goalString :
             '1 goal\n'.concat(goalString);
         const filteredGoalState = reFilters.length === 0 || filterIndex === -1 ? goalString :
             // this regex splits the goal state into (possibly multi-line) hypothesis and goal blocks
