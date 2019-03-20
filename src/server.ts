@@ -22,8 +22,7 @@ let stderrOutput: OutputChannel;
 export class Server extends leanclient.Server {
     transport: ProcessTransport;
     executablePath: string;
-    overrideExecutablePath: string;
-    hasLean: boolean;        // have we found a usable copy of Lean yet?
+    hasLean: boolean = false;        // have we found a usable copy of Lean yet?
     workingDirectory: string;
     options: string[];
 
@@ -56,15 +55,22 @@ export class Server extends leanclient.Server {
                 let elanLean = resolve(homedir(), '.elan', 'bin', 'lean');
                 if(existsSync(elanLean)) {
                     this.executablePath = elanLean;
+                    this.hasLean = true;
                 } else if(process.platform === 'win32') {
                   elanLean = resolve('C:', 'msys64', 'home', username.sync(),
                     '.elan', 'bin', 'lean');
                   if(existsSync(elanLean)) {
                     this.executablePath = elanLean;
+                    this.hasLean = true;
                   }
+                } else {
+                    this.hasLean = false;
                 }
+              } else {
+                this.hasLean = true;
               }
             }
+
             this.workingDirectory = workspace.rootPath;
             this.options = config.get('extraOptions') || [];
 
@@ -77,12 +83,10 @@ export class Server extends leanclient.Server {
                 this.executablePath, this.workingDirectory, this.options);
             super.connect();
 
-            this.hasLean = true; // mark that we've successfully started Lean,
-                                 // so that any later crashes do not prompt
-                                 // to install elan
             this.restarted.fire(null);
+
         } catch (e) {
-            this.requestRestart(`Lean: ${e}`);
+            this.requestRestart(e.message);
         }
     }
 
@@ -104,12 +108,13 @@ export class Server extends leanclient.Server {
                         stderrOutput.show();
                         break;
                     }
-                    this.requestRestart(
-                        `Lean: ${e.message}\n` +
-                        'The lean.executablePath may be incorrect, make sure it is a valid Lean executable');
+                    const msg = e.message.startsWith('Unable to start') ?
+                        ` --- The lean.executablePath "${this.executablePath}" ` +
+                        'may be incorrect, make sure it is a valid Lean executable' : '';
+                    this.requestRestart(e.message + msg);
                     break;
                 case 'unrelated':
-                    window.showWarningMessage('Lean: ' + e.message);
+                    window.showWarningMessage(e.message);
                     break;
             }
 
@@ -140,10 +145,10 @@ export class Server extends leanclient.Server {
     }
 
     async installElan() {
-        if(workspace.getConfiguration('lean').get<string>('executablePath') !== 'lean') {
+        if(this.executablePath !== 'lean') {
             await window.showErrorMessage(
               "It looks like you've modified the `lean.executablePath` user setting.\n" +
-              'Please change it back to `lean` before installing elan.');
+              'Please change it back to an empty string before installing elan.');
         } else {
             this.hasLean = true; // make sure we only prompt to install elan once
 
