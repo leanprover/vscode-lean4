@@ -404,20 +404,19 @@
 		"cheerio": "^1.0.0-rc.2",
 		"hasbin": "^1.2.3",
 		"lean-client-js-node": "^1.2.12",
-		"load-json-file": "5.1.0",
-		"username": "^4.0.0"
+		"load-json-file": "5.2.0",
+		"username": "^4.1.0"
 	},
 	"devDependencies": {
 		"@types/load-json-file": "^2.0.7",
-		"@types/mocha": "^5.2.5",
-		"@types/node": "^10.12.18",
+		"@types/mocha": "^5.2.6",
+		"@types/node": "^11.11.5",
 		"@types/semver": "^5.5.0",
 		"@types/username": "^3.0.0",
-		"mocha": "^5.2.0",
-		"tslint": "^5.12.0",
-		"typescript": "^3.2.2",
-		"vsce": "^1.54.0",
-		"vscode": "^1.1.26"
+		"tslint": "^5.14.0",
+		"typescript": "^3.3.4000",
+		"vsce": "^1.58.0",
+		"vscode": "^1.1.33"
 	},
 	"icon": "images/lean_logo.png",
 	"license": "Apache-2.0",
