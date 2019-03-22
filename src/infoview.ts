@@ -140,7 +140,7 @@ export class InfoProvider implements Disposable {
     }
 
     private openPreview(editor: TextEditor) {
-        let column = editor ? editor.viewColumn + 1 : ViewColumn.Three;
+        let column = editor ? editor.viewColumn + 1 : ViewColumn.Two;
         if (column === 4) { column = ViewColumn.Three; }
         if (this.webviewPanel) {
             this.webviewPanel.reveal(column, true);
