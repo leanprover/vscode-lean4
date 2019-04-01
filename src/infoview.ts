@@ -1,5 +1,5 @@
 import { readFileSync } from 'fs';
-import { Message, InfoResponse } from 'lean-client-js-node';
+import { InfoResponse, Message } from 'lean-client-js-node';
 import { basename, join } from 'path';
 import {
     commands, Disposable, DocumentSelector,
@@ -381,7 +381,7 @@ export class InfoProvider implements Disposable {
         if (info.record) {
             const name = info.record['full-id'] || info.record.text;
             if (name && !info.record.tactic_params) {
-                text += name + ' : ' + info.record.type;
+                text = name + ' : ' + info.record.type;
             }
         }
         if (!this.statusShown) {
