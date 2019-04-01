@@ -272,6 +272,8 @@ export class InfoProvider implements Disposable {
         }
 
         const chMsg = this.updateMessages();
+        /* updateTypeStatus is only called from the cases of the following switch-block, so pausing
+           live-updates to the infoview (via this.stopped) also pauses the type status bar item */
         switch (this.displayMode) {
         case DisplayMode.OnlyState:
             const chGoal = await this.updateGoal();
