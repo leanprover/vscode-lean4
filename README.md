@@ -19,6 +19,7 @@ We currently support a variety of features.
 * Fill in `{! !}` holes using <kbd>ctrl</kbd>+<kbd>.</kbd>
 * Tasks for leanpkg (<kbd>ctrl</kbd>+<kbd>p</kbd> task configure)
 * Tactic state filtering with regex
+* Type of the term under the cursor can be displayed in the status bar
 
 ## Requirements
 
@@ -47,6 +48,7 @@ This extension contributes the following settings (for a complete list, open the
   - `flags` are additional flags passed to the [JavaScript RegExp constructor](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp).
   - The `name` key is optional and may contain a string that is displayed in the dropdown instead of the full regex details.
 * `lean.infoViewFilterIndex`: index of the filter applied to the tactic state (in the array `lean.infoViewTacticStateFilters`). An index of -1 means no filter is applied.
+* `lean.typeInStatusBar`: controls whether the type of the term under the cursor is displayed as a status bar item (`true` by default).
 
 It also contributes the following commands, which can be bound to keys if desired:
 

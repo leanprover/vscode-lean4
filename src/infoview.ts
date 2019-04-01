@@ -1,5 +1,5 @@
 import { readFileSync } from 'fs';
-import { Message } from 'lean-client-js-node';
+import { Message, InfoResponse } from 'lean-client-js-node';
 import { basename, join } from 'path';
 import {
     commands, Disposable, DocumentSelector,
@@ -36,6 +36,7 @@ export class InfoProvider implements Disposable {
     private subscriptions: Disposable[] = [];
 
     private displayMode: DisplayMode = DisplayMode.AllMessage;
+
     private statusBarItem: StatusBarItem;
     private statusShown: boolean = false;
 
@@ -77,6 +78,10 @@ export class InfoProvider implements Disposable {
             workspace.onDidChangeConfiguration((e) => {
                 this.updateStylesheet();
                 this.rerender();
+                if (!workspace.getConfiguration('lean').get('typeInStatusBar') && this.statusShown) {
+                    this.statusBarItem.hide();
+                    this.statusShown = false;
+                }
             }),
             commands.registerCommand('_lean.revealPosition', this.revealEditorPosition),
             commands.registerCommand('_lean.infoView.pause', () => {
@@ -278,6 +283,11 @@ export class InfoProvider implements Disposable {
             break;
 
         case DisplayMode.AllMessage:
+            if (workspace.getConfiguration('lean').get('typeInStatusBar')) {
+                const info = await this.server.info(
+                    this.curFileName, this.curPosition.line + 1, this.curPosition.character);
+                this.updateTypeStatus(info);
+            }
             if (forceRefresh || chMsg) {
                 this.rerender();
             } else {
@@ -348,7 +358,6 @@ export class InfoProvider implements Disposable {
 
     private async updateGoal(): Promise<boolean> {
         if (this.stopped) { return false; }
-        let text = 'Type: ';
         const info = await this.server.info(
             this.curFileName, this.curPosition.line + 1, this.curPosition.character);
         if (info.record && info.record.state) {
@@ -362,6 +371,13 @@ export class InfoProvider implements Disposable {
                 return false;
             }
         }
+        if (workspace.getConfiguration('lean').get('typeInStatusBar')) {
+            this.updateTypeStatus(info);
+        }
+    }
+
+    private updateTypeStatus(info: InfoResponse) {
+        let text = 'Type: ';
         if (info.record) {
             const name = info.record['full-id'] || info.record.text;
             if (name) {
