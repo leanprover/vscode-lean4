@@ -44,16 +44,18 @@ export class LeanCompletionItemProvider implements CompletionItemProvider {
         if (!isInputCompletion(document, position)) {
             const message = await this.server.complete(document.fileName, position.line + 1, position.character);
             const completions: CompletionItem[] = [];
-            for (const completion of message.completions) {
-                const item = new CompletionItem(completion.text, CompletionItemKind.Function);
-                item.range = new Range(position.translate(0, -message.prefix.length), position);
-                if (completion.tactic_params) {
-                    item.detail = completion.tactic_params.join(' ');
-                } else {
-                    item.detail = completion.type;
+            if (message.completions) {
+                for (const completion of message.completions) {
+                    const item = new CompletionItem(completion.text, CompletionItemKind.Function);
+                    item.range = new Range(position.translate(0, -message.prefix.length), position);
+                    if (completion.tactic_params) {
+                        item.detail = completion.tactic_params.join(' ');
+                    } else {
+                        item.detail = completion.type;
+                    }
+                    item.documentation = new MarkdownString(completion.doc);
+                    completions.push(item);
                 }
-                item.documentation = new MarkdownString(completion.doc);
-                completions.push(item);
             }
             for (const kw of keywords) {
                 completions.push(new CompletionItem(kw, CompletionItemKind.Keyword));
