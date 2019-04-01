@@ -377,13 +377,11 @@ export class InfoProvider implements Disposable {
     }
 
     private updateTypeStatus(info: InfoResponse) {
-        let text = 'Type: ';
+        let text = '';
         if (info.record) {
             const name = info.record['full-id'] || info.record.text;
-            if (name) {
-                if (!info.record.tactic_params) {
-                    text += name + ' : ' + info.record.type;
-                }
+            if (name && !info.record.tactic_params) {
+                text += name + ' : ' + info.record.type;
             }
         }
         if (!this.statusShown) {
