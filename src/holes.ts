@@ -11,7 +11,7 @@ function mkRange(r: Ran): Range {
 }
 
 export class LeanHoles implements Disposable, CodeActionProvider {
-    private holes: HoleCommands[];
+    private holes: HoleCommands[] = [];
     private collection: DiagnosticCollection;
     private subscriptions: Disposable[] = [];
 
