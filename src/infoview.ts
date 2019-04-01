@@ -4,7 +4,8 @@ import { basename, join } from 'path';
 import {
     commands, Disposable, DocumentSelector,
     ExtensionContext, languages, Position, Range,
-    Selection, TextEditor, TextEditorDecorationType, TextEditorRevealType,
+    Selection, StatusBarAlignment, StatusBarItem, TextEditor,
+    TextEditorDecorationType, TextEditorRevealType,
     Uri, ViewColumn, WebviewPanel, window, workspace,
 } from 'vscode';
 import { Server } from './server';
@@ -32,10 +33,11 @@ enum DisplayMode {
 
 export class InfoProvider implements Disposable {
     private webviewPanel: WebviewPanel;
-
     private subscriptions: Disposable[] = [];
 
     private displayMode: DisplayMode = DisplayMode.AllMessage;
+    private statusBarItem: StatusBarItem;
+    private statusShown: boolean = false;
 
     private started: boolean = false;
     private stopped: boolean = false;
@@ -49,6 +51,9 @@ export class InfoProvider implements Disposable {
     private hoverDecorationType: TextEditorDecorationType;
 
     constructor(private server: Server, private leanDocs: DocumentSelector, private context: ExtensionContext) {
+
+        this.statusBarItem = window.createStatusBarItem(StatusBarAlignment.Right, 100);
+
         this.hoverDecorationType = window.createTextEditorDecorationType({
             backgroundColor: 'red', // make configurable?
             border: '3px solid red',
@@ -343,7 +348,7 @@ export class InfoProvider implements Disposable {
 
     private async updateGoal(): Promise<boolean> {
         if (this.stopped) { return false; }
-
+        let text = 'Type: ';
         const info = await this.server.info(
             this.curFileName, this.curPosition.line + 1, this.curPosition.character);
         if (info.record && info.record.state) {
@@ -357,6 +362,19 @@ export class InfoProvider implements Disposable {
                 return false;
             }
         }
+        if (info.record) {
+            const name = info.record['full-id'] || info.record.text;
+            if (name) {
+                if (!info.record.tactic_params) {
+                    text += name + ' : ' + info.record.type;
+                }
+            }
+        }
+        if (!this.statusShown) {
+            this.statusBarItem.show();
+            this.statusShown = true;
+        }
+        this.statusBarItem.text = text;
     }
 
     private getMediaPath(mediaFile: string): string {
