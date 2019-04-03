@@ -77,6 +77,9 @@ It also contributes the following commands, which can be bound to keys if desire
 
 ## Release Notes
 
+### 0.14.0
+* Show type of term under cursor in status bar
+
 ### 0.13.3
 * Info view opens automatically
 
