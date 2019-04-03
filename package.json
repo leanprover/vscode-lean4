@@ -156,6 +156,11 @@
 					"type": "number",
 					"default": -1,
 					"description": "Index of the filter applied to the tactic state (in the array infoViewTacticStateFilters). An index of -1 means no filter is applied."
+				},
+				"lean.typeInStatusBar": {
+					"type": "boolean",
+					"default": true,
+					"description": "Show the type of term under the cursor in the status bar."
 				}
 			}
 		},

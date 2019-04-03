@@ -1,10 +1,11 @@
 import { readFileSync } from 'fs';
-import { Message } from 'lean-client-js-node';
+import { InfoResponse, Message } from 'lean-client-js-node';
 import { basename, join } from 'path';
 import {
     commands, Disposable, DocumentSelector,
     ExtensionContext, languages, Position, Range,
-    Selection, TextEditor, TextEditorDecorationType, TextEditorRevealType,
+    Selection, StatusBarAlignment, StatusBarItem, TextEditor,
+    TextEditorDecorationType, TextEditorRevealType,
     Uri, ViewColumn, WebviewPanel, window, workspace,
 } from 'vscode';
 import { Server } from './server';
@@ -32,10 +33,12 @@ enum DisplayMode {
 
 export class InfoProvider implements Disposable {
     private webviewPanel: WebviewPanel;
-
     private subscriptions: Disposable[] = [];
 
     private displayMode: DisplayMode = DisplayMode.AllMessage;
+
+    private statusBarItem: StatusBarItem;
+    private statusShown: boolean = false;
 
     private started: boolean = false;
     private stopped: boolean = false;
@@ -49,6 +52,9 @@ export class InfoProvider implements Disposable {
     private hoverDecorationType: TextEditorDecorationType;
 
     constructor(private server: Server, private leanDocs: DocumentSelector, private context: ExtensionContext) {
+
+        this.statusBarItem = window.createStatusBarItem(StatusBarAlignment.Right, 100);
+
         this.hoverDecorationType = window.createTextEditorDecorationType({
             backgroundColor: 'red', // make configurable?
             border: '3px solid red',
@@ -72,6 +78,10 @@ export class InfoProvider implements Disposable {
             workspace.onDidChangeConfiguration((e) => {
                 this.updateStylesheet();
                 this.rerender();
+                if (!workspace.getConfiguration('lean').get('typeInStatusBar') && this.statusShown) {
+                    this.statusBarItem.hide();
+                    this.statusShown = false;
+                }
             }),
             commands.registerCommand('_lean.revealPosition', this.revealEditorPosition),
             commands.registerCommand('_lean.infoView.pause', () => {
@@ -262,6 +272,8 @@ export class InfoProvider implements Disposable {
         }
 
         const chMsg = this.updateMessages();
+        /* updateTypeStatus is only called from the cases of the following switch-block, so pausing
+           live-updates to the infoview (via this.stopped) also pauses the type status bar item */
         switch (this.displayMode) {
         case DisplayMode.OnlyState:
             const chGoal = await this.updateGoal();
@@ -273,6 +285,11 @@ export class InfoProvider implements Disposable {
             break;
 
         case DisplayMode.AllMessage:
+            if (workspace.getConfiguration('lean').get('typeInStatusBar')) {
+                const info = await this.server.info(
+                    this.curFileName, this.curPosition.line + 1, this.curPosition.character);
+                this.updateTypeStatus(info);
+            }
             if (forceRefresh || chMsg) {
                 this.rerender();
             } else {
@@ -343,7 +360,6 @@ export class InfoProvider implements Disposable {
 
     private async updateGoal(): Promise<boolean> {
         if (this.stopped) { return false; }
-
         const info = await this.server.info(
             this.curFileName, this.curPosition.line + 1, this.curPosition.character);
         if (info.record && info.record.state) {
@@ -357,6 +373,24 @@ export class InfoProvider implements Disposable {
                 return false;
             }
         }
+        if (workspace.getConfiguration('lean').get('typeInStatusBar')) {
+            this.updateTypeStatus(info);
+        }
+    }
+
+    private updateTypeStatus(info: InfoResponse) {
+        let text = '';
+        if (info.record) {
+            const name = info.record['full-id'] || info.record.text;
+            if (name && !info.record.tactic_params) {
+                text = name + ' : ' + info.record.type;
+            }
+        }
+        if (!this.statusShown) {
+            this.statusBarItem.show();
+            this.statusShown = true;
+        }
+        this.statusBarItem.text = text;
     }
 
     private getMediaPath(mediaFile: string): string {
