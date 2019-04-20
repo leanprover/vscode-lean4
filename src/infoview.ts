@@ -208,6 +208,7 @@ export class InfoProvider implements Disposable {
     private rerender() {
         if (this.webviewPanel) {
             this.webviewPanel.webview.html = this.render();
+            this.stopHover();
         }
     }
     private async postMessage(msg: any): Promise<boolean> {
