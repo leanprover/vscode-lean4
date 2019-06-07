@@ -48,10 +48,13 @@ export class LeanCompletionItemProvider implements CompletionItemProvider {
                 for (const completion of message.completions) {
                     const item = new CompletionItem(completion.text, CompletionItemKind.Function);
                     item.range = new Range(position.translate(0, -message.prefix.length), position);
+                    item.insertText = completion.text;
                     if (completion.tactic_params) {
                         item.detail = completion.tactic_params.join(' ');
+                        item.label = item.label + ' ' + item.detail;
                     } else {
-                        item.detail = completion.type;
+                        item.detail = completion.type.replace(/\?([^\s]+)/g, '$1');
+                        item.label = item.label + ' : ' + item.detail;
                     }
                     item.documentation = new MarkdownString(completion.doc);
                     completions.push(item);
