@@ -450,7 +450,7 @@ export class InfoProvider implements Disposable {
             .replace(/^(\d+ goals|1 goal)/mg, '<strong class="goal-goals">$1</strong>')
             .replace(/^(context|state):/mg, '<strong class="goal-goals">$1</strong>:')
             .replace(/^(case) /mg, '<strong class="goal-case">$1</strong> ')
-            .replace(/^([^:\n< ][^:\n⊢]*) :/mg, '<strong class="goal-hyp">$1</strong> :');
+            .replace(/^([^:\n< ][^:\n⊢{[(⦃]*) :/mg, '<strong class="goal-hyp">$1</strong> :');
     }
 
     private renderGoal() {
