@@ -50,6 +50,7 @@ This extension contributes the following settings (for a complete list, open the
   - The `name` key is optional and may contain a string that is displayed in the dropdown instead of the full regex details.
 * `lean.infoViewFilterIndex`: index of the filter applied to the tactic state (in the array `lean.infoViewTacticStateFilters`). An index of -1 means no filter is applied.
 * `lean.typeInStatusBar`: controls whether the type of the term under the cursor is displayed as a status bar item (`true` by default).
+* `lean.typesInCompletionList`: controls whether the types of all items in the list of completions are displayed. By default, only the type of the highlighted item is shown.
 
 It also contributes the following commands, which can be bound to keys if desired:
 

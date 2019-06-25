@@ -1,5 +1,5 @@
 import { CompletionItem, CompletionItemKind, CompletionItemProvider,
-    MarkdownString, Position, Range, TextDocument } from 'vscode';
+    MarkdownString, Position, Range, TextDocument, workspace } from 'vscode';
 import { Server } from './server';
 import { isInputCompletion } from './util';
 
@@ -52,6 +52,10 @@ export class LeanCompletionItemProvider implements CompletionItemProvider {
                         item.detail = completion.tactic_params.join(' ');
                     } else {
                         item.detail = completion.type;
+                    }
+                    if (workspace.getConfiguration('lean').get('typesInCompletionList')) {
+                        item.insertText = completion.text;
+                        item.label = item.label + (completion.tactic_params ? ' ' + item.detail : ' : ' + item.detail);
                     }
                     item.documentation = new MarkdownString(completion.doc);
                     completions.push(item);

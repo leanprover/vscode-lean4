@@ -161,6 +161,11 @@
 					"type": "boolean",
 					"default": true,
 					"description": "Show the type of term under the cursor in the status bar."
+				},
+				"lean.typesInCompletionList": {
+					"type": "boolean",
+					"default": false,
+					"description": "Display types of all items in the list of completions. By default, only the type of the highlighted item is shown."
 				}
 			}
 		},
