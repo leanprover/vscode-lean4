@@ -41,6 +41,7 @@ This extension contributes the following settings (for a complete list, open the
   - `project`: check the entire project's files
 * `lean.input.leader`: character to type to trigger Unicode input mode (`\` by default)
 * `lean.input.languages`: allows the Unicode input functionality to be used in other languages
+* `lean.input.customTranslations`: add additional input Unicode translations. Example: `{"foo": "☺"}` will correct `\foo` to `☺` (assuming the `lean.input.leader` has its default value `\`).
 * `lean.infoViewAutoOpen`: controls whether the info view is automatically displayed when the Lean extension is activated (`true` by default).
 * `lean.infoViewTacticStateFilters`: An array of objects containing regular expression strings that can be used to filter (positively or negatively) the tactic state in the info view. Set to an empty array `[]` to hide the filter select dropdown. Each object must contain the following keys:
   - `regex` is a properly-escaped regex string,
