@@ -53,7 +53,7 @@ export class InfoProvider implements Disposable {
 
     constructor(private server: Server, private leanDocs: DocumentSelector, private context: ExtensionContext) {
 
-        this.statusBarItem = window.createStatusBarItem(StatusBarAlignment.Right, 100);
+        this.statusBarItem = window.createStatusBarItem(StatusBarAlignment.Right, 1000);
 
         this.hoverDecorationType = window.createTextEditorDecorationType({
             backgroundColor: 'red', // make configurable?
