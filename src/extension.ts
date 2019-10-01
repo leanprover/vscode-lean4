@@ -1,4 +1,4 @@
-import loadJsonFile from 'load-json-file';
+import loadJsonFile = require('load-json-file');
 import { commands, DocumentFilter, ExtensionContext, languages, Uri, workspace } from 'vscode';
 import { batchExecuteFile } from './batch';
 import { LeanCompletionItemProvider } from './completion';
