@@ -77,6 +77,7 @@ class TextEditorAbbrevHandler {
             [this.leader + '[[]]']: '⟦⟧',
             [this.leader + '<>']: '⟨⟩',
             [this.leader + '([])'] : '⟮⟯',
+            [this.leader + 'f<>']: '‹›',
         };
         if (range) {
             const replacement = hackyReplacements[this.editor.document.getText(range)];
