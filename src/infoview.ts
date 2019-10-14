@@ -272,6 +272,9 @@ export class InfoProvider implements Disposable {
             return;
         }
 
+        // clear type in status bar item
+        this.statusBarItem.text = '';
+
         const chMsg = this.updateMessages();
         /* updateTypeStatus is only called from the cases of the following switch-block, so pausing
            live-updates to the infoview (via this.stopped) also pauses the type status bar item */
@@ -380,18 +383,16 @@ export class InfoProvider implements Disposable {
     }
 
     private updateTypeStatus(info: InfoResponse) {
-        let text = '';
-        if (info.record) {
-            const name = info.record['full-id'] || info.record.text;
-            if (name && !info.record.tactic_params) {
-                text = name + ' : ' + info.record.type;
-            }
-        }
         if (!this.statusShown) {
             this.statusBarItem.show();
             this.statusShown = true;
         }
-        this.statusBarItem.text = text;
+        if (info.record) {
+            const name = info.record['full-id'] || info.record.text;
+            if (name && !info.record.tactic_params) {
+                this.statusBarItem.text = name + ' : ' + info.record.type;
+            }
+        }
     }
 
     private getMediaPath(mediaFile: string): string {
