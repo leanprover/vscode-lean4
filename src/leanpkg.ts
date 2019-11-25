@@ -76,13 +76,18 @@ export class LeanpkgService implements TaskProvider, Disposable {
         }
     }
 
-    checkLeanpkgPathFile() {
+    async checkLeanpkgPathFile() {
         if (!fs.existsSync(this.leanpkgToml) && !fs.existsSync(this.leanpkgPath)) {
-            window.showWarningMessage(`
+            const leanFiles = await workspace.findFiles('**/*.lean', undefined, 1);
+            // Only show warning if there are Lean files, see https://github.com/leanprover/vscode-lean/issues/133
+            // (The extension is also activated for Markdown files.)
+            if (leanFiles.length > 0) {
+                window.showWarningMessage(`
 You are running Lean in a directory without a leanpkg.toml file, this is NOT
 supported.  Please open the directoy containing the leanpkg.toml file
 instead. [More details
 here](https://github.com/leanprover-community/mathlib/blob/master/docs/install/project.md)`);
+            }
         } else if (!fs.existsSync(this.leanpkgPath)) {
             this.requestLeanpkgConfigure('Lean: leanpkg.path does not exist');
         } else if (fs.statSync(this.leanpkgPath) < fs.statSync(this.leanpkgToml)) {
