@@ -17,7 +17,7 @@ We currently support a variety of features.
 * Search for declarations in open files (<kbd>ctrl</kbd>+<kbd>p</kbd> #)
 * Region of interest checking (i.e. control how much of the project is checked automatically by Lean)
 * Fill in `{! !}` holes using <kbd>ctrl</kbd>+<kbd>.</kbd>
-* Tasks for leanpkg (<kbd>ctrl</kbd>+<kbd>p</kbd> task configure)
+* Tasks for leanpkg (<kbd>ctrl</kbd>+<kbd>shift</kbd>+<kbd>p</kbd> and select "Tasks: Configure Task")
 * Tactic state filtering with regex
 * Type of the term under the cursor can be displayed in the status bar
 
@@ -31,7 +31,8 @@ On Windows, if you installed Lean using MSYS2, you need to add both `C:\msys64\m
 
 This extension contributes the following settings (for a complete list, open the VS Code Settings and scroll to "Lean configuration"):
 
-* `lean.executablePath`: controls which Lean executable is used when starting the server
+* `lean.executablePath`: controls which Lean executable is used when starting the server. If you are bundling Lean and `vscode-lean` with [Portable mode VS Code](https://code.visualstudio.com/docs/editor/portable), you might find it useful to specify a relative path to Lean. This can be done by starting this setting string with `%extensionPath%`; the extension will replace this with the absolute path of the extension folder. For example, with the default directory setup in Portable mode, `%extensionPath%/../../../lean` will point to `lean` in the same folder as the VS Code executable / application.
+* `lean.leanpkgPath`: controls which leanpkg executable is used for `leanpkg` task integration. The `%extensionPath%` token can be used here as well.
 * `lean.timeLimit`: controls the `-T` flag passed to the Lean executable
 * `lean.memoryLimit`: controls the `-M` flag passed to the Lean executable
 * `lean.roiModeDefault`: controls the default region of interest, the options are:
