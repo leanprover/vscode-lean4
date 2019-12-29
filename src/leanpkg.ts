@@ -61,7 +61,7 @@ export class LeanpkgService implements TaskProvider, Disposable {
 
         const leanPath = config.get<string>('executablePath').replace('%extensionPath%', extensionPath + '/');
         if (leanPath) {
-            const leanpkg2 = path.join(path.dirname(leanPath), 'lean');
+            const leanpkg2 = path.join(path.dirname(leanPath), 'leanpkg');
             if (fs.existsSync(leanpkg2)) { return leanpkg2; }
         }
 
