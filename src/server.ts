@@ -5,7 +5,7 @@ import { Event, Message, ProcessTransport, Task } from 'lean-client-js-node';
 import { homedir } from 'os';
 import { resolve } from 'path';
 import * as username from 'username';
-import { OutputChannel, TerminalOptions, window, workspace } from 'vscode';
+import { extensions, OutputChannel, TerminalOptions, window, workspace } from 'vscode';
 import { LowPassFilter } from './util';
 
 export interface ServerStatus {
@@ -100,8 +100,10 @@ export class Server extends leanclient.Server {
             this.options.push('-T');
             this.options.push('' + config.get('timeLimit'));
 
+            const {extensionPath} = extensions.getExtension('jroesch.lean');
+            const executablePath = this.executablePath.replace('%extensionPath%', extensionPath + '/');
             this.transport = new ProcessTransport(
-                this.executablePath, this.workingDirectory, this.options);
+                executablePath, this.workingDirectory, this.options);
             super.connect();
 
             this.restarted.fire(null);
