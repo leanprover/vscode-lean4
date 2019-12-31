@@ -363,22 +363,26 @@ export class InfoProvider implements Disposable {
     }
 
     private async updateGoal(): Promise<boolean> {
-        if (this.stopped) { return false; }
-        const info = await this.server.info(
-            this.curFileName, this.curPosition.line + 1, this.curPosition.character);
-        if (info.record && info.record.state) {
-            if (this.curGoalState !== info.record.state) {
-                this.curGoalState = info.record.state;
-                return true;
+        if (this.stopped || !this.curFileName || !this.curPosition) { return false; }
+        try {
+            const info = await this.server.info(
+                this.curFileName, this.curPosition.line + 1, this.curPosition.character);
+            if (info.record && info.record.state) {
+                if (this.curGoalState !== info.record.state) {
+                    this.curGoalState = info.record.state;
+                    return true;
+                }
+            } else {
+                if (this.curGoalState) {
+                    this.curGoalState = null;
+                    return false;
+                }
             }
-        } else {
-            if (this.curGoalState) {
-                this.curGoalState = null;
-                return false;
+            if (workspace.getConfiguration('lean').get('typeInStatusBar')) {
+                this.updateTypeStatus(info);
             }
-        }
-        if (workspace.getConfiguration('lean').get('typeInStatusBar')) {
-            this.updateTypeStatus(info);
+        } catch (e) {
+            if (e !== 'interrupted') { throw e; }
         }
     }
 
