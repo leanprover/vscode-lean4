@@ -85,7 +85,7 @@ export function activate(context: ExtensionContext) {
     let langConf = Uri.file(context.asAbsolutePath('language-configuration.json')).toJSON();
     langConf = { comments: langConf.comments, brackets: langConf.brackets,
         autoClosingPairs: langConf.autoClosingPairs, surroundingPairs: langConf.surroundingPairs,
-        wordPattern: /(-?\d*\.\d\w*)|([^`~!@$%^&*()-=+\[{\]}⟨⟩\\|;:",./?\s]+)/ };
+        wordPattern: /(-?\d*\.\d\w*)|([^`~!@$%^&*()-=+\[{\]}⟨⟩⦃⦄⟦⟧⟮⟯‹›\\|;:",./?\s]+)/ };
     context.subscriptions.push(
         languages.setLanguageConfiguration('lean', langConf),
     );
