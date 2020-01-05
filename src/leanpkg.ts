@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { commands, Disposable, ProcessExecution, Task, TaskGroup, TaskProvider, Uri,
-    window, workspace } from 'vscode';
+import { commands, Disposable, extensions, ProcessExecution, Task, TaskGroup,
+    TaskProvider, Uri, window, workspace } from 'vscode';
 import { Server } from './server';
 
 export class LeanpkgService implements TaskProvider, Disposable {
@@ -55,12 +55,13 @@ export class LeanpkgService implements TaskProvider, Disposable {
     leanpkgExecutable(): string {
         const config = workspace.getConfiguration('lean');
 
-        const leanpkg = config.get<string>('leanpkgPath');
+        const {extensionPath} = extensions.getExtension('jroesch.lean');
+        const leanpkg = config.get<string>('leanpkgPath').replace('%extensionPath%', extensionPath + '/');
         if (leanpkg) { return leanpkg; }
 
-        const leanPath = config.get<string>('executablePath');
+        const leanPath = config.get<string>('executablePath').replace('%extensionPath%', extensionPath + '/');
         if (leanPath) {
-            const leanpkg2 = path.join(path.dirname(leanPath), 'lean');
+            const leanpkg2 = path.join(path.dirname(leanPath), 'leanpkg');
             if (fs.existsSync(leanpkg2)) { return leanpkg2; }
         }
 
