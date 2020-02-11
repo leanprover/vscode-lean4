@@ -1,7 +1,7 @@
 import { CancellationToken, commands, Disposable, DocumentFilter, Hover,
     HoverProvider, languages, Position, Range, Selection, TextDocument,
     TextDocumentChangeEvent, TextEditor, TextEditorDecorationType,
-    TextEditorSelectionChangeEvent, window, workspace, MarkdownString } from 'vscode';
+    TextEditorSelectionChangeEvent, window, workspace } from 'vscode';
 
 export interface Translations { [abbrev: string]: string; }
 
@@ -23,7 +23,7 @@ function inputModeCustomTranslations(): Translations {
 
 /** Adds hover behaviour for getting translations of unicode characters. Eg: "Type ⊓ using \glb or \sqcap"  */
 export class LeanInputExplanationHover implements HoverProvider, Disposable {
-    private leader: String;
+    private leader: string;
     private reverseTranslations: { [unicode: string]: string[] };
     private maxTranslationSize: number;
 
@@ -41,7 +41,7 @@ export class LeanInputExplanationHover implements HoverProvider, Disposable {
         this.maxTranslationSize = 0;
         this.reverseTranslations = {};
         const allTranslations = { ...this.translations, ...customTranslations };
-        for (const abbrev in allTranslations) {
+        for (const abbrev of Object.getOwnPropertyNames(allTranslations)) {
             const unicode = allTranslations[abbrev];
             if (!this.reverseTranslations[unicode]) {
                 this.reverseTranslations[unicode] = [];
@@ -49,7 +49,7 @@ export class LeanInputExplanationHover implements HoverProvider, Disposable {
             this.reverseTranslations[unicode].push(abbrev);
             this.maxTranslationSize = Math.max(this.maxTranslationSize, unicode.length);
         }
-        for (const unicode in this.reverseTranslations) {
+        for (const unicode of Object.getOwnPropertyNames(this.reverseTranslations)) {
             this.reverseTranslations[unicode].sort((a, b) => a.length - b.length);
         }
     }
@@ -60,7 +60,9 @@ export class LeanInputExplanationHover implements HoverProvider, Disposable {
             .filter((init) => this.reverseTranslations[init])
             .map((init) => ({ unicode: init, abbrevs: this.reverseTranslations[init] }))
             .reverse();
-        if (allAbbrevs.length == 0) return;
+        if (allAbbrevs.length === 0) {
+            return;
+        }
 
         const hoverMarkdown =
             allAbbrevs.map(({unicode, abbrevs}) =>
