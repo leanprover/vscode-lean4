@@ -166,8 +166,8 @@ class TextEditorAbbrevHandler {
                 } else if (change.text === this.leader) {
                     return this.convertRange(
                         new Range(change.range.start, change.range.start.translate(0, 1)));
-                } else if (change.text.match(/^\s+|[)}⟩]$/)) {
-                    // whitespace, closing parens
+                } else if (change.text.match(/^\s+$/)) {
+                    // whitespace
                     return this.convertRange();
                 }
             }
