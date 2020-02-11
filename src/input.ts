@@ -1,7 +1,7 @@
 import { CancellationToken, commands, Disposable, DocumentFilter, Hover,
     HoverProvider, languages, Position, Range, Selection, TextDocument,
     TextDocumentChangeEvent, TextEditor, TextEditorDecorationType,
-    TextEditorSelectionChangeEvent, window, workspace } from 'vscode';
+    TextEditorSelectionChangeEvent, window, workspace, MarkdownString } from 'vscode';
 
 export interface Translations { [abbrev: string]: string; }
 
@@ -23,36 +23,52 @@ function inputModeCustomTranslations(): Translations {
 
 /** Adds hover behaviour for getting translations of unicode characters. Eg: "Type ⊓ using \glb or \sqcap"  */
 export class LeanInputExplanationHover implements HoverProvider, Disposable {
-    private leader = inputModeLeader();
-    private customTranslations = inputModeCustomTranslations();
+    private leader: String;
+    private reverseTranslations: { [unicode: string]: string[] };
+    private maxTranslationSize: number;
+
     private subscriptions: Disposable[] = [];
 
     constructor(private translations: Translations) {
-        this.subscriptions.push(
-            workspace.onDidChangeConfiguration(() => {
-                this.leader = inputModeLeader();
-                this.customTranslations = inputModeCustomTranslations();
-            }));
+        this.readConfig();
+        this.subscriptions.push(workspace.onDidChangeConfiguration(() => this.readConfig()));
     }
 
-    getAbbrevations(symbol: string): string[] {
-        const abbrevs: string[] = [];
-        for (const k in this.customTranslations) {
-            if (this.customTranslations[k] === symbol) { abbrevs.push(k); }
+    private readConfig() {
+        this.leader = inputModeLeader();
+        const customTranslations = inputModeCustomTranslations();
+
+        this.maxTranslationSize = 0;
+        this.reverseTranslations = {};
+        const allTranslations = { ...this.translations, ...customTranslations };
+        for (const abbrev in allTranslations) {
+            const unicode = allTranslations[abbrev];
+            if (!this.reverseTranslations[unicode]) {
+                this.reverseTranslations[unicode] = [];
+            }
+            this.reverseTranslations[unicode].push(abbrev);
+            this.maxTranslationSize = Math.max(this.maxTranslationSize, unicode.length);
         }
-        for (const k in this.translations) {
-            if (this.customTranslations[k]) {continue;}
-            if (this.translations[k] === symbol) { abbrevs.push(k); }
+        for (const unicode in this.reverseTranslations) {
+            this.reverseTranslations[unicode].sort((a, b) => a.length - b.length);
         }
-        return abbrevs;
     }
 
     provideHover(document: TextDocument, pos: Position, token: CancellationToken): Hover | undefined {
-        const symbolRange = new Range(pos, pos.translate(0, 1));
-        const symbol = document.getText(symbolRange);
-        const abbrevs = this.getAbbrevations(symbol).sort((a, b) => a.length - b.length);
-        return abbrevs.length > 0 &&
-            new Hover(`Type ${symbol} using ${abbrevs.map((a) => this.leader + a).join(' or ')}`, symbolRange);
+        const text = document.getText(new Range(pos, pos.translate(0, this.maxTranslationSize)));
+        const allAbbrevs = Array(text.length).fill(undefined).map((_, i) => text.substr(0, i+1))
+            .filter((init) => this.reverseTranslations[init])
+            .map((init) => ({ unicode: init, abbrevs: this.reverseTranslations[init] }))
+            .reverse();
+        if (allAbbrevs.length == 0) return;
+
+        const hoverMarkdown =
+            allAbbrevs.map(({unicode, abbrevs}) =>
+                    `Type ${unicode} using ${abbrevs.map((a) => '`' + this.leader + a + '`').join(' or ')}`)
+                .join('\n\n');
+        const maxUnicodeLen = allAbbrevs[0].unicode.length;
+        const hoverRange = new Range(pos, pos.translate(0, maxUnicodeLen));
+        return new Hover(hoverMarkdown, hoverRange);
     }
 
     dispose() {
