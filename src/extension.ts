@@ -6,6 +6,7 @@ import { LeanDefinitionProvider } from './definition';
 import { LeanDiagnosticsProvider } from './diagnostics';
 import { DocViewProvider } from './docview';
 import { LeanHoles } from './holes';
+import { TacticSuggestions } from './tacticsuggestions';
 import { LeanHoverProvider } from './hover';
 import { InfoProvider } from './infoview';
 import { inputModeLanguages, LeanInputAbbreviator, LeanInputExplanationHover } from './input';
@@ -102,6 +103,9 @@ export function activate(context: ExtensionContext) {
 
     // Holes
     context.subscriptions.push(new LeanHoles(server, LEAN_MODE));
+
+    // Tactic suggestions
+    context.subscriptions.push(new TacticSuggestions(server));
 
     // Add item to the status bar.
     context.subscriptions.push(new LeanStatusBarItem(server, roiManager));
