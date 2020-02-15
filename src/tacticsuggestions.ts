@@ -20,14 +20,18 @@ export class TacticSuggestions implements Disposable {
 
             if (messages.length === 0) return;
 
-            // Replace everything from the message start till the end of line
             const msg = messages[0];
+            const suggestion = msg.text.match(/Try this: ?(.*)/)[1];
+
+            if (!suggestion) return;
+
+            // Replace everything from the message start till the end of line
             const range = new Range(
                 new Position(curPosition.line, msg.pos_col),
                 new Position(curPosition.line, 
                     textEditor.document.lineAt(curPosition.line).range.end.character)
             )
-            edit.replace(range, msg.text);
+            edit.replace(range, suggestion);
         };
 
         this.subscriptions.push(
