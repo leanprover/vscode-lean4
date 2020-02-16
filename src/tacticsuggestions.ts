@@ -65,7 +65,7 @@ export class TacticSuggestions implements Disposable {
         return messages[0];
     }
 
-    private pasteIntoEditor(m : Message, textEditor : TextEditor, suggestion : string | null){
+    private async pasteIntoEditor(m : Message, textEditor : TextEditor, suggestion : string | null){
         if (suggestion === null) {
             // Find first suggestion in message
             suggestion = m.text.match(new RegExp(this.regex, 'm'))[1];
@@ -81,8 +81,15 @@ export class TacticSuggestions implements Disposable {
             new Position(line,
                 textEditor.document.lineAt(line).range.end.character)
         )
-        textEditor.edit(editBuilder => {
+        await textEditor.edit(editBuilder => {
             editBuilder.replace(range, suggestion)
         });
+
+        // Focus text editor
+        const lastCol = textEditor.document.lineAt(line).range.end.character;
+        const lastPos = new Position(line, lastCol)
+        const selection = new Range(lastPos, lastPos);
+        window.showTextDocument(textEditor.document,
+            {viewColumn:textEditor.viewColumn, selection});
     }
 }
