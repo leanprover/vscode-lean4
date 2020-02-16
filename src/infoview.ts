@@ -49,6 +49,8 @@ export class InfoProvider implements Disposable {
 
     private stylesheet: string = null;
 
+    private messageFormatters: ((text : string, msg : Message) => string)[] = [];
+
     private hoverDecorationType: TextEditorDecorationType;
 
     constructor(private server: Server, private leanDocs: DocumentSelector, private context: ExtensionContext) {
@@ -121,6 +123,10 @@ export class InfoProvider implements Disposable {
 
     dispose() {
         for (const s of this.subscriptions) { s.dispose(); }
+    }
+
+    addMessageFormatter(f : (text : string, msg : Message) => string) {
+        this.messageFormatters.push(f);
     }
 
     private updateStylesheet() {
@@ -450,7 +456,7 @@ export class InfoProvider implements Disposable {
     }
 
     private colorizeMessage(goal: string): string {
-        return escapeHtml(goal)
+        return goal
             .replace(/^([|⊢]) /mg, '<strong class="goal-vdash">$1</strong> ')
             .replace(/^(\d+ goals|1 goal)/mg, '<strong class="goal-goals">$1</strong>')
             .replace(/^(context|state):/mg, '<strong class="goal-goals">$1</strong>:')
@@ -475,7 +481,7 @@ export class InfoProvider implements Disposable {
                     return filt.match ? test : !test;
                 }).join('\n');
         return `<div id="goal"><h1>Tactic State</h1><pre>${
-            this.colorizeMessage(filteredGoalState)}</pre></div>`;
+            this.colorizeMessage(escapeHtml(filteredGoalState))}</pre></div>`;
     }
 
     private renderMessages() {
@@ -488,14 +494,17 @@ export class InfoProvider implements Disposable {
             const cmd = encodeURI('command:_lean.revealPosition?' +
                 JSON.stringify([Uri.file(m.file_name), m.pos_line, m.pos_col]));
             const shouldColorize = m.severity === 'error';
-            const colorized = shouldColorize ? this.colorizeMessage(m.text) :
-                escapeHtml(m.text);
+            let text = escapeHtml(m.text)
+            text = shouldColorize ? this.colorizeMessage(text) : text;
+            this.messageFormatters.forEach((formatter) => {
+                text = formatter(text, m);
+            });
             return `<div class="message ${m.severity}" data-line="${l}" data-column="${c}"
                 data-end-line="${el}" data-end-column="${ec}">
                 <h1 title="${f}:${l}:${c}"><a href="${cmd}">
                     ${b}:${l}:${c}: ${m.severity} ${escapeHtml(m.caption)}
                 </a></h1>
-                <pre>${colorized}</pre></div>`;
+                <pre>${text}</pre></div>`;
         }).join('\n');
     }
 

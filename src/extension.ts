@@ -104,14 +104,16 @@ export function activate(context: ExtensionContext) {
     // Holes
     context.subscriptions.push(new LeanHoles(server, LEAN_MODE));
 
-    // Tactic suggestions
-    context.subscriptions.push(new TacticSuggestions(server));
 
     // Add item to the status bar.
     context.subscriptions.push(new LeanStatusBarItem(server, roiManager));
 
     // Add info view: listing either the current goal state or a list of all error messages
-    context.subscriptions.push(new InfoProvider(server, LEAN_MODE, context));
+    const infoView = new InfoProvider(server, LEAN_MODE, context);
+    context.subscriptions.push();
+
+    // Tactic suggestions
+    context.subscriptions.push(new TacticSuggestions(server, infoView));
 
     context.subscriptions.push(new LeanpkgService(server));
 
