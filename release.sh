@@ -13,3 +13,6 @@ git tag -a v$new_version -m "vscode-lean $new_version"
 ./node_modules/.bin/vsce publish
 git push
 git push --tags
+
+./node_modules/.bin/vsce package
+hub release create -m "vscode-lean $new_version" v$new_version -a lean-$new_version.vsix
