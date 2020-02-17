@@ -80,6 +80,9 @@ It also contributes the following commands, which can be bound to keys if desire
 
 ## Release Notes
 
+### 0.15.0
+* Command to apply tactic suggestions such as from `library_search` (using `alt+v` or clicking "Try this:" in the info view)
+
 ### 0.14.0
 * Show type of term under cursor in status bar
 
