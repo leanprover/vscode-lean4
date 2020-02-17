@@ -177,6 +177,12 @@
 				"description": "Restart the Language Server."
 			},
 			{
+				"command": "lean.pasteTacticSuggestion",
+				"category": "Lean",
+				"title": "Paste Tactic Suggestion",
+				"description": "Pastes a suggestion provided by a tactic (e.g. from squeeze_simp)"
+			},
+			{
 				"command": "lean.input.convert",
 				"category": "Lean",
 				"title": "Input: Convert Current Abbreviation",
@@ -326,6 +332,12 @@
 				"command": "lean.batchExecute",
 				"key": "ctrl+shift+r",
 				"mac": "cmd+shift+r",
+				"when": "editorTextFocus && editorLangId == lean"
+			},
+			{
+				"command": "lean.pasteTacticSuggestion",
+				"key": "alt+v",
+				"mac": "alt+v",
 				"when": "editorTextFocus && editorLangId == lean"
 			}
 		],
