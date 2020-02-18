@@ -2204,7 +2204,8 @@
 			],
 			"while": "(^|\\G)((?=\\s*[-=]{3,}\\s*$)|[ ]{4,}(?=\\S))"
 		},
-		"raw_block": {
+		"raw_block_disabled": {
+			"why": "doc comments strip indentation",
 			"begin": "(^|\\G)([ ]{4}|\\t)",
 			"name": "markup.raw.block.markdown",
 			"while": "(^|\\G)([ ]{4}|\\t)"
