@@ -300,6 +300,14 @@
 					".lean"
 				],
 				"configuration": "./language-configuration.json"
+			},
+			{
+				"id": "leanmarkdown",
+				"aliases": [],
+				"extensions": [
+					".leanmarkdown"
+				],
+				"configuration": "./language-configuration.json"
 			}
 		],
 		"grammars": [
@@ -307,6 +315,11 @@
 				"language": "lean",
 				"scopeName": "source.lean",
 				"path": "./syntaxes/lean.json"
+			},
+			{
+				"language": "leanmarkdown",
+				"scopeName": "source.lean.markdown",
+				"path": "./syntaxes/lean-markdown.json"
 			}
 		],
 		"keybindings": [

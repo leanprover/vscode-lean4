@@ -61,10 +61,18 @@
       "name": "comment.line.double-dash.lean"
     },
     "docComment": {
-      "begin": "/--", "end": "-/", "name": "comment.block.documentation.lean"
+      "begin": "/--", "end": "-/", "name": "comment.block.documentation.lean",
+      "patterns": [
+        {"include": "source.lean.markdown"},
+        {"include": "#blockComment"}
+      ]
     },
     "modDocComment": {
-      "begin": "/-!", "end": "-/", "name": "comment.block.documentation.lean"
+      "begin": "/-!", "end": "-/", "name": "comment.block.documentation.lean",
+      "patterns": [
+        {"include": "source.lean.markdown"},
+        {"include": "#blockComment"}
+      ]
     },
     "blockComment": {
       "begin": "/-", "end": "-/", "name": "comment.block.lean",
