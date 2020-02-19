@@ -110,7 +110,7 @@ export function activate(context: ExtensionContext) {
 
     // Add info view: listing either the current goal state or a list of all error messages
     const infoView = new InfoProvider(server, LEAN_MODE, context);
-    context.subscriptions.push();
+    context.subscriptions.push(infoView);
 
     // Tactic suggestions
     context.subscriptions.push(new TacticSuggestions(server, infoView));
