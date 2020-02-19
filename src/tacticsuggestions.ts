@@ -32,7 +32,7 @@ export class TacticSuggestions implements Disposable {
             const newText = text.replace(new RegExp(this.regex, 'mg'), (match,tactic) => {
                 const command = encodeURI('command:_lean.pasteTacticSuggestion?' +
                     JSON.stringify([m, tactic]));
-                return `${this.magicWord}<a href="${command}">${tactic}</a>`
+                return `${this.magicWord}<a href="${command}" title="${tactic}">${tactic}</a>`
             });
             return newText;
         });
