@@ -7,8 +7,10 @@ import { InfoProvider } from './infoview';
 /** Pastes suggestions provided by tactics such as `squeeze_simp` */
 export class TacticSuggestions implements Disposable {
     private subscriptions: Disposable[] = [];
+
+    // Match everything after "Try this" until the next unindented line
     private magicWord = 'Try this: ';
-    private regex = '^' + this.magicWord + '(.*)$';
+    private regex = '^' + this.magicWord + '((.*\n )*.*)$';
 
     constructor(private server: Server, private infoView: InfoProvider) {
 
