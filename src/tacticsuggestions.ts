@@ -72,7 +72,7 @@ export class TacticSuggestions implements Disposable {
         return messages[0];
     }
 
-    private pasteIntoEditor(m : Message, textEditor : TextEditor, suggestion : string | null){
+    private async pasteIntoEditor(m : Message, textEditor : TextEditor, suggestion : string | null){
         if (suggestion === null) {
             // Find first suggestion in message
             suggestion = m.text.match(new RegExp(this.regex, 'm'))[1];
@@ -129,8 +129,13 @@ export class TacticSuggestions implements Disposable {
             new Position(startLine, startCol),
             new Position(endLine, endCol)
         )
-        textEditor.edit(editBuilder => {
+        await textEditor.edit(editBuilder => {
             editBuilder.replace(range, suggestion)
         });
+
+        // Strangely, the cursor moves during the edit, but the selection anchor
+        // does not. Therefore, move the anchor to the cursor:
+        textEditor.selection =
+            new Selection(textEditor.selection.active, textEditor.selection.active);
     }
 }
