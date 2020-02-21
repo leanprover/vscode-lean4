@@ -41,7 +41,7 @@ export class RoiManager implements Disposable {
         this.send();
 
         this.subscriptions.push(commands.registerCommand('lean.roiMode.select', async () => {
-            const items: Array<QuickPickItem & {mode: RoiMode}> = [
+            const items: (QuickPickItem & {mode: RoiMode})[] = [
                 {
                     label: 'nothing',
                     description: 'disable checking',
