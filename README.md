@@ -13,8 +13,8 @@ We currently support a variety of features.
 * Error messages / diagnostics
 * Customizable Unicode input support (e.g. type `\la`+<kbd>tab</kbd> to input `λ`)
 * Info view window to show goal, tactic state, and error messages:
-  - click <img src="media/display-goal-light.svg"> or hit <kbd>ctrl</kbd>+<kbd>shift</kbd>+<kbd>enter</kbd> for local goal view, or
-  - click <img src="media/display-list-light.svg"> or hit <kbd>ctrl</kbd>+<kbd>shift</kbd>+<kbd>alt</kbd>+<kbd>enter</kbd> for all messages
+  - click <img src="media/display-goal-light.png"> or hit <kbd>ctrl</kbd>+<kbd>shift</kbd>+<kbd>enter</kbd> for local goal view, or
+  - click <img src="media/display-list-light.png"> or hit <kbd>ctrl</kbd>+<kbd>shift</kbd>+<kbd>alt</kbd>+<kbd>enter</kbd> for all messages
 * Batch file execution
 * Search for declarations in open files (<kbd>ctrl</kbd>+<kbd>p</kbd> `#`)
 * Region of interest checking (i.e. control how much of the project is checked automatically by Lean)
@@ -62,7 +62,7 @@ It also contributes the following commands, which can be bound to keys if desire
 * `lean.infoView.displayGoal`: show the tactic state and any messages (e.g. info, warning, error) at the current position in the info view window (bound to <kbd>ctrl</kbd>+<kbd>shift</kbd>+<kbd>enter</kbd> by default)
 * `lean.infoView.displayList`: show all messages for the current file from Lean in the info view window (bound to <kbd>ctrl</kbd>+<kbd>shift</kbd>+<kbd>alt</kbd>+<kbd>enter</kbd> by default)
 * `lean.infoView.copyToComment`: copy the current contents of the info view into a new comment on the next line
-* `lean.infoView.toggleUpdating`: pause / continue live updates of the info view (same as clicking on the <img src="media/pause.svg"> and <img src="media/continue.svg"> icons)
+* `lean.infoView.toggleUpdating`: pause / continue live updates of the info view (same as clicking on the <img src="media/pause.png"> and <img src="media/continue.png"> icons)
 * `lean.roiMode.select`: select the region of interest (files to be checked by the Lean server)
 * `lean.batchExecute`: execute the current file using Lean (bound to <kbd>ctrl</kbd>+<kbd>shift</kbd>+<kbd>r</kbd> by default)
 * `lean.pasteTacticSuggestion`: if any tactic suggestions (i.e. tactics which return a "Try this:" in their output) are active for the code under the cursor, apply the first suggested edit. (bound to <kbd>alt</kbd>+<kbd>v</kbd> by defaullt)
