@@ -161,7 +161,8 @@ export class InfoProvider implements Disposable {
         if (this.webviewPanel) {
             this.webviewPanel.reveal(column, true);
         } else {
-            this.webviewPanel = window.createWebviewPanel('lean', 'Lean Messages',
+            this.webviewPanel = window.createWebviewPanel('lean',
+                this.displayMode === DisplayMode.OnlyState ? 'Lean Goal' : 'Lean Messages',
                 {viewColumn: column, preserveFocus: true},
                 {
                     enableFindWidget: true,
@@ -207,6 +208,9 @@ export class InfoProvider implements Disposable {
     private setMode(mode: DisplayMode) {
         if (this.displayMode === mode && !this.stopped) { return; }
         this.displayMode = mode;
+        if (this.webviewPanel) {
+            this.webviewPanel.title = this.displayMode === DisplayMode.OnlyState ? 'Lean Goal' : 'Lean Messages';
+        }
         this.stopped = false;
         this.updatePosition(true);
     }
@@ -430,10 +434,10 @@ export class InfoProvider implements Disposable {
                 <div id="debug"></div>
                 ${this.curGoalState ? this.renderFilter() : ''}
                 <div id="run-state">
-                    <span id="state-continue">Stopped <a href="command:_lean.infoView.continue?{}">
-                        <img title="Continue Updating" src="${this.getMediaPath('continue.svg')}"></a></span>
-                    <span id="state-pause">Updating <a href="command:_lean.infoView.pause?{}">
-                        <img title="Stop Updating" src="${this.getMediaPath('pause.svg')}"></span></a>
+                    <span id="state-continue"><a href="command:_lean.infoView.continue?{}">
+                        <img title="Unfreeze display" src="${this.getMediaPath('continue.svg')}"></a></span>
+                    <span id="state-pause"><a href="command:_lean.infoView.pause?{}">
+                        <img title="Freeze display" src="${this.getMediaPath('pause.svg')}"></a></span>
                 </div>
                 ${this.renderGoal()}
                 <div id="messages">${this.renderMessages()}</div>
@@ -445,7 +449,7 @@ export class InfoProvider implements Disposable {
         const filterIndex = workspace.getConfiguration('lean').get('infoViewFilterIndex', -1);
         return reFilters.length > 0 ?
             `<div id="filter">
-            <select id="filterSelect" onchange="infoViewModule.selectFilter(this.value);">
+            <select id="filterSelect" onchange="infoViewModule.selectFilter(this.value);" title="Select a filter to apply to the tactic state">
                 <option value="-1" ${filterIndex === -1 ? 'selected' : ''}>no filter</option>
                 ${reFilters.map((obj, i) =>
                     `<option value="${i}" ${filterIndex === i ? 'selected' : ''}>
