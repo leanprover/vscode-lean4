@@ -1,6 +1,6 @@
 import { Message, Severity } from 'lean-client-js-node';
 import { Diagnostic, DiagnosticCollection, DiagnosticSeverity,
-    Disposable, languages, Position, Range, Uri, window, workspace } from 'vscode';
+    Disposable, languages, Position, TextDocument, Uri, workspace } from 'vscode';
 import { Server } from './server';
 
 function toSeverity(severity: Severity): DiagnosticSeverity {
@@ -16,7 +16,7 @@ export class LeanDiagnosticsProvider implements Disposable {
     collection: DiagnosticCollection;
     private subscriptions: Disposable[] = [];
 
-    constructor(private server: Server) {
+    constructor(server: Server) {
         this.collection = languages.createDiagnosticCollection('lean');
         this.subscriptions.push(this.collection);
 
@@ -28,10 +28,18 @@ export class LeanDiagnosticsProvider implements Disposable {
 
     private updateDiagnostics(messages: Message[]) {
         const diagnosticMap = new Map<string, Diagnostic[]>();
+        const docMap = new Map<string, TextDocument>();
 
         for (const message of messages) {
             const pos = new Position(message.pos_line - 1, message.pos_col);
-            const range = new Range(pos, pos);
+            // Assign the diagnostic to the entire word following the info message
+            // so that code actions can be activated more easily
+            let msgDoc = docMap.get(message.file_name);
+            if (!msgDoc) {
+                msgDoc = workspace.textDocuments.find((doc) => doc.fileName === message.file_name);
+                docMap.set(message.file_name, msgDoc);
+            }
+            const range = msgDoc.getWordRangeAtPosition(pos);
             let diagnostics = diagnosticMap.get(message.file_name);
             if (!diagnostics) { diagnosticMap.set(message.file_name, diagnostics = []); }
             const d = new Diagnostic(range, message.text,

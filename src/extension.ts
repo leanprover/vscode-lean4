@@ -113,7 +113,7 @@ export function activate(context: ExtensionContext) {
     context.subscriptions.push(infoView);
 
     // Tactic suggestions
-    context.subscriptions.push(new TacticSuggestions(server, infoView));
+    context.subscriptions.push(new TacticSuggestions(server, infoView, LEAN_MODE));
 
     context.subscriptions.push(new LeanpkgService(server));
 

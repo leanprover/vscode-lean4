@@ -12,18 +12,21 @@ We currently support a variety of features.
 * Auto-completion based on context and type via the Lean server
 * Error messages / diagnostics
 * Customizable Unicode input support (e.g. type `\la`+<kbd>tab</kbd> to input `λ`)
-* Info view window to show goal, tactic state, and error messages (<kbd>ctrl</kbd>+<kbd>shift</kbd>+<kbd>enter</kbd> for local goal view or <kbd>ctrl</kbd>+<kbd>shift</kbd>+<kbd>alt</kbd>+<kbd>enter</kbd> for all messages)
+* Info view window to show goal, tactic state, and error messages:
+  - click <img src="media/display-goal-light.svg"> or hit <kbd>ctrl</kbd>+<kbd>shift</kbd>+<kbd>enter</kbd> for local goal view, or
+  - click <img src="media/display-list-light.svg"> or hit <kbd>ctrl</kbd>+<kbd>shift</kbd>+<kbd>alt</kbd>+<kbd>enter</kbd> for all messages
 * Batch file execution
-* Search for declarations in open files (<kbd>ctrl</kbd>+<kbd>p</kbd> #)
+* Search for declarations in open files (<kbd>ctrl</kbd>+<kbd>p</kbd> `#`)
 * Region of interest checking (i.e. control how much of the project is checked automatically by Lean)
-* Fill in `{! !}` holes using <kbd>ctrl</kbd>+<kbd>.</kbd>
-* Tasks for leanpkg (<kbd>ctrl</kbd>+<kbd>shift</kbd>+<kbd>p</kbd> and select "Tasks: Configure Task")
+* Fill in `{! !}` holes with the [code actions](https://code.visualstudio.com/docs/editor/refactoring#_code-actions-quick-fixes-and-refactorings) menu (<kbd>ctrl</kbd>+<kbd>.</kbd>)
+* Tasks for `leanpkg` (<kbd>ctrl</kbd>+<kbd>shift</kbd>+<kbd>p</kbd> and select "Tasks: Configure Task")
 * Tactic state filtering with regex
 * Type of the term under the cursor can be displayed in the status bar
+* Tactic suggestions (tactics which suggest edits with a "Try this:" message) can be applied either with a keyboard shortcut (<kbd>alt</kbd>+<kbd>v</kbd>), by clicking on the info view message, or via code actions (<kbd>ctrl</kbd>+<kbd>.</kbd>)
 
 ## Requirements
 
-This extension requires an installation of [Lean](https://leanprover.github.io). As of version 0.12.1, the extension can install Lean for you using [elan](https://github.com/Kha/elan).
+This extension requires an installation of [Lean](https://leanprover.github.io). As of version 0.12.1, the extension can install Lean for you using [elan](https://github.com/Kha/elan). See the [mathlib installation docs](https://github.com/leanprover-community/mathlib#installation) for alternative instructions.
 
 On Windows, if you installed Lean using MSYS2, you need to add both `C:\msys64\mingw64\bin` (or wherever you installed MSYS2) and `C:\projects\lean\bin` (or wherever you installed Lean) to the system `PATH` environment variable. To do this, press <kbd>Win</kbd>+<kbd>Pause</kbd> > go to Advanced System Settings > go to Environment variables. Under system variables (not user variables) find the `Path` variable, and add these two folders.
 
@@ -59,9 +62,10 @@ It also contributes the following commands, which can be bound to keys if desire
 * `lean.infoView.displayGoal`: show the tactic state and any messages (e.g. info, warning, error) at the current position in the info view window (bound to <kbd>ctrl</kbd>+<kbd>shift</kbd>+<kbd>enter</kbd> by default)
 * `lean.infoView.displayList`: show all messages for the current file from Lean in the info view window (bound to <kbd>ctrl</kbd>+<kbd>shift</kbd>+<kbd>alt</kbd>+<kbd>enter</kbd> by default)
 * `lean.infoView.copyToComment`: copy the current contents of the info view into a new comment on the next line
-* `lean.infoView.toggleUpdating`: pause / continue live updates of the info view
+* `lean.infoView.toggleUpdating`: pause / continue live updates of the info view (same as clicking on the <img src="media/pause.svg"> and <img src="media/continue.svg"> icons)
 * `lean.roiMode.select`: select the region of interest (files to be checked by the Lean server)
 * `lean.batchExecute`: execute the current file using Lean (bound to <kbd>ctrl</kbd>+<kbd>shift</kbd>+<kbd>r</kbd> by default)
+* `lean.pasteTacticSuggestion`: if any tactic suggestions (i.e. tactics which return a "Try this:" in their output) are active for the code under the cursor, apply the first suggested edit. (bound to <kbd>alt</kbd>+<kbd>v</kbd> by defaullt)
 
 ### Other potentially helpful settings
 
@@ -81,7 +85,7 @@ It also contributes the following commands, which can be bound to keys if desire
 ## Release Notes
 
 ### 0.15.0
-* Command to apply tactic suggestions such as from `library_search` (using `alt+v` or clicking "Try this:" in the info view)
+* Command to apply tactic suggestions such as from `library_search` (using <kbd>alt</kbd>+<kbd>v</kbd> or clicking "Try this:" in the info view)
 
 ### 0.14.0
 * Show type of term under cursor in status bar
@@ -96,7 +100,7 @@ It also contributes the following commands, which can be bound to keys if desire
 * Dropped support for Lean versions older than 3.1.0.
 
 ### 0.12.1
-* Automated elan installation
+* Automated `elan` installation
 
 ### 0.11.2
 * Tactic state highlighting
@@ -109,32 +113,32 @@ It also contributes the following commands, which can be bound to keys if desire
 
 ### 0.10.0
 * New configuration option for extra command-line arguments. (`lean.extraOptions`)
-* Integration with leanpkg.
+* Integration with `leanpkg`.
 
 ### 0.9.0
-* Extremely improved info view (ctrl+shift+enter)
+* Extremely improved info view (<kbd>ctrl</kbd>+<kbd>shift</kbd>+<kbd>enter</kbd>)
 * Only show commands acting on Lean files when a Lean file is open in the current editor
 * Hole support
 
 ### 0.8.0
 * Info view showing the current goal and error messages.
-* Search command (ctrl+p #)
-* Improved unicode input.
+* Search command (<kbd>ctrl</kbd>+<kbd>p</kbd> `#`)
+* Improved Unicode input.
 
 ### 0.7.2
 * New input mode for Unicode symbols.
-* Internally uses new client library to interact with the Lean server.
+* Internally uses new [client library](https://github.com/leanprover/lean-client-js) to interact with the Lean server.
 
 ### 0.7.1
 * Fixes issue with highlighting commands beginning with `#`.
 
 ### 0.7.0
-* Support for controlling the "region of interest", i.e which files
+* Support for controlling the "region of interest", i.e. which files
   are considered by the Lean server for checking and recompilation.
 * Miscellaneous improvements to the grammar, and syntax highlighting
 * Initial support for recording Lean server errors, and an option
   for displaying them upon crash.
-* Support for more bracket pairs including many unicode options.
+* Support for more bracket pairs including many Unicode options.
 * Properly set working directory when executing in batch mode.
 * Configuration for controlling default region of interest.
 
@@ -154,7 +158,7 @@ Add support for time and memory limits.
 
 ### 0.6.2
 
-Consider angle brackets and parenthesis when completing unicode symbols.
+Consider angle brackets and parenthesis when completing Unicode symbols.
 
 ### 0.6.0
 

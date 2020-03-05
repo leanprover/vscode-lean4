@@ -1,27 +1,30 @@
-import { commands, Disposable,  window, TextEditor, TextEditorEdit,
-    Position, Range, Uri, Selection } from 'vscode';
-import { Server } from './server';
 import { Message } from 'lean-client-js-node';
+import { CodeActionContext, CodeActionProvider, Command, commands,
+    DiagnosticSeverity, Disposable, DocumentSelector, languages,
+    Position, Range, Selection, TextDocument, TextEditor, Uri, window } from 'vscode';
 import { InfoProvider } from './infoview';
+import { Server } from './server';
 
 /** Pastes suggestions provided by tactics such as `squeeze_simp` */
-export class TacticSuggestions implements Disposable {
+export class TacticSuggestions implements Disposable, CodeActionProvider {
     private subscriptions: Disposable[] = [];
 
     // Match everything after "Try this" until the next unindented line
     private magicWord = 'Try this: ';
     private regex = '^' + this.magicWord + '((.*\n )*.*)$';
+    private regexGM = new RegExp(this.regex, 'gm');
+    private regexM = new RegExp(this.regex, 'm');
 
-    constructor(private server: Server, private infoView: InfoProvider) {
+    constructor(private server: Server, infoView: InfoProvider, private leanDocs: DocumentSelector) {
 
-        const commandHandler = (textEditor : TextEditor, edit : TextEditorEdit) => {
+        const commandHandler = (textEditor: TextEditor) => {
             const msg = this.findSelectedMessage(textEditor);
             if (msg === null) return;
 
             this.pasteIntoEditor(msg, textEditor, null);
         };
 
-        const infoViewCommandHandler = (m : Message, suggestion : string) => {
+        const infoViewCommandHandler = (m: Message, suggestion: string) => {
             const textEditor = this.findTextEditor(m.file_name);
 
             this.pasteIntoEditor(m, textEditor, suggestion);
@@ -32,11 +35,12 @@ export class TacticSuggestions implements Disposable {
 
         this.subscriptions.push(
             commands.registerTextEditorCommand('lean.pasteTacticSuggestion', commandHandler),
-            commands.registerCommand('_lean.pasteTacticSuggestion', infoViewCommandHandler)
+            commands.registerCommand('_lean.pasteTacticSuggestion', infoViewCommandHandler),
+            languages.registerCodeActionsProvider(this.leanDocs, this),
         );
 
-        infoView.addMessageFormatter((text: string, m : Message) => {
-            const newText = text.replace(new RegExp(this.regex, 'mg'), (match,tactic) => {
+        infoView.addMessageFormatter((text: string, m:Message) => {
+            const newText = text.replace(this.regexGM, (_, tactic) => {
                 const command = encodeURI('command:_lean.pasteTacticSuggestion?' +
                     JSON.stringify([m, tactic]));
                 return `${this.magicWord}<a href="${command}" title="${tactic}">${tactic}</a>`
@@ -49,7 +53,7 @@ export class TacticSuggestions implements Disposable {
         for (const s of this.subscriptions) { s.dispose(); }
     }
 
-    private findTextEditor(fileName){
+    private findTextEditor(fileName: string) {
         for (const textEditor of window.visibleTextEditors) {
             if (textEditor.document.uri.toString() === Uri.file(fileName).toString()) {
                 return textEditor;
@@ -57,12 +61,12 @@ export class TacticSuggestions implements Disposable {
         }
     }
 
-    private findSelectedMessage(textEditor : TextEditor){
+    private findSelectedMessage(textEditor: TextEditor) {
         const curFileName = textEditor.document.fileName;
         const curPosition = textEditor.selection.active;
         // Find message closest to the cursor
         const messages = this.server.messages
-            .filter((m : Message) => m.file_name === curFileName &&
+            .filter((m: Message) => m.file_name === curFileName &&
                 m.pos_line === curPosition.line + 1 &&
                 m.pos_col <= curPosition.character)
             .sort((a, b) => b.pos_col - a.pos_col);
@@ -72,11 +76,12 @@ export class TacticSuggestions implements Disposable {
         return messages[0];
     }
 
-    private async pasteIntoEditor(m : Message, textEditor : TextEditor, suggestion : string | null){
+    private async pasteIntoEditor(m: Message, textEditor: TextEditor, suggestion: string | null) {
         if (suggestion === null) {
             // Find first suggestion in message
-            suggestion = m.text.match(new RegExp(this.regex, 'm'))[1];
-            if (!suggestion) return;
+            const suggs = m.text.match(this.regexM);
+            if (!suggs) return;
+            suggestion = suggs[1];
         }
 
         // Start of the tactic call to replace
@@ -94,7 +99,7 @@ export class TacticSuggestions implements Disposable {
         for (endLine = startLine; endLine < textEditor.document.lineCount; endLine++) {
             const chars = textEditor.document.lineAt(endLine).text.split('').entries();
             // Iterate over every character of the line
-            for(const [col, char] of chars){
+            for (const [col, char] of chars) {
                 // Only search from where the tactic starts
                 if (endLine > startLine || col > startCol) {
                     if (openBrackets === 0 && [',',';'].includes(char)) {
@@ -122,7 +127,7 @@ export class TacticSuggestions implements Disposable {
 
         // Jump to the end of the tactic call
         const lastPos = new Position(endLine, endCol)
-        textEditor.selection = new Selection(lastPos,lastPos)
+        textEditor.selection = new Selection(lastPos, lastPos)
 
         // Replace tactic call by suggestion
         const range = new Range(
@@ -137,5 +142,25 @@ export class TacticSuggestions implements Disposable {
         // does not. Therefore, move the anchor to the cursor:
         textEditor.selection =
             new Selection(textEditor.selection.active, textEditor.selection.active);
+    }
+
+    provideCodeActions(document: TextDocument, range: Range, context: CodeActionContext): Command[] {
+        const cmds: Command[] = [];
+        // filter diagnostic messages
+        for (const diag of context.diagnostics) {
+            if (diag.severity !== DiagnosticSeverity.Information) { continue; }
+            // identify message
+            const msg = this.server.messages.find((m) => m.file_name === document.fileName &&
+                m.text === diag.message);
+            // each "Try this" becomes a code action
+            for (const [, tactic] of diag.message.matchAll(this.regexGM)) {
+                cmds.push({
+                    title: tactic,
+                    command: '_lean.pasteTacticSuggestion',
+                    arguments: [msg, tactic]
+                });
+            }
+        }
+        return cmds;
     }
 }
