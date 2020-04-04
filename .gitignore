@@ -1,3 +1,8 @@
 out
 node_modules
 *.vsix
+<<<<<<< HEAD
+media/index.js
+=======
+media/index.js
+>>>>>>> c55ff2b... Draft widget viewer.
