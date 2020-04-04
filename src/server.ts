@@ -132,7 +132,7 @@ export class Server extends leanclient.Server {
                     // json parsing errors
                     if (e.message.startsWith('cannot parse: ')) {
                         stderrOutput.append(e.message + '\n');
-                        stderrOutput.show();
+                        // stderrOutput.show();
                         break;
                     }
                     const msg = e.message.startsWith('Unable to start') ?
