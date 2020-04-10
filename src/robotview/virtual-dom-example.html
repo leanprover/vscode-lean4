@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Add React in One Minute</title>
+</head>
+
+<body>
+    <script src="https://unpkg.com/virtual-dom@2.1.1/dist/virtual-dom.js" crossorigin></script>
+    <script>
+        'use strict';
+        import { h, diff, patch } from "virtual-dom";
+
+        function update(action, state) {
+            return state + action;
+        }
+
+        function render(count) {
+            return h('div', {
+                style: {
+                    textAlign: 'center',
+                    lineHeight: (100 + count) + 'px',
+                    border: '1px solid red',
+                    width: (100 + count) + 'px',
+                    height: (100 + count) + 'px'
+                }
+            },  [ h('button', { "ev-click" : () => run(1) }, ["+"]),
+                  String(count),
+                  h('button', { "ev-click" : () => run(-1) }, ["-"]),
+                ]);
+        }
+
+        function run(action) {
+            state = update(action, state);
+            let newTree = render(state);
+            let patches = diff(tree, newTree)
+            rootNode = patch(rootNode, patches);
+            tree = newTree;
+        }
+
+        let state = 4
+        let tree = render(state);
+        let rootNode = createElement(tree);
+        document.body.appendChild(rootNode);
+
+    </script>
+
+</body>
+
+</html>

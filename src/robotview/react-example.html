@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Infoview</title>
+</head>
+
+<body>
+
+    <div id="like_button_container"></div>
+
+    <script src="https://unpkg.com/react@16/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@16/umd/react-dom.development.js" crossorigin></script>
+
+    <!-- Load our React component. -->
+    <script>
+        'use strict';
+        const vscode = acquireVsCodeApi();
+        const e = React.createElement;
+
+        function JSONDOM(props) {
+            let {json} = props
+            if (typeof msg === "string") {return msg; }
+            else if (msg instanceof Array) {return msg.map(j => e(JSONDOM, {"json" : j}));}
+            else {
+                let {tag, attributes, children} = msg;
+                let as = {};
+                for (let k of Object.getOwnPropertyNames(attributes)) {
+                    if (k.startsWith("ev-")) {
+                        k = k.substring(3);
+                        as[k] = () => vscode.postMessage(attributes[k])
+                    } else {
+                        as[k] = attributes[k]
+                    }
+                }
+                return e(tag, as, e(JSONDOM,{"json" : j}));
+            }
+        }
+
+        window.addEventListener('message', event => {
+            let msg = event.data;
+            console.log(`Recieved message ${msg}`);
+            ReactDOM.render(e(JSONDOM,{"json" : msg}), domContainer);
+        })
+
+        function Counter() {
+            const [count, setCount] = React.useState(0);
+            return [
+                e('button', { onClick: () => setCount(count + 1) }, "+"),
+                count,
+                e('button', { onClick: () => setCount(count - 1) }, "-"),
+                "loading!!!! Play with this counter while you wait."
+            ]
+        }
+
+        const domContainer = document.querySelector('#like_button_container');
+        ReactDOM.render(e(Counter), domContainer);
+    </script>
+
+</body>
+
+</html>
