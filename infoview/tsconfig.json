@@ -1,0 +1,7 @@
+{
+    "compilerOptions": {
+        "jsx": "react",
+        "module": "system",
+        "outFile": "../media/infoview-index.js"
+    },
+}

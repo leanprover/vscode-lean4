@@ -31,6 +31,31 @@ enum DisplayMode {
     AllMessage, // all messages
 }
 
+interface InfoProps {
+    widget?,
+    goalState?: string,
+    messages?: Message[],
+
+    fileName: string,
+
+    displayMode: DisplayMode,
+    infoViewTacticStateFilters: any[],
+    filterIndex
+}
+
+type InfoviewMessage = {
+    command : "sync",
+    props : InfoProps
+} | {
+    command : "continue"
+} | {
+    command : "pause"
+} | {
+    command : "position",
+    fileName, line, column
+}
+
+
 export class InfoProvider implements Disposable {
     private webviewPanel: WebviewPanel;
     private subscriptions: Disposable[] = [];
@@ -46,10 +71,11 @@ export class InfoProvider implements Disposable {
     private curPosition: Position = null;
     private curGoalState: string = null;
     private curMessages: Message[] = null;
+    private curWidget : any = null;
 
     private stylesheet: string = null;
 
-    private messageFormatters: ((text : string, msg : Message) => string)[] = [];
+    private messageFormatters: ((text: string, msg: Message) => string)[] = [];
 
     private hoverDecorationType: TextEditorDecorationType;
 
@@ -125,7 +151,7 @@ export class InfoProvider implements Disposable {
         for (const s of this.subscriptions) { s.dispose(); }
     }
 
-    addMessageFormatter(f : (text : string, msg : Message) => string) {
+    addMessageFormatter(f: (text: string, msg: Message) => string) {
         this.messageFormatters.push(f);
     }
 
@@ -133,7 +159,7 @@ export class InfoProvider implements Disposable {
         const css = this.context.asAbsolutePath(join('media', `infoview.css`));
         const fontFamily =
             (workspace.getConfiguration('editor').get('fontFamily') as string).
-            replace(/['"]/g, '');
+                replace(/['"]/g, '');
         this.stylesheet = readFileSync(css, 'utf-8') + `
             pre {
                 font-family: ${fontFamily};
@@ -149,7 +175,7 @@ export class InfoProvider implements Disposable {
             this.started = true;
             this.setMode(
                 workspace.getConfiguration('lean').get('infoViewAutoOpenShowGoal', true) ?
-                DisplayMode.OnlyState : DisplayMode.AllMessage);
+                    DisplayMode.OnlyState : DisplayMode.AllMessage);
             this.openPreview(window.activeTextEditor);
             this.updatePosition(false);
         }
@@ -163,14 +189,14 @@ export class InfoProvider implements Disposable {
         } else {
             this.webviewPanel = window.createWebviewPanel('lean',
                 this.displayMode === DisplayMode.OnlyState ? 'Lean Goal' : 'Lean Messages',
-                {viewColumn: column, preserveFocus: true},
+                { viewColumn: column, preserveFocus: true },
                 {
                     enableFindWidget: true,
                     retainContextWhenHidden: true,
                     enableScripts: true,
                     enableCommandUris: true,
                 });
-            this.webviewPanel.webview.html = this.render();
+            this.webviewPanel.webview.html = this.initialHtml();
             this.webviewPanel.onDidDispose(() => this.webviewPanel = null);
             this.webviewPanel.webview.onDidReceiveMessage((message) => {
                 switch (message.command) {
@@ -205,6 +231,24 @@ export class InfoProvider implements Disposable {
         this.postMessage({ command: 'pause' });
     }
 
+    private rerender() {
+        if (this.webviewPanel) {
+            const infoViewTacticStateFilters = workspace.getConfiguration('lean').get('infoViewTacticStateFilters', []);
+            const filterIndex = workspace.getConfiguration('lean').get('infoViewFilterIndex', -1);
+            this.postMessage({
+                command : "sync",
+                props : {
+                widget : this.curWidget,
+                goalState : this.curGoalState,
+                messages : this.curMessages,
+                fileName : this.curFileName,
+                displayMode : this.displayMode,
+                filterIndex,
+                infoViewTacticStateFilters,
+            }});
+        }
+    }
+
     private setMode(mode: DisplayMode) {
         if (this.displayMode === mode && !this.stopped) { return; }
         this.displayMode = mode;
@@ -215,13 +259,7 @@ export class InfoProvider implements Disposable {
         this.updatePosition(true);
     }
 
-    private rerender() {
-        if (this.webviewPanel) {
-            this.webviewPanel.webview.html = this.render();
-            this.stopHover();
-        }
-    }
-    private async postMessage(msg: any): Promise<boolean> {
+    private async postMessage(msg: InfoviewMessage): Promise<boolean> {
         if (this.webviewPanel) {
             return this.webviewPanel.webview.postMessage(msg);
         } else {
@@ -240,7 +278,7 @@ export class InfoProvider implements Disposable {
     }
 
     private hoverEditorPosition(uri: string, line: number, column: number,
-                                endLine: number, endColumn: number) {
+        endLine: number, endColumn: number) {
         for (const editor of window.visibleTextEditors) {
             if (editor.document.uri.toString() === uri) {
                 const pos = new Position(line - 1, column);
@@ -289,27 +327,27 @@ export class InfoProvider implements Disposable {
         /* updateTypeStatus is only called from the cases of the following switch-block, so pausing
            live-updates to the infoview (via this.stopped) also pauses the type status bar item */
         switch (this.displayMode) {
-        case DisplayMode.OnlyState:
-            const chGoal = await this.updateGoal();
-            if (chPos || chGoal || chMsg) {
-                this.rerender();
-            } else if (forceRefresh) {
-                this.postMessage({ command: 'continue' });
-            }
-            break;
+            case DisplayMode.OnlyState:
+                const chGoal = await this.updateGoal();
+                if (chPos || chGoal || chMsg) {
+                    this.rerender();
+                } else if (forceRefresh) {
+                    this.postMessage({ command: 'continue' });
+                }
+                break;
 
-        case DisplayMode.AllMessage:
-            if (workspace.getConfiguration('lean').get('typeInStatusBar')) {
-                const info = await this.server.info(
-                    this.curFileName, this.curPosition.line + 1, this.curPosition.character);
-                this.updateTypeStatus(info);
-            }
-            if (forceRefresh || chMsg) {
-                this.rerender();
-            } else {
-                this.sendPosition();
-            }
-            break;
+            case DisplayMode.AllMessage:
+                if (workspace.getConfiguration('lean').get('typeInStatusBar')) {
+                    const info = await this.server.info(
+                        this.curFileName, this.curPosition.line + 1, this.curPosition.character);
+                    this.updateTypeStatus(info);
+                }
+                if (forceRefresh || chMsg) {
+                    this.rerender();
+                } else {
+                    this.sendPosition();
+                }
+                break;
         }
     }
 
@@ -317,41 +355,41 @@ export class InfoProvider implements Disposable {
         if (this.stopped || !this.curFileName) { return false; }
         let msgs: Message[];
         switch (this.displayMode) {
-        case DisplayMode.OnlyState:
-            /* Heuristic: find first position to the left which has messages attached,
-               from that on show all messages in this line */
-            msgs = this.server.messages
-                .filter((m) => m.file_name === this.curFileName &&
-                    m.pos_line === this.curPosition.line + 1)
-                .sort((a, b) => a.pos_col - b.pos_col);
-            if (!workspace.getConfiguration('lean').get('infoViewAllErrorsOnLine')) {
-                let startColumn;
-                let startPos = null;
-                for (let i = 0; i < msgs.length; i++) {
-                    if (this.curPosition.character < msgs[i].pos_col) { break; }
-                    if (this.curPosition.character === msgs[i].pos_col) {
-                        startColumn = this.curPosition.character;
-                        startPos = i;
-                        break;
+            case DisplayMode.OnlyState:
+                /* Heuristic: find first position to the left which has messages attached,
+                   from that on show all messages in this line */
+                msgs = this.server.messages
+                    .filter((m) => m.file_name === this.curFileName &&
+                        m.pos_line === this.curPosition.line + 1)
+                    .sort((a, b) => a.pos_col - b.pos_col);
+                if (!workspace.getConfiguration('lean').get('infoViewAllErrorsOnLine')) {
+                    let startColumn;
+                    let startPos = null;
+                    for (let i = 0; i < msgs.length; i++) {
+                        if (this.curPosition.character < msgs[i].pos_col) { break; }
+                        if (this.curPosition.character === msgs[i].pos_col) {
+                            startColumn = this.curPosition.character;
+                            startPos = i;
+                            break;
+                        }
+                        if (startColumn == null || startColumn < msgs[i].pos_col) {
+                            startColumn = msgs[i].pos_col;
+                            startPos = i;
+                        }
                     }
-                    if (startColumn == null || startColumn < msgs[i].pos_col) {
-                        startColumn = msgs[i].pos_col;
-                        startPos = i;
+                    if (startPos) {
+                        msgs = msgs.slice(startPos);
                     }
                 }
-                if (startPos) {
-                    msgs = msgs.slice(startPos);
-                }
-            }
-            break;
+                break;
 
-        case DisplayMode.AllMessage:
-            msgs = this.server.messages
-                .filter((m) => m.file_name === this.curFileName)
-                .sort((a, b) => a.pos_line === b.pos_line
+            case DisplayMode.AllMessage:
+                msgs = this.server.messages
+                    .filter((m) => m.file_name === this.curFileName)
+                    .sort((a, b) => a.pos_line === b.pos_line
                         ? a.pos_col - b.pos_col
                         : a.pos_line - b.pos_line);
-            break;
+                break;
         }
         if (!this.curMessages) {
             this.curMessages = msgs;
@@ -377,12 +415,18 @@ export class InfoProvider implements Disposable {
         try {
             const info = await this.server.info(
                 this.curFileName, this.curPosition.line + 1, this.curPosition.character);
+            if (info.record && info.record.widget) {
+                this.curWidget = info.record.widget;
+            } else {
+                this.curWidget = null;
+            }
             if (info.record && info.record.state) {
                 if (this.curGoalState !== info.record.state) {
                     this.curGoalState = info.record.state;
                     return true;
                 }
-            } else {
+            }
+            else {
                 if (this.curGoalState) {
                     this.curGoalState = null;
                     return false;
@@ -411,119 +455,31 @@ export class InfoProvider implements Disposable {
 
     private getMediaPath(mediaFile: string): string {
         return Uri.file(this.context.asAbsolutePath(join('media', mediaFile)))
-            .with({scheme: 'vscode-resource'}).toString();
+            .with({ scheme: 'vscode-resource' }).toString();
     }
 
-    private render() {
-        if (this.curGoalState.includes("#robot")) {
-            return this.renderFromJSON();
-        }
-        const header = `<!DOCTYPE html>
+    private initialHtml() {
+        return `
+            <!DOCTYPE html>
             <html>
             <head>
+                <meta charset="UTF-8" />
                 <meta http-equiv="Content-type" content="text/html;charset=utf-8">
+                <title>Infoview</title>
                 <style>${this.stylesheet}</style>
-                <script charset="utf-8" src="${this.getMediaPath('infoview-ctrl.js')}"></script>
-            </head>`;
-        if (!this.curFileName) {
-            return header + '<body>No Lean file active</body>';
-        }
-        return header +
-            `<body
-                data-uri="${encodeURI(Uri.file(this.curFileName).toString())}"
-                data-line="${(this.curPosition.line + 1).toString()}"
-                data-column="${this.curPosition.character.toString()}"
-                ${this.displayMode === DisplayMode.AllMessage ? "data-messages=''" : ''}>
-                <div id="debug"></div>
-                ${this.curGoalState ? this.renderFilter() : ''}
-                <div id="run-state">
-                    <span id="state-continue"><a href="command:_lean.infoView.continue?{}">
-                        <img title="Unfreeze display" src="${this.getMediaPath('continue.svg')}"></a></span>
-                    <span id="state-pause"><a href="command:_lean.infoView.pause?{}">
-                        <img title="Freeze display" src="${this.getMediaPath('pause.svg')}"></a></span>
-                </div>
-                ${this.renderGoal()}
-                <div id="messages">${this.renderMessages()}</div>
-            </body></html>`;
-    }
-
-    private renderFilter() {
-        const reFilters = workspace.getConfiguration('lean').get('infoViewTacticStateFilters', []);
-        const filterIndex = workspace.getConfiguration('lean').get('infoViewFilterIndex', -1);
-        return reFilters.length > 0 ?
-            `<div id="filter">
-            <select id="filterSelect" onchange="infoViewModule.selectFilter(this.value);" title="Select a filter to apply to the tactic state">
-                <option value="-1" ${filterIndex === -1 ? 'selected' : ''}>no filter</option>
-                ${reFilters.map((obj, i) =>
-                    `<option value="${i}" ${filterIndex === i ? 'selected' : ''}>
-                    ${obj.name ||
-                        `${obj.match ? 'show ' : 'hide '}/${obj.regex}/${obj.flags}`}</option>`)}
-            </select>
-        </div>` : '';
-    }
-
-    private renderFromJSON() {
-        return `
-
-        `
-    }
-
-    private colorizeMessage(goal: string): string {
-        return goal
-            .replace(/^([|⊢]) /mg, '<strong class="goal-vdash">$1</strong> ')
-            .replace(/^(\d+ goals|1 goal)/mg, '<strong class="goal-goals">$1</strong>')
-            .replace(/^(context|state):/mg, '<strong class="goal-goals">$1</strong>:')
-            .replace(/^(case) /mg, '<strong class="goal-case">$1</strong> ')
-            .replace(/^([^:\n< ][^:\n⊢{[(⦃]*) :/mg, '<strong class="goal-hyp">$1</strong> :');
-    }
-
-    private renderGoal() {
-        if (!this.curGoalState || this.displayMode !== DisplayMode.OnlyState) { return ''; }
-        const reFilters = workspace.getConfiguration('lean').get('infoViewTacticStateFilters', []);
-        const filterIndex = workspace.getConfiguration('lean').get('infoViewFilterIndex', -1);
-        let goalString: string = this.curGoalState.replace(/^(no goals)/mg, 'goals accomplished');
-        goalString = RegExp('^\\d+ goals|goals accomplished', 'mg').test(goalString) ? goalString :
-            '1 goal\n'.concat(goalString);
-        const filteredGoalState = reFilters.length === 0 || filterIndex === -1 ? goalString :
-            // this regex splits the goal state into (possibly multi-line) hypothesis and goal blocks
-            // by keeping indented lines with the most recent non-indented line
-            goalString.match(/(^(?!  ).*\n?(  .*\n?)*)/mg).map((line) => line.trim())
-                .filter((line) => {
-                    const filt = reFilters[filterIndex];
-                    const test = line.match(new RegExp(filt.regex, filt.flags)) !== null;
-                    return filt.match ? test : !test;
-                }).join('\n');
-        return `<div id="goal"><h1>Tactic State</h1><pre>${
-            this.colorizeMessage(escapeHtml(filteredGoalState))}</pre></div>`;
-    }
-
-    private renderMessages() {
-        if (!this.curFileName || !this.curMessages) { return ``; }
-        return this.curMessages.map((m) => {
-            const f = escapeHtml(m.file_name); const b = escapeHtml(basename(m.file_name));
-            const l = m.pos_line; const c = m.pos_col;
-            const el = m.end_pos_line || l;
-            const ec = m.end_pos_col || c;
-            const cmd = encodeURI('command:_lean.revealPosition?' +
-                JSON.stringify([Uri.file(m.file_name), m.pos_line, m.pos_col]));
-            const shouldColorize = m.severity === 'error';
-            let text = escapeHtml(m.text)
-            text = shouldColorize ? this.colorizeMessage(text) : text;
-            this.messageFormatters.forEach((formatter) => {
-                text = formatter(text, m);
-            });
-            return `<div class="message ${m.severity}" data-line="${l}" data-column="${c}"
-                data-end-line="${el}" data-end-column="${ec}">
-                <h1 title="${f}:${l}:${c}"><a href="${cmd}">
-                    ${b}:${l}:${c}: ${m.severity} ${escapeHtml(m.caption)}
-                </a></h1>
-                <pre>${text}</pre></div>`;
-        }).join('\n');
+            </head>
+            <body>
+                <div id="react_root"></div>
+                <script src="https://unpkg.com/react@16/umd/react.development.js" crossorigin></script>
+                <script src="https://unpkg.com/react-dom@16/umd/react-dom.development.js" crossorigin></script>
+                <script src="${this.getMediaPath('index.js')}"></sscript>
+            </body>
+            </html>`
     }
 
     private async copyToComment(editor: TextEditor) {
         await editor.edit((builder) => {
-            builder.insert(editor.selection.end.with({character: 0}).translate({lineDelta: 1}),
+            builder.insert(editor.selection.end.with({ character: 0 }).translate({ lineDelta: 1 }),
                 '/-\n' + this.renderText() + '\n-/\n');
         });
     }
