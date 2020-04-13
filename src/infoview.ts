@@ -55,6 +55,12 @@ type InfoviewMessage = {
     fileName, line, column
 }
 
+type WidgetEvent = {
+    command : "widget-event",
+    handler : number,
+    args : any[]
+}
+
 
 export class InfoProvider implements Disposable {
     private webviewPanel: WebviewPanel;
@@ -198,23 +204,34 @@ export class InfoProvider implements Disposable {
                 });
             this.webviewPanel.webview.html = this.initialHtml();
             this.webviewPanel.onDidDispose(() => this.webviewPanel = null);
-            this.webviewPanel.webview.onDidReceiveMessage((message) => {
-                switch (message.command) {
-                    case 'selectFilter':
-                        workspace.getConfiguration('lean').update('infoViewFilterIndex',
-                            message.filterId, true);
-                        // the workspace configuration change already forces a rerender
-                        return;
-                    case 'hoverPosition':
-                        this.hoverEditorPosition(message.data[0], message.data[1], message.data[2],
-                            message.data[3], message.data[4]);
-                        return;
-                    case 'stopHover':
-                        this.stopHover();
-                        return;
-                }
-            }, undefined, this.subscriptions);
+            this.webviewPanel.webview.onDidReceiveMessage((message) => this.handleMessage(message), undefined, this.subscriptions);
         }
+    }
+
+    private handleMessage(message) {
+        switch (message.command) {
+            case 'selectFilter':
+                workspace.getConfiguration('lean').update('infoViewFilterIndex',
+                    message.filterId, true);
+                // the workspace configuration change already forces a rerender
+                return;
+            case 'hoverPosition':
+                this.hoverEditorPosition(message.data[0], message.data[1], message.data[2],
+                    message.data[3], message.data[4]);
+                return;
+            case 'stopHover':
+                this.stopHover();
+                return;
+            case 'widget-event':
+                this.handleWidgetEvent(message);
+                return;
+        }
+    }
+
+    private handleWidgetEvent(message : WidgetEvent) {
+        this.server.send({
+
+        });
     }
 
     private sendPosition() {
@@ -412,29 +429,33 @@ export class InfoProvider implements Disposable {
 
     private async updateGoal(): Promise<boolean> {
         if (this.stopped || !this.curFileName || !this.curPosition) { return false; }
+        let shouldUpdate = false;
         try {
             const info = await this.server.info(
                 this.curFileName, this.curPosition.line + 1, this.curPosition.character);
             if (info.record && info.record.widget) {
                 this.curWidget = info.record.widget;
+                console.log("Found a widget");
+                console.log(this.curWidget);
+                shouldUpdate = true;
             } else {
                 this.curWidget = null;
             }
             if (info.record && info.record.state) {
                 if (this.curGoalState !== info.record.state) {
                     this.curGoalState = info.record.state;
-                    return true;
+                    shouldUpdate = true;
                 }
             }
             else {
                 if (this.curGoalState) {
                     this.curGoalState = null;
-                    return false;
                 }
             }
             if (workspace.getConfiguration('lean').get('typeInStatusBar')) {
                 this.updateTypeStatus(info);
             }
+            return shouldUpdate;
         } catch (e) {
             if (e !== 'interrupted') { throw e; }
         }

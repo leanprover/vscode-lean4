@@ -55,7 +55,8 @@ function colorizeMessage(goal: string): string {
 }
 
 function Goal(props) {
-    if (props.goalState || props.displayMode !== DisplayMode.OnlyState) { return []; }
+    // hello
+    if (!props.goalState || props.displayMode !== DisplayMode.OnlyState) { return []; }
     const reFilters = props.infoViewTacticStateFilters || [];
     const filterIndex = props.infoViewFilterIndex ?? -1;
     let goalString = props.goalState.replace(/^(no goals)/mg, 'goals accomplished')
@@ -106,17 +107,18 @@ function Messages(props: InfoProps) {
 }
 
 /** Render a Lean widget */
-function Widget(props : {widget : widget}) {
+function Widget(props : {widget? : widget}) {
     let {widget, ...rest} = props;
     if (!widget) {return "";}
     return widget.map(w => {
         if (typeof w === "string") {   return w; }
         let {tag, attributes, children} = w;
+        attributes = attributes || {};
         let new_attrs : any = {};
         for (let k of Object.getOwnPropertyNames(attributes)) {
             if (k === "onClick") {
                 new_attrs[k] = () => vscode.postMessage({
-                    kind: "widget-event",
+                    command: "widget-event",
                     handler: attributes[k],
                     args : {}, // [todo]
                 });
@@ -144,6 +146,7 @@ function Info(props: InfoProps) {
         </div>
         <Goal {...props}/>
         <Messages {...props}/>
+        <Widget {...props}/>
     </>
 }
 
@@ -162,7 +165,7 @@ const vscode = acquireVsCodeApi();
 window.addEventListener('message', event => {
 
     const message = event.data; // The JSON data our extension sent
-
+    console.log(message);
     switch (message.command) {
         case 'sync':
             ReactDOM.render(React.createElement(Info, message.props), domContainer);
