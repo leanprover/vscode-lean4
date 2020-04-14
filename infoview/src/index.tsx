@@ -1,10 +1,14 @@
-
-// import { basename } from 'path'
-
 declare var React;
 declare var ReactDOM;
 
-type widget = ({ tag: string, children: widget, attributes: { [k: string]: any } } | string)[]
+type html = ({ tag: string, children: html, attributes: { [k: string]: any } } | string)[]
+
+type widget = {
+    file_name : string,
+    line : number,
+    column : number,
+    html : html
+}
 
 // [hack] copied from commands.d.ts
 interface LogMessage {
@@ -54,6 +58,8 @@ function colorizeMessage(goal: string): string {
         .replace(/^([^:\n< ][^:\n⊢{[(⦃]*) :/mg, '<strong class="goal-hyp">$1</strong> :');
 }
 
+function basename(path) {return path.split(/[\\/]/).pop();}
+
 function Goal(props) {
     // hello
     if (!props.goalState || props.displayMode !== DisplayMode.OnlyState) { return []; }
@@ -80,9 +86,9 @@ function Goal(props) {
 
 function Messages(props: InfoProps) {
     if (!props.fileName || !props.messages) { return ``; }
-    return props.messages.map((m) => {
+    let msgs = props.messages.map((m) => {
         const f = escapeHtml(m.file_name);
-        const b = escapeHtml(m.file_name); // [hack] should be basename
+        const b = escapeHtml(basename(m.file_name));
         const l = m.pos_line; const c = m.pos_col;
         const el = m.end_pos_line || l;
         const ec = m.end_pos_col || c;
@@ -91,11 +97,9 @@ function Messages(props: InfoProps) {
             JSON.stringify([(m.file_name), m.pos_line, m.pos_col]));
         const shouldColorize = m.severity === 'error';
         let text = escapeHtml(m.text)
-        text = shouldColorize ? this.colorizeMessage(text) : text;
-        this.messageFormatters.forEach((formatter) => {
-            text = formatter(text, m);
-        });
-        return <div className={`message ${m.severity}`} data-line={l} data-column={c} data-end-line={el} data-end-column={ec}>
+        text = shouldColorize ? colorizeMessage(text) : text;
+        let key = `${m.file_name}:${m.pos_line}:${m.pos_col}`;
+        return <div key={key} className={`message ${m.severity}`} data-line={l} data-column={c} data-end-line={el} data-end-column={ec}>
             <h1 title={`${f}:${l}:${c}`}>
                 <a href={cmd}>
                     {b}:{l}:{c}: {m.severity} {escapeHtml(m.caption)}
@@ -103,31 +107,42 @@ function Messages(props: InfoProps) {
             </h1>
             <pre dangerouslySetInnerHTML={{ __html: text }} />
         </div>;
-    }).join('\n');
+    });
+    return <div id="messages">{msgs}</div>
 }
 
-/** Render a Lean widget */
-function Widget(props : {widget? : widget}) {
-    let {widget, ...rest} = props;
-    if (!widget) {return "";}
-    return widget.map(w => {
+function Html(props : widget) {
+    let {html, ...rest} = props;
+    return html.map(w => {
         if (typeof w === "string") {   return w; }
         let {tag, attributes, children} = w;
         attributes = attributes || {};
         let new_attrs : any = {};
         for (let k of Object.getOwnPropertyNames(attributes)) {
             if (k === "onClick") {
-                new_attrs[k] = () => vscode.postMessage({
-                    command: "widget-event",
+                new_attrs[k] = () => post({
+                    command: "widget_event",
                     handler: attributes[k],
                     args : {}, // [todo]
+                    file_name : props.file_name,
+                    line : props.line,
+                    column : props.column
                 });
             } else {
                 new_attrs[k] = attributes[k];
             }
         }
-        return React.createElement(tag, new_attrs, <Widget widget={children} {...rest}/>)
+        return React.createElement(tag, new_attrs, Html({html:children, ...rest}));
     })
+}
+
+function Widget(props : {widget? : widget}) {
+    let {widget, ...rest} = props;
+    if (!widget) {return "";}
+    return <div id="widget">
+        <h1>Widget</h1>
+        <div className="widget-container">{Html(widget)}</div>;
+    </div>
 }
 
 function Info(props: InfoProps) {
@@ -150,22 +165,13 @@ function Info(props: InfoProps) {
     </>
 }
 
-function Counter() {
-    const [count, setCount] = React.useState(0);
-    return [
-        React.createElement('button', { onClick: () => setCount(count + 1) }, "+"),
-        count,
-        React.createElement('button', { onClick: () => setCount(count - 1) }, "-"),
-    ]
-}
-
 // @ts-ignore
 const vscode = acquireVsCodeApi();
 
 window.addEventListener('message', event => {
 
     const message = event.data; // The JSON data our extension sent
-    console.log(message);
+    console.log("incoming:", message);
     switch (message.command) {
         case 'sync':
             ReactDOM.render(React.createElement(Info, message.props), domContainer);
@@ -175,5 +181,24 @@ window.addEventListener('message', event => {
     }
 });
 
+function post(message) {
+    console.log("posting:", message);
+    vscode.postMessage(message);
+}
+
 const domContainer = document.querySelector('#react_root');
-ReactDOM.render(React.createElement(Counter), domContainer);
+ReactDOM.render(<div><h1>Lean Interactive Window</h1></div>, domContainer);
+
+/* todos:
+
+- [ ] sort out button images / images in general.
+- [ ] make sure that the types are DRY.
+- [ ] figure out tsc error:
+        ../node_modules/@types/semver/ranges/valid.d.ts:2:25 - error TS2307: Cannot find module '../'.
+- [ ] styling; can I include a stylesheet so that it is easy to make things look good?
+- [ ] it is possible that the widget's update function will take too long, in which case we should show some kind of loading thing.
+- [ ] tooltips / hover information is common enough that they should be supported 'natively'
+- [ ] a reset button for a widget.
+- [ ] drag and drop is essential.
+- [ ] expression pretty printing? Lean's pretty printer is so complex I am not sure how to do this.
+*/

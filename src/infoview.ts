@@ -56,7 +56,10 @@ type InfoviewMessage = {
 }
 
 type WidgetEvent = {
-    command : "widget-event",
+    command : "widget_event",
+    file_name : string,
+    line : number,
+    column : number,
     handler : number,
     args : any[]
 }
@@ -222,16 +225,27 @@ export class InfoProvider implements Disposable {
             case 'stopHover':
                 this.stopHover();
                 return;
-            case 'widget-event':
+            case 'widget_event':
                 this.handleWidgetEvent(message);
                 return;
         }
     }
 
-    private handleWidgetEvent(message : WidgetEvent) {
-        this.server.send({
-
-        });
+    private async handleWidgetEvent(message : WidgetEvent) {
+        console.log("got widget event", message);
+        message = {
+            command: 'widget_event',
+            file_name : this.curFileName,
+            line : this.curPosition.line + 1,
+            column: this.curPosition.character,
+            ...message,
+        }
+        let result : any = await this.server.send(message);
+        console.log("recieved from server", result);
+        if (result.record && result.record.status === "success" && result.record.widget) {
+            this.curWidget = result.record.widget;
+            this.rerender();
+        }
     }
 
     private sendPosition() {
@@ -436,7 +450,7 @@ export class InfoProvider implements Disposable {
             if (info.record && info.record.widget) {
                 this.curWidget = info.record.widget;
                 console.log("Found a widget");
-                console.log(this.curWidget);
+                console.log(info.record);
                 shouldUpdate = true;
             } else {
                 this.curWidget = null;
