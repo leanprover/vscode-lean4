@@ -22,12 +22,12 @@
 				"lean.executablePath": {
 					"type": "string",
 					"default": "lean",
-					"description": "Path to the Lean executable to use."
+					"description": "Path to the Lean executable to use. DO NOT CHANGE from the default `lean` unless you know what you're doing!"
 				},
 				"lean.leanpkgPath": {
 					"type": "string",
 					"default": "leanpkg",
-					"description": "Path to the leanpkg executable to use."
+					"description": "Path to the leanpkg executable to use. DO NOT CHANGE from the default `leanpkg` unless you know what you're doing!"
 				},
 				"lean.memoryLimit": {
 					"type": "number",
