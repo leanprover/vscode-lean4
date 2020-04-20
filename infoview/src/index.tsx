@@ -1,13 +1,17 @@
 declare var React;
 declare var ReactDOM;
 
-type html = ({ tag: string, children: html, attributes: { [k: string]: any } } | string)[]
+type html =
+    | { tag: "div" | "span" | "hr", children: html[], attributes: { [k: string]: any } }
+    | string
+    | { tag : "Hover", hoverThunk : number, children : html[] }
+
 
 type widget = {
     file_name : string,
     line : number,
     column : number,
-    html : html
+    html : html[]
 }
 
 // [hack] copied from commands.d.ts
@@ -111,17 +115,28 @@ function Messages(props: InfoProps) {
     return <div id="messages">{msgs}</div>
 }
 
+function Hover(props : {handler: number, children}) {
+
+}
+
 function Html(props : widget) {
     let {html, ...rest} = props;
     return html.map(w => {
         if (typeof w === "string") {   return w; }
+        if (w.tag === "Hover") {
+
+            return;
+        }
         let {tag, attributes, children} = w;
+
+        if (tag === "hr") { return <hr/>; }
         attributes = attributes || {};
         let new_attrs : any = {};
         for (let k of Object.getOwnPropertyNames(attributes)) {
             if (k === "onClick") {
                 new_attrs[k] = () => post({
                     command: "widget_event",
+                    kind : "click",
                     handler: attributes[k],
                     args : {}, // [todo]
                     file_name : props.file_name,
