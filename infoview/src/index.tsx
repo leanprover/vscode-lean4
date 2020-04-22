@@ -1,8 +1,14 @@
 declare var React;
 declare var ReactDOM;
 
+/** This is everything that lean needs to know to figure out which event handler to fire in the VM. */
+interface eventHandlerId {
+    route : number[],
+    handler : number,
+}
+
 type html =
-    | { tag: "div" | "span" | "hr", children: html[], attributes: { [k: string]: any } }
+    | { tag: "div" | "span" | "hr", children: html[], attributes: { [k: string]: any }, events : {[k : string] : eventHandlerId} }
     | string
     | { tag : "Hover", hoverThunk : number, children : html[] }
 
@@ -127,24 +133,31 @@ function Html(props : widget) {
 
             return;
         }
-        let {tag, attributes, children} = w;
+        let {tag, attributes, events, children} = w;
 
         if (tag === "hr") { return <hr/>; }
         attributes = attributes || {};
+        events = events || {};
         let new_attrs : any = {};
         for (let k of Object.getOwnPropertyNames(attributes)) {
+            new_attrs[k] = attributes[k];
+
+        }
+        for (let k of Object.getOwnPropertyNames(events)) {
+            let eh = events[k];
             if (k === "onClick") {
                 new_attrs[k] = () => post({
                     command: "widget_event",
                     kind : "click",
-                    handler: attributes[k],
+                    handler: eh.handler,
+                    route : eh.route,
                     args : {}, // [todo]
                     file_name : props.file_name,
                     line : props.line,
                     column : props.column
                 });
             } else {
-                new_attrs[k] = attributes[k];
+                console.error(`unrecognised event kind ${k}`);
             }
         }
         return React.createElement(tag, new_attrs, Html({html:children, ...rest}));

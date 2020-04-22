@@ -61,6 +61,7 @@ type WidgetEvent = {
     line : number,
     column : number,
     handler : number,
+    route : number[],
     args : any[]
 }
 
