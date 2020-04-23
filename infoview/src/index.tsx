@@ -32,7 +32,7 @@ interface LogMessage {
     text: string;
 }
 
-enum DisplayMode { //[hack] copied
+enum DisplayMode { // [hack] copied
     OnlyState, // only the state at the current cursor position including the tactic state
     AllMessage, // all messages
 }
@@ -71,7 +71,6 @@ function colorizeMessage(goal: string): string {
 function basename(path) {return path.split(/[\\/]/).pop();}
 
 function Goal(props) {
-    // hello
     if (!props.goalState || props.displayMode !== DisplayMode.OnlyState) { return []; }
     const reFilters = props.infoViewTacticStateFilters || [];
     const filterIndex = props.infoViewFilterIndex ?? -1;
@@ -104,7 +103,7 @@ function Messages(props: InfoProps) {
         const ec = m.end_pos_col || c;
         const cmd = encodeURI('command:_lean.revealPosition?' +
             // JSON.stringify([Uri.file(m.file_name), m.pos_line, m.pos_col]));
-            JSON.stringify([(m.file_name), m.pos_line, m.pos_col]));
+            JSON.stringify([(m.file_name), m.pos_line, m.pos_col])); // [TODO] Uri.file isn't available in the webview?
         const shouldColorize = m.severity === 'error';
         let text = escapeHtml(m.text)
         text = shouldColorize ? colorizeMessage(text) : text;
@@ -220,13 +219,13 @@ ReactDOM.render(<div><h1>Lean Interactive Window</h1></div>, domContainer);
 /* todos:
 
 - [ ] sort out button images / images in general.
-- [ ] make sure that the types are DRY.
+- [ ] make sure that the types are DRY between extension and webview
 - [ ] figure out tsc error:
         ../node_modules/@types/semver/ranges/valid.d.ts:2:25 - error TS2307: Cannot find module '../'.
 - [ ] styling; can I include a stylesheet so that it is easy to make things look good?
 - [ ] it is possible that the widget's update function will take too long, in which case we should show some kind of loading thing.
 - [ ] tooltips / hover information is common enough that they should be supported 'natively'
 - [ ] a reset button for a widget.
-- [ ] drag and drop is essential.
-- [ ] expression pretty printing? Lean's pretty printer is so complex I am not sure how to do this.
+- [ ] drag and drop.
+
 */
