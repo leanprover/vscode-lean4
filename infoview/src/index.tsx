@@ -7,17 +7,22 @@ interface eventHandlerId {
     handler : number,
 }
 
+type element = { tag: "div" | "span" | "hr", children: html[], attributes: { [k: string]: any }, events : {[k : string] : eventHandlerId} }
+type component = html[]
+
 type html =
-    | { tag: "div" | "span" | "hr", children: html[], attributes: { [k: string]: any }, events : {[k : string] : eventHandlerId} }
+    | component
     | string
-    | { tag : "Hover", hoverThunk : number, children : html[] }
+    | element
+    | null
+    // | { tag : "Hover", hoverThunk : number, children : html[] }
 
 
 type widget = {
     file_name : string,
     line : number,
     column : number,
-    html : html[]
+    html : html[] | null
 }
 
 // [hack] copied from commands.d.ts
@@ -127,11 +132,13 @@ function Hover(props : {handler: number, children}) {
 function Html(props : widget) {
     let {html, ...rest} = props;
     return html.map(w => {
-        if (typeof w === "string") {   return w; }
-        if (w.tag === "Hover") {
+        if (typeof w === "string") { return w; }
+        if (w instanceof Array) {return Html({html : w, ...rest}); }
 
-            return;
-        }
+        // if (w.tag === "Hover") {
+
+        //     return;
+        // }
         let {tag, attributes, events, children} = w;
 
         if (tag === "hr") { return <hr/>; }
