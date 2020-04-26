@@ -32,7 +32,7 @@ enum DisplayMode {
 }
 
 interface InfoProps {
-    widget?,
+    widget? : string,
     goalState?: string,
     messages?: Message[],
 
@@ -270,7 +270,7 @@ export class InfoProvider implements Disposable {
             this.postMessage({
                 command : "sync",
                 props : {
-                widget : this.curWidget,
+                widget : JSON.stringify(this.curWidget), // [note] there is a bug in vscode where the whole window will irrecoverably hang if the json depth is too high.
                 goalState : this.curGoalState,
                 messages : this.curMessages,
                 fileName : this.curFileName,
@@ -498,6 +498,7 @@ export class InfoProvider implements Disposable {
         let libraries = [
             "https://unpkg.com/react@16/umd/react.development.js",
             "https://unpkg.com/react-dom@16/umd/react-dom.development.js",
+            "https://unpkg.com/@popperjs/core@2",
             "https://unpkg.com/react-popper/dist/index.umd.js",
         ];
         libraries = libraries.map(l => `<script src="${l}" crossorigin></script>`);
