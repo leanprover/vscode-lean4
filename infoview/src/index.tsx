@@ -1,13 +1,26 @@
 declare var React;
 declare var ReactDOM;
+declare var ReactPopper;
+// @ts-ignore
+const vscode = acquireVsCodeApi();
 
 /** This is everything that lean needs to know to figure out which event handler to fire in the VM. */
 interface eventHandlerId {
-    route : number[],
-    handler : number,
+    route: number[],
+    handler: number,
 }
 
-type element = { tag: "div" | "span" | "hr", children: html[], attributes: { [k: string]: any }, events : {[k : string] : eventHandlerId} }
+interface element {
+    tag: "div" | "span" | "hr" | "button", // ... etc
+    children: html[],
+    attributes: { [k: string]: any },
+    events: {
+        "onClick"?: eventHandlerId
+        "onMouseEnter"?: eventHandlerId
+        "onMouseLeave"?: eventHandlerId
+    }
+    tooltip?: html
+}
 type component = html[]
 
 type html =
@@ -15,14 +28,12 @@ type html =
     | string
     | element
     | null
-    // | { tag : "Hover", hoverThunk : number, children : html[] }
-
 
 type widget = {
-    file_name : string,
-    line : number,
-    column : number,
-    html : html[] | null
+    file_name: string,
+    line: number,
+    column: number,
+    html: html[] | null
 }
 
 // [hack] copied from commands.d.ts
@@ -73,7 +84,7 @@ function colorizeMessage(goal: string): string {
         .replace(/^([^:\n< ][^:\n⊢{[(⦃]*) :/mg, '<strong class="goal-hyp">$1</strong> :');
 }
 
-function basename(path) {return path.split(/[\\/]/).pop();}
+function basename(path) { return path.split(/[\\/]/).pop(); }
 
 function Goal(props) {
     // hello
@@ -126,54 +137,67 @@ function Messages(props: InfoProps) {
     return <div id="messages">{msgs}</div>
 }
 
-function Hover(props : {handler: number, children}) {
-
-}
-
-function Html(props : widget) {
-    let {html, ...rest} = props;
+function Html(props: widget) {
+    let { html, ...rest } = props;
     return html.map(w => {
         if (typeof w === "string") { return w; }
-        if (w instanceof Array) {return Html({html : w, ...rest}); }
-
-        // if (w.tag === "Hover") {
-
-        //     return;
-        // }
-        let {tag, attributes, events, children} = w;
-
-        if (tag === "hr") { return <hr/>; }
+        if (w instanceof Array) { return Html({ html: w, ...rest }); }
+        let { tag, attributes, events, children, tooltip } = w;
+        if (tag === "hr") { return <hr />; }
         attributes = attributes || {};
         events = events || {};
-        let new_attrs : any = {};
+        let new_attrs: any = {};
         for (let k of Object.getOwnPropertyNames(attributes)) {
             new_attrs[k] = attributes[k];
 
         }
         for (let k of Object.getOwnPropertyNames(events)) {
-            let eh = events[k];
-            if (k === "onClick") {
-                new_attrs[k] = () => post({
-                    command: "widget_event",
-                    kind : "click",
-                    handler: eh.handler,
-                    route : eh.route,
-                    args : {}, // [todo]
-                    file_name : props.file_name,
-                    line : props.line,
-                    column : props.column
-                });
+            if (["onClick", "onMouseEnter", "onMouseLeave"].includes(k)) {
+                new_attrs[k] = (e) => post({
+                        command: "widget_event",
+                        kind: k,
+                        handler: events[k].handler,
+                        route: events[k].route,
+                        args: {}, // [todo]
+                        file_name: props.file_name,
+                        line: props.line,
+                        column: props.column
+                    });
             } else {
                 console.error(`unrecognised event kind ${k}`);
             }
         }
-        return React.createElement(tag, new_attrs, Html({html:children, ...rest}));
-    })
+        if (tooltip) {
+            return <Popper popperContent={Html({html:[tooltip], ...rest})} refEltTag={tag} refEltAttrs={new_attrs} key={new_attrs.key}>{Html({html:children, ...rest})}</Popper>
+        } else {
+            return React.createElement(tag, new_attrs, Html({ html: children, ...rest }));
+        }
+    });
 }
 
-function Widget(props : {widget? : widget}) {
-    let {widget, ...rest} = props;
-    if (!widget) {return "";}
+const Popper = (props) => {
+    const { children, popperContent, refEltTag, refEltAttrs } = props;
+    const [referenceElement, setReferenceElement] = React.useState(null);
+    const [popperElement, setPopperElement] = React.useState(null);
+    const [arrowElement, setArrowElement] = React.useState(null);
+    const { styles, attributes } = ReactPopper.usePopper(referenceElement, popperElement, {
+        modifiers: [{ name: 'arrow', options: { element: arrowElement } }],
+    });
+    const refElt = React.createElement(refEltTag, {ref : setReferenceElement, ...refEltAttrs}, children);
+    return (
+        <>
+            {refElt}
+            <div ref={setPopperElement} style={styles.popper} {...attributes.popper}>
+                {popperContent}
+                <div ref={setArrowElement} style={styles.arrow} />
+            </div>
+        </>
+    );
+}
+
+function Widget(props: { widget?: widget }) {
+    let { widget, ...rest } = props;
+    if (!widget) { return ""; }
     return <div id="widget">
         <h1>Widget</h1>
         <div className="widget-container">{Html(widget)}</div>;
@@ -194,14 +218,11 @@ function Info(props: InfoProps) {
                 </a>
             </span>
         </div>
-        <Goal {...props}/>
-        <Messages {...props}/>
-        <Widget {...props}/>
+        <Goal {...props} />
+        <Messages {...props} />
+        <Widget {...props} />
     </>
 }
-
-// @ts-ignore
-const vscode = acquireVsCodeApi();
 
 window.addEventListener('message', event => {
 
@@ -232,7 +253,7 @@ ReactDOM.render(<div><h1>Lean Interactive Window</h1></div>, domContainer);
         ../node_modules/@types/semver/ranges/valid.d.ts:2:25 - error TS2307: Cannot find module '../'.
 - [ ] styling; can I include a stylesheet so that it is easy to make things look good?
 - [ ] it is possible that the widget's update function will take too long, in which case we should show some kind of loading thing.
-- [ ] tooltips / hover information is common enough that they should be supported 'natively'
+- [x] tooltips / hover information is common enough that they should be supported 'natively'
 - [ ] a reset button for a widget.
 - [ ] drag and drop is essential.
 - [ ] expression pretty printing? Lean's pretty printer is so complex I am not sure how to do this.

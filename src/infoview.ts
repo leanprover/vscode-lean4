@@ -495,6 +495,12 @@ export class InfoProvider implements Disposable {
     }
 
     private initialHtml() {
+        let libraries = [
+            "https://unpkg.com/react@16/umd/react.development.js",
+            "https://unpkg.com/react-dom@16/umd/react-dom.development.js",
+            "https://unpkg.com/react-popper/dist/index.umd.js",
+        ];
+        libraries = libraries.map(l => `<script src="${l}" crossorigin></script>`);
         return `
             <!DOCTYPE html>
             <html>
@@ -506,8 +512,7 @@ export class InfoProvider implements Disposable {
             </head>
             <body>
                 <div id="react_root"></div>
-                <script src="https://unpkg.com/react@16/umd/react.development.js" crossorigin></script>
-                <script src="https://unpkg.com/react-dom@16/umd/react-dom.development.js" crossorigin></script>
+                ${libraries.join("\n")}
                 <script src="${this.getMediaPath('index.js')}"></sscript>
             </body>
             </html>`
