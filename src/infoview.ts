@@ -65,8 +65,8 @@ type WidgetEvent = {
     args : any[]
 }
 
-
 export class InfoProvider implements Disposable {
+    /** Instance of the panel. */
     private webviewPanel: WebviewPanel;
     private subscriptions: Disposable[] = [];
 
@@ -89,7 +89,10 @@ export class InfoProvider implements Disposable {
 
     private hoverDecorationType: TextEditorDecorationType;
 
-    constructor(private server: Server, private leanDocs: DocumentSelector, private context: ExtensionContext) {
+    constructor(
+        private server: Server,
+        private leanDocs: DocumentSelector,
+        private context: ExtensionContext) {
 
         this.statusBarItem = window.createStatusBarItem(StatusBarAlignment.Right, 1000);
 
@@ -446,6 +449,7 @@ export class InfoProvider implements Disposable {
         if (this.stopped || !this.curFileName || !this.curPosition) { return false; }
         let shouldUpdate = false;
         try {
+            // get the 'save_info' format for this location.
             const info = await this.server.info(
                 this.curFileName, this.curPosition.line + 1, this.curPosition.character);
             if (info.record && info.record.widget) {
