@@ -144,7 +144,7 @@ enum DisplayMode { // [hack] copied
 
 
 interface InfoProps {
-    widget?: widget,
+    widget?: string,
     goalState?: string,
     messages?: LogMessage[],
 
@@ -267,17 +267,3 @@ function post(message : WidgetEventMessage) {
 
 const domContainer = document.querySelector('#react_root');
 ReactDOM.render(<div><h1>Lean Interactive Window</h1></div>, domContainer);
-
-/* todos:
-
-- [ ] sort out button images / images in general.
-- [ ] make sure that the types are DRY between extension and webview
-- [ ] figure out tsc error:
-        ../node_modules/@types/semver/ranges/valid.d.ts:2:25 - error TS2307: Cannot find module '../'.
-- [ ] styling; can I include a stylesheet so that it is easy to make things look good?
-- [ ] it is possible that the widget's update function will take too long, in which case we should show some kind of loading thing.
-- [x] tooltips / hover information is common enough that they should be supported 'natively'
-- [ ] a reset button for a widget.
-- [ ] drag and drop.
-
-*/
