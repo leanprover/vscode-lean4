@@ -49,7 +49,7 @@ export class InfoProvider implements Disposable {
 
     private stylesheet: string = null;
 
-    private messageFormatters: ((text : string, msg : Message) => string)[] = [];
+    private messageFormatters: ((text: string, msg: Message) => string)[] = [];
 
     private hoverDecorationType: TextEditorDecorationType;
 
@@ -85,7 +85,7 @@ export class InfoProvider implements Disposable {
                     this.statusShown = false;
                 }
             }),
-            commands.registerCommand('_lean.revealPosition', this.revealEditorPosition),
+            commands.registerCommand('_lean.revealPosition', this.revealEditorPosition.bind(this)),
             commands.registerCommand('_lean.infoView.pause', () => {
                 this.stopUpdating();
             }),
@@ -125,13 +125,14 @@ export class InfoProvider implements Disposable {
         for (const s of this.subscriptions) { s.dispose(); }
     }
 
-    addMessageFormatter(f : (text : string, msg : Message) => string) {
+    addMessageFormatter(f: (text: string, msg: Message) => string) {
         this.messageFormatters.push(f);
     }
 
     private updateStylesheet() {
-        const css = this.context.asAbsolutePath(join('media', `infoview.css`));
+        const css = this.context.asAbsolutePath(join('media', 'infoview.css'));
         const fontFamily =
+            // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
             (workspace.getConfiguration('editor').get('fontFamily') as string).
             replace(/['"]/g, '');
         this.stylesheet = readFileSync(css, 'utf-8') + `
@@ -481,6 +482,7 @@ export class InfoProvider implements Disposable {
             goalString.match(/(^(?!  ).*\n?(  .*\n?)*)/mg).map((line) => line.trim())
                 .filter((line) => {
                     const filt = reFilters[filterIndex];
+                    // eslint-disable-next-line @typescript-eslint/prefer-regexp-exec
                     const test = line.match(new RegExp(filt.regex, filt.flags)) !== null;
                     return filt.match ? test : !test;
                 }).join('\n');
@@ -489,7 +491,7 @@ export class InfoProvider implements Disposable {
     }
 
     private renderMessages() {
-        if (!this.curFileName || !this.curMessages) { return ``; }
+        if (!this.curFileName || !this.curMessages) { return ''; }
         return this.curMessages.map((m) => {
             const f = escapeHtml(m.file_name); const b = escapeHtml(basename(m.file_name));
             const l = m.pos_line; const c = m.pos_col;

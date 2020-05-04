@@ -79,7 +79,7 @@ It also contributes the following commands, which can be bound to keys if desire
 * Install `code` from http://code.visualstudio.com
 * Run `git clone https://github.com/leanprover/vscode-lean`
 * Run `npm install` in the `vscode-lean` directory
-* Install the [TSLint extension for vscode](https://marketplace.visualstudio.com/items?itemName=eg2.tslint)
+* Install the [ESLint extension for vscode](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint)
 * Open the `vscode-lean` directory in VS Code and start developing (<kbd>F5</kbd> starts the debugger)
 
 ## Release Notes

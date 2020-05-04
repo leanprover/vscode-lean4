@@ -5,7 +5,7 @@
 	"version": "0.15.8",
 	"publisher": "jroesch",
 	"engines": {
-		"vscode": "^1.24.0"
+		"vscode": "^1.38.0"
 	},
 	"categories": [
 		"Programming Languages"
@@ -429,9 +429,7 @@
 	"scripts": {
 		"vscode:prepublish": "tsc -p ./",
 		"compile": "tsc -watch -p ./",
-		"lint": "tslint -c tslint.json src/*.ts",
-		"postinstall": "node ./node_modules/vscode/bin/install",
-		"test": "node ./node_modules/vscode/bin/test"
+		"lint": "eslint -c .eslintrc.js src/*.ts"
 	},
 	"dependencies": {
 		"axios": "^0.19.2",
@@ -444,14 +442,16 @@
 	},
 	"devDependencies": {
 		"@types/load-json-file": "^5.1.0",
-		"@types/mocha": "^7.0.1",
-		"@types/node": "^13.7.0",
+		"@types/mocha": "^7.0.2",
+		"@types/node": "^13.13.4",
 		"@types/semver": "^7.1.0",
 		"@types/username": "^3.0.0",
-		"tslint": "^6.0.0",
-		"typescript": "^3.7.5",
-		"vsce": "^1.73.0",
-		"vscode": "^1.1.36"
+		"eslint": "^6.8.0",
+		"@typescript-eslint/eslint-plugin": "^2.31.0",
+		"@typescript-eslint/parser": "^2.31.0",
+		"typescript": "^3.8.3",
+		"@types/vscode": "^1.38.0",
+		"vsce": "^1.75.0"
 	},
 	"icon": "images/lean_logo.png",
 	"license": "Apache-2.0",

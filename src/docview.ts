@@ -1,6 +1,5 @@
 import axios from 'axios';
-// tslint:disable-next-line:no-var-requires
-const cheerio = require('cheerio');
+import cheerio = require('cheerio');
 import { URL } from 'url';
 import { commands, Disposable, Position, Uri, ViewColumn, WebviewPanel, window,
      workspace, WorkspaceEdit } from 'vscode';

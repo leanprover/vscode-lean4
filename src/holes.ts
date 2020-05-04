@@ -4,8 +4,8 @@ import { CodeActionProvider, Command, commands, Diagnostic,
     Range, TextDocument, Uri, window } from 'vscode';
 import { Server } from './server';
 
-interface Pos { line: number; column: number; }
-interface Ran { start: Pos; end: Pos; }
+interface Pos { line: number; column: number }
+interface Ran { start: Pos; end: Pos }
 function mkRange(r: Ran): Range {
     return new Range(r.start.line - 1, r.start.column, r.end.line - 1, r.end.column);
 }

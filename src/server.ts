@@ -195,7 +195,7 @@ export class Server extends leanclient.Server {
               } else {
                   await window.showErrorMessage(
                     "You'll need to install a terminal (e.g. Git for Windows, or MSYS2)\n" +
-                    `before we can install elan.`);
+                    'before we can install elan.');
                   return;
               }
             }
