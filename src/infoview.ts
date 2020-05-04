@@ -411,8 +411,8 @@ export class InfoProvider implements Disposable {
     }
 
     private getMediaPath(mediaFile: string): string {
-        return Uri.file(this.context.asAbsolutePath(join('media', mediaFile)))
-            .with({scheme: 'vscode-resource'}).toString();
+        return this.webviewPanel.webview.asWebviewUri(
+            Uri.file(join(this.context.extensionPath, 'media', mediaFile))).toString();
     }
 
     private render() {
