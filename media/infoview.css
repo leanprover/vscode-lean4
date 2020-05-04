@@ -12,19 +12,19 @@ body {
   padding: 0px;
 }
 
-div
+/* div
 {
   display: block;
   width: calc(100% - 3em);
   margin: 0px;
   padding: 0px;
   position: relative;
-}
+} */
 
 h1
 {
   display: block;
-  width: calc(100% - 3em);
+  /* width: calc(100% - 3em); */
 
   margin-bottom: 1ex;
   margin-top: 1ex;
@@ -176,7 +176,7 @@ select {
   padding: 4px 8px;
   font-size: 13px;
   border-radius: 4px;
-  display: none;
+  /* display: none; */
 }
 
 .tooltip[data-show] {

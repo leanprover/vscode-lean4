@@ -174,10 +174,10 @@ export class InfoProvider implements Disposable {
             (workspace.getConfiguration('editor').get('fontFamily') as string).
                 replace(/['"]/g, '');
         this.stylesheet = readFileSync(css, 'utf-8') + `
-            pre {
+            .font-code {
                 font-family: ${fontFamily};
                 font-size: ${workspace.getConfiguration('editor').get('fontSize')}px;
-                white-space: pre-wrap; // TODO(gabriel): make configurable
+                // white-space: pre-wrap; // TODO(gabriel): make configurable
             }
             ` +
             workspace.getConfiguration('lean').get('infoViewStyle');
@@ -513,12 +513,13 @@ export class InfoProvider implements Disposable {
                 <meta charset="UTF-8" />
                 <meta http-equiv="Content-type" content="text/html;charset=utf-8">
                 <title>Infoview</title>
+                <link rel="stylesheet" href="https://unpkg.com/tachyons/css/tachyons.min.css">
                 <style>${this.stylesheet}</style>
             </head>
             <body>
                 <div id="react_root"></div>
                 ${libraries.join("\n")}
-                <script src="${this.getMediaPath('index.js')}"></sscript>
+                <script src="${this.getMediaPath('index.js')}"></script>
             </body>
             </html>`
     }

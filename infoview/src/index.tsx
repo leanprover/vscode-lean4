@@ -59,7 +59,6 @@ function Html(props: widget) {
         let new_attrs: any = {};
         for (let k of Object.getOwnPropertyNames(attributes)) {
             new_attrs[k] = attributes[k];
-
         }
         for (let k of Object.getOwnPropertyNames(events)) {
             if (["onClick", "onMouseEnter", "onMouseLeave"].includes(k)) {
@@ -90,8 +89,10 @@ function Html(props: widget) {
         }
         if (tooltip) {
             return <Popper popperContent={Html({html:[tooltip], ...rest})} refEltTag={tag} refEltAttrs={new_attrs} key={new_attrs.key}>{Html({html:children, ...rest})}</Popper>
-        } else {
+        } else if (children.length > 0) {
             return React.createElement(tag, new_attrs, Html({ html: children, ...rest }));
+        } else {
+            return React.createElement(tag, new_attrs);
         }
     });
 }
@@ -102,28 +103,31 @@ const Popper = (props) => {
     const [popperElement, setPopperElement] = React.useState(null);
     const [arrowElement, setArrowElement] = React.useState(null);
     const { styles, attributes } = ReactPopper.usePopper(referenceElement, popperElement, {
-        modifiers: [{ name: 'arrow', options: { element: arrowElement } }],
+        modifiers: [
+            { name: 'arrow', options: { element: arrowElement } },
+            { name: 'offset', options : {offset : [0,8]}}
+        ],
     });
     const refElt = React.createElement(refEltTag, {ref : setReferenceElement, ...refEltAttrs}, children);
     return (
         <>
             {refElt}
-            <div ref={setPopperElement} style={styles.popper} {...attributes.popper}>
+            <div ref={setPopperElement} style={styles.popper} {...attributes.popper} className="tooltip">
                 {popperContent}
-                <div ref={setArrowElement} style={styles.arrow} />
+                <div ref={setArrowElement} style={styles.arrow} className="arrow"/>
             </div>
         </>
     );
 }
-
-function Widget(props: { widget?: widget }) {
-    let { widget, ...rest } = props;
-    if (!widget) { return ""; }
-    return <div id="widget">
-        <h1>Widget</h1>
-        <div className="widget-container">{Html(widget)}</div>;
-    </div>
-}
+function Widget(props: { widget?: string }) {
+        let { widget, ...rest } = props;
+        let widget_json = JSON.parse(widget);
+        if (!widget_json) { return ""; }
+        return <div id="widget">
+            <h1>Widget</h1>
+            <div className="widget-container">{Html(widget_json)}</div>;
+        </div>
+    }
 
 // [hack] copied from commands.d.ts
 interface LogMessage {
@@ -195,7 +199,7 @@ function Goal(props) {
     goalString = colorizeMessage(escapeHtml(goalString));
     return <div id="goal">
         <h1>Tactic State</h1>
-        <pre dangerouslySetInnerHTML={{ __html: goalString }} />
+        <pre className="font-code" dangerouslySetInnerHTML={{ __html: goalString }} />
     </div>
 }
 
@@ -220,7 +224,7 @@ function Messages(props: InfoProps) {
                     {b}:{l}:{c}: {m.severity} {escapeHtml(m.caption)}
                 </a>
             </h1>
-            <pre dangerouslySetInnerHTML={{ __html: text }} />
+            <pre className="font-code" dangerouslySetInnerHTML={{ __html: text }} />
         </div>;
     });
     return <div id="messages">{msgs}</div>
