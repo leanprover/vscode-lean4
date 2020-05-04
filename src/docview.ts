@@ -79,7 +79,7 @@ export class DocViewProvider implements Disposable {
               ">
             <a href="${mkCommandUri('lean.backDocView')}" title="back">← back</a>
             <a href="${mkCommandUri('lean.forwardDocView')}" title="forward">→ forward</a>
-        </nav>`).prependTo('body');
+        </nav>`).prependTo($('body'));
         $('nav+*').css('margin-top','3em');
         this.getWebview().webview.html = $.html();
     }

@@ -441,16 +441,17 @@
 		"username": "^5.1.0"
 	},
 	"devDependencies": {
+		"@types/cheerio": "^0.22.18",
 		"@types/load-json-file": "^5.1.0",
 		"@types/mocha": "^7.0.2",
 		"@types/node": "^13.13.4",
 		"@types/semver": "^7.1.0",
 		"@types/username": "^3.0.0",
-		"eslint": "^6.8.0",
+		"@types/vscode": "^1.38.0",
 		"@typescript-eslint/eslint-plugin": "^2.31.0",
 		"@typescript-eslint/parser": "^2.31.0",
+		"eslint": "^6.8.0",
 		"typescript": "^3.8.3",
-		"@types/vscode": "^1.38.0",
 		"vsce": "^1.75.0"
 	},
 	"icon": "images/lean_logo.png",
