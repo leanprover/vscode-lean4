@@ -1,8 +1,8 @@
 import axios from 'axios';
 import cheerio = require('cheerio');
 import { URL } from 'url';
-import { commands, Disposable, Position, Uri, ViewColumn, WebviewPanel, window,
-     workspace, WorkspaceEdit } from 'vscode';
+import { commands, Disposable, Uri, ViewColumn, WebviewPanel, window,
+     workspace, WebviewOptions, WebviewPanelOptions } from 'vscode';
 
 export function mkCommandUri(commandName: string, ...args: any): string {
     return `command:${commandName}?${encodeURIComponent(JSON.stringify(args))}`;
@@ -30,9 +30,13 @@ export class DocViewProvider implements Disposable {
     private webview?: WebviewPanel;
     private getWebview(): WebviewPanel {
         if (!this.webview) {
+            const options: WebviewOptions & WebviewPanelOptions = {
+                enableFindWidget: true,
+                enableScripts: true,
+                enableCommandUris: true,
+            };
             this.webview = window.createWebviewPanel('lean', 'Lean Documentation',
-                {viewColumn: 3},
-                {enableFindWidget: true, enableScripts: true, enableCommandUris: true});
+                { viewColumn: 3, preserveFocus: true }, options);
             this.webview.onDidDispose(() => this.webview = null);
         }
         return this.webview;
