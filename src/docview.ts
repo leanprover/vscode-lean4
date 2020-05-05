@@ -4,10 +4,15 @@ import { URL } from 'url';
 import { commands, Disposable, Uri, ViewColumn, WebviewPanel, window,
      workspace, WebviewOptions, WebviewPanelOptions } from 'vscode';
 import * as fs from 'fs';
-import { join, basename } from 'path';
+import { join } from 'path';
 
 export function mkCommandUri(commandName: string, ...args: any): string {
     return `command:${commandName}?${encodeURIComponent(JSON.stringify(args))}`;
+}
+
+function findProjectDocumentation(): string | null {
+    const html = join(workspace.rootPath, 'html', 'index.html');
+    return fs.existsSync(html) ? html : null;
 }
 
 export class DocViewProvider implements Disposable {
@@ -21,12 +26,30 @@ export class DocViewProvider implements Disposable {
             commands.registerCommand('lean.backDocView', () => this.back()),
             commands.registerCommand('lean.forwardDocView', () => this.forward()),
             commands.registerCommand('lean.openTryIt', (code) => this.tryIt(code)),
+            commands.registerCommand('lean.openExample', (file) => this.example(file)),
         );
+        this.offerToOpenProjectDocumentation();
+    }
+
+    private async offerToOpenProjectDocumentation() {
+        if (!fs.existsSync(join(workspace.rootPath, 'leanpkg.toml'))) return;
+        const projDoc = findProjectDocumentation();
+        if (!projDoc) return;
+        const openDoc = 'Open project documentation';
+        const choice = await window.showInformationMessage('Documentation exists!', openDoc);
+        if (choice === openDoc) {
+            await this.open(Uri.file(projDoc).toString());
+        }
     }
 
     private async tryIt(code: string) {
         const doc = await workspace.openTextDocument({language: 'lean', content: code});
         const editor = await window.showTextDocument(doc, ViewColumn.One);
+    }
+
+    private async example(file: string) {
+        const doc = await workspace.openTextDocument(Uri.parse(file));
+        await window.showTextDocument(doc, ViewColumn.One);
     }
 
     private webview?: WebviewPanel;
@@ -68,12 +91,10 @@ export class DocViewProvider implements Disposable {
             const $ = cheerio.load('<body>');
             const body = $('body');
 
-            const html = join(workspace.rootPath, 'html', 'index.html');
-            if (fs.existsSync(html)) {
+            const html = findProjectDocumentation();
+            if (html) {
                 body.append($('<p>').append($('<a>').attr('href', Uri.file(html).toString())
-                    .text('Open documentation of current project (')
-                    .append($('<code>').text(join(basename(workspace.rootPath), 'html', 'index.html')))
-                    .append(')')));
+                    .text('Open documentation of current project')));
             }
 
             const books = {
@@ -103,6 +124,8 @@ export class DocViewProvider implements Disposable {
     }
 
     async setHtml() {
+        const {webview} = this.getWebview();
+
         const url = this.currentURL;
         let $: CheerioStatic;
         try {
@@ -123,6 +146,9 @@ export class DocViewProvider implements Disposable {
                 // keep relative links
             } else if (link.attribs.alwaysExternal) {
                 // keep links with alwaysExternal attribute
+            } else if (link.attribs.tryitfile) {
+                link.attribs.title = link.attribs.title || 'Open code block (in existing file)';
+                link.attribs.href = mkCommandUri('lean.openExample', new URL(link.attribs.tryitfile, url).toString());
             } else if (tryItMatch) {
                 const code = decodeURIComponent(tryItMatch[1]);
                 link.attribs.title = link.attribs.title || 'Open code block in new editor';
@@ -168,7 +194,7 @@ export class DocViewProvider implements Disposable {
         navDiv.append(mkLink('lean.forwardDocView', 'forward', 'forward ➡'));
         $('nav+*').css('margin-top','3em');
 
-        this.getWebview().webview.html = $.html();
+        webview.html = $.html();
     }
 
     /** Called by the user clicking a link. */
