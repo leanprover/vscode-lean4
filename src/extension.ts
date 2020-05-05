@@ -17,6 +17,7 @@ import { Server } from './server';
 import { LeanStatusBarItem } from './statusbar';
 import { LeanSyncService } from './sync';
 import { LeanTaskGutter, LeanTaskMessages } from './taskgutter';
+import { StaticServer } from './staticserver';
 
 // Seeing .olean files in the source tree is annoying, we should
 // just globally hide them.
@@ -108,14 +109,19 @@ export function activate(context: ExtensionContext) {
     // Add item to the status bar.
     context.subscriptions.push(new LeanStatusBarItem(server, roiManager));
 
+    const staticServer = new StaticServer(context);
+    context.subscriptions.push(staticServer);
+    staticServer.server.on('listening', () => {
+
     // Add info view: listing either the current goal state or a list of all error messages
-    const infoView = new InfoProvider(server, LEAN_MODE, context);
+    const infoView = new InfoProvider(server, LEAN_MODE, context, staticServer);
     context.subscriptions.push(infoView);
+
+    context.subscriptions.push(new DocViewProvider(staticServer));
 
     // Tactic suggestions
     context.subscriptions.push(new TacticSuggestions(server, infoView, LEAN_MODE));
+    });
 
     context.subscriptions.push(new LeanpkgService(server));
-
-    context.subscriptions.push(new DocViewProvider());
 }

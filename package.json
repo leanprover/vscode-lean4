@@ -435,6 +435,7 @@
 		"axios": "^0.19.2",
 		"carrier": "0.3.0",
 		"cheerio": "^1.0.0-rc.3",
+		"express": "^4.17.1",
 		"hasbin": "^1.2.3",
 		"lean-client-js-node": "^1.2.12",
 		"load-json-file": "6.2.0",
@@ -442,6 +443,7 @@
 	},
 	"devDependencies": {
 		"@types/cheerio": "^0.22.18",
+		"@types/express": "^4.17.6",
 		"@types/load-json-file": "^5.1.0",
 		"@types/mocha": "^7.0.2",
 		"@types/node": "^13.13.4",

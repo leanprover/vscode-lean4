@@ -9,6 +9,7 @@ import {
     Uri, ViewColumn, WebviewPanel, window, workspace,
 } from 'vscode';
 import { Server } from './server';
+import { StaticServer } from './staticserver';
 
 function compareMessages(m1: Message, m2: Message): boolean {
     return (m1.file_name === m2.file_name &&
@@ -53,7 +54,7 @@ export class InfoProvider implements Disposable {
 
     private hoverDecorationType: TextEditorDecorationType;
 
-    constructor(private server: Server, private leanDocs: DocumentSelector, private context: ExtensionContext) {
+    constructor(private server: Server, private leanDocs: DocumentSelector, private context: ExtensionContext, private staticServer: StaticServer) {
 
         this.statusBarItem = window.createStatusBarItem(StatusBarAlignment.Right, 1000);
 
@@ -411,8 +412,8 @@ export class InfoProvider implements Disposable {
     }
 
     private getMediaPath(mediaFile: string): string {
-        return this.webviewPanel.webview.asWebviewUri(
-            Uri.file(join(this.context.extensionPath, 'media', mediaFile))).toString();
+        // workaround for https://github.com/microsoft/vscode/issues/89038
+        return this.staticServer.mkUri(join(this.context.extensionPath, 'media', mediaFile));
     }
 
     private render() {
