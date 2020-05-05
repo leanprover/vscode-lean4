@@ -70,12 +70,16 @@ export class DocViewProvider implements Disposable {
             script.attribs.src = new URL(script.attribs.src, url).toString();
         }
         for (const link of $('a[href]').get()) {
-            const tryItMatch = link.attribs.href.match(/\/live\/.*#code=(.*)/);
-            if (tryItMatch) {
+            const tryItMatch = link.attribs.href.match(/\/(?:live|lean-web-editor)\/.*#code=(.*)/);
+            if (link.attribs.href.startsWith('#')) {
+                // keep relative links
+            } else if (tryItMatch) {
                 const code = decodeURIComponent(tryItMatch[1]);
+                link.attribs.title = link.attribs.title || 'Open code block in new editor';
                 link.attribs.href = mkCommandUri('lean.openTryIt', code);
             } else {
                 const href = new URL(link.attribs.href, url).toString();
+                link.attribs.title = link.attribs.title || link.attribs.href;
                 link.attribs.href = mkCommandUri('lean.openDocView', href);
             }
         }
