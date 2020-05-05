@@ -56,7 +56,13 @@ export class DocViewProvider implements Disposable {
 
     async setHtml() {
         const url = this.currentURL;
-        const $ = cheerio.load(await this.fetch(url));
+        let $: CheerioStatic;
+        try {
+            $ = cheerio.load(await this.fetch(url));
+        } catch (e) {
+            $ = cheerio.load('<pre>');
+            $('pre').text(e.toString());
+        }
         for (const style of $('link[rel=stylesheet]').get()) {
             style.attribs.href = new URL(style.attribs.href, url).toString();
         }
