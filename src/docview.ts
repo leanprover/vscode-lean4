@@ -173,9 +173,6 @@ export class DocViewProvider implements Disposable {
 
     /** Called by the user clicking a link. */
     async open(url?: string) {
-        if (this.currentURL === url) {
-            return;
-        }
         if (url) {
             this.backstack.push(this.currentURL);
             this.forwardstack = [];
