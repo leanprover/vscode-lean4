@@ -49,10 +49,21 @@ export class DocViewProvider implements Disposable {
         if (url) {
             const uri = Uri.parse(url);
             if (uri.scheme === 'file') {
-                return fs.readFileSync(uri.fsPath).toString();
+                if (uri.fsPath.endsWith('.html')) {
+                    return fs.readFileSync(uri.fsPath).toString();
+                }
             } else {
-                return (await axios.get<string>(url)).data;
+                const {data, headers} = await axios.get<string>(url);
+                if (('' + headers['content-type']).startsWith('text/html')) {
+                    return data;
+                }
             }
+
+            const $ = cheerio.load('<p>');
+            $('p').text('Unsupported file. ')
+                .append($('<a>').attr('href', url).attr('alwaysExternal', 'true')
+                    .text('Open in browser instead.'));
+            return $.html();
         } else {
             const $ = cheerio.load('<body>');
             const body = $('body');
@@ -110,6 +121,8 @@ export class DocViewProvider implements Disposable {
             const tryItMatch = link.attribs.href.match(/\/(?:live|lean-web-editor)\/.*#code=(.*)/);
             if (link.attribs.href.startsWith('#')) {
                 // keep relative links
+            } else if (link.attribs.alwaysExternal) {
+                // keep links with alwaysExternal attribute
             } else if (tryItMatch) {
                 const code = decodeURIComponent(tryItMatch[1]);
                 link.attribs.title = link.attribs.title || 'Open code block in new editor';
