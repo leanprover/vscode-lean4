@@ -34,6 +34,7 @@ export class DocViewProvider implements Disposable {
                 enableFindWidget: true,
                 enableScripts: true,
                 enableCommandUris: true,
+                retainContextWhenHidden: true,
             };
             this.webview = window.createWebviewPanel('lean', 'Lean Documentation',
                 { viewColumn: 3, preserveFocus: true }, options);
@@ -88,14 +89,35 @@ export class DocViewProvider implements Disposable {
                 link.attribs.href = mkCommandUri('lean.openDocView', href);
             }
         }
-        $(`<nav style="
-                width:100vw; position : fixed; top : 0px; left : 0px;
-                padding : 4px; background : #f3f3f3; z-index:100
-              ">
-            <a href="${mkCommandUri('lean.backDocView')}" title="back">← back</a>
-            <a href="${mkCommandUri('lean.forwardDocView')}" title="forward">→ forward</a>
-        </nav>`).prependTo($('body'));
+
+        const nav = $('<nav>');
+        nav.css('width', '100vw');
+        nav.css('position', 'fixed');
+        nav.css('top', '0');
+        nav.css('right', '0');
+        nav.css('text-align', 'right');
+        nav.css('z-index', '100');
+        nav.prependTo($('body'));
+        const navDiv = $('<span>');
+        navDiv.css('padding', '4px');
+        navDiv.css('padding-right', '20px');
+        navDiv.css('z-index', '100');
+        navDiv.css('background-color', 'var(--vscode-tab-activeBackground)');
+        nav.append(navDiv);
+        const fontSize = workspace.getConfiguration('editor').get('fontSize') + 'px';
+        const mkLink = (command: string, title: string, text: string) => $('<a>')
+            .attr('title', title)
+            .attr('href', mkCommandUri(command))
+            .css('color', 'var(--vscode-tab-activeForeground)')
+            .css('font-family', 'sans-serif')
+            .css('font-size', fontSize)
+            .css('margin-left', '1em')
+            .css('text-decoration', 'none')
+            .text(text);
+        navDiv.append(mkLink('lean.backDocView', 'back', '⬅ back'));
+        navDiv.append(mkLink('lean.forwardDocView', 'forward', 'forward ➡'));
         $('nav+*').css('margin-top','3em');
+
         this.getWebview().webview.html = $.html();
     }
 
