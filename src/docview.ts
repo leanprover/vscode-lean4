@@ -3,6 +3,8 @@ import cheerio = require('cheerio');
 import { URL } from 'url';
 import { commands, Disposable, Uri, ViewColumn, WebviewPanel, window,
      workspace, WebviewOptions, WebviewPanelOptions } from 'vscode';
+import * as fs from 'fs';
+import { join, basename } from 'path';
 
 export function mkCommandUri(commandName: string, ...args: any): string {
     return `command:${commandName}?${encodeURIComponent(JSON.stringify(args))}`;
@@ -45,18 +47,47 @@ export class DocViewProvider implements Disposable {
 
     async fetch(url?: string): Promise<string> {
         if (url) {
-            return (await axios.get<string>(url)).data;
+            const uri = Uri.parse(url);
+            if (uri.scheme === 'file') {
+                return fs.readFileSync(uri.fsPath).toString();
+            } else {
+                return (await axios.get<string>(url)).data;
+            }
         } else {
+            const $ = cheerio.load('<body>');
+            const body = $('body');
+
+            const html = join(workspace.rootPath, 'html', 'index.html');
+            if (fs.existsSync(html)) {
+                body.append($('<p>').append($('<a>').attr('href', Uri.file(html).toString())
+                    .text('Open documentation of current project (')
+                    .append($('<code>').text(join(basename(workspace.rootPath), 'html', 'index.html')))
+                    .append(')')));
+            }
+
             const books = {
                 'Theorem Proving in Lean':
                     'https://leanprover.github.io/theorem_proving_in_lean/',
                 'Reference Manual': 'https://leanprover.github.io/reference/',
                 'Mathematics in Lean': 'https://avigad.github.io/mathematics_in_lean/',
             };
-            return '<ul>' +
-                Object.getOwnPropertyNames(books).map((n) =>
-                    `<li><a href="${books[n]}">${n}</a></li>`).join('') +
-                '</ul>';
+            for (const book of Object.getOwnPropertyNames(books)) {
+                body.append($('<p>').append($('<a>').attr('href', books[book]).text(book)));
+            }
+
+            return $.html();
+        }
+    }
+
+    private mkRelativeUrl(relative: string, base: string): string {
+        const uri = new URL(relative, base);
+        if (uri.protocol === 'file:') {
+            if (new URL(base).protocol !== 'file:') {
+                return '';
+            }
+            return this.webview.webview.asWebviewUri(Uri.parse(uri.toString())).toString();
+        } else {
+            return uri.toString();
         }
     }
 
@@ -70,10 +101,10 @@ export class DocViewProvider implements Disposable {
             $('pre').text(e.toString());
         }
         for (const style of $('link[rel=stylesheet]').get()) {
-            style.attribs.href = new URL(style.attribs.href, url).toString();
+            style.attribs.href = this.mkRelativeUrl(style.attribs.href, url);
         }
         for (const script of $('script[src]').get()) {
-            script.attribs.src = new URL(script.attribs.src, url).toString();
+            script.attribs.src = this.mkRelativeUrl(script.attribs.src, url);
         }
         for (const link of $('a[href]').get()) {
             const tryItMatch = link.attribs.href.match(/\/(?:live|lean-web-editor)\/.*#code=(.*)/);
@@ -84,9 +115,12 @@ export class DocViewProvider implements Disposable {
                 link.attribs.title = link.attribs.title || 'Open code block in new editor';
                 link.attribs.href = mkCommandUri('lean.openTryIt', code);
             } else {
-                const href = new URL(link.attribs.href, url).toString();
-                link.attribs.title = link.attribs.title || link.attribs.href;
-                link.attribs.href = mkCommandUri('lean.openDocView', href);
+                const hrefUrl = new URL(link.attribs.href, url);
+                const isExternal = url && new URL(url).origin !== hrefUrl.origin;
+                if (!isExternal) {
+                    link.attribs.title = link.attribs.title || link.attribs.href;
+                    link.attribs.href = mkCommandUri('lean.openDocView', hrefUrl.toString());
+                }
             }
         }
 
