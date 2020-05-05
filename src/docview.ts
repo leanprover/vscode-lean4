@@ -35,11 +35,7 @@ export class DocViewProvider implements Disposable {
         if (!fs.existsSync(join(workspace.rootPath, 'leanpkg.toml'))) return;
         const projDoc = findProjectDocumentation();
         if (!projDoc) return;
-        const openDoc = 'Open project documentation';
-        const choice = await window.showInformationMessage('Documentation exists!', openDoc);
-        if (choice === openDoc) {
-            await this.open(Uri.file(projDoc).toString());
-        }
+        await this.open(Uri.file(projDoc).toString());
     }
 
     private async tryIt(code: string) {
