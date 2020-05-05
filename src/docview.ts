@@ -137,6 +137,9 @@ export class DocViewProvider implements Disposable {
             }
         }
 
+        // javascript search doesn't work
+        $('.sphinxsidebar #searchbox').remove();
+
         const nav = $('<nav>');
         nav.css('width', '100vw');
         nav.css('position', 'fixed');
