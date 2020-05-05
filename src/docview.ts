@@ -50,6 +50,7 @@ export class DocViewProvider implements Disposable {
                 'Theorem Proving in Lean':
                     'https://leanprover.github.io/theorem_proving_in_lean/',
                 'Reference Manual': 'https://leanprover.github.io/reference/',
+                'Mathematics in Lean': 'https://avigad.github.io/mathematics_in_lean/',
             };
             return '<ul>' +
                 Object.getOwnPropertyNames(books).map((n) =>
