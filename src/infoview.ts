@@ -64,6 +64,24 @@ type WidgetEvent = {
     route : number[],
     args : any[]
 }
+interface WidgetEventResponseSuccess {
+    status : "success",
+    widget : any,
+}
+interface WidgetEventResponseEdit {
+    status : "edit",
+    widget : any,
+    /** Some text to insert after the widget's comma. */
+    action : string
+}
+interface WidgetEventResponseInvalid {
+    status : "invalid_handler"
+}
+interface WidgetEventResponseError {
+    status : "error",
+    message : string
+}
+type WidgetEventResponse = WidgetEventResponseSuccess | WidgetEventResponseInvalid | WidgetEventResponseEdit | WidgetEventResponseError
 
 export class InfoProvider implements Disposable {
     /** Instance of the panel. */
@@ -246,9 +264,38 @@ export class InfoProvider implements Disposable {
         }
         let result : any = await this.server.send(message);
         console.log("recieved from server", result);
-        if (result.record && result.record.status === "success" && result.record.widget) {
-            this.curWidget = result.record.widget;
+        if (!result.record) { return; }
+        let record : WidgetEventResponse = result.record as any;
+        if (record.status === "success" && record.widget) {
+            this.curWidget = record.widget;
             this.rerender();
+        } else if (record.status === "edit") {
+            const new_command : string = record.action;
+            this.curWidget = record.widget;
+            for (const editor of window.visibleTextEditors) {
+                if (editor.document.fileName === message.file_name) {
+                    const current_selection_range = editor.selection;
+                    const cursor_pos = current_selection_range.active;
+                    const prev_line = editor.document.lineAt(message.line - 2);
+                    const spaces = prev_line.firstNonWhitespaceCharacterIndex;
+                    const margin_str = [...Array(spaces).keys()].map(x => " ").join("");
+
+                    // [hack] for now, we assume that there is only ever one command per line
+                    // and that the command should be inserted on the line above this one.
+
+                    await editor.edit((builder) => {
+                        builder.insert(
+                            prev_line.range.end,
+                            `\n${margin_str}${new_command}, `);
+                    });
+                    editor.selection = new Selection(message.line, spaces, message.line, spaces);
+                }
+            }
+
+        } else if (record.status === "invalid_handler") {
+            console.warn(`No widget_event update for {${message.handler}, ${message.route}}: invalid handler.`)
+        } else if (record.status === "error") {
+            console.error(`Update gave an error: ${record.message}`);
         }
     }
 
