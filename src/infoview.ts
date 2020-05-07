@@ -195,7 +195,6 @@ export class InfoProvider implements Disposable {
             .font-code {
                 font-family: ${fontFamily};
                 font-size: ${workspace.getConfiguration('editor').get('fontSize')}px;
-                // white-space: pre-wrap; // TODO(gabriel): make configurable
             }
             ` +
             workspace.getConfiguration('lean').get('infoViewStyle');
@@ -500,10 +499,11 @@ export class InfoProvider implements Disposable {
             // get the 'save_info' format for this location.
             const info = await this.server.info(
                 this.curFileName, this.curPosition.line + 1, this.curPosition.character);
-            if (info.record && info.record.widget) {
-                this.curWidget = info.record.widget;
+            const record : any = info.record;
+            if (record && record.widget) {
+                this.curWidget = record.widget;
                 console.log("Found a widget");
-                console.log(info.record);
+                console.log(record);
                 shouldUpdate = true;
             } else {
                 this.curWidget = null;
