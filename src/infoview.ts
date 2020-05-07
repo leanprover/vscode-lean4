@@ -294,6 +294,7 @@ export class InfoProvider implements Disposable {
 
         } else if (record.status === "invalid_handler") {
             console.warn(`No widget_event update for {${message.handler}, ${message.route}}: invalid handler.`)
+            await this.updateGoal();
         } else if (record.status === "error") {
             console.error(`Update gave an error: ${record.message}`);
         }
