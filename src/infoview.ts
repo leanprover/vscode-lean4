@@ -231,7 +231,7 @@ export class InfoProvider implements Disposable {
             this.webviewPanel.webview.onDidReceiveMessage((message) => this.handleMessage(message), undefined, this.subscriptions);
         }
     }
-
+    /** Handle a message incoming from the webview. */
     private handleMessage(message) {
         switch (message.command) {
             case 'selectFilter':
@@ -252,6 +252,7 @@ export class InfoProvider implements Disposable {
         }
     }
 
+    /** Runs whenever the user interacts with a widget. */
     private async handleWidgetEvent(message : WidgetEvent) {
         console.log("got widget event", message);
         message = {
@@ -299,6 +300,7 @@ export class InfoProvider implements Disposable {
         }
     }
 
+    /** post a position message to the webserver. */
     private sendPosition() {
         this.postMessage({
             command: 'position',
