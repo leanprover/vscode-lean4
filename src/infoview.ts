@@ -95,17 +95,27 @@ export class InfoProvider implements Disposable {
             workspace.onDidChangeTextDocument((e) => {
                 if (this.stickyPosition && this.curPosition != null &&
                     e.document.fileName === this.curFileName) {
-                    let offset = e.document.offsetAt(this.curPosition);
+                    // stupid cursor math that should be in the vscode API
+                    let newPosition = this.curPosition;
                     for (const chg of e.contentChanges) {
-                        if (offset >= chg.rangeOffset) {
-                            offset = Math.max(chg.rangeOffset, offset - chg.rangeLength) + chg.text.length;
+                        if (newPosition.isAfterOrEqual(chg.range.start)) {
+                            let lines = 0;
+                            for (const c of chg.text) if (c === '\n') lines++;
+                            newPosition = new Position(
+                                chg.range.start.line + Math.max(0, newPosition.line - chg.range.end.line) + lines,
+                                newPosition.line > chg.range.end.line ?
+                                    newPosition.character :
+                                lines === 0 ?
+                                    chg.range.start.character + Math.max(0, newPosition.character - chg.range.end.character) + chg.text.length :
+                                9999 // too lazy to get column positioning right, and end of the line is a good place
+                            );
                         }
                     }
-                    const pos = e.document.positionAt(offset);
-                    this.updatePosition(false, pos);
+                    newPosition = e.document.validatePosition(newPosition);
+                    this.updatePosition(false, newPosition);
                     for (const editor of window.visibleTextEditors) {
                         if (editor.document.fileName === this.curFileName) {
-                            editor.setDecorations(this.stickyDecorationType, [new Range(pos, pos)]);
+                            editor.setDecorations(this.stickyDecorationType, [new Range(newPosition, newPosition)]);
                         }
                     }
 
