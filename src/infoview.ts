@@ -9,6 +9,7 @@ import {
     Uri, ViewColumn, WebviewPanel, window, workspace,
 } from 'vscode';
 import { Server } from './server';
+import { DisplayMode, WidgetEventMessage, InfoviewMessage } from './typings'
 
 function compareMessages(m1: Message, m2: Message): boolean {
     return (m1.file_name === m2.file_name &&
@@ -26,44 +27,7 @@ function escapeHtml(s: string): string {
         .replace(/'/g, '&#039;');
 }
 
-enum DisplayMode {
-    OnlyState, // only the state at the current cursor position including the tactic state
-    AllMessage, // all messages
-}
 
-interface InfoProps {
-    widget? : string,
-    goalState?: string,
-    messages?: Message[],
-
-    fileName: string,
-
-    displayMode: DisplayMode,
-    infoViewTacticStateFilters: any[],
-    filterIndex
-}
-
-type InfoviewMessage = {
-    command : "sync",
-    props : InfoProps
-} | {
-    command : "continue"
-} | {
-    command : "pause"
-} | {
-    command : "position",
-    fileName, line, column
-}
-
-type WidgetEvent = {
-    command : "widget_event",
-    file_name : string,
-    line : number,
-    column : number,
-    handler : number,
-    route : number[],
-    args : any[]
-}
 interface WidgetEventResponseSuccess {
     status : "success",
     widget : any,
@@ -253,7 +217,7 @@ export class InfoProvider implements Disposable {
     }
 
     /** Runs whenever the user interacts with a widget. */
-    private async handleWidgetEvent(message : WidgetEvent) {
+    private async handleWidgetEvent(message : WidgetEventMessage) {
         console.log("got widget event", message);
         message = {
             command: 'widget_event',
@@ -549,13 +513,6 @@ export class InfoProvider implements Disposable {
     }
 
     private initialHtml() {
-        let libraries = [
-            "https://unpkg.com/react@16/umd/react.development.js",
-            "https://unpkg.com/react-dom@16/umd/react-dom.development.js",
-            "https://unpkg.com/@popperjs/core@2",
-            "https://unpkg.com/react-popper/dist/index.umd.js",
-        ];
-        libraries = libraries.map(l => `<script src="${l}" crossorigin></script>`);
         return `
             <!DOCTYPE html>
             <html>
@@ -568,7 +525,6 @@ export class InfoProvider implements Disposable {
             </head>
             <body>
                 <div id="react_root"></div>
-                ${libraries.join("\n")}
                 <script src="${this.getMediaPath('index.js')}"></script>
             </body>
             </html>`

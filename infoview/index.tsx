@@ -1,6 +1,8 @@
-declare var React;
-declare var ReactDOM;
-declare var ReactPopper;
+import * as React from 'react';
+import * as ReactDOM from 'react-dom';
+import * as ReactPopper from 'react-popper';
+import {WidgetEventMessage} from '../src/typings';
+
 // @ts-ignore
 const vscode = acquireVsCodeApi();
 
@@ -34,17 +36,6 @@ type widget = {
     line: number,
     column: number,
     html: html[] | null
-}
-
-interface WidgetEventMessage {
-    command : "widget_event",
-    kind : "onClick" | "onMouseEnter" | "onMouseLeave" | "onChange";
-    handler : number,
-    route : number[],
-    args : {type : "unit"} | {type : "string", value : string};
-    file_name : string,
-    line : number,
-    column : number
 }
 
 function Html(props: widget) {
@@ -119,10 +110,10 @@ const Popper = (props) => {
         </>
     );
 }
-function Widget(props: { widget?: string }) {
-        let { widget, ...rest } = props;
+function Widget(props: { widget?: string }) : JSX.Element {
+        let { widget } = props;
         let widget_json = JSON.parse(widget);
-        if (!widget_json) { return ""; }
+        if (!widget_json) { return null; }
         return <div id="widget">
             <h1>Widget</h1>
             <div className="widget-container">{Html(widget_json)}</div>
@@ -180,8 +171,8 @@ function colorizeMessage(goal: string): string {
 
 function basename(path) { return path.split(/[\\/]/).pop(); }
 
-function Goal(props) {
-    if (!props.goalState || props.displayMode !== DisplayMode.OnlyState) { return []; }
+function Goal(props) : JSX.Element {
+    if (!props.goalState || props.displayMode !== DisplayMode.OnlyState) { return null; }
     const reFilters = props.infoViewTacticStateFilters || [];
     const filterIndex = props.infoViewFilterIndex ?? -1;
     let goalString = props.goalState.replace(/^(no goals)/mg, 'goals accomplished')
@@ -203,8 +194,8 @@ function Goal(props) {
     </div>
 }
 
-function Messages(props: InfoProps) {
-    if (!props.fileName || !props.messages) { return ``; }
+function Messages(props: InfoProps) : JSX.Element {
+    if (!props.fileName || !props.messages) { return null; }
     let msgs = props.messages.map((m) => {
         const f = escapeHtml(m.file_name);
         const b = escapeHtml(basename(m.file_name));
