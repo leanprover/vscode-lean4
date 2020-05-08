@@ -125,7 +125,7 @@ function Widget(props: { widget?: string }) {
         if (!widget_json) { return ""; }
         return <div id="widget">
             <h1>Widget</h1>
-            <div className="widget-container">{Html(widget_json)}</div>;
+            <div className="widget-container">{Html(widget_json)}</div>
         </div>
     }
 
@@ -244,9 +244,9 @@ function Info(props: InfoProps) {
                 </a>
             </span>
         </div>
+        <Widget {...props} />
         <Goal {...props} />
         <Messages {...props} />
-        <Widget {...props} />
     </>
 }
 
