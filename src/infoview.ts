@@ -54,6 +54,7 @@ export class InfoProvider implements Disposable {
     private messageFormatters: ((text: string, msg: Message) => string)[] = [];
 
     private hoverDecorationType: TextEditorDecorationType;
+    private stickyDecorationType: TextEditorDecorationType;
 
     constructor(private server: Server, private leanDocs: DocumentSelector, private context: ExtensionContext, private staticServer: StaticServer) {
 
@@ -62,6 +63,10 @@ export class InfoProvider implements Disposable {
         this.hoverDecorationType = window.createTextEditorDecorationType({
             backgroundColor: 'red', // make configurable?
             border: '3px solid red',
+        });
+        this.stickyDecorationType = window.createTextEditorDecorationType({
+            backgroundColor: 'blue', // make configurable?
+            border: '3px solid blue',
         });
         this.updateStylesheet();
         this.subscriptions.push(
@@ -93,10 +98,17 @@ export class InfoProvider implements Disposable {
                     let offset = e.document.offsetAt(this.curPosition);
                     for (const chg of e.contentChanges) {
                         if (offset >= chg.rangeOffset) {
-                            offset = Math.min(chg.rangeOffset, offset - chg.rangeLength) + chg.text.length;
+                            offset = Math.max(chg.rangeOffset, offset - chg.rangeLength) + chg.text.length;
                         }
                     }
-                    this.updatePosition(false, e.document.positionAt(offset));
+                    const pos = e.document.positionAt(offset);
+                    this.updatePosition(false, pos);
+                    for (const editor of window.visibleTextEditors) {
+                        if (editor.document.fileName === this.curFileName) {
+                            editor.setDecorations(this.stickyDecorationType, [new Range(pos, pos)]);
+                        }
+                    }
+
                 }
             }),
             commands.registerCommand('_lean.revealPosition', this.revealEditorPosition.bind(this)),
@@ -132,9 +144,17 @@ export class InfoProvider implements Disposable {
             commands.registerTextEditorCommand('lean.infoView.toggleStickyPosition', (editor) => {
                 if (this.stickyPosition) {
                     this.stickyPosition = false;
+                    for (const ed of window.visibleTextEditors) {
+                        if (ed.document.languageId === 'lean') {
+                            ed.setDecorations(this.stickyDecorationType, []);
+                        }
+                    }
                     this.updatePosition(false);
                 } else {
                     this.stickyPosition = true;
+                    const pos = editor.selection.active;
+                    editor.setDecorations(this.stickyDecorationType, [new Range(pos, pos)]);
+                    this.updatePosition(false, pos, editor);
                 }
             }),
         );
@@ -301,10 +321,10 @@ export class InfoProvider implements Disposable {
         return (this.curFileName !== oldFileName || !this.curPosition.isEqual(oldPosition));
     }
 
-    private async updatePosition(forceRefresh: boolean, newStickyValue?: Position) {
+    private async updatePosition(forceRefresh: boolean, newStickyValue?: Position, editor?: TextEditor) {
         if (this.stopped) { return; }
 
-        const chPos = this.changePosition();
+        const chPos = this.changePosition(newStickyValue);
         if (!chPos && !forceRefresh) {
             return;
         }
