@@ -241,6 +241,12 @@
 				"description": "Copy the current contents of the info view into a new comment on the next line."
 			},
 			{
+				"command": "lean.infoView.toggleStickyPosition",
+				"category": "Lean",
+				"title": "Info View: Toggle Sticky Position",
+				"description": "Mark the current position of the cursor for goal reporting, instead of tracking the cursor."
+			},
+			{
 				"command": "lean.infoView.toggleUpdating",
 				"category": "Lean",
 				"title": "Info View: Toggle Updating",
@@ -374,6 +380,10 @@
 				},
 				{
 					"command": "lean.infoView.copyToComment",
+					"when": "editorLangId == lean"
+				},
+				{
+					"command": "lean.infoView.toggleStickyPosition",
 					"when": "editorLangId == lean"
 				},
 				{

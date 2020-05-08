@@ -43,6 +43,7 @@ export class InfoProvider implements Disposable {
 
     private started: boolean = false;
     private stopped: boolean = false;
+    private stickyPosition: boolean = false;
     private curFileName: string = null;
     private curPosition: Position = null;
     private curGoalState: string = null;
@@ -86,6 +87,18 @@ export class InfoProvider implements Disposable {
                     this.statusShown = false;
                 }
             }),
+            workspace.onDidChangeTextDocument((e) => {
+                if (this.stickyPosition && this.curPosition != null &&
+                    e.document.fileName === this.curFileName) {
+                    let offset = e.document.offsetAt(this.curPosition);
+                    for (const chg of e.contentChanges) {
+                        if (offset >= chg.rangeOffset) {
+                            offset = Math.min(chg.rangeOffset, offset - chg.rangeLength) + chg.text.length;
+                        }
+                    }
+                    this.updatePosition(false, e.document.positionAt(offset));
+                }
+            }),
             commands.registerCommand('_lean.revealPosition', this.revealEditorPosition.bind(this)),
             commands.registerCommand('_lean.infoView.pause', () => {
                 this.stopUpdating();
@@ -114,6 +127,14 @@ export class InfoProvider implements Disposable {
                     this.setMode(this.displayMode);
                 } else {
                     this.stopUpdating();
+                }
+            }),
+            commands.registerTextEditorCommand('lean.infoView.toggleStickyPosition', (editor) => {
+                if (this.stickyPosition) {
+                    this.stickyPosition = false;
+                    this.updatePosition(false);
+                } else {
+                    this.stickyPosition = true;
                 }
             }),
         );
@@ -261,7 +282,7 @@ export class InfoProvider implements Disposable {
         }
     }
 
-    private changePosition() {
+    private changePosition(newStickyValue?: Position) {
         if (!window.activeTextEditor ||
             !languages.match(this.leanDocs, window.activeTextEditor.document)) {
             return;
@@ -270,13 +291,17 @@ export class InfoProvider implements Disposable {
         const oldFileName = this.curFileName;
         const oldPosition = this.curPosition;
 
-        this.curFileName = window.activeTextEditor.document.fileName;
-        this.curPosition = window.activeTextEditor.selection.active;
+        if (newStickyValue) {
+            this.curPosition = newStickyValue;
+        } else if (!this.stickyPosition) {
+            this.curFileName = window.activeTextEditor.document.fileName;
+            this.curPosition = window.activeTextEditor.selection.active;
+        }
 
         return (this.curFileName !== oldFileName || !this.curPosition.isEqual(oldPosition));
     }
 
-    private async updatePosition(forceRefresh: boolean) {
+    private async updatePosition(forceRefresh: boolean, newStickyValue?: Position) {
         if (this.stopped) { return; }
 
         const chPos = this.changePosition();
