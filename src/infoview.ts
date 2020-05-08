@@ -9,7 +9,7 @@ import {
     Uri, ViewColumn, WebviewPanel, window, workspace,
 } from 'vscode';
 import { Server } from './server';
-import { DisplayMode, WidgetEventMessage, InfoviewMessage } from './typings'
+import { DisplayMode, WidgetEventMessage, InfoviewMessage, InfoProps } from './typings'
 
 function compareMessages(m1: Message, m2: Message): boolean {
     return (m1.file_name === m2.file_name &&
@@ -283,9 +283,7 @@ export class InfoProvider implements Disposable {
         if (this.webviewPanel) {
             const infoViewTacticStateFilters = workspace.getConfiguration('lean').get('infoViewTacticStateFilters', []);
             const filterIndex = workspace.getConfiguration('lean').get('infoViewFilterIndex', -1);
-            this.postMessage({
-                command : "sync",
-                props : {
+            const cursorInfo : InfoProps = {
                 widget : JSON.stringify(this.curWidget), // [note] there is a bug in vscode where the whole window will irrecoverably hang if the json depth is too high.
                 goalState : this.curGoalState,
                 messages : this.curMessages,
@@ -293,7 +291,17 @@ export class InfoProvider implements Disposable {
                 displayMode : this.displayMode,
                 filterIndex,
                 infoViewTacticStateFilters,
-            }});
+                line : this.curPosition.line, column : this.curPosition.character,
+                location_name  : `${Uri.file(this.curFileName)}:${this.curPosition.line}:${this.curPosition.character}`,
+                base_name : basename(this.curFileName),
+            }
+
+            this.postMessage({
+                command : "sync",
+                props : {
+                    cursorInfo,
+                    pinnedInfos : [],
+                }});
         }
     }
 

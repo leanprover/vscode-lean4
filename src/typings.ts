@@ -18,20 +18,30 @@ export enum DisplayMode {
 }
 
 export interface InfoProps {
-    widget? : string,
+    widget? : string, // [note] vscode crashes if the widget is sent as a deeply nested json object.
     goalState?: string,
     messages?: Message[],
 
     fileName: string,
+    line : number, column : number,
+    location_name : string // ${fileName}:${line}:${col}
+    base_name : string,
 
     displayMode: DisplayMode,
     infoViewTacticStateFilters: any[],
     filterIndex
 }
 
+/** The root state of the infoview */
+export interface InfoViewState {
+    cursorInfo : InfoProps,
+    pinnedInfos : InfoProps[]
+}
+
+/** Message from the extension to the infoview */
 export type InfoviewMessage = {
     command : "sync",
-    props : InfoProps
+    props : InfoViewState
 } | {
     command : "continue"
 } | {
@@ -39,4 +49,7 @@ export type InfoviewMessage = {
 } | {
     command : "position",
     fileName, line, column
+} | {
+    command : "set_pin" | "unset_pin",
+    fileName, line, column,
 }

@@ -8,7 +8,7 @@
         ],
         "sourceMap": true,
         "alwaysStrict": true,
-        "rootDir": "./src",
+        "rootDir": ".",
         "jsx": "preserve",
         "typeRoots": [
             "./node_modules/@types",
