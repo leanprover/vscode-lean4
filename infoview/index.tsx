@@ -118,7 +118,7 @@ function Main(props : InfoViewState) {
     if (!props) {return null}
     return <>
         <Info {...props.cursorInfo} key="cursor"/>
-        {props.pinnedInfos && props.pinnedInfos.map (pi => <Info {...props.cursorInfo} key={pi.key}/>)}
+        {props.pinnedInfos && props.pinnedInfos.map (pi => <Info {...props.cursorInfo} key={pi.location_name}/>)}
     </>
 }
 
