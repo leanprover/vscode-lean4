@@ -29,11 +29,11 @@ function colorizeMessage(goal: string): string {
 function basename(path) { return path.split(/[\\/]/).pop(); }
 
 
-function Collapsable(props : {title : string, children, className?}) {
+function Collapsable(props : {title : string, children, className?, headerClassName?}) {
     const [collapsed, set] = React.useState(false);
     return <div className={props.className}>
-        <h1 className="flex justify-between items-end"><span>{props.title}</span><button className="pointer dim f4 link pa1 ma1 bn bg-transparent" onClick={() => set(!collapsed)}>{collapsed ? "▶" : "▼"}</button></h1>
-        <div hidden={collapsed}>
+        <h1 className={"flex justify-between items-end " + props.headerClassName || ""}><span>{props.title}</span><button className="pointer dim f4 link pa1 ma1 bn bg-transparent" onClick={() => set(!collapsed)}>{collapsed ? "▶" : "▼"}</button></h1>
+        <div className="ml3" hidden={collapsed}>
             {props.children}
         </div>
     </div>
@@ -73,7 +73,8 @@ function MessageView(m : Message) {
     const shouldColorize = m.severity === 'error';
     let text = escapeHtml(m.text)
     text = shouldColorize ? colorizeMessage(text) : text;
-    return <Collapsable title={`${b}:${l}:${c}`}>
+    let cn = m.severity;
+    return <Collapsable title={`${b}:${l}:${c}`} className={cn}>
         <pre className="font-code" dangerouslySetInnerHTML={{ __html: text }} />
     </Collapsable>
     // return <div className={`message ${m.severity}`} data-line={l} data-column={c} data-end-line={el} data-end-column={ec}>
@@ -87,15 +88,16 @@ function MessageView(m : Message) {
 }
 
 function Messages(props: InfoProps): JSX.Element {
-    if (!props.fileName || !props.messages) { return null; }
-    let msgs = props.messages.map(m => <MessageView {...m} key={m.file_name + m.pos_line + m.pos_col + m.caption}/>);
+    if (!props.fileName || !props.messages || props.messages.length === 0) { return null; }
+    let msgs = (props.messages || []).map(m =>
+      <MessageView {...m} key={m.file_name + m.pos_line + m.pos_col + m.caption}/>);
     return <Collapsable title="Messages">{msgs}</Collapsable>
 }
 
 function Info(props: InfoProps & {color? : "light-blue" | "light-green"}) {
-    let col = props.color || "lightest-blue";
-    return <div className={`ba ma2 b--${col}`}>
-        <h1 className={`bg-${col} f5 pv2 ph3 ma0 bn`}>{props.base_name}:{props.line}:{props.column}</h1>
+    // let col = props.color || "lightest-blue";
+    return <div className={`ma2`}>
+        <h1 className={`f5 pv2 ph3 ma0 bn underline b `}>{props.base_name}:{props.line}:{props.column}</h1>
         {/* <div id="run-state">
             <span id="state-continue">
                 <button onClick={() => setFrozen(null)}><img title="Unfreeze display" src="continue.svg" /></button>
@@ -110,6 +112,7 @@ function Info(props: InfoProps & {color? : "light-blue" | "light-green"}) {
             <Widget widget={props.widget} post={e => post(e)}/>
             <Goal {...props} />
             <Messages {...props} />
+            {!props.goalState && (!props.messages || props.messages.length == 0) && (!props.widget) ? "no info found" : null}
         </div>
     </div>
 }

@@ -107,15 +107,15 @@ h1 {
   border-bottom-color: black;
 }
 
-div.error h1 a {
+div.error h1 {
   color: darkred;
 }
 
-div.warning h1 a {
+div.warning h1 {
   color: darkorange;
 }
 
-div.information h1 a {
+div.information h1 {
   color: darkgreen;
 }
 
@@ -139,15 +139,15 @@ select {
   border-bottom-color: lightgray;
 }
 
-.vscode-dark div.error h1 a {
+.vscode-dark div.error h1 {
   color: red;
 }
 
-.vscode-dark div.warning h1 a {
+.vscode-dark div.warning h1 {
   color: orange;
 }
 
-.vscode-dark div.information h1 a {
+.vscode-dark div.information h1 {
   color: lightgreen;
 }
 
@@ -173,6 +173,11 @@ select {
   /* display: none; */
 }
 
+.vscode-dark .tooltip {
+  background: #f0f0f0;
+  color: #333;
+}
+
 .tooltip[data-show] {
   display: block;
 }
@@ -189,6 +194,10 @@ select {
   content: '';
   transform: rotate(45deg);
   background: #333;
+}
+
+.vscode-dark .arrow::before {
+  background: #f0f0f0;
 }
 
 .tooltip[data-popper-placement^='top'] > .arrow {
@@ -222,15 +231,15 @@ select {
   border-bottom-color: white;
 }
 
-.vscode-high-contrast div.error h1 a {
+.vscode-high-contrast div.error h1 {
   color: lightpink;
 }
 
-.vscode-high-contrast div.warning h1 a {
+.vscode-high-contrast div.warning h1 {
   color: yellow;
 }
 
-.vscode-high-contrast div.information h1 a {
+.vscode-high-contrast div.information h1 {
   color: lightgreen;
 }
 
