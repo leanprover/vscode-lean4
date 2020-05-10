@@ -29,21 +29,21 @@ function escapeHtml(s: string): string {
 
 
 interface WidgetEventResponseSuccess {
-    status : "success",
-    widget : any,
+    status: 'success';
+    widget: any;
 }
 interface WidgetEventResponseEdit {
-    status : "edit",
-    widget : any,
+    status: 'edit';
+    widget: any;
     /** Some text to insert after the widget's comma. */
-    action : string
+    action: string;
 }
 interface WidgetEventResponseInvalid {
-    status : "invalid_handler"
+    status: 'invalid_handler';
 }
 interface WidgetEventResponseError {
-    status : "error",
-    message : string
+    status: 'error';
+    message: string;
 }
 type WidgetEventResponse = WidgetEventResponseSuccess | WidgetEventResponseInvalid | WidgetEventResponseEdit | WidgetEventResponseError
 
@@ -63,7 +63,7 @@ export class InfoProvider implements Disposable {
     private curPosition: Position = null;
     private curGoalState: string = null;
     private curMessages: Message[] = null;
-    private curWidget : any = null;
+    private curWidget: any = null;
 
     private stylesheet: string = null;
 
@@ -106,7 +106,7 @@ export class InfoProvider implements Disposable {
                     this.statusShown = false;
                 }
             }),
-            commands.registerCommand('_lean.revealPosition', this.revealEditorPosition),
+            commands.registerCommand('_lean.revealPosition', (x,y,z) => this.revealEditorPosition(x,y,z)),
             commands.registerCommand('_lean.infoView.pause', () => {
                 this.stopUpdating();
             }),
@@ -151,10 +151,9 @@ export class InfoProvider implements Disposable {
     }
 
     private updateStylesheet() {
-        const css = this.context.asAbsolutePath(join('media', `infoview.css`));
-        const fontFamily =
-            (workspace.getConfiguration('editor').get('fontFamily') as string).
-                replace(/['"]/g, '');
+        const css = this.context.asAbsolutePath(join('media', 'infoview.css'));
+        let fontFamily: string = workspace.getConfiguration('editor').get('fontFamily');
+        fontFamily = fontFamily.replace(/['"]/g, '');
         this.stylesheet = readFileSync(css, 'utf-8') + `
             .font-code {
                 font-family: ${fontFamily};
@@ -217,24 +216,24 @@ export class InfoProvider implements Disposable {
     }
 
     /** Runs whenever the user interacts with a widget. */
-    private async handleWidgetEvent(message : WidgetEventMessage) {
-        console.log("got widget event", message);
+    private async handleWidgetEvent(message: WidgetEventMessage) {
+        console.log('got widget event', message);
         message = {
             command: 'widget_event',
-            file_name : this.curFileName,
-            line : this.curPosition.line + 1,
+            file_name: this.curFileName,
+            line: this.curPosition.line + 1,
             column: this.curPosition.character,
             ...message,
         }
-        let result : any = await this.server.send(message);
-        console.log("recieved from server", result);
+        const result: any = await this.server.send(message);
+        console.log('recieved from server', result);
         if (!result.record) { return; }
-        let record : WidgetEventResponse = result.record as any;
-        if (record.status === "success" && record.widget) {
+        const record: WidgetEventResponse = result.record;
+        if (record.status === 'success' && record.widget) {
             this.curWidget = record.widget;
             this.rerender();
-        } else if (record.status === "edit") {
-            const new_command : string = record.action;
+        } else if (record.status === 'edit') {
+            const new_command: string = record.action;
             this.curWidget = record.widget;
             for (const editor of window.visibleTextEditors) {
                 if (editor.document.fileName === message.file_name) {
@@ -242,7 +241,7 @@ export class InfoProvider implements Disposable {
                     const cursor_pos = current_selection_range.active;
                     const prev_line = editor.document.lineAt(message.line - 2);
                     const spaces = prev_line.firstNonWhitespaceCharacterIndex;
-                    const margin_str = [...Array(spaces).keys()].map(x => " ").join("");
+                    const margin_str = [...Array(spaces).keys()].map(x => ' ').join('');
 
                     // [hack] for now, we assume that there is only ever one command per line
                     // and that the command should be inserted on the line above this one.
@@ -256,11 +255,11 @@ export class InfoProvider implements Disposable {
                 }
             }
 
-        } else if (record.status === "invalid_handler") {
+        } else if (record.status === 'invalid_handler') {
             console.warn(`No widget_event update for {${message.handler}, ${message.route}}: invalid handler.`)
             await this.updateGoal();
-            await this.rerender();
-        } else if (record.status === "error") {
+            this.rerender();
+        } else if (record.status === 'error') {
             console.error(`Update gave an error: ${record.message}`);
         }
     }
@@ -284,25 +283,26 @@ export class InfoProvider implements Disposable {
         if (this.webviewPanel) {
             const infoViewTacticStateFilters = workspace.getConfiguration('lean').get('infoViewTacticStateFilters', []);
             const filterIndex = workspace.getConfiguration('lean').get('infoViewFilterIndex', -1);
-            const cursorInfo : InfoProps = {
-                widget : this.curWidget ? JSON.stringify(this.curWidget) : undefined, // [note] there is a bug in vscode where the whole window will irrecoverably hang if the json depth is too high.
-                goalState : this.curGoalState,
-                messages : this.curMessages,
-                fileName : this.curFileName,
-                displayMode : this.displayMode,
+            const cursorInfo: InfoProps = {
+                widget: this.curWidget ? JSON.stringify(this.curWidget) : undefined, // [note] there is a bug in vscode where the whole window will irrecoverably hang if the json depth is too high.
+                goalState: this.curGoalState,
+                messages: this.curMessages,
+                fileName: this.curFileName,
+                displayMode: this.displayMode,
                 filterIndex,
                 infoViewTacticStateFilters,
-                line : this.curPosition.line, column : this.curPosition.character,
-                location_name  : `${Uri.file(this.curFileName)}:${this.curPosition.line}:${this.curPosition.character}`,
-                base_name : basename(this.curFileName),
+                line: this.curPosition.line, column: this.curPosition.character,
+                location_name: `${Uri.file(this.curFileName)}:${this.curPosition.line}:${this.curPosition.character}`,
+                base_name: basename(this.curFileName),
             }
 
             this.postMessage({
-                command : "sync",
-                props : {
+                command: 'sync',
+                props: {
                     cursorInfo,
-                    pinnedInfos : [],
-                }});
+                    pinnedInfos: [],
+                }
+            });
         }
     }
 
@@ -474,10 +474,10 @@ export class InfoProvider implements Disposable {
             // get the 'save_info' format for this location.
             const info = await this.server.info(
                 this.curFileName, this.curPosition.line + 1, this.curPosition.character);
-            const record : any = info.record;
+            const record: any = info.record;
             if (record && record.widget) {
                 this.curWidget = record.widget;
-                console.log("Found a widget");
+                console.log('Found a widget');
                 console.log(record);
                 shouldUpdate = true;
             } else {
