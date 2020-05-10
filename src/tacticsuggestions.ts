@@ -39,7 +39,7 @@ export class TacticSuggestions implements Disposable, CodeActionProvider {
             languages.registerCodeActionsProvider(this.leanDocs, this),
         );
 
-        infoView.addMessageFormatter((text: string, m:Message) => {
+        infoView.addMessageFormatter((text: string, m: Message) => {
             const newText = text.replace(this.regexGM, (_, tactic) => {
                 const command = encodeURI('command:_lean.pasteTacticSuggestion?' +
                     JSON.stringify([m, tactic]));
@@ -79,7 +79,7 @@ export class TacticSuggestions implements Disposable, CodeActionProvider {
     private async pasteIntoEditor(m: Message, textEditor: TextEditor, suggestion: string | null) {
         if (suggestion === null) {
             // Find first suggestion in message
-            const suggs = m.text.match(this.regexM);
+            const suggs = this.regexM.exec(m.text);
             if (!suggs) return;
             suggestion = suggs[1];
         }

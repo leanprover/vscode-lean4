@@ -3,7 +3,7 @@ import { CancellationToken, commands, Disposable, DocumentFilter, Hover,
     TextDocumentChangeEvent, TextEditor, TextEditorDecorationType,
     TextEditorSelectionChangeEvent, window, workspace } from 'vscode';
 
-export interface Translations { [abbrev: string]: string; }
+export interface Translations { [abbrev: string]: string }
 
 function inputModeEnabled(): boolean {
     return workspace.getConfiguration('lean.input').get('enabled', true);
@@ -100,8 +100,8 @@ class TextEditorAbbrevHandler {
         if (range) {
             const replacement = hackyReplacements[this.editor.document.getText(range)];
             if (replacement) {
-                this.editor.edit(async (builder) => {
-                    await builder.replace(range, replacement);
+                this.editor.edit((builder) => {
+                    builder.replace(range, replacement);
                     const pos = range.start.translate(0, 1);
                     this.editor.selection = new Selection(pos, pos);
                     this.updateRange();
@@ -123,7 +123,7 @@ class TextEditorAbbrevHandler {
         const range = this.range;
 
         const toReplace = this.editor.document.getText(range);
-        if (toReplace[0] !== this.leader) { return this.updateRange(); }
+        if (!toReplace.startsWith(this.leader)) { return this.updateRange(); }
 
         const abbreviation = toReplace.slice(1);
         const replacement = this.abbreviator.findReplacement(abbreviation);
@@ -166,7 +166,7 @@ class TextEditorAbbrevHandler {
                 } else if (change.text === this.leader) {
                     return this.convertRange(
                         new Range(change.range.start, change.range.start.translate(0, 1)));
-                } else if (change.text.match(/^\s+$/)) {
+                } else if (/^\s+$/.exec(change.text)) {
                     // whitespace
                     return this.convertRange();
                 }
@@ -216,7 +216,7 @@ export class LeanInputAbbreviator {
             // delete removed editors
             const handlers = new Map<TextEditor, TextEditorAbbrevHandler>();
             this.handlers.forEach((h, e) => {
-                if (editors.indexOf(e) !== -1) {
+                if (editors.includes(e)) {
                     handlers.set(e, h);
                 }
             });

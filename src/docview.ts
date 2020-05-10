@@ -1,12 +1,19 @@
 import axios from 'axios';
-// tslint:disable-next-line:no-var-requires
-const cheerio = require('cheerio');
+import cheerio = require('cheerio');
 import { URL } from 'url';
-import { commands, Disposable, Position, Uri, ViewColumn, WebviewPanel, window,
-     workspace, WorkspaceEdit } from 'vscode';
+import { commands, Disposable, Uri, ViewColumn, WebviewPanel, window,
+     workspace, WebviewOptions, WebviewPanelOptions } from 'vscode';
+import * as fs from 'fs';
+import { join } from 'path';
+import { StaticServer } from './staticserver';
 
 export function mkCommandUri(commandName: string, ...args: any): string {
     return `command:${commandName}?${encodeURIComponent(JSON.stringify(args))}`;
+}
+
+function findProjectDocumentation(): string | null {
+    const html = join(workspace.rootPath, 'html', 'index.html');
+    return fs.existsSync(html) ? html : null;
 }
 
 export class DocViewProvider implements Disposable {
@@ -14,13 +21,22 @@ export class DocViewProvider implements Disposable {
     private currentURL: string | undefined = undefined;
     private backstack: string[] = [];
     private forwardstack: string[] = [];
-    constructor() {
+    constructor(private staticServer: StaticServer) {
         this.subscriptions.push(
             commands.registerCommand('lean.openDocView', (url) => this.open(url)),
             commands.registerCommand('lean.backDocView', () => this.back()),
             commands.registerCommand('lean.forwardDocView', () => this.forward()),
             commands.registerCommand('lean.openTryIt', (code) => this.tryIt(code)),
+            commands.registerCommand('lean.openExample', (file) => this.example(file)),
         );
+        this.offerToOpenProjectDocumentation();
+    }
+
+    private async offerToOpenProjectDocumentation() {
+        if (!fs.existsSync(join(workspace.rootPath, 'leanpkg.toml'))) return;
+        const projDoc = findProjectDocumentation();
+        if (!projDoc) return;
+        await this.open(Uri.file(projDoc).toString());
     }
 
     private async tryIt(code: string) {
@@ -28,12 +44,22 @@ export class DocViewProvider implements Disposable {
         const editor = await window.showTextDocument(doc, ViewColumn.One);
     }
 
+    private async example(file: string) {
+        const doc = await workspace.openTextDocument(Uri.parse(file));
+        await window.showTextDocument(doc, ViewColumn.One);
+    }
+
     private webview?: WebviewPanel;
     private getWebview(): WebviewPanel {
         if (!this.webview) {
+            const options: WebviewOptions & WebviewPanelOptions = {
+                enableFindWidget: true,
+                enableScripts: true,
+                enableCommandUris: true,
+                retainContextWhenHidden: true,
+            };
             this.webview = window.createWebviewPanel('lean', 'Lean Documentation',
-                {viewColumn: 3},
-                {enableFindWidget: true, enableScripts: true, enableCommandUris: true});
+                { viewColumn: 3, preserveFocus: true }, options);
             this.webview.onDidDispose(() => this.webview = null);
         }
         return this.webview;
@@ -41,48 +67,133 @@ export class DocViewProvider implements Disposable {
 
     async fetch(url?: string): Promise<string> {
         if (url) {
-            return (await axios.get<string>(url)).data;
+            const uri = Uri.parse(url);
+            if (uri.scheme === 'file') {
+                if (uri.fsPath.endsWith('.html')) {
+                    return fs.readFileSync(uri.fsPath).toString();
+                }
+            } else {
+                const {data, headers} = await axios.get<string>(url);
+                if (('' + headers['content-type']).startsWith('text/html')) {
+                    return data;
+                }
+            }
+
+            const $ = cheerio.load('<p>');
+            $('p').text('Unsupported file. ')
+                .append($('<a>').attr('href', url).attr('alwaysExternal', 'true')
+                    .text('Open in browser instead.'));
+            return $.html();
         } else {
+            const $ = cheerio.load('<body>');
+            const body = $('body');
+
+            const html = findProjectDocumentation();
+            if (html) {
+                body.append($('<p>').append($('<a>').attr('href', Uri.file(html).toString())
+                    .text('Open documentation of current project')));
+            }
+
             const books = {
                 'Theorem Proving in Lean':
                     'https://leanprover.github.io/theorem_proving_in_lean/',
                 'Reference Manual': 'https://leanprover.github.io/reference/',
+                'Mathematics in Lean': 'https://avigad.github.io/mathematics_in_lean/',
             };
-            return '<ul>' +
-                Object.getOwnPropertyNames(books).map((n) =>
-                    `<li><a href="${books[n]}">${n}</a></li>`).join('') +
-                '</ul>';
+            for (const book of Object.getOwnPropertyNames(books)) {
+                body.append($('<p>').append($('<a>').attr('href', books[book]).text(book)));
+            }
+
+            return $.html();
+        }
+    }
+
+    private mkRelativeUrl(relative: string, base: string): string {
+        const uri = new URL(relative, base);
+        if (uri.protocol === 'file:') {
+            if (new URL(base).protocol !== 'file:') {
+                return '';
+            }
+            const path = Uri.parse(uri.toString()).fsPath;
+            // workaround for https://github.com/microsoft/vscode/issues/89038
+            return this.staticServer.mkUri(path);
+        } else {
+            return uri.toString();
         }
     }
 
     async setHtml() {
+        const {webview} = this.getWebview();
+
         const url = this.currentURL;
-        const $ = cheerio.load(await this.fetch(url));
+        let $: CheerioStatic;
+        try {
+            $ = cheerio.load(await this.fetch(url));
+        } catch (e) {
+            $ = cheerio.load('<pre>');
+            $('pre').text(e.toString());
+        }
         for (const style of $('link[rel=stylesheet]').get()) {
-            style.attribs.href = new URL(style.attribs.href, url).toString();
+            style.attribs.href = this.mkRelativeUrl(style.attribs.href, url);
         }
         for (const script of $('script[src]').get()) {
-            script.attribs.src = new URL(script.attribs.src, url).toString();
+            script.attribs.src = this.mkRelativeUrl(script.attribs.src, url);
         }
         for (const link of $('a[href]').get()) {
-            const tryItMatch = link.attribs.href.match(/\/live\/.*#code=(.*)/);
-            if (tryItMatch) {
+            const tryItMatch = link.attribs.href.match(/\/(?:live|lean-web-editor)\/.*#code=(.*)/);
+            if (link.attribs.href.startsWith('#')) {
+                // keep relative links
+            } else if (link.attribs.alwaysExternal) {
+                // keep links with alwaysExternal attribute
+            } else if (link.attribs.tryitfile) {
+                link.attribs.title = link.attribs.title || 'Open code block (in existing file)';
+                link.attribs.href = mkCommandUri('lean.openExample', new URL(link.attribs.tryitfile, url).toString());
+            } else if (tryItMatch) {
                 const code = decodeURIComponent(tryItMatch[1]);
+                link.attribs.title = link.attribs.title || 'Open code block in new editor';
                 link.attribs.href = mkCommandUri('lean.openTryIt', code);
             } else {
-                const href = new URL(link.attribs.href, url).toString();
-                link.attribs.href = mkCommandUri('lean.openDocView', href);
+                const hrefUrl = new URL(link.attribs.href, url);
+                const isExternal = url && new URL(url).origin !== hrefUrl.origin;
+                if (!isExternal) {
+                    link.attribs.title = link.attribs.title || link.attribs.href;
+                    link.attribs.href = mkCommandUri('lean.openDocView', hrefUrl.toString());
+                }
             }
         }
-        $(`<nav style="
-                width:100vw; position : fixed; top : 0px; left : 0px;
-                padding : 4px; background : #f3f3f3; z-index:100
-              ">
-            <a href="${mkCommandUri('lean.backDocView')}" title="back">← back</a>
-            <a href="${mkCommandUri('lean.forwardDocView')}" title="forward">→ forward</a>
-        </nav>`).prependTo('body');
+
+        // javascript search doesn't work
+        $('.sphinxsidebar #searchbox').remove();
+
+        const nav = $('<nav>');
+        nav.css('width', '100vw');
+        nav.css('position', 'fixed');
+        nav.css('top', '0');
+        nav.css('right', '0');
+        nav.css('text-align', 'right');
+        nav.css('z-index', '100');
+        nav.prependTo($('body'));
+        const navDiv = $('<span>');
+        navDiv.css('padding', '4px');
+        navDiv.css('padding-right', '20px');
+        navDiv.css('z-index', '100');
+        navDiv.css('background-color', 'var(--vscode-tab-activeBackground)');
+        nav.append(navDiv);
+        const fontSize = workspace.getConfiguration('editor').get('fontSize') + 'px';
+        const mkLink = (command: string, title: string, text: string) => $('<a>')
+            .attr('title', title)
+            .attr('href', mkCommandUri(command))
+            .css('color', 'var(--vscode-tab-activeForeground)')
+            .css('font-family', 'sans-serif')
+            .css('font-size', fontSize)
+            .css('margin-left', '1em')
+            .css('text-decoration', 'none')
+            .text(text);
+        navDiv.append(mkLink('lean.backDocView', 'back', '⬅ back'));
+        navDiv.append(mkLink('lean.forwardDocView', 'forward', 'forward ➡'));
         $('nav+*').css('margin-top','3em');
-        this.getWebview().webview.html = $.html();
+
+        webview.html = $.html();
     }
 
     /** Called by the user clicking a link. */
