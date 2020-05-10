@@ -9,6 +9,7 @@ import {
     Uri, ViewColumn, WebviewPanel, window, workspace,
 } from 'vscode';
 import { Server } from './server';
+import { DisplayMode, WidgetEventMessage, InfoviewMessage, InfoProps } from './typings'
 
 function compareMessages(m1: Message, m2: Message): boolean {
     return (m1.file_name === m2.file_name &&
@@ -26,44 +27,7 @@ function escapeHtml(s: string): string {
         .replace(/'/g, '&#039;');
 }
 
-enum DisplayMode {
-    OnlyState, // only the state at the current cursor position including the tactic state
-    AllMessage, // all messages
-}
 
-interface InfoProps {
-    widget? : string,
-    goalState?: string,
-    messages?: Message[],
-
-    fileName: string,
-
-    displayMode: DisplayMode,
-    infoViewTacticStateFilters: any[],
-    filterIndex
-}
-
-type InfoviewMessage = {
-    command : "sync",
-    props : InfoProps
-} | {
-    command : "continue"
-} | {
-    command : "pause"
-} | {
-    command : "position",
-    fileName, line, column
-}
-
-type WidgetEvent = {
-    command : "widget_event",
-    file_name : string,
-    line : number,
-    column : number,
-    handler : number,
-    route : number[],
-    args : any[]
-}
 interface WidgetEventResponseSuccess {
     status : "success",
     widget : any,
@@ -195,7 +159,6 @@ export class InfoProvider implements Disposable {
             .font-code {
                 font-family: ${fontFamily};
                 font-size: ${workspace.getConfiguration('editor').get('fontSize')}px;
-                // white-space: pre-wrap; // TODO(gabriel): make configurable
             }
             ` +
             workspace.getConfiguration('lean').get('infoViewStyle');
@@ -232,7 +195,7 @@ export class InfoProvider implements Disposable {
             this.webviewPanel.webview.onDidReceiveMessage((message) => this.handleMessage(message), undefined, this.subscriptions);
         }
     }
-
+    /** Handle a message incoming from the webview. */
     private handleMessage(message) {
         switch (message.command) {
             case 'selectFilter':
@@ -253,7 +216,8 @@ export class InfoProvider implements Disposable {
         }
     }
 
-    private async handleWidgetEvent(message : WidgetEvent) {
+    /** Runs whenever the user interacts with a widget. */
+    private async handleWidgetEvent(message : WidgetEventMessage) {
         console.log("got widget event", message);
         message = {
             command: 'widget_event',
@@ -294,11 +258,14 @@ export class InfoProvider implements Disposable {
 
         } else if (record.status === "invalid_handler") {
             console.warn(`No widget_event update for {${message.handler}, ${message.route}}: invalid handler.`)
+            await this.updateGoal();
+            await this.rerender();
         } else if (record.status === "error") {
             console.error(`Update gave an error: ${record.message}`);
         }
     }
 
+    /** post a position message to the webserver. */
     private sendPosition() {
         this.postMessage({
             command: 'position',
@@ -317,17 +284,25 @@ export class InfoProvider implements Disposable {
         if (this.webviewPanel) {
             const infoViewTacticStateFilters = workspace.getConfiguration('lean').get('infoViewTacticStateFilters', []);
             const filterIndex = workspace.getConfiguration('lean').get('infoViewFilterIndex', -1);
-            this.postMessage({
-                command : "sync",
-                props : {
-                widget : JSON.stringify(this.curWidget), // [note] there is a bug in vscode where the whole window will irrecoverably hang if the json depth is too high.
+            const cursorInfo : InfoProps = {
+                widget : this.curWidget ? JSON.stringify(this.curWidget) : undefined, // [note] there is a bug in vscode where the whole window will irrecoverably hang if the json depth is too high.
                 goalState : this.curGoalState,
                 messages : this.curMessages,
                 fileName : this.curFileName,
                 displayMode : this.displayMode,
                 filterIndex,
                 infoViewTacticStateFilters,
-            }});
+                line : this.curPosition.line, column : this.curPosition.character,
+                location_name  : `${Uri.file(this.curFileName)}:${this.curPosition.line}:${this.curPosition.character}`,
+                base_name : basename(this.curFileName),
+            }
+
+            this.postMessage({
+                command : "sync",
+                props : {
+                    cursorInfo,
+                    pinnedInfos : [],
+                }});
         }
     }
 
@@ -499,10 +474,11 @@ export class InfoProvider implements Disposable {
             // get the 'save_info' format for this location.
             const info = await this.server.info(
                 this.curFileName, this.curPosition.line + 1, this.curPosition.character);
-            if (info.record && info.record.widget) {
-                this.curWidget = info.record.widget;
+            const record : any = info.record;
+            if (record && record.widget) {
+                this.curWidget = record.widget;
                 console.log("Found a widget");
-                console.log(info.record);
+                console.log(record);
                 shouldUpdate = true;
             } else {
                 this.curWidget = null;
@@ -546,13 +522,6 @@ export class InfoProvider implements Disposable {
     }
 
     private initialHtml() {
-        let libraries = [
-            "https://unpkg.com/react@16/umd/react.development.js",
-            "https://unpkg.com/react-dom@16/umd/react-dom.development.js",
-            "https://unpkg.com/@popperjs/core@2",
-            "https://unpkg.com/react-popper/dist/index.umd.js",
-        ];
-        libraries = libraries.map(l => `<script src="${l}" crossorigin></script>`);
         return `
             <!DOCTYPE html>
             <html>
@@ -565,7 +534,6 @@ export class InfoProvider implements Disposable {
             </head>
             <body>
                 <div id="react_root"></div>
-                ${libraries.join("\n")}
                 <script src="${this.getMediaPath('index.js')}"></script>
             </body>
             </html>`
