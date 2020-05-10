@@ -61,8 +61,8 @@ const Popper = (props) => {
 export function Widget(props: {widget? : string, post : WidgetProps["post"]}): JSX.Element {
     if (!props.widget) {return null; }
     let widget_json : WidgetProps = JSON.parse(props.widget);
-    widget_json.post = props.post;
     if (!widget_json) { return null; }
+    widget_json.post = props.post;
     return <div>
         <h1>Widget</h1>
         <div className="widget-container">{Html(widget_json)}</div>

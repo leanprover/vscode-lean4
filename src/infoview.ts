@@ -259,6 +259,7 @@ export class InfoProvider implements Disposable {
         } else if (record.status === "invalid_handler") {
             console.warn(`No widget_event update for {${message.handler}, ${message.route}}: invalid handler.`)
             await this.updateGoal();
+            await this.rerender();
         } else if (record.status === "error") {
             console.error(`Update gave an error: ${record.message}`);
         }
@@ -284,7 +285,7 @@ export class InfoProvider implements Disposable {
             const infoViewTacticStateFilters = workspace.getConfiguration('lean').get('infoViewTacticStateFilters', []);
             const filterIndex = workspace.getConfiguration('lean').get('infoViewFilterIndex', -1);
             const cursorInfo : InfoProps = {
-                widget : JSON.stringify(this.curWidget), // [note] there is a bug in vscode where the whole window will irrecoverably hang if the json depth is too high.
+                widget : this.curWidget ? JSON.stringify(this.curWidget) : undefined, // [note] there is a bug in vscode where the whole window will irrecoverably hang if the json depth is too high.
                 goalState : this.curGoalState,
                 messages : this.curMessages,
                 fileName : this.curFileName,
