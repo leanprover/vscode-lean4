@@ -2,6 +2,8 @@
 import * as React from 'react';
 import * as ReactPopper from 'react-popper';
 import { WidgetEventMessage } from '../src/typings';
+import "./popper.css"
+
 
 /** This is everything that lean needs to know to figure out which event handler to fire in the VM. */
 interface eventHandlerId {

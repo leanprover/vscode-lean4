@@ -3,7 +3,9 @@ import * as ReactDOM from 'react-dom';
 import { WidgetEventMessage, DisplayMode, InfoProps, InfoViewState, InfoviewMessage } from '../src/typings';
 import { Widget } from './widget';
 import { Message } from 'lean-client-js-node';
-
+import "./tachyons.css"
+import "./severity.css"
+import "./goal.css"
 // @ts-ignore
 const vscode = acquireVsCodeApi();
 
@@ -29,11 +31,18 @@ function colorizeMessage(goal: string): string {
 function basename(path) { return path.split(/[\\/]/).pop(); }
 
 
-function Collapsable(props : {title : string, children, className?, headerClassName?}) {
+function Collapsible(props : {title : string, rank? : "h1" | "h2" | "h3" | "h4", children, className?, headerClassName?}) {
     const [collapsed, set] = React.useState(false);
+    const h = React.createElement(props.rank || "h1", {className : 'flex justify-between items-end '}, [
+        <span className={props.headerClassName}>{props.title}</span>,
+        <button className='pointer dim link pa1 ma1 bn bg-transparent'
+          onClick={() => set(!collapsed)}>
+              {collapsed ? '▶' : '▼'}
+        </button>
+    ])
     return <div className={props.className}>
-        <h1 className={"flex justify-between items-end " + props.headerClassName || ""}><span>{props.title}</span><button className="pointer dim f4 link pa1 ma1 bn bg-transparent" onClick={() => set(!collapsed)}>{collapsed ? "▶" : "▼"}</button></h1>
-        <div className="ml3" hidden={collapsed}>
+        {h}
+        <div className='ml3' hidden={collapsed}>
             {props.children}
         </div>
     </div>
@@ -56,9 +65,9 @@ function Goal(props): JSX.Element {
             }).join('\n');
     }
     goalString = colorizeMessage(escapeHtml(goalString));
-    return <Collapsable title="Tactic State">
+    return <Collapsible title="Tactic State" rank="h2">
         <pre className="font-code" dangerouslySetInnerHTML={{ __html: goalString }} />
-    </Collapsable>
+    </Collapsible>
 }
 
 function MessageView(m : Message) {
@@ -73,10 +82,9 @@ function MessageView(m : Message) {
     const shouldColorize = m.severity === 'error';
     let text = escapeHtml(m.text)
     text = shouldColorize ? colorizeMessage(text) : text;
-    let cn = m.severity;
-    return <Collapsable title={`${b}:${l}:${c}`} className={cn}>
+    return <Collapsible rank="h3" title={`${b}:${l}:${c}`} headerClassName={m.severity}>
         <pre className="font-code" dangerouslySetInnerHTML={{ __html: text }} />
-    </Collapsable>
+    </Collapsible>
     // return <div className={`message ${m.severity}`} data-line={l} data-column={c} data-end-line={el} data-end-column={ec}>
     //     <h1 title={`${f}:${l}:${c}`}>
     //         <a href={cmd}>
@@ -91,7 +99,7 @@ function Messages(props: InfoProps): JSX.Element {
     if (!props.fileName || !props.messages || props.messages.length === 0) { return null; }
     let msgs = (props.messages || []).map(m =>
       <MessageView {...m} key={m.file_name + m.pos_line + m.pos_col + m.caption}/>);
-    return <Collapsable title="Messages">{msgs}</Collapsable>
+    return <Collapsible rank="h2" title="Messages">{msgs}</Collapsible>
 }
 
 function Info(props: InfoProps & {color? : "light-blue" | "light-green"}) {

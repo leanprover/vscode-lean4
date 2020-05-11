@@ -78,10 +78,6 @@ div#run-state span a img {
   top: 3px;
 }
 
-.disabled {
-  display: none;
-}
-
 #marker {
   position: absolute;
   left: 2px;
@@ -107,17 +103,6 @@ h1 {
   border-bottom-color: black;
 }
 
-div.error h1 {
-  color: darkred;
-}
-
-div.warning h1 {
-  color: darkorange;
-}
-
-div.information h1 {
-  color: darkgreen;
-}
 
 div#run-state {
   background-color: #f0f0f0;
@@ -139,83 +124,6 @@ select {
   border-bottom-color: lightgray;
 }
 
-.vscode-dark div.error h1 {
-  color: red;
-}
-
-.vscode-dark div.warning h1 {
-  color: orange;
-}
-
-.vscode-dark div.information h1 {
-  color: lightgreen;
-}
-
-.vscode-dark div.error h1 {
-  color: red;
-}
-
-.vscode-dark div.warning h1 {
-  color: orange;
-}
-
-.vscode-dark div.information h1 {
-  color: lightgreen;
-}
-
-.tooltip {
-  background: #333;
-  color: white;
-  font-weight: bold;
-  padding: 4px 8px;
-  font-size: 13px;
-  border-radius: 4px;
-  /* display: none; */
-}
-
-.vscode-dark .tooltip {
-  background: #f0f0f0;
-  color: #333;
-}
-
-.tooltip[data-show] {
-  display: block;
-}
-
-.arrow,
-.arrow::before {
-  position: absolute;
-  width: 8px;
-  height: 8px;
-  z-index: -1;
-}
-
-.arrow::before {
-  content: '';
-  transform: rotate(45deg);
-  background: #333;
-}
-
-.vscode-dark .arrow::before {
-  background: #f0f0f0;
-}
-
-.tooltip[data-popper-placement^='top'] > .arrow {
-  bottom: -4px;
-}
-
-.tooltip[data-popper-placement^='bottom'] > .arrow {
-  top: -4px;
-}
-
-.tooltip[data-popper-placement^='left'] > .arrow {
-  right: -4px;
-}
-
-.tooltip[data-popper-placement^='right'] > .arrow {
-  left: -4px;
-}
-
 .vscode-dark div#run-state {
   background-color: #222;
 }
@@ -231,29 +139,6 @@ select {
   border-bottom-color: white;
 }
 
-.vscode-high-contrast div.error h1 {
-  color: lightpink;
-}
-
-.vscode-high-contrast div.warning h1 {
-  color: yellow;
-}
-
-.vscode-high-contrast div.information h1 {
-  color: lightgreen;
-}
-
-.vscode-high-contrast div.error h1 {
-  color: lightpink;
-}
-
-.vscode-high-contrast div.warning h1 {
-  color: yellow;
-}
-
-.vscode-high-contrast div.information h1 {
-  color: lightgreen;
-}
 
 .vscode-high-contrast div#run-state {
   background-color: #000;
@@ -266,12 +151,3 @@ select {
   background-color: #000;
 }
 
-.goal-goals { color: #569cd6; }
-.goal-vdash { color: #569cd6; }
-.goal-case { color: #a1df90; }
-.goal-hyp { color: #ffcc00; }
-
-.vscode-light .goal-goals { color: #367cb6; }
-.vscode-light .goal-vdash { color: #367cb6; }
-.vscode-light .goal-case { color: #1f7a1f; }
-.vscode-light .goal-hyp { color: #cc7a00; }

@@ -154,13 +154,15 @@ export class InfoProvider implements Disposable {
             // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
             (workspace.getConfiguration('editor').get('fontFamily') as string).
                 replace(/['"]/g, '');
-        this.stylesheet = readFileSync(css, 'utf-8') + `
+        const styleSheetOld = readFileSync(css, 'utf-8');
+        const fontCodeCSS = `
             .font-code {
                 font-family: ${fontFamily};
                 font-size: ${workspace.getConfiguration('editor').get('fontSize')}px;
             }
-            ` +
-            workspace.getConfiguration('lean').get('infoViewStyle');
+        `;
+        const configCSS = workspace.getConfiguration('lean').get('infoViewStyle');
+        this.stylesheet = /* styleSheetOld + */ fontCodeCSS + configCSS;
     }
 
     private autoOpen() {
@@ -529,7 +531,6 @@ export class InfoProvider implements Disposable {
                 <meta charset="UTF-8" />
                 <meta http-equiv="Content-type" content="text/html;charset=utf-8">
                 <title>Infoview</title>
-                <link rel="stylesheet" href="https://unpkg.com/tachyons/css/tachyons.min.css">
                 <style>${this.stylesheet}</style>
             </head>
             <body>
