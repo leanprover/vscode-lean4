@@ -1,52 +1,15 @@
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
-import { WidgetEventMessage, DisplayMode, InfoProps, InfoViewState, InfoviewMessage } from '../src/typings';
+import { WidgetEventMessage, DisplayMode, InfoProps, InfoViewState, InfoviewMessage, ServerStatus } from '../src/typings';
 import { Widget } from './widget';
 import { Message } from 'lean-client-js-node';
 import "./tachyons.css"
 import "./severity.css"
 import "./goal.css"
+import { colorizeMessage, escapeHtml, basename, Collapsible } from './util';
 // @ts-ignore
 const vscode = acquireVsCodeApi();
 
-// https://stackoverflow.com/questions/6234773/can-i-escape-html-special-chars-in-javascript
-function escapeHtml(s: string): string {
-    return s
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
-}
-
-function colorizeMessage(goal: string): string {
-    return goal
-        .replace(/^([|⊢]) /mg, '<strong class="goal-vdash">$1</strong> ')
-        .replace(/^(\d+ goals|1 goal)/mg, '<strong class="goal-goals">$1</strong>')
-        .replace(/^(context|state):/mg, '<strong class="goal-goals">$1</strong>:')
-        .replace(/^(case) /mg, '<strong class="goal-case">$1</strong> ')
-        .replace(/^([^:\n< ][^:\n⊢{[(⦃]*) :/mg, '<strong class="goal-hyp">$1</strong> :');
-}
-
-function basename(path) { return path.split(/[\\/]/).pop(); }
-
-
-function Collapsible(props : {title : string, rank? : "h1" | "h2" | "h3" | "h4", children, className?, headerClassName?}) {
-    const [collapsed, set] = React.useState(false);
-    const h = React.createElement(props.rank || "h1", {className : 'flex justify-between items-end '}, [
-        <span className={props.headerClassName}>{props.title}</span>,
-        <button className='pointer dim link pa1 ma1 bn bg-transparent'
-          onClick={() => set(!collapsed)}>
-              {collapsed ? '▶' : '▼'}
-        </button>
-    ])
-    return <div className={props.className}>
-        {h}
-        <div className='ml3' hidden={collapsed}>
-            {props.children}
-        </div>
-    </div>
-}
 
 function Goal(props): JSX.Element {
     if (!props.goalState || props.displayMode !== DisplayMode.OnlyState) { return null; }
@@ -104,8 +67,7 @@ function Messages(props: InfoProps): JSX.Element {
 
 function Info(props: InfoProps & {color? : "light-blue" | "light-green"}) {
     // let col = props.color || "lightest-blue";
-    return <div className={`ma2`}>
-        <h1 className={`f5 pv2 ph3 ma0 bn underline b `}>{props.base_name}:{props.line}:{props.column}</h1>
+    return <Collapsible title={`${props.base_name}:${props.line}:${props.column}`}>
         {/* <div id="run-state">
             <span id="state-continue">
                 <button onClick={() => setFrozen(null)}><img title="Unfreeze display" src="continue.svg" /></button>
@@ -122,7 +84,26 @@ function Info(props: InfoProps & {color? : "light-blue" | "light-green"}) {
             <Messages {...props} />
             {!props.goalState && (!props.messages || props.messages.length == 0) && (!props.widget) ? "no info found" : null}
         </div>
-    </div>
+    </Collapsible>
+}
+
+function StatusView(props : ServerStatus) {
+    return <Collapsible rank="h2" title="Tasks">
+        <p>Running: {props.isRunning}</p>
+        <table> <tbody>
+            <tr key="header"><th>File Name</th>
+            <th>Pos start</th>
+            <th>Pos end</th>
+            <th>Desc</th></tr>
+            {props.tasks.map(t => <tr key={`${t.file_name}:${t.pos_col}:${t.pos_line}:${t.desc}`}>
+                <td>{t.file_name}</td>
+                <td>{t.pos_line}:{t.pos_col}</td>
+                <td>{t.end_pos_line}:{t.end_pos_col}</td>
+                <td>{t.desc}</td>
+            </tr>)}
+        </tbody>
+        </table>
+        </Collapsible>
 }
 
 function Main(props : InfoViewState) {
@@ -130,15 +111,19 @@ function Main(props : InfoViewState) {
     return <>
         <Info {...props.cursorInfo} key="cursor"/>
         {props.pinnedInfos && props.pinnedInfos.map (pi => <Info {...props.cursorInfo} key={pi.location_name}/>)}
+        {props.serverStatus && <StatusView {...props.serverStatus}/>}
     </>
 }
+
+let global_state : Partial<InfoViewState> = {}
 
 window.addEventListener('message', event => {
     const message : InfoviewMessage = event.data; // The JSON data our extension sent
     console.log("incoming:", message);
     switch (message.command) {
         case 'sync':
-            ReactDOM.render(React.createElement(Main, message.props), domContainer);
+            global_state = {...global_state, ...message.props};
+            ReactDOM.render(React.createElement(Main, global_state), domContainer);
             break;
         default:
             console.error(`Unrecognised command ${message.command}`);
@@ -151,4 +136,4 @@ function post(message: WidgetEventMessage) {
 }
 
 const domContainer = document.querySelector('#react_root');
-ReactDOM.render(<div><h1>Lean Interactive Window</h1></div>, domContainer);
+ReactDOM.render(<div><h1>Lean Interactive Window</h1>Waiting for message from server...</div>, domContainer);

@@ -3,6 +3,7 @@ import * as React from 'react';
 import * as ReactPopper from 'react-popper';
 import { WidgetEventMessage } from '../src/typings';
 import "./popper.css"
+import { Collapsible } from './util';
 
 
 /** This is everything that lean needs to know to figure out which event handler to fire in the VM. */
@@ -65,10 +66,9 @@ export function Widget(props: {widget? : string, post : WidgetProps["post"]}): J
     let widget_json : WidgetProps = JSON.parse(props.widget);
     if (!widget_json) { return null; }
     widget_json.post = props.post;
-    return <div>
-        <h1>Widget</h1>
-        <div className="widget-container">{Html(widget_json)}</div>
-    </div>
+    return <Collapsible title="Widget" rank="h2">
+            {Html(widget_json)}
+    </Collapsible>
 }
 function Html(props: WidgetProps) {
     let { html, ...rest } = props;

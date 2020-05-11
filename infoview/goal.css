@@ -8,3 +8,11 @@
 .vscode-light .goal-vdash { color: #367cb6; }
 .vscode-light .goal-case { color: #1f7a1f; }
 .vscode-light .goal-hyp { color: #cc7a00; }
+
+.highlight {
+    background-color: #96ccff;
+}
+
+.vscode-dark .highlight {
+    background-color: #001b44;
+}

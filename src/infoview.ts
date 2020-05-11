@@ -9,7 +9,7 @@ import {
     Uri, ViewColumn, WebviewPanel, window, workspace,
 } from 'vscode';
 import { Server } from './server';
-import { DisplayMode, WidgetEventMessage, InfoviewMessage, InfoProps } from './typings'
+import { DisplayMode, WidgetEventMessage, InfoviewMessage, InfoProps, ServerStatus } from './typings'
 import { StaticServer } from './staticserver';
 
 function compareMessages(m1: Message, m2: Message): boolean {
@@ -65,6 +65,7 @@ export class InfoProvider implements Disposable {
     private curGoalState: string = null;
     private curMessages: Message[] = null;
     private curWidget: any = null;
+    private curServerStatus: ServerStatus = null;
 
     private stylesheet: string = null;
 
@@ -85,10 +86,12 @@ export class InfoProvider implements Disposable {
             this.server.allMessages.on(() => {
                 if (this.updateMessages()) { this.rerender(); }
             }),
-            this.server.statusChanged.on(async () => {
+            this.server.statusChanged.on(async (s) => {
                 if (this.displayMode === DisplayMode.OnlyState) {
                     const changed = await this.updateGoal();
-                    if (changed) { this.rerender(); }
+                    this.curServerStatus = s;
+                    this.rerender();
+                    // if (changed) { this.rerender(); }
                 }
             }),
             this.server.restarted.on(() => {
@@ -303,6 +306,7 @@ export class InfoProvider implements Disposable {
                 props: {
                     cursorInfo,
                     pinnedInfos: [],
+                    serverStatus : this.curServerStatus
                 }
             });
         }
