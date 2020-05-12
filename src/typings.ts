@@ -46,7 +46,7 @@ export interface InfoProps {
 export interface InfoViewState {
     cursorInfo: InfoProps;
     pinnedInfos: InfoProps[];
-    serverStatus: ServerStatus;
+    // serverStatus: ServerStatus;
 }
 
 /** Message from the extension to the infoview */

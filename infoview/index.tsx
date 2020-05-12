@@ -4,8 +4,7 @@ import { WidgetEventMessage, DisplayMode, InfoProps, InfoViewState, InfoviewMess
 import { Widget } from './widget';
 import { Message } from 'lean-client-js-node';
 import './tachyons.css'
-import './severity.css'
-import './goal.css'
+import './index.css'
 import { colorizeMessage, escapeHtml, basename, Collapsible } from './util';
 declare const acquireVsCodeApi;
 const vscode = acquireVsCodeApi();
@@ -27,7 +26,7 @@ function Goal(props): JSX.Element {
             }).join('\n');
     }
     goalString = colorizeMessage(escapeHtml(goalString));
-    return <Collapsible title="Tactic State" rank="h2">
+    return <Collapsible title="Tactic State">
         <pre className="font-code" dangerouslySetInnerHTML={{ __html: goalString }} />
     </Collapsible>
 }
@@ -44,7 +43,7 @@ function MessageView(m: Message) {
     const shouldColorize = m.severity === 'error';
     let text = escapeHtml(m.text)
     text = shouldColorize ? colorizeMessage(text) : text;
-    return <Collapsible rank="h3" title={`${b}:${l}:${c}`} headerClassName={m.severity}>
+    return <Collapsible title={`${b}:${l}:${c}`} headerClassName={m.severity}>
         <pre className="font-code" dangerouslySetInnerHTML={{ __html: text }} />
     </Collapsible>
     // return <div className={`message ${m.severity}`} data-line={l} data-column={c} data-end-line={el} data-end-column={ec}>
@@ -61,7 +60,7 @@ function Messages(props: InfoProps): JSX.Element {
     if (!props.fileName || !props.messages || props.messages.length === 0) { return null; }
     const msgs = (props.messages || []).map(m =>
       <MessageView {...m} key={m.file_name + m.pos_line + m.pos_col + m.caption}/>);
-    return <Collapsible rank="h2" title="Messages">{msgs}</Collapsible>
+    return <Collapsible title="Messages">{msgs}</Collapsible>
 }
 
 function Info(props: InfoProps & {color? : 'light-blue' | 'light-green'}) {
@@ -77,7 +76,7 @@ function Info(props: InfoProps & {color? : 'light-blue' | 'light-green'}) {
                 </button>
             </span>
         </div> */}
-        <div className="pa3 ma0">
+        <div>
             <Widget widget={props.widget} post={e => post(e)}/>
             <Goal {...props} />
             <Messages {...props} />
@@ -87,7 +86,7 @@ function Info(props: InfoProps & {color? : 'light-blue' | 'light-green'}) {
 }
 
 function StatusView(props: ServerStatus) {
-    return <Collapsible rank="h2" title="Tasks">
+    return <Collapsible title="Tasks">
         <p>Running: {props.isRunning}</p>
         <table> <tbody>
             <tr key="header"><th>File Name</th>
@@ -110,7 +109,7 @@ function Main(props: InfoViewState) {
     return <>
         <Info {...props.cursorInfo} key="cursor"/>
         {props.pinnedInfos && props.pinnedInfos.map (pi => <Info {...props.cursorInfo} key={pi.location_name}/>)}
-        {props.serverStatus && <StatusView {...props.serverStatus}/>}
+        {/* {props.serverStatus && <StatusView {...props.serverStatus}/>} */}
     </>
 }
 

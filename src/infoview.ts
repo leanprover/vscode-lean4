@@ -28,7 +28,6 @@ function escapeHtml(s: string): string {
         .replace(/'/g, '&#039;');
 }
 
-
 interface WidgetEventResponseSuccess {
     status: 'success';
     widget: any;
@@ -65,7 +64,6 @@ export class InfoProvider implements Disposable {
     private curGoalState: string = null;
     private curMessages: Message[] = null;
     private curWidget: any = null;
-    private curServerStatus: ServerStatus = null;
 
     private stylesheet: string = null;
 
@@ -89,9 +87,7 @@ export class InfoProvider implements Disposable {
             this.server.statusChanged.on(async (s) => {
                 if (this.displayMode === DisplayMode.OnlyState) {
                     const changed = await this.updateGoal();
-                    this.curServerStatus = s;
-                    this.rerender();
-                    // if (changed) { this.rerender(); }
+                    if (changed) { this.rerender(); }
                 }
             }),
             this.server.restarted.on(() => {
@@ -306,7 +302,6 @@ export class InfoProvider implements Disposable {
                 props: {
                     cursorInfo,
                     pinnedInfos: [],
-                    serverStatus : this.curServerStatus
                 }
             });
         }

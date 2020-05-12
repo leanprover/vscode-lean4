@@ -22,9 +22,9 @@ export function colorizeMessage(goal: string): string {
 export function basename(path) { return path.split(/[\\/]/).pop(); }
 
 
-export function Collapsible(props: {title: string; rank? : 'h1' | 'h2' | 'h3' | 'h4'; children; className?; headerClassName?}) {
+export function Collapsible(props: {title: string; children; className?; headerClassName?}) {
     const [collapsed, set] = React.useState(false);
-    const h = React.createElement(props.rank || 'h1', {}, [
+    const h = React.createElement('h1', {}, [
         <a className='pointer dim link pa1 ma1 bn'
           onClick={() => set(!collapsed)}>
               {collapsed ? '⮞' : '⮟'}
@@ -33,7 +33,7 @@ export function Collapsible(props: {title: string; rank? : 'h1' | 'h2' | 'h3' | 
     ])
     return <div className={props.className}>
         {h}
-        <div className='ml3' hidden={collapsed}>
+        <div className='ml1' hidden={collapsed}>
             {props.children}
         </div>
     </div>

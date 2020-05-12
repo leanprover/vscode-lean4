@@ -65,7 +65,7 @@ export function Widget(props: { widget?: string; post: WidgetProps['post'] }): J
     const widget_json: WidgetProps = JSON.parse(props.widget);
     if (!widget_json) { return null; }
     widget_json.post = props.post;
-    return <Collapsible title="Widget" rank="h2">
+    return <Collapsible title="Widget">
         {Html(widget_json)}
     </Collapsible>
 }

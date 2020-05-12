@@ -1,3 +1,4 @@
+/* Styles for the tooltips shown in the widget view. */
 .tooltip {
     /* tooltips are _always_ dark.  */
     background: #333;
