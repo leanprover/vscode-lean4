@@ -2,41 +2,40 @@
 import * as React from 'react';
 import * as ReactPopper from 'react-popper';
 import { WidgetEventMessage } from '../src/typings';
-import "./popper.css"
+import './popper.css'
 import { Collapsible } from './util';
 
-
 /** This is everything that lean needs to know to figure out which event handler to fire in the VM. */
-interface eventHandlerId {
-    route: number[],
-    handler: number,
+interface EventHandlerId {
+    route: number[];
+    handler: number;
 }
 
-interface element {
-    tag: "div" | "span" | "hr" | "button" | "input", // ... etc
-    children: html[],
-    attributes: { [k: string]: any },
+interface WidgetElement {
+    tag: 'div' | 'span' | 'hr' | 'button' | 'input'; // ... etc
+    children: html[];
+    attributes: { [k: string]: any };
     events: {
-        "onClick"?: eventHandlerId
-        "onMouseEnter"?: eventHandlerId
-        "onMouseLeave"?: eventHandlerId
-    }
-    tooltip?: html
+        'onClick'?: EventHandlerId;
+        'onMouseEnter'?: EventHandlerId;
+        'onMouseLeave'?: EventHandlerId;
+    };
+    tooltip?: html;
 }
 type component = html[]
 
 type html =
     | component
     | string
-    | element
+    | WidgetElement
     | null
 
 export interface WidgetProps {
-    file_name: string,
-    line: number,
-    column: number,
-    html: html[] | null,
-    post : (e : WidgetEventMessage) => void
+    file_name: string;
+    line: number;
+    column: number;
+    html: html[] | null;
+    post: (e: WidgetEventMessage) => void;
 }
 
 const Popper = (props) => {
@@ -61,47 +60,48 @@ const Popper = (props) => {
         </>
     );
 }
-export function Widget(props: {widget? : string, post : WidgetProps["post"]}): JSX.Element {
-    if (!props.widget) {return null; }
-    let widget_json : WidgetProps = JSON.parse(props.widget);
+export function Widget(props: { widget?: string; post: WidgetProps['post'] }): JSX.Element {
+    if (!props.widget) { return null; }
+    const widget_json: WidgetProps = JSON.parse(props.widget);
     if (!widget_json) { return null; }
     widget_json.post = props.post;
     return <Collapsible title="Widget" rank="h2">
-            {Html(widget_json)}
+        {Html(widget_json)}
     </Collapsible>
 }
 function Html(props: WidgetProps) {
-    let { html, ...rest } = props;
+    const { html, ...rest } = props;
     return html.map(w => {
-        if (typeof w === "string") { return w; }
+        if (typeof w === 'string') { return w; }
         if (w instanceof Array) { return Html({ html: w, ...rest }); }
-        let { tag, attributes, events, children, tooltip } = w;
-        if (tag === "hr") { return <hr />; }
+        const { tag, children, tooltip } = w;
+        let { attributes, events } = w;
+        if (tag === 'hr') { return <hr />; }
         attributes = attributes || {};
         events = events || {};
-        let new_attrs: any = {};
-        for (let k of Object.getOwnPropertyNames(attributes)) {
+        const new_attrs: any = {};
+        for (const k of Object.getOwnPropertyNames(attributes)) {
             new_attrs[k] = attributes[k];
         }
-        for (let k of Object.getOwnPropertyNames(events)) {
-            if (["onClick", "onMouseEnter", "onMouseLeave"].includes(k)) {
+        for (const k of Object.getOwnPropertyNames(events)) {
+            if (['onClick', 'onMouseEnter', 'onMouseLeave'].includes(k)) {
                 new_attrs[k] = (e) => props.post({
-                    command: "widget_event",
+                    command: 'widget_event',
                     kind: k as any,
                     handler: events[k].handler,
                     route: events[k].route,
-                    args: { type: "unit" },
+                    args: { type: 'unit' },
                     file_name: props.file_name,
                     line: props.line,
                     column: props.column
                 });
-            } else if (tag === "input" && attributes.type === "text" && k === "onChange") {
-                new_attrs["onChange"] = (e) => props.post({
-                    command: "widget_event",
-                    kind: "onChange",
+            } else if (tag === 'input' && attributes.type === 'text' && k === 'onChange') {
+                new_attrs.onChange = (e) => props.post({
+                    command: 'widget_event',
+                    kind: 'onChange',
                     handler: events[k].handler,
                     route: events[k].route,
-                    args: { type: "string", value: e.target.value },
+                    args: { type: 'string', value: e.target.value },
                     file_name: props.file_name,
                     line: props.line,
                     column: props.column,

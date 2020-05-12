@@ -429,7 +429,7 @@
 	"scripts": {
 		"vscode:prepublish": "webpack --env.production",
 		"compile": "webpack --env.development",
-		"lint": "eslint -c .eslintrc.js src/*.ts",
+		"lint": "eslint -c ./.eslintrc.js ./src/**/*.ts ./infoview/**/*.tsx",
 		"postinstall": "node ./node_modules/vscode/bin/install",
 		"test": "node ./node_modules/vscode/bin/test"
 	},
