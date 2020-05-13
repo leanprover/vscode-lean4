@@ -2,6 +2,7 @@ import { basename, escapeHtml, colorizeMessage, Collapsible } from './util';
 import { Message } from 'lean-client-js-node';
 import React = require('react');
 import { Location, DisplayMode, Config } from '../src/typings';
+import { MessagesContext, ConfigContext } from '.';
 
 function compareMessages(m1: Message, m2: Message): boolean {
     return (m1.file_name === m2.file_name &&
@@ -41,28 +42,30 @@ export function Messages(props: {messages: Message[]}): JSX.Element {
     return <Collapsible title="Messages">{msgs}</Collapsible>
 }
 
-interface MessagesForProps extends Location {
-    messages: Message[];
-    config: Config;
+interface MessagesForProps {
+    loc: Location;
 }
 
 export function MessagesFor(props: MessagesForProps) {
+    const allMessages = React.useContext(MessagesContext);
+    const config = React.useContext(ConfigContext);
+    const loc = props.loc;
     let msgs: Message[];
-    switch (this.displayMode) {
+    switch (config.displayMode) {
         case DisplayMode.OnlyState:
             /* Heuristic: find first position to the left which has messages attached,
                from that on show all messages in this line */
-            msgs = props.messages
-                .filter((m) => m.file_name === props.file_name &&
-                    m.pos_line === props.line)
+            msgs = allMessages
+                .filter((m) => m.file_name === loc.file_name &&
+                    m.pos_line === loc.line)
                 .sort((a, b) => a.pos_col - b.pos_col);
-            if (!props.infoViewAllErrorsOnLine) {
+            if (!config.infoViewAllErrorsOnLine) {
                 let startColumn;
                 let startPos = null;
                 for (let i = 0; i < msgs.length; i++) {
-                    if (props.column < msgs[i].pos_col) { break; }
-                    if (props.column === msgs[i].pos_col) {
-                        startColumn = props.column;
+                    if (loc.column < msgs[i].pos_col) { break; }
+                    if (loc.column === msgs[i].pos_col) {
+                        startColumn = loc.column;
                         startPos = i;
                         break;
                     }
@@ -78,7 +81,7 @@ export function MessagesFor(props: MessagesForProps) {
             break;
 
         case DisplayMode.AllMessage:
-            msgs = props.messages
+            msgs = allMessages
                 .filter((m) => m.file_name === l.file_name)
                 .sort((a, b) => a.pos_line === b.pos_line
                     ? a.pos_col - b.pos_col

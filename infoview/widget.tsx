@@ -54,45 +54,9 @@ const Popper = (props) => {
     );
 }
 
-    /** Runs whenever the user interacts with a widget. */
-export async function handleWidgetEvent(
-    message: WidgetEventMessage,
-    server: (msg: WidgetEventMessage) => Promise<WidgetEventResponse>,
-    onTextEdit: (loc: Location, text: string) => void
-    ) {
-        console.log('got widget event', message);
-        message = {
-            command: 'widget_event',
-            file_name: message.file_name,
-            line: message.line,
-            column: message.column,
-            ...message,
-        }
-        const result: any = await server(message);
-        console.log('recieved from server', result);
-        if (!result.record) { return; }
-        const record: WidgetEventResponse = result.record;
-        if (record.status === 'success' && record.widget) {
-            this.updateGoal();
-            this.rerender();
-        } else if (record.status === 'edit') {
-            const new_command: string = record.action;
-            this.curWidget = record.widget;
-
-
-
-        } else if (record.status === 'invalid_handler') {
-            console.warn(`No widget_event update for {${message.handler}, ${message.route}}: invalid handler.`)
-            await this.updateGoal();
-            this.rerender();
-        } else if (record.status === 'error') {
-            console.error(`Update gave an error: ${record.message}`);
-        }
-}
-
 export interface WidgetProps {
-    widget?:string;
-    post: (e : WidgetEventMessage) => void;
+    widget?: string;
+    post: (e: WidgetEventMessage) => void;
 }
 
 export function Widget(props: WidgetProps): JSX.Element {

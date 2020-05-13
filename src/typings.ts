@@ -11,6 +11,10 @@ export interface Location {
     column: number;
 }
 
+export function locationKey(l: Location): string {
+    return `${l.file_name}:${l.line}:${l.column}`;
+}
+
 export interface ServerStatus {
     stopped: boolean;
     isRunning: boolean;
@@ -20,11 +24,11 @@ export interface ServerStatus {
 
 interface WidgetEventResponseSuccess {
     status: 'success';
-    widget: any;
+    widget: {html: any};
 }
 interface WidgetEventResponseEdit {
     status: 'edit';
-    widget: any;
+    widget: {html: any};
     /** Some text to insert after the widget's comma. */
     action: string;
 }
@@ -38,12 +42,13 @@ interface WidgetEventResponseError {
 export type WidgetEventResponse = WidgetEventResponseSuccess | WidgetEventResponseInvalid | WidgetEventResponseEdit | WidgetEventResponseError
 
 
-export interface WidgetEventMessage extends Location {
+export interface WidgetEventMessage {
     command: 'widget_event';
     kind: 'onClick' | 'onMouseEnter' | 'onMouseLeave' | 'onChange';
     handler: number;
     route: number[];
     args: { type: 'unit' } | { type: 'string'; value: string };
+    loc: Location;
 }
 
 export enum DisplayMode {
@@ -64,6 +69,12 @@ export interface Config {
     infoViewTacticStateFilters: any[];
     infoViewAllErrorsOnLine: boolean;
     displayMode: DisplayMode;
+}
+export const defaultConfig = {
+    filterIndex: -1,
+    infoViewTacticStateFilters: [],
+    infoViewAllErrorsOnLine: false,
+    displayMode: DisplayMode.AllMessage,
 }
 
 /** The root state of the infoview */
@@ -88,18 +99,18 @@ export interface RevealMessage {
 }
 export interface ServerRequestMessage {
     command: 'server_request';
-    request;
+    payload: string;
 }
 
 export type FromInfoviewMessage = ServerRequestMessage | InsertTextMessage | RevealMessage
 
 /** Message from the extension to the infoview */
 export type ToInfoviewMessage = {
-    command: 'server_response';
-    response;
-} | ({command: 'position'} & Location)
-| {command: 'on_all_messages'; messages: Message[]}
-| {command: 'on_server_status_changed'; status: ServerStatus}
+    command: 'server_event' | 'server_error';
+    payload: string; // payloads have to be stringified json because vscode crashes if the depth is too big.
+} | {command: 'position'; loc: Location}
+// | {command: 'on_all_messages'; messages: Message[]}
+// | {command: 'on_server_status_changed'; status: ServerStatus}
 | {
     command: 'on_config_change';
     config: Config;

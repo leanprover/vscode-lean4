@@ -42,18 +42,6 @@ export class InfoProvider implements Disposable {
         });
         this.updateStylesheet();
         this.subscriptions.push(
-            this.server.allMessages.on(() => {
-                this.postMessage({
-                    command: 'on_all_messages',
-                    messages: this.server.messages,
-                });
-            }),
-            this.server.statusChanged.on((s) => {
-                this.postMessage({
-                    command: 'on_server_status_changed',
-                    status: s,
-                });
-            }),
             this.server.restarted.on(() => {
                 this.autoOpen();
             }),
@@ -233,9 +221,11 @@ export class InfoProvider implements Disposable {
     private sendPosition() {
         this.postMessage({
             command: 'position',
-            file_name: this.curFileName,
-            line: this.curPosition.line + 1,
-            column: this.curPosition.character,
+            loc : {
+                file_name: this.curFileName,
+                line: this.curPosition.line + 1,
+                column: this.curPosition.character,
+            }
         });
     }
     private sendConfig() {
@@ -368,25 +358,6 @@ export class InfoProvider implements Disposable {
             ...l,
             location_name: `${Uri.file(l.file_name)}:${this.curPosition.line}:${this.curPosition.character}`,
             base_name: basename(l.file_name),
-        }
-    }
-
-    private async updateInfoViewState(): Promise<boolean> {
-        try {
-            const cur_info = await this.server.info(
-                this.curFileName, this.curPosition.line + 1, this.curPosition.character
-            );
-            const cur_infoprops: InfoProps = this.toInfoProps(this.getLocation(), cur_info);
-            const new_pins: InfoProps[] = [];
-            for (const pin of this.pins) {
-                const pin_info = await this.server.info(
-                    pin.file_name, pin.line, pin.column,
-                );
-                new_pins.push(this.toInfoProps(pin, pin_info));
-            }
-            return true;
-        } catch (e) {
-            if (e !== 'interrupted') { throw e; }
         }
     }
 
