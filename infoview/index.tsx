@@ -1,6 +1,6 @@
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
-import { WidgetEventMessage, DisplayMode, InfoProps, InfoViewState, InfoviewMessage, ServerStatus } from '../src/typings';
+import { WidgetEventMessage, DisplayMode, InfoProps, InfoViewState, InfoviewMessage } from '../src/typings';
 import { Widget } from './widget';
 import { Message } from 'lean-client-js-node';
 import './tachyons.css'
@@ -85,24 +85,24 @@ function Info(props: InfoProps & {color? : 'light-blue' | 'light-green'}) {
     </Collapsible>
 }
 
-function StatusView(props: ServerStatus) {
-    return <Collapsible title="Tasks">
-        <p>Running: {props.isRunning}</p>
-        <table> <tbody>
-            <tr key="header"><th>File Name</th>
-            <th>Pos start</th>
-            <th>Pos end</th>
-            <th>Desc</th></tr>
-            {props.tasks.map(t => <tr key={`${t.file_name}:${t.pos_col}:${t.pos_line}:${t.desc}`}>
-                <td>{t.file_name}</td>
-                <td>{t.pos_line}:{t.pos_col}</td>
-                <td>{t.end_pos_line}:{t.end_pos_col}</td>
-                <td>{t.desc}</td>
-            </tr>)}
-        </tbody>
-        </table>
-        </Collapsible>
-}
+// function StatusView(props: ServerStatus) {
+//     return <Collapsible title="Tasks">
+//         <p>Running: {props.isRunning}</p>
+//         <table> <tbody>
+//             <tr key="header"><th>File Name</th>
+//             <th>Pos start</th>
+//             <th>Pos end</th>
+//             <th>Desc</th></tr>
+//             {props.tasks.map(t => <tr key={`${t.file_name}:${t.pos_col}:${t.pos_line}:${t.desc}`}>
+//                 <td>{t.file_name}</td>
+//                 <td>{t.pos_line}:{t.pos_col}</td>
+//                 <td>{t.end_pos_line}:{t.end_pos_col}</td>
+//                 <td>{t.desc}</td>
+//             </tr>)}
+//         </tbody>
+//         </table>
+//         </Collapsible>
+// }
 
 function Main(props: InfoViewState) {
     if (!props) {return null}
