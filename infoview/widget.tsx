@@ -1,7 +1,7 @@
 
 import * as React from 'react';
 import * as ReactPopper from 'react-popper';
-import { WidgetEventMessage } from '../src/typings';
+import { WidgetEventMessage, WidgetEventResponse, Location } from '../src/typings';
 import './popper.css'
 import { Collapsible } from './util';
 
@@ -30,13 +30,6 @@ type html =
     | WidgetElement
     | null
 
-export interface WidgetProps {
-    file_name: string;
-    line: number;
-    column: number;
-    html: html[] | null;
-    post: (e: WidgetEventMessage) => void;
-}
 
 const Popper = (props) => {
     const { children, popperContent, refEltTag, refEltAttrs } = props;
@@ -60,16 +53,64 @@ const Popper = (props) => {
         </>
     );
 }
-export function Widget(props: { widget?: string; post: WidgetProps['post'] }): JSX.Element {
+
+    /** Runs whenever the user interacts with a widget. */
+export async function handleWidgetEvent(
+    message: WidgetEventMessage,
+    server: (msg: WidgetEventMessage) => Promise<WidgetEventResponse>,
+    onTextEdit: (loc: Location, text: string) => void
+    ) {
+        console.log('got widget event', message);
+        message = {
+            command: 'widget_event',
+            file_name: message.file_name,
+            line: message.line,
+            column: message.column,
+            ...message,
+        }
+        const result: any = await server(message);
+        console.log('recieved from server', result);
+        if (!result.record) { return; }
+        const record: WidgetEventResponse = result.record;
+        if (record.status === 'success' && record.widget) {
+            this.updateGoal();
+            this.rerender();
+        } else if (record.status === 'edit') {
+            const new_command: string = record.action;
+            this.curWidget = record.widget;
+
+
+
+        } else if (record.status === 'invalid_handler') {
+            console.warn(`No widget_event update for {${message.handler}, ${message.route}}: invalid handler.`)
+            await this.updateGoal();
+            this.rerender();
+        } else if (record.status === 'error') {
+            console.error(`Update gave an error: ${record.message}`);
+        }
+}
+
+export interface WidgetProps {
+    widget?:string;
+    post: (e : WidgetEventMessage) => void;
+}
+
+export function Widget(props: WidgetProps): JSX.Element {
     if (!props.widget) { return null; }
-    const widget_json: WidgetProps = JSON.parse(props.widget);
+    const widget_json: HtmlProps = JSON.parse(props.widget);
     if (!widget_json) { return null; }
     widget_json.post = props.post;
     return <Collapsible title="Widget">
         {Html(widget_json)}
     </Collapsible>
 }
-function Html(props: WidgetProps) {
+
+interface HtmlProps extends Location {
+    html: html[] | null;
+    post: (e: WidgetEventMessage) => void;
+}
+
+function Html(props: HtmlProps) {
     const { html, ...rest } = props;
     return html.map(w => {
         if (typeof w === 'string') { return w; }
@@ -119,4 +160,5 @@ function Html(props: WidgetProps) {
         }
     });
 }
+
 

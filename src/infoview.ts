@@ -9,43 +9,8 @@ import {
     Uri, ViewColumn, WebviewPanel, window, workspace,
 } from 'vscode';
 import { Server } from './server';
-import { DisplayMode, WidgetEventMessage, InfoviewMessage, InfoProps, ServerStatus } from './typings'
+import { DisplayMode, WidgetEventMessage, ToInfoviewMessage, InfoProps, ServerStatus, FromInfoviewMessage, InfoViewState, Location, Config, InsertTextMessage, ServerRequestMessage } from './typings'
 import { StaticServer } from './staticserver';
-
-function compareMessages(m1: Message, m2: Message): boolean {
-    return (m1.file_name === m2.file_name &&
-        m1.pos_line === m2.pos_line && m1.pos_col === m2.pos_col &&
-        m1.severity === m2.severity && m1.caption === m2.caption && m1.text === m2.text);
-}
-
-// https://stackoverflow.com/questions/6234773/can-i-escape-html-special-chars-in-javascript
-function escapeHtml(s: string): string {
-    return s
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
-}
-
-interface WidgetEventResponseSuccess {
-    status: 'success';
-    widget: any;
-}
-interface WidgetEventResponseEdit {
-    status: 'edit';
-    widget: any;
-    /** Some text to insert after the widget's comma. */
-    action: string;
-}
-interface WidgetEventResponseInvalid {
-    status: 'invalid_handler';
-}
-interface WidgetEventResponseError {
-    status: 'error';
-    message: string;
-}
-type WidgetEventResponse = WidgetEventResponseSuccess | WidgetEventResponseInvalid | WidgetEventResponseEdit | WidgetEventResponseError
 
 export class InfoProvider implements Disposable {
     /** Instance of the panel. */
@@ -61,10 +26,6 @@ export class InfoProvider implements Disposable {
     private stopped: boolean = false;
     private curFileName: string = null;
     private curPosition: Position = null;
-    private curGoalState: string = null;
-    private curMessages: Message[] = null;
-    private curWidget: any = null;
-
     private stylesheet: string = null;
 
     private messageFormatters: ((text: string, msg: Message) => string)[] = [];
@@ -82,13 +43,16 @@ export class InfoProvider implements Disposable {
         this.updateStylesheet();
         this.subscriptions.push(
             this.server.allMessages.on(() => {
-                if (this.updateMessages()) { this.rerender(); }
+                this.postMessage({
+                    command: 'on_all_messages',
+                    messages: this.server.messages,
+                });
             }),
-            this.server.statusChanged.on(async (s) => {
-                if (this.displayMode === DisplayMode.OnlyState) {
-                    const changed = await this.updateGoal();
-                    if (changed) { this.rerender(); }
-                }
+            this.server.statusChanged.on((s) => {
+                this.postMessage({
+                    command: 'on_server_status_changed',
+                    status: s,
+                });
             }),
             this.server.restarted.on(() => {
                 this.autoOpen();
@@ -96,43 +60,44 @@ export class InfoProvider implements Disposable {
             window.onDidChangeActiveTextEditor(() => this.updatePosition(false)),
             window.onDidChangeTextEditorSelection(() => this.updatePosition(false)),
             workspace.onDidChangeConfiguration((e) => {
+                // regression; changing the style needs a reload. :/
                 this.updateStylesheet();
-                this.rerender();
+                this.sendConfig();
                 if (!workspace.getConfiguration('lean').get('typeInStatusBar') && this.statusShown) {
                     this.statusBarItem.hide();
                     this.statusShown = false;
                 }
             }),
             commands.registerCommand('_lean.revealPosition', this.revealEditorPosition.bind(this)),
-            commands.registerCommand('_lean.infoView.pause', () => {
-                this.stopUpdating();
-            }),
-            commands.registerCommand('_lean.infoView.continue', () => {
-                this.setMode(this.displayMode);
-            }),
+            // commands.registerCommand('_lean.infoView.pause', () => {
+            //     this.stopUpdating();
+            // }),
+            // commands.registerCommand('_lean.infoView.continue', () => {
+            //     this.setMode(this.displayMode);
+            // }),
             commands.registerTextEditorCommand('lean.displayGoal', (editor) => {
-                this.setMode(DisplayMode.OnlyState);
+                // this.setMode(DisplayMode.OnlyState);
                 this.openPreview(editor);
             }),
             commands.registerTextEditorCommand('lean.displayList', (editor) => {
-                this.setMode(DisplayMode.AllMessage);
+                // this.setMode(DisplayMode.AllMessage);
                 this.openPreview(editor);
             }),
-            commands.registerTextEditorCommand('lean.infoView.displayGoal', (editor) => {
-                this.setMode(DisplayMode.OnlyState);
-            }),
-            commands.registerTextEditorCommand('lean.infoView.displayList', (editor) => {
-                this.setMode(DisplayMode.AllMessage);
-            }),
-            commands.registerTextEditorCommand('lean.infoView.copyToComment',
-                (editor) => this.copyToComment(editor)),
-            commands.registerTextEditorCommand('lean.infoView.toggleUpdating', (editor) => {
-                if (this.stopped) {
-                    this.setMode(this.displayMode);
-                } else {
-                    this.stopUpdating();
-                }
-            }),
+            // commands.registerTextEditorCommand('lean.infoView.displayGoal', (editor) => {
+            //     this.setMode(DisplayMode.OnlyState);
+            // }),
+            // commands.registerTextEditorCommand('lean.infoView.displayList', (editor) => {
+            //     this.setMode(DisplayMode.AllMessage);
+            // }),
+            // commands.registerTextEditorCommand('lean.infoView.copyToComment',
+            //     (editor) => this.copyToComment(editor)),
+            // commands.registerTextEditorCommand('lean.infoView.toggleUpdating', (editor) => {
+            //     if (this.stopped) {
+            //         this.setMode(this.displayMode);
+            //     } else {
+            //         this.stopUpdating();
+            //     }
+            // }),
         );
         if (this.server.alive()) {
             this.autoOpen();
@@ -172,6 +137,7 @@ export class InfoProvider implements Disposable {
                     DisplayMode.OnlyState : DisplayMode.AllMessage);
             this.openPreview(window.activeTextEditor);
             this.updatePosition(false);
+            this.sendConfig();
         }
     }
 
@@ -196,115 +162,92 @@ export class InfoProvider implements Disposable {
         }
     }
     /** Handle a message incoming from the webview. */
-    private handleMessage(message) {
+    private handleMessage(message: FromInfoviewMessage) {
         switch (message.command) {
-            case 'selectFilter':
-                workspace.getConfiguration('lean').update('infoViewFilterIndex',
-                    message.filterId, true);
-                // the workspace configuration change already forces a rerender
+            // case 'selectFilter':
+            //     workspace.getConfiguration('lean').update('infoViewFilterIndex',
+            //         message.filterId, true);
+            //     // the workspace configuration change already forces a rerender
+            //     return;
+            // case 'hoverPosition':
+            //     this.hoverEditorPosition(message.data[0], message.data[1], message.data[2],
+            //         message.data[3], message.data[4]);
+            //     return;
+            // case 'stopHover':
+            //     this.stopHover();
+            //     return;
+            case 'insert_text':
+                this.handleInsertText(message);
                 return;
-            case 'hoverPosition':
-                this.hoverEditorPosition(message.data[0], message.data[1], message.data[2],
-                    message.data[3], message.data[4]);
+            case 'server_request':
+                this.handleServerRequest(message);
                 return;
-            case 'stopHover':
-                this.stopHover();
+            case 'reveal':
+                this.revealEditorPosition(Uri.parse(message.loc.file_name), message.loc.line, message.loc.column);
                 return;
-            case 'widget_event':
-                this.handleWidgetEvent(message);
-                return;
+            // case 'widget_event':
+            //     this.handleWidgetEvent(message);
+            //     return;
+            // case 'set_pin':
+            //     this.pins.push({...message});
+            //     return;
+            // case 'unset_pin':
+            //     this.pins.filter(x => !(
+            //         x.file_name === message.file_name &&
+            //         x.line === message.line &&
+            //         x.column === message.column));
+            //     return;
         }
     }
+    private async handleServerRequest(message: ServerRequestMessage) {
+        const response = await this.server.send(message.request);
+        this.postMessage({
+            command: 'server_response',
+            response,
+        });
+    }
+    private async handleInsertText(message: InsertTextMessage) {
+        const new_command = message.text;
+        for (const editor of window.visibleTextEditors) {
+            if (editor.document.fileName === message.loc.file_name) {
+                const current_selection_range = editor.selection;
+                const cursor_pos = current_selection_range.active;
+                const prev_line = editor.document.lineAt(message.loc.line - 2);
+                const spaces = prev_line.firstNonWhitespaceCharacterIndex;
+                const margin_str = [...Array(spaces).keys()].map(x => ' ').join('');
 
-    /** Runs whenever the user interacts with a widget. */
-    private async handleWidgetEvent(message: WidgetEventMessage) {
-        console.log('got widget event', message);
-        message = {
-            command: 'widget_event',
-            file_name: this.curFileName,
-            line: this.curPosition.line + 1,
-            column: this.curPosition.character,
-            ...message,
-        }
-        const result: any = await this.server.send(message);
-        console.log('recieved from server', result);
-        if (!result.record) { return; }
-        const record: WidgetEventResponse = result.record;
-        if (record.status === 'success' && record.widget) {
-            this.curWidget = record.widget;
-            this.rerender();
-        } else if (record.status === 'edit') {
-            const new_command: string = record.action;
-            this.curWidget = record.widget;
-            for (const editor of window.visibleTextEditors) {
-                if (editor.document.fileName === message.file_name) {
-                    const current_selection_range = editor.selection;
-                    const cursor_pos = current_selection_range.active;
-                    const prev_line = editor.document.lineAt(message.line - 2);
-                    const spaces = prev_line.firstNonWhitespaceCharacterIndex;
-                    const margin_str = [...Array(spaces).keys()].map(x => ' ').join('');
+                // [hack] for now, we assume that there is only ever one command per line
+                // and that the command should be inserted on the line above this one.
 
-                    // [hack] for now, we assume that there is only ever one command per line
-                    // and that the command should be inserted on the line above this one.
-
-                    await editor.edit((builder) => {
-                        builder.insert(
-                            prev_line.range.end,
-                            `\n${margin_str}${new_command}, `);
-                    });
-                    editor.selection = new Selection(message.line, spaces, message.line, spaces);
-                }
+                await editor.edit((builder) => {
+                    builder.insert(
+                        prev_line.range.end,
+                        `\n${margin_str}${new_command}, `);
+                });
+                editor.selection = new Selection(message.loc.line, spaces, message.loc.line, spaces);
             }
-
-        } else if (record.status === 'invalid_handler') {
-            console.warn(`No widget_event update for {${message.handler}, ${message.route}}: invalid handler.`)
-            await this.updateGoal();
-            this.rerender();
-        } else if (record.status === 'error') {
-            console.error(`Update gave an error: ${record.message}`);
         }
     }
 
-    /** post a position message to the webserver. */
+    /** post a position message to the infoview. */
     private sendPosition() {
         this.postMessage({
             command: 'position',
-            fileName: this.curFileName,
+            file_name: this.curFileName,
             line: this.curPosition.line + 1,
             column: this.curPosition.character,
         });
     }
-
-    private stopUpdating() {
-        this.stopped = true;
-        this.postMessage({ command: 'pause' });
-    }
-
-    private rerender() {
-        if (this.webviewPanel) {
-            const infoViewTacticStateFilters = workspace.getConfiguration('lean').get('infoViewTacticStateFilters', []);
-            const filterIndex = workspace.getConfiguration('lean').get('infoViewFilterIndex', -1);
-            const cursorInfo: InfoProps = {
-                widget: this.curWidget ? JSON.stringify(this.curWidget) : undefined, // [note] there is a bug in vscode where the whole window will irrecoverably hang if the json depth is too high.
-                goalState: this.curGoalState,
-                messages: this.curMessages,
-                fileName: this.curFileName,
+    private sendConfig() {
+        this.postMessage({
+            command: 'on_config_change',
+            config: {
+                infoViewTacticStateFilters: workspace.getConfiguration('lean').get('infoViewTacticStateFilters', []),
+                filterIndex: workspace.getConfiguration('lean').get('infoViewFilterIndex', -1),
+                infoViewAllErrorsOnLine: workspace.getConfiguration('lean').get('infoViewAllErrorsOnLine', false),
                 displayMode: this.displayMode,
-                filterIndex,
-                infoViewTacticStateFilters,
-                line: this.curPosition.line, column: this.curPosition.character,
-                location_name: `${Uri.file(this.curFileName)}:${this.curPosition.line}:${this.curPosition.character}`,
-                base_name: basename(this.curFileName),
-            }
-
-            this.postMessage({
-                command: 'sync',
-                props: {
-                    cursorInfo,
-                    pinnedInfos: [],
-                }
-            });
-        }
+            },
+        });
     }
 
     private setMode(mode: DisplayMode) {
@@ -315,9 +258,10 @@ export class InfoProvider implements Disposable {
         }
         this.stopped = false;
         this.updatePosition(true);
+        this.sendConfig();
     }
 
-    private async postMessage(msg: InfoviewMessage): Promise<boolean> {
+    private async postMessage(msg: ToInfoviewMessage): Promise<boolean> {
         if (this.webviewPanel) {
             return this.webviewPanel.webview.postMessage(msg);
         } else {
@@ -381,7 +325,6 @@ export class InfoProvider implements Disposable {
         // clear type in status bar item
         this.statusBarItem.text = '';
 
-        const chMsg = this.updateMessages();
         /* updateTypeStatus is only called from the cases of the following switch-block, so pausing
            live-updates to the infoview (via this.stopped) also pauses the type status bar item */
         switch (this.displayMode) {
@@ -409,96 +352,39 @@ export class InfoProvider implements Disposable {
         }
     }
 
-    private updateMessages(): boolean {
-        if (this.stopped || !this.curFileName) { return false; }
-        let msgs: Message[];
-        switch (this.displayMode) {
-            case DisplayMode.OnlyState:
-                /* Heuristic: find first position to the left which has messages attached,
-                   from that on show all messages in this line */
-                msgs = this.server.messages
-                    .filter((m) => m.file_name === this.curFileName &&
-                        m.pos_line === this.curPosition.line + 1)
-                    .sort((a, b) => a.pos_col - b.pos_col);
-                if (!workspace.getConfiguration('lean').get('infoViewAllErrorsOnLine')) {
-                    let startColumn;
-                    let startPos = null;
-                    for (let i = 0; i < msgs.length; i++) {
-                        if (this.curPosition.character < msgs[i].pos_col) { break; }
-                        if (this.curPosition.character === msgs[i].pos_col) {
-                            startColumn = this.curPosition.character;
-                            startPos = i;
-                            break;
-                        }
-                        if (startColumn == null || startColumn < msgs[i].pos_col) {
-                            startColumn = msgs[i].pos_col;
-                            startPos = i;
-                        }
-                    }
-                    if (startPos) {
-                        msgs = msgs.slice(startPos);
-                    }
-                }
-                break;
-
-            case DisplayMode.AllMessage:
-                msgs = this.server.messages
-                    .filter((m) => m.file_name === this.curFileName)
-                    .sort((a, b) => a.pos_line === b.pos_line
-                        ? a.pos_col - b.pos_col
-                        : a.pos_line - b.pos_line);
-                break;
-        }
-        if (!this.curMessages) {
-            this.curMessages = msgs;
-            return true;
-        }
-        const oldMsgs = this.curMessages;
-        if (msgs.length === oldMsgs.length) {
-            let eq = true;
-            for (let i = 0; i < msgs.length; i++) {
-                if (!compareMessages(msgs[i], oldMsgs[i])) {
-                    eq = false;
-                    break;
-                }
-            }
-            if (eq) { return false; }
-        }
-        this.curMessages = msgs;
-        return true;
+    private getLocation(): Location {
+        return {
+            file_name: this.curFileName,
+            line: this.curPosition.line + 1,
+            column: this.curPosition.character
+        };
     }
 
-    private async updateGoal(): Promise<boolean> {
-        if (this.stopped || !this.curFileName || !this.curPosition) { return false; }
-        let shouldUpdate = false;
+    private toInfoProps(l: Location, m: InfoResponse): InfoProps {
+        const record: any = m.record;
+        return {
+            widget: record && record.widget ? JSON.stringify(record.widget) : undefined, // [note] there is a bug in vscode where the whole window will irrecoverably hang if the json depth is too high.
+            goalState: record && record.state,
+            ...l,
+            location_name: `${Uri.file(l.file_name)}:${this.curPosition.line}:${this.curPosition.character}`,
+            base_name: basename(l.file_name),
+        }
+    }
+
+    private async updateInfoViewState(): Promise<boolean> {
         try {
-            // get the 'save_info' format for this location.
-            const info = await this.server.info(
-                this.curFileName, this.curPosition.line + 1, this.curPosition.character);
-            const record: any = info.record;
-            if (record && record.widget) {
-                this.curWidget = record.widget;
-                console.log('Found a widget');
-                console.log(record);
-                shouldUpdate = true;
-            } else {
-                this.curWidget = null;
+            const cur_info = await this.server.info(
+                this.curFileName, this.curPosition.line + 1, this.curPosition.character
+            );
+            const cur_infoprops: InfoProps = this.toInfoProps(this.getLocation(), cur_info);
+            const new_pins: InfoProps[] = [];
+            for (const pin of this.pins) {
+                const pin_info = await this.server.info(
+                    pin.file_name, pin.line, pin.column,
+                );
+                new_pins.push(this.toInfoProps(pin, pin_info));
             }
-            if (info.record && info.record.state) {
-                if (this.curGoalState !== info.record.state) {
-                    this.curGoalState = info.record.state;
-                    shouldUpdate = true;
-                }
-            }
-            else {
-                if (this.curGoalState) {
-                    this.curGoalState = null;
-                }
-            }
-            if (workspace.getConfiguration('lean').get('typeInStatusBar')) {
-                this.updateTypeStatus(info);
-            }
-            return shouldUpdate;
+            return true;
         } catch (e) {
             if (e !== 'interrupted') { throw e; }
         }
@@ -539,18 +425,18 @@ export class InfoProvider implements Disposable {
             </html>`
     }
 
-    private async copyToComment(editor: TextEditor) {
-        await editor.edit((builder) => {
-            builder.insert(editor.selection.end.with({ character: 0 }).translate({ lineDelta: 1 }),
-                '/-\n' + this.renderText() + '\n-/\n');
-        });
-    }
-    private renderText(): string {
-        const msgText = this.curMessages &&
-            this.curMessages.map((m) =>
-                `${basename(m.file_name)}:${m.pos_line}:${m.pos_col}: ${m.severity} ${m.caption}\n${m.text}`,
-            ).join('\n');
-        const goalText = this.curGoalState ? `Tactic State:\n${this.curGoalState}\n` : '';
-        return goalText + msgText;
-    }
+    // private async copyToComment(editor: TextEditor) {
+    //     await editor.edit((builder) => {
+    //         builder.insert(editor.selection.end.with({ character: 0 }).translate({ lineDelta: 1 }),
+    //             '/-\n' + this.renderText() + '\n-/\n');
+    //     });
+    // }
+    // private renderText(): string {
+    //     const msgText = this.curMessages &&
+    //         this.curMessages.map((m) =>
+    //             `${basename(m.file_name)}:${m.pos_line}:${m.pos_col}: ${m.severity} ${m.caption}\n${m.text}`,
+    //         ).join('\n');
+    //     const goalText = this.curGoalState ? `Tactic State:\n${this.curGoalState}\n` : '';
+    //     return goalText + msgText;
+    // }
 }

@@ -21,18 +21,28 @@ export function colorizeMessage(goal: string): string {
 
 export function basename(path) { return path.split(/[\\/]/).pop(); }
 
-
-export function Collapsible(props: {title: string; children; className?; headerClassName?}) {
+interface CollapsibleProps {
+    title: string;
+    children;
+    className?: string;
+    headerClassName?: string;
+    toolbar?;
+}
+export function Collapsible(props: CollapsibleProps) {
     const [collapsed, set] = React.useState(false);
-    const h = React.createElement('h1', {}, [
-        <a className='pointer dim link pa1 ma1 bn'
-          onClick={() => set(!collapsed)}>
-              {collapsed ? '⮞' : '⮟'}
-        </a>,
-        <span className={props.headerClassName}>{props.title}</span>,
-    ])
     return <div className={props.className}>
-        {h}
+        <h1 className={'collapsible-header'}>
+            <a className='pointer dim link pa1 ma1 bn'
+            onClick={() => set(!collapsed)}>
+                {collapsed ? '⮞' : '⮟'}
+            </a>,
+            <span className={props.headerClassName}>{props.title}</span>,
+            {toolbar &&
+                <span className="fr">
+                    {toolbar}
+                </span>
+            }
+        </h1>
         <div className='ml1' hidden={collapsed}>
             {props.children}
         </div>

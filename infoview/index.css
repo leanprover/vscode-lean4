@@ -68,12 +68,12 @@ h1 {
     font-size: 100%;
 }
 
-h1 {
+.collapsible-header {
     border-bottom-color: black;
 }
-.vscode-dark h1 {
+.vscode-dark .collapsible-header {
     border-bottom-color: lightgray;
 }
-.vscode-high-contrast h1 {
+.vscode-high-contrast .collapsible-header {
     border-bottom-color: white;
   }
