@@ -43,6 +43,7 @@ export class InfoProvider implements Disposable {
 
     private started: boolean = false;
     private stopped: boolean = false;
+    private stickyPosition: boolean = false;
     private curFileName: string = null;
     private curPosition: Position = null;
     private curGoalState: string = null;
@@ -53,6 +54,7 @@ export class InfoProvider implements Disposable {
     private messageFormatters: ((text: string, msg: Message) => string)[] = [];
 
     private hoverDecorationType: TextEditorDecorationType;
+    private stickyDecorationType: TextEditorDecorationType;
 
     constructor(private server: Server, private leanDocs: DocumentSelector, private context: ExtensionContext, private staticServer: StaticServer) {
 
@@ -61,6 +63,10 @@ export class InfoProvider implements Disposable {
         this.hoverDecorationType = window.createTextEditorDecorationType({
             backgroundColor: 'red', // make configurable?
             border: '3px solid red',
+        });
+        this.stickyDecorationType = window.createTextEditorDecorationType({
+            backgroundColor: 'blue', // make configurable?
+            border: '3px solid blue',
         });
         this.updateStylesheet();
         this.subscriptions.push(
@@ -84,6 +90,35 @@ export class InfoProvider implements Disposable {
                 if (!workspace.getConfiguration('lean').get('typeInStatusBar') && this.statusShown) {
                     this.statusBarItem.hide();
                     this.statusShown = false;
+                }
+            }),
+            workspace.onDidChangeTextDocument((e) => {
+                if (this.stickyPosition && this.curPosition != null &&
+                    e.document.fileName === this.curFileName) {
+                    // stupid cursor math that should be in the vscode API
+                    let newPosition = this.curPosition;
+                    for (const chg of e.contentChanges) {
+                        if (newPosition.isAfterOrEqual(chg.range.start)) {
+                            let lines = 0;
+                            for (const c of chg.text) if (c === '\n') lines++;
+                            newPosition = new Position(
+                                chg.range.start.line + Math.max(0, newPosition.line - chg.range.end.line) + lines,
+                                newPosition.line > chg.range.end.line ?
+                                    newPosition.character :
+                                lines === 0 ?
+                                    chg.range.start.character + Math.max(0, newPosition.character - chg.range.end.character) + chg.text.length :
+                                9999 // too lazy to get column positioning right, and end of the line is a good place
+                            );
+                        }
+                    }
+                    newPosition = e.document.validatePosition(newPosition);
+                    this.updatePosition(false, newPosition);
+                    for (const editor of window.visibleTextEditors) {
+                        if (editor.document.fileName === this.curFileName) {
+                            editor.setDecorations(this.stickyDecorationType, [new Range(newPosition, newPosition)]);
+                        }
+                    }
+
                 }
             }),
             commands.registerCommand('_lean.revealPosition', this.revealEditorPosition.bind(this)),
@@ -114,6 +149,22 @@ export class InfoProvider implements Disposable {
                     this.setMode(this.displayMode);
                 } else {
                     this.stopUpdating();
+                }
+            }),
+            commands.registerTextEditorCommand('lean.infoView.toggleStickyPosition', (editor) => {
+                if (this.stickyPosition) {
+                    this.stickyPosition = false;
+                    for (const ed of window.visibleTextEditors) {
+                        if (ed.document.languageId === 'lean') {
+                            ed.setDecorations(this.stickyDecorationType, []);
+                        }
+                    }
+                    this.updatePosition(false);
+                } else {
+                    this.stickyPosition = true;
+                    const pos = editor.selection.active;
+                    editor.setDecorations(this.stickyDecorationType, [new Range(pos, pos)]);
+                    this.updatePosition(false, pos, editor);
                 }
             }),
         );
@@ -261,7 +312,7 @@ export class InfoProvider implements Disposable {
         }
     }
 
-    private changePosition() {
+    private changePosition(newStickyValue?: Position) {
         if (!window.activeTextEditor ||
             !languages.match(this.leanDocs, window.activeTextEditor.document)) {
             return;
@@ -270,16 +321,20 @@ export class InfoProvider implements Disposable {
         const oldFileName = this.curFileName;
         const oldPosition = this.curPosition;
 
-        this.curFileName = window.activeTextEditor.document.fileName;
-        this.curPosition = window.activeTextEditor.selection.active;
+        if (newStickyValue) {
+            this.curPosition = newStickyValue;
+        } else if (!this.stickyPosition) {
+            this.curFileName = window.activeTextEditor.document.fileName;
+            this.curPosition = window.activeTextEditor.selection.active;
+        }
 
         return (this.curFileName !== oldFileName || !this.curPosition.isEqual(oldPosition));
     }
 
-    private async updatePosition(forceRefresh: boolean) {
+    private async updatePosition(forceRefresh: boolean, newStickyValue?: Position, editor?: TextEditor) {
         if (this.stopped) { return; }
 
-        const chPos = this.changePosition();
+        const chPos = this.changePosition(newStickyValue);
         if (!chPos && !forceRefresh) {
             return;
         }
