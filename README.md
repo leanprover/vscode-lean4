@@ -61,8 +61,8 @@ It also contributes the following commands, which can be bound to keys if desire
 * `lean.input.convert`: converts the current Unicode abbreviation (bound to <kbd>tab</kbd> by default)
 * `lean.infoView.displayGoal`: show the tactic state and any messages (e.g. info, warning, error) at the current position in the info view window (bound to <kbd>ctrl</kbd>+<kbd>shift</kbd>+<kbd>enter</kbd> by default)
 * `lean.infoView.displayList`: show all messages for the current file from Lean in the info view window (bound to <kbd>ctrl</kbd>+<kbd>shift</kbd>+<kbd>alt</kbd>+<kbd>enter</kbd> by default)
-* `lean.infoView.copyToComment`: copy the current contents of the info view into a new comment on the next line
-* `lean.infoView.toggleStickyPosition`: enable / disable "sticky" mode. On enable this places a marker at the current position, and the goal will continue to be reported from this position even as the cursor moves and edits are made to the file. Disabling the mode goes back to tracking the cursor.
+* `lean.infoView.copyToComment`: copy the current contents of the info view into a new comment on the next line (same as clicking on the <img src="media/copy-to-comment.png"> icon)
+* `lean.infoView.toggleStickyPosition`: enable / disable "sticky" mode. On enable this places a marker at the current position, and the goal will continue to be reported from this position even as the cursor moves and edits are made to the file. Disabling the mode goes back to tracking the cursor. (same as clicking on the <img src="media/toggle-sticky-position.png"> icon)
 * `lean.infoView.toggleUpdating`: pause / continue live updates of the info view (same as clicking on the <img src="media/pause.png"> and <img src="media/continue.png"> icons)
 * `lean.roiMode.select`: select the region of interest (files to be checked by the Lean server)
 * `lean.batchExecute`: execute the current file using Lean (bound to <kbd>ctrl</kbd>+<kbd>shift</kbd>+<kbd>r</kbd> by default)
@@ -84,6 +84,9 @@ It also contributes the following commands, which can be bound to keys if desire
 * Open the `vscode-lean` directory in VS Code and start developing (<kbd>F5</kbd> starts the debugger)
 
 ## Release Notes
+
+### 0.15.13
+* "sticky" mode for the infoview position
 
 ### 0.15.0
 * Command to apply tactic suggestions such as from `library_search` (using <kbd>alt</kbd>+<kbd>v</kbd> or clicking "Try this:" in the info view)
