@@ -136,15 +136,15 @@ export class InfoProvider implements Disposable {
                 this.setMode(DisplayMode.AllMessage);
                 this.openPreview(editor);
             }),
-            commands.registerTextEditorCommand('lean.infoView.displayGoal', (editor) => {
+            commands.registerCommand('lean.infoView.displayGoal', () => {
                 this.setMode(DisplayMode.OnlyState);
             }),
-            commands.registerTextEditorCommand('lean.infoView.displayList', (editor) => {
+            commands.registerCommand('lean.infoView.displayList', () => {
                 this.setMode(DisplayMode.AllMessage);
             }),
             commands.registerTextEditorCommand('lean.infoView.copyToComment',
                 (editor) => this.copyToComment(editor)),
-            commands.registerTextEditorCommand('lean.infoView.toggleUpdating', (editor) => {
+            commands.registerCommand('lean.infoView.toggleUpdating', () => {
                 if (this.stopped) {
                     this.setMode(this.displayMode);
                 } else {
@@ -164,7 +164,7 @@ export class InfoProvider implements Disposable {
                     this.stickyPosition = true;
                     const pos = editor.selection.active;
                     editor.setDecorations(this.stickyDecorationType, [new Range(pos, pos)]);
-                    this.updatePosition(false, pos, editor);
+                    this.updatePosition(false, pos);
                 }
             }),
         );
@@ -241,6 +241,10 @@ export class InfoProvider implements Disposable {
                         return;
                 }
             }, undefined, this.subscriptions);
+            // Make the context key track when one of your webviews is focused
+            this.webviewPanel.onDidChangeViewState(({ webviewPanel }) => {
+                commands.executeCommand('setContext', 'infoViewFocused', webviewPanel.active);
+            });
         }
     }
 
@@ -331,7 +335,7 @@ export class InfoProvider implements Disposable {
         return (this.curFileName !== oldFileName || !this.curPosition.isEqual(oldPosition));
     }
 
-    private async updatePosition(forceRefresh: boolean, newStickyValue?: Position, editor?: TextEditor) {
+    private async updatePosition(forceRefresh: boolean, newStickyValue?: Position) {
         if (this.stopped) { return; }
 
         const chPos = this.changePosition(newStickyValue);
