@@ -1,5 +1,5 @@
 import { readFileSync } from 'fs';
-import { InfoResponse, Message } from 'lean-client-js-node';
+import { InfoResponse, Message, Connection } from 'lean-client-js-node';
 import { basename, join } from 'path';
 import {
     commands, Disposable, DocumentSelector,
@@ -15,6 +15,7 @@ import { StaticServer } from './staticserver';
 export class InfoProvider implements Disposable {
     /** Instance of the panel. */
     private webviewPanel: WebviewPanel;
+    private proxyConnection: Connection;
     private subscriptions: Disposable[] = [];
 
     private displayMode: DisplayMode = DisplayMode.AllMessage;
@@ -41,6 +42,7 @@ export class InfoProvider implements Disposable {
             border: '3px solid red',
         });
         this.updateStylesheet();
+        this.proxyConnection = this.server.makeProxyConnection();
         this.subscriptions.push(
             this.server.restarted.on(() => {
                 this.autoOpen();
@@ -86,6 +88,19 @@ export class InfoProvider implements Disposable {
             //         this.stopUpdating();
             //     }
             // }),
+            this.proxyConnection,
+            this.proxyConnection.error.on(e =>
+                this.postMessage({
+                    command: 'server_error',
+                    payload: JSON.stringify(e)
+                })
+            ),
+            this.proxyConnection.jsonMessage.on(e =>
+                this.postMessage({
+                    command: 'server_event',
+                    payload: JSON.stringify(e)
+                })
+            ),
         );
         if (this.server.alive()) {
             this.autoOpen();
@@ -187,12 +202,9 @@ export class InfoProvider implements Disposable {
             //     return;
         }
     }
-    private async handleServerRequest(message: ServerRequestMessage) {
-        const response = await this.server.send(message.request);
-        this.postMessage({
-            command: 'server_response',
-            response,
-        });
+    private handleServerRequest(message: ServerRequestMessage) {
+        const msg = JSON.parse(message.payload);
+        this.proxyConnection.send(msg);
     }
     private async handleInsertText(message: InsertTextMessage) {
         const new_command = message.text;

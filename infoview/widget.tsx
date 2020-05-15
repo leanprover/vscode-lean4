@@ -56,6 +56,7 @@ const Popper = (props) => {
 
 export interface WidgetProps {
     widget?: string;
+    loc: Location;
     post: (e: WidgetEventMessage) => void;
 }
 
@@ -64,6 +65,7 @@ export function Widget(props: WidgetProps): JSX.Element {
     const widget_json: HtmlProps = JSON.parse(props.widget);
     if (!widget_json) { return null; }
     widget_json.post = props.post;
+    widget_json.loc = props.loc;
     return <Collapsible title="Widget">
         {Html(widget_json)}
     </Collapsible>
@@ -71,6 +73,7 @@ export function Widget(props: WidgetProps): JSX.Element {
 
 interface HtmlProps extends Location {
     html: html[] | null;
+    loc: Location;
     post: (e: WidgetEventMessage) => void;
 }
 
@@ -96,9 +99,7 @@ function Html(props: HtmlProps) {
                     handler: events[k].handler,
                     route: events[k].route,
                     args: { type: 'unit' },
-                    file_name: props.file_name,
-                    line: props.line,
-                    column: props.column
+                    loc: props.loc,
                 });
             } else if (tag === 'input' && attributes.type === 'text' && k === 'onChange') {
                 new_attrs.onChange = (e) => props.post({
@@ -107,9 +108,7 @@ function Html(props: HtmlProps) {
                     handler: events[k].handler,
                     route: events[k].route,
                     args: { type: 'string', value: e.target.value },
-                    file_name: props.file_name,
-                    line: props.line,
-                    column: props.column,
+                    loc: props.loc,
                 });
             } else {
                 console.error(`unrecognised event kind ${k}`);
