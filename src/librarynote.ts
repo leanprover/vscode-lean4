@@ -1,6 +1,6 @@
 import {DocumentLinkProvider, TextDocument, DocumentLink, ProviderResult, Range, workspace, window} from 'vscode';
 
-const seeNoteRegex = /see note \[([^\]]+)\]/gi;
+const seeNoteRegex = /note \[([^\]]+)\]/gi;
 const libraryNoteRegex = /library_note "(.*)"/g;
 
 export class LibraryNoteLinkProvider implements DocumentLinkProvider {
