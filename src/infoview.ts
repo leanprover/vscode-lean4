@@ -9,7 +9,7 @@ import {
     Uri, ViewColumn, WebviewPanel, window, workspace,
 } from 'vscode';
 import { Server } from './server';
-import { DisplayMode, WidgetEventMessage, ToInfoviewMessage, InfoProps, ServerStatus, FromInfoviewMessage, InfoViewState, Location, Config, InsertTextMessage, ServerRequestMessage } from './typings'
+import { DisplayMode, WidgetEventMessage, ToInfoviewMessage, InfoProps, ServerStatus, FromInfoviewMessage, InfoViewState, Location, Config, InsertTextMessage, ServerRequestMessage, RevealMessage, HoverPositionMessage, locationEq } from './typings'
 import { StaticServer } from './staticserver';
 
 export class InfoProvider implements Disposable {
@@ -25,13 +25,15 @@ export class InfoProvider implements Disposable {
 
     private started: boolean = false;
     private stopped: boolean = false;
-    private curFileName: string = null;
-    private curPosition: Position = null;
+
+    private pins: Location[] | null;
+
     private stylesheet: string = null;
 
     private messageFormatters: ((text: string, msg: Message) => string)[] = [];
 
     private hoverDecorationType: TextEditorDecorationType;
+    private stickyDecorationType: TextEditorDecorationType;
 
     constructor(private server: Server, private leanDocs: DocumentSelector, private context: ExtensionContext, private staticServer: StaticServer) {
 
@@ -40,6 +42,10 @@ export class InfoProvider implements Disposable {
         this.hoverDecorationType = window.createTextEditorDecorationType({
             backgroundColor: 'red', // make configurable?
             border: '3px solid red',
+        });
+        this.stickyDecorationType = window.createTextEditorDecorationType({
+            backgroundColor: 'blue', // make configurable?
+            border: '3px solid blue',
         });
         this.updateStylesheet();
         this.proxyConnection = (this.server as any).makeProxyConnection(); // see defn below.
@@ -58,6 +64,40 @@ export class InfoProvider implements Disposable {
                     this.statusShown = false;
                 }
             }),
+            workspace.onDidChangeTextDocument((e) => {
+                if (this.pins && this.pins.length !== 0) {
+                    // stupid cursor math that should be in the vscode API
+                    let changed: boolean = false;
+                    this.pins = this.pins.map(pin => {
+                        if (pin.file_name !== e.document.fileName) { return pin; }
+                        let newPosition = this.positionOfLocation(pin);
+                        for (const chg of e.contentChanges) {
+                            if (newPosition.isAfterOrEqual(chg.range.start)) {
+                                let lines = 0;
+                            for (const c of chg.text) if (c === '\n') lines++;
+                            newPosition = new Position(
+                                chg.range.start.line + Math.max(0, newPosition.line - chg.range.end.line) + lines,
+                                newPosition.line > chg.range.end.line ?
+                                newPosition.character :
+                                lines === 0 ?
+                                chg.range.start.character + Math.max(0, newPosition.character - chg.range.end.character) + chg.text.length :
+                                9999 // too lazy to get column positioning right, and end of the line is a good place
+                                );
+                            }
+                        }
+                        newPosition = e.document.validatePosition(newPosition);
+                        const new_pin = this.makeLocation(pin.file_name, newPosition);
+                        if (!locationEq(new_pin, pin)) {changed = true; }
+                        return new_pin;
+                    });
+                    if (changed) {
+                        this.postMessage({
+                            command: 'sync_pin', pins: this.pins
+                        });
+                    }
+                    this.updatePosition(false);
+                }
+            }),
             commands.registerCommand('_lean.revealPosition', this.revealEditorPosition.bind(this)),
             // commands.registerCommand('_lean.infoView.pause', () => {
             //     this.stopUpdating();
@@ -73,21 +113,6 @@ export class InfoProvider implements Disposable {
                 // this.setMode(DisplayMode.AllMessage);
                 this.openPreview(editor);
             }),
-            // commands.registerTextEditorCommand('lean.infoView.displayGoal', (editor) => {
-            //     this.setMode(DisplayMode.OnlyState);
-            // }),
-            // commands.registerTextEditorCommand('lean.infoView.displayList', (editor) => {
-            //     this.setMode(DisplayMode.AllMessage);
-            // }),
-            // commands.registerTextEditorCommand('lean.infoView.copyToComment',
-            //     (editor) => this.copyToComment(editor)),
-            // commands.registerTextEditorCommand('lean.infoView.toggleUpdating', (editor) => {
-            //     if (this.stopped) {
-            //         this.setMode(this.displayMode);
-            //     } else {
-            //         this.stopUpdating();
-            //     }
-            // }),
             this.proxyConnection,
             this.proxyConnection.error.on(e =>
                 this.postMessage({
@@ -101,6 +126,37 @@ export class InfoProvider implements Disposable {
                     payload: JSON.stringify(e)
                 })
             ),
+            commands.registerCommand('lean.infoView.displayGoal', () => {
+                this.setMode(DisplayMode.OnlyState);
+            }),
+            commands.registerCommand('lean.infoView.displayList', () => {
+                this.setMode(DisplayMode.AllMessage);
+            }),
+            // commands.registerTextEditorCommand('lean.infoView.copyToComment',
+            //     (editor) => this.copyToComment(editor)),
+            // commands.registerCommand('lean.infoView.toggleUpdating', () => {
+            //     if (this.stopped) {
+            //         this.setMode(this.displayMode);
+            //     } else {
+            //         this.stopUpdating();
+            //     }
+            // }),
+            // commands.registerTextEditorCommand('lean.infoView.toggleStickyPosition', (editor) => {
+            //     if (this.stickyPosition) {
+            //         this.stickyPosition = false;
+            //         for (const ed of window.visibleTextEditors) {
+            //             if (ed.document.languageId === 'lean') {
+            //                 ed.setDecorations(this.stickyDecorationType, []);
+            //             }
+            //         }
+            //         this.updatePosition(false);
+            //     } else {
+            //         this.stickyPosition = true;
+            //         const pos = editor.selection.active;
+            //         editor.setDecorations(this.stickyDecorationType, [new Range(pos, pos)]);
+            //         this.updatePosition(false, pos);
+            //     }
+            // }),
         );
         if (this.server.alive()) {
             this.autoOpen();
@@ -167,17 +223,14 @@ export class InfoProvider implements Disposable {
     /** Handle a message incoming from the webview. */
     private handleMessage(message: FromInfoviewMessage) {
         switch (message.command) {
-            // case 'selectFilter':
-            //     workspace.getConfiguration('lean').update('infoViewFilterIndex',
-            //         message.filterId, true);
-            //     // the workspace configuration change already forces a rerender
-            //     return;
-            // case 'hoverPosition':
-            //     this.hoverEditorPosition(message.data[0], message.data[1], message.data[2],
-            //         message.data[3], message.data[4]);
-            //     return;
-            // case 'stopHover':
-            //     this.stopHover();
+            case 'hover_position':
+                this.hoverEditorPosition(message);
+                return;
+            case 'stop_hover':
+                this.stopHover(message);
+                return;
+            // case 'copy_to_comment_response':
+            //     this.handleCopyToCommentResponse(message);
             //     return;
             case 'insert_text':
                 this.handleInsertText(message);
@@ -188,18 +241,6 @@ export class InfoProvider implements Disposable {
             case 'reveal':
                 this.revealEditorPosition(Uri.parse(message.loc.file_name), message.loc.line, message.loc.column);
                 return;
-            // case 'widget_event':
-            //     this.handleWidgetEvent(message);
-            //     return;
-            // case 'set_pin':
-            //     this.pins.push({...message});
-            //     return;
-            // case 'unset_pin':
-            //     this.pins.filter(x => !(
-            //         x.file_name === message.file_name &&
-            //         x.line === message.line &&
-            //         x.column === message.column));
-            //     return;
         }
     }
     private handleServerRequest(message: ServerRequestMessage) {
@@ -229,17 +270,17 @@ export class InfoProvider implements Disposable {
         }
     }
 
-    /** post a position message to the infoview. */
-    private sendPosition() {
-        this.postMessage({
-            command: 'position',
-            loc : {
-                file_name: this.curFileName,
-                line: this.curPosition.line + 1,
-                column: this.curPosition.character,
-            }
-        });
+    private positionOfLocation(l: Location): Position {
+        return new Position(l.line - 1, l.column);
     }
+    private makeLocation(file_name: string, pos: Position): Location {
+        return {
+            file_name,
+            line: pos.line + 1,
+            column: pos.character,
+        }
+    }
+
     private sendConfig() {
         this.postMessage({
             command: 'on_config_change',
@@ -281,8 +322,8 @@ export class InfoProvider implements Disposable {
         }
     }
 
-    private hoverEditorPosition(uri: string, line: number, column: number,
-        endLine: number, endColumn: number) {
+    private hoverEditorPosition(message: HoverPositionMessage) {
+        const {uri, line, column, endLine, endColumn} = message;
         for (const editor of window.visibleTextEditors) {
             if (editor.document.uri.toString() === uri) {
                 const pos = new Position(line - 1, column);
@@ -293,7 +334,7 @@ export class InfoProvider implements Disposable {
         }
     }
 
-    private stopHover() {
+    private stopHover(message) {
         for (const editor of window.visibleTextEditors) {
             if (editor.document.languageId === 'lean') {
                 editor.setDecorations(this.hoverDecorationType, []);
@@ -301,85 +342,19 @@ export class InfoProvider implements Disposable {
         }
     }
 
-    private changePosition() {
-        if (!window.activeTextEditor ||
-            !languages.match(this.leanDocs, window.activeTextEditor.document)) {
-            return;
-        }
-
-        const oldFileName = this.curFileName;
-        const oldPosition = this.curPosition;
-
-        this.curFileName = window.activeTextEditor.document.fileName;
-        this.curPosition = window.activeTextEditor.selection.active;
-
-        return (this.curFileName !== oldFileName || !this.curPosition.isEqual(oldPosition));
-    }
-
     private updatePosition(forceRefresh: boolean) {
-        const chPos = this.changePosition();
-        if (!chPos && !forceRefresh) {
+        if (!forceRefresh) {
             return;
         }
         this.postMessage({
             command: 'position',
-            loc: this.getLocation(),
+            loc: this.getActiveLocation(),
         });
-        // if (this.stopped) { return; }
-
-        // const chPos = this.changePosition();
-        // if (!chPos && !forceRefresh) {
-        //     return;
-        // }
-
-        // // clear type in status bar item
-        // this.statusBarItem.text = '';
-
-        // /* updateTypeStatus is only called from the cases of the following switch-block, so pausing
-        //    live-updates to the infoview (via this.stopped) also pauses the type status bar item */
-        // switch (this.displayMode) {
-        //     case DisplayMode.OnlyState:
-        //         const chGoal = await this.updateGoal();
-        //         if (chPos || chGoal || chMsg) {
-        //             this.rerender();
-        //         } else if (forceRefresh) {
-        //             this.postMessage({ command: 'continue' });
-        //         }
-        //         break;
-
-        //     case DisplayMode.AllMessage:
-        //         if (workspace.getConfiguration('lean').get('typeInStatusBar')) {
-        //             const info = await this.server.info(
-        //                 this.curFileName, this.curPosition.line + 1, this.curPosition.character);
-        //             this.updateTypeStatus(info);
-        //         }
-        //         if (forceRefresh || chMsg) {
-        //             this.rerender();
-        //         } else {
-        //             this.sendPosition();
-        //         }
-        //         break;
-        // }
     }
 
-    private getLocation(): Location | null {
-        if (this.curFileName === null || this.curPosition === null) {return null; }
-        return {
-            file_name: this.curFileName,
-            line: this.curPosition.line + 1,
-            column: this.curPosition.character
-        };
-    }
-
-    private toInfoProps(l: Location, m: InfoResponse): InfoProps {
-        const record: any = m.record;
-        return {
-            widget: record && record.widget ? JSON.stringify(record.widget) : undefined, // [note] there is a bug in vscode where the whole window will irrecoverably hang if the json depth is too high.
-            goalState: record && record.state,
-            ...l,
-            location_name: `${Uri.file(l.file_name)}:${this.curPosition.line}:${this.curPosition.character}`,
-            base_name: basename(l.file_name),
-        }
+    private getActiveLocation(): Location | null {
+        if (!window.activeTextEditor || !languages.match(this.leanDocs, window.activeTextEditor.document)) {return null; }
+        return this.makeLocation(window.activeTextEditor.document.fileName, window.activeTextEditor.selection.active);
     }
 
     private updateTypeStatus(info: InfoResponse) {
@@ -416,19 +391,4 @@ export class InfoProvider implements Disposable {
             </body>
             </html>`
     }
-
-    // private async copyToComment(editor: TextEditor) {
-    //     await editor.edit((builder) => {
-    //         builder.insert(editor.selection.end.with({ character: 0 }).translate({ lineDelta: 1 }),
-    //             '/-\n' + this.renderText() + '\n-/\n');
-    //     });
-    // }
-    // private renderText(): string {
-    //     const msgText = this.curMessages &&
-    //         this.curMessages.map((m) =>
-    //             `${basename(m.file_name)}:${m.pos_line}:${m.pos_col}: ${m.severity} ${m.caption}\n${m.text}`,
-    //         ).join('\n');
-    //     const goalText = this.curGoalState ? `Tactic State:\n${this.curGoalState}\n` : '';
-    //     return goalText + msgText;
-    // }
 }

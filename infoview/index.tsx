@@ -26,7 +26,7 @@ function Info(props: InfoProps) {
 
     const {loc, isPinned, isCursor, onEdit, onPin} = props;
     const [widget, setWidget] = React.useState<{html: WidgetComponent | null} | null>(null);
-    const [goalState, setGoalState] = React.useState(null);
+    const [goalState, setGoalState] = React.useState<string | null>(null);
 
     function updateInfo() {
         if (props.loc === null) {
@@ -46,7 +46,7 @@ function Info(props: InfoProps) {
             });
     }
 
-    React.useEffect(() => updateInfo(), [props.loc]);
+    React.useEffect(() => updateInfo(), [props.loc.line, props.loc.column, props.loc.file_name]);
 
     async function handleWidgetEvent(e: {kind; handler: WidgetEventHandler; args}) {
         console.log('got widget event', e);
@@ -76,6 +76,11 @@ function Info(props: InfoProps) {
         }
     }
 
+    function copyToComment() {
+        if (!goalState) {return; }
+        post({ command: 'insert_text', text: `/-\n${goalState}\n-/\n`})
+    }
+
     if (loc === null) {
         return <div>Waiting for info... </div>
     }
@@ -84,6 +89,7 @@ function Info(props: InfoProps) {
             <summary className="ma1 pa1">
                 {`${basename(loc.file_name)}:${loc.line}:${loc.column}`}
                 <span className="fr">
+                    {goalState && <a className="link pointer" onClick={() => copyToComment()}>copy to comment</a>}
                     <a className="link pointer" onClick={() => onPin(!isPinned)}>{isPinned ? 'unpin' : 'pin'}</a>
                 </span>
             </summary>
@@ -122,17 +128,6 @@ function Main(props: {}) {
     const [messages, setMessages] = React.useState<Message[]>([]);
     const [curLoc, setCurLoc] = React.useState<Location | null>(null);
     const [pinnedLocs, setPinnedLocs] = React.useState<Location[]>([]);
-    React.useEffect(() => {
-        const me = global_server.allMessages.on(x => setMessages(x.msgs));
-        const pe = PositionEvent.on(l => setCurLoc(l));
-        const ce = ConfigEvent.on(l => setConfig(l));
-        return () => {
-            me.dispose();
-            pe.dispose();
-            ce.dispose();
-        }
-    });
-
     function onEdit(loc,text) {
         return post({
             command: 'insert_text',
@@ -140,14 +135,31 @@ function Main(props: {}) {
             text
         });
     }
+    React.useEffect(() => {
+        const me = global_server.allMessages.on(x => setMessages(x.msgs));
+        const pe = PositionEvent.on(l => setCurLoc(l));
+        const ce = ConfigEvent.on(l => setConfig(l));
+        const de = SyncPinEvent.on(l => setPinnedLocs(l.pins));
+        return () => {
+            me.dispose();
+            pe.dispose();
+            ce.dispose();
+            de.dispose();
+        }
+    });
+
 
     const isPinned = loc => pinnedLocs.some(l => locationEq(l, loc));
     const pin = () => {
         if (isPinned(curLoc)) {return; }
-        setPinnedLocs([...pinnedLocs, curLoc]);
+        const pins = [...pinnedLocs, curLoc];
+        setPinnedLocs(pins);
+        post({command:'sync_pin', pins})
     }
     const unpin = (idx) => () => {
-        setPinnedLocs(pinnedLocs.filter((l,i) => i !== idx));
+        const pins = pinnedLocs.filter((l,i) => i !== idx);
+        setPinnedLocs(pins);
+        post({command:'sync_pin', pins})
     }
 
     return <>
@@ -160,10 +172,11 @@ function Main(props: {}) {
 
 const PositionEvent: Event<Location> = new Event();
 const ConfigEvent: Event<Config> = new Event();
+const SyncPinEvent: Event<{pins: Location[]}> = new Event();
 
 window.addEventListener('message', event => { // messages from the extension
     const message: ToInfoviewMessage = event.data; // The JSON data our extension sent
-    console.log('Recieved from extension:', message);
+    console.log('Received from extension:', message);
     switch (message.command) {
         case 'position':
             PositionEvent.fire(message.loc);
@@ -171,6 +184,11 @@ window.addEventListener('message', event => { // messages from the extension
         case 'on_config_change':
             ConfigEvent.fire(message.config);
             break;
+        case 'sync_pin':
+            SyncPinEvent.fire(message);
+            break;
+        // case 'copy_to_comment_request':
+        //     CopyToCommentEvent.fire(message);
     }
 });
 

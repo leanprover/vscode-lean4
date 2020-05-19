@@ -126,7 +126,8 @@ export interface InfoViewState {
 
 export interface InsertTextMessage {
     command: 'insert_text';
-    loc: Location;
+    /** If no location is given set to be the cursor position. */
+    loc?: Location;
     text: string;
 }
 export interface RevealMessage {
@@ -137,17 +138,29 @@ export interface ServerRequestMessage {
     command: 'server_request';
     payload: string;
 }
+export interface HoverPositionMessage {
+    command: 'hover_position';
+    uri: string; line: number; column: number; endLine: number; endColumn: number;
+}
 
-export type FromInfoviewMessage = ServerRequestMessage | InsertTextMessage | RevealMessage
+export interface SyncPinMessage {
+    command: 'sync_pin';
+    pins: Location[];
+}
+
+export type FromInfoviewMessage =
+    | ServerRequestMessage
+    | InsertTextMessage
+    | RevealMessage
+    // | {command: 'copy_to_comment_response'; text: string}
+    | HoverPositionMessage
+    | {command: 'stop_hover'}
+    | SyncPinMessage
 
 /** Message from the extension to the infoview */
-export type ToInfoviewMessage = {
-    command: 'server_event' | 'server_error';
-    payload: string; // payloads have to be stringified json because vscode crashes if the depth is too big.
-} | {command: 'position'; loc: Location}
-// | {command: 'on_all_messages'; messages: Message[]}
-// | {command: 'on_server_status_changed'; status: ServerStatus}
-| {
-    command: 'on_config_change';
-    config: Config;
-}
+export type ToInfoviewMessage =
+    | { command: 'server_event' | 'server_error'; payload: string} // payloads have to be stringified json because vscode crashes if the depth is too big. }
+    | { command: 'position'; loc: Location}
+    | { command: 'on_config_change'; config: Config}
+    | SyncPinMessage
+    // | { command: 'copy_to_comment_request'; loc: Location }
