@@ -26,7 +26,6 @@ interface CollapsibleProps {
     children;
     className?: string;
     headerClassName?: string;
-    toolbar?;
 }
 export function Collapsible(props: CollapsibleProps) {
     const [collapsed, set] = React.useState(false);
@@ -35,13 +34,8 @@ export function Collapsible(props: CollapsibleProps) {
             <a className='pointer dim link pa1 ma1 bn'
             onClick={() => set(!collapsed)}>
                 {collapsed ? '⮞' : '⮟'}
-            </a>,
-            <span className={props.headerClassName}>{props.title}</span>,
-            {toolbar &&
-                <span className="fr">
-                    {toolbar}
-                </span>
-            }
+            </a>
+            <span className={props.headerClassName}>{props.title}</span>
         </h1>
         <div className='ml1' hidden={collapsed}>
             {props.children}

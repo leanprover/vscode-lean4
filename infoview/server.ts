@@ -1,4 +1,4 @@
-import { Server, Transport, Connection, Event, TransportError } from 'lean-client-js-node';
+import { Server, Transport, Connection, Event, TransportError } from 'lean-client-js-core';
 import { ToInfoviewMessage, FromInfoviewMessage } from '../src/typings';
 declare const acquireVsCodeApi;
 const vscode = acquireVsCodeApi();
@@ -57,3 +57,5 @@ class ProxyConnection implements Connection {
 }
 
 export const global_server = new Server(new ProxyTransport());
+global_server.logMessagesToConsole = true;
+global_server.connect();

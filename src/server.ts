@@ -225,6 +225,7 @@ export class Server extends leanclient.Server {
     }
 }
 
+// [hack] this needs to be made a PR for lean-client-js-core
 // @ts-ignore
 leanclient.Server.prototype.makeProxyConnection = function () {
     const translate: Map<number,number> = new Map();

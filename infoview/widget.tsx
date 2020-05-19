@@ -1,35 +1,10 @@
 
 import * as React from 'react';
 import * as ReactPopper from 'react-popper';
-import { WidgetEventMessage, WidgetEventResponse, Location } from '../src/typings';
+import { WidgetEventMessage, Location, WidgetHtml, isWidgetElement, WidgetComponent, WidgetElement } from '../src/typings';
 import './popper.css'
 import { Collapsible } from './util';
-
-/** This is everything that lean needs to know to figure out which event handler to fire in the VM. */
-interface EventHandlerId {
-    route: number[];
-    handler: number;
-}
-
-interface WidgetElement {
-    tag: 'div' | 'span' | 'hr' | 'button' | 'input'; // ... etc
-    children: html[];
-    attributes: { [k: string]: any };
-    events: {
-        'onClick'?: EventHandlerId;
-        'onMouseEnter'?: EventHandlerId;
-        'onMouseLeave'?: EventHandlerId;
-    };
-    tooltip?: html;
-}
-type component = html[]
-
-type html =
-    | component
-    | string
-    | WidgetElement
-    | null
-
+import { LocationContext } from '.';
 
 const Popper = (props) => {
     const { children, popperContent, refEltTag, refEltAttrs } = props;
@@ -55,73 +30,79 @@ const Popper = (props) => {
 }
 
 export interface WidgetProps {
-    widget?: string;
-    loc: Location;
+    widget?: {html:  WidgetComponent};
     post: (e: WidgetEventMessage) => void;
 }
 
 export function Widget(props: WidgetProps): JSX.Element {
     if (!props.widget) { return null; }
-    const widget_json: HtmlProps = JSON.parse(props.widget);
-    if (!widget_json) { return null; }
-    widget_json.post = props.post;
-    widget_json.loc = props.loc;
     return <Collapsible title="Widget">
-        {Html(widget_json)}
+        {ViewHtml({
+            html: props.widget.html,
+            post: props.post,
+        })}
     </Collapsible>
 }
 
-interface HtmlProps extends Location {
-    html: html[] | null;
-    loc: Location;
+interface HtmlProps {
+    html: WidgetComponent;
     post: (e: WidgetEventMessage) => void;
 }
 
-function Html(props: HtmlProps) {
-    const { html, ...rest } = props;
-    return html.map(w => {
-        if (typeof w === 'string') { return w; }
-        if (w instanceof Array) { return Html({ html: w, ...rest }); }
-        const { tag, children, tooltip } = w;
-        let { attributes, events } = w;
-        if (tag === 'hr') { return <hr />; }
-        attributes = attributes || {};
-        events = events || {};
-        const new_attrs: any = {};
-        for (const k of Object.getOwnPropertyNames(attributes)) {
-            new_attrs[k] = attributes[k];
-        }
-        for (const k of Object.getOwnPropertyNames(events)) {
-            if (['onClick', 'onMouseEnter', 'onMouseLeave'].includes(k)) {
-                new_attrs[k] = (e) => props.post({
-                    command: 'widget_event',
-                    kind: k as any,
-                    handler: events[k].handler,
-                    route: events[k].route,
-                    args: { type: 'unit' },
-                    loc: props.loc,
-                });
-            } else if (tag === 'input' && attributes.type === 'text' && k === 'onChange') {
-                new_attrs.onChange = (e) => props.post({
-                    command: 'widget_event',
-                    kind: 'onChange',
-                    handler: events[k].handler,
-                    route: events[k].route,
-                    args: { type: 'string', value: e.target.value },
-                    loc: props.loc,
-                });
-            } else {
-                console.error(`unrecognised event kind ${k}`);
-            }
-        }
-        if (tooltip) {
-            return <Popper popperContent={Html({ html: [tooltip], ...rest })} refEltTag={tag} refEltAttrs={new_attrs} key={new_attrs.key}>{Html({ html: children, ...rest })}</Popper>
-        } else if (children.length > 0) {
-            return React.createElement(tag, new_attrs, Html({ html: children, ...rest }));
-        } else {
-            return React.createElement(tag, new_attrs);
-        }
-    });
+function ViewHtml(props: {html: WidgetHtml; post}) {
+    const {html, ...rest} = props;
+    if (typeof html === 'string') {
+        return html;
+    } else if (!isWidgetElement(html)) {
+        return ViewWidgetComponent({html, ...rest});
+    } else {
+        return ViewWidgetElement({ w:html, ...rest });
+    }
 }
 
+function ViewWidgetElement(props: {w: WidgetElement; post}) {
+    const {w, loc, post} = props;
+    const { t:tag, c:children, tt:tooltip } = w;
+    let { a:attributes, e:events } = w;
+    if (tag === 'hr') { return <hr />; }
+    attributes = attributes || {};
+    events = events || {};
+    const new_attrs: any = {};
+    for (const k of Object.getOwnPropertyNames(attributes)) {
+        new_attrs[k] = attributes[k];
+    }
+    for (const k of Object.getOwnPropertyNames(events)) {
+        if (['onClick', 'onMouseEnter', 'onMouseLeave'].includes(k)) {
+            new_attrs[k] = (e) => post({
+                command: 'widget_event',
+                kind: k as any,
+                handler: events[k],
+                args: { type: 'unit' }
+            });
+        } else if (tag === 'input' && attributes.type === 'text' && k === 'onChange') {
+            new_attrs.onChange = (e) => post({
+                command: 'widget_event',
+                kind: 'onChange',
+                handler: events[k],
+                args: { type: 'string', value: e.target.value }
+            });
+        } else {
+            console.error(`unrecognised event kind ${k}`);
+        }
+    }
+    const vs = children.map(html => ViewHtml({html, post}));
+    if (tooltip) {
+        return <Popper popperContent={ViewHtml({ html: tooltip, post })} refEltTag={tag} refEltAttrs={new_attrs} key={new_attrs.key}>
+            {vs}
+        </Popper>
+    } else if (children.length > 0) {
+        return React.createElement(tag, new_attrs, vs);
+    } else {
+        return React.createElement(tag, new_attrs);
+    }
+}
+
+function ViewWidgetComponent(props: HtmlProps) {
+    return props.html.c.map(html => ViewHtml({...props, html}))
+}
 

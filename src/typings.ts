@@ -41,14 +41,47 @@ interface WidgetEventResponseError {
 }
 export type WidgetEventResponse = WidgetEventResponseSuccess | WidgetEventResponseInvalid | WidgetEventResponseEdit | WidgetEventResponseError
 
+export interface WidgetEventHandler {
+    /** handler id */
+    h: number;
+    /** route */
+    r: number[];
+}
 
-export interface WidgetEventMessage {
+export interface WidgetElement {
+    /** tag */
+    t: 'div' | 'span' | 'hr' | 'button' | 'input'; // ... etc ... any string
+    /** children */
+    c: WidgetHtml[];
+    /** attributes */
+    a: { [k: string]: any };
+    /** events */
+    e: {
+        'onClick'?: WidgetEventHandler;
+        'onMouseEnter'?: WidgetEventHandler;
+        'onMouseLeave'?: WidgetEventHandler;
+    };
+    /** tooltip */
+    tt?: WidgetHtml;
+}
+export interface WidgetComponent {
+    /** children */
+    c: WidgetHtml[];
+}
+export function isWidgetElement(h: WidgetHtml): h is WidgetElement { return typeof h === 'object' && (h as any).t !== undefined}
+// function isComponent(h: html): h is component { return typeof h === 'object' && (h as any).t === undefined }
+export type WidgetHtml =
+    | WidgetComponent
+    | string
+    | WidgetElement
+    | null
+
+
+export interface WidgetEventMessage extends Location {
     command: 'widget_event';
     kind: 'onClick' | 'onMouseEnter' | 'onMouseLeave' | 'onChange';
-    handler: number;
-    route: number[];
+    handler: WidgetEventHandler;
     args: { type: 'unit' } | { type: 'string'; value: string };
-    loc: Location;
 }
 
 export enum DisplayMode {

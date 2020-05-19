@@ -42,7 +42,7 @@ export class InfoProvider implements Disposable {
             border: '3px solid red',
         });
         this.updateStylesheet();
-        this.proxyConnection = this.server.makeProxyConnection();
+        this.proxyConnection = (this.server as any).makeProxyConnection(); // see defn below.
         this.subscriptions.push(
             this.server.restarted.on(() => {
                 this.autoOpen();
@@ -316,45 +316,54 @@ export class InfoProvider implements Disposable {
         return (this.curFileName !== oldFileName || !this.curPosition.isEqual(oldPosition));
     }
 
-    private async updatePosition(forceRefresh: boolean) {
-        if (this.stopped) { return; }
-
+    private updatePosition(forceRefresh: boolean) {
         const chPos = this.changePosition();
         if (!chPos && !forceRefresh) {
             return;
         }
+        this.postMessage({
+            command: 'position',
+            loc: this.getLocation(),
+        });
+        // if (this.stopped) { return; }
 
-        // clear type in status bar item
-        this.statusBarItem.text = '';
+        // const chPos = this.changePosition();
+        // if (!chPos && !forceRefresh) {
+        //     return;
+        // }
 
-        /* updateTypeStatus is only called from the cases of the following switch-block, so pausing
-           live-updates to the infoview (via this.stopped) also pauses the type status bar item */
-        switch (this.displayMode) {
-            case DisplayMode.OnlyState:
-                const chGoal = await this.updateGoal();
-                if (chPos || chGoal || chMsg) {
-                    this.rerender();
-                } else if (forceRefresh) {
-                    this.postMessage({ command: 'continue' });
-                }
-                break;
+        // // clear type in status bar item
+        // this.statusBarItem.text = '';
 
-            case DisplayMode.AllMessage:
-                if (workspace.getConfiguration('lean').get('typeInStatusBar')) {
-                    const info = await this.server.info(
-                        this.curFileName, this.curPosition.line + 1, this.curPosition.character);
-                    this.updateTypeStatus(info);
-                }
-                if (forceRefresh || chMsg) {
-                    this.rerender();
-                } else {
-                    this.sendPosition();
-                }
-                break;
-        }
+        // /* updateTypeStatus is only called from the cases of the following switch-block, so pausing
+        //    live-updates to the infoview (via this.stopped) also pauses the type status bar item */
+        // switch (this.displayMode) {
+        //     case DisplayMode.OnlyState:
+        //         const chGoal = await this.updateGoal();
+        //         if (chPos || chGoal || chMsg) {
+        //             this.rerender();
+        //         } else if (forceRefresh) {
+        //             this.postMessage({ command: 'continue' });
+        //         }
+        //         break;
+
+        //     case DisplayMode.AllMessage:
+        //         if (workspace.getConfiguration('lean').get('typeInStatusBar')) {
+        //             const info = await this.server.info(
+        //                 this.curFileName, this.curPosition.line + 1, this.curPosition.character);
+        //             this.updateTypeStatus(info);
+        //         }
+        //         if (forceRefresh || chMsg) {
+        //             this.rerender();
+        //         } else {
+        //             this.sendPosition();
+        //         }
+        //         break;
+        // }
     }
 
-    private getLocation(): Location {
+    private getLocation(): Location | null {
+        if (this.curFileName === null || this.curPosition === null) {return null; }
         return {
             file_name: this.curFileName,
             line: this.curPosition.line + 1,

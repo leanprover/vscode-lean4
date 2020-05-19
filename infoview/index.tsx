@@ -1,9 +1,9 @@
 import { global_server, post } from './server';
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
-import { WidgetEventMessage, DisplayMode, Location, InfoViewState, ToInfoviewMessage, ServerStatus, FromInfoviewMessage, Config, defaultConfig, locationKey, WidgetEventResponse } from '../src/typings';
+import { WidgetEventMessage, ToInfoviewMessage, ServerStatus, Config, defaultConfig, WidgetEventResponse, WidgetEventHandler, Location, WidgetHtml, WidgetComponent } from '../src/typings';
 import { Widget } from './widget';
-import { Message, Event } from 'lean-client-js-node';
+import { Message, Event } from 'lean-client-js-core';
 import './tachyons.css'
 import './index.css'
 import { Collapsible, basename } from './util';
@@ -11,20 +11,28 @@ import { MessagesFor } from './messages';
 import { Goal } from './goal';
 
 interface InfoProps {
-    loc: Location;
+    loc: Location | null;
     isPinned: boolean;
     onEdit: (l: Location, text: string) => void;
 }
 
 export const ConfigContext = React.createContext<Config>(defaultConfig);
 export const MessagesContext = React.createContext<Message[]>([]);
+export const LocationContext = React.createContext<Location | null>(null);
 
 function Info(props: InfoProps) {
-    const [widget, setWidget] = React.useState(null);
+
+    const {loc, isPinned, onEdit} = props;
+    const [widget, setWidget] = React.useState<{html: WidgetComponent | null} | null>(null);
     const [goalState, setGoalState] = React.useState(null);
 
     function updateInfo() {
-        global_server.info(props.loc.file_name, props.loc.line, props.loc.column)
+        if (props.loc === null) {
+            setWidget(null);
+            setGoalState(null);
+            return;
+        }
+        global_server.info(loc.file_name, loc.line, loc.column)
             .then((info) => {
                 const record: any = info.record;
                 if (record && record.widget) {
@@ -38,11 +46,15 @@ function Info(props: InfoProps) {
 
     React.useEffect(() => updateInfo(), [props.loc]);
 
-    async function handleWidgetEvent(e: {kind; handler; route; args}) {
+    async function handleWidgetEvent(e: {kind; handler: WidgetEventHandler; args}) {
         console.log('got widget event', e);
+        if (props.loc === null) {
+            updateInfo();
+            return;
+        }
         const message: WidgetEventMessage = {
             command: 'widget_event',
-            loc: props.loc,
+            ...props.loc,
             ...e,
         }
         const result: any = await global_server.send(message);
@@ -55,19 +67,31 @@ function Info(props: InfoProps) {
             setWidget(record.widget);
             this.props.onEdit(props.loc, record.action);
         } else if (record.status === 'invalid_handler') {
-            console.warn(`No widget_event update for {${message.handler}, ${message.route}}: invalid handler.`)
+            console.warn(`No widget_event update for ${message.handler}: invalid handler.`)
             updateInfo();
         } else if (record.status === 'error') {
             console.error(`Update gave an error: ${record.message}`);
         }
     }
 
-    const toolbar = props.isPinned ? <a onClick={() => {}}>unpin</a> : <a onClick={() => { }}>pin</a>;
-    return <Collapsible title={`${basename(props.loc.file_name)}:${props.loc.line}:${props.loc.column}`} toolbar={toolbar}>
-        <Widget widget={widget} post={e => handleWidgetEvent(e)} />
-        <Goal goalState={goalState} />
-        <MessagesFor loc={props.loc} />
-    </Collapsible>
+    if (props.loc === null) {
+        return <div>Waiting for info... </div>
+    }
+    return <LocationContext.Provider value={props.loc}>
+        <details className="ma1" open>
+            <summary className="ma1 pa1">
+                {`${basename(props.loc.file_name)}:${props.loc.line}:${props.loc.column}`}
+                <span className="fr">
+                    {props.isPinned ? <a onClick={() => {}}>unpin</a> : <a onClick={() => { }}>pin</a>}
+                </span>
+            </summary>
+            <div className="ml2">
+                <Widget widget={widget} post={e => handleWidgetEvent(e)} />
+                <Goal goalState={goalState} />
+                <MessagesFor loc={props.loc}/>
+            </div>
+        </details>
+    </LocationContext.Provider>;
 }
 
 function StatusView(props: ServerStatus) {
@@ -127,6 +151,7 @@ const ConfigEvent: Event<Config> = new Event();
 
 window.addEventListener('message', event => { // messages from the extension
     const message: ToInfoviewMessage = event.data; // The JSON data our extension sent
+    console.log(`Recieved from extension: ${message}`);
     switch (message.command) {
         case 'position':
             PositionEvent.fire(message.loc);

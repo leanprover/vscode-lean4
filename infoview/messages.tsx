@@ -1,7 +1,7 @@
 import { basename, escapeHtml, colorizeMessage, Collapsible } from './util';
 import { Message } from 'lean-client-js-node';
 import React = require('react');
-import { Location, DisplayMode, Config } from '../src/typings';
+import { Location, DisplayMode } from '../src/typings';
 import { MessagesContext, ConfigContext } from '.';
 
 function compareMessages(m1: Message, m2: Message): boolean {
@@ -82,7 +82,7 @@ export function MessagesFor(props: MessagesForProps) {
 
         case DisplayMode.AllMessage:
             msgs = allMessages
-                .filter((m) => m.file_name === l.file_name)
+                .filter((m) => m.file_name === loc.file_name)
                 .sort((a, b) => a.pos_line === b.pos_line
                     ? a.pos_col - b.pos_col
                     : a.pos_line - b.pos_line);
