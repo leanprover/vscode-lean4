@@ -1,19 +1,21 @@
 import { global_server, post } from './server';
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
-import { WidgetEventMessage, ToInfoviewMessage, ServerStatus, Config, defaultConfig, WidgetEventResponse, WidgetEventHandler, Location, WidgetHtml, WidgetComponent } from '../src/typings';
+import { WidgetEventMessage, ToInfoviewMessage, ServerStatus, Config, defaultConfig, WidgetEventResponse, WidgetEventHandler, Location, WidgetComponent, locationKey, locationEq } from '../src/typings';
 import { Widget } from './widget';
 import { Message, Event } from 'lean-client-js-core';
 import './tachyons.css'
 import './index.css'
-import { Collapsible, basename } from './util';
+import { basename } from './util';
 import { MessagesFor } from './messages';
 import { Goal } from './goal';
 
 interface InfoProps {
     loc: Location | null;
     isPinned: boolean;
+    isCursor: boolean;
     onEdit: (l: Location, text: string) => void;
+    onPin: (new_pin_state: boolean) => void;
 }
 
 export const ConfigContext = React.createContext<Config>(defaultConfig);
@@ -22,7 +24,7 @@ export const LocationContext = React.createContext<Location | null>(null);
 
 function Info(props: InfoProps) {
 
-    const {loc, isPinned, onEdit} = props;
+    const {loc, isPinned, isCursor, onEdit, onPin} = props;
     const [widget, setWidget] = React.useState<{html: WidgetComponent | null} | null>(null);
     const [goalState, setGoalState] = React.useState(null);
 
@@ -65,7 +67,7 @@ function Info(props: InfoProps) {
             setWidget(record.widget);
         } else if (record.status === 'edit') {
             setWidget(record.widget);
-            this.props.onEdit(props.loc, record.action);
+            onEdit(props.loc, record.action);
         } else if (record.status === 'invalid_handler') {
             console.warn(`No widget_event update for ${message.handler}: invalid handler.`)
             updateInfo();
@@ -74,28 +76,29 @@ function Info(props: InfoProps) {
         }
     }
 
-    if (props.loc === null) {
+    if (loc === null) {
         return <div>Waiting for info... </div>
     }
-    return <LocationContext.Provider value={props.loc}>
+    return <LocationContext.Provider value={loc}>
         <details className="ma1" open>
             <summary className="ma1 pa1">
-                {`${basename(props.loc.file_name)}:${props.loc.line}:${props.loc.column}`}
+                {`${basename(loc.file_name)}:${loc.line}:${loc.column}`}
                 <span className="fr">
-                    {props.isPinned ? <a onClick={() => {}}>unpin</a> : <a onClick={() => { }}>pin</a>}
+                    <a className="link pointer" onClick={() => onPin(!isPinned)}>{isPinned ? 'unpin' : 'pin'}</a>
                 </span>
             </summary>
-            <div className="ml2">
+            <div className="ml1">
                 <Widget widget={widget} post={e => handleWidgetEvent(e)} />
                 <Goal goalState={goalState} />
-                <MessagesFor loc={props.loc}/>
+                <MessagesFor loc={loc}/>
             </div>
         </details>
     </LocationContext.Provider>;
 }
 
 function StatusView(props: ServerStatus) {
-    return <Collapsible title="Tasks">
+    return <details open>
+        <summary className="ma1 pa1">Tasks</summary>
         <p>Running: {props.isRunning}</p>
         <table> <tbody>
             <tr key="header"><th>File Name</th>
@@ -110,7 +113,7 @@ function StatusView(props: ServerStatus) {
             </tr>)}
         </tbody>
         </table>
-    </Collapsible>
+    </details>
 }
 
 function Main(props: {}) {
@@ -138,10 +141,19 @@ function Main(props: {}) {
         });
     }
 
+    const isPinned = loc => pinnedLocs.some(l => locationEq(l, loc));
+    const pin = () => {
+        if (isPinned(curLoc)) {return; }
+        setPinnedLocs([...pinnedLocs, curLoc]);
+    }
+    const unpin = (idx) => () => {
+        setPinnedLocs(pinnedLocs.filter((l,i) => i !== idx));
+    }
+
     return <>
         <ConfigContext.Provider value={config}><MessagesContext.Provider value={messages}>
-            <Info loc={curLoc} key="cursor" isPinned={false} onEdit={onEdit}/>
-            {pinnedLocs.map((l,i) => <Info loc={l} key={i} isPinned={true} onEdit={onEdit}/>)}
+            {pinnedLocs.map((l,i) => <Info loc={l} key={locationKey(l)} isPinned={true} isCursor={locationEq(l,curLoc)} onEdit={onEdit} onPin={unpin(i)}/>)}
+            {!isPinned(curLoc) && <Info loc={curLoc} key="cursor" isPinned={false} isCursor={true} onEdit={onEdit} onPin={pin}/>}
         </MessagesContext.Provider></ConfigContext.Provider>
     </>
 }
@@ -151,7 +163,7 @@ const ConfigEvent: Event<Config> = new Event();
 
 window.addEventListener('message', event => { // messages from the extension
     const message: ToInfoviewMessage = event.data; // The JSON data our extension sent
-    console.log(`Recieved from extension: ${message}`);
+    console.log('Recieved from extension:', message);
     switch (message.command) {
         case 'position':
             PositionEvent.fire(message.loc);

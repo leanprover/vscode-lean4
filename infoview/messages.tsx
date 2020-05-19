@@ -1,8 +1,9 @@
-import { basename, escapeHtml, colorizeMessage, Collapsible } from './util';
+import { basename, escapeHtml, colorizeMessage } from './util';
 import { Message } from 'lean-client-js-node';
 import React = require('react');
 import { Location, DisplayMode } from '../src/typings';
 import { MessagesContext, ConfigContext } from '.';
+import { DefaultSerializer } from 'v8';
 
 function compareMessages(m1: Message, m2: Message): boolean {
     return (m1.file_name === m2.file_name &&
@@ -22,24 +23,25 @@ export function MessageView(m: Message) {
     const shouldColorize = m.severity === 'error';
     let text = escapeHtml(m.text)
     text = shouldColorize ? colorizeMessage(text) : text;
-    return <Collapsible title={`${b}:${l}:${c}`} headerClassName={m.severity}>
-        <pre className="font-code" dangerouslySetInnerHTML={{ __html: text }} />
-    </Collapsible>
-    // return <div className={`message ${m.severity}`} data-line={l} data-column={c} data-end-line={el} data-end-column={ec}>
-    //     <h1 title={`${f}:${l}:${c}`}>
-    //         <a href={cmd}>
-    //             {b}:{l}:{c}: {m.severity} {escapeHtml(m.caption)}
-    //         </a>
-    //     </h1>
-    //     <pre className="font-code" dangerouslySetInnerHTML={{ __html: text }} />
-    // </div>;
+    const title = `${b}:${l}:${c}`;
+    return <details open>
+        <summary className={m.severity + ' ma1 pa1'}>{title}</summary>
+        <div className="ml1">
+            <pre className="font-code ws-normal" dangerouslySetInnerHTML={{ __html: text }} />
+        </div>
+    </details>
 }
 
 export function Messages(props: {messages: Message[]}): JSX.Element {
     if (!props.messages || props.messages.length === 0) { return null; }
     const msgs = (props.messages || []).map(m =>
       <MessageView {...m} key={m.file_name + m.pos_line + m.pos_col + m.caption}/>);
-    return <Collapsible title="Messages">{msgs}</Collapsible>
+    return <details open>
+        <summary className="ma1 pa1">Messages</summary>
+        <div className="ml1">
+            {msgs}
+        </div>
+    </details>
 }
 
 interface MessagesForProps {

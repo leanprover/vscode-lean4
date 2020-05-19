@@ -14,6 +14,9 @@ export interface Location {
 export function locationKey(l: Location): string {
     return `${l.file_name}:${l.line}:${l.column}`;
 }
+export function locationEq(l1: Location, l2: Location) {
+    return l1.column === l2.column && l1.line === l2.line && l1.file_name === l2.file_name
+}
 
 export interface ServerStatus {
     stopped: boolean;

@@ -1,10 +1,7 @@
-
 import * as React from 'react';
 import * as ReactPopper from 'react-popper';
 import { WidgetEventMessage, Location, WidgetHtml, isWidgetElement, WidgetComponent, WidgetElement } from '../src/typings';
-import './popper.css'
-import { Collapsible } from './util';
-import { LocationContext } from '.';
+import './popper.css';
 
 const Popper = (props) => {
     const { children, popperContent, refEltTag, refEltAttrs } = props;
@@ -36,12 +33,13 @@ export interface WidgetProps {
 
 export function Widget(props: WidgetProps): JSX.Element {
     if (!props.widget) { return null; }
-    return <Collapsible title="Widget">
+    return <details  open>
+        <summary className="ma1 pa1">Widget</summary>
         {ViewHtml({
             html: props.widget.html,
             post: props.post,
         })}
-    </Collapsible>
+    </details>
 }
 
 interface HtmlProps {
@@ -61,7 +59,7 @@ function ViewHtml(props: {html: WidgetHtml; post}) {
 }
 
 function ViewWidgetElement(props: {w: WidgetElement; post}) {
-    const {w, loc, post} = props;
+    const {w, post, ...rest} = props;
     const { t:tag, c:children, tt:tooltip } = w;
     let { a:attributes, e:events } = w;
     if (tag === 'hr') { return <hr />; }
@@ -90,9 +88,9 @@ function ViewWidgetElement(props: {w: WidgetElement; post}) {
             console.error(`unrecognised event kind ${k}`);
         }
     }
-    const vs = children.map(html => ViewHtml({html, post}));
+    const vs = children.map(html => ViewHtml({html, post, ...rest}));
     if (tooltip) {
-        return <Popper popperContent={ViewHtml({ html: tooltip, post })} refEltTag={tag} refEltAttrs={new_attrs} key={new_attrs.key}>
+        return <Popper popperContent={ViewHtml({ html: tooltip, post, ...rest })} refEltTag={tag} refEltAttrs={new_attrs} key={new_attrs.key}>
             {vs}
         </Popper>
     } else if (children.length > 0) {

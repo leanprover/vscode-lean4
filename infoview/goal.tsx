@@ -1,13 +1,13 @@
 import { DisplayMode } from '../src/typings';
 import * as React from 'react';
-import { Collapsible, colorizeMessage, escapeHtml } from './util';
+import { colorizeMessage, escapeHtml } from './util';
 import { ConfigContext } from './index';
 
 interface GoalProps {
     goalState: string;
 }
 
-export function Goal(props : GoalProps): JSX.Element {
+export function Goal(props: GoalProps): JSX.Element {
     const config = React.useContext(ConfigContext);
     if (!props.goalState || config.displayMode !== DisplayMode.OnlyState) { return null; }
     const reFilters = config.infoViewTacticStateFilters || [];
@@ -25,7 +25,7 @@ export function Goal(props : GoalProps): JSX.Element {
             }).join('\n');
     }
     goalString = colorizeMessage(escapeHtml(goalString));
-    return <Collapsible title="Tactic State">
-        <pre className="font-code" dangerouslySetInnerHTML={{ __html: goalString }} />
-    </Collapsible>
+    return <details><summary>Tactic State</summary>
+        <pre className="font-code ml1" dangerouslySetInnerHTML={{ __html: goalString }} />
+    </details>
 }
