@@ -2,7 +2,7 @@
 	"name": "lean",
 	"displayName": "lean",
 	"description": "An extension for VS Code which provides support for the Lean language.",
-	"version": "0.15.12",
+	"version": "0.15.14",
 	"publisher": "jroesch",
 	"engines": {
 		"vscode": "^1.38.0"
@@ -232,13 +232,27 @@
 				"command": "lean.openDocView",
 				"category": "Lean",
 				"title": "Open Documentation View",
-				"description": "Opens the online version of TPIL"
+				"description": "Open documentation panel"
 			},
 			{
 				"command": "lean.infoView.copyToComment",
 				"category": "Lean",
 				"title": "Info View: Copy Contents to Comment",
-				"description": "Copy the current contents of the info view into a new comment on the next line."
+				"description": "Copy the current contents of the info view into a new comment on the next line.",
+				"icon": {
+					"dark": "./media/copy-to-comment-dark.svg",
+					"light": "./media/copy-to-comment-light.svg"
+				}
+			},
+			{
+				"command": "lean.infoView.toggleStickyPosition",
+				"category": "Lean",
+				"title": "Info View: Toggle Sticky Position",
+				"description": "Mark the current position of the cursor for goal reporting, instead of tracking the cursor.",
+				"icon": {
+					"dark": "./media/toggle-sticky-position-dark.svg",
+					"light": "./media/toggle-sticky-position-light.svg"
+				}
 			},
 			{
 				"command": "lean.infoView.toggleUpdating",
@@ -352,6 +366,18 @@
 				"key": "alt+v",
 				"mac": "alt+v",
 				"when": "editorTextFocus && editorLangId == lean"
+			},
+			{
+				"command": "lean.infoView.displayGoal",
+				"key": "ctrl+shift+enter",
+				"mac": "cmd+shift+enter",
+				"when": "infoViewFocused"
+			},
+			{
+				"command": "lean.infoView.displayList",
+				"key": "ctrl+shift+alt+enter",
+				"mac": "cmd+shift+alt+enter",
+				"when": "infoViewFocused"
 			}
 		],
 		"menus": {
@@ -377,38 +403,52 @@
 					"when": "editorLangId == lean"
 				},
 				{
+					"command": "lean.infoView.toggleStickyPosition",
+					"when": "editorLangId == lean"
+				},
+				{
 					"command": "lean.infoView.displayGoal",
-					"when": "resourceSchema == lean-info"
+					"when": "infoViewFocused"
 				},
 				{
 					"command": "lean.infoView.displayList",
-					"when": "resourceSchema == lean-info"
+					"when": "infoViewFocused"
 				},
 				{
 					"command": "lean.infoView.toggleUpdating",
-					"when": "resourceSchema == lean-info"
+					"when": "editorLangId == lean || infoViewFocused"
 				}
 			],
 			"editor/title": [
 				{
 					"command": "lean.displayList",
 					"when": "editorLangId == lean",
-					"group": "navigation"
+					"group": "navigation@1"
 				},
 				{
 					"command": "lean.displayGoal",
 					"when": "editorLangId == lean",
-					"group": "navigation"
+					"group": "navigation@2"
 				},
 				{
 					"command": "lean.infoView.displayList",
-					"when": "resourceScheme == lean-info",
-					"group": "navigation"
+					"when": "infoViewFocused",
+					"group": "navigation@1"
 				},
 				{
 					"command": "lean.infoView.displayGoal",
-					"when": "resourceScheme == lean-info",
-					"group": "navigation"
+					"when": "infoViewFocused",
+					"group": "navigation@2"
+				},
+				{
+					"command": "lean.infoView.copyToComment",
+					"when": "editorLangId == lean",
+					"group": "navigation@3"
+				},
+				{
+					"command": "lean.infoView.toggleStickyPosition",
+					"when": "editorLangId == lean",
+					"group": "navigation@4"
 				}
 			]
 		}

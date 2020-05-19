@@ -18,6 +18,7 @@ import { LeanStatusBarItem } from './statusbar';
 import { LeanSyncService } from './sync';
 import { LeanTaskGutter, LeanTaskMessages } from './taskgutter';
 import { StaticServer } from './staticserver';
+import { LibraryNoteLinkProvider } from './librarynote';
 
 // Seeing .olean files in the source tree is annoying, we should
 // just globally hide them.
@@ -124,4 +125,7 @@ export function activate(context: ExtensionContext) {
     });
 
     context.subscriptions.push(new LeanpkgService(server));
+
+    context.subscriptions.push(languages.registerDocumentLinkProvider(LEAN_MODE,
+        new LibraryNoteLinkProvider()));
 }
