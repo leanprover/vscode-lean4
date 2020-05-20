@@ -1,7 +1,7 @@
 import { basename, escapeHtml, colorizeMessage } from './util';
 import { Message } from 'lean-client-js-node';
 import React = require('react');
-import { Location, DisplayMode } from '../src/typings';
+import { Location, DisplayMode, Config } from '../src/typings';
 import { MessagesContext, ConfigContext } from '.';
 import { DefaultSerializer } from 'v8';
 
@@ -32,16 +32,12 @@ export function MessageView(m: Message) {
     </details>
 }
 
-export function Messages(props: {messages: Message[]; title?: string, defaultOpen?: boolean}): JSX.Element {
-    if (!props.messages || props.messages.length === 0) { return null; }
+export function Messages(props: {messages: Message[]}): JSX.Element {
+    const should_hide = !props.messages || props.messages.length === 0;
+    if (should_hide) {return <>No messages.</>}
     const msgs = (props.messages || []).map(m =>
       <MessageView {...m} key={m.file_name + m.pos_line + m.pos_col + m.caption}/>);
-    return  <details open={props.defaultOpen === undefined ? true : props.defaultOpen}>
-        <summary className="mv2 pointer">{props.title || 'Messages'}</summary>
-        <div className="ml3">
-            {msgs}
-        </div>
-    </details>
+    return <>{msgs}</>;
 }
 
 interface MessagesForProps {
@@ -51,17 +47,14 @@ interface MessagesForProps {
 export function AllMessages(props: {file_name?: string}) {
     const allMessages = React.useContext(MessagesContext);
     const msgs = allMessages
-    .filter((m) => props.file_name ? m.file_name === props.file_name : true)
-    .sort((a, b) => a.pos_line === b.pos_line
-        ? a.pos_col - b.pos_col
-        : a.pos_line - b.pos_line);
-    return <Messages title="All Messages" messages={msgs}/>
+        .filter((m) => props.file_name ? m.file_name === props.file_name : true)
+        .sort((a, b) => a.pos_line === b.pos_line
+            ? a.pos_col - b.pos_col
+            : a.pos_line - b.pos_line);
+    return <Messages messages={msgs}/>
 }
 
-export function MessagesFor(props: MessagesForProps) {
-    const allMessages = React.useContext(MessagesContext);
-    const config = React.useContext(ConfigContext);
-    const loc = props.loc;
+export function GetMessagesFor(allMessages: Message[], loc: Location, config: Config) {
     let msgs: Message[];
     /* Heuristic: find first position to the left which has messages attached,
         from that on show all messages in this line */
@@ -88,5 +81,5 @@ export function MessagesFor(props: MessagesForProps) {
             msgs = msgs.slice(startPos);
         }
     }
-    return <Messages messages={msgs}/>
+    return msgs;
 }

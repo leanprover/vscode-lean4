@@ -76,7 +76,12 @@ function Main(props: {}) {
         <ConfigContext.Provider value={config}><MessagesContext.Provider value={messages}>
             {pinnedLocs.map((l,i) => <Info loc={l} key={locationKey(l)} isPinned={true} isCursor={locationEq(l,curLoc)} onEdit={onEdit} onPin={unpin(i)}/>)}
             {!isPinned(curLoc) && <Info loc={curLoc} key="cursor" isPinned={false} isCursor={true} onEdit={onEdit} onPin={pin}/>}
-            {config.displayMode === DisplayMode.AllMessage && <AllMessages/>}
+            <details className={(config.displayMode === DisplayMode.AllMessage ? '' : 'dn')}>
+                <summary className="mv2">All Messages</summary>
+                <div className="ml3">
+                    <AllMessages/>
+                </div>
+            </details>
         </MessagesContext.Provider></ConfigContext.Provider>
     </div>
 }

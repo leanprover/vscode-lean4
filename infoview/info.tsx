@@ -1,10 +1,10 @@
 import { WidgetComponent, Location, WidgetEventHandler, WidgetEventMessage, WidgetEventResponse } from '../src/typings';
 import * as React from 'react';
 import { global_server, post } from './server';
-import { LocationContext } from '.';
+import { LocationContext, MessagesContext, ConfigContext } from '.';
 import { Widget } from './widget';
 import { Goal } from './goal';
-import { MessagesFor } from './messages';
+import { GetMessagesFor, Messages } from './messages';
 import { basename } from './util';
 
 interface InfoProps {
@@ -16,10 +16,11 @@ interface InfoProps {
 }
 
 export function Info(props: InfoProps) {
-
     const {loc, isPinned, isCursor, onEdit, onPin} = props;
     const [widget, setWidget] = React.useState<{html: WidgetComponent | null} | null>(null);
     const [goalState, setGoalState] = React.useState<string | null>(null);
+    const allMessages = React.useContext(MessagesContext);
+    const config = React.useContext(ConfigContext);
 
     function updateInfo() {
         if (props.loc === null) {
@@ -30,12 +31,8 @@ export function Info(props: InfoProps) {
         global_server.info(loc.file_name, loc.line, loc.column)
             .then((info) => {
                 const record: any = info.record;
-                if (record && record.widget) {
-                    setWidget(record.widget);
-                }
-                if (record && record.state) {
-                    setGoalState(record.state);
-                }
+                setWidget(record && record.widget);
+                setGoalState(record && record.state);
             });
     }
 
@@ -78,6 +75,8 @@ export function Info(props: InfoProps) {
         return <div>Waiting for info... </div>
     }
     const border_style = 'pl2 bl pointer ' + (isCursor ? 'b--blue ' : 'b--yellow ');
+    const messages = GetMessagesFor(allMessages, loc, config);
+    const nothing_to_show = !widget && !goalState && messages.length === 0;
     return <LocationContext.Provider value={loc}>
         <details className={border_style} open
           onMouseEnter={() => post({command:'hover_position', loc})}
@@ -90,9 +89,20 @@ export function Info(props: InfoProps) {
                 </span>
             </summary>
             <div className="ml3">
-                <Widget widget={widget} post={e => handleWidgetEvent(e)} />
-                <Goal goalState={goalState} />
-                <MessagesFor loc={loc}/>
+                <details open className={widget ? '' : 'dn'}>
+                    <summary className="mv2 pointer">Widget</summary>
+                    <div className="ml3">
+                        <Widget widget={widget} post={e => handleWidgetEvent(e)} />
+                    </div>
+                </details>
+                <details open className={goalState ? '' : 'dn'}>
+                    <summary className="mv2 pointer">Tactic State</summary>
+                    <Goal goalState={goalState} />
+                </details>
+                <details open className={messages.length === 0 ? 'dn' : '0'}>
+                    <summary className="mv2 pointer">Messages</summary>
+                    <Messages messages={messages}/>
+                </details>
             </div>
         </details>
     </LocationContext.Provider>;

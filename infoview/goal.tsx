@@ -25,7 +25,5 @@ export function Goal(props: GoalProps): JSX.Element {
             }).join('\n');
     }
     goalString = colorizeMessage(escapeHtml(goalString));
-    return <details open><summary className="mv2 pointer">Tactic State</summary>
-        <pre className="font-code ml3" dangerouslySetInnerHTML={{ __html: goalString }} />
-    </details>
+    return <pre className="font-code ml3" dangerouslySetInnerHTML={{ __html: goalString }} />
 }
