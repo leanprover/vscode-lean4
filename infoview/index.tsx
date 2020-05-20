@@ -1,11 +1,12 @@
 import { global_server, post, PositionEvent, ConfigEvent, SyncPinEvent } from './server';
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
-import { ServerStatus, Config, defaultConfig,  Location, locationKey, locationEq } from '../src/typings';
+import { ServerStatus, Config, defaultConfig,  Location, locationKey, locationEq, DisplayMode } from '../src/typings';
 import { Message } from 'lean-client-js-core';
 import './tachyons.css' // stylesheet assumed by Lean widgets. See https://tachyons.io/ for documentation
 import './index.css'
 import { Info } from './info';
+import { AllMessages } from './messages';
 
 
 export const ConfigContext = React.createContext<Config>(defaultConfig);
@@ -75,6 +76,7 @@ function Main(props: {}) {
         <ConfigContext.Provider value={config}><MessagesContext.Provider value={messages}>
             {pinnedLocs.map((l,i) => <Info loc={l} key={locationKey(l)} isPinned={true} isCursor={locationEq(l,curLoc)} onEdit={onEdit} onPin={unpin(i)}/>)}
             {!isPinned(curLoc) && <Info loc={curLoc} key="cursor" isPinned={false} isCursor={true} onEdit={onEdit} onPin={pin}/>}
+            {config.displayMode === DisplayMode.AllMessage && <AllMessages/>}
         </MessagesContext.Provider></ConfigContext.Provider>
     </div>
 }

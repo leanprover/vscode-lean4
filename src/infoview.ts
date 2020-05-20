@@ -106,11 +106,11 @@ export class InfoProvider implements Disposable {
             //     this.setMode(this.displayMode);
             // }),
             commands.registerTextEditorCommand('lean.displayGoal', (editor) => {
-                // this.setMode(DisplayMode.OnlyState);
+                this.setMode(DisplayMode.OnlyState);
                 this.openPreview(editor);
             }),
             commands.registerTextEditorCommand('lean.displayList', (editor) => {
-                // this.setMode(DisplayMode.AllMessage);
+                this.setMode(DisplayMode.AllMessage);
                 this.openPreview(editor);
             }),
             this.proxyConnection,
@@ -342,7 +342,7 @@ export class InfoProvider implements Disposable {
     private stopHover(message) {
         for (const editor of window.visibleTextEditors) {
             if (editor.document.languageId === 'lean') {
-                // editor.setDecorations(this.hoverDecorationType, []);
+                editor.setDecorations(this.hoverDecorationType, []);
             }
         }
     }

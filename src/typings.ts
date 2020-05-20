@@ -109,7 +109,7 @@ export interface Config {
 export const defaultConfig = {
     filterIndex: -1,
     infoViewTacticStateFilters: [],
-    infoViewAllErrorsOnLine: false,
+    infoViewAllErrorsOnLine: true,
     displayMode: DisplayMode.AllMessage,
 }
 
