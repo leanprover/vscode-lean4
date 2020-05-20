@@ -33,12 +33,14 @@ export interface WidgetProps {
 
 export function Widget(props: WidgetProps): JSX.Element {
     if (!props.widget) { return null; }
-    return <details  open>
-        <summary className="ma1 pa1">Widget</summary>
+    return <details open>
+        <summary className="mv2">Widget</summary>
+        <div className="ml3">
         {ViewHtml({
             html: props.widget.html,
             post: props.post,
         })}
+        </div>
     </details>
 }
 

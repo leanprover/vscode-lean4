@@ -53,8 +53,8 @@ export class InfoProvider implements Disposable {
             this.server.restarted.on(() => {
                 this.autoOpen();
             }),
-            window.onDidChangeActiveTextEditor(() => this.updatePosition(false)),
-            window.onDidChangeTextEditorSelection(() => this.updatePosition(false)),
+            window.onDidChangeActiveTextEditor(() => this.sendPosition()),
+            window.onDidChangeTextEditorSelection(() => this.sendPosition()),
             workspace.onDidChangeConfiguration((e) => {
                 // regression; changing the style needs a reload. :/
                 this.updateStylesheet();
@@ -95,7 +95,7 @@ export class InfoProvider implements Disposable {
                             command: 'sync_pin', pins: this.pins
                         });
                     }
-                    this.updatePosition(false);
+                    this.sendPosition();
                 }
             }),
             commands.registerCommand('_lean.revealPosition', this.revealEditorPosition.bind(this)),
@@ -195,7 +195,7 @@ export class InfoProvider implements Disposable {
                 workspace.getConfiguration('lean').get('infoViewAutoOpenShowGoal', true) ?
                     DisplayMode.OnlyState : DisplayMode.AllMessage);
             this.openPreview(window.activeTextEditor);
-            this.updatePosition(false);
+            this.sendPosition();
             this.sendConfig();
         }
     }
@@ -240,6 +240,9 @@ export class InfoProvider implements Disposable {
                 return;
             case 'reveal':
                 this.revealEditorPosition(Uri.parse(message.loc.file_name), message.loc.line, message.loc.column);
+                return;
+            case 'sync_pin':
+                this.pins = message.pins;
                 return;
         }
     }
@@ -300,7 +303,7 @@ export class InfoProvider implements Disposable {
             this.webviewPanel.title = this.displayMode === DisplayMode.OnlyState ? 'Lean Goal' : 'Lean Messages';
         }
         this.stopped = false;
-        this.updatePosition(true);
+        this.sendPosition();
         this.sendConfig();
     }
 
@@ -323,9 +326,11 @@ export class InfoProvider implements Disposable {
     }
 
     private hoverEditorPosition(message: HoverPositionMessage) {
-        const {uri, line, column, endLine, endColumn} = message;
+        const {file_name, line, column} = message.loc;
+        const endLine = line; // [todo]
+        const endColumn = column;
         for (const editor of window.visibleTextEditors) {
-            if (editor.document.uri.toString() === uri) {
+            if (editor.document.uri.path === file_name) {
                 const pos = new Position(line - 1, column);
                 const endPos = new Position(endLine - 1, endColumn);
                 const range = new Range(pos, endPos);
@@ -337,22 +342,21 @@ export class InfoProvider implements Disposable {
     private stopHover(message) {
         for (const editor of window.visibleTextEditors) {
             if (editor.document.languageId === 'lean') {
-                editor.setDecorations(this.hoverDecorationType, []);
+                // editor.setDecorations(this.hoverDecorationType, []);
             }
         }
     }
 
-    private updatePosition(forceRefresh: boolean) {
-        if (!forceRefresh) {
-            return;
-        }
+    private sendPosition() {
+        const loc = this.getActiveCursorLocation();
+        if (loc === null) {return; }
         this.postMessage({
             command: 'position',
-            loc: this.getActiveLocation(),
+            loc,
         });
     }
 
-    private getActiveLocation(): Location | null {
+    private getActiveCursorLocation(): Location | null {
         if (!window.activeTextEditor || !languages.match(this.leanDocs, window.activeTextEditor.document)) {return null; }
         return this.makeLocation(window.activeTextEditor.document.fileName, window.activeTextEditor.selection.active);
     }

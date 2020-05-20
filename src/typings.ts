@@ -140,7 +140,8 @@ export interface ServerRequestMessage {
 }
 export interface HoverPositionMessage {
     command: 'hover_position';
-    uri: string; line: number; column: number; endLine: number; endColumn: number;
+    loc: Location;
+    // uri: string; line: number; column: number; endLine: number; endColumn: number;
 }
 
 export interface SyncPinMessage {

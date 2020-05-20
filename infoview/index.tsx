@@ -1,110 +1,20 @@
-import { global_server, post } from './server';
+import { global_server, post, PositionEvent, ConfigEvent, SyncPinEvent } from './server';
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
-import { WidgetEventMessage, ToInfoviewMessage, ServerStatus, Config, defaultConfig, WidgetEventResponse, WidgetEventHandler, Location, WidgetComponent, locationKey, locationEq } from '../src/typings';
-import { Widget } from './widget';
-import { Message, Event } from 'lean-client-js-core';
-import './tachyons.css'
+import { ServerStatus, Config, defaultConfig,  Location, locationKey, locationEq } from '../src/typings';
+import { Message } from 'lean-client-js-core';
+import './tachyons.css' // stylesheet assumed by Lean widgets. See https://tachyons.io/ for documentation
 import './index.css'
-import { basename } from './util';
-import { MessagesFor } from './messages';
-import { Goal } from './goal';
+import { Info } from './info';
 
-interface InfoProps {
-    loc: Location | null;
-    isPinned: boolean;
-    isCursor: boolean;
-    onEdit: (l: Location, text: string) => void;
-    onPin: (new_pin_state: boolean) => void;
-}
 
 export const ConfigContext = React.createContext<Config>(defaultConfig);
 export const MessagesContext = React.createContext<Message[]>([]);
 export const LocationContext = React.createContext<Location | null>(null);
 
-function Info(props: InfoProps) {
-
-    const {loc, isPinned, isCursor, onEdit, onPin} = props;
-    const [widget, setWidget] = React.useState<{html: WidgetComponent | null} | null>(null);
-    const [goalState, setGoalState] = React.useState<string | null>(null);
-
-    function updateInfo() {
-        if (props.loc === null) {
-            setWidget(null);
-            setGoalState(null);
-            return;
-        }
-        global_server.info(loc.file_name, loc.line, loc.column)
-            .then((info) => {
-                const record: any = info.record;
-                if (record && record.widget) {
-                    setWidget(record.widget);
-                }
-                if (record && record.state) {
-                    setGoalState(record.state);
-                }
-            });
-    }
-
-    React.useEffect(() => updateInfo(), [props.loc.line, props.loc.column, props.loc.file_name]);
-
-    async function handleWidgetEvent(e: {kind; handler: WidgetEventHandler; args}) {
-        console.log('got widget event', e);
-        if (props.loc === null) {
-            updateInfo();
-            return;
-        }
-        const message: WidgetEventMessage = {
-            command: 'widget_event',
-            ...props.loc,
-            ...e,
-        }
-        const result: any = await global_server.send(message);
-        console.log('received from server', result);
-        if (!result.record) { return; }
-        const record: WidgetEventResponse = result.record;
-        if (record.status === 'success' && record.widget) {
-            setWidget(record.widget);
-        } else if (record.status === 'edit') {
-            setWidget(record.widget);
-            onEdit(props.loc, record.action);
-        } else if (record.status === 'invalid_handler') {
-            console.warn(`No widget_event update for ${message.handler}: invalid handler.`)
-            updateInfo();
-        } else if (record.status === 'error') {
-            console.error(`Update gave an error: ${record.message}`);
-        }
-    }
-
-    function copyToComment() {
-        if (!goalState) {return; }
-        post({ command: 'insert_text', text: `/-\n${goalState}\n-/\n`})
-    }
-
-    if (loc === null) {
-        return <div>Waiting for info... </div>
-    }
-    return <LocationContext.Provider value={loc}>
-        <details className="ma1" open>
-            <summary className="ma1 pa1">
-                {`${basename(loc.file_name)}:${loc.line}:${loc.column}`}
-                <span className="fr">
-                    {goalState && <a className="link pointer" onClick={() => copyToComment()}>copy to comment</a>}
-                    <a className="link pointer" onClick={() => onPin(!isPinned)}>{isPinned ? 'unpin' : 'pin'}</a>
-                </span>
-            </summary>
-            <div className="ml1">
-                <Widget widget={widget} post={e => handleWidgetEvent(e)} />
-                <Goal goalState={goalState} />
-                <MessagesFor loc={loc}/>
-            </div>
-        </details>
-    </LocationContext.Provider>;
-}
-
 function StatusView(props: ServerStatus) {
     return <details open>
-        <summary className="ma1 pa1">Tasks</summary>
+        <summary className="mv2">Tasks</summary>
         <p>Running: {props.isRunning}</p>
         <table> <tbody>
             <tr key="header"><th>File Name</th>
@@ -148,7 +58,6 @@ function Main(props: {}) {
         }
     });
 
-
     const isPinned = loc => pinnedLocs.some(l => locationEq(l, loc));
     const pin = () => {
         if (isPinned(curLoc)) {return; }
@@ -162,35 +71,13 @@ function Main(props: {}) {
         post({command:'sync_pin', pins})
     }
 
-    return <>
+    return <div className="ma2">
         <ConfigContext.Provider value={config}><MessagesContext.Provider value={messages}>
             {pinnedLocs.map((l,i) => <Info loc={l} key={locationKey(l)} isPinned={true} isCursor={locationEq(l,curLoc)} onEdit={onEdit} onPin={unpin(i)}/>)}
             {!isPinned(curLoc) && <Info loc={curLoc} key="cursor" isPinned={false} isCursor={true} onEdit={onEdit} onPin={pin}/>}
         </MessagesContext.Provider></ConfigContext.Provider>
-    </>
+    </div>
 }
-
-const PositionEvent: Event<Location> = new Event();
-const ConfigEvent: Event<Config> = new Event();
-const SyncPinEvent: Event<{pins: Location[]}> = new Event();
-
-window.addEventListener('message', event => { // messages from the extension
-    const message: ToInfoviewMessage = event.data; // The JSON data our extension sent
-    console.log('Received from extension:', message);
-    switch (message.command) {
-        case 'position':
-            PositionEvent.fire(message.loc);
-            break;
-        case 'on_config_change':
-            ConfigEvent.fire(message.config);
-            break;
-        case 'sync_pin':
-            SyncPinEvent.fire(message);
-            break;
-        // case 'copy_to_comment_request':
-        //     CopyToCommentEvent.fire(message);
-    }
-});
 
 const domContainer = document.querySelector('#react_root');
 ReactDOM.render(<Main/>, domContainer);
