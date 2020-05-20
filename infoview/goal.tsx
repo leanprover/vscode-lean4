@@ -9,7 +9,7 @@ interface GoalProps {
 
 export function Goal(props: GoalProps): JSX.Element {
     const config = React.useContext(ConfigContext);
-    if (!props.goalState || config.displayMode !== DisplayMode.OnlyState) { return null; }
+    if (!props.goalState) { return null; }
     const reFilters = config.infoViewTacticStateFilters || [];
     const filterIndex = config.filterIndex ?? -1;
     let goalString = props.goalState.replace(/^(no goals)/mg, 'goals accomplished')
@@ -25,7 +25,7 @@ export function Goal(props: GoalProps): JSX.Element {
             }).join('\n');
     }
     goalString = colorizeMessage(escapeHtml(goalString));
-    return <details open><summary className="mv2">Tactic State</summary>
+    return <details open><summary className="mv2 pointer">Tactic State</summary>
         <pre className="font-code ml3" dangerouslySetInnerHTML={{ __html: goalString }} />
     </details>
 }

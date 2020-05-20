@@ -15,7 +15,7 @@ export const LocationContext = React.createContext<Location | null>(null);
 
 function StatusView(props: ServerStatus) {
     return <details open>
-        <summary className="mv2">Tasks</summary>
+        <summary className="mv2 pointer">Tasks</summary>
         <p>Running: {props.isRunning}</p>
         <table> <tbody>
             <tr key="header"><th>File Name</th>

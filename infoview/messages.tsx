@@ -25,7 +25,7 @@ export function MessageView(m: Message) {
     text = shouldColorize ? colorizeMessage(text) : text;
     const title = `${b}:${l}:${c}`;
     return <details open>
-        <summary className={m.severity + ' mv2'}>{title}</summary>
+        <summary className={m.severity + ' mv2 pointer'}>{title}</summary>
         <div className="ml3">
             <pre className="font-code" style={{whiteSpace: 'pre-wrap'}} dangerouslySetInnerHTML={{ __html: text }} />
         </div>
@@ -37,7 +37,7 @@ export function Messages(props: {messages: Message[]; title?: string, defaultOpe
     const msgs = (props.messages || []).map(m =>
       <MessageView {...m} key={m.file_name + m.pos_line + m.pos_col + m.caption}/>);
     return  <details open={props.defaultOpen === undefined ? true : props.defaultOpen}>
-        <summary className="mv2">{props.title || 'Messages'}</summary>
+        <summary className="mv2 pointer">{props.title || 'Messages'}</summary>
         <div className="ml3">
             {msgs}
         </div>

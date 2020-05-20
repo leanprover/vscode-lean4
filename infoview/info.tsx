@@ -77,7 +77,7 @@ export function Info(props: InfoProps) {
     if (loc === null) {
         return <div>Waiting for info... </div>
     }
-    const border_style = 'pl2 bl ' + (isCursor ? 'b--blue ' : 'b--yellow ');
+    const border_style = 'pl2 bl pointer ' + (isCursor ? 'b--blue ' : 'b--yellow ');
     return <LocationContext.Provider value={loc}>
         <details className={border_style} open
           onMouseEnter={() => post({command:'hover_position', loc})}
