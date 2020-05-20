@@ -162,6 +162,6 @@ export type FromInfoviewMessage =
 export type ToInfoviewMessage =
     | { command: 'server_event' | 'server_error'; payload: string} // payloads have to be stringified json because vscode crashes if the depth is too big. }
     | { command: 'position'; loc: Location}
-    | { command: 'on_config_change'; config: Config}
+    | { command: 'on_config_change'; config: Partial<Config>}
     | SyncPinMessage
     // | { command: 'copy_to_comment_request'; loc: Location }

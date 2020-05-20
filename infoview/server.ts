@@ -9,7 +9,7 @@ export function post(message: FromInfoviewMessage) { // send a message to the ex
 }
 
 export const PositionEvent: Event<Location> = new Event();
-export const ConfigEvent: Event<Config> = new Event();
+export const ConfigEvent: Event<Partial<Config>> = new Event();
 export const SyncPinEvent: Event<{pins: Location[]}> = new Event();
 
 window.addEventListener('message', event => { // messages from the extension

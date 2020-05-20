@@ -49,7 +49,7 @@ function Main(props: {}) {
     React.useEffect(() => {
         const me = global_server.allMessages.on(x => setMessages(x.msgs));
         const pe = PositionEvent.on(l => setCurLoc(l));
-        const ce = ConfigEvent.on(l => setConfig(l));
+        const ce = ConfigEvent.on(l => setConfig({...config, ...l}));
         const de = SyncPinEvent.on(l => setPinnedLocs(l.pins));
         return () => {
             me.dispose();
