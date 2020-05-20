@@ -85,8 +85,8 @@ export function Info(props: InfoProps) {
             <summary className="mv2">
                 {`${basename(loc.file_name)}:${loc.line}:${loc.column}`}
                 <span className="fr">
-                    {goalState && <a className="link pointer" onClick={() => copyToComment()}>copy to comment</a>}
-                    <a className="link pointer" onClick={() => onPin(!isPinned)}>{isPinned ? 'unpin' : 'pin'}</a>
+                    {goalState && <a className="link pointer mh3 dim" onClick={e => {e.preventDefault(); copyToComment()}}>copy to comment</a>}
+                    <a className="link pointer mh3 dim" onClick={e => { e.preventDefault(); onPin(!isPinned)}}>{isPinned ? 'unpin' : 'pin'}</a>
                 </span>
             </summary>
             <div className="ml3">

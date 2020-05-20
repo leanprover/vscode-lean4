@@ -252,25 +252,32 @@ export class InfoProvider implements Disposable {
     }
     private async handleInsertText(message: InsertTextMessage) {
         const new_command = message.text;
-        for (const editor of window.visibleTextEditors) {
-            if (editor.document.fileName === message.loc.file_name) {
-                const current_selection_range = editor.selection;
-                const cursor_pos = current_selection_range.active;
-                const prev_line = editor.document.lineAt(message.loc.line - 2);
-                const spaces = prev_line.firstNonWhitespaceCharacterIndex;
-                const margin_str = [...Array(spaces).keys()].map(x => ' ').join('');
-
-                // [hack] for now, we assume that there is only ever one command per line
-                // and that the command should be inserted on the line above this one.
-
-                await editor.edit((builder) => {
-                    builder.insert(
-                        prev_line.range.end,
-                        `\n${margin_str}${new_command}, `);
-                });
-                editor.selection = new Selection(message.loc.line, spaces, message.loc.line, spaces);
+        let editor = null;
+        if (message.loc) {
+           editor = window.visibleTextEditors.find(e => e.document.fileName === message.loc.file_name);
+        } else {
+            editor = window.activeTextEditor;
+            if (!editor) { // sometimes activeTextEditor is null.
+                editor = window.visibleTextEditors[0];
             }
         }
+        if (!editor) {return; }
+        const pos = message.loc ? this.positionOfLocation(message.loc) : editor.selection.active;
+        const current_selection_range = editor.selection;
+        const cursor_pos = current_selection_range.active;
+        const prev_line = editor.document.lineAt(pos.line - 1);
+        const spaces = prev_line.firstNonWhitespaceCharacterIndex;
+        const margin_str = [...Array(spaces).keys()].map(x => ' ').join('');
+
+        // [hack] for now, we assume that there is only ever one command per line
+        // and that the command should be inserted on the line above this one.
+
+        await editor.edit((builder) => {
+            builder.insert(
+                prev_line.range.end,
+                `\n${margin_str}${new_command}`);
+        });
+        editor.selection = new Selection(pos.line, spaces, pos.line, spaces);
     }
 
     private positionOfLocation(l: Location): Position {
