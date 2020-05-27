@@ -149,19 +149,19 @@ export interface SyncPinMessage {
     pins: Location[];
 }
 
+/** Message from the infoview to the extension. */
 export type FromInfoviewMessage =
     | ServerRequestMessage
     | InsertTextMessage
     | RevealMessage
-    // | {command: 'copy_to_comment_response'; text: string}
     | HoverPositionMessage
     | {command: 'stop_hover'}
     | SyncPinMessage
 
-/** Message from the extension to the infoview */
+/** Message from the extension to the infoview. */
 export type ToInfoviewMessage =
     | { command: 'server_event' | 'server_error'; payload: string} // payloads have to be stringified json because vscode crashes if the depth is too big. }
     | { command: 'position'; loc: Location}
     | { command: 'on_config_change'; config: Partial<Config>}
     | SyncPinMessage
-    // | { command: 'copy_to_comment_request'; loc: Location }
+    | { command: 'pause' | 'continue' | 'toggle_updating' | 'copy_to_comment' | 'toggle_pin'}

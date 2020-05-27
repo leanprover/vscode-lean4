@@ -1,6 +1,6 @@
 import { WidgetComponent, Location, WidgetEventHandler, WidgetEventMessage, WidgetEventResponse } from '../src/typings';
 import * as React from 'react';
-import { global_server, post } from './server';
+import { global_server, post, CopyToCommentEvent } from './server';
 import { LocationContext, MessagesContext, ConfigContext } from '.';
 import { Widget } from './widget';
 import { Goal } from './goal';
@@ -8,22 +8,25 @@ import { GetMessagesFor, Messages } from './messages';
 import { basename } from './util';
 
 interface InfoProps {
-    loc: Location | null;
+    loc?: Location;
     isPinned: boolean;
     isCursor: boolean;
     onEdit: (l: Location, text: string) => void;
     onPin: (new_pin_state: boolean) => void;
+    paused: boolean;
+    setPaused: (paused: boolean) => void;
 }
 
 export function Info(props: InfoProps) {
-    const {loc, isPinned, isCursor, onEdit, onPin} = props;
+    const {loc, isPinned, isCursor, onEdit, onPin, paused, setPaused} = props;
     const [widget, setWidget] = React.useState<{html: WidgetComponent | null} | null>(null);
     const [goalState, setGoalState] = React.useState<string | null>(null);
     const allMessages = React.useContext(MessagesContext);
     const config = React.useContext(ConfigContext);
 
     function updateInfo() {
-        if (props.loc === null) {
+        if (paused) { return; }
+        if (!props.loc) {
             setWidget(null);
             setGoalState(null);
             return;
@@ -36,11 +39,16 @@ export function Info(props: InfoProps) {
             });
     }
 
-    React.useEffect(() => updateInfo(), [props.loc && props.loc.line, props.loc && props.loc.column, props.loc && props.loc.file_name]);
+    React.useEffect(() => updateInfo(), [ // perform updateInfo if any of these change.
+        props.loc && props.loc.line,
+        props.loc && props.loc.column,
+        props.loc && props.loc.file_name,
+        paused,
+    ]);
 
     async function handleWidgetEvent(e: {kind; handler: WidgetEventHandler; args}) {
         console.log('got widget event', e);
-        if (props.loc === null) {
+        if (!props.loc) {
             updateInfo();
             return;
         }
@@ -67,11 +75,20 @@ export function Info(props: InfoProps) {
     }
 
     function copyToComment() {
-        if (!goalState) {return; }
+        if (!goalState) { return; }
         post({ command: 'insert_text', text: `/-\n${goalState}\n-/\n`})
     }
 
-    if (loc === null) {
+    // If we are the cursor infoview, then we should subscribe to
+    // some commands from the extension
+    React.useEffect(() => {
+        if (isCursor) {
+            const h = CopyToCommentEvent.on(copyToComment);
+            return () => h.dispose();
+        }
+    }, [isCursor])
+
+    if (!loc) {
         return <div>Waiting for info... </div>
     }
     const border_style = 'pl2 bl pointer ' + (isCursor ? 'b--blue ' : 'b--yellow ');
@@ -84,14 +101,15 @@ export function Info(props: InfoProps) {
             <summary className="mv2">
                 {`${basename(loc.file_name)}:${loc.line}:${loc.column}`}
                 <span className="fr">
-                    {goalState && <a className="link pointer mh3 dim" onClick={e => {e.preventDefault(); copyToComment()}}>copy to comment</a>}
-                    <a className="link pointer mh3 dim" onClick={e => { e.preventDefault(); onPin(!isPinned)}}>{isPinned ? 'unpin' : 'pin'}</a>
+                    {goalState && <a className="link pointer mh3 dim" onClick={e => {e.preventDefault(); copyToComment()}}>copy to comment</a>} {/* [todo] give this a cool icon. */}
+                    <a className="link pointer mh3 dim" onClick={e => { e.preventDefault(); onPin(!isPinned)}}>{isPinned ? 'unpin' : 'pin'}</a> {/* [todo] give this a cool icon. */}
+                    <a className="link pointer mh3 dim" onClick={e => { e.preventDefault(); setPaused(!paused)}}>{paused ? 'unpause' : 'pause'}</a> {/* [todo] give this a cool icon. */}
                 </span>
             </summary>
             <div className="ml3">
                 <details open className={widget ? '' : 'dn'}>
                     <summary className="mv2 pointer">Widget</summary>
-                    <div className="ml3">
+                    <div className={'ml3 ' + (paused ? 'o-60' : '')} >
                         <Widget widget={widget} post={e => handleWidgetEvent(e)} />
                     </div>
                 </details>

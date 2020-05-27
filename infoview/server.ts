@@ -11,34 +11,38 @@ export function post(message: FromInfoviewMessage) { // send a message to the ex
 export const PositionEvent: Event<Location> = new Event();
 export const ConfigEvent: Event<Partial<Config>> = new Event();
 export const SyncPinEvent: Event<{pins: Location[]}> = new Event();
+export const PauseEvent: Event<{}> = new Event();
+export const ContinueEvent: Event<{}> = new Event();
+export const ToggleUpdatingEvent: Event<{}> = new Event();
+export const CopyToCommentEvent: Event<{}> = new Event();
+export const TogglePinEvent: Event<{}> = new Event();
 
 window.addEventListener('message', event => { // messages from the extension
     const message: ToInfoviewMessage = event.data; // The JSON data our extension sent
     console.log('Received from extension:', message);
     switch (message.command) {
-        case 'position':
-            PositionEvent.fire(message.loc);
-            break;
-        case 'on_config_change':
-            ConfigEvent.fire(message.config);
-            break;
-        case 'sync_pin':
-            SyncPinEvent.fire(message);
-            break;
-        // case 'copy_to_comment_request':
-        //     CopyToCommentEvent.fire(message);
+        case 'position': PositionEvent.fire(message.loc); break;
+        case 'on_config_change': ConfigEvent.fire(message.config); break;
+        case 'sync_pin': SyncPinEvent.fire(message); break;
+        case 'pause': PauseEvent.fire(message); break;
+        case 'continue': ContinueEvent.fire(message); break;
+        case 'toggle_updating': ToggleUpdatingEvent.fire(message); break;
+        case 'copy_to_comment': CopyToCommentEvent.fire(message); break;
+        case 'toggle_pin': TogglePinEvent.fire(message); break;
     }
 });
 
 class ProxyTransport implements Transport {
     connect(): Connection {
-        return new ProxyConnection();
+        return new ProxyConnectionClient();
     }
     constructor() { }
 }
 
-/** Forwards all of the messages between extension and webview. */
-class ProxyConnection implements Connection {
+/** Forwards all of the messages between extension and webview.
+ * See also makeProxyConnection on the server.
+ */
+class ProxyConnectionClient implements Connection {
     error: Event<TransportError>;
     jsonMessage: Event<any>;
     alive: boolean;

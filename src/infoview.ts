@@ -92,19 +92,20 @@ export class InfoProvider implements Disposable {
                     });
                     if (changed) {
                         this.postMessage({
-                            command: 'sync_pin', pins: this.pins
+                            command: 'sync_pin',
+                            pins: this.pins,
                         });
                     }
                     this.sendPosition();
                 }
             }),
             commands.registerCommand('_lean.revealPosition', this.revealEditorPosition.bind(this)),
-            // commands.registerCommand('_lean.infoView.pause', () => {
-            //     this.stopUpdating();
-            // }),
-            // commands.registerCommand('_lean.infoView.continue', () => {
-            //     this.setMode(this.displayMode);
-            // }),
+            commands.registerCommand('_lean.infoView.pause', () => {
+                this.postMessage({ command: 'pause' })
+            }),
+            commands.registerCommand('_lean.infoView.continue', () => {
+                this.postMessage({ command: 'continue' })
+            }),
             commands.registerTextEditorCommand('lean.displayGoal', (editor) => {
                 this.setMode(DisplayMode.OnlyState);
                 this.openPreview(editor);
@@ -132,31 +133,15 @@ export class InfoProvider implements Disposable {
             commands.registerCommand('lean.infoView.displayList', () => {
                 this.setMode(DisplayMode.AllMessage);
             }),
-            // commands.registerTextEditorCommand('lean.infoView.copyToComment',
-            //     (editor) => this.copyToComment(editor)),
-            // commands.registerCommand('lean.infoView.toggleUpdating', () => {
-            //     if (this.stopped) {
-            //         this.setMode(this.displayMode);
-            //     } else {
-            //         this.stopUpdating();
-            //     }
-            // }),
-            // commands.registerTextEditorCommand('lean.infoView.toggleStickyPosition', (editor) => {
-            //     if (this.stickyPosition) {
-            //         this.stickyPosition = false;
-            //         for (const ed of window.visibleTextEditors) {
-            //             if (ed.document.languageId === 'lean') {
-            //                 ed.setDecorations(this.stickyDecorationType, []);
-            //             }
-            //         }
-            //         this.updatePosition(false);
-            //     } else {
-            //         this.stickyPosition = true;
-            //         const pos = editor.selection.active;
-            //         editor.setDecorations(this.stickyDecorationType, [new Range(pos, pos)]);
-            //         this.updatePosition(false, pos);
-            //     }
-            // }),
+            commands.registerTextEditorCommand('lean.infoView.copyToComment',() =>
+                this.postMessage({ command: 'copy_to_comment' })
+            ),
+            commands.registerCommand('lean.infoView.toggleUpdating', () => {
+                this.postMessage({ command: 'toggle_updating' })
+            }),
+            commands.registerTextEditorCommand('lean.infoView.toggleStickyPosition', (editor) => {
+                this.postMessage({ command: 'toggle_pin' })
+            }),
         );
         if (this.server.alive()) {
             this.autoOpen();

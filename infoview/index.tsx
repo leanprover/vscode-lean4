@@ -1,4 +1,4 @@
-import { global_server, post, PositionEvent, ConfigEvent, SyncPinEvent } from './server';
+import { global_server, post, PositionEvent, ConfigEvent, SyncPinEvent, PauseEvent, ContinueEvent, ToggleUpdatingEvent, TogglePinEvent } from './server';
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 import { ServerStatus, Config, defaultConfig,  Location, locationKey, locationEq, DisplayMode } from '../src/typings';
@@ -7,7 +7,6 @@ import './tachyons.css' // stylesheet assumed by Lean widgets. See https://tachy
 import './index.css'
 import { Info } from './info';
 import { AllMessages } from './messages';
-
 
 export const ConfigContext = React.createContext<Config>(defaultConfig);
 export const MessagesContext = React.createContext<Message[]>([]);
@@ -33,12 +32,26 @@ function StatusView(props: ServerStatus) {
     </details>
 }
 
+interface InfoProps {
+    loc?: Location;
+    paused: boolean;
+}
+
 function Main(props: {}) {
     if (!props) { return null }
     const [config, setConfig] = React.useState(defaultConfig);
     const [messages, setMessages] = React.useState<Message[]>([]);
-    const [curLoc, setCurLoc] = React.useState<Location | null>(null);
-    const [pinnedLocs, setPinnedLocs] = React.useState<Location[]>([]);
+    const [curLoc, setCurLoc] = React.useState<InfoProps>({paused: false});
+    const [pinnedLocs, setPinnedLocs] = React.useState<InfoProps[]>([]);
+    const setPause = (idx?: number) => (paused: boolean) => {
+        if (idx === undefined) {
+            setCurLoc({...curLoc, paused});
+        } else {
+            const pins = [...pinnedLocs];
+            pins[idx] = {...pins[idx], paused};
+            setPinnedLocs(pins);
+        }
+    }
     function onEdit(loc,text) {
         return post({
             command: 'insert_text',
@@ -47,35 +60,42 @@ function Main(props: {}) {
         });
     }
     React.useEffect(() => {
-        const me = global_server.allMessages.on(x => setMessages(x.msgs));
-        const pe = PositionEvent.on(l => setCurLoc(l));
-        const ce = ConfigEvent.on(l => setConfig({...config, ...l}));
-        const de = SyncPinEvent.on(l => setPinnedLocs(l.pins));
-        return () => {
-            me.dispose();
-            pe.dispose();
-            ce.dispose();
-            de.dispose();
-        }
+        const subscriptions = [
+            global_server.allMessages.on(x => setMessages(x.msgs)),
+            PositionEvent.on(loc => setCurLoc({...curLoc, loc})),
+            ConfigEvent.on(l => setConfig({...config, ...l})),
+            SyncPinEvent.on(l => setPinnedLocs(l.pins.map((loc, i) => ({loc, paused: pinnedLocs[i] && pinnedLocs[i].paused})))),
+            PauseEvent.on(l => setPause()(true)),
+            ContinueEvent.on(l => setPause()(false)),
+            ToggleUpdatingEvent.on(l => setPause()(curLoc && !curLoc.paused)),
+            TogglePinEvent.on(() => isPinned(curLoc.loc) ? unpin()() : pin() )
+        ];
+        return () => { for (const s of subscriptions) s.dispose(); }
     });
 
-    const isPinned = loc => pinnedLocs.some(l => locationEq(l, loc));
+    const isPinned = (loc: Location) => pinnedLocs.some(l => locationEq(l.loc, loc));
     const pin = () => {
-        if (isPinned(curLoc)) {return; }
+        if (isPinned(curLoc.loc)) {return; }
         const pins = [...pinnedLocs, curLoc];
         setPinnedLocs(pins);
-        post({command:'sync_pin', pins})
+        post({command:'sync_pin', pins: pins.map(x => x.loc)})
     }
-    const unpin = (idx) => () => {
+    const unpin = (idx?) => () => {
+        if (idx === undefined) {
+            idx = pinnedLocs.findIndex(p => locationEq(p.loc, curLoc.loc));
+        }
         const pins = pinnedLocs.filter((l,i) => i !== idx);
         setPinnedLocs(pins);
-        post({command:'sync_pin', pins})
+        post({command:'sync_pin', pins: pins.map(x => x.loc)})
     }
 
     return <div className="ma2">
         <ConfigContext.Provider value={config}><MessagesContext.Provider value={messages}>
-            {pinnedLocs.map((l,i) => <Info loc={l} key={locationKey(l)} isPinned={true} isCursor={locationEq(l,curLoc)} onEdit={onEdit} onPin={unpin(i)}/>)}
-            {!isPinned(curLoc) && <Info loc={curLoc} key="cursor" isPinned={false} isCursor={true} onEdit={onEdit} onPin={pin}/>}
+            {pinnedLocs.map(({loc, paused},i) => {
+                const isCursor = locationEq(loc,curLoc.loc);
+                const key = isCursor ? 'cursor' : locationKey(loc);
+                return <Info loc={loc} paused={paused} setPaused={setPause(i)} key={key} isPinned={true} isCursor={isCursor} onEdit={onEdit} onPin={unpin(i)}/>}) }
+            {!isPinned(curLoc.loc) && <Info loc={curLoc.loc} paused={curLoc.paused} setPaused={setPause()} key="cursor" isPinned={false} isCursor={true} onEdit={onEdit} onPin={pin}/>}
             <details className={(config.displayMode === DisplayMode.AllMessage ? '' : 'dn')}>
                 <summary className="mv2">All Messages</summary>
                 <div className="ml3">
