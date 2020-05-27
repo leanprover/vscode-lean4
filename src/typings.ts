@@ -27,11 +27,11 @@ export interface ServerStatus {
 
 interface WidgetEventResponseSuccess {
     status: 'success';
-    widget: {html: any};
+    widget: {html: WidgetComponent};
 }
 interface WidgetEventResponseEdit {
     status: 'edit';
-    widget: {html: any};
+    widget: {html: WidgetComponent};
     /** Some text to insert after the widget's comma. */
     action: string;
 }
@@ -57,7 +57,7 @@ export interface WidgetElement {
     /** children */
     c: WidgetHtml[];
     /** attributes */
-    a: { [k: string]: any };
+    a: { [k: string]: any } | null;
     /** events */
     e: {
         'onClick'?: WidgetEventHandler;

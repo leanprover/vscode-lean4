@@ -172,12 +172,10 @@ export class InfoProvider implements Disposable {
     }
 
     private updateStylesheet() {
-        const css = this.context.asAbsolutePath(join('media', 'infoview.css'));
         const fontFamily =
             // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
             (workspace.getConfiguration('editor').get('fontFamily') as string).
                 replace(/['"]/g, '');
-        const styleSheetOld = readFileSync(css, 'utf-8');
         const fontCodeCSS = `
             .font-code {
                 font-family: ${fontFamily};
@@ -185,7 +183,7 @@ export class InfoProvider implements Disposable {
             }
         `;
         const configCSS = workspace.getConfiguration('lean').get('infoViewStyle');
-        this.stylesheet = /* styleSheetOld + */ fontCodeCSS + configCSS;
+        this.stylesheet = fontCodeCSS + configCSS;
     }
 
     private autoOpen() {

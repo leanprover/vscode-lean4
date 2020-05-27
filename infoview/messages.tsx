@@ -1,9 +1,8 @@
 import { basename, escapeHtml, colorizeMessage } from './util';
 import { Message } from 'lean-client-js-node';
-import React = require('react');
-import { Location, DisplayMode, Config } from '../src/typings';
-import { MessagesContext, ConfigContext } from '.';
-import { DefaultSerializer } from 'v8';
+import * as React from 'react';
+import { Location, Config } from '../src/typings';
+import { MessagesContext } from '.';
 
 function compareMessages(m1: Message, m2: Message): boolean {
     return (m1.file_name === m2.file_name &&
@@ -12,14 +11,8 @@ function compareMessages(m1: Message, m2: Message): boolean {
 }
 
 export function MessageView(m: Message) {
-    // const f = escapeHtml(m.file_name);
     const b = escapeHtml(basename(m.file_name));
     const l = m.pos_line; const c = m.pos_col;
-    // const el = m.end_pos_line || l;
-    // const ec = m.end_pos_col || c;
-    // const cmd = encodeURI('command:_lean.revealPosition?' +
-        // JSON.stringify([Uri.file(m.file_name), m.pos_line, m.pos_col]));
-        // JSON.stringify([(m.file_name), m.pos_line, m.pos_col])); // [TODO] Uri.file isn't available in the webview?
     const shouldColorize = m.severity === 'error';
     let text = escapeHtml(m.text)
     text = shouldColorize ? colorizeMessage(text) : text;
@@ -38,10 +31,6 @@ export function Messages(props: {messages: Message[]}): JSX.Element {
     const msgs = (props.messages || []).map(m =>
       <MessageView {...m} key={m.file_name + m.pos_line + m.pos_col + m.caption}/>);
     return <>{msgs}</>;
-}
-
-interface MessagesForProps {
-    loc: Location;
 }
 
 export function AllMessages(props: {file_name?: string}) {

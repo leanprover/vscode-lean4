@@ -97,11 +97,15 @@ export function Info(props: InfoProps) {
                 </details>
                 <details open className={goalState ? '' : 'dn'}>
                     <summary className="mv2 pointer">Tactic State</summary>
-                    <Goal goalState={goalState} />
+                    <div className="ml3">
+                        <Goal goalState={goalState} />
+                    </div>
                 </details>
                 <details open className={messages.length === 0 ? 'dn' : '0'}>
                     <summary className="mv2 pointer">Messages</summary>
-                    <Messages messages={messages}/>
+                    <div className="ml3">
+                        <Messages messages={messages}/>
+                    </div>
                 </details>
             </div>
         </details>
