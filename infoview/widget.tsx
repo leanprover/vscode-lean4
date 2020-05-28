@@ -2,6 +2,7 @@ import * as React from 'react';
 import * as ReactPopper from 'react-popper';
 import { WidgetEventMessage, Location, WidgetHtml, isWidgetElement, WidgetComponent, WidgetElement } from '../src/typings';
 import './popper.css';
+import { ProcessTransport } from 'lean-client-js-node';
 
 const Popper = (props) => {
     const { children, popperContent, refEltTag, refEltAttrs } = props;
@@ -31,12 +32,37 @@ export interface WidgetProps {
     post: (e: WidgetEventMessage) => void;
 }
 
+class WidgetErrorBoundary extends React.Component<{children},{error}> {
+    constructor(props) {
+      super(props);
+      this.state = { error: null };
+    }
+    static getDerivedStateFromError(error) {
+        return { error };
+    }
+    componentDidCatch(error, errorInfo) {
+        console.log(error, errorInfo);
+    }
+    componentWillReceiveProps(new_props) {
+        this.setState({error: null});
+    }
+    render() {
+      if (this.state.error) {
+        const message = this.state.error.message
+        return <div className="ba b--red pa3">
+            <h1>Widget rendering threw an error:</h1>
+            {message}
+        </div>;
+      }
+      return this.props.children;
+    }
+}
+
 export function Widget(props: WidgetProps): JSX.Element {
     if (!props.widget) { return null; }
-    return ViewHtml({
-            html: props.widget.html,
-            post: props.post,
-        })
+    return <WidgetErrorBoundary>
+        <ViewHtml html={props.widget.html} post={props.post}/>
+    </WidgetErrorBoundary>
 }
 
 interface HtmlProps {

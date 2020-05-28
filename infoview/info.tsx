@@ -21,28 +21,30 @@ export function Info(props: InfoProps) {
     const {loc, isPinned, isCursor, onEdit, onPin, paused, setPaused} = props;
     const [widget, setWidget] = React.useState<{html: WidgetComponent | null} | null>(null);
     const [goalState, setGoalState] = React.useState<string | null>(null);
+    const [updateError, setUpdateError] = React.useState<any | null>(null);
     const allMessages = React.useContext(MessagesContext);
     const config = React.useContext(ConfigContext);
 
-    function updateInfo() {
-        if (paused) { return; }
-        if (!props.loc) {
+    async function updateInfo(force = false) {
+        if (paused && !force) { return; }
+        setUpdateError(null);
+        if (!loc) {
             setWidget(null);
             setGoalState(null);
             return;
         }
-        global_server.info(loc.file_name, loc.line, loc.column)
-            .then((info) => {
-                const record: any = info.record;
-                setWidget(record && record.widget);
-                setGoalState(record && record.state);
-            });
+        try {
+            const info = await global_server.info(loc.file_name, loc.line, loc.column);
+            const record: any = info.record;
+            setWidget(record && record.widget);
+            setGoalState(record && record.state);
+        } catch (e) {
+            setUpdateError(e);
+        }
     }
 
-    React.useEffect(() => updateInfo(), [ // perform updateInfo if any of these change.
-        props.loc && props.loc.line,
-        props.loc && props.loc.column,
-        props.loc && props.loc.file_name,
+    React.useEffect(() => {updateInfo();}, [ // perform updateInfo if any of these change.
+        loc,
         paused,
     ]);
 
@@ -70,7 +72,7 @@ export function Info(props: InfoProps) {
             console.warn(`No widget_event update for ${message.handler}: invalid handler.`)
             updateInfo();
         } else if (record.status === 'error') {
-            console.error(`Update gave an error: ${record.message}`);
+            console.error(`Update gave an error: ${record.message || record}`);
         }
     }
 
@@ -104,9 +106,11 @@ export function Info(props: InfoProps) {
                     {goalState && <a className="link pointer mh3 dim" onClick={e => {e.preventDefault(); copyToComment()}}>copy to comment</a>} {/* [todo] give this a cool icon. */}
                     <a className="link pointer mh3 dim" onClick={e => { e.preventDefault(); onPin(!isPinned)}}>{isPinned ? 'unpin' : 'pin'}</a> {/* [todo] give this a cool icon. */}
                     <a className="link pointer mh3 dim" onClick={e => { e.preventDefault(); setPaused(!paused)}}>{paused ? 'unpause' : 'pause'}</a> {/* [todo] give this a cool icon. */}
+                    <a className="link pointer mh3 dim" onClick={e => { e.preventDefault(); updateInfo(true); }}>update</a> {/* [todo] give this a cool icon. */}
                 </span>
             </summary>
             <div className="ml3">
+                {updateError && <div className="error">Error updating: {updateError.message || updateError}</div> }
                 <details open className={widget ? '' : 'dn'}>
                     <summary className="mv2 pointer">Widget</summary>
                     <div className={'ml3 ' + (paused ? 'o-60' : '')} >
