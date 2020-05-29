@@ -118,7 +118,7 @@ export function Info(props: InfoProps) {
                         <Widget widget={widget} post={e => handleWidgetEvent(e)} />
                     </div>
                 </details>
-                <details open className={goalState ? '' : 'dn'}>
+                <details open={!widget} className={goalState ? '' : 'dn'}>
                     <summary className="mv2 pointer">Tactic State</summary>
                     <div className="ml1">
                         <Goal goalState={goalState} />
