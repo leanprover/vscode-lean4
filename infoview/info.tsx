@@ -34,13 +34,24 @@ export function Info(props: InfoProps) {
             setGoalState(null);
             return;
         }
-        try {
-            const info = await global_server.info(loc.file_name, loc.line, loc.column);
-            const record: any = info.record;
-            setWidget(record && record.widget);
-            setGoalState(record && record.state);
-        } catch (e) {
-            setUpdateError(e);
+        const maxTries = 2;
+        let tryCount = 0;
+        while (tryCount < maxTries) {
+            tryCount++;
+            try {
+                const info = await global_server.info(loc.file_name, loc.line, loc.column);
+                const record: any = info.record;
+                setWidget(record && record.widget);
+                setGoalState(record && record.state);
+                return;
+            } catch (e) {
+                if (tryCount >= maxTries) {
+                    setUpdateError(e);
+                } else {
+                    // wait a second and try again.
+                    await new Promise(r => setTimeout(r, 1000));
+                }
+            }
         }
     }
 
@@ -104,14 +115,14 @@ export function Info(props: InfoProps) {
             <summary className="mv2">
                 {`${basename(loc.file_name)}:${loc.line}:${loc.column}`}
                 <span className="fr">
-{goalState && <a className="link pointer mh3 dim" title="copy to comment" onClick={e => {e.preventDefault(); copyToComment()}}><CopyToCommentIcon/></a>}
-<a className="link pointer mh3 dim" onClick={e => { e.preventDefault(); onPin(!isPinned)}} title={isPinned ? 'unpin' : 'pin'}>{isPinned ? <PinnedIcon/> : <PinIcon/>}</a>
-<a className="link pointer mh3 dim" onClick={e => { e.preventDefault(); setPaused(!paused)}} title={paused ? 'continue' : 'pause'}>{paused ? <ContinueIcon/> : <PauseIcon/>}</a>
-<a className="link pointer mh3 dim" onClick={e => { e.preventDefault(); updateInfo(true); }} title="refresh"><RefreshIcon/></a>
+                    {goalState && <a className="link pointer mh3 dim" title="copy to comment" onClick={e => {e.preventDefault(); copyToComment()}}><CopyToCommentIcon/></a>}
+                    <a className="link pointer mh3 dim" onClick={e => { e.preventDefault(); onPin(!isPinned)}} title={isPinned ? 'unpin' : 'pin'}>{isPinned ? <PinnedIcon/> : <PinIcon/>}</a>
+                    <a className="link pointer mh3 dim" onClick={e => { e.preventDefault(); setPaused(!paused)}} title={paused ? 'continue' : 'pause'}>{paused ? <ContinueIcon/> : <PauseIcon/>}</a>
+                    <a className="link pointer mh3 dim" onClick={e => { e.preventDefault(); updateInfo(true); }} title="refresh"><RefreshIcon/></a>
                 </span>
             </summary>
             <div className="ml1">
-                {updateError && <div className="error">Error updating: {updateError.message || updateError}</div> }
+                {updateError && <div className="error">Error updating: {updateError.message || updateError}. <a className="link pointer dim" onClick={e => updateInfo(true)}>Try again.</a></div> }
                 <details open className={widget ? '' : 'dn'}>
                     <summary className="mv2 pointer">Widget</summary>
                     <div className={'ml1 ' + (paused ? 'o-60' : '')} >
