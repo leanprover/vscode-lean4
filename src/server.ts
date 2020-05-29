@@ -226,6 +226,7 @@ export class Server extends leanclient.Server {
 }
 
 // [hack] this needs to be made a PR for lean-client-js-core
+// eslint-disable-next-line @typescript-eslint/ban-ts-ignore
 // @ts-ignore
 leanclient.Server.prototype.makeProxyConnection = function () {
     const translate: Map<number,number> = new Map();
