@@ -31,7 +31,8 @@ export class LeanDiagnosticsProvider implements Disposable {
         const docMap = new Map<string, TextDocument>();
 
         for (const message of messages) {
-            const pos = new Position(message.pos_line - 1, message.pos_col);
+            const line = Math.max(message.pos_line - 1, 0);
+            const pos = new Position(line, message.pos_col);
             // Assign the diagnostic to the entire word following the info message
             // so that code actions can be activated more easily
             let msgDoc = docMap.get(message.file_name);

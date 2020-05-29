@@ -93,7 +93,8 @@ export class RoiManager implements Disposable {
             const files = await workspace.findFiles('**/*.lean');
             paths = files.map((f) => f.fsPath);
         } else {
-            paths = workspace.textDocuments.map((d) => d.fileName);
+            paths = workspace.textDocuments.filter((d) => languages.match(this.documentFilter, d))
+                                           .map((d) => d.fileName);
         }
 
         const visibleRanges: {[fileName: string]: RoiRange[]} = {};
