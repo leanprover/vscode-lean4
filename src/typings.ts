@@ -106,7 +106,7 @@ export interface Config {
     infoViewAllErrorsOnLine: boolean;
     displayMode: DisplayMode;
 }
-export const defaultConfig = {
+export const defaultConfig: Config = {
     filterIndex: -1,
     infoViewTacticStateFilters: [],
     infoViewAllErrorsOnLine: true,

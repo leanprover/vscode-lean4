@@ -212,9 +212,6 @@ export class InfoProvider implements Disposable {
             case 'stop_hover':
                 this.stopHover(message);
                 return;
-            // case 'copy_to_comment_response':
-            //     this.handleCopyToCommentResponse(message);
-            //     return;
             case 'insert_text':
                 this.handleInsertText(message);
                 return;

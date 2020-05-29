@@ -23,7 +23,7 @@ function getWebviewConfig(env) {
 				},
 				{
 					test: /\.svg/,
-					use: ['svg-inline-loader']
+					use: ['svg-loader']
 				}
 			]
 		},

@@ -6,6 +6,7 @@ import { Widget } from './widget';
 import { Goal } from './goal';
 import { GetMessagesFor, Messages } from './messages';
 import { basename } from './util';
+import { CopyToCommentIcon, PinnedIcon, PinIcon, ContinueIcon, PauseIcon, RefreshIcon } from './svg_icons';
 
 interface InfoProps {
     loc?: Location;
@@ -103,10 +104,10 @@ export function Info(props: InfoProps) {
             <summary className="mv2">
                 {`${basename(loc.file_name)}:${loc.line}:${loc.column}`}
                 <span className="fr">
-                    {goalState && <a className="link pointer mh3 dim" onClick={e => {e.preventDefault(); copyToComment()}}>copy to comment</a>} {/* [todo] give this a cool icon. */}
-                    <a className="link pointer mh3 dim" onClick={e => { e.preventDefault(); onPin(!isPinned)}}>{isPinned ? 'unpin' : 'pin'}</a> {/* [todo] give this a cool icon. */}
-                    <a className="link pointer mh3 dim" onClick={e => { e.preventDefault(); setPaused(!paused)}}>{paused ? 'unpause' : 'pause'}</a> {/* [todo] give this a cool icon. */}
-                    <a className="link pointer mh3 dim" onClick={e => { e.preventDefault(); updateInfo(true); }}>update</a> {/* [todo] give this a cool icon. */}
+{goalState && <a className="link pointer mh3 dim" title="copy to comment" onClick={e => {e.preventDefault(); copyToComment()}}><CopyToCommentIcon/></a>}
+<a className="link pointer mh3 dim" onClick={e => { e.preventDefault(); onPin(!isPinned)}} title={isPinned ? 'unpin' : 'pin'}>{isPinned ? <PinnedIcon/> : <PinIcon/>}</a>
+<a className="link pointer mh3 dim" onClick={e => { e.preventDefault(); setPaused(!paused)}} title={paused ? 'continue' : 'pause'}>{paused ? <ContinueIcon/> : <PauseIcon/>}</a>
+<a className="link pointer mh3 dim" onClick={e => { e.preventDefault(); updateInfo(true); }} title="refresh"><RefreshIcon/></a>
                 </span>
             </summary>
             <div className="ml3">
