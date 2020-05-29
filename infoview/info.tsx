@@ -110,23 +110,23 @@ export function Info(props: InfoProps) {
 <a className="link pointer mh3 dim" onClick={e => { e.preventDefault(); updateInfo(true); }} title="refresh"><RefreshIcon/></a>
                 </span>
             </summary>
-            <div className="ml3">
+            <div className="ml1">
                 {updateError && <div className="error">Error updating: {updateError.message || updateError}</div> }
                 <details open className={widget ? '' : 'dn'}>
                     <summary className="mv2 pointer">Widget</summary>
-                    <div className={'ml3 ' + (paused ? 'o-60' : '')} >
+                    <div className={'ml1 ' + (paused ? 'o-60' : '')} >
                         <Widget widget={widget} post={e => handleWidgetEvent(e)} />
                     </div>
                 </details>
                 <details open className={goalState ? '' : 'dn'}>
                     <summary className="mv2 pointer">Tactic State</summary>
-                    <div className="ml3">
+                    <div className="ml1">
                         <Goal goalState={goalState} />
                     </div>
                 </details>
                 <details open className={messages.length === 0 ? 'dn' : '0'}>
                     <summary className="mv2 pointer">Messages</summary>
-                    <div className="ml3">
+                    <div className="ml1">
                         <Messages messages={messages}/>
                     </div>
                 </details>

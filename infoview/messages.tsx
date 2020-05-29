@@ -19,7 +19,7 @@ export function MessageView(m: Message) {
     const title = `${b}:${l}:${c}`;
     return <details open>
         <summary className={m.severity + ' mv2 pointer'}>{title}</summary>
-        <div className="ml3">
+        <div className="ml1">
             <pre className="font-code" style={{whiteSpace: 'pre-wrap'}} dangerouslySetInnerHTML={{ __html: text }} />
         </div>
     </details>
