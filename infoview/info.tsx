@@ -18,6 +18,15 @@ interface InfoProps {
     setPaused: (paused: boolean) => void;
 }
 
+type InfoStatus = 'updating' | 'error' | 'pinned' | 'cursor';
+
+const statusColTable: {[T in InfoStatus]: string} = {
+    'updating': 'orange',
+    'cursor': 'blue',
+    'pinned': 'purple',
+    'error': 'red',
+}
+
 export function Info(props: InfoProps) {
     const {loc, isPinned, isCursor, onEdit, onPin, paused, setPaused} = props;
     const [widget, setWidget]           = React.useState<{html: WidgetComponent | null} | null>(null);
@@ -109,7 +118,8 @@ export function Info(props: InfoProps) {
     if (!loc) {
         return <div>Waiting for info... </div>
     }
-    const border_style = 'pl2 bl pointer ' + (isCursor ? 'b--blue ' : 'b--yellow ');
+    const status: InfoStatus = updating ? 'updating' : updateError ? 'error' : isPinned ? 'pinned' : 'cursor';
+    const border_style = 'pl2 bl pointer ' + (`b--${statusColTable[status]} `);
     const messages = GetMessagesFor(allMessages, loc, config);
     const nothingToShow = !widget && !goalState && messages.length === 0;
     const locationString = `${basename(loc.file_name)}:${loc.line}:${loc.column}`;
