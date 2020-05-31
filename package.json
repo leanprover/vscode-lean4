@@ -247,7 +247,7 @@
 			{
 				"command": "lean.infoView.toggleStickyPosition",
 				"category": "Lean",
-				"title": "Info View: Toggle Sticky Position",
+				"title": "Info View: Toggle Pin",
 				"description": "Mark the current position of the cursor for goal reporting, instead of tracking the cursor.",
 				"icon": {
 					"dark": "./media/toggle-sticky-position-dark.svg",
