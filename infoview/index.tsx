@@ -6,7 +6,7 @@ import { Message } from 'lean-client-js-core';
 import './tachyons.css' // stylesheet assumed by Lean widgets. See https://tachyons.io/ for documentation
 import './index.css'
 import { Info } from './info';
-import { AllMessages } from './messages';
+import { Messages, processMessages } from './messages';
 
 export const ConfigContext = React.createContext<Config>(defaultConfig);
 export const MessagesContext = React.createContext<Message[]>([]);
@@ -72,7 +72,6 @@ function Main(props: {}) {
         ];
         return () => { for (const s of subscriptions) s.dispose(); }
     });
-
     const isPinned = (loc: Location) => pinnedLocs.some(l => locationEq(l.loc, loc));
     const pin = () => {
         if (isPinned(curLoc.loc)) {return; }
@@ -88,21 +87,21 @@ function Main(props: {}) {
         setPinnedLocs(pins);
         post({command:'sync_pin', pins: pins.map(x => x.loc)})
     }
-
+    const allMessages = processMessages(messages, null);
     return <div className="ma2">
-        <ConfigContext.Provider value={config}><MessagesContext.Provider value={messages}>
+        <ConfigContext.Provider value={config}>
             {pinnedLocs.map(({loc, paused},i) => {
                 const isCursor = locationEq(loc,curLoc.loc);
                 const key = isCursor ? 'cursor' : locationKey(loc);
                 return <Info loc={loc} paused={paused} setPaused={setPause(i)} key={key} isPinned={true} isCursor={isCursor} onEdit={onEdit} onPin={unpin(i)}/>}) }
             {!isPinned(curLoc.loc) && <Info loc={curLoc.loc} paused={curLoc.paused} setPaused={setPause()} key="cursor" isPinned={false} isCursor={true} onEdit={onEdit} onPin={pin}/>}
             <details className={(config.displayMode === DisplayMode.AllMessage ? '' : 'dn')}>
-                <summary className="mv2">All Messages</summary>
+                <summary className="mv2">All Messages ({allMessages.length})</summary>
                 <div className="ml3">
-                    <AllMessages/>
+                    <Messages messages={allMessages}/>
                 </div>
             </details>
-        </MessagesContext.Provider></ConfigContext.Provider>
+        </ConfigContext.Provider>
     </div>
 }
 

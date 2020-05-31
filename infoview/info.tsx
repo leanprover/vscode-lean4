@@ -20,15 +20,18 @@ interface InfoProps {
 
 export function Info(props: InfoProps) {
     const {loc, isPinned, isCursor, onEdit, onPin, paused, setPaused} = props;
-    const [widget, setWidget] = React.useState<{html: WidgetComponent | null} | null>(null);
-    const [goalState, setGoalState] = React.useState<string | null>(null);
+    const [widget, setWidget]           = React.useState<{html: WidgetComponent | null} | null>(null);
+    const [goalState, setGoalState]     = React.useState<string | null>(null);
+    const [updating, setUpdating]       = React.useState<boolean>(false);
     const [updateError, setUpdateError] = React.useState<any | null>(null);
     const allMessages = React.useContext(MessagesContext);
-    const config = React.useContext(ConfigContext);
+    const config      = React.useContext(ConfigContext);
 
+    /** Called to get new info from the server. */
     async function updateInfo(force = false) {
         if (paused && !force) { return; }
         setUpdateError(null);
+        setUpdating(true);
         if (!loc) {
             setWidget(null);
             setGoalState(null);
@@ -43,10 +46,13 @@ export function Info(props: InfoProps) {
                 const record: any = info.record;
                 setWidget(record && record.widget);
                 setGoalState(record && record.state);
+                setUpdating(false);
                 return;
             } catch (e) {
                 if (tryCount >= maxTries) {
                     setUpdateError(e);
+                    setUpdating(false);
+                    return;
                 } else {
                     // wait a second and try again.
                     await new Promise(r => setTimeout(r, 1000));
@@ -61,7 +67,6 @@ export function Info(props: InfoProps) {
     ]);
 
     async function handleWidgetEvent(e: {kind; handler: WidgetEventHandler; args}) {
-        console.log('got widget event', e);
         if (!props.loc) {
             updateInfo();
             return;
@@ -72,7 +77,6 @@ export function Info(props: InfoProps) {
             ...e,
         }
         const result: any = await global_server.send(message);
-        console.log('received from server', result);
         if (!result.record) { return; }
         const record: WidgetEventResponse = result.record;
         if (record.status === 'success' && record.widget) {
@@ -100,25 +104,26 @@ export function Info(props: InfoProps) {
             const h = CopyToCommentEvent.on(copyToComment);
             return () => h.dispose();
         }
-    }, [isCursor])
+    }, [isCursor]);
 
     if (!loc) {
         return <div>Waiting for info... </div>
     }
     const border_style = 'pl2 bl pointer ' + (isCursor ? 'b--blue ' : 'b--yellow ');
     const messages = GetMessagesFor(allMessages, loc, config);
-    const nothing_to_show = !widget && !goalState && messages.length === 0;
+    const nothingToShow = !widget && !goalState && messages.length === 0;
+    const locationString = `${basename(loc.file_name)}:${loc.line}:${loc.column}`;
     return <LocationContext.Provider value={loc}>
         <details className={border_style} open
           onMouseEnter={() => post({command:'hover_position', loc})}
           onMouseLeave={() => post({command:'stop_hover'})}>
             <summary className="mv2">
-                {`${basename(loc.file_name)}:${loc.line}:${loc.column}`}
+                {locationString}
                 <span className="fr">
                     {goalState && <a className="link pointer mh3 dim" title="copy to comment" onClick={e => {e.preventDefault(); copyToComment()}}><CopyToCommentIcon/></a>}
                     <a className="link pointer mh3 dim" onClick={e => { e.preventDefault(); onPin(!isPinned)}} title={isPinned ? 'unpin' : 'pin'}>{isPinned ? <PinnedIcon/> : <PinIcon/>}</a>
                     <a className="link pointer mh3 dim" onClick={e => { e.preventDefault(); setPaused(!paused)}} title={paused ? 'continue' : 'pause'}>{paused ? <ContinueIcon/> : <PauseIcon/>}</a>
-                    <a className="link pointer mh3 dim" onClick={e => { e.preventDefault(); updateInfo(true); }} title="refresh"><RefreshIcon/></a>
+                    <a className={'link pointer mh3 dim ' + (updating ? 'spin' : '')} onClick={e => { e.preventDefault(); updateInfo(true); }} title="refresh"><RefreshIcon/></a>
                 </span>
             </summary>
             <div className="ml1">
@@ -136,11 +141,12 @@ export function Info(props: InfoProps) {
                     </div>
                 </details>
                 <details open className={messages.length === 0 ? 'dn' : '0'}>
-                    <summary className="mv2 pointer">Messages</summary>
+                    <summary className="mv2 pointer">Messages ({messages.length})</summary>
                     <div className="ml1">
                         <Messages messages={messages}/>
                     </div>
                 </details>
+                {nothingToShow && (updating ? 'updating...' : `no info found at ${locationString}`)}
             </div>
         </details>
     </LocationContext.Provider>;

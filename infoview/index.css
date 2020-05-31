@@ -77,3 +77,11 @@ h1 {
 .vscode-high-contrast .collapsible-header {
     border-bottom-color: white;
 }
+
+@keyframes spinner {
+    to {transform: rotate(360deg);}
+}
+
+.spin {
+    animation: spinner .6s linear infinite;
+}

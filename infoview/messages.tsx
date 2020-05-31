@@ -35,12 +35,17 @@ export function Messages(props: {messages: Message[]}): JSX.Element {
 
 export function AllMessages(props: {file_name?: string}) {
     const allMessages = React.useContext(MessagesContext);
-    const msgs = allMessages
-        .filter((m) => props.file_name ? m.file_name === props.file_name : true)
+    const msgs = processMessages(allMessages, props.file_name)
+    return <Messages messages={msgs}/>
+}
+
+/** Some processing for preparing all messages for viewing. */
+export function processMessages(messages: Message[], file_name) {
+    return messages
+        .filter((m) => file_name ? m.file_name === file_name : true)
         .sort((a, b) => a.pos_line === b.pos_line
             ? a.pos_col - b.pos_col
             : a.pos_line - b.pos_line);
-    return <Messages messages={msgs}/>
 }
 
 export function GetMessagesFor(allMessages: Message[], loc: Location, config: Config) {
