@@ -88,7 +88,7 @@ function Main(props: {}) {
         post({command:'sync_pin', pins: pins.map(x => x.loc)})
     }
     const allMessages = processMessages(messages, null);
-    return <div className="ma2">
+    return <div className="ma1">
         <ConfigContext.Provider value={config}><MessagesContext.Provider value={messages}>
             {pinnedLocs.map(({loc, paused},i) => {
                 const isCursor = locationEq(loc,curLoc.loc);
@@ -97,7 +97,7 @@ function Main(props: {}) {
             {!isPinned(curLoc.loc) && <Info loc={curLoc.loc} paused={curLoc.paused} setPaused={setPause()} key="cursor" isPinned={false} isCursor={true} onEdit={onEdit} onPin={pin}/>}
             <details className={(config.displayMode === DisplayMode.AllMessage ? '' : 'dn')}>
                 <summary className="mv2">All Messages ({allMessages.length})</summary>
-                <div className="ml3">
+                <div className="ml1">
                     <Messages messages={allMessages}/>
                 </div>
             </details>
