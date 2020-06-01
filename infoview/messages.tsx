@@ -25,11 +25,11 @@ export function MessageView(m: Message) {
     </details>
 }
 
-export function Messages(props: {messages: Message[]}): JSX.Element {
+export function Messages(props: {messages: (Message & {key?})[]}): JSX.Element {
     const should_hide = !props.messages || props.messages.length === 0;
     if (should_hide) {return <>No messages.</>}
-    const msgs = (props.messages || []).map(m =>
-      <MessageView {...m} key={m.file_name + m.pos_line + m.pos_col + m.caption}/>);
+    const msgs = (props.messages || []).map((m,i) =>
+      <MessageView {...m} key={m.key || i}/>);
     return <>{msgs}</>;
 }
 
@@ -40,12 +40,19 @@ export function AllMessages(props: {file_name?: string}) {
 }
 
 /** Some processing for preparing all messages for viewing. */
-export function processMessages(messages: Message[], file_name) {
-    return messages
-        .filter((m) => file_name ? m.file_name === file_name : true)
-        .sort((a, b) => a.pos_line === b.pos_line
+export function processMessages(messages: Message[], file_name): (Message & {key: string})[] {
+    const newmsgs = []
+    for (const m of messages) {
+        if (file_name && m.file_name !== file_name) {continue;}
+        let key = `${m.file_name}:${m.pos_line}:${m.pos_col}--${m.text.substr(0, 10)}`;
+        while (newmsgs.some(m => m.key === key)) {
+            key += "'";
+        }
+        newmsgs.push({...m, key});
+    }
+    return newmsgs.sort((a, b) => a.pos_line === b.pos_line
             ? a.pos_col - b.pos_col
-            : a.pos_line - b.pos_line);
+            : a.pos_line - b.pos_line)
 }
 
 export function GetMessagesFor(allMessages: Message[], loc: Location, config: Config) {
