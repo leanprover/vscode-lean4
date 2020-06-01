@@ -89,7 +89,7 @@ function Main(props: {}) {
     }
     const allMessages = processMessages(messages, null);
     return <div className="ma2">
-        <ConfigContext.Provider value={config}>
+        <ConfigContext.Provider value={config}><MessagesContext.Provider value={messages}>
             {pinnedLocs.map(({loc, paused},i) => {
                 const isCursor = locationEq(loc,curLoc.loc);
                 const key = isCursor ? 'cursor' : locationKey(loc);
@@ -101,7 +101,7 @@ function Main(props: {}) {
                     <Messages messages={allMessages}/>
                 </div>
             </details>
-        </ConfigContext.Provider>
+        </MessagesContext.Provider></ConfigContext.Provider>
     </div>
 }
 
