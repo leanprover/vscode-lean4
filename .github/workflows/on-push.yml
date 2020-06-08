@@ -1,9 +1,6 @@
 name: vscode-lean build
 
-on:
-  push:
-    tags:
-      - '*'
+on: [push]
 
 jobs:
   build_job:
