@@ -7,7 +7,7 @@ import { Goal } from './goal';
 import { GetMessagesFor, Messages } from './messages';
 import { basename } from './util';
 import { CopyToCommentIcon, PinnedIcon, PinIcon, ContinueIcon, PauseIcon, RefreshIcon } from './svg_icons';
-import { WidgetData, WidgetEventMessage, WidgetEventHandler, WidgetEventRecord, WidgetEventResponse } from 'lean-client-js-core';
+import { WidgetData, WidgetEventRequest, WidgetEventHandler, WidgetEventRecord } from 'lean-client-js-node';
 
 interface InfoProps {
     loc?: Location;
@@ -71,7 +71,7 @@ export function Info(props: InfoProps) {
             updateInfo();
             return;
         }
-        const message: WidgetEventMessage = {
+        const message: WidgetEventRequest = {
             command: 'widget_event',
             line: widget.line,
             column: widget.column,

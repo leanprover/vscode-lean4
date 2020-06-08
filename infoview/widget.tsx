@@ -1,8 +1,7 @@
 import * as React from 'react';
 import * as ReactPopper from 'react-popper';
-import { WidgetEventMessage, Location, WidgetHtml, isWidgetElement, WidgetComponent, WidgetElement } from '../src/shared';
 import './popper.css';
-import { ProcessTransport } from 'lean-client-js-node';
+import { WidgetData, WidgetComponent, WidgetHtml, WidgetElement, WidgetEventRequest } from 'lean-client-js-node';
 
 const Popper = (props) => {
     const { children, popperContent, refEltTag, refEltAttrs } = props;
@@ -28,8 +27,8 @@ const Popper = (props) => {
 }
 
 export interface WidgetProps {
-    widget?: {html:  WidgetComponent};
-    post: (e: WidgetEventMessage) => void;
+    widget?: WidgetData;
+    post: (e: WidgetEventRequest) => void;
 }
 
 class WidgetErrorBoundary extends React.Component<{children},{error}> {
@@ -67,7 +66,11 @@ export function Widget(props: WidgetProps): JSX.Element {
 
 interface HtmlProps {
     html: WidgetComponent;
-    post: (e: WidgetEventMessage) => void;
+    post: (e: WidgetEventRequest) => void;
+}
+
+function isWidgetElement(w : WidgetHtml) : w is WidgetElement {
+    return (typeof w === 'object') && (w as any).t;
 }
 
 function ViewHtml(props: {html: WidgetHtml; post}) {
