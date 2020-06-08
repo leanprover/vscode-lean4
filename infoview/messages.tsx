@@ -45,7 +45,7 @@ export function processMessages(messages: Message[], file_name): (Message & {key
     for (const m of messages) {
         if (file_name && m.file_name !== file_name) {continue;}
         let key = `${m.file_name}:${m.pos_line}:${m.pos_col}--${m.text.substr(0, 10)}`;
-        while (newmsgs.some(m => m.key === key)) {
+        while (newmsgs.some(x => x.key === key)) {
             key += "'";
         }
         newmsgs.push({...m, key});
