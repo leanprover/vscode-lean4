@@ -119,7 +119,7 @@ export function Info(props: InfoProps) {
         return <div>Waiting for info... </div>
     }
     const status: InfoStatus = updating ? 'updating' : updateError ? 'error' : isPinned ? 'pinned' : 'cursor';
-    const border_style = 'pl2 bl pointer ' + (`b--${statusColTable[status]} `);
+    const border_style = 'pl2 bl ' + (`b--${statusColTable[status]} `);
     const messages = GetMessagesFor(allMessages, loc, config);
     const nothingToShow = !widget && !goalState && messages.length === 0;
     const locationString = `${basename(loc.file_name)}:${loc.line}:${loc.column}`;
