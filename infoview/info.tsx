@@ -46,27 +46,17 @@ export function Info(props: InfoProps) {
             setGoalState(null);
             return;
         }
-        const maxTries = 2;
-        let tryCount = 0;
-        while (tryCount < maxTries) {
-            tryCount++;
-            try {
-                const info = await global_server.info(loc.file_name, loc.line, loc.column);
-                const record: any = info.record;
-                setWidget(record && record.widget);
-                setGoalState(record && record.state);
-                setUpdating(false);
-                return;
-            } catch (e) {
-                if (tryCount >= maxTries) {
-                    setUpdateError(e);
-                    setUpdating(false);
-                    return;
-                } else {
-                    // wait a second and try again.
-                    await new Promise(r => setTimeout(r, 1000));
-                }
-            }
+        try {
+            const info = await global_server.info(loc.file_name, loc.line, loc.column);
+            const record: any = info.record;
+            setWidget(record && record.widget);
+            setGoalState(record && record.state);
+            setUpdating(false);
+            return;
+        } catch (e) {
+            setUpdateError(e);
+            setUpdating(false);
+            return;
         }
     }
 
