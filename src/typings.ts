@@ -25,13 +25,18 @@ export interface ServerStatus {
     tasks: Task[];
 }
 
+export interface WidgetData {
+    html: WidgetComponent;
+    line: number;
+    column: number;
+}
 interface WidgetEventResponseSuccess {
     status: 'success';
-    widget: {html: WidgetComponent};
+    widget: WidgetData;
 }
 interface WidgetEventResponseEdit {
     status: 'edit';
-    widget: {html: WidgetComponent};
+    widget: WidgetData;
     /** Some text to insert after the widget's comma. */
     action: string;
 }
