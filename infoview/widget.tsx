@@ -69,7 +69,7 @@ interface HtmlProps {
     post: (e: WidgetEventRequest) => void;
 }
 
-function isWidgetElement(w : WidgetHtml) : w is WidgetElement {
+function isWidgetElement(w: WidgetHtml): w is WidgetElement {
     return (typeof w === 'object') && (w as any).t;
 }
 
