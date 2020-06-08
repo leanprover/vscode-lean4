@@ -1,4 +1,4 @@
-import { WidgetComponent, Location, WidgetEventHandler, WidgetEventMessage, WidgetEventResponse } from '../src/typings';
+import { WidgetComponent, Location, WidgetEventHandler, WidgetEventMessage, WidgetEventResponse, WidgetData } from '../src/typings';
 import * as React from 'react';
 import { global_server, post, CopyToCommentEvent } from './server';
 import { LocationContext, MessagesContext, ConfigContext } from '.';
@@ -29,7 +29,7 @@ const statusColTable: {[T in InfoStatus]: string} = {
 
 export function Info(props: InfoProps) {
     const {loc, isPinned, isCursor, onEdit, onPin, paused, setPaused} = props;
-    const [widget, setWidget]           = React.useState<{html: WidgetComponent | null} | null>(null);
+    const [widget, setWidget]           = React.useState<WidgetData | null>(null);
     const [goalState, setGoalState]     = React.useState<string | null>(null);
     const [updating, setUpdating]       = React.useState<boolean>(false);
     const [updateError, setUpdateError] = React.useState<any | null>(null);
@@ -46,27 +46,17 @@ export function Info(props: InfoProps) {
             setGoalState(null);
             return;
         }
-        const maxTries = 2;
-        let tryCount = 0;
-        while (tryCount < maxTries) {
-            tryCount++;
-            try {
-                const info = await global_server.info(loc.file_name, loc.line, loc.column);
-                const record: any = info.record;
-                setWidget(record && record.widget);
-                setGoalState(record && record.state);
-                setUpdating(false);
-                return;
-            } catch (e) {
-                if (tryCount >= maxTries) {
-                    setUpdateError(e);
-                    setUpdating(false);
-                    return;
-                } else {
-                    // wait a second and try again.
-                    await new Promise(r => setTimeout(r, 1000));
-                }
-            }
+        try {
+            const info = await global_server.info(loc.file_name, loc.line, loc.column);
+            const record: any = info.record;
+            setWidget(record && record.widget);
+            setGoalState(record && record.state);
+            setUpdating(false);
+            return;
+        } catch (e) {
+            setUpdateError(e);
+            setUpdating(false);
+            return;
         }
     }
 
@@ -82,7 +72,9 @@ export function Info(props: InfoProps) {
         }
         const message: WidgetEventMessage = {
             command: 'widget_event',
-            ...props.loc,
+            line: widget.line,
+            column: widget.column,
+            file_name: props.loc.file_name,
             ...e,
         }
         const result: any = await global_server.send(message);
@@ -95,7 +87,6 @@ export function Info(props: InfoProps) {
             onEdit(props.loc, record.action);
         } else if (record.status === 'invalid_handler') {
             console.warn(`No widget_event update for ${message.handler}: invalid handler.`)
-            updateInfo();
         } else if (record.status === 'error') {
             console.error(`Update gave an error: ${record.message || record}`);
         }
