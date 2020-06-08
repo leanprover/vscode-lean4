@@ -1,6 +1,6 @@
 import * as React from 'react';
 import * as ReactPopper from 'react-popper';
-import { WidgetEventMessage, Location, WidgetHtml, isWidgetElement, WidgetComponent, WidgetElement } from '../src/typings';
+import { WidgetEventMessage, Location, WidgetHtml, isWidgetElement, WidgetComponent, WidgetElement } from '../src/shared';
 import './popper.css';
 import { ProcessTransport } from 'lean-client-js-node';
 

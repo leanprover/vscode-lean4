@@ -1,7 +1,7 @@
 import { global_server, post, PositionEvent, ConfigEvent, SyncPinEvent, PauseEvent, ContinueEvent, ToggleUpdatingEvent, TogglePinEvent } from './server';
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
-import { ServerStatus, Config, defaultConfig,  Location, locationKey, locationEq, DisplayMode } from '../src/typings';
+import { ServerStatus, Config, defaultConfig,  Location, locationKey, locationEq, DisplayMode } from '../src/shared';
 import { Message } from 'lean-client-js-core';
 import './tachyons.css' // stylesheet assumed by Lean widgets. See https://tachyons.io/ for documentation
 import './index.css'

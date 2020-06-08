@@ -1,4 +1,4 @@
-import { WidgetComponent, Location, WidgetEventHandler, WidgetEventMessage, WidgetEventResponse, WidgetData } from '../src/typings';
+import { Location } from '../src/shared';
 import * as React from 'react';
 import { global_server, post, CopyToCommentEvent } from './server';
 import { LocationContext, MessagesContext, ConfigContext } from '.';
@@ -7,6 +7,7 @@ import { Goal } from './goal';
 import { GetMessagesFor, Messages } from './messages';
 import { basename } from './util';
 import { CopyToCommentIcon, PinnedIcon, PinIcon, ContinueIcon, PauseIcon, RefreshIcon } from './svg_icons';
+import { WidgetData, WidgetEventMessage, WidgetEventHandler, WidgetEventRecord, WidgetEventResponse } from 'lean-client-js-core';
 
 interface InfoProps {
     loc?: Location;
@@ -79,7 +80,7 @@ export function Info(props: InfoProps) {
         }
         const result: any = await global_server.send(message);
         if (!result.record) { return; }
-        const record: WidgetEventResponse = result.record;
+        const record: WidgetEventRecord = result.record;
         if (record.status === 'success' && record.widget) {
             setWidget(record.widget);
         } else if (record.status === 'edit') {

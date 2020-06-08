@@ -9,7 +9,7 @@ import {
     Uri, ViewColumn, WebviewPanel, window, workspace,
 } from 'vscode';
 import { Server } from './server';
-import { DisplayMode, WidgetEventMessage, ToInfoviewMessage, InfoProps, ServerStatus, FromInfoviewMessage, InfoViewState, Location, Config, InsertTextMessage, ServerRequestMessage, RevealMessage, HoverPositionMessage, locationEq } from './typings'
+import { DisplayMode, ToInfoviewMessage, FromInfoviewMessage, Location, InsertTextMessage, ServerRequestMessage, RevealMessage, HoverPositionMessage, locationEq } from './shared'
 import { StaticServer } from './staticserver';
 
 export class InfoProvider implements Disposable {
@@ -48,7 +48,7 @@ export class InfoProvider implements Disposable {
             border: '3px solid blue',
         });
         this.updateStylesheet();
-        this.proxyConnection = (this.server as any).makeProxyConnection(); // see defn below.
+        this.proxyConnection = this.server.makeProxyTransport().connect();
         this.subscriptions.push(
             this.server.restarted.on(() => {
                 this.autoOpen();

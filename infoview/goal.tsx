@@ -1,4 +1,3 @@
-import { DisplayMode } from '../src/typings';
 import * as React from 'react';
 import { colorizeMessage, escapeHtml } from './util';
 import { ConfigContext } from './index';

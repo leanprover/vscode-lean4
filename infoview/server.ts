@@ -1,5 +1,5 @@
 import { Server, Transport, Connection, Event, TransportError } from 'lean-client-js-core';
-import { ToInfoviewMessage, FromInfoviewMessage, Config, Location } from '../src/typings';
+import { ToInfoviewMessage, FromInfoviewMessage, Config, Location } from '../src/shared';
 declare const acquireVsCodeApi;
 const vscode = acquireVsCodeApi();
 
@@ -40,7 +40,7 @@ class ProxyTransport implements Transport {
 }
 
 /** Forwards all of the messages between extension and webview.
- * See also makeProxyConnection on the server.
+ * See also makeProxyTransport on the server.
  */
 class ProxyConnectionClient implements Connection {
     error: Event<TransportError>;

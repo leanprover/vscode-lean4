@@ -1,7 +1,7 @@
 import { basename, escapeHtml, colorizeMessage } from './util';
 import { Message } from 'lean-client-js-node';
 import * as React from 'react';
-import { Location, Config } from '../src/typings';
+import { Location, Config } from '../src/shared';
 import { MessagesContext } from '.';
 
 function compareMessages(m1: Message, m2: Message): boolean {

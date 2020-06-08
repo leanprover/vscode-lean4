@@ -7,7 +7,7 @@ import { resolve } from 'path';
 import * as username from 'username';
 import { extensions, OutputChannel, TerminalOptions, window, workspace } from 'vscode';
 import { LowPassFilter } from './util';
-import { ServerStatus } from './typings';
+import { ServerStatus } from './shared';
 
 
 const MAX_MESSAGES = 2**13;
@@ -222,52 +222,6 @@ export class Server extends leanclient.Server {
         } else if (item === installElanItem) {
             this.installElan();
         }
-    }
-}
-
-// [hack] this needs to be made a PR for lean-client-js-core
-// eslint-disable-next-line @typescript-eslint/ban-ts-ignore
-// @ts-ignore
-leanclient.Server.prototype.makeProxyConnection = function () {
-    const translate: Map<number,number> = new Map();
-    const jsonMessage: Event<any> = new Event();
-    const error: Event<any> = new Event();
-    const send = (jsonMsg: any) => {
-        const {seq_num, ...req} = jsonMsg;
-        if (seq_num) {
-            const new_seq_num = this.currentSeqNum++;
-            new Promise((res, reject) => this.sentRequests.set(new_seq_num, {resolve : res, reject}));
-            translate.set(new_seq_num, seq_num);
-            this.conn.send({seq_num : new_seq_num, ...req});
-        } else {
-            throw new Error('expected message to have a seq num');
-        }
-    }
-    const h1 = this.conn.jsonMessage.on(x => {
-        if (x.seq_num) {
-            const {seq_num, ...rest} = x;
-            const old_seq_num = translate.get(seq_num);
-            if (seq_num !== undefined) {
-                translate.delete(seq_num);
-                jsonMessage.fire({seq_num : old_seq_num, ...rest});
-            }
-        } else {
-            jsonMessage.fire(x);
-        }
-    });
-    const h2 = this.conn.error.on(x => error.fire(x));
-    const dispose = () => {
-        error.dispose();
-        jsonMessage.dispose();
-        h1.dispose();
-        h2.dispose();
-    }
-    return {
-        alive: true,
-        error,
-        jsonMessage,
-        send,
-        dispose
     }
 }
 
