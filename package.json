@@ -472,7 +472,8 @@
 		"watch": "webpack --env.development --watch",
 		"lint": "eslint -c ./.eslintrc.js ./src/**/*.ts ./infoview/**/*.tsx",
 		"postinstall": "node ./node_modules/vscode/bin/install",
-		"test": "node ./node_modules/vscode/bin/test"
+		"test": "node ./node_modules/vscode/bin/test",
+		"package": "vsce package"
 	},
 	"dependencies": {
 		"axios": "^0.19.2",
