@@ -470,7 +470,8 @@
 		"vscode:prepublish": "npm run compile",
 		"compile": "tsc -p ./",
 		"watch": "tsc -watch -p ./",
-		"lint": "eslint -c .eslintrc.js src/*.ts"
+		"lint": "eslint -c .eslintrc.js src/*.ts",
+		"package": "vsce package"
 	},
 	"dependencies": {
 		"axios": "^0.19.2",
