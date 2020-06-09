@@ -1,0 +1,14 @@
+name: vscode-lean build
+
+on: [push]
+
+jobs:
+  build_job:
+    runs-on: ubuntu-latest
+    name: Build
+    steps:
+      - uses: actions/checkout@v2
+      - run: npm install
+      - run: npm run lint
+      - run: npm run compile
+      - run: npm run package
