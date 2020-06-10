@@ -29,6 +29,12 @@ window.addEventListener('message', event => { // messages from the extension
         case 'toggle_updating': ToggleUpdatingEvent.fire(message); break;
         case 'copy_to_comment': CopyToCommentEvent.fire(message); break;
         case 'toggle_pin': TogglePinEvent.fire(message); break;
+        case 'restart':
+            console.log("restarting server");
+            global_server.restart();
+            break;
+        case 'server_event': break;
+        case 'server_error': break;
     }
 });
 

@@ -52,6 +52,9 @@ export class InfoProvider implements Disposable {
         this.subscriptions.push(
             this.server.restarted.on(() => {
                 this.autoOpen();
+                this.proxyConnection.dispose();
+                this.proxyConnection = this.server.makeProxyTransport().connect();
+                this.postMessage({command: 'restart'});
             }),
             window.onDidChangeActiveTextEditor(() => this.sendPosition()),
             window.onDidChangeTextEditorSelection(() => this.sendPosition()),
@@ -149,6 +152,7 @@ export class InfoProvider implements Disposable {
     }
 
     dispose() {
+        this.proxyConnection.dispose();
         for (const s of this.subscriptions) { s.dispose(); }
     }
 
