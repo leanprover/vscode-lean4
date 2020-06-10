@@ -50,8 +50,19 @@ export function Info(props: InfoProps) {
         try {
             const info = await global_server.info(loc.file_name, loc.line, loc.column);
             const record = info.record;
-            setWidget(record && record.widget);
             setGoalState(record && record.state);
+            if (record && record.widget && record.widget.html === undefined) {
+                const { widget: newWidget } = await global_server.send({
+                    command: 'get_widget',
+                    line: record.widget.line,
+                    column: record.widget.column,
+                    id: (record.widget as any).id,
+                    file_name: props.loc.file_name,
+                } as any) as any;
+                setWidget(newWidget);
+            } else {
+                setWidget(record && record.widget);
+            }
             setUpdating(false);
             return;
         } catch (e) {
@@ -80,9 +91,10 @@ export function Info(props: InfoProps) {
             command: 'widget_event',
             line: widget.line,
             column: widget.column,
+            id: (widget as any).id,
             file_name: props.loc.file_name,
             ...e,
-        }
+        } as any;
         const result = await global_server.send(message);
         if (!result.record) { return; }
         const record = result.record;
