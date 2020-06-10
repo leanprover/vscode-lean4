@@ -439,16 +439,6 @@
 					"command": "lean.infoView.displayGoal",
 					"when": "infoViewFocused",
 					"group": "navigation@2"
-				},
-				{
-					"command": "lean.infoView.copyToComment",
-					"when": "editorLangId == lean",
-					"group": "navigation@3"
-				},
-				{
-					"command": "lean.infoView.toggleStickyPosition",
-					"when": "editorLangId == lean",
-					"group": "navigation@4"
 				}
 			]
 		}
