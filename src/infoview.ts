@@ -52,7 +52,6 @@ export class InfoProvider implements Disposable {
         this.subscriptions.push(
             this.server.restarted.on(() => {
                 this.autoOpen();
-                this.makeProxyConnection();
                 this.postMessage({command: 'restart'});
             }),
             window.onDidChangeActiveTextEditor(() => this.sendPosition()),

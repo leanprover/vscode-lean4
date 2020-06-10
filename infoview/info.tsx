@@ -1,6 +1,6 @@
 import { Location } from '../src/shared';
 import * as React from 'react';
-import { global_server, post, CopyToCommentEvent } from './server';
+import { global_server, post, CopyToCommentEvent, ServerRestartEvent } from './server';
 import { LocationContext, MessagesContext, ConfigContext } from '.';
 import { Widget } from './widget';
 import { Goal } from './goal';
@@ -65,6 +65,11 @@ export function Info(props: InfoProps) {
         loc,
         paused,
     ]);
+    // update the infos if the server restarts.
+    React.useEffect(() => {
+        const h = ServerRestartEvent.on(() => updateInfo());
+        return () => h.dispose();
+    });
 
     async function handleWidgetEvent(e: {kind; handler: WidgetEventHandler; args}) {
         if (!props.loc) {

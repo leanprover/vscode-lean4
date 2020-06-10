@@ -16,6 +16,7 @@ export const ContinueEvent: Event<{}> = new Event();
 export const ToggleUpdatingEvent: Event<{}> = new Event();
 export const CopyToCommentEvent: Event<{}> = new Event();
 export const TogglePinEvent: Event<{}> = new Event();
+export const ServerRestartEvent: Event<{}> = new Event();
 
 window.addEventListener('message', event => { // messages from the extension
     const message: ToInfoviewMessage = event.data; // The JSON data our extension sent
@@ -29,10 +30,7 @@ window.addEventListener('message', event => { // messages from the extension
         case 'toggle_updating': ToggleUpdatingEvent.fire(message); break;
         case 'copy_to_comment': CopyToCommentEvent.fire(message); break;
         case 'toggle_pin': TogglePinEvent.fire(message); break;
-        case 'restart':
-            console.log("restarting server");
-            global_server.restart();
-            break;
+        case 'restart': ServerRestartEvent.fire(message); break;
         case 'server_event': break;
         case 'server_error': break;
     }
