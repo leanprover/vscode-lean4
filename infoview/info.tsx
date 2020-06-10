@@ -49,7 +49,7 @@ export function Info(props: InfoProps) {
         }
         try {
             const info = await global_server.info(loc.file_name, loc.line, loc.column);
-            const record: any = info.record;
+            const record = info.record;
             setWidget(record && record.widget);
             setGoalState(record && record.state);
             setUpdating(false);
@@ -78,9 +78,9 @@ export function Info(props: InfoProps) {
             file_name: props.loc.file_name,
             ...e,
         }
-        const result: any = await global_server.send(message);
+        const result = await global_server.send(message);
         if (!result.record) { return; }
-        const record: WidgetEventRecord = result.record;
+        const record = result.record;
         if (record.status === 'success' && record.widget) {
             setWidget(record.widget);
         } else if (record.status === 'edit') {
