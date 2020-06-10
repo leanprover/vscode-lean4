@@ -48,12 +48,11 @@ export class InfoProvider implements Disposable {
             border: '3px solid blue',
         });
         this.updateStylesheet();
-        this.proxyConnection = this.server.makeProxyTransport().connect();
+        this.makeProxyConnection();
         this.subscriptions.push(
             this.server.restarted.on(() => {
                 this.autoOpen();
-                this.proxyConnection.dispose();
-                this.proxyConnection = this.server.makeProxyTransport().connect();
+                this.makeProxyConnection();
                 this.postMessage({command: 'restart'});
             }),
             window.onDidChangeActiveTextEditor(() => this.sendPosition()),
@@ -117,19 +116,7 @@ export class InfoProvider implements Disposable {
                 this.setMode(DisplayMode.AllMessage);
                 this.openPreview(editor);
             }),
-            this.proxyConnection,
-            this.proxyConnection.error.on(e =>
-                this.postMessage({
-                    command: 'server_error',
-                    payload: JSON.stringify(e)
-                })
-            ),
-            this.proxyConnection.jsonMessage.on(e =>
-                this.postMessage({
-                    command: 'server_event',
-                    payload: JSON.stringify(e)
-                })
-            ),
+
             commands.registerCommand('lean.infoView.displayGoal', () => {
                 this.setMode(DisplayMode.OnlyState);
             }),
@@ -149,6 +136,28 @@ export class InfoProvider implements Disposable {
         if (this.server.alive()) {
             this.autoOpen();
         }
+    }
+
+    makeProxyConnection() {
+        if (this.proxyConnection) {
+            this.proxyConnection.dispose();
+        }
+        this.proxyConnection = this.server.makeProxyTransport().connect();
+        this.subscriptions.push(
+            this.proxyConnection.error.on(e =>
+                this.postMessage({
+                    command: 'server_error',
+                    payload: JSON.stringify(e)
+                })
+            ),
+            this.proxyConnection.jsonMessage.on(e =>
+                this.postMessage({
+                    command: 'server_event',
+                    payload: JSON.stringify(e)
+                })
+            )
+        );
+
     }
 
     dispose() {
