@@ -3,6 +3,7 @@ import { Message } from 'lean-client-js-node';
 import * as React from 'react';
 import { Location, Config } from '../src/shared';
 import { MessagesContext } from '.';
+import { CopyToCommentIcon } from './svg_icons';
 
 function compareMessages(m1: Message, m2: Message): boolean {
     return (m1.file_name === m2.file_name &&
@@ -10,7 +11,13 @@ function compareMessages(m1: Message, m2: Message): boolean {
         m1.severity === m2.severity && m1.caption === m2.caption && m1.text === m2.text);
 }
 
-export function MessageView(m: Message) {
+interface MessageViewProps {
+    m: Message;
+    onCopyToComment?: (x: string) => void;
+}
+
+export function MessageView(props: MessageViewProps) {
+    const {m, onCopyToComment} = props;
     const b = escapeHtml(basename(m.file_name));
     const l = m.pos_line; const c = m.pos_col;
     const shouldColorize = m.severity === 'error';
@@ -18,18 +25,29 @@ export function MessageView(m: Message) {
     text = shouldColorize ? colorizeMessage(text) : text;
     const title = `${b}:${l}:${c}`;
     return <details open>
-        <summary className={m.severity + ' mv2 pointer'}>{title}</summary>
+        <summary className={m.severity + ' mv2 pointer'}>{title}
+            {onCopyToComment &&
+                <span className="fr">
+                    <a className="link pointer mh3 dim" title="copy to comment" onClick={e => {e.preventDefault(); onCopyToComment(m.text)}}><CopyToCommentIcon/></a>
+                </span>
+            }
+        </summary>
         <div className="ml1">
             <pre className="font-code" style={{whiteSpace: 'pre-wrap'}} dangerouslySetInnerHTML={{ __html: text }} />
         </div>
     </details>
 }
 
-export function Messages(props: {messages: (Message & {key?})[]}): JSX.Element {
+interface MessagesProps {
+    messages: (Message & {key?})[];
+    onCopyToComment?: (text: string) => void;
+}
+
+export function Messages(props: MessagesProps): JSX.Element {
     const should_hide = !props.messages || props.messages.length === 0;
     if (should_hide) {return <>No messages.</>}
     const msgs = (props.messages || []).map((m,i) =>
-      <MessageView {...m} key={m.key || i}/>);
+      <MessageView m={m} key={m.key || i} onCopyToComment={props.onCopyToComment}/>);
     return <>{msgs}</>;
 }
 

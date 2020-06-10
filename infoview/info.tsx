@@ -93,9 +93,9 @@ export function Info(props: InfoProps) {
         }
     }
 
-    function copyToComment() {
-        if (!goalState) { return; }
-        post({ command: 'insert_text', text: `/-\n${goalState}\n-/\n`})
+    function copyToComment(text?: string) {
+        if (!(text || goalState)) { return; }
+        post({ command: 'insert_text', text: `/-\n${text || goalState}\n-/\n`})
     }
 
     // If we are the cursor infoview, then we should subscribe to
@@ -145,7 +145,7 @@ export function Info(props: InfoProps) {
                 <details open className={messages.length === 0 ? 'dn' : '0'}>
                     <summary className="mv2 pointer">Messages ({messages.length})</summary>
                     <div className="ml1">
-                        <Messages messages={messages}/>
+                        <Messages messages={messages} onCopyToComment={copyToComment}/>
                     </div>
                 </details>
                 {nothingToShow && (updating ? 'updating...' : `no info found at ${locationString}`)}
