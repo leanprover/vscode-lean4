@@ -24,5 +24,5 @@ export function Goal(props: GoalProps): JSX.Element {
             }).join('\n');
     }
     goalString = colorizeMessage(escapeHtml(goalString));
-    return <pre className="font-code ml3"  style={{whiteSpace: 'pre-wrap'}} dangerouslySetInnerHTML={{ __html: goalString }} />
+    return <pre className="font-code"  style={{whiteSpace: 'pre-wrap'}} dangerouslySetInnerHTML={{ __html: goalString }} />
 }
