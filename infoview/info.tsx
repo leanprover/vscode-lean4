@@ -5,9 +5,9 @@ import { LocationContext, MessagesContext, ConfigContext } from '.';
 import { Widget } from './widget';
 import { Goal } from './goal';
 import { GetMessagesFor, Messages } from './messages';
-import { basename } from './util';
+import { basename, EventLike } from './util';
 import { CopyToCommentIcon, PinnedIcon, PinIcon, ContinueIcon, PauseIcon, RefreshIcon } from './svg_icons';
-import { WidgetData, WidgetEventRequest, WidgetEventHandler, WidgetEventRecord } from 'lean-client-js-node';
+import { WidgetData, WidgetEventRequest, WidgetEventHandler, WidgetEventRecord, Task, CurrentTasksResponse } from 'lean-client-js-node';
 
 interface InfoProps {
     loc?: Location;
@@ -19,13 +19,18 @@ interface InfoProps {
     setPaused: (paused: boolean) => void;
 }
 
-type InfoStatus = 'updating' | 'error' | 'pinned' | 'cursor';
+type InfoStatus = 'updating' | 'error' | 'pinned' | 'cursor' | 'loading';
 
 const statusColTable: {[T in InfoStatus]: string} = {
-    'updating': 'orange',
+    'updating': 'gold',
+    'loading': 'yellow',
     'cursor': 'blue',
     'pinned': 'purple',
-    'error': 'red',
+    'error': 'dark-red',
+}
+
+function isLoading(ts: CurrentTasksResponse, l:Location) {
+    return ts.tasks.some(t => t.file_name === l.file_name && t.pos_line < l.line && l.line < t.end_pos_line);
 }
 
 export function Info(props: InfoProps) {
@@ -33,6 +38,7 @@ export function Info(props: InfoProps) {
     const [widget, setWidget]           = React.useState<WidgetData | null>(null);
     const [goalState, setGoalState]     = React.useState<string | null>(null);
     const [updating, setUpdating]       = React.useState<boolean>(false);
+    const [loading, setLoading]       = React.useState<boolean>(false);
     const [updateError, setUpdateError] = React.useState<any | null>(null);
     const allMessages = React.useContext(MessagesContext);
     const config      = React.useContext(ConfigContext);
@@ -80,10 +86,15 @@ export function Info(props: InfoProps) {
         loc,
         paused,
     ]);
-    // update the infos if the server restarts.
+    // update the infos if these events happen.
     React.useEffect(() => {
-        const h = ServerRestartEvent.on(() => updateInfo());
-        return () => h.dispose();
+        const e1 = EventLike.throttle(300, global_server.tasks);
+        const e2 = EventLike.map(x => isLoading(x,loc), e1);
+        const h1 = e2.on(c => setLoading(c));
+        const e3 = EventLike.onChange((x,y) => x !== y, e2);
+        const e4 = EventLike.merge(ServerRestartEvent, global_server.error, e3);
+        const h2 = e4.on(() => updateInfo());
+        return () => { for (let x of [e1,e2,e3,e4,h1,h2]) x.dispose(); };
     });
 
     async function handleWidgetEvent(e: {kind; handler: WidgetEventHandler; args}) {
@@ -131,7 +142,7 @@ export function Info(props: InfoProps) {
     if (!loc) {
         return <div>Waiting for info... </div>
     }
-    const status: InfoStatus = updating ? 'updating' : updateError ? 'error' : isPinned ? 'pinned' : 'cursor';
+    const status: InfoStatus = loading ? 'loading' : updating ? 'updating' : updateError ? 'error' : isPinned ? 'pinned' : 'cursor';
     const border_style = 'pl2 bl ' + (`b--${statusColTable[status]} `);
     const messages = GetMessagesFor(allMessages, loc, config);
     const nothingToShow = !widget && !goalState && messages.length === 0;
@@ -169,7 +180,7 @@ export function Info(props: InfoProps) {
                         <Messages messages={messages} onCopyToComment={copyToComment}/>
                     </div>
                 </details>
-                {nothingToShow && (updating ? 'updating...' : `no info found at ${locationString}`)}
+                {nothingToShow && (loading ? 'loading...' : updating ? 'updating...' : `no info found at ${locationString}`)}
             </div>
         </details>
     </LocationContext.Provider>;
