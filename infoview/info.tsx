@@ -165,9 +165,7 @@ export function Info(props: InfoProps) {
     const nothingToShow = !widget && !goalState && messages.length === 0;
     const locationString = `${basename(loc.file_name)}:${(throttled_loc || loc).line}:${(throttled_loc || loc).column}`;
     return <LocationContext.Provider value={loc}>
-        <details className={border_style} open
-          onMouseEnter={() => post({command:'hover_position', loc})}
-          onMouseLeave={() => post({command:'stop_hover'})}>
+        <details className={border_style} open>
             <summary className="mv2">
                 {locationString}
                 <span className="fr">
