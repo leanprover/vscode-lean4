@@ -59,6 +59,7 @@ export function Info(props: InfoProps) {
             setGoalState(record && record.state);
             if (record && record.widget) {
                 if (record.widget.html !== undefined) {
+                    // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
                     setWidget(record.widget as WidgetData);
                 } else {
                     const { widget: newWidget } = await global_server.send({
