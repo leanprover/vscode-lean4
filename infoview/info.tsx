@@ -29,7 +29,7 @@ const statusColTable: {[T in InfoStatus]: string} = {
     'error': 'dark-red',
 }
 
-function isLoading(ts: CurrentTasksResponse, l:Location) {
+function isLoading(ts: CurrentTasksResponse, l: Location) {
     return ts.tasks.some(t => t.file_name === l.file_name && t.pos_line < l.line && l.line < t.end_pos_line);
 }
 
@@ -95,7 +95,7 @@ export function Info(props: InfoProps) {
         const e3 = EventLike.onChange((x,y) => x !== y, e2);
         const e4 = EventLike.merge(ServerRestartEvent, global_server.error, e3);
         const h2 = e4.on(() => updateInfo());
-        return () => { for (let x of [e1,e2,e3,e4,h1,h2]) x.dispose(); };
+        return () => { for (const x of [e1,e2,e3,e4,h1,h2]) x.dispose(); };
     });
 
     async function handleWidgetEvent(e: {kind; handler: WidgetEventHandler; args}) {

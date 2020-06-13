@@ -26,14 +26,14 @@ interface Disposable {
 }
 
 interface EventLike<T> extends Disposable {
-    on(h : (x : T) => void): Disposable;
+    on(h: (x: T) => void): Disposable;
 }
 
 function mkEventLike<T>(o: EventLike<any>, ...ds: Disposable[]): EventLike<T> {
-    return {on: f => o.on(f), dispose() { o.dispose(); for (let x of ds) x.dispose(); }}
+    return {on: f => o.on(f), dispose() { o.dispose(); for (const x of ds) x.dispose(); }}
 }
 
-function onChange<T>(comp: (a:T,b:T)=> boolean, e: EventLike<T>): EventLike<T> {
+function onChange<T>(comp: (a: T,b: T) => boolean, e: EventLike<T>): EventLike<T> {
     const out = new Event();
     let prev = null;
     const h = e.on(x => {
@@ -45,22 +45,22 @@ function onChange<T>(comp: (a:T,b:T)=> boolean, e: EventLike<T>): EventLike<T> {
     return mkEventLike(out, h);
 }
 
-function map<T,U>(f: (x : T) => U, e: EventLike<T>) : EventLike<U> {
+function map<T,U>(f: (x: T) => U, e: EventLike<T>): EventLike<U> {
     const out = new Event();
     return mkEventLike(out, e.on((x) => out.fire(f(x))));
 }
 
-function filter<T>(f: (x : T) => boolean, e: EventLike<T>) : EventLike<T> {
+function filter<T>(f: (x: T) => boolean, e: EventLike<T>): EventLike<T> {
     const out = new Event();
     return mkEventLike(out, e.on((x) => f(x) && out.fire(x)));
 }
 
-function merge<U>(...es: EventLike<U>[]) : EventLike<U> {
+function merge<U>(...es: EventLike<U>[]): EventLike<U> {
     const out = new Event();
     return mkEventLike(out, ...es.map(e => e.on(x => out.fire(x))));
 }
 
-function throttle<T>(delayms: number, inputEvent : EventLike<T>) : EventLike<T> {
+function throttle<T>(delayms: number, inputEvent: EventLike<T>): EventLike<T> {
     const out = new Event<T>();
     let trig = false;
     let value = null;
