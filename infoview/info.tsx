@@ -30,7 +30,22 @@ const statusColTable: {[T in InfoStatus]: string} = {
 }
 
 function isLoading(ts: CurrentTasksResponse, l: Location) {
+    if (l === undefined) {return false; }
     return ts.tasks.some(t => t.file_name === l.file_name && t.pos_line < l.line && l.line < t.end_pos_line);
+}
+
+/** Take the prop `x` but throttled, that is, it only updates to the latest value of x every `delayms` milliseconds */
+function useThrottle<T>(delayms: number, x: T): T {
+    const [y,sy] = React.useState(x);
+    const [t,st] = React.useState(false);
+    React.useEffect(() => {
+        if (!t && x !== y) {
+            sy(x);
+            st(true);
+            setTimeout(() => st(false), delayms);
+        }
+    }, [x, t]);
+    return y;
 }
 
 export function Info(props: InfoProps) {
@@ -42,6 +57,7 @@ export function Info(props: InfoProps) {
     const [updateError, setUpdateError] = React.useState<any | null>(null);
     const allMessages = React.useContext(MessagesContext);
     const config      = React.useContext(ConfigContext);
+    const throttled_loc = useThrottle(200, loc);
 
     /** Called to get new info from the server. */
     async function updateInfo(force = false) {
@@ -84,7 +100,7 @@ export function Info(props: InfoProps) {
     }
 
     React.useEffect(() => {updateInfo();}, [ // perform updateInfo if any of these change.
-        loc,
+        throttled_loc,
         paused,
     ]);
     // update the infos if these events happen.
@@ -96,7 +112,7 @@ export function Info(props: InfoProps) {
         const e4 = EventLike.merge(ServerRestartEvent, global_server.error, e3);
         const h2 = e4.on(() => updateInfo());
         return () => { for (const x of [e1,e2,e3,e4,h1,h2]) x.dispose(); };
-    });
+    }, [loc]);
 
     async function handleWidgetEvent(e: {kind; handler: WidgetEventHandler; args}) {
         if (!props.loc) {
@@ -147,7 +163,7 @@ export function Info(props: InfoProps) {
     const border_style = 'pl2 bl ' + (`b--${statusColTable[status]} `);
     const messages = GetMessagesFor(allMessages, loc, config);
     const nothingToShow = !widget && !goalState && messages.length === 0;
-    const locationString = `${basename(loc.file_name)}:${loc.line}:${loc.column}`;
+    const locationString = `${basename(loc.file_name)}:${(throttled_loc || loc).line}:${(throttled_loc || loc).column}`;
     return <LocationContext.Provider value={loc}>
         <details className={border_style} open
           onMouseEnter={() => post({command:'hover_position', loc})}
@@ -162,7 +178,7 @@ export function Info(props: InfoProps) {
                 </span>
             </summary>
             <div className="ml1">
-                {updateError && <div className="error">Error updating: {updateError.message || updateError}. <a className="link pointer dim" onClick={e => updateInfo(true)}>Try again.</a></div> }
+                {!loading && !updating && updateError && <div className="error">Error updating: {updateError.message || updateError}. <a className="link pointer dim" onClick={e => updateInfo(true)}>Try again.</a></div> }
                 <details open className={widget ? '' : 'dn'}>
                     <summary className="mv2 pointer">Widget</summary>
                     <div className={'ml1 ' + (paused ? 'o-60' : '')} >
