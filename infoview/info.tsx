@@ -170,7 +170,7 @@ export function Info(props: InfoProps) {
                     </div>
                 </details>
                 <details open={!widget} className={goalState ? '' : 'dn'}>
-                    <summary className="mv2 pointer">Tactic State</summary>
+                    <summary className="mv2 pointer">{widget ? 'Plaintext Tactic State' : 'Tactic State'}</summary>
                     <div className="ml1">
                         <Goal goalState={goalState} />
                     </div>
