@@ -33,6 +33,9 @@ function isLoading(ts: CurrentTasksResponse, l: Location) {
     if (l === undefined) {return false; }
     return ts.tasks.some(t => t.file_name === l.file_name && t.pos_line < l.line && l.line < t.end_pos_line);
 }
+function isDone(ts: CurrentTasksResponse) {
+    return ts.tasks.length === 0
+}
 
 /** Take the prop `x` but throttled, that is, it only updates to the latest value of x every `delayms` milliseconds */
 function useThrottle<T>(delayms: number, x: T): T {
@@ -109,9 +112,10 @@ export function Info(props: InfoProps) {
         const e2 = EventLike.map(x => isLoading(x,loc), e1);
         const h1 = e2.on(c => setLoading(c));
         const e3 = EventLike.onChange((x,y) => x !== y, e2);
-        const e4 = EventLike.merge(ServerRestartEvent, global_server.error, e3);
+        const e5 = EventLike.filter(isDone, e1);
+        const e4 = EventLike.merge(ServerRestartEvent, global_server.error, e3, e1);
         const h2 = e4.on(() => updateInfo());
-        return () => { for (const x of [e1,e2,e3,e4,h1,h2]) x.dispose(); };
+        return () => { for (const x of [e1,e2,e3,e4,e5,h1,h2]) x.dispose(); };
     }, [loc]);
 
     async function handleWidgetEvent(e: {kind; handler: WidgetEventHandler; args}) {
