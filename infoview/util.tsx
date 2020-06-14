@@ -25,64 +25,205 @@ interface Disposable {
     dispose(): void;
 }
 
-interface EventLike<T> extends Disposable {
+export interface Signal<T> {
     on(h: (x: T) => void): Disposable;
+    value?: T;
 }
 
-function mkEventLike<T>(o: EventLike<any>, ...ds: Disposable[]): EventLike<T> {
-    return {on: f => o.on(f), dispose() { o.dispose(); for (const x of ds) x.dispose(); }}
-}
+export class SignalBuilder {
+    subscriptions: Disposable[] = [];
+    dispose() {for (const s of this.subscriptions) s.dispose();}
 
-function onChange<T>(comp: (a: T,b: T) => boolean, e: EventLike<T>): EventLike<T> {
-    const out = new Event();
-    let prev = null;
-    const h = e.on(x => {
-        if (prev !== null && comp(prev,x)) {
-            out.fire(x);
+    push(...handlers: Disposable[]) {this.subscriptions.push(...handlers);}
+
+    mkEvent<T>() {
+        const e = new Event<T>();
+        this.subscriptions.push(e);
+        return e;
+    }
+
+    onChange<T>(e: Signal<T>, comp: (a: T,b: T) => boolean = (x,y) => x !== y): Signal<T> {
+        const out = new Event<T>();
+        let prev = null;
+        const h = e.on(x => {
+            if (prev !== null && comp(prev,x)) {
+                out.fire(x);
+            }
+            prev = x;
+        });
+        this.subscriptions.push(out, h);
+        return out;
+    }
+
+    filter<T>(f: (x: T) => boolean, e: Signal<T>): Signal<T> {
+        return {on: h => e.on(x => f(x) && h(x))};
+    }
+    map<T,U>(f: (x: T) => U, e: Signal<T>): Signal<U> {
+        return {on: h => e.on(x => h(f(x)))};
+    }
+    merge<U>(...es: Signal<U>[]): Signal<U> {
+        const out = new Event();
+        return {on: h => {
+            const ss = es.map(e => e.on(h));
+            return {dispose(){for (const s of ss) s.dispose();}}
+        }}
+    }
+    throttle<T>(delayms: number, inputEvent: Signal<T>): Signal<T> {
+        const out = new Event<T>();
+        let trig = false;
+        let value = null;
+        const f = () => {
+            if (value !== null) {
+                out.fire(value);
+                value = null;
+                setTimeout(f, delayms);
+            } else {
+                trig = false
+            }
+        };
+        const h = inputEvent.on((x) => {
+            value = x;
+            if (!trig) {
+                trig = true;
+                f();
+            }
+        });
+        this.subscriptions.push(out, h);
+        return out;
+    }
+
+    zip<X>(es: {[k in keyof X]: Signal<X[k]>}, defaults?: X): Signal<X> {
+        const current: X = defaults || {} as any;
+        const triggered: any = {};
+        const update = (h) => (k: string) => (v: any) => {
+            current[k] = v;
+            triggered[k] = true;
+            if (defaults || Object.getOwnPropertyNames(es).every(s => triggered[s])) h({...current});
         }
-        prev = x;
-    });
-    return mkEventLike(out, h);
-}
+        return {on: h => {
+            const hs = Object.getOwnPropertyNames(es).map(k => es[k].on(update(h)(k)));
+            return {dispose() {for (const x of hs) x.dispose();}}
+        }};
+    }
 
-function map<T,U>(f: (x: T) => U, e: EventLike<T>): EventLike<U> {
-    const out = new Event();
-    return mkEventLike(out, e.on((x) => out.fire(f(x))));
-}
-
-function filter<T>(f: (x: T) => boolean, e: EventLike<T>): EventLike<T> {
-    const out = new Event();
-    return mkEventLike(out, e.on((x) => f(x) && out.fire(x)));
-}
-
-function merge<U>(...es: EventLike<U>[]): EventLike<U> {
-    const out = new Event();
-    return mkEventLike(out, ...es.map(e => e.on(x => out.fire(x))));
-}
-
-function throttle<T>(delayms: number, inputEvent: EventLike<T>): EventLike<T> {
-    const out = new Event<T>();
-    let trig = false;
-    let value = null;
-    const f = () => {
-        if (value !== null) {
-            out.fire(value);
-            value = null;
-            setTimeout(f, delayms);
-        } else {
-            trig = false
+    unzip<X>(e: Signal<X>, ks: (keyof X)[]): {[k in keyof X]: Signal<X[k]>} {
+        const r: any = {};
+        for (const k of ks) {
+            r[k] = {on: h => {
+                let prev = null;
+                return e.on(x => {
+                    if (!prev || prev[k] !== x[k]) {
+                        prev = x[k];
+                        h(x[k]);
+                    }
+                })}
+            };
         }
-    };
-    const h = inputEvent.on((x) => {
-        value = x;
-        if (!trig) {
-            trig = true;
-            f();
-        }
-    });
-    return mkEventLike(out, h)
-}
+        return r;
+    }
 
-export const EventLike = {
-    map, filter, throttle, merge, onChange
+    /** When the input fires, run the given promise and throttle future input values until the promise resolves.
+     * Swallows the error if the promise errors.
+     */
+    throttleTask<X,Y>(f: (x: X) => Promise<Y>, input: Signal<X>): {result: Signal<Y>; isRunning: Signal<boolean>} {
+        const result = new Event<Y>();
+        const isRunning = new Event<boolean>();
+        let value = null;
+        let task = null;
+        const run = (x) => {
+            task = f(x).then(y => {
+                result.fire(y)
+            }).finally(() => {
+                if (value !== null) {
+                    run(value);
+                    value = null;
+                } else {
+                    isRunning.fire(false);
+                    task = null;
+                }
+            })
+        }
+        const h = input.on((x) => {
+            value = x;
+            if (!task) {
+                isRunning.fire(true);
+                run(x);
+            }
+        });
+        this.subscriptions.push(result, isRunning, h);
+        return {result, isRunning};
+    }
+
+    mapTaskOrdered<X,Y>(f: (x: X) => Promise<Y>, input: Signal<X>): Signal<Y> {
+        let inflight = 0;
+        let head = null;
+        const result = new Event<Y>();
+        const mk = (x) => f(x).then(y => result.fire(y)).finally(() => inflight--);
+        const h = input.on(x => {
+            if (inflight === 0) {
+                inflight++;
+                head = mk(x);
+            } else {
+                inflight++;
+                head = head.catch(() => ({})).then(() => mk(x));
+            }
+        });
+        this.subscriptions.push(result, h);
+        return result;
+    }
+
+    scan<A,X>(f: (acc: A, x: X) => A, init: A, g: Signal<X>): Signal<A> {
+        const out = new Event<A>();
+        let acc = init;
+        const h = g.on(x => {acc = f(acc, x); out.fire(acc);});
+        this.subscriptions.push(out, h);
+        return out;
+    }
+
+    store<X>(g: Signal<X>): Signal<X> & {value?: X} {
+        const r: any = g;
+        this.subscriptions.push(g.on(x => r.value = x));
+        return r;
+    }
+
+    debounce(ms: number, g: Signal<boolean>): Signal<boolean> {
+        const out = new Event<boolean>();
+        let value = false;
+        let trig = false;
+        let checking = false;
+        let down = Date.now();
+        const check = () => {
+            const e = Date.now() - down;
+            if (trig) {
+                trig = false;
+                if (e < ms) {
+                    setTimeout(check, ms - e);
+                } else {
+                    checking = false;
+                }
+            } else {
+                trig = false;
+                value = false;
+                checking = false;
+                out.fire(false);
+            }
+        }
+        const h = g.on(x => {
+            if (x) {
+                trig = true;
+            } else {
+                down = Date.now();
+            }
+            if (x && !value) {
+                value = true;
+                out.fire(true);
+            }
+            if (!x && value && !checking) {
+                trig = false;
+                setTimeout(check, ms);
+            }
+        });
+        this.subscriptions.push(out, h);
+        return out;
+    }
 }

@@ -1,5 +1,6 @@
 import { Server, Transport, Connection, Event, TransportError } from 'lean-client-js-core';
-import { ToInfoviewMessage, FromInfoviewMessage, Config, Location } from '../src/shared';
+import { ToInfoviewMessage, FromInfoviewMessage, Config, Location, defaultConfig } from '../src/shared';
+import { SignalBuilder, Signal } from './util';
 declare const acquireVsCodeApi;
 const vscode = acquireVsCodeApi();
 
@@ -9,7 +10,8 @@ export function post(message: FromInfoviewMessage) { // send a message to the ex
 }
 
 export const PositionEvent: Event<Location> = new Event();
-export const ConfigEvent: Event<Partial<Config>> = new Event();
+const InnerConfigEvent: Event<Partial<Config>> = new Event();
+export const ConfigEvent: Signal<Config> = (new SignalBuilder()).scan((acc, x) => ({...acc, ...x}), defaultConfig, InnerConfigEvent);
 export const SyncPinEvent: Event<{pins: Location[]}> = new Event();
 export const PauseEvent: Event<{}> = new Event();
 export const ContinueEvent: Event<{}> = new Event();
@@ -23,7 +25,7 @@ window.addEventListener('message', event => { // messages from the extension
     console.log('Received from extension:', message);
     switch (message.command) {
         case 'position': PositionEvent.fire(message.loc); break;
-        case 'on_config_change': ConfigEvent.fire(message.config); break;
+        case 'on_config_change': InnerConfigEvent.fire(message.config); break;
         case 'sync_pin': SyncPinEvent.fire(message); break;
         case 'pause': PauseEvent.fire(message); break;
         case 'continue': ContinueEvent.fire(message); break;

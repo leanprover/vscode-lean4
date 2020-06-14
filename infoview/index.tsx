@@ -63,7 +63,7 @@ function Main(props: {}) {
         const subscriptions = [
             global_server.allMessages.on(x => setMessages(x.msgs)),
             PositionEvent.on(loc => setCurLoc({...curLoc, loc})),
-            ConfigEvent.on(l => setConfig({...config, ...l})),
+            ConfigEvent.on(l => setConfig(l)),
             SyncPinEvent.on(l => setPinnedLocs(l.pins.map((loc, i) => ({loc, paused: pinnedLocs[i] && pinnedLocs[i].paused})))),
             PauseEvent.on(l => setPause()(true)),
             ContinueEvent.on(l => setPause()(false)),
@@ -92,9 +92,8 @@ function Main(props: {}) {
         <ConfigContext.Provider value={config}><MessagesContext.Provider value={messages}>
             {pinnedLocs.map(({loc, paused},i) => {
                 const isCursor = locationEq(loc,curLoc.loc);
-                const key = isCursor ? 'cursor' : locationKey(loc);
-                return <Info loc={loc} paused={paused} setPaused={setPause(i)} key={key} isPinned={true} isCursor={isCursor} onEdit={onEdit} onPin={unpin(i)}/>}) }
-            {!isPinned(curLoc.loc) && <Info loc={curLoc.loc} paused={curLoc.paused} setPaused={setPause()} key="cursor" isPinned={false} isCursor={true} onEdit={onEdit} onPin={pin}/>}
+                return <Info loc={loc} isPaused={paused} setPaused={setPause(i)} key={i} isPinned={true} isCursor={isCursor} onEdit={onEdit} onPin={unpin(i)}/>}) }
+            {!isPinned(curLoc.loc) && <Info loc={curLoc.loc} isPaused={curLoc.paused} setPaused={setPause()} key={pinnedLocs.length} isPinned={false} isCursor={true} onEdit={onEdit} onPin={pin}/>}
             <details className={(config.displayMode === DisplayMode.AllMessage ? '' : 'dn')}>
                 <summary className="mv2">All Messages ({allMessages.length})</summary>
                 <div className="ml1">
