@@ -5,7 +5,6 @@ declare const acquireVsCodeApi;
 const vscode = acquireVsCodeApi();
 
 export function post(message: FromInfoviewMessage) { // send a message to the extension
-    console.log('posting to extension: ', message);
     vscode.postMessage(message);
 }
 
@@ -22,7 +21,6 @@ export const ServerRestartEvent: Event<{}> = new Event();
 
 window.addEventListener('message', event => { // messages from the extension
     const message: ToInfoviewMessage = event.data; // The JSON data our extension sent
-    console.log('Received from extension:', message);
     switch (message.command) {
         case 'position': PositionEvent.fire(message.loc); break;
         case 'on_config_change': InnerConfigEvent.fire(message.config); break;

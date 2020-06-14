@@ -142,11 +142,6 @@ export function infoEvents(sb: SignalBuilder, sinks: {onEdit}, onProps: Signal<I
         handleWidgetEvent: (w) => onWidgetEvent.fire(w)
     };
     const z = sb.scan<InfoState,Partial<InfoState>>((acc, x) => ({...acc, ...x}), defaultInfoProps, r);
-    sb.push(r.on(x => console.log('r: ', x)))
-    sb.push(z.on(x => console.log('z: ', x)))
-    sb.push(updateTrigger.on(x => console.log('updateTrigger: ', x)))
-    sb.push(onLoc.on(x => console.log('onLoc: ', x)))
-    sb.push(throttled_loc.on(x => console.log('throttled_loc: ', x)))
     sb.push(z.on(x => state.fire(x)));
     return state;
 }
