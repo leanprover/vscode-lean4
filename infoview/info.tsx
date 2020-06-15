@@ -85,7 +85,11 @@ export function Info(props: InfoProps) {
                         <Messages messages={messages} onCopyToComment={copyToComment}/>
                     </div>
                 </details>
-                {nothingToShow && (loading ? 'loading...' : updating ? 'updating...' : `no info found at ${locationString}`)}
+                {nothingToShow && (
+                    loading ? 'loading...' :
+                    updating ? 'updating...' :
+                    paused ? <span>Updating is paused. <a className="link pointer dim" onClick={e => forceUpdate()}>Refresh</a> or <a className="link pointer dim" onClick={e => setPaused(false)}>resume updating</a> to see information</span> :
+                    `no info found at ${locationString}`)}
             </div>
         </details>
     </LocationContext.Provider>;
