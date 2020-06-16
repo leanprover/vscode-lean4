@@ -214,6 +214,7 @@ export class InfoProvider implements Disposable {
             this.webviewPanel.onDidDispose(() => this.webviewPanel = null);
             this.webviewPanel.webview.onDidReceiveMessage((message) => this.handleMessage(message), undefined, this.subscriptions);
         }
+        this.sendPosition();
     }
     /** Handle a message incoming from the webview. */
     private handleMessage(message: FromInfoviewMessage) {
