@@ -168,7 +168,7 @@ export interface InfoState {
     isUpdating: boolean;
     widget?: WidgetData;
     goalState?: GoalState;
-    error?: any;
+    error?: {message: string};
     messages: Message[];
 
     forceUpdate: () => void;
