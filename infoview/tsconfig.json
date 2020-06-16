@@ -1,0 +1,24 @@
+{
+	"compilerOptions": {
+		"outDir": "./dist/",
+		"module": "commonjs",
+		"target": "es2017",
+		"jsx": "react",
+		"typeRoots": [
+			"../node_modules/@types",
+			"../src/typings/"
+		],
+		"sourceMap": true,
+		"strict": false,
+		"noImplicitAny": false,
+		"lib": [
+			"dom",
+			"esnext.asynciterable",
+			"es2017"
+		],
+	},
+	"include": [
+		"./**/*",
+		"../src/typings/*"
+	]
+}

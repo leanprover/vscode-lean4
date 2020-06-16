@@ -22,7 +22,7 @@ module.exports = {
     ],
     "parser": "@typescript-eslint/parser",
     "parserOptions": {
-        "project": "tsconfig.json",
+        "project": ["./tsconfig.json", "./infoview/tsconfig.json"],
         "sourceType": "module"
     },
     "plugins": [
@@ -122,6 +122,7 @@ module.exports = {
         "no-console": "off",
         "no-debugger": "error",
         "no-empty": "off",
+        "ban-ts-ignore": "off",
         "no-eval": "error",
         "no-fallthrough": "off",
         "no-invalid-this": "off",

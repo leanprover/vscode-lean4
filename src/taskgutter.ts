@@ -1,6 +1,7 @@
 import { Diagnostic, DiagnosticCollection, DiagnosticSeverity, Disposable, ExtensionContext,
     languages, OverviewRulerLane, Range, TextEditorDecorationType, Uri, window, workspace } from 'vscode';
-import { Server, ServerStatus } from './server';
+import { Server } from './server';
+import { ServerStatus } from './shared';
 
 export class LeanTaskGutter implements Disposable {
     private decoration: TextEditorDecorationType;

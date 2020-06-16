@@ -7,13 +7,8 @@ import { resolve } from 'path';
 import * as username from 'username';
 import { extensions, OutputChannel, TerminalOptions, window, workspace } from 'vscode';
 import { LowPassFilter } from './util';
+import { ServerStatus } from './shared';
 
-export interface ServerStatus {
-    stopped: boolean;
-    isRunning: boolean;
-    numberOfTasks: number;
-    tasks: Task[];
-}
 
 const MAX_MESSAGES = 2**13;
 const MAX_MESSAGE_SIZE = 2**18;
@@ -132,7 +127,7 @@ export class Server extends leanclient.Server {
                     // json parsing errors
                     if (e.message.startsWith('cannot parse: ')) {
                         stderrOutput.append(e.message + '\n');
-                        stderrOutput.show();
+                        // stderrOutput.show();
                         break;
                     }
                     const msg = e.message.startsWith('Unable to start') ?
@@ -229,3 +224,4 @@ export class Server extends leanclient.Server {
         }
     }
 }
+

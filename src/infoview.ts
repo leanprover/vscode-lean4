@@ -1,5 +1,5 @@
 import { readFileSync } from 'fs';
-import { InfoResponse, Message } from 'lean-client-js-node';
+import { InfoResponse, Message, Connection } from 'lean-client-js-node';
 import { basename, join } from 'path';
 import {
     commands, Disposable, DocumentSelector,
@@ -9,31 +9,13 @@ import {
     Uri, ViewColumn, WebviewPanel, window, workspace,
 } from 'vscode';
 import { Server } from './server';
+import { DisplayMode, ToInfoviewMessage, FromInfoviewMessage, Location, InsertTextMessage, ServerRequestMessage, RevealMessage, HoverPositionMessage, locationEq } from './shared'
 import { StaticServer } from './staticserver';
 
-function compareMessages(m1: Message, m2: Message): boolean {
-    return (m1.file_name === m2.file_name &&
-        m1.pos_line === m2.pos_line && m1.pos_col === m2.pos_col &&
-        m1.severity === m2.severity && m1.caption === m2.caption && m1.text === m2.text);
-}
-
-// https://stackoverflow.com/questions/6234773/can-i-escape-html-special-chars-in-javascript
-function escapeHtml(s: string): string {
-    return s
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
-}
-
-enum DisplayMode {
-    OnlyState, // only the state at the current cursor position including the tactic state
-    AllMessage, // all messages
-}
-
 export class InfoProvider implements Disposable {
+    /** Instance of the panel. */
     private webviewPanel: WebviewPanel;
+    private proxyConnection: Connection;
     private subscriptions: Disposable[] = [];
 
     private displayMode: DisplayMode = DisplayMode.AllMessage;
@@ -43,11 +25,8 @@ export class InfoProvider implements Disposable {
 
     private started: boolean = false;
     private stopped: boolean = false;
-    private stickyPosition: boolean = false;
-    private curFileName: string = null;
-    private curPosition: Position = null;
-    private curGoalState: string = null;
-    private curMessages: Message[] = null;
+
+    private pins: Location[] | null;
 
     private stylesheet: string = null;
 
@@ -69,64 +48,64 @@ export class InfoProvider implements Disposable {
             border: '3px solid blue',
         });
         this.updateStylesheet();
+        this.makeProxyConnection();
         this.subscriptions.push(
-            this.server.allMessages.on(() => {
-                if (this.updateMessages()) { this.rerender(); }
-            }),
-            this.server.statusChanged.on(async () => {
-                if (this.displayMode === DisplayMode.OnlyState) {
-                    const changed = await this.updateGoal();
-                    if (changed) { this.rerender(); }
-                }
-            }),
             this.server.restarted.on(() => {
                 this.autoOpen();
+                this.postMessage({command: 'restart'});
             }),
-            window.onDidChangeActiveTextEditor(() => this.updatePosition(false)),
-            window.onDidChangeTextEditorSelection(() => this.updatePosition(false)),
+            window.onDidChangeActiveTextEditor(() => this.sendPosition()),
+            window.onDidChangeTextEditorSelection(() => this.sendPosition()),
             workspace.onDidChangeConfiguration((e) => {
+                // regression; changing the style needs a reload. :/
                 this.updateStylesheet();
-                this.rerender();
+                this.sendConfig();
                 if (!workspace.getConfiguration('lean').get('typeInStatusBar') && this.statusShown) {
                     this.statusBarItem.hide();
                     this.statusShown = false;
                 }
             }),
             workspace.onDidChangeTextDocument((e) => {
-                if (this.stickyPosition && this.curPosition != null &&
-                    e.document.fileName === this.curFileName) {
+                if (this.pins && this.pins.length !== 0) {
                     // stupid cursor math that should be in the vscode API
-                    let newPosition = this.curPosition;
-                    for (const chg of e.contentChanges) {
-                        if (newPosition.isAfterOrEqual(chg.range.start)) {
-                            let lines = 0;
+                    let changed: boolean = false;
+                    this.pins = this.pins.map(pin => {
+                        if (pin.file_name !== e.document.fileName) { return pin; }
+                        let newPosition = this.positionOfLocation(pin);
+                        for (const chg of e.contentChanges) {
+                            if (newPosition.isAfterOrEqual(chg.range.start)) {
+                                let lines = 0;
                             for (const c of chg.text) if (c === '\n') lines++;
                             newPosition = new Position(
                                 chg.range.start.line + Math.max(0, newPosition.line - chg.range.end.line) + lines,
                                 newPosition.line > chg.range.end.line ?
-                                    newPosition.character :
+                                newPosition.character :
                                 lines === 0 ?
-                                    chg.range.start.character + Math.max(0, newPosition.character - chg.range.end.character) + chg.text.length :
+                                chg.range.start.character + Math.max(0, newPosition.character - chg.range.end.character) + chg.text.length :
                                 9999 // too lazy to get column positioning right, and end of the line is a good place
-                            );
+                                );
+                            }
                         }
+                        newPosition = e.document.validatePosition(newPosition);
+                        const new_pin = this.makeLocation(pin.file_name, newPosition);
+                        if (!locationEq(new_pin, pin)) {changed = true; }
+                        return new_pin;
+                    });
+                    if (changed) {
+                        this.postMessage({
+                            command: 'sync_pin',
+                            pins: this.pins,
+                        });
                     }
-                    newPosition = e.document.validatePosition(newPosition);
-                    this.updatePosition(false, newPosition);
-                    for (const editor of window.visibleTextEditors) {
-                        if (editor.document.fileName === this.curFileName) {
-                            editor.setDecorations(this.stickyDecorationType, [new Range(newPosition, newPosition)]);
-                        }
-                    }
-
+                    this.sendPosition();
                 }
             }),
             commands.registerCommand('_lean.revealPosition', this.revealEditorPosition.bind(this)),
             commands.registerCommand('_lean.infoView.pause', () => {
-                this.stopUpdating();
+                this.postMessage({ command: 'pause' })
             }),
             commands.registerCommand('_lean.infoView.continue', () => {
-                this.setMode(this.displayMode);
+                this.postMessage({ command: 'continue' })
             }),
             commands.registerTextEditorCommand('lean.displayGoal', (editor) => {
                 this.setMode(DisplayMode.OnlyState);
@@ -136,36 +115,21 @@ export class InfoProvider implements Disposable {
                 this.setMode(DisplayMode.AllMessage);
                 this.openPreview(editor);
             }),
+
             commands.registerCommand('lean.infoView.displayGoal', () => {
                 this.setMode(DisplayMode.OnlyState);
             }),
             commands.registerCommand('lean.infoView.displayList', () => {
                 this.setMode(DisplayMode.AllMessage);
             }),
-            commands.registerTextEditorCommand('lean.infoView.copyToComment',
-                (editor) => this.copyToComment(editor)),
+            commands.registerTextEditorCommand('lean.infoView.copyToComment',() =>
+                this.postMessage({ command: 'copy_to_comment' })
+            ),
             commands.registerCommand('lean.infoView.toggleUpdating', () => {
-                if (this.stopped) {
-                    this.setMode(this.displayMode);
-                } else {
-                    this.stopUpdating();
-                }
+                this.postMessage({ command: 'toggle_updating' })
             }),
             commands.registerTextEditorCommand('lean.infoView.toggleStickyPosition', (editor) => {
-                if (this.stickyPosition) {
-                    this.stickyPosition = false;
-                    for (const ed of window.visibleTextEditors) {
-                        if (ed.document.languageId === 'lean') {
-                            ed.setDecorations(this.stickyDecorationType, []);
-                        }
-                    }
-                    this.updatePosition(false);
-                } else {
-                    this.stickyPosition = true;
-                    const pos = editor.selection.active;
-                    editor.setDecorations(this.stickyDecorationType, [new Range(pos, pos)]);
-                    this.updatePosition(false, pos);
-                }
+                this.postMessage({ command: 'toggle_pin' })
             }),
         );
         if (this.server.alive()) {
@@ -173,7 +137,30 @@ export class InfoProvider implements Disposable {
         }
     }
 
+    makeProxyConnection() {
+        if (this.proxyConnection) {
+            this.proxyConnection.dispose();
+        }
+        this.proxyConnection = this.server.makeProxyTransport().connect();
+        this.subscriptions.push(
+            this.proxyConnection.error.on(e =>
+                this.postMessage({
+                    command: 'server_error',
+                    payload: JSON.stringify(e)
+                })
+            ),
+            this.proxyConnection.jsonMessage.on(e =>
+                this.postMessage({
+                    command: 'server_event',
+                    payload: JSON.stringify(e)
+                })
+            )
+        );
+
+    }
+
     dispose() {
+        this.proxyConnection.dispose();
         for (const s of this.subscriptions) { s.dispose(); }
     }
 
@@ -182,19 +169,18 @@ export class InfoProvider implements Disposable {
     }
 
     private updateStylesheet() {
-        const css = this.context.asAbsolutePath(join('media', 'infoview.css'));
         const fontFamily =
             // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
             (workspace.getConfiguration('editor').get('fontFamily') as string).
-            replace(/['"]/g, '');
-        this.stylesheet = readFileSync(css, 'utf-8') + `
-            pre {
+                replace(/['"]/g, '');
+        const fontCodeCSS = `
+            .font-code {
                 font-family: ${fontFamily};
                 font-size: ${workspace.getConfiguration('editor').get('fontSize')}px;
-                white-space: pre-wrap; // TODO(gabriel): make configurable
             }
-            ` +
-            workspace.getConfiguration('lean').get('infoViewStyle');
+        `;
+        const configCSS = workspace.getConfiguration('lean').get('infoViewStyle');
+        this.stylesheet = fontCodeCSS + configCSS;
     }
 
     private autoOpen() {
@@ -202,9 +188,10 @@ export class InfoProvider implements Disposable {
             this.started = true;
             this.setMode(
                 workspace.getConfiguration('lean').get('infoViewAutoOpenShowGoal', true) ?
-                DisplayMode.OnlyState : DisplayMode.AllMessage);
+                    DisplayMode.OnlyState : DisplayMode.AllMessage);
             this.openPreview(window.activeTextEditor);
-            this.updatePosition(false);
+            this.sendPosition();
+            this.sendConfig();
         }
     }
 
@@ -216,50 +203,96 @@ export class InfoProvider implements Disposable {
         } else {
             this.webviewPanel = window.createWebviewPanel('lean',
                 this.displayMode === DisplayMode.OnlyState ? 'Lean Goal' : 'Lean Messages',
-                {viewColumn: column, preserveFocus: true},
+                { viewColumn: column, preserveFocus: true },
                 {
                     enableFindWidget: true,
                     retainContextWhenHidden: true,
                     enableScripts: true,
                     enableCommandUris: true,
                 });
-            this.webviewPanel.webview.html = this.render();
+            this.webviewPanel.webview.html = this.initialHtml();
             this.webviewPanel.onDidDispose(() => this.webviewPanel = null);
-            this.webviewPanel.webview.onDidReceiveMessage((message) => {
-                switch (message.command) {
-                    case 'selectFilter':
-                        workspace.getConfiguration('lean').update('infoViewFilterIndex',
-                            message.filterId, true);
-                        // the workspace configuration change already forces a rerender
-                        return;
-                    case 'hoverPosition':
-                        this.hoverEditorPosition(message.data[0], message.data[1], message.data[2],
-                            message.data[3], message.data[4]);
-                        return;
-                    case 'stopHover':
-                        this.stopHover();
-                        return;
-                }
-            }, undefined, this.subscriptions);
-            // Make the context key track when one of your webviews is focused
-            this.webviewPanel.onDidChangeViewState(({ webviewPanel }) => {
-                commands.executeCommand('setContext', 'infoViewFocused', webviewPanel.active);
-            });
+            this.webviewPanel.webview.onDidReceiveMessage((message) => this.handleMessage(message), undefined, this.subscriptions);
+        }
+    }
+    /** Handle a message incoming from the webview. */
+    private handleMessage(message: FromInfoviewMessage) {
+        switch (message.command) {
+            case 'hover_position':
+                this.hoverEditorPosition(message);
+                return;
+            case 'stop_hover':
+                this.stopHover(message);
+                return;
+            case 'insert_text':
+                this.handleInsertText(message);
+                return;
+            case 'server_request':
+                this.handleServerRequest(message);
+                return;
+            case 'reveal':
+                this.revealEditorPosition(Uri.parse(message.loc.file_name), message.loc.line, message.loc.column);
+                return;
+            case 'sync_pin':
+                this.pins = message.pins;
+                return;
+        }
+    }
+    private handleServerRequest(message: ServerRequestMessage) {
+        const msg = JSON.parse(message.payload);
+        this.proxyConnection.send(msg);
+    }
+    private async handleInsertText(message: InsertTextMessage) {
+        const new_command = message.text;
+        let editor = null;
+        if (message.loc) {
+           editor = window.visibleTextEditors.find(e => e.document.fileName === message.loc.file_name);
+        } else {
+            editor = window.activeTextEditor;
+            if (!editor) { // sometimes activeTextEditor is null.
+                editor = window.visibleTextEditors[0];
+            }
+        }
+        if (!editor) {return; }
+        const pos = message.loc ? this.positionOfLocation(message.loc) : editor.selection.active;
+        const current_selection_range = editor.selection;
+        const cursor_pos = current_selection_range.active;
+        const prev_line = editor.document.lineAt(pos.line - 1);
+        const spaces = prev_line.firstNonWhitespaceCharacterIndex;
+        const margin_str = [...Array(spaces).keys()].map(x => ' ').join('');
+
+        // [hack] for now, we assume that there is only ever one command per line
+        // and that the command should be inserted on the line above this one.
+
+        await editor.edit((builder) => {
+            builder.insert(
+                prev_line.range.end,
+                `\n${margin_str}${new_command}`);
+        });
+        editor.selection = new Selection(pos.line, spaces, pos.line, spaces);
+    }
+
+    private positionOfLocation(l: Location): Position {
+        return new Position(l.line - 1, l.column);
+    }
+    private makeLocation(file_name: string, pos: Position): Location {
+        return {
+            file_name,
+            line: pos.line + 1,
+            column: pos.character,
         }
     }
 
-    private sendPosition() {
+    private sendConfig() {
         this.postMessage({
-            command: 'position',
-            fileName: this.curFileName,
-            line: this.curPosition.line + 1,
-            column: this.curPosition.character,
+            command: 'on_config_change',
+            config: {
+                infoViewTacticStateFilters: workspace.getConfiguration('lean').get('infoViewTacticStateFilters', []),
+                filterIndex: workspace.getConfiguration('lean').get('infoViewFilterIndex', -1),
+                infoViewAllErrorsOnLine: workspace.getConfiguration('lean').get('infoViewAllErrorsOnLine', false),
+                displayMode: this.displayMode,
+            },
         });
-    }
-
-    private stopUpdating() {
-        this.stopped = true;
-        this.postMessage({ command: 'pause' });
     }
 
     private setMode(mode: DisplayMode) {
@@ -269,16 +302,11 @@ export class InfoProvider implements Disposable {
             this.webviewPanel.title = this.displayMode === DisplayMode.OnlyState ? 'Lean Goal' : 'Lean Messages';
         }
         this.stopped = false;
-        this.updatePosition(true);
+        this.sendPosition();
+        this.sendConfig();
     }
 
-    private rerender() {
-        if (this.webviewPanel) {
-            this.webviewPanel.webview.html = this.render();
-            this.stopHover();
-        }
-    }
-    private async postMessage(msg: any): Promise<boolean> {
+    private async postMessage(msg: ToInfoviewMessage): Promise<boolean> {
         if (this.webviewPanel) {
             return this.webviewPanel.webview.postMessage(msg);
         } else {
@@ -296,10 +324,12 @@ export class InfoProvider implements Disposable {
         }
     }
 
-    private hoverEditorPosition(uri: string, line: number, column: number,
-                                endLine: number, endColumn: number) {
+    private hoverEditorPosition(message: HoverPositionMessage) {
+        const {file_name, line, column} = message.loc;
+        const endLine = line; // [todo]
+        const endColumn = column;
         for (const editor of window.visibleTextEditors) {
-            if (editor.document.uri.toString() === uri) {
+            if (editor.document.uri.path === file_name) {
                 const pos = new Position(line - 1, column);
                 const endPos = new Position(endLine - 1, endColumn);
                 const range = new Range(pos, endPos);
@@ -308,7 +338,7 @@ export class InfoProvider implements Disposable {
         }
     }
 
-    private stopHover() {
+    private stopHover(message) {
         for (const editor of window.visibleTextEditors) {
             if (editor.document.languageId === 'lean') {
                 editor.setDecorations(this.hoverDecorationType, []);
@@ -316,145 +346,18 @@ export class InfoProvider implements Disposable {
         }
     }
 
-    private changePosition(newStickyValue?: Position) {
-        if (!window.activeTextEditor ||
-            !languages.match(this.leanDocs, window.activeTextEditor.document)) {
-            return;
-        }
-
-        const oldFileName = this.curFileName;
-        const oldPosition = this.curPosition;
-
-        if (newStickyValue) {
-            this.curPosition = newStickyValue;
-        } else if (!this.stickyPosition) {
-            this.curFileName = window.activeTextEditor.document.fileName;
-            this.curPosition = window.activeTextEditor.selection.active;
-        }
-
-        return (this.curFileName !== oldFileName || !this.curPosition.isEqual(oldPosition));
+    private sendPosition() {
+        const loc = this.getActiveCursorLocation();
+        if (loc === null) {return; }
+        this.postMessage({
+            command: 'position',
+            loc,
+        });
     }
 
-    private async updatePosition(forceRefresh: boolean, newStickyValue?: Position) {
-        if (this.stopped) { return; }
-
-        const chPos = this.changePosition(newStickyValue);
-        if (!chPos && !forceRefresh) {
-            return;
-        }
-
-        // clear type in status bar item
-        this.statusBarItem.text = '';
-
-        const chMsg = this.updateMessages();
-        /* updateTypeStatus is only called from the cases of the following switch-block, so pausing
-           live-updates to the infoview (via this.stopped) also pauses the type status bar item */
-        switch (this.displayMode) {
-        case DisplayMode.OnlyState:
-            const chGoal = await this.updateGoal();
-            if (chPos || chGoal || chMsg) {
-                this.rerender();
-            } else if (forceRefresh) {
-                this.postMessage({ command: 'continue' });
-            }
-            break;
-
-        case DisplayMode.AllMessage:
-            if (workspace.getConfiguration('lean').get('typeInStatusBar')) {
-                const info = await this.server.info(
-                    this.curFileName, this.curPosition.line + 1, this.curPosition.character);
-                this.updateTypeStatus(info);
-            }
-            if (forceRefresh || chMsg) {
-                this.rerender();
-            } else {
-                this.sendPosition();
-            }
-            break;
-        }
-    }
-
-    private updateMessages(): boolean {
-        if (this.stopped || !this.curFileName) { return false; }
-        let msgs: Message[];
-        switch (this.displayMode) {
-        case DisplayMode.OnlyState:
-            /* Heuristic: find first position to the left which has messages attached,
-               from that on show all messages in this line */
-            msgs = this.server.messages
-                .filter((m) => m.file_name === this.curFileName &&
-                    m.pos_line === this.curPosition.line + 1)
-                .sort((a, b) => a.pos_col - b.pos_col);
-            if (!workspace.getConfiguration('lean').get('infoViewAllErrorsOnLine')) {
-                let startColumn;
-                let startPos = null;
-                for (let i = 0; i < msgs.length; i++) {
-                    if (this.curPosition.character < msgs[i].pos_col) { break; }
-                    if (this.curPosition.character === msgs[i].pos_col) {
-                        startColumn = this.curPosition.character;
-                        startPos = i;
-                        break;
-                    }
-                    if (startColumn == null || startColumn < msgs[i].pos_col) {
-                        startColumn = msgs[i].pos_col;
-                        startPos = i;
-                    }
-                }
-                if (startPos) {
-                    msgs = msgs.slice(startPos);
-                }
-            }
-            break;
-
-        case DisplayMode.AllMessage:
-            msgs = this.server.messages
-                .filter((m) => m.file_name === this.curFileName)
-                .sort((a, b) => a.pos_line === b.pos_line
-                        ? a.pos_col - b.pos_col
-                        : a.pos_line - b.pos_line);
-            break;
-        }
-        if (!this.curMessages) {
-            this.curMessages = msgs;
-            return true;
-        }
-        const oldMsgs = this.curMessages;
-        if (msgs.length === oldMsgs.length) {
-            let eq = true;
-            for (let i = 0; i < msgs.length; i++) {
-                if (!compareMessages(msgs[i], oldMsgs[i])) {
-                    eq = false;
-                    break;
-                }
-            }
-            if (eq) { return false; }
-        }
-        this.curMessages = msgs;
-        return true;
-    }
-
-    private async updateGoal(): Promise<boolean> {
-        if (this.stopped || !this.curFileName || !this.curPosition) { return false; }
-        try {
-            const info = await this.server.info(
-                this.curFileName, this.curPosition.line + 1, this.curPosition.character);
-            if (info.record && info.record.state) {
-                if (this.curGoalState !== info.record.state) {
-                    this.curGoalState = info.record.state;
-                    return true;
-                }
-            } else {
-                if (this.curGoalState) {
-                    this.curGoalState = null;
-                    return false;
-                }
-            }
-            if (workspace.getConfiguration('lean').get('typeInStatusBar')) {
-                this.updateTypeStatus(info);
-            }
-        } catch (e) {
-            if (e !== 'interrupted') { throw e; }
-        }
+    private getActiveCursorLocation(): Location | null {
+        if (!window.activeTextEditor || !languages.match(this.leanDocs, window.activeTextEditor.document)) {return null; }
+        return this.makeLocation(window.activeTextEditor.document.fileName, window.activeTextEditor.selection.active);
     }
 
     private updateTypeStatus(info: InfoResponse) {
@@ -475,117 +378,20 @@ export class InfoProvider implements Disposable {
         return this.staticServer.mkUri(join(this.context.extensionPath, 'media', mediaFile));
     }
 
-    private render() {
-        const header = `<!DOCTYPE html>
+    private initialHtml() {
+        return `
+            <!DOCTYPE html>
             <html>
             <head>
+                <meta charset="UTF-8" />
                 <meta http-equiv="Content-type" content="text/html;charset=utf-8">
+                <title>Infoview</title>
                 <style>${this.stylesheet}</style>
-                <script charset="utf-8" src="${this.getMediaPath('infoview-ctrl.js')}"></script>
-            </head>`;
-        if (!this.curFileName) {
-            return header + '<body>No Lean file active</body>';
-        }
-        return header +
-            `<body
-                data-uri="${encodeURI(Uri.file(this.curFileName).toString())}"
-                data-line="${(this.curPosition.line + 1).toString()}"
-                data-column="${this.curPosition.character.toString()}"
-                ${this.displayMode === DisplayMode.AllMessage ? "data-messages=''" : ''}>
-                <div id="debug"></div>
-                ${this.curGoalState ? this.renderFilter() : ''}
-                <div id="run-state">
-                    <span id="state-continue"><a href="command:_lean.infoView.continue?{}">
-                        <img title="Unfreeze display" src="${this.getMediaPath('continue.svg')}"></a></span>
-                    <span id="state-pause"><a href="command:_lean.infoView.pause?{}">
-                        <img title="Freeze display" src="${this.getMediaPath('pause.svg')}"></a></span>
-                </div>
-                ${this.renderGoal()}
-                <div id="messages">${this.renderMessages()}</div>
-            </body></html>`;
-    }
-
-    private renderFilter() {
-        const reFilters = workspace.getConfiguration('lean').get('infoViewTacticStateFilters', []);
-        const filterIndex = workspace.getConfiguration('lean').get('infoViewFilterIndex', -1);
-        return reFilters.length > 0 ?
-            `<div id="filter">
-            <select id="filterSelect" onchange="infoViewModule.selectFilter(this.value);" title="Select a filter to apply to the tactic state">
-                <option value="-1" ${filterIndex === -1 ? 'selected' : ''}>no filter</option>
-                ${reFilters.map((obj, i) =>
-                    `<option value="${i}" ${filterIndex === i ? 'selected' : ''}>
-                    ${obj.name ||
-                        `${obj.match ? 'show ' : 'hide '}/${obj.regex}/${obj.flags}`}</option>`)}
-            </select>
-        </div>` : '';
-    }
-
-    private colorizeMessage(goal: string): string {
-        return goal
-            .replace(/^([|⊢]) /mg, '<strong class="goal-vdash">$1</strong> ')
-            .replace(/^(\d+ goals|1 goal)/mg, '<strong class="goal-goals">$1</strong>')
-            .replace(/^(context|state):/mg, '<strong class="goal-goals">$1</strong>:')
-            .replace(/^(case) /mg, '<strong class="goal-case">$1</strong> ')
-            .replace(/^([^:\n< ][^:\n⊢{[(⦃]*) :/mg, '<strong class="goal-hyp">$1</strong> :');
-    }
-
-    private renderGoal() {
-        if (!this.curGoalState || this.displayMode !== DisplayMode.OnlyState) { return ''; }
-        const reFilters = workspace.getConfiguration('lean').get('infoViewTacticStateFilters', []);
-        const filterIndex = workspace.getConfiguration('lean').get('infoViewFilterIndex', -1);
-        let goalString: string = this.curGoalState.replace(/^(no goals)/mg, 'goals accomplished');
-        goalString = RegExp('^\\d+ goals|goals accomplished', 'mg').test(goalString) ? goalString :
-            '1 goal\n'.concat(goalString);
-        const filteredGoalState = reFilters.length === 0 || filterIndex === -1 ? goalString :
-            // this regex splits the goal state into (possibly multi-line) hypothesis and goal blocks
-            // by keeping indented lines with the most recent non-indented line
-            goalString.match(/(^(?!  ).*\n?(  .*\n?)*)/mg).map((line) => line.trim())
-                .filter((line) => {
-                    const filt = reFilters[filterIndex];
-                    // eslint-disable-next-line @typescript-eslint/prefer-regexp-exec
-                    const test = line.match(new RegExp(filt.regex, filt.flags)) !== null;
-                    return filt.match ? test : !test;
-                }).join('\n');
-        return `<div id="goal"><h1>Tactic State</h1><pre>${
-            this.colorizeMessage(escapeHtml(filteredGoalState))}</pre></div>`;
-    }
-
-    private renderMessages() {
-        if (!this.curFileName || !this.curMessages) { return ''; }
-        return this.curMessages.map((m) => {
-            const f = escapeHtml(m.file_name); const b = escapeHtml(basename(m.file_name));
-            const l = m.pos_line; const c = m.pos_col;
-            const el = m.end_pos_line || l;
-            const ec = m.end_pos_col || c;
-            const cmd = encodeURI('command:_lean.revealPosition?' +
-                JSON.stringify([Uri.file(m.file_name), m.pos_line, m.pos_col]));
-            const shouldColorize = m.severity === 'error';
-            let text = escapeHtml(m.text)
-            text = shouldColorize ? this.colorizeMessage(text) : text;
-            this.messageFormatters.forEach((formatter) => {
-                text = formatter(text, m);
-            });
-            return `<div class="message ${m.severity}" data-line="${l}" data-column="${c}"
-                data-end-line="${el}" data-end-column="${ec}">
-                <h1 title="${f}:${l}:${c}"><a href="${cmd}">
-                    ${b}:${l}:${c}: ${m.severity} ${escapeHtml(m.caption)}
-                </a></h1>
-                <pre>${text}</pre></div>`;
-        }).join('\n');
-    }
-
-    private async copyToComment(editor: TextEditor) {
-        await editor.edit((builder) => {
-            builder.insert(editor.selection.end.with({character: 0}).translate({lineDelta: 1}),
-                '/-\n' + this.renderText() + '\n-/\n');
-        });
-    }
-    private renderText(): string {
-        const msgText = this.curMessages &&
-            this.curMessages.map((m) =>
-                `${basename(m.file_name)}:${m.pos_line}:${m.pos_col}: ${m.severity} ${m.caption}\n${m.text}`,
-            ).join('\n');
-        const goalText = this.curGoalState ? `Tactic State:\n${this.curGoalState}\n` : '';
-        return goalText + msgText;
+            </head>
+            <body>
+                <div id="react_root"></div>
+                <script src="${this.getMediaPath('index.js')}"></script>
+            </body>
+            </html>`
     }
 }

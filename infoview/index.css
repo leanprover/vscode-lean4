@@ -1,0 +1,87 @@
+
+/* Some styles specific to the infoview. */
+
+/* These are syntax highlights for the string goal view. */
+.goal-goals { color: #569cd6; }
+.goal-vdash { color: #569cd6; }
+.goal-case { color: #a1df90; }
+.goal-hyp { color: #ffcc00; }
+
+.vscode-light .goal-goals { color: #367cb6; }
+.vscode-light .goal-vdash { color: #367cb6; }
+.vscode-light .goal-case { color: #1f7a1f; }
+.vscode-light .goal-hyp { color: #cc7a00; }
+
+.highlight { /* Used to denote text highlighted by the pretty-print expression widget. */
+    background-color: #96ccff;
+}
+
+.vscode-dark .highlight {
+    background-color: #569cd6;
+}
+
+.error {
+    color: darkred;
+}
+
+.warning {
+    color: darkorange;
+}
+
+.information {
+    color: darkgreen;
+}
+
+.vscode-dark .error {
+    color: red;
+}
+
+.vscode-dark .warning {
+    color: orange;
+}
+
+.vscode-dark .information {
+    color: lightgreen;
+}
+
+.vscode-high-contrast .error {
+    color: lightpink;
+}
+
+.vscode-high-contrast .warning {
+    color: yellow;
+}
+
+.vscode-high-contrast .information {
+    color: lightgreen;
+}
+
+/* Headers for infoview */
+
+h1 {
+    display: block;
+    margin-bottom: 1ex;
+    margin-top: 1ex;
+    border-bottom: 1px solid;
+    padding: 0px;
+    font-weight: normal;
+    font-size: 100%;
+}
+
+.collapsible-header {
+    border-bottom-color: black;
+}
+.vscode-dark .collapsible-header {
+    border-bottom-color: lightgray;
+}
+.vscode-high-contrast .collapsible-header {
+    border-bottom-color: white;
+}
+
+@keyframes spinner {
+    to {transform: rotate(360deg);}
+}
+
+.spin {
+    animation: spinner .6s linear infinite;
+}
