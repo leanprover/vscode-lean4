@@ -72,6 +72,7 @@ export function infoEvents(sb: SignalBuilder, sinks: {onEdit}, onProps: Signal<I
         const loc = onLoc.value;
         if (!loc) {return {};}
         try {
+                // [todo] if the location has not changed keep the widget and goal state?
                 const res: any = {widget: null, goalState: null, error: null};
                 const info = await global_dispatcher.run(() => global_server.info(loc.file_name, loc.line, loc.column));
                 const record = info.record;

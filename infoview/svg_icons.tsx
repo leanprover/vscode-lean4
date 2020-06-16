@@ -39,3 +39,7 @@ export function ContinueIcon() {
 export function RefreshIcon() {
     return <svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" fill="currentColor"><path fillRule="evenodd" clipRule="evenodd" d="M5.563 2.516A6.001 6.001 0 0 0 8 14 6 6 0 0 0 9.832 2.285l-.302.953A5.002 5.002 0 0 1 8 13a5 5 0 0 1-2.88-9.088l.443-1.396z"/><path fillRule="evenodd" clipRule="evenodd" d="M5 3H2V2h3.5l.5.5V6H5V3z"/></svg>
 }
+
+export function GoToFileIcon() {
+    return <svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" fill="currentColor"><path fillRule="evenodd" clipRule="evenodd" d="M8.06 3.854L6 5.914 5.914 6l-.707-.707L6.5 4h-3a1.5 1.5 0 0 0 0 3H4v1h-.5a2.5 2.5 0 1 1 0-5h3L5.207 1.707 5.914 1l2.147 2.146v.708zM8.329 2H10v4h4v7H6V7.347L5 6.5v7l.5.5h9l.5-.5V5l-.1-.4-3.4-3.5-.3-.1H7.328l1 1zm5.575 3L11 2v3h2.903z"/></svg>
+}

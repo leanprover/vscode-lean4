@@ -28,7 +28,7 @@ export function MessageView(props: MessageViewProps) {
         <summary className={m.severity + ' mv2 pointer'}>{title}
             {onCopyToComment &&
                 <span className="fr">
-                    <a className="link pointer mh3 dim" title="copy to comment" onClick={e => {e.preventDefault(); onCopyToComment(m.text)}}><CopyToCommentIcon/></a>
+                    <a className="link pointer mh3 dim" title="copy message to comment" onClick={e => {e.preventDefault(); onCopyToComment(m.text)}}><CopyToCommentIcon/></a>
                 </span>
             }
         </summary>
