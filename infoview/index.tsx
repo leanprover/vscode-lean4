@@ -52,7 +52,7 @@ function Main(props: {}) {
             setPinnedLocs(pins);
         }
     }
-    function onEdit(loc,text) {
+    function onEdit(loc: Location, text: string) {
         return post({
             command: 'insert_text',
             loc,

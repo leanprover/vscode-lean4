@@ -30,7 +30,7 @@ interface InfoProps {
 
 export function Info(props: InfoProps) {
     const {setPaused, onPin, onEdit, isCursor, isPinned} = props;
-    const {loc, isLoading:loading, isUpdating:updating, isPaused: paused, error:updateError, goalState, widget, messages, handleWidgetEvent, forceUpdate} = useInfo(props, onEdit);
+    const {loc, isLoading:loading, isUpdating:updating, isPaused: paused, error:updateError, goalState, widget, messages, forceUpdate} = useInfo(props);
     const config    = React.useContext(ConfigContext);
 
     function copyToComment(text?: string) {
@@ -71,7 +71,7 @@ export function Info(props: InfoProps) {
                 <details open className={widget ? '' : 'dn'}>
                     <summary className="mv2 pointer">Widget</summary>
                     <div className={'ml1 '} >
-                        <Widget widget={widget} post={e => handleWidgetEvent(e)} />
+                        <Widget widget={widget} fileName={loc.file_name} onEdit={onEdit} />
                     </div>
                 </details>
                 <details open={!widget} className={goalState ? '' : 'dn'}>
