@@ -60,7 +60,7 @@ export function infoEvents(sb: SignalBuilder, sinks: {onEdit}, onProps: Signal<I
         global_server.error,
         sb.filter(x => !x, onPaused),
         sb.onChange(onIsLoading),
-        sb.onChange(sb.map(isDone, onTasks)),
+        sb.map(isDone, onTasks),
         throttled_loc
     )), onForceUpdate);
 
