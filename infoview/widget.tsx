@@ -1,7 +1,9 @@
 import * as React from 'react';
 import * as ReactPopper from 'react-popper';
 import './popper.css';
-import { WidgetData, WidgetComponent, WidgetHtml, WidgetElement, WidgetEventRequest } from 'lean-client-js-node';
+import { WidgetComponent, WidgetHtml, WidgetElement, WidgetEventRequest, WidgetIdentifier } from 'lean-client-js-node';
+import { global_server } from './server';
+import { Location } from '../src/shared';
 
 const Popper = (props) => {
     const { children, popperContent, refEltTag, refEltAttrs } = props;
@@ -27,8 +29,9 @@ const Popper = (props) => {
 }
 
 export interface WidgetProps {
-    widget?: WidgetData;
-    post: (e: WidgetEventRequest) => void;
+    widget?: WidgetIdentifier;
+    onEdit?: (l: Location, text: string) => void;
+    fileName: string;
 }
 
 class WidgetErrorBoundary extends React.Component<{children},{error}> {
@@ -58,9 +61,46 @@ class WidgetErrorBoundary extends React.Component<{children},{error}> {
 }
 
 export function Widget(props: WidgetProps): JSX.Element {
-    if (!props.widget) { return null; }
+    const [html, setHtml] = React.useState(props.widget && props.widget.html);
+    React.useEffect(() => {
+        async function loadHtml() {
+            setHtml((await global_server.send({
+                command: 'get_widget',
+                line: props.widget.line,
+                column: props.widget.column,
+                id: props.widget.id,
+                file_name: props.fileName,
+            })).widget.html);
+        }
+        if (props.widget && !props.widget.html) loadHtml();
+    }, [props.fileName, props.widget]);
+    if (!props.widget) return null;
+    async function post(e: any) {
+        const message: WidgetEventRequest = {
+            command: 'widget_event',
+            line: props.widget.line,
+            column: props.widget.column,
+            id: props.widget.id,
+            file_name: props.fileName,
+            ...e,
+        };
+        const update_result = await global_server.send(message);
+        if (!update_result.record) { return; }
+        const record = update_result.record;
+        if (record.status === 'success' && record.widget) {
+            setHtml(record.widget.html);
+        } else if (record.status === 'edit') {
+            const loc = { line: props.widget.line, column: props.widget.column, file_name: props.fileName };
+            props.onEdit && props.onEdit(loc, record.action);
+            setHtml(record.widget.html);
+        } else if (record.status === 'invalid_handler') {
+            console.warn(`No widget_event update for ${message.handler}: invalid handler.`)
+        } else if (record.status === 'error') {
+            console.error(`Update gave an error: ${record.message || record}`);
+        }
+    }
     return <WidgetErrorBoundary>
-        <ViewHtml html={props.widget.html} post={props.post}/>
+        { html ? <ViewHtml html={html} post={post}/> : null }
     </WidgetErrorBoundary>
 }
 

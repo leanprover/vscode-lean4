@@ -1,5 +1,5 @@
 import { Signal, SignalBuilder } from './util';
-import { Event, CurrentTasksResponse, WidgetEventHandler, WidgetEventRequest, WidgetData, GoalState, Message } from 'lean-client-js-core'
+import { Event, CurrentTasksResponse, GoalState, Message, WidgetIdentifier } from 'lean-client-js-core'
 import { global_server, ServerRestartEvent, ConfigEvent } from './server';
 import {Location, locationKey,} from '../src/shared';
 import { GetMessagesFor } from './messages';
@@ -34,16 +34,8 @@ class OneAtATimeDispatcher {
 }
 const global_dispatcher = new OneAtATimeDispatcher();
 
-
-interface WidgetEventArgs {
-    kind;
-    handler: WidgetEventHandler;
-    args;
-}
-
-export function infoEvents(sb: SignalBuilder, sinks: {onEdit}, onProps: Signal<InfoProps>): Signal<InfoState> {
+export function infoEvents(sb: SignalBuilder, onProps: Signal<InfoProps>): Signal<InfoState> {
     const onForceUpdate = sb.mkEvent<any>();
-    const onWidgetEvent = sb.mkEvent<WidgetEventArgs>();
     const state = sb.mkEvent<InfoState>();
     const statev = sb.store(state);
 
@@ -72,65 +64,26 @@ export function infoEvents(sb: SignalBuilder, sinks: {onEdit}, onProps: Signal<I
         const loc = onLoc.value;
         if (!loc) {return {};}
         try {
-                // [todo] if the location has not changed keep the widget and goal state?
-                const res: any = {widget: null, goalState: null, error: null};
-                const info = await global_dispatcher.run(() => global_server.info(loc.file_name, loc.line, loc.column));
-                const record = info.record;
-                res.goalState = record && record.state;
-                if (record && record.widget) {
-                    if (record.widget.html !== undefined) {
-                        res.widget = record.widget;
-                    } else {
-                        const { widget: newWidget } = await global_server.send({
-                            command: 'get_widget',
-                            line: record.widget.line,
-                            column: record.widget.column,
-                            id: record.widget.id,
-                            file_name: loc.file_name,
-                        });
-                        res.widget = newWidget;
-                    }
-                }
-                return res;
-            } catch (error) {
-                return {error};
+            // [todo] if the location has not changed keep the widget and goal state?
+            const info = await global_dispatcher.run(() => global_server.info(loc.file_name, loc.line, loc.column));
+            const record = info.record;
+            const goalState = record && record.state;
+            const widget = record && record.widget;
+            if (widget && widget.line === undefined) {
+                widget.line = loc.line;
+                widget.column = loc.column;
             }
-    }, updateTrigger);
-
-    const we = sb.mapTaskOrdered(async (e) => {
-        const s = statev.value;
-        if (!s) {return {}; }
-        if (!s.loc) {return {};}
-        if (!s.widget) {return {};}
-        const message: WidgetEventRequest = {
-            command: 'widget_event',
-            line: s.widget.line,
-            column: s.widget.column,
-            id: s.widget.id,
-            file_name: s.loc.file_name,
-            ...e,
-        };
-        const update_result = await global_server.send(message);
-        if (!update_result.record) { return; }
-        const record = update_result.record;
-        if (record.status === 'success' && record.widget) {
-            return {widget: record.widget};
-        } else if (record.status === 'edit') {
-            sinks.onEdit(s.loc, record.action);
-            return {widget: record.widget};
-        } else if (record.status === 'invalid_handler') {
-            console.warn(`No widget_event update for ${message.handler}: invalid handler.`)
-        } else if (record.status === 'error') {
-            console.error(`Update gave an error: ${record.message || record}`);
+            return { widget, goalState };
+        } catch (error) {
+            return {error};
         }
-    }, onWidgetEvent);
+    }, updateTrigger);
 
     const r: Signal<Partial<InfoState>> = sb.merge(
         result,
         sb.map<boolean, Partial<InfoState>>(l => ({isLoading:l}), sb.debounce(300, onIsLoading)),
         sb.map<boolean, Partial<InfoState>>(l => ({isUpdating:l}), sb.debounce(300, isRunning)),
         onProps,
-        we,
         onMessage,
     );
 
@@ -140,7 +93,6 @@ export function infoEvents(sb: SignalBuilder, sinks: {onEdit}, onProps: Signal<I
         isPaused: false,
         messages: [],
         forceUpdate: () => onForceUpdate.fire({}),
-        handleWidgetEvent: (w) => onWidgetEvent.fire(w)
     };
     const z = sb.scan<InfoState,Partial<InfoState>>((acc, x) => ({...acc, ...x}), defaultInfoProps, r);
     sb.push(z.on(x => state.fire(x)));
@@ -166,13 +118,12 @@ export interface InfoState {
 
     isLoading: boolean;
     isUpdating: boolean;
-    widget?: WidgetData;
+    widget?: WidgetIdentifier;
     goalState?: GoalState;
     error?: {message: string};
     messages: Message[];
 
     forceUpdate: () => void;
-    handleWidgetEvent;
 }
 
 const defaultInfoState: InfoState = {
@@ -181,16 +132,15 @@ const defaultInfoState: InfoState = {
     isPaused: false,
     messages: [],
     forceUpdate: () => {},
-    handleWidgetEvent: () => {},
 }
 
-export function useInfo(ps: InfoProps, onEdit) {
+export function useInfo(ps: InfoProps) {
     const [g,s] = React.useState(defaultInfoState);
     const pes = React.useRef<Event<InfoProps>>();
     React.useEffect(() => {
         const sb = new SignalBuilder();
         pes.current = sb.mkEvent<InfoProps>();
-        sb.push(infoEvents(sb, {onEdit}, pes.current).on(s));
+        sb.push(infoEvents(sb, pes.current).on(s));
         return () => sb.dispose();
     }, []);
     React.useEffect(() => {
