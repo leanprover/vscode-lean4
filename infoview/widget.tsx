@@ -60,28 +60,32 @@ class WidgetErrorBoundary extends React.Component<{children},{error}> {
     }
 }
 
-export function Widget(props: WidgetProps): JSX.Element {
-    const [html, setHtml] = React.useState(props.widget && props.widget.html);
+export function Widget({ widget, fileName, onEdit }: WidgetProps): JSX.Element {
+    const [html, setHtml] = React.useState<WidgetComponent>();
     React.useEffect(() => {
         async function loadHtml() {
             setHtml((await global_server.send({
                 command: 'get_widget',
-                line: props.widget.line,
-                column: props.widget.column,
-                id: props.widget.id,
-                file_name: props.fileName,
+                line: widget.line,
+                column: widget.column,
+                id: widget.id,
+                file_name: fileName,
             })).widget.html);
         }
-        if (props.widget && !props.widget.html) loadHtml();
-    }, [props.fileName, props.widget]);
-    if (!props.widget) return null;
+        if (widget && !widget.html) {
+            loadHtml();
+        } else {
+            setHtml(widget && widget.html);
+        }
+    }, [fileName, widget]);
+    if (!widget) return null;
     async function post(e: any) {
         const message: WidgetEventRequest = {
             command: 'widget_event',
-            line: props.widget.line,
-            column: props.widget.column,
-            id: props.widget.id,
-            file_name: props.fileName,
+            line: widget.line,
+            column: widget.column,
+            id: widget.id,
+            file_name: fileName,
             ...e,
         };
         const update_result = await global_server.send(message);
@@ -90,8 +94,8 @@ export function Widget(props: WidgetProps): JSX.Element {
         if (record.status === 'success' && record.widget) {
             setHtml(record.widget.html);
         } else if (record.status === 'edit') {
-            const loc = { line: props.widget.line, column: props.widget.column, file_name: props.fileName };
-            if (props.onEdit) props.onEdit(loc, record.action);
+            const loc = { line: widget.line, column: widget.column, file_name: fileName };
+            if (onEdit) onEdit(loc, record.action);
             setHtml(record.widget.html);
         } else if (record.status === 'invalid_handler') {
             console.warn(`No widget_event update for ${message.handler}: invalid handler.`)
