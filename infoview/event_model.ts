@@ -127,8 +127,8 @@ export function infoEvents(sb: SignalBuilder, sinks: {onEdit}, onProps: Signal<I
 
     const r: Signal<Partial<InfoState>> = sb.merge(
         result,
-        sb.map<boolean, Partial<InfoState>>(l => ({isLoading:l}), sb.debounce(100, onIsLoading)),
-        sb.map<boolean, Partial<InfoState>>(l => ({isUpdating:l}), sb.debounce(100, isRunning)),
+        sb.map<boolean, Partial<InfoState>>(l => ({isLoading:l}), sb.debounce(300, onIsLoading)),
+        sb.map<boolean, Partial<InfoState>>(l => ({isUpdating:l}), sb.debounce(300, isRunning)),
         onProps,
         we,
         onMessage,
