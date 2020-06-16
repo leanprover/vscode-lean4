@@ -91,7 +91,7 @@ export function Widget(props: WidgetProps): JSX.Element {
             setHtml(record.widget.html);
         } else if (record.status === 'edit') {
             const loc = { line: props.widget.line, column: props.widget.column, file_name: props.fileName };
-            props.onEdit && props.onEdit(loc, record.action);
+            if (props.onEdit) props.onEdit(loc, record.action);
             setHtml(record.widget.html);
         } else if (record.status === 'invalid_handler') {
             console.warn(`No widget_event update for ${message.handler}: invalid handler.`)
