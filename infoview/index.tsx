@@ -9,7 +9,6 @@ import { Info } from './info';
 import { Messages, processMessages } from './messages';
 
 export const ConfigContext = React.createContext<Config>(defaultConfig);
-export const MessagesContext = React.createContext<Message[]>([]);
 export const LocationContext = React.createContext<Location | null>(null);
 
 function StatusView(props: ServerStatus) {
@@ -70,8 +69,9 @@ function Main(props: {}) {
             ToggleUpdatingEvent.on(l => setPause()(curLoc && !curLoc.paused)),
             TogglePinEvent.on(() => isPinned(curLoc.loc) ? unpin()() : pin() )
         ];
+
         return () => { for (const s of subscriptions) s.dispose(); }
-    });
+    }, []);
     const isPinned = (loc: Location) => pinnedLocs.some(l => locationEq(l.loc, loc));
     const pin = () => {
         if (isPinned(curLoc.loc)) {return; }
@@ -89,7 +89,7 @@ function Main(props: {}) {
     }
     const allMessages = processMessages(messages, null);
     return <div className="ma1">
-        <ConfigContext.Provider value={config}><MessagesContext.Provider value={messages}>
+        <ConfigContext.Provider value={config}>
             {pinnedLocs.map(({loc, paused},i) => {
                 const isCursor = locationEq(loc,curLoc.loc);
                 return <Info loc={loc} isPaused={paused} setPaused={setPause(i)} key={i} isPinned={true} isCursor={isCursor} onEdit={onEdit} onPin={unpin(i)}/>}) }
@@ -100,7 +100,7 @@ function Main(props: {}) {
                     <Messages messages={allMessages}/>
                 </div>
             </details>
-        </MessagesContext.Provider></ConfigContext.Provider>
+        </ConfigContext.Provider>
     </div>
 }
 
