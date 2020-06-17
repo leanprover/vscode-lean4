@@ -1,4 +1,4 @@
-import { Server, Transport, Connection, Event, TransportError } from 'lean-client-js-core';
+import { Server, Transport, Connection, Event, TransportError, Message } from 'lean-client-js-core';
 import { ToInfoviewMessage, FromInfoviewMessage, Config, Location, defaultConfig } from '../src/shared';
 import { SignalBuilder, Signal } from './util';
 declare const acquireVsCodeApi;
@@ -18,6 +18,7 @@ export const ToggleUpdatingEvent: Event<{}> = new Event();
 export const CopyToCommentEvent: Event<{}> = new Event();
 export const TogglePinEvent: Event<{}> = new Event();
 export const ServerRestartEvent: Event<{}> = new Event();
+export const AllMessages: Event<Message[]> = new Event();
 
 window.addEventListener('message', event => { // messages from the extension
     const message: ToInfoviewMessage = event.data; // The JSON data our extension sent
@@ -31,6 +32,7 @@ window.addEventListener('message', event => { // messages from the extension
         case 'copy_to_comment': CopyToCommentEvent.fire(message); break;
         case 'toggle_pin': TogglePinEvent.fire(message); break;
         case 'restart': ServerRestartEvent.fire(message); break;
+        case 'all_messages': AllMessages.fire(message.messages); break;
         case 'server_event': break;
         case 'server_error': break;
     }
@@ -89,4 +91,5 @@ class ProxyConnectionClient implements Connection {
 
 export const global_server = new Server(new ProxyTransport());
 global_server.logMessagesToConsole = true;
+global_server.allMessages.on(x => AllMessages.fire(x.msgs));
 global_server.connect();
