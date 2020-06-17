@@ -94,7 +94,7 @@ function Main(props: {}) {
                 const isCursor = locationEq(loc,curLoc.loc);
                 return <Info loc={loc} isPaused={paused} setPaused={setPause(i)} key={i} isPinned={true} isCursor={isCursor} onEdit={onEdit} onPin={unpin(i)}/>}) }
             {!isPinned(curLoc.loc) && <Info loc={curLoc.loc} isPaused={curLoc.paused} setPaused={setPause()} key={pinnedLocs.length} isPinned={false} isCursor={true} onEdit={onEdit} onPin={pin}/>}
-            <details>
+            <details open={!config.infoViewAutoOpenShowGoal}>
                 <summary className="mv2">All Messages ({allMessages.length})</summary>
                 <div className="ml1">
                     <Messages messages={allMessages}/>

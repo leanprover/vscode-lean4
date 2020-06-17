@@ -273,6 +273,7 @@ export class InfoProvider implements Disposable {
                 infoViewTacticStateFilters: workspace.getConfiguration('lean').get('infoViewTacticStateFilters', []),
                 filterIndex: workspace.getConfiguration('lean').get('infoViewFilterIndex', -1),
                 infoViewAllErrorsOnLine: workspace.getConfiguration('lean').get('infoViewAllErrorsOnLine', false),
+                infoViewAutoOpenShowGoal: workspace.getConfiguration('lean').get('infoViewAutoOpenShowGoal', true)
             },
         });
     }

@@ -37,11 +37,13 @@ export interface Config {
     filterIndex;
     infoViewTacticStateFilters: any[];
     infoViewAllErrorsOnLine: boolean;
+    infoViewAutoOpenShowGoal: boolean;
 }
 export const defaultConfig: Config = {
     filterIndex: -1,
     infoViewTacticStateFilters: [],
     infoViewAllErrorsOnLine: true,
+    infoViewAutoOpenShowGoal: true,
 }
 
 /** The root state of the infoview */
