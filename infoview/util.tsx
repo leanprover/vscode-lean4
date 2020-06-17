@@ -1,4 +1,5 @@
 import { Event } from 'lean-client-js-core'
+import { syncBuiltinESMExports } from 'module';
 
 // https://stackoverflow.com/questions/6234773/can-i-escape-html-special-chars-in-javascript
 export function escapeHtml(s: string): string {
@@ -122,6 +123,22 @@ export class SignalBuilder {
         return r;
     }
 
+    /** Only trigger the output `y` at most once after each `x` trigger. */
+    onceAfter<X,Y>(x: Signal<X>, y: Signal<Y>): Signal<Y> {
+        const out = new Event<Y>();
+        let trig = false;
+        this.subscriptions.push(
+            x.on(() => {trig = true;}),
+            y.on(v => {
+                if (trig) {
+                    trig = false;
+                    out.fire(v);
+                }
+            }),
+        );
+        return out;
+    }
+
     /** When the input fires, run the given promise and throttle future input values until the promise resolves.
      * Swallows the error if the promise errors.
      */
@@ -182,6 +199,8 @@ export class SignalBuilder {
 
     store<X>(g: Signal<X>): Signal<X> & {value?: X} {
         const r: any = g;
+        if (r.isStoring) {return r;}
+        r.isStoring = true;
         this.subscriptions.push(g.on(x => r.value = x));
         return r;
     }
