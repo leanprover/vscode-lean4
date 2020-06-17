@@ -1,5 +1,4 @@
 import { Event } from 'lean-client-js-core'
-import { syncBuiltinESMExports } from 'module';
 
 // https://stackoverflow.com/questions/6234773/can-i-escape-html-special-chars-in-javascript
 export function escapeHtml(s: string): string {
