@@ -61,7 +61,7 @@ export function infoEvents(sb: SignalBuilder, onProps: Signal<InfoProps>): Signa
 
     const {result, isRunning} = sb.throttleTask<Location, Partial<InfoState>>(async () => {
         const loc = onLoc.value;
-        if (!loc) {return {};}
+        if (!loc) {return {widget: null, goalState: null, error: null};}
         try {
             // [todo] if the location has not changed keep the widget and goal state?
             const info = await global_dispatcher.run(() => global_server.info(loc.file_name, loc.line, loc.column));
@@ -72,7 +72,7 @@ export function infoEvents(sb: SignalBuilder, onProps: Signal<InfoProps>): Signa
                 widget.line = loc.line;
                 widget.column = loc.column;
             }
-            return { widget, goalState };
+            return { widget, goalState, error: null };
         } catch (error) {
             return {error};
         }
