@@ -1,7 +1,7 @@
 import { global_server, post, PositionEvent, ConfigEvent, SyncPinEvent, PauseEvent, ContinueEvent, ToggleUpdatingEvent, TogglePinEvent } from './server';
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
-import { ServerStatus, Config, defaultConfig,  Location, locationKey, locationEq, DisplayMode } from '../src/shared';
+import { ServerStatus, Config, defaultConfig,  Location, locationKey, locationEq } from '../src/shared';
 import { Message } from 'lean-client-js-core';
 import './tachyons.css' // stylesheet assumed by Lean widgets. See https://tachyons.io/ for documentation
 import './index.css'
@@ -94,7 +94,7 @@ function Main(props: {}) {
                 const isCursor = locationEq(loc,curLoc.loc);
                 return <Info loc={loc} isPaused={paused} setPaused={setPause(i)} key={i} isPinned={true} isCursor={isCursor} onEdit={onEdit} onPin={unpin(i)}/>}) }
             {!isPinned(curLoc.loc) && <Info loc={curLoc.loc} isPaused={curLoc.paused} setPaused={setPause()} key={pinnedLocs.length} isPinned={false} isCursor={true} onEdit={onEdit} onPin={pin}/>}
-            <details className={(config.displayMode === DisplayMode.AllMessage ? '' : 'dn')}>
+            <details>
                 <summary className="mv2">All Messages ({allMessages.length})</summary>
                 <div className="ml1">
                     <Messages messages={allMessages}/>
