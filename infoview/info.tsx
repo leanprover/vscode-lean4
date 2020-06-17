@@ -14,8 +14,8 @@ type InfoStatus = 'updating' | 'error' | 'pinned' | 'cursor' | 'loading';
 const statusColTable: {[T in InfoStatus]: string} = {
     'updating': 'gold',
     'loading': 'yellow',
-    'cursor': 'blue',
-    'pinned': 'purple',
+    'cursor': '',
+    'pinned': '',
     'error': 'dark-red',
 }
 interface InfoProps {
@@ -51,12 +51,12 @@ export function Info(props: InfoProps) {
         return <div>Waiting for info... </div>
     }
     const status: InfoStatus = loading ? 'loading' : updating ? 'updating' : updateError ? 'error' : isPinned ? 'pinned' : 'cursor';
-    const border_style = 'pl2 bl ' + (`b--${statusColTable[status]} `);
+    const statusColor = statusColTable[status];
     const nothingToShow = !widget && !goalState && messages.length === 0;
     const locationString = `${basename(loc.file_name)}:${(loc).line}:${(loc).column}`;
     return <LocationContext.Provider value={loc}>
-        <details className={border_style} open>
-            <summary className="mv2">
+        <details className="" open>
+            <summary style={{transition: 'color 0.5s ease'}} className={'mv2 ' + statusColor}>
                 {locationString}
                 <span className="fr">
                     {goalState && <a className="link pointer mh2 dim" title="copy state to comment" onClick={e => {e.preventDefault(); copyToComment()}}><CopyToCommentIcon/></a>}
@@ -68,12 +68,9 @@ export function Info(props: InfoProps) {
             </summary>
             <div className="ml1">
                 {!loading && !updating && updateError && <div className="error">Error updating: {updateError.message}. <a className="link pointer dim" onClick={e => forceUpdate()}>Try again.</a></div> }
-                <details open className={widget ? '' : 'dn'}>
-                    <summary className="mv2 pointer">Widget</summary>
-                    <div className={'ml1 '} >
-                        <Widget widget={widget} fileName={loc.file_name} onEdit={onEdit} />
-                    </div>
-                </details>
+                <div>
+                    <Widget widget={widget} fileName={loc.file_name} onEdit={onEdit} />
+                </div>
                 <details open={!widget} className={goalState ? '' : 'dn'}>
                     <summary className="mv2 pointer">{widget ? 'Plaintext Tactic State' : 'Tactic State'}</summary>
                     <div className="ml1">
