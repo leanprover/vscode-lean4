@@ -190,8 +190,6 @@ export class InfoProvider implements Disposable {
                 workspace.getConfiguration('lean').get('infoViewAutoOpenShowGoal', true) ?
                     DisplayMode.OnlyState : DisplayMode.AllMessage);
             this.openPreview(window.activeTextEditor);
-            this.sendPosition();
-            this.sendConfig();
         }
     }
 
@@ -216,6 +214,7 @@ export class InfoProvider implements Disposable {
         }
         this.sendPosition();
         this.sendConfig();
+        this.postMessage({command: 'all_messages', messages: this.server.messages});
     }
     /** Handle a message incoming from the webview. */
     private handleMessage(message: FromInfoviewMessage) {

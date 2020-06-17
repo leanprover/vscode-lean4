@@ -2,7 +2,6 @@ import { basename, escapeHtml, colorizeMessage } from './util';
 import { Message } from 'lean-client-js-node';
 import * as React from 'react';
 import { Location, Config } from '../src/shared';
-import { MessagesContext } from '.';
 import { CopyToCommentIcon } from './svg_icons';
 
 function compareMessages(m1: Message, m2: Message): boolean {
@@ -49,12 +48,6 @@ export function Messages(props: MessagesProps): JSX.Element {
     const msgs = (props.messages || []).map((m,i) =>
       <MessageView m={m} key={m.key || i} onCopyToComment={props.onCopyToComment}/>);
     return <>{msgs}</>;
-}
-
-export function AllMessages(props: {file_name?: string}) {
-    const allMessages = React.useContext(MessagesContext);
-    const msgs = processMessages(allMessages, props.file_name)
-    return <Messages messages={msgs}/>
 }
 
 /** Some processing for preparing all messages for viewing. */

@@ -1,4 +1,4 @@
-import { global_server, post, PositionEvent, ConfigEvent, SyncPinEvent, PauseEvent, ContinueEvent, ToggleUpdatingEvent, TogglePinEvent } from './server';
+import { global_server, post, PositionEvent, ConfigEvent, SyncPinEvent, PauseEvent, ContinueEvent, ToggleUpdatingEvent, TogglePinEvent, AllMessages } from './server';
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 import { ServerStatus, Config, defaultConfig,  Location, locationKey, locationEq, DisplayMode } from '../src/shared';
@@ -60,7 +60,7 @@ function Main(props: {}) {
     }
     React.useEffect(() => {
         const subscriptions = [
-            global_server.allMessages.on(x => setMessages(x.msgs)),
+            AllMessages.on(x => setMessages(x)),
             PositionEvent.on(loc => setCurLoc({...curLoc, loc})),
             ConfigEvent.on(l => setConfig(l)),
             SyncPinEvent.on(l => setPinnedLocs(l.pins.map((loc, i) => ({loc, paused: pinnedLocs[i] && pinnedLocs[i].paused})))),

@@ -101,5 +101,6 @@ export type ToInfoviewMessage =
     | { command: 'server_event' | 'server_error'; payload: string} // payloads have to be stringified json because vscode crashes if the depth is too big. }
     | { command: 'position'; loc: Location}
     | { command: 'on_config_change'; config: Partial<Config>}
+    | { command: 'all_messages'; messages: Message[]}
     | SyncPinMessage
     | { command: 'pause' | 'continue' | 'toggle_updating' | 'copy_to_comment' | 'toggle_pin' | 'restart'}
