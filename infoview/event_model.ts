@@ -53,7 +53,7 @@ export function infoEvents(sb: SignalBuilder, onProps: Signal<InfoProps>): Signa
         sb.filter(x => !x, onPaused),
         sb.onChange(onIsLoading),
         sb.map(isDone, onTasks),
-        throttled_loc
+        sb.onChange(throttled_loc, (x,y) => !x || !y || locationKey(x) !== locationKey(y))
     )), onForceUpdate);
     const onMessage = sb.map(({msgs, loc, config}) => {
         return {messages: GetMessagesFor(msgs, loc, config)};
