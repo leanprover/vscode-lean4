@@ -12,8 +12,8 @@ import { useInfo } from './event_model';
 type InfoStatus = 'updating' | 'error' | 'pinned' | 'cursor' | 'loading';
 
 const statusColTable: {[T in InfoStatus]: string} = {
-    'updating': 'gold',
-    'loading': 'yellow',
+    'updating': '',
+    'loading': 'gold',
     'cursor': '',
     'pinned': '',
     'error': 'dark-red',
@@ -85,7 +85,6 @@ export function Info(props: InfoProps) {
                 </details>
                 {nothingToShow && (
                     loading ? 'loading...' :
-                    updating ? 'updating...' :
                     paused ? <span>Updating is paused. <a className="link pointer dim" onClick={e => forceUpdate()}>Refresh</a> or <a className="link pointer dim" onClick={e => setPaused(false)}>resume updating</a> to see information</span> :
                     `no info found at ${locationString}`)}
             </div>
