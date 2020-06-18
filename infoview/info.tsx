@@ -84,9 +84,9 @@ export function Info(props: InfoProps) {
                     </div>
                 </details>
                 {nothingToShow && (
-                    loading ? 'loading...' :
+                    loading ? 'Loading...' :
                     paused ? <span>Updating is paused. <a className="link pointer dim" onClick={e => forceUpdate()}>Refresh</a> or <a className="link pointer dim" onClick={e => setPaused(false)}>resume updating</a> to see information</span> :
-                    `no info found at ${locationString}`)}
+                    `No info found at ${locationString}`)}
             </div>
         </details>
     </LocationContext.Provider>;
