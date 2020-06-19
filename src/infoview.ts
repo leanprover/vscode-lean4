@@ -237,6 +237,10 @@ export class InfoProvider implements Disposable {
             case 'sync_pin':
                 this.pins = message.pins;
                 return;
+            case 'request_config':
+                this.sendConfig();
+                this.postMessage({command: 'all_messages', messages: this.server.messages});
+                return;
         }
     }
     private handleServerRequest(message: ServerRequestMessage) {

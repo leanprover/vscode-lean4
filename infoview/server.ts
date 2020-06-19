@@ -96,3 +96,5 @@ export const global_server = new Server(new ProxyTransport());
 global_server.logMessagesToConsole = true;
 global_server.allMessages.on(x => AllMessages.fire(x.msgs));
 global_server.connect();
+
+post({command:'request_config'});
