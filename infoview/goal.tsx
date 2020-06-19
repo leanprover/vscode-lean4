@@ -10,7 +10,7 @@ export function Goal(props: GoalProps): JSX.Element {
     const config = React.useContext(ConfigContext);
     if (!props.goalState) { return null; }
     const reFilters = config.infoViewTacticStateFilters || [];
-    const filterIndex = config.filterIndex ?? -1;
+    const [filterIndex, setFilterIndex] = React.useState(config.filterIndex ?? -1);
     let goalString = props.goalState.replace(/^(no goals)/mg, 'goals accomplished')
     goalString = RegExp('^\\d+ goals|goals accomplished', 'mg').test(goalString) ? goalString : '1 goal\n'.concat(goalString);
     if (!(reFilters.length === 0 || filterIndex === -1)) {
@@ -24,5 +24,14 @@ export function Goal(props: GoalProps): JSX.Element {
             }).join('\n');
     }
     goalString = colorizeMessage(escapeHtml(goalString));
-    return <pre className="font-code"  style={{whiteSpace: 'pre-wrap'}} dangerouslySetInnerHTML={{ __html: goalString }} />
+    return <div>
+        {reFilters.length !== 0 && <div className="fr">
+            <label>filter: </label>
+            <select value={filterIndex} onChange={(e) => setFilterIndex(e.target.value)}>
+                {reFilters.map((obj,i) => <option value={i}>{obj.name || `${obj.match ? 'show ' : 'hide '}/${obj.regex}/${obj.flags}`}</option>)}
+            </select>
+        </div>}
+        <pre className="font-code"  style={{whiteSpace: 'pre-wrap'}} dangerouslySetInnerHTML={{ __html: goalString }} />
+    </div>
+
 }
