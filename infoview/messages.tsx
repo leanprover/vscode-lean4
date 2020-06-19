@@ -27,12 +27,10 @@ export function MessageView(props: MessageViewProps) {
     const title = `${b}:${l}:${c}`;
     return <details open>
         <summary className={m.severity + ' mv2 pointer'}>{title}
-            {onCopyToComment &&
                 <span className="fr">
                     <a className={'link pointer mh2 dim '} onClick={e => { e.preventDefault(); post({command: 'reveal', loc}); }} title="reveal file location"><GoToFileIcon/></a>
-                    <a className="link pointer mh2 dim" title="copy message to comment" onClick={e => {e.preventDefault(); onCopyToComment(m.text)}}><CopyToCommentIcon/></a>
+                    {onCopyToComment && <a className="link pointer mh2 dim" title="copy message to comment" onClick={e => {e.preventDefault(); onCopyToComment(m.text)}}><CopyToCommentIcon/></a>}
                 </span>
-            }
         </summary>
         <div className="ml1">
             <pre className="font-code" style={{whiteSpace: 'pre-wrap'}} dangerouslySetInnerHTML={{ __html: text }} />
