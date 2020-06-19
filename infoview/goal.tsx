@@ -27,7 +27,7 @@ export function Goal(props: GoalProps): JSX.Element {
     return <div>
         {reFilters.length !== 0 && <div className="fr">
             <label>filter: </label>
-            <select value={filterIndex} onChange={(e) => setFilterIndex(e.target.value)}>
+            <select value={filterIndex} onChange={(e) => setFilterIndex(Number(e.target.value))}>
                 <option value={-1}>none</option>
                 {reFilters.map((obj,i) => <option value={i}>{obj.name || `${obj.match ? 'show ' : 'hide '}/${obj.regex}/${obj.flags}`}</option>)}
             </select>
