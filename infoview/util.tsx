@@ -175,7 +175,10 @@ export class SignalBuilder {
     scan<A,X>(f: (acc: A, x: X) => A, init: A, g: Signal<X>): Signal<A> {
         const out = new Event<A>();
         let acc = init;
-        const h = g.on(x => {acc = f(acc, x); out.fire(acc);});
+        const h = g.on(x => {
+            acc = f(acc, x);
+            out.fire(acc);
+        });
         this.subscriptions.push(out, h);
         return out;
     }
