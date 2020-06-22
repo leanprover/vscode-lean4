@@ -2,7 +2,8 @@ import { basename, escapeHtml, colorizeMessage } from './util';
 import { Message } from 'lean-client-js-node';
 import * as React from 'react';
 import { Location, Config } from '../src/shared';
-import { CopyToCommentIcon } from './svg_icons';
+import { CopyToCommentIcon, GoToFileIcon } from './svg_icons';
+import { post } from './server';
 
 function compareMessages(m1: Message, m2: Message): boolean {
     return (m1.file_name === m2.file_name &&
@@ -19,17 +20,17 @@ export function MessageView(props: MessageViewProps) {
     const {m, onCopyToComment} = props;
     const b = escapeHtml(basename(m.file_name));
     const l = m.pos_line; const c = m.pos_col;
+    const loc: Location = {file_name: m.file_name, column: c, line: l}
     const shouldColorize = m.severity === 'error';
     let text = escapeHtml(m.text)
     text = shouldColorize ? colorizeMessage(text) : text;
     const title = `${b}:${l}:${c}`;
     return <details open>
         <summary className={m.severity + ' mv2 pointer'}>{title}
-            {onCopyToComment &&
                 <span className="fr">
-                    <a className="link pointer mh3 dim" title="copy message to comment" onClick={e => {e.preventDefault(); onCopyToComment(m.text)}}><CopyToCommentIcon/></a>
+                    <a className={'link pointer mh2 dim '} onClick={e => { e.preventDefault(); post({command: 'reveal', loc}); }} title="reveal file location"><GoToFileIcon/></a>
+                    {onCopyToComment && <a className="link pointer mh2 dim" title="copy message to comment" onClick={e => {e.preventDefault(); onCopyToComment(m.text)}}><CopyToCommentIcon/></a>}
                 </span>
-            }
         </summary>
         <div className="ml1">
             <pre className="font-code" style={{whiteSpace: 'pre-wrap'}} dangerouslySetInnerHTML={{ __html: text }} />

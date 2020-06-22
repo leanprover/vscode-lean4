@@ -319,14 +319,23 @@ export class InfoProvider implements Disposable {
         }
     }
 
-    private revealEditorPosition(uri: Uri, line: number, column: number) {
-        for (const editor of window.visibleTextEditors) {
-            if (editor.document.uri.toString() === uri.toString()) {
-                const pos = new Position(line - 1, column);
-                editor.revealRange(new Range(pos, pos), TextEditorRevealType.InCenterIfOutsideViewport);
-                editor.selection = new Selection(pos, pos);
+    private async revealEditorPosition(uri: Uri, line: number, column: number) {
+        const pos = new Position(line - 1, column);
+        let editor = null;
+        for (const e of window.visibleTextEditors) {
+            if (e.document.uri.toString() === uri.toString()) {
+                editor = e;
+                break;
             }
         }
+        if (!editor) {
+            const c = window.activeTextEditor ? window.activeTextEditor.viewColumn : ViewColumn.One;
+            const td = await workspace.openTextDocument(uri);
+            editor = await window.showTextDocument(td, c, false);
+        }
+        editor.revealRange(new Range(pos, pos), TextEditorRevealType.InCenterIfOutsideViewport);
+        editor.selection = new Selection(pos, pos);
+        return;
     }
 
     private hoverEditorPosition(message: HoverPositionMessage) {
