@@ -199,36 +199,6 @@
 				}
 			},
 			{
-				"command": "lean.displayList",
-				"category": "Lean",
-				"title": "Info View: Display Messages",
-				"description": "Displays all messages for the current file in the info view.",
-				"icon": {
-					"dark": "./media/display-list-dark.svg",
-					"light": "./media/display-list-light.svg"
-				}
-			},
-			{
-				"command": "lean.infoView.displayGoal",
-				"category": "Lean",
-				"title": "Info View: Display Goal",
-				"description": "Display the goal and any messages at the current position in the info view.",
-				"icon": {
-					"dark": "./media/display-goal-dark.svg",
-					"light": "./media/display-goal-light.svg"
-				}
-			},
-			{
-				"command": "lean.infoView.displayList",
-				"category": "Lean",
-				"title": "Info View: Display Messages",
-				"description": "Displays all messages for the current file in the info view.",
-				"icon": {
-					"dark": "./media/display-list-dark.svg",
-					"light": "./media/display-list-light.svg"
-				}
-			},
-			{
 				"command": "lean.openDocView",
 				"category": "Lean",
 				"title": "Open Documentation View",
@@ -344,12 +314,6 @@
 				"when": "editorTextFocus && editorLangId == lean"
 			},
 			{
-				"command": "lean.displayList",
-				"key": "ctrl+shift+alt+enter",
-				"mac": "cmd+shift+alt+enter",
-				"when": "editorTextFocus && editorLangId == lean"
-			},
-			{
 				"command": "lean.input.convert",
 				"key": "tab",
 				"mac": "tab",
@@ -366,28 +330,12 @@
 				"key": "alt+v",
 				"mac": "alt+v",
 				"when": "editorTextFocus && editorLangId == lean"
-			},
-			{
-				"command": "lean.infoView.displayGoal",
-				"key": "ctrl+shift+enter",
-				"mac": "cmd+shift+enter",
-				"when": "infoViewFocused"
-			},
-			{
-				"command": "lean.infoView.displayList",
-				"key": "ctrl+shift+alt+enter",
-				"mac": "cmd+shift+alt+enter",
-				"when": "infoViewFocused"
 			}
 		],
 		"menus": {
 			"commandPalette": [
 				{
 					"command": "lean.displayGoal",
-					"when": "editorLangId == lean"
-				},
-				{
-					"command": "lean.displayList",
 					"when": "editorLangId == lean"
 				},
 				{
@@ -407,37 +355,14 @@
 					"when": "editorLangId == lean"
 				},
 				{
-					"command": "lean.infoView.displayGoal",
-					"when": "infoViewFocused"
-				},
-				{
-					"command": "lean.infoView.displayList",
-					"when": "infoViewFocused"
-				},
-				{
 					"command": "lean.infoView.toggleUpdating",
 					"when": "editorLangId == lean || infoViewFocused"
 				}
 			],
 			"editor/title": [
 				{
-					"command": "lean.displayList",
-					"when": "editorLangId == lean",
-					"group": "navigation@1"
-				},
-				{
 					"command": "lean.displayGoal",
 					"when": "editorLangId == lean",
-					"group": "navigation@2"
-				},
-				{
-					"command": "lean.infoView.displayList",
-					"when": "infoViewFocused",
-					"group": "navigation@1"
-				},
-				{
-					"command": "lean.infoView.displayGoal",
-					"when": "infoViewFocused",
 					"group": "navigation@2"
 				}
 			]

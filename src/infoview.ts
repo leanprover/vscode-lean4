@@ -9,7 +9,7 @@ import {
     Uri, ViewColumn, WebviewPanel, window, workspace,
 } from 'vscode';
 import { Server } from './server';
-import { DisplayMode, ToInfoviewMessage, FromInfoviewMessage, Location, InsertTextMessage, ServerRequestMessage, RevealMessage, HoverPositionMessage, locationEq } from './shared'
+import { ToInfoviewMessage, FromInfoviewMessage, Location, InsertTextMessage, ServerRequestMessage, RevealMessage, HoverPositionMessage, locationEq } from './shared'
 import { StaticServer } from './staticserver';
 
 export class InfoProvider implements Disposable {
@@ -17,8 +17,6 @@ export class InfoProvider implements Disposable {
     private webviewPanel: WebviewPanel;
     private proxyConnection: Connection;
     private subscriptions: Disposable[] = [];
-
-    private displayMode: DisplayMode = DisplayMode.AllMessage;
 
     private statusBarItem: StatusBarItem;
     private statusShown: boolean = false;
@@ -108,19 +106,7 @@ export class InfoProvider implements Disposable {
                 this.postMessage({ command: 'continue' })
             }),
             commands.registerTextEditorCommand('lean.displayGoal', (editor) => {
-                this.setMode(DisplayMode.OnlyState);
                 this.openPreview(editor);
-            }),
-            commands.registerTextEditorCommand('lean.displayList', (editor) => {
-                this.setMode(DisplayMode.AllMessage);
-                this.openPreview(editor);
-            }),
-
-            commands.registerCommand('lean.infoView.displayGoal', () => {
-                this.setMode(DisplayMode.OnlyState);
-            }),
-            commands.registerCommand('lean.infoView.displayList', () => {
-                this.setMode(DisplayMode.AllMessage);
             }),
             commands.registerTextEditorCommand('lean.infoView.copyToComment',() =>
                 this.postMessage({ command: 'copy_to_comment' })
@@ -186,9 +172,6 @@ export class InfoProvider implements Disposable {
     private autoOpen() {
         if (!this.started && workspace.getConfiguration('lean').get('infoViewAutoOpen')) {
             this.started = true;
-            this.setMode(
-                workspace.getConfiguration('lean').get('infoViewAutoOpenShowGoal', true) ?
-                    DisplayMode.OnlyState : DisplayMode.AllMessage);
             this.openPreview(window.activeTextEditor);
         }
     }
@@ -199,8 +182,7 @@ export class InfoProvider implements Disposable {
         if (this.webviewPanel) {
             this.webviewPanel.reveal(column, true);
         } else {
-            this.webviewPanel = window.createWebviewPanel('lean',
-                this.displayMode === DisplayMode.OnlyState ? 'Lean Goal' : 'Lean Messages',
+            this.webviewPanel = window.createWebviewPanel('lean', 'Lean Infoview',
                 { viewColumn: column, preserveFocus: true },
                 {
                     enableFindWidget: true,
@@ -295,20 +277,9 @@ export class InfoProvider implements Disposable {
                 infoViewTacticStateFilters: workspace.getConfiguration('lean').get('infoViewTacticStateFilters', []),
                 filterIndex: workspace.getConfiguration('lean').get('infoViewFilterIndex', -1),
                 infoViewAllErrorsOnLine: workspace.getConfiguration('lean').get('infoViewAllErrorsOnLine', false),
-                displayMode: this.displayMode,
+                infoViewAutoOpenShowGoal: workspace.getConfiguration('lean').get('infoViewAutoOpenShowGoal', true)
             },
         });
-    }
-
-    private setMode(mode: DisplayMode) {
-        if (this.displayMode === mode && !this.stopped) { return; }
-        this.displayMode = mode;
-        if (this.webviewPanel) {
-            this.webviewPanel.title = this.displayMode === DisplayMode.OnlyState ? 'Lean Goal' : 'Lean Messages';
-        }
-        this.stopped = false;
-        this.sendPosition();
-        this.sendConfig();
     }
 
     private async postMessage(msg: ToInfoviewMessage): Promise<boolean> {

@@ -25,11 +25,6 @@ export interface ServerStatus {
     tasks: Task[];
 }
 
-export enum DisplayMode {
-    OnlyState, // only the state at the current cursor position including the tactic state
-    AllMessage, // all messages
-}
-
 export interface InfoProps extends Location {
     widget?: string; // [note] vscode crashes if the widget is sent as a deeply nested json object.
     goalState?: string;
@@ -42,13 +37,13 @@ export interface Config {
     filterIndex;
     infoViewTacticStateFilters: any[];
     infoViewAllErrorsOnLine: boolean;
-    displayMode: DisplayMode;
+    infoViewAutoOpenShowGoal: boolean;
 }
 export const defaultConfig: Config = {
     filterIndex: -1,
     infoViewTacticStateFilters: [],
     infoViewAllErrorsOnLine: true,
-    displayMode: DisplayMode.AllMessage,
+    infoViewAutoOpenShowGoal: true,
 }
 
 /** The root state of the infoview */
