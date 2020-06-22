@@ -11,6 +11,9 @@ export function post(message: FromInfoviewMessage) { // send a message to the ex
 export const PositionEvent: Event<Location> = new Event();
 const InnerConfigEvent: Event<Partial<Config>> = new Event();
 export const ConfigEvent: Signal<Config> = (new SignalBuilder()).scan((acc, x) => ({...acc, ...x}), defaultConfig, InnerConfigEvent);
+ConfigEvent.on(c => {
+    console.log('config updated: ', c);
+});
 export const SyncPinEvent: Event<{pins: Location[]}> = new Event();
 export const PauseEvent: Event<{}> = new Event();
 export const ContinueEvent: Event<{}> = new Event();
@@ -93,3 +96,5 @@ export const global_server = new Server(new ProxyTransport());
 global_server.logMessagesToConsole = true;
 global_server.allMessages.on(x => AllMessages.fire(x.msgs));
 global_server.connect();
+
+post({command:'request_config'});

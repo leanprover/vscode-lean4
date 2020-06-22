@@ -147,7 +147,7 @@ function ViewWidgetElement(props: {w: WidgetElement; post}) {
                 handler: events[k],
                 args: { type: 'unit' }
             });
-        } else if (tag === 'input' && attributes.type === 'text' && k === 'onChange') {
+        } else if (((tag === 'input' && attributes.type === 'text') || tag === 'select') && k === 'onChange') {
             new_attrs.onChange = (e) => post({
                 command: 'widget_event',
                 kind: 'onChange',
@@ -155,7 +155,7 @@ function ViewWidgetElement(props: {w: WidgetElement; post}) {
                 args: { type: 'string', value: e.target.value }
             });
         } else {
-            console.error(`unrecognised event kind ${k}`);
+            throw new Error(`unrecognised event kind ${k} for ${tag}`);
         }
     }
     const vs = children.map(html => ViewHtml({html, post, ...rest}));
