@@ -44,7 +44,9 @@ export function infoEvents(sb: SignalBuilder, onProps: Signal<InfoProps>): Signa
     sb.store(onPaused);
 
     const throttled_loc = sb.throttle<Location>(300, onLoc);
+    const onLocChange = sb.onChange(throttled_loc, (x,y) => !x || !y || locationKey(x) !== locationKey(y));
     const onTasks = sb.throttle(300, global_server.tasks);
+    const onIsDone = sb.filter(isDone, onTasks);
     const onIsLoading = sb.map(({l, t}) => isLoading(t, l), sb.zip({l:throttled_loc, t:onTasks}));
 
     const updateTrigger = sb.merge(sb.filter((x) => !onPaused.value, sb.merge(
@@ -52,29 +54,42 @@ export function infoEvents(sb: SignalBuilder, onProps: Signal<InfoProps>): Signa
         global_server.error,
         sb.filter(x => !x, onPaused),
         sb.onChange(onIsLoading),
-        sb.map(isDone, onTasks),
-        sb.onChange(throttled_loc, (x,y) => !x || !y || locationKey(x) !== locationKey(y))
+        onLocChange,
     )), onForceUpdate);
+
     const onMessage = sb.map(({msgs, loc, config}) => {
         return {messages: GetMessagesFor(msgs, loc, config)};
     }, sb.zip({msgs: AllMessages, loc: throttled_loc, config: ConfigEvent}));
 
-    const {result, isRunning} = sb.throttleTask<Location, Partial<InfoState>>(async () => {
+    const {result, isRunning} = sb.throttleTask<any, Partial<InfoState>>(async () => {
         const loc = onLoc.value;
+        let maxTries = 1;
         if (!loc) {return {widget: null, goalState: null, error: null};}
-        try {
-            // [todo] if the location has not changed keep the widget and goal state?
-            const info = await global_dispatcher.run(() => global_server.info(loc.file_name, loc.line, loc.column));
-            const record = info.record;
-            const goalState = record && record.state;
-            const widget = record && record.widget;
-            if (widget && widget.line === undefined) {
-                widget.line = loc.line;
-                widget.column = loc.column;
+        while (true) {
+            try {
+                // [todo] if the location has not changed keep the widget and goal state?
+                const info = await global_dispatcher.run(() => global_server.info(loc.file_name, loc.line, loc.column));
+                const record = info.record;
+                const goalState = record && record.state;
+                const widget = record && record.widget;
+                if (widget && widget.line === undefined) {
+                    widget.line = loc.line;
+                    widget.column = loc.column;
+                }
+                if (!widget && !goalState && maxTries > 0) {
+                    await new Promise((res) => setTimeout(res, 100));
+                    maxTries--;
+                } else {
+                    return { widget, goalState, error: null };
+                }
+            } catch (error) {
+                if (maxTries > 0) {
+                    await new Promise((res) => setTimeout(res, 100));
+                    maxTries--;
+                } else {
+                    return {error};
+                }
             }
-            return { widget, goalState, error: null };
-        } catch (error) {
-            return {error};
         }
     }, updateTrigger);
 
