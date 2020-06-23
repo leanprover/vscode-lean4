@@ -1,9 +1,10 @@
 import { basename, escapeHtml, colorizeMessage } from './util';
-import { Message } from 'lean-client-js-node';
+import { Message, WidgetIdentifier } from 'lean-client-js-node';
 import * as React from 'react';
 import { Location, Config } from '../src/shared';
 import { CopyToCommentIcon, GoToFileIcon } from './svg_icons';
 import { post } from './server';
+import { Widget } from './widget';
 
 function compareMessages(m1: Message, m2: Message): boolean {
     return (m1.file_name === m2.file_name &&
@@ -25,6 +26,7 @@ export function MessageView(props: MessageViewProps) {
     let text = escapeHtml(m.text)
     text = shouldColorize ? colorizeMessage(text) : text;
     const title = `${b}:${l}:${c}`;
+    const widgetId: WidgetIdentifier | null = (m as any).widget;
     return <details open>
         <summary className={m.severity + ' mv2 pointer'}>{title}
                 <span className="fr">
@@ -33,7 +35,9 @@ export function MessageView(props: MessageViewProps) {
                 </span>
         </summary>
         <div className="ml1">
+            { widgetId ? <Widget fileName={m.file_name} widget={widgetId}/> :
             <pre className="font-code" style={{whiteSpace: 'pre-wrap'}} dangerouslySetInnerHTML={{ __html: text }} />
+            }
         </div>
     </details>
 }
