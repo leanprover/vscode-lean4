@@ -60,9 +60,34 @@ class WidgetErrorBoundary extends React.Component<{children},{error}> {
     }
 }
 
+/** Returns `[node, isVisible]`. Attach `node` to the dom element you care about as `<div ref={node}>...</div>` and
+ * `isVisible` will change depending on whether the node is visible in the viewport or not. */
+function useIsVisible() {
+    const [isVisible,setIsVisible] = React.useState<boolean>(false);
+    const observer = React.useRef<IntersectionObserver>(null);
+    const node = React.useCallback<any>(n => {
+        if (observer.current) {
+            observer.current.disconnect();
+        }
+        if (n !== null) {
+            // this is called when the given element is mounted.
+            observer.current = new IntersectionObserver(([x]) => {
+                setIsVisible(x.isIntersecting);
+            }, { threshold: 0, root: null, rootMargin: '0px'});
+            observer.current.observe(n);
+        } else {
+            // when unmounted
+        }
+    }, []);
+    return [node, isVisible]
+}
+
 export function Widget({ widget, fileName, onEdit }: WidgetProps): JSX.Element {
     const [html, setHtml] = React.useState<WidgetComponent>();
+    const widgetContainerRef = React.useRef(null);
+    const [node, isVisible] = useIsVisible();
     React.useEffect(() => {
+        if (!isVisible) {return; }
         async function loadHtml() {
             setHtml((await global_server.send({
                 command: 'get_widget',
@@ -77,7 +102,7 @@ export function Widget({ widget, fileName, onEdit }: WidgetProps): JSX.Element {
         } else {
             setHtml(widget && widget.html);
         }
-    }, [fileName, widget]);
+    }, [fileName, widget, isVisible]);
     if (!widget) return null;
     async function post(e: any) {
         const message: WidgetEventRequest = {
@@ -103,9 +128,10 @@ export function Widget({ widget, fileName, onEdit }: WidgetProps): JSX.Element {
             console.error(`Update gave an error: ${record.message || record}`);
         }
     }
-    return <WidgetErrorBoundary>
+    return <div ref={node} className={isVisible ? 'ba b--red' : 'ba b--green'}><WidgetErrorBoundary>
         { html ? <ViewHtml html={html} post={post}/> : null }
     </WidgetErrorBoundary>
+    </div>
 }
 
 interface HtmlProps {
