@@ -84,7 +84,6 @@ function useIsVisible() {
 
 export function Widget({ widget, fileName, onEdit }: WidgetProps): JSX.Element {
     const [html, setHtml] = React.useState<WidgetComponent>();
-    const widgetContainerRef = React.useRef(null);
     const [node, isVisible] = useIsVisible();
     React.useEffect(() => {
         if (!isVisible) {return; }
@@ -128,9 +127,10 @@ export function Widget({ widget, fileName, onEdit }: WidgetProps): JSX.Element {
             console.error(`Update gave an error: ${record.message || record}`);
         }
     }
-    return <div ref={node} className={isVisible ? 'ba b--red' : 'ba b--green'}><WidgetErrorBoundary>
-        { html ? <ViewHtml html={html} post={post}/> : null }
-    </WidgetErrorBoundary>
+    return <div ref={node}>
+        <WidgetErrorBoundary>
+            { html ? <ViewHtml html={html} post={post}/> : null }
+        </WidgetErrorBoundary>
     </div>
 }
 
