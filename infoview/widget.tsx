@@ -4,6 +4,7 @@ import './popper.css';
 import { WidgetComponent, WidgetHtml, WidgetElement, WidgetEventRequest, WidgetIdentifier } from 'lean-client-js-node';
 import { global_server } from './server';
 import { Location } from '../src/shared';
+import { useIsVisible } from './collapsing';
 
 function Popper(props: {children: React.ReactNode[], popperContent: any, refEltTag: any, refEltAttrs: any}) {
     const { children, popperContent, refEltTag, refEltAttrs } = props;
@@ -58,28 +59,6 @@ class WidgetErrorBoundary extends React.Component<{children: any},{error?: {mess
       }
       return this.props.children;
     }
-}
-
-/** Returns `[node, isVisible]`. Attach `node` to the dom element you care about as `<div ref={node}>...</div>` and
- * `isVisible` will change depending on whether the node is visible in the viewport or not. */
-export function useIsVisible(): [any, boolean] {
-    const [isVisible,setIsVisible] = React.useState<boolean>(false);
-    const observer = React.useRef<IntersectionObserver>(null);
-    const node = React.useCallback<any>(n => {
-        if (observer.current) {
-            observer.current.disconnect();
-        }
-        if (n !== null) {
-            // this is called when the given element is mounted.
-            observer.current = new IntersectionObserver(([x]) => {
-                setIsVisible(x.isIntersecting);
-            }, { threshold: 0, root: null, rootMargin: '0px'});
-            observer.current.observe(n);
-        } else {
-            // when unmounted
-        }
-    }, []);
-    return [node, isVisible]
 }
 
 export function Widget({ widget, fileName, onEdit }: WidgetProps): JSX.Element {
