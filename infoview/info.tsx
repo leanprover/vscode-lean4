@@ -4,7 +4,7 @@ import { post, CopyToCommentEvent, copyToComment } from './server';
 import { LocationContext, ConfigContext } from '.';
 import { Widget } from './widget';
 import { Goal } from './goal';
-import { Messages } from './messages';
+import { Messages, processMessages } from './messages';
 import { basename } from './util';
 import { CopyToCommentIcon, PinnedIcon, PinIcon, ContinueIcon, PauseIcon, RefreshIcon, GoToFileIcon } from './svg_icons';
 import { useInfo } from './event_model';
@@ -29,8 +29,9 @@ interface InfoProps {
 
 export function Info(props: InfoProps) {
     const {setPaused, onPin, isCursor, isPinned} = props;
-    const {loc, isLoading:loading, isUpdating:updating, isPaused: paused, error:updateError, goalState, widget, messages, forceUpdate} = useInfo(props);
+    const {loc, isLoading:loading, isUpdating:updating, isPaused: paused, error:updateError, goalState, widget, messages: messages0, forceUpdate} = useInfo(props);
     const config    = React.useContext(ConfigContext);
+    const messages = processMessages(messages0);
 
     function copyGoalToComment() {
         if (goalState) copyToComment(goalState);

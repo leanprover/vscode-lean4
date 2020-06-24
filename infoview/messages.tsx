@@ -7,9 +7,11 @@ import { copyToComment, reveal } from './server';
 import { Widget } from './widget';
 
 function compareMessages(m1: Message, m2: Message): boolean {
-    return (m1.file_name === m2.file_name &&
+    return m1.file_name === m2.file_name &&
         m1.pos_line === m2.pos_line && m1.pos_col === m2.pos_col &&
-        m1.severity === m2.severity && m1.caption === m2.caption && m1.text === m2.text);
+        m1.severity === m2.severity && m1.caption === m2.caption && m1.text === m2.text &&
+        !!m1.widget === !!m2.widget && (!m1.widget ||
+            m1.widget.line === m2.widget.line && m1.widget.column === m2.widget.column && m1.widget.id === m2.widget.id);
 }
 
 interface MessageViewProps {
@@ -41,31 +43,32 @@ export function MessageView(props: MessageViewProps) {
 }
 
 interface MessagesProps {
-    messages: Message[];
+    messages: ProcessedMessage[];
 }
 
 export function Messages(props: MessagesProps): JSX.Element {
     const should_hide = !props.messages || props.messages.length === 0;
     if (should_hide) {return <>No messages.</>}
     const msgs = props.messages.map((m) =>
-      <MessageView m={m} key={`${m.pos_line}:${m.pos_col}`} />);
+      <MessageView m={m} key={m.key} />);
     return <>{msgs}</>;
 }
 
+export interface ProcessedMessage extends Message {
+    key: string;
+}
+
 /** Some processing for preparing all messages for viewing. */
-export function processMessages(messages: Message[], file_name): (Message & {key: string})[] {
-    const newmsgs = []
-    for (const m of messages) {
-        if (file_name && m.file_name !== file_name) {continue;}
-        let key = `${m.file_name}:${m.pos_line}:${m.pos_col}--${m.text.substr(0, 10)}`;
-        while (newmsgs.some(x => x.key === key)) {
-            key += "'";
-        }
-        newmsgs.push({...m, key});
-    }
-    return newmsgs.sort((a, b) => a.pos_line === b.pos_line
-            ? a.pos_col - b.pos_col
-            : a.pos_line - b.pos_line)
+export function processMessages(messages: Message[]): ProcessedMessage[] {
+    const keys = {};
+    return messages
+        .sort((a, b) => a.pos_line === b.pos_line ? a.pos_col - b.pos_col : a.pos_line - b.pos_line)
+        .map((m) => {
+            let key = `${m.pos_line}:${m.pos_col}`;
+            keys[key] += 1;
+            key = `${key}:${keys[key]}`;
+            return {...m, key};
+        });
 }
 
 export function GetMessagesFor(allMessages: Message[], loc: Location, config: Config) {

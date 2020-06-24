@@ -80,7 +80,7 @@ function Main(props: {}) {
         setPinnedLocs(pins);
         post({command:'sync_pin', pins: pins.map(x => x.loc)})
     }
-    const allMessages = processMessages(messages, null);
+    const allMessages = processMessages(messages.filter((m) => !curLoc.loc || m.file_name === curLoc.loc.file_name));
     return <div className="ma1">
         <ConfigContext.Provider value={config}>
             {pinnedLocs.map(({loc, paused},i) => {
