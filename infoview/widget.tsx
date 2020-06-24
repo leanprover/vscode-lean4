@@ -2,8 +2,7 @@ import * as React from 'react';
 import * as ReactPopper from 'react-popper';
 import './popper.css';
 import { WidgetComponent, WidgetHtml, WidgetElement, WidgetEventRequest, WidgetIdentifier } from 'lean-client-js-node';
-import { global_server } from './server';
-import { Location } from '../src/shared';
+import { global_server, edit } from './server';
 import { useIsVisible } from './collapsing';
 
 function Popper(props: {children: React.ReactNode[]; popperContent: any; refEltTag: any; refEltAttrs: any}) {
@@ -31,7 +30,6 @@ function Popper(props: {children: React.ReactNode[]; popperContent: any; refEltT
 
 export interface WidgetProps {
     widget?: WidgetIdentifier;
-    onEdit?: (l: Location, text: string) => void;
     fileName: string;
 }
 
@@ -61,7 +59,7 @@ class WidgetErrorBoundary extends React.Component<{children: any},{error?: {mess
     }
 }
 
-export function Widget({ widget, fileName, onEdit }: WidgetProps): JSX.Element {
+export function Widget({ widget, fileName }: WidgetProps): JSX.Element {
     const [html, setHtml] = React.useState<WidgetComponent>();
     const [node, isVisible] = useIsVisible();
     React.useEffect(() => {
@@ -98,7 +96,7 @@ export function Widget({ widget, fileName, onEdit }: WidgetProps): JSX.Element {
             setHtml(record.widget.html);
         } else if (record.status === 'edit') {
             const loc = { line: widget.line, column: widget.column, file_name: fileName };
-            if (onEdit) onEdit(loc, record.action);
+            edit(loc, record.action);
             setHtml(record.widget.html);
         } else if (record.status === 'invalid_handler') {
             console.warn(`No widget_event update for ${message.handler}: invalid handler.`)

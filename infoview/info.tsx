@@ -1,6 +1,6 @@
 import { Location } from '../src/shared';
 import * as React from 'react';
-import { post, CopyToCommentEvent } from './server';
+import { post, CopyToCommentEvent, copyToComment } from './server';
 import { LocationContext, ConfigContext } from '.';
 import { Widget } from './widget';
 import { Goal } from './goal';
@@ -22,27 +22,25 @@ interface InfoProps {
     loc: Location;
     isPinned: boolean;
     isCursor: boolean;
-    onEdit: (l: Location, text: string) => void;
     onPin: (new_pin_state: boolean) => void;
     isPaused: boolean;
     setPaused: (paused: boolean) => void;
 }
 
 export function Info(props: InfoProps) {
-    const {setPaused, onPin, onEdit, isCursor, isPinned} = props;
+    const {setPaused, onPin, isCursor, isPinned} = props;
     const {loc, isLoading:loading, isUpdating:updating, isPaused: paused, error:updateError, goalState, widget, messages, forceUpdate} = useInfo(props);
     const config    = React.useContext(ConfigContext);
 
-    function copyToComment(text?: string) {
-        if (!(text || goalState)) { return; }
-        post({ command: 'insert_text', text: `/-\n${text || goalState}\n-/\n`})
+    function copyGoalToComment() {
+        if (goalState) copyToComment(goalState);
     }
 
     // If we are the cursor infoview, then we should subscribe to
     // some commands from the extension
     React.useEffect(() => {
         if (isCursor) {
-            const h = CopyToCommentEvent.on(copyToComment);
+            const h = CopyToCommentEvent.on(copyGoalToComment);
             return () => h.dispose();
         }
     }, [isCursor]);
@@ -59,7 +57,7 @@ export function Info(props: InfoProps) {
             <summary style={{transition: 'color 0.5s ease'}} className={'mv2 ' + statusColor}>
                 {locationString}
                 <span className="fr">
-                    {goalState && <a className="link pointer mh2 dim" title="copy state to comment" onClick={e => {e.preventDefault(); copyToComment()}}><CopyToCommentIcon/></a>}
+                    {goalState && <a className="link pointer mh2 dim" title="copy state to comment" onClick={e => {e.preventDefault(); copyGoalToComment()}}><CopyToCommentIcon/></a>}
                     {isPinned && <a className={'link pointer mh2 dim '} onClick={e => { e.preventDefault(); post({command: 'reveal', loc}); }} title="reveal file location"><GoToFileIcon/></a>}
                     <a className="link pointer mh2 dim" onClick={e => { e.preventDefault(); onPin(!isPinned)}} title={isPinned ? 'unpin' : 'pin'}>{isPinned ? <PinnedIcon/> : <PinIcon/>}</a>
                     <a className="link pointer mh2 dim" onClick={e => { e.preventDefault(); setPaused(!paused)}} title={paused ? 'continue updating' : 'pause updating'}>{paused ? <ContinueIcon/> : <PauseIcon/>}</a>
@@ -75,7 +73,7 @@ export function Info(props: InfoProps) {
                         </div> }
                 </div>
                 <div>
-                    <Widget widget={widget} fileName={loc.file_name} onEdit={onEdit} />
+                    <Widget widget={widget} fileName={loc.file_name} />
                 </div>
                 <details open={!widget} className={goalState ? '' : 'dn'}>
                     <summary className="mv2 pointer">{widget ? 'Plaintext Tactic State' : 'Tactic State'}</summary>
@@ -86,7 +84,7 @@ export function Info(props: InfoProps) {
                 <details open className={messages.length === 0 ? 'dn' : '0'}>
                     <summary className="mv2 pointer">Messages ({messages.length})</summary>
                     <div className="ml1">
-                        <Messages messages={messages} onCopyToComment={copyToComment}/>
+                        <Messages messages={messages}/>
                     </div>
                 </details>
                 {nothingToShow && (

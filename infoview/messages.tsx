@@ -1,9 +1,9 @@
 import { basename, escapeHtml, colorizeMessage } from './util';
-import { Message, WidgetIdentifier } from 'lean-client-js-node';
+import { Message } from 'lean-client-js-node';
 import * as React from 'react';
 import { Location, Config } from '../src/shared';
 import { CopyToCommentIcon, GoToFileIcon } from './svg_icons';
-import { post } from './server';
+import { copyToComment, reveal } from './server';
 import { Widget } from './widget';
 
 function compareMessages(m1: Message, m2: Message): boolean {
@@ -14,11 +14,10 @@ function compareMessages(m1: Message, m2: Message): boolean {
 
 interface MessageViewProps {
     m: Message;
-    onCopyToComment?: (x: string) => void;
 }
 
 export function MessageView(props: MessageViewProps) {
-    const {m, onCopyToComment} = props;
+    const {m} = props;
     const b = escapeHtml(basename(m.file_name));
     const l = m.pos_line; const c = m.pos_col;
     const loc: Location = {file_name: m.file_name, column: c, line: l}
@@ -29,8 +28,8 @@ export function MessageView(props: MessageViewProps) {
     return <details open>
         <summary className={m.severity + ' mv2 pointer'}>{title}
                 <span className="fr">
-                    <a className={'link pointer mh2 dim '} onClick={e => { e.preventDefault(); post({command: 'reveal', loc}); }} title="reveal file location"><GoToFileIcon/></a>
-                    {onCopyToComment && <a className="link pointer mh2 dim" title="copy message to comment" onClick={e => {e.preventDefault(); onCopyToComment(m.text)}}><CopyToCommentIcon/></a>}
+                    <a className={'link pointer mh2 dim '} onClick={e => { e.preventDefault(); reveal(loc); }} title="reveal file location"><GoToFileIcon/></a>
+                    { m.widget ? null : <a className="link pointer mh2 dim" title="copy message to comment" onClick={e => {e.preventDefault(); copyToComment(m.text)}}><CopyToCommentIcon/></a> }
                 </span>
         </summary>
         <div className="ml1">
@@ -42,15 +41,14 @@ export function MessageView(props: MessageViewProps) {
 }
 
 interface MessagesProps {
-    messages: (Message & {key?})[];
-    onCopyToComment?: (text: string) => void;
+    messages: Message[];
 }
 
 export function Messages(props: MessagesProps): JSX.Element {
     const should_hide = !props.messages || props.messages.length === 0;
     if (should_hide) {return <>No messages.</>}
-    const msgs = (props.messages || []).map((m,i) =>
-      <MessageView m={m} key={m.key || i} onCopyToComment={props.onCopyToComment}/>);
+    const msgs = props.messages.map((m) =>
+      <MessageView m={m} key={`${m.pos_line}:${m.pos_col}`} />);
     return <>{msgs}</>;
 }
 

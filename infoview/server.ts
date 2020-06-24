@@ -8,6 +8,18 @@ export function post(message: FromInfoviewMessage) { // send a message to the ex
     vscode.postMessage(message);
 }
 
+export function copyToComment(text: string) {
+    post({ command: 'insert_text', text: `/-\n${text}\n-/\n`});
+}
+
+export function reveal(loc: Location) {
+    post({ command: 'reveal', loc });
+}
+
+export function edit(loc: Location, text: string) {
+    post({ command: 'insert_text', loc, text });
+}
+
 export const PositionEvent: Event<Location> = new Event();
 const InnerConfigEvent: Event<Partial<Config>> = new Event();
 export const ConfigEvent: Signal<Config> = (new SignalBuilder()).scan((acc, x) => ({...acc, ...x}), defaultConfig, InnerConfigEvent);
