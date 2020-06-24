@@ -8,6 +8,7 @@ import { Messages, processMessages } from './messages';
 import { basename } from './util';
 import { CopyToCommentIcon, PinnedIcon, PinIcon, ContinueIcon, PauseIcon, RefreshIcon, GoToFileIcon } from './svg_icons';
 import { useInfo } from './event_model';
+import { Details } from './collapsing';
 
 type InfoStatus = 'updating' | 'error' | 'pinned' | 'cursor' | 'loading';
 
@@ -30,7 +31,6 @@ interface InfoProps {
 export function Info(props: InfoProps) {
     const {setPaused, onPin, isCursor, isPinned} = props;
     const {loc, isLoading:loading, isUpdating:updating, isPaused: paused, error:updateError, goalState, widget, messages: messages0, forceUpdate} = useInfo(props);
-    const config    = React.useContext(ConfigContext);
     const messages = processMessages(messages0);
 
     function copyGoalToComment() {
@@ -54,7 +54,7 @@ export function Info(props: InfoProps) {
     const nothingToShow = !widget && !goalState && messages.length === 0;
     const locationString = `${basename(loc.file_name)}:${(loc).line}:${(loc).column}`;
     return <LocationContext.Provider value={loc}>
-        <details className="" open>
+        <Details>
             <summary style={{transition: 'color 0.5s ease'}} className={'mv2 ' + statusColor}>
                 {locationString}
                 <span className="fr">
@@ -93,7 +93,7 @@ export function Info(props: InfoProps) {
                     paused ? <span>Updating is paused. <a className="link pointer dim" onClick={e => forceUpdate()}>Refresh</a> or <a className="link pointer dim" onClick={e => setPaused(false)}>resume updating</a> to see information</span> :
                     `No info found at ${locationString}`)}
             </div>
-        </details>
+        </Details>
     </LocationContext.Provider>;
 }
 
