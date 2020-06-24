@@ -26,7 +26,6 @@ export function MessageView(props: MessageViewProps) {
     let text = escapeHtml(m.text)
     text = shouldColorize ? colorizeMessage(text) : text;
     const title = `${b}:${l}:${c}`;
-    const widgetId: WidgetIdentifier | null = (m as any).widget;
     return <details open>
         <summary className={m.severity + ' mv2 pointer'}>{title}
                 <span className="fr">
@@ -35,7 +34,7 @@ export function MessageView(props: MessageViewProps) {
                 </span>
         </summary>
         <div className="ml1">
-            { widgetId ? <Widget fileName={m.file_name} widget={widgetId}/> :
+            { m.widget ? <Widget fileName={m.file_name} widget={m.widget}/> :
             <pre className="font-code" style={{whiteSpace: 'pre-wrap'}} dangerouslySetInnerHTML={{ __html: text }} />
             }
         </div>
