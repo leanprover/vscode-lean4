@@ -18,8 +18,7 @@ interface MessageViewProps {
     m: Message;
 }
 
-export function MessageView(props: MessageViewProps) {
-    const {m} = props;
+const MessageView = React.memo(({m}: MessageViewProps) => {
     const b = escapeHtml(basename(m.file_name));
     const l = m.pos_line; const c = m.pos_col;
     const loc: Location = {file_name: m.file_name, column: c, line: l}
@@ -40,7 +39,7 @@ export function MessageView(props: MessageViewProps) {
             }
         </div>
     </details>
-}
+}, (a,b) => compareMessages(a.m, b.m));
 
 interface MessagesProps {
     messages: ProcessedMessage[];
@@ -64,10 +63,9 @@ export function processMessages(messages: Message[]): ProcessedMessage[] {
     return messages
         .sort((a, b) => a.pos_line === b.pos_line ? a.pos_col - b.pos_col : a.pos_line - b.pos_line)
         .map((m) => {
-            let key = `${m.pos_line}:${m.pos_col}`;
-            keys[key] += 1;
-            key = `${key}:${keys[key]}`;
-            return {...m, key};
+            const key0 = `${m.pos_line}:${m.pos_col}`;
+            keys[key0] = (keys[key0] || 0)+1;
+            return { ...m, key: `${key0}:${keys[key0]}` };
         });
 }
 
