@@ -61,9 +61,7 @@ class WidgetErrorBoundary extends React.Component<{children: any},{error?: {mess
 
 export const Widget = React.memo(({ widget, fileName }: WidgetProps) => {
     const [html, setHtml] = React.useState<WidgetComponent>();
-    const [node, isVisible] = useIsVisible();
     React.useEffect(() => {
-        if (!isVisible) {return; }
         async function loadHtml() {
             setHtml((await global_server.send({
                 command: 'get_widget',
@@ -78,7 +76,7 @@ export const Widget = React.memo(({ widget, fileName }: WidgetProps) => {
         } else {
             setHtml(widget && widget.html);
         }
-    }, [fileName, widget, isVisible]);
+    }, [fileName, widget]);
     if (!widget) return null;
     async function post(e: any) {
         const message: WidgetEventRequest = {
@@ -104,7 +102,7 @@ export const Widget = React.memo(({ widget, fileName }: WidgetProps) => {
             console.error(`Update gave an error: ${record.message || record}`);
         }
     }
-    return <div ref={node}>
+    return <div>
         <WidgetErrorBoundary>
             { html ? <ViewHtml html={html} post={post}/> : null }
         </WidgetErrorBoundary>
