@@ -4,8 +4,9 @@ import './popper.css';
 import { WidgetComponent, WidgetHtml, WidgetElement, WidgetEventRequest, WidgetIdentifier } from 'lean-client-js-node';
 import { global_server } from './server';
 import { Location } from '../src/shared';
+import { useIsVisible } from './collapsing';
 
-const Popper = (props) => {
+function Popper(props: {children: React.ReactNode[]; popperContent: any; refEltTag: any; refEltAttrs: any}) {
     const { children, popperContent, refEltTag, refEltAttrs } = props;
     const [referenceElement, setReferenceElement] = React.useState(null);
     const [popperElement, setPopperElement] = React.useState(null);
@@ -34,7 +35,7 @@ export interface WidgetProps {
     fileName: string;
 }
 
-class WidgetErrorBoundary extends React.Component<{children},{error}> {
+class WidgetErrorBoundary extends React.Component<{children: any},{error?: {message: string}}> {
     constructor(props) {
       super(props);
       this.state = { error: null };
@@ -62,7 +63,9 @@ class WidgetErrorBoundary extends React.Component<{children},{error}> {
 
 export function Widget({ widget, fileName, onEdit }: WidgetProps): JSX.Element {
     const [html, setHtml] = React.useState<WidgetComponent>();
+    const [node, isVisible] = useIsVisible();
     React.useEffect(() => {
+        if (!isVisible) {return; }
         async function loadHtml() {
             setHtml((await global_server.send({
                 command: 'get_widget',
@@ -77,7 +80,7 @@ export function Widget({ widget, fileName, onEdit }: WidgetProps): JSX.Element {
         } else {
             setHtml(widget && widget.html);
         }
-    }, [fileName, widget]);
+    }, [fileName, widget, isVisible]);
     if (!widget) return null;
     async function post(e: any) {
         const message: WidgetEventRequest = {
@@ -103,9 +106,11 @@ export function Widget({ widget, fileName, onEdit }: WidgetProps): JSX.Element {
             console.error(`Update gave an error: ${record.message || record}`);
         }
     }
-    return <WidgetErrorBoundary>
-        { html ? <ViewHtml html={html} post={post}/> : null }
-    </WidgetErrorBoundary>
+    return <div ref={node}>
+        <WidgetErrorBoundary>
+            { html ? <ViewHtml html={html} post={post}/> : null }
+        </WidgetErrorBoundary>
+    </div>
 }
 
 interface HtmlProps {

@@ -67,7 +67,13 @@ export function Info(props: InfoProps) {
                 </span>
             </summary>
             <div className="ml1">
-                {!loading && !updating && updateError && <div className="error">Error updating: {updateError.message}. <a className="link pointer dim" onClick={e => forceUpdate()}>Try again.</a></div> }
+                <div>
+                    {!loading && !updating && updateError &&
+                        <div className="error">
+                            Error updating: {updateError.message}.
+                            <a className="link pointer dim" onClick={e => forceUpdate()}>Try again.</a>
+                        </div> }
+                </div>
                 <div>
                     <Widget widget={widget} fileName={loc.file_name} onEdit={onEdit} />
                 </div>
