@@ -6,7 +6,7 @@ import { global_server } from './server';
 import { Location } from '../src/shared';
 import { useIsVisible } from './collapsing';
 
-function Popper(props: {children: React.ReactNode[], popperContent: any, refEltTag: any, refEltAttrs: any}) {
+function Popper(props: {children: React.ReactNode[]; popperContent: any; refEltTag: any; refEltAttrs: any}) {
     const { children, popperContent, refEltTag, refEltAttrs } = props;
     const [referenceElement, setReferenceElement] = React.useState(null);
     const [popperElement, setPopperElement] = React.useState(null);
