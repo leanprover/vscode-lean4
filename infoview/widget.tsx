@@ -5,7 +5,7 @@ import { WidgetComponent, WidgetHtml, WidgetElement, WidgetEventRequest, WidgetI
 import { global_server } from './server';
 import { Location } from '../src/shared';
 
-const Popper = (props) => {
+function Popper(props: {children: React.ReactNode[], popperContent: any, refEltTag: any, refEltAttrs: any}) {
     const { children, popperContent, refEltTag, refEltAttrs } = props;
     const [referenceElement, setReferenceElement] = React.useState(null);
     const [popperElement, setPopperElement] = React.useState(null);
@@ -34,7 +34,7 @@ export interface WidgetProps {
     fileName: string;
 }
 
-class WidgetErrorBoundary extends React.Component<{children},{error}> {
+class WidgetErrorBoundary extends React.Component<{children: any},{error?: {message: string}}> {
     constructor(props) {
       super(props);
       this.state = { error: null };
@@ -62,7 +62,7 @@ class WidgetErrorBoundary extends React.Component<{children},{error}> {
 
 /** Returns `[node, isVisible]`. Attach `node` to the dom element you care about as `<div ref={node}>...</div>` and
  * `isVisible` will change depending on whether the node is visible in the viewport or not. */
-function useIsVisible() {
+export function useIsVisible(): [any, boolean] {
     const [isVisible,setIsVisible] = React.useState<boolean>(false);
     const observer = React.useRef<IntersectionObserver>(null);
     const node = React.useCallback<any>(n => {
