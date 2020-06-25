@@ -120,12 +120,6 @@ export interface InfoProps {
     loc: Location;
 }
 
-export interface InfoSinks {
-    onEdit: (l: Location, text: string) => void;
-    onPin: (new_pin_state: boolean) => void;
-    setPaused: (paused: boolean) => void;
-}
-
 export interface InfoState {
     loc?: Location;
     isPaused: boolean;
