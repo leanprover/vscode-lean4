@@ -41,69 +41,56 @@ function Main(props: {}) {
     if (!props) { return null }
     const [config, setConfig] = React.useState(currentConfig);
     const [messages, setMessages] = React.useState<Message[]>(currentAllMessages);
-    const [curLoc, setCurLoc] = React.useState<InfoProps>({paused: false});
+    const [curLoc, setCurLoc] = React.useState<Location>(null);
     React.useEffect(() => {
         const subscriptions = [
             AllMessagesEvent.on(x => setMessages(x)),
-            PositionEvent.on(loc => setCurLoc({...curLoc, loc})),
+            PositionEvent.on(loc => setCurLoc(loc)),
             ConfigEvent.on(l => setConfig(l)),
         ];
 
         return () => { for (const s of subscriptions) s.dispose(); }
     }, []);
-    const allMessages = processMessages(messages.filter((m) => !curLoc.loc || m.file_name === curLoc.loc.file_name));
+    const allMessages = processMessages(messages.filter((m) => curLoc && m.file_name === curLoc.file_name));
     return <div className="ma1">
         <ConfigContext.Provider value={config}>
-            <Infos curLoc={curLoc} setCurLoc={setCurLoc}/>
+            <Infos curLoc={curLoc}/>
             <div className="mv2"><AllMessages allMessages={allMessages}/></div>
         </ConfigContext.Provider>
     </div>
 }
 
-function Infos({curLoc, setCurLoc}): JSX.Element {
-    const setPause = (idx?: number) => (paused: boolean) => {
-        if (idx === undefined) {
-            setCurLoc({...curLoc, paused});
-        } else {
-            const pins = [...pinnedLocs];
-            pins[idx] = {...pins[idx], paused};
-            setPinnedLocs(pins);
-        }
-    }
+function Infos({curLoc}: {curLoc: Location}): JSX.Element {
     React.useEffect(() => {
         const subscriptions = [
-            SyncPinEvent.on(l => setPinnedLocs(l.pins.map((loc, i) => ({loc, paused: pinnedLocs[i] && pinnedLocs[i].paused})))),
-            PauseEvent.on(l => setPause()(true)),
-            ContinueEvent.on(l => setPause()(false)),
-            ToggleUpdatingEvent.on(l => setPause()(curLoc && !curLoc.paused)),
-            TogglePinEvent.on(() => isPinned(curLoc.loc) ? unpin()() : pin() )
+            SyncPinEvent.on(l => setPinnedLocs(l.pins)),
+            TogglePinEvent.on(() => isPinned(curLoc) ? unpin()() : pin() )
         ];
 
         return () => { for (const s of subscriptions) s.dispose(); }
     }, []);
-    const [pinnedLocs, setPinnedLocs] = React.useState<InfoProps[]>([]);
-    const isPinned = (loc: Location) => pinnedLocs.some(l => locationEq(l.loc, loc));
+    const [pinnedLocs, setPinnedLocs] = React.useState<Location[]>([]);
+    const isPinned = (loc: Location) => pinnedLocs.some((l) => locationEq(l, loc));
     const pin = () => {
-        if (isPinned(curLoc.loc)) {return; }
+        if (isPinned(curLoc)) {return; }
         const pins = [...pinnedLocs, curLoc];
         setPinnedLocs(pins);
-        post({command:'sync_pin', pins: pins.map(x => x.loc)})
+        post({command:'sync_pin', pins})
     }
     const unpin = (idx?) => () => {
         if (idx === undefined) {
-            idx = pinnedLocs.findIndex(p => locationEq(p.loc, curLoc.loc));
+            idx = pinnedLocs.findIndex(p => locationEq(p, curLoc));
         }
         const pins = pinnedLocs.filter((l,i) => i !== idx);
         setPinnedLocs(pins);
-        post({command:'sync_pin', pins: pins.map(x => x.loc)})
+        post({command:'sync_pin', pins})
     }
     return <>
         <div>
-            {pinnedLocs.map(({loc, paused}, i) => {
-                const isCursor = locationEq(loc,curLoc.loc);
-                return <Info key={locationKey(loc)} loc={loc} isPaused={paused} setPaused={setPause(i)} isPinned={true} isCursor={false} onPin={unpin(i)}/>}) }
+            {pinnedLocs.map((loc, i) =>
+                <Info key={locationKey(loc)} loc={loc} isPinned={true} isCursor={false} onPin={unpin(i)}/>)}
         </div>
-        <Info loc={curLoc.loc} isPaused={curLoc.paused} setPaused={setPause()} isPinned={false} isCursor={true} onPin={pin}/>
+        <Info loc={curLoc} isPinned={false} isCursor={true} onPin={pin}/>
     </>;
 }
 

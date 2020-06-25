@@ -1,6 +1,6 @@
 import { Location } from '../src/shared';
 import * as React from 'react';
-import { post, CopyToCommentEvent, copyToComment } from './server';
+import { post, CopyToCommentEvent, copyToComment, PauseEvent, ContinueEvent, ToggleUpdatingEvent } from './server';
 import { LocationContext, ConfigContext } from '.';
 import { Widget } from './widget';
 import { Goal } from './goal';
@@ -19,18 +19,23 @@ const statusColTable: {[T in InfoStatus]: string} = {
     'pinned': '',
     'error': 'dark-red',
 }
+
 interface InfoProps {
     loc: Location;
     isPinned: boolean;
     isCursor: boolean;
     onPin: (new_pin_state: boolean) => void;
-    isPaused: boolean;
-    setPaused: (paused: boolean) => void;
 }
 
 export function Info(props: InfoProps) {
-    const {setPaused, onPin, isCursor, isPinned} = props;
-    const {loc, isLoading:loading, isUpdating:updating, isPaused: paused, error:updateError, goalState, widget, messages: messages0, forceUpdate} = useInfo(props);
+    const {isCursor, isPinned, onPin} = props;
+
+    const [isPaused0, setPaused] = React.useState<boolean>(false);
+    const isCurrentlyPaused = React.useRef<boolean>()
+    const {loc, isLoading:loading, isUpdating:updating, error:updateError, goalState, widget, messages: messages0, isPaused, forceUpdate} =
+        useInfo({loc: props.loc, isPaused: isPaused0});
+    isCurrentlyPaused.current = isPaused;
+
     const messages = processMessages(messages0);
 
     function copyGoalToComment() {
@@ -43,6 +48,18 @@ export function Info(props: InfoProps) {
         if (isCursor) {
             const h = CopyToCommentEvent.on(copyGoalToComment);
             return () => h.dispose();
+        }
+    }, [isCursor]);
+
+    React.useEffect(() => {
+        if (isCursor) {
+            const subscriptions = [
+                PauseEvent.on(l => setPaused(true)),
+                ContinueEvent.on(l => setPaused(false)),
+                ToggleUpdatingEvent.on(l => setPaused(!isCurrentlyPaused.current)),
+            ];
+
+            return () => { for (const s of subscriptions) s.dispose(); }
         }
     }, [isCursor]);
 
@@ -65,14 +82,14 @@ export function Info(props: InfoProps) {
         <Details open>
             <summary style={{transition: 'color 0.5s ease'}} className={'mv2 ' + statusColor}>
                 {locationString}
-                {isPinned && !paused && ' (pinned)'}
-                {!isPinned && paused && ' (paused)'}
-                {isPinned && paused && ' (pinned and paused)'}
+                {isPinned && !isPaused && ' (pinned)'}
+                {!isPinned && isPaused && ' (paused)'}
+                {isPinned && isPaused && ' (pinned and paused)'}
                 <span className="fr">
                     {goalState && <a className="link pointer mh2 dim" title="copy state to comment" onClick={e => {e.preventDefault(); copyGoalToComment()}}><CopyToCommentIcon/></a>}
                     {isPinned && <a className={'link pointer mh2 dim '} onClick={e => { e.preventDefault(); post({command: 'reveal', loc}); }} title="reveal file location"><GoToFileIcon/></a>}
                     <a className="link pointer mh2 dim" onClick={e => { e.preventDefault(); onPin(!isPinned)}} title={isPinned ? 'unpin' : 'pin'}>{isPinned ? <PinnedIcon/> : <PinIcon/>}</a>
-                    <a className="link pointer mh2 dim" onClick={e => { e.preventDefault(); setPaused(!paused)}} title={paused ? 'continue updating' : 'pause updating'}>{paused ? <ContinueIcon/> : <PauseIcon/>}</a>
+                    { !isCursor && <a className="link pointer mh2 dim" onClick={e => { e.preventDefault(); setPaused(!isPaused)}} title={isPaused ? 'continue updating' : 'pause updating'}>{isPaused ? <ContinueIcon/> : <PauseIcon/>}</a> }
                     <a className={'link pointer mh2 dim ' + (updating ? 'spin' : '')} onClick={e => { e.preventDefault(); forceUpdate(); }} title="update"><RefreshIcon/></a>
                 </span>
             </summary>
@@ -109,7 +126,7 @@ export function Info(props: InfoProps) {
                 </div>
                 {nothingToShow && (
                     loading ? 'Loading...' :
-                    paused ? <span>Updating is paused. <a className="link pointer dim" onClick={e => forceUpdate()}>Refresh</a> or <a className="link pointer dim" onClick={e => setPaused(false)}>resume updating</a> to see information</span> :
+                    isPaused ? <span>Updating is paused. <a className="link pointer dim" onClick={e => forceUpdate()}>Refresh</a> or <a className="link pointer dim" onClick={e => setPaused(false)}>resume updating</a> to see information</span> :
                     'No info found.')}
             </div>
         </Details>

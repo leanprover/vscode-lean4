@@ -115,11 +115,9 @@ export function infoEvents(sb: SignalBuilder, onProps: Signal<InfoProps>): Signa
     return state;
 }
 
-export interface InfoProps {
-    isPinned: boolean;
-    isCursor: boolean;
-    isPaused: boolean;
+interface InfoProps {
     loc: Location;
+    isPaused: boolean;
 }
 
 export interface InfoState {
