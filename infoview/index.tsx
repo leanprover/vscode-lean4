@@ -32,11 +32,6 @@ function StatusView(props: ServerStatus) {
     </Details>
 }
 
-interface InfoProps {
-    loc?: Location;
-    paused: boolean;
-}
-
 function Main(props: {}) {
     if (!props) { return null }
     const [config, setConfig] = React.useState(currentConfig);
