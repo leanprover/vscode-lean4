@@ -65,7 +65,9 @@ export function Info(props: InfoProps) {
         <Details open>
             <summary style={{transition: 'color 0.5s ease'}} className={'mv2 ' + statusColor}>
                 {locationString}
-                {isPinned && ' (pinned)'}
+                {isPinned && !paused && ' (pinned)'}
+                {!isPinned && paused && ' (paused)'}
+                {isPinned && paused && ' (pinned and paused)'}
                 <span className="fr">
                     {goalState && <a className="link pointer mh2 dim" title="copy state to comment" onClick={e => {e.preventDefault(); copyGoalToComment()}}><CopyToCommentIcon/></a>}
                     {isPinned && <a className={'link pointer mh2 dim '} onClick={e => { e.preventDefault(); post({command: 'reveal', loc}); }} title="reveal file location"><GoToFileIcon/></a>}
