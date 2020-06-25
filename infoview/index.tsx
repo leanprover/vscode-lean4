@@ -1,4 +1,4 @@
-import { global_server, post, PositionEvent, ConfigEvent, SyncPinEvent, PauseEvent, ContinueEvent, ToggleUpdatingEvent, TogglePinEvent, AllMessages } from './server';
+import { post, PositionEvent, ConfigEvent, SyncPinEvent, PauseEvent, ContinueEvent, ToggleUpdatingEvent, TogglePinEvent, AllMessagesEvent } from './server';
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 import { ServerStatus, Config, defaultConfig,  Location, locationKey, locationEq } from '../src/shared';
@@ -7,12 +7,13 @@ import './tachyons.css' // stylesheet assumed by Lean widgets. See https://tachy
 import './index.css'
 import { Info } from './info';
 import { Messages, processMessages } from './messages';
+import { Details } from './collapsing';
 
 export const ConfigContext = React.createContext<Config>(defaultConfig);
 export const LocationContext = React.createContext<Location | null>(null);
 
 function StatusView(props: ServerStatus) {
-    return <details open>
+    return <Details>
         <summary className="mv2 pointer">Tasks</summary>
         <p>Running: {props.isRunning}</p>
         <table> <tbody>
@@ -28,7 +29,7 @@ function StatusView(props: ServerStatus) {
             </tr>)}
         </tbody>
         </table>
-    </details>
+    </Details>
 }
 
 interface InfoProps {
@@ -41,7 +42,25 @@ function Main(props: {}) {
     const [config, setConfig] = React.useState(defaultConfig);
     const [messages, setMessages] = React.useState<Message[]>([]);
     const [curLoc, setCurLoc] = React.useState<InfoProps>({paused: false});
-    const [pinnedLocs, setPinnedLocs] = React.useState<InfoProps[]>([]);
+    React.useEffect(() => {
+        const subscriptions = [
+            AllMessagesEvent.on(x => setMessages(x)),
+            PositionEvent.on(loc => setCurLoc({...curLoc, loc})),
+            ConfigEvent.on(l => setConfig(l)),
+        ];
+
+        return () => { for (const s of subscriptions) s.dispose(); }
+    }, []);
+    const allMessages = processMessages(messages.filter((m) => !curLoc.loc || m.file_name === curLoc.loc.file_name));
+    return <div className="ma1">
+        <ConfigContext.Provider value={config}>
+            <Infos curLoc={curLoc} setCurLoc={setCurLoc}/>
+            <div className="mv2"><AllMessages allMessages={allMessages}/></div>
+        </ConfigContext.Provider>
+    </div>
+}
+
+function Infos({curLoc, setCurLoc}): JSX.Element {
     const setPause = (idx?: number) => (paused: boolean) => {
         if (idx === undefined) {
             setCurLoc({...curLoc, paused});
@@ -51,18 +70,8 @@ function Main(props: {}) {
             setPinnedLocs(pins);
         }
     }
-    function onEdit(loc: Location, text: string) {
-        return post({
-            command: 'insert_text',
-            loc,
-            text
-        });
-    }
     React.useEffect(() => {
         const subscriptions = [
-            AllMessages.on(x => setMessages(x)),
-            PositionEvent.on(loc => setCurLoc({...curLoc, loc})),
-            ConfigEvent.on(l => setConfig(l)),
             SyncPinEvent.on(l => setPinnedLocs(l.pins.map((loc, i) => ({loc, paused: pinnedLocs[i] && pinnedLocs[i].paused})))),
             PauseEvent.on(l => setPause()(true)),
             ContinueEvent.on(l => setPause()(false)),
@@ -72,6 +81,7 @@ function Main(props: {}) {
 
         return () => { for (const s of subscriptions) s.dispose(); }
     }, []);
+    const [pinnedLocs, setPinnedLocs] = React.useState<InfoProps[]>([]);
     const isPinned = (loc: Location) => pinnedLocs.some(l => locationEq(l.loc, loc));
     const pin = () => {
         if (isPinned(curLoc.loc)) {return; }
@@ -87,21 +97,23 @@ function Main(props: {}) {
         setPinnedLocs(pins);
         post({command:'sync_pin', pins: pins.map(x => x.loc)})
     }
-    const allMessages = processMessages(messages, null);
-    return <div className="ma1">
-        <ConfigContext.Provider value={config}>
-            {pinnedLocs.map(({loc, paused},i) => {
-                const isCursor = locationEq(loc,curLoc.loc);
-                return <Info loc={loc} isPaused={paused} setPaused={setPause(i)} key={i} isPinned={true} isCursor={isCursor} onEdit={onEdit} onPin={unpin(i)}/>}) }
-            {!isPinned(curLoc.loc) && <Info loc={curLoc.loc} isPaused={curLoc.paused} setPaused={setPause()} key={pinnedLocs.length} isPinned={false} isCursor={true} onEdit={onEdit} onPin={pin}/>}
-            <details open={!config.infoViewAutoOpenShowGoal}>
-                <summary className="mv2">All Messages ({allMessages.length})</summary>
-                <div className="ml1">
-                    <Messages messages={allMessages}/>
-                </div>
-            </details>
-        </ConfigContext.Provider>
-    </div>
+    return <>
+        {pinnedLocs.map(({loc, paused}, i) => {
+            const isCursor = locationEq(loc,curLoc.loc);
+            return <Info key={locationKey(loc)} loc={loc} isPaused={paused} setPaused={setPause(i)} isPinned={true} isCursor={isCursor} onPin={unpin(i)}/>}) }
+        <div>
+            {!isPinned(curLoc.loc) &&
+                <Info loc={curLoc.loc} isPaused={curLoc.paused} setPaused={setPause()} key={pinnedLocs.length} isPinned={false} isCursor={true} onPin={pin}/>}
+        </div>
+    </>;
+}
+
+function AllMessages({allMessages}): JSX.Element {
+    const config = React.useContext(ConfigContext);
+    return <Details open={!config.infoViewAutoOpenShowGoal}>
+        <summary>All Messages ({allMessages.length})</summary>
+        <div className="ml1"> <Messages messages={allMessages}/> </div>
+    </Details>;
 }
 
 const domContainer = document.querySelector('#react_root');

@@ -8,6 +8,18 @@ export function post(message: FromInfoviewMessage) { // send a message to the ex
     vscode.postMessage(message);
 }
 
+export function copyToComment(text: string) {
+    post({ command: 'insert_text', text: `/-\n${text}\n-/\n`});
+}
+
+export function reveal(loc: Location) {
+    post({ command: 'reveal', loc });
+}
+
+export function edit(loc: Location, text: string) {
+    post({ command: 'insert_text', loc, text });
+}
+
 export const PositionEvent: Event<Location> = new Event();
 const InnerConfigEvent: Event<Partial<Config>> = new Event();
 export const ConfigEvent: Signal<Config> = (new SignalBuilder()).scan((acc, x) => ({...acc, ...x}), defaultConfig, InnerConfigEvent);
@@ -21,7 +33,7 @@ export const ToggleUpdatingEvent: Event<{}> = new Event();
 export const CopyToCommentEvent: Event<{}> = new Event();
 export const TogglePinEvent: Event<{}> = new Event();
 export const ServerRestartEvent: Event<{}> = new Event();
-export const AllMessages: Event<Message[]> = new Event();
+export const AllMessagesEvent: Event<Message[]> = new Event();
 
 window.addEventListener('message', event => { // messages from the extension
     const message: ToInfoviewMessage = event.data; // The JSON data our extension sent
@@ -35,7 +47,7 @@ window.addEventListener('message', event => { // messages from the extension
         case 'copy_to_comment': CopyToCommentEvent.fire(message); break;
         case 'toggle_pin': TogglePinEvent.fire(message); break;
         case 'restart': ServerRestartEvent.fire(message); break;
-        case 'all_messages': AllMessages.fire(message.messages); break;
+        case 'all_messages': AllMessagesEvent.fire(message.messages); break;
         case 'server_event': break;
         case 'server_error': break;
     }
@@ -94,7 +106,7 @@ class ProxyConnectionClient implements Connection {
 
 export const global_server = new Server(new ProxyTransport());
 global_server.logMessagesToConsole = true;
-global_server.allMessages.on(x => AllMessages.fire(x.msgs));
+global_server.allMessages.on(x => AllMessagesEvent.fire(x.msgs));
 global_server.connect();
 
 post({command:'request_config'});

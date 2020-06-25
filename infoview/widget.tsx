@@ -2,8 +2,7 @@ import * as React from 'react';
 import * as ReactPopper from 'react-popper';
 import './popper.css';
 import { WidgetComponent, WidgetHtml, WidgetElement, WidgetEventRequest, WidgetIdentifier } from 'lean-client-js-node';
-import { global_server } from './server';
-import { Location } from '../src/shared';
+import { global_server, edit } from './server';
 import { useIsVisible } from './collapsing';
 
 function Popper(props: {children: React.ReactNode[]; popperContent: any; refEltTag: any; refEltAttrs: any}) {
@@ -31,7 +30,6 @@ function Popper(props: {children: React.ReactNode[]; popperContent: any; refEltT
 
 export interface WidgetProps {
     widget?: WidgetIdentifier;
-    onEdit?: (l: Location, text: string) => void;
     fileName: string;
 }
 
@@ -61,11 +59,9 @@ class WidgetErrorBoundary extends React.Component<{children: any},{error?: {mess
     }
 }
 
-export function Widget({ widget, fileName, onEdit }: WidgetProps): JSX.Element {
+export const Widget = React.memo(({ widget, fileName }: WidgetProps) => {
     const [html, setHtml] = React.useState<WidgetComponent>();
-    const [node, isVisible] = useIsVisible();
     React.useEffect(() => {
-        if (!isVisible) {return; }
         async function loadHtml() {
             setHtml((await global_server.send({
                 command: 'get_widget',
@@ -80,7 +76,7 @@ export function Widget({ widget, fileName, onEdit }: WidgetProps): JSX.Element {
         } else {
             setHtml(widget && widget.html);
         }
-    }, [fileName, widget, isVisible]);
+    }, [fileName, widget]);
     if (!widget) return null;
     async function post(e: any) {
         const message: WidgetEventRequest = {
@@ -98,7 +94,7 @@ export function Widget({ widget, fileName, onEdit }: WidgetProps): JSX.Element {
             setHtml(record.widget.html);
         } else if (record.status === 'edit') {
             const loc = { line: widget.line, column: widget.column, file_name: fileName };
-            if (onEdit) onEdit(loc, record.action);
+            edit(loc, record.action);
             setHtml(record.widget.html);
         } else if (record.status === 'invalid_handler') {
             console.warn(`No widget_event update for ${message.handler}: invalid handler.`)
@@ -106,12 +102,18 @@ export function Widget({ widget, fileName, onEdit }: WidgetProps): JSX.Element {
             console.error(`Update gave an error: ${record.message || record}`);
         }
     }
-    return <div ref={node}>
+    return <div>
         <WidgetErrorBoundary>
             { html ? <ViewHtml html={html} post={post}/> : null }
         </WidgetErrorBoundary>
     </div>
-}
+}, (a, b) => a.fileName === b.fileName &&
+    !!a.widget === !!b.widget &&
+    (!a.widget || a.widget === b.widget ||
+        a.widget.line === b.widget.line &&
+        a.widget.column === b.widget.column &&
+        a.widget.id === b.widget.id &&
+        a.widget.html === b.widget.html));
 
 interface HtmlProps {
     html: WidgetComponent;
