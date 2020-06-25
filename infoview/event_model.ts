@@ -54,11 +54,12 @@ export function infoEvents(sb: SignalBuilder, onProps: Signal<InfoProps>): Signa
         global_server.error,
         sb.filter(x => !x, onPaused),
         sb.onChange(onIsLoading),
+        onIsDone,
         onLocChange,
     )), onForceUpdate);
 
     const onMessage = sb.map(({msgs, loc, config}) => {
-        return {messages: GetMessagesFor(msgs, loc, config)};
+        return {messages: loc ? GetMessagesFor(msgs, loc, config) : []};
     }, sb.zip({msgs: AllMessagesEvent, loc: throttled_loc, config: ConfigEvent}));
 
     const {result, isRunning} = sb.throttleTask<any, Partial<InfoState>>(async () => {
