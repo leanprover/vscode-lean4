@@ -46,6 +46,7 @@ function Main(props: {}) {
 
         return () => { for (const s of subscriptions) s.dispose(); }
     }, []);
+    if (!curLoc) return <p>Click somewhere in the Lean file to enable the info view.</p>;
     const allMessages = processMessages(messages.filter((m) => curLoc && m.file_name === curLoc.file_name));
     return <div className="ma1">
         <ConfigContext.Provider value={config}>

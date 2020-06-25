@@ -9,7 +9,6 @@ import { basename } from './util';
 import { CopyToCommentIcon, PinnedIcon, PinIcon, ContinueIcon, PauseIcon, RefreshIcon, GoToFileIcon } from './svg_icons';
 import { Details } from './collapsing';
 import { Event, InfoResponse, CurrentTasksResponse, Message } from 'lean-client-js-core';
-import { triggerAsyncId } from 'async_hooks';
 
 /** Older versions of Lean can't deal with multiple simul info requests so this just prevents that. */
 class OneAtATimeDispatcher {
@@ -50,7 +49,7 @@ interface InfoProps {
 }
 
 function isLoading(ts: CurrentTasksResponse, l: Location): boolean {
-    return l !== undefined &&
+    return l &&
         ts.tasks.some(t => t.file_name === l.file_name && t.pos_line < l.line && l.line < t.end_pos_line);
 }
 
@@ -108,6 +107,7 @@ function infoEvents(isPaused: boolean, loc: Location): UpdatingInfoResponse {
         if (!loc) {
             setResponse(null);
             setError(null);
+            return;
         }
         try {
             const info = await global_dispatcher.run(() => global_server.info(loc.file_name, loc.line, loc.column));
@@ -213,7 +213,7 @@ export function Info(props: InfoProps) {
                     {goalState && <a className="link pointer mh2 dim" title="copy state to comment" onClick={e => {e.preventDefault(); copyGoalToComment()}}><CopyToCommentIcon/></a>}
                     {isPinned && <a className={'link pointer mh2 dim '} onClick={e => { e.preventDefault(); post({command: 'reveal', loc}); }} title="reveal file location"><GoToFileIcon/></a>}
                     <a className="link pointer mh2 dim" onClick={e => { e.preventDefault(); onPin(!isPinned)}} title={isPinned ? 'unpin' : 'pin'}>{isPinned ? <PinnedIcon/> : <PinIcon/>}</a>
-                    { !isCursor && <a className="link pointer mh2 dim" onClick={e => { e.preventDefault(); setPaused(!isPaused)}} title={isPaused ? 'continue updating' : 'pause updating'}>{isPaused ? <ContinueIcon/> : <PauseIcon/>}</a> }
+                    <a className="link pointer mh2 dim" onClick={e => { e.preventDefault(); setPaused(!isPaused)}} title={isPaused ? 'continue updating' : 'pause updating'}>{isPaused ? <ContinueIcon/> : <PauseIcon/>}</a>
                     { !isPaused && <a className={'link pointer mh2 dim'} onClick={e => { e.preventDefault(); forceUpdate(); }} title="update"><RefreshIcon/></a> }
                 </span>
             </summary>
