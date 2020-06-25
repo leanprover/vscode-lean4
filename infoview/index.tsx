@@ -1,4 +1,4 @@
-import { post, PositionEvent, ConfigEvent, SyncPinEvent, PauseEvent, ContinueEvent, ToggleUpdatingEvent, TogglePinEvent, AllMessagesEvent, currentAllMessages, currentConfig } from './server';
+import { post, PositionEvent, ConfigEvent, SyncPinEvent, PauseEvent, ContinueEvent, ToggleUpdatingEvent, TogglePinEvent, AllMessagesEvent, currentAllMessages, currentConfig, globalCurrentLoc } from './server';
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 import { ServerStatus, Config, defaultConfig,  Location, locationKey, locationEq } from '../src/shared';
@@ -41,7 +41,7 @@ function Main(props: {}) {
     if (!props) { return null }
     const [config, setConfig] = React.useState(currentConfig);
     const [messages, setMessages] = React.useState<Message[]>(currentAllMessages);
-    const [curLoc, setCurLoc] = React.useState<Location>(null);
+    const [curLoc, setCurLoc] = React.useState<Location>(globalCurrentLoc);
     React.useEffect(() => {
         const subscriptions = [
             AllMessagesEvent.on(x => setMessages(x)),
@@ -61,6 +61,7 @@ function Main(props: {}) {
 }
 
 function Infos({curLoc}: {curLoc: Location}): JSX.Element {
+    // TODO: sync pins reverts pause state
     React.useEffect(() => {
         const subscriptions = [
             SyncPinEvent.on(l => setPinnedLocs(l.pins)),
