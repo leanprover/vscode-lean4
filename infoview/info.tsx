@@ -46,6 +46,13 @@ export function Info(props: InfoProps) {
         }
     }, [isCursor]);
 
+    const [displayMode, setDisplayMode] = React.useState<'widget' | 'text'>('widget');
+    const widgetModeSwitcher =
+        <select value={displayMode} onChange={(ev) => setDisplayMode(ev.target.value as any)}>
+            <option value={'widget'}>widget</option>
+            <option value={'text'}>plain text</option>
+        </select>;
+
     if (!loc) {
         return <div>Waiting for info... </div>
     }
@@ -53,8 +60,9 @@ export function Info(props: InfoProps) {
     const statusColor = statusColTable[status];
     const nothingToShow = !widget && !goalState && messages.length === 0;
     const locationString = `${basename(loc.file_name)}:${(loc).line}:${(loc).column}`;
+
     return <LocationContext.Provider value={loc}>
-        <Details>
+        <Details open>
             <summary style={{transition: 'color 0.5s ease'}} className={'mv2 ' + statusColor}>
                 {locationString}
                 <span className="fr">
@@ -74,24 +82,32 @@ export function Info(props: InfoProps) {
                         </div> }
                 </div>
                 <div>
-                    <Widget widget={widget} fileName={loc.file_name} />
+                    { (widget || goalState) &&
+                        <Details open>
+                            <summary>
+                                Tactic state
+                                { widget && <span className='fr'>{widgetModeSwitcher}</span> }
+                            </summary>
+                            <div className='ml1'>
+                                { widget && displayMode === 'widget' ?
+                                    <Widget widget={widget} fileName={loc.file_name} /> :
+                                    <Goal goalState={goalState} /> }
+                            </div>
+                        </Details> }
                 </div>
-                <details open={!widget} className={goalState ? '' : 'dn'}>
-                    <summary className="mv2 pointer">{widget ? 'Plaintext Tactic State' : 'Tactic State'}</summary>
-                    <div className="ml1">
-                        <Goal goalState={goalState} />
-                    </div>
-                </details>
-                <details open className={messages.length === 0 ? 'dn' : '0'}>
-                    <summary className="mv2 pointer">Messages ({messages.length})</summary>
-                    <div className="ml1">
-                        <Messages messages={messages}/>
-                    </div>
-                </details>
+                <div>
+                    { messages.length > 0 &&
+                        <Details open>
+                            <summary className="mv2 pointer">Messages ({messages.length})</summary>
+                            <div className="ml1">
+                                <Messages messages={messages}/>
+                            </div>
+                        </Details> }
+                </div>
                 {nothingToShow && (
                     loading ? 'Loading...' :
                     paused ? <span>Updating is paused. <a className="link pointer dim" onClick={e => forceUpdate()}>Refresh</a> or <a className="link pointer dim" onClick={e => setPaused(false)}>resume updating</a> to see information</span> :
-                    `No info found at ${locationString}`)}
+                    'No info found.')}
             </div>
         </Details>
     </LocationContext.Provider>;

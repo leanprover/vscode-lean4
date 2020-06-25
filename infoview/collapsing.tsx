@@ -23,7 +23,7 @@ export function useIsVisible(): [any, boolean] {
 }
 
 export function Details({open: initiallyOpen, children: [summary, ...children]}: {open?: boolean; children: [JSX.Element, ...JSX.Element[]]}): JSX.Element {
-    const [isOpen, setOpen] = React.useState<boolean>(initiallyOpen === undefined ? true : false);
+    const [isOpen, setOpen] = React.useState<boolean>(initiallyOpen === undefined ? false : true);
     const setupEventListener = React.useCallback((node?: HTMLDetailsElement) => {
         if (node !== null) {
             node.addEventListener('toggle', () => setOpen(node.open));
