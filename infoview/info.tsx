@@ -88,7 +88,7 @@ function delayedThrottled(ms: number, cb: () => void): () => void {
     };
 }
 
-interface UpdatingInfoResponse {
+interface InfoState {
     loc: Location;
     loading: boolean;
     response?: InfoResponse;
@@ -97,7 +97,7 @@ interface UpdatingInfoResponse {
     triggerUpdate: () => void;
 };
 
-function infoEvents(isPaused: boolean, loc: Location): UpdatingInfoResponse {
+function infoState(isPaused: boolean, loc: Location): InfoState {
     const loading = useMappedEvent(global_server.tasks, false, (t) => isLoading(t, loc), [loc]);
 
     const [response, setResponse] = React.useState<InfoResponse>();
@@ -154,10 +154,10 @@ export function Info(props: InfoProps) {
     const isCurrentlyPaused = React.useRef<boolean>();
     isCurrentlyPaused.current = isPaused;
 
-    const responseRef = React.useRef<UpdatingInfoResponse>({loc: null, loading: true, messages: [], triggerUpdate: () => {}});
-    const newResponse = infoEvents(isPaused, (isPaused && responseRef.current.loc) || props.loc);
-    if (!isPaused) responseRef.current = newResponse;
-    const {loc, response: info, error, loading, messages} = responseRef.current;
+    const stateRef = React.useRef<InfoState>({loc: null, loading: true, messages: [], triggerUpdate: () => {}});
+    const newState = infoState(isPaused, (isPaused && stateRef.current.loc) || props.loc);
+    if (!isPaused) stateRef.current = newState;
+    const {loc, response: info, error, loading, messages} = stateRef.current;
 
     function copyGoalToComment() {
         const goal = info.record && info.record.state;
@@ -200,7 +200,7 @@ export function Info(props: InfoProps) {
     const locationString = loc && `${basename(loc.file_name)}:${(loc).line}:${(loc).column}`;
 
     // TODO: updating of paused views
-    const forceUpdate = () => !isCurrentlyPaused.current && responseRef.current.triggerUpdate();
+    const forceUpdate = () => !isCurrentlyPaused.current && stateRef.current.triggerUpdate();
 
     return <LocationContext.Provider value={loc}>
         <Details open>
