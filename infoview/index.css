@@ -85,3 +85,9 @@ h1 {
 .spin {
     animation: spinner .6s linear infinite;
 }
+
+select {
+    background-color: var(--vscode-dropdown-background);
+    color: var(--vscode-dropdown-foreground);
+    border-color: var(--vscode-dropdown-border);
+}

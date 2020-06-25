@@ -164,12 +164,6 @@ export class InfoProvider implements Disposable {
                 font-family: ${fontFamily};
                 font-size: ${workspace.getConfiguration('editor').get('fontSize')}px;
             }
-
-            select {
-                background-color: var(--vscode-dropdown-background);
-                color: var(--vscode-dropdown-foreground);
-                border-color: var(--vscode-dropdown-border);
-            }
         `;
         const configCSS = workspace.getConfiguration('lean').get('infoViewStyle');
         this.stylesheet = fontCodeCSS + configCSS;
