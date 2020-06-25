@@ -4,16 +4,11 @@ import { CodeActionContext, CodeActionProvider, Command, commands,
     Position, Range, Selection, TextDocument, TextEditor, Uri, window } from 'vscode';
 import { InfoProvider } from './infoview';
 import { Server } from './server';
+import { regexGM, magicWord, regexM } from './trythis';
 
 /** Pastes suggestions provided by tactics such as `squeeze_simp` */
 export class TacticSuggestions implements Disposable, CodeActionProvider {
     private subscriptions: Disposable[] = [];
-
-    // Match everything after "Try this" until the next unindented line
-    private magicWord = 'Try this: ';
-    private regex = '^' + this.magicWord + '((.*\n )*.*)$';
-    private regexGM = new RegExp(this.regex, 'gm');
-    private regexM = new RegExp(this.regex, 'm');
 
     constructor(private server: Server, infoView: InfoProvider, private leanDocs: DocumentSelector) {
 
@@ -38,15 +33,6 @@ export class TacticSuggestions implements Disposable, CodeActionProvider {
             commands.registerCommand('_lean.pasteTacticSuggestion', infoViewCommandHandler),
             languages.registerCodeActionsProvider(this.leanDocs, this),
         );
-
-        infoView.addMessageFormatter((text: string, m: Message) => {
-            const newText = text.replace(this.regexGM, (_, tactic) => {
-                const command = encodeURI('command:_lean.pasteTacticSuggestion?' +
-                    JSON.stringify([m, tactic]));
-                return `${this.magicWord}<a href="${command}" title="${tactic}">${tactic}</a>`
-            });
-            return newText;
-        });
     }
 
     dispose() {
@@ -79,7 +65,7 @@ export class TacticSuggestions implements Disposable, CodeActionProvider {
     private async pasteIntoEditor(m: Message, textEditor: TextEditor, suggestion: string | null) {
         if (suggestion === null) {
             // Find first suggestion in message
-            const suggs = this.regexM.exec(m.text);
+            const suggs = regexM.exec(m.text);
             if (!suggs) return;
             suggestion = suggs[1];
         }
@@ -153,7 +139,7 @@ export class TacticSuggestions implements Disposable, CodeActionProvider {
             const msg = this.server.messages.find((m) => m.file_name === document.fileName &&
                 m.text === diag.message);
             // each "Try this" becomes a code action
-            for (const [, tactic] of diag.message.matchAll(this.regexGM)) {
+            for (const [, tactic] of diag.message.matchAll(regexGM)) {
                 cmds.push({
                     title: tactic,
                     command: '_lean.pasteTacticSuggestion',

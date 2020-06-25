@@ -1,6 +1,5 @@
-import { readFileSync } from 'fs';
-import { InfoResponse, Message, Connection } from 'lean-client-js-node';
-import { basename, join } from 'path';
+import { InfoResponse, Connection } from 'lean-client-js-node';
+import { join } from 'path';
 import {
     commands, Disposable, DocumentSelector,
     ExtensionContext, languages, Position, Range,
@@ -22,16 +21,12 @@ export class InfoProvider implements Disposable {
     private statusShown: boolean = false;
 
     private started: boolean = false;
-    private stopped: boolean = false;
 
     private pins: Location[] | null;
 
     private stylesheet: string = null;
 
-    private messageFormatters: ((text: string, msg: Message) => string)[] = [];
-
     private hoverDecorationType: TextEditorDecorationType;
-    private stickyDecorationType: TextEditorDecorationType;
 
     constructor(private server: Server, private leanDocs: DocumentSelector, private context: ExtensionContext, private staticServer: StaticServer) {
 
@@ -40,10 +35,6 @@ export class InfoProvider implements Disposable {
         this.hoverDecorationType = window.createTextEditorDecorationType({
             backgroundColor: 'red', // make configurable?
             border: '3px solid red',
-        });
-        this.stickyDecorationType = window.createTextEditorDecorationType({
-            backgroundColor: 'blue', // make configurable?
-            border: '3px solid blue',
         });
         this.updateStylesheet();
         this.makeProxyConnection();
@@ -148,10 +139,6 @@ export class InfoProvider implements Disposable {
     dispose() {
         this.proxyConnection.dispose();
         for (const s of this.subscriptions) { s.dispose(); }
-    }
-
-    addMessageFormatter(f: (text: string, msg: Message) => string) {
-        this.messageFormatters.push(f);
     }
 
     private updateStylesheet() {

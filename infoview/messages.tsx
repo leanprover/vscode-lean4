@@ -5,6 +5,7 @@ import { Location, Config } from '../src/shared';
 import { CopyToCommentIcon, GoToFileIcon } from './svg_icons';
 import { copyToComment, reveal } from './server';
 import { Widget } from './widget';
+import * as trythis from '../src/trythis';
 
 function compareMessages(m1: Message, m2: Message): boolean {
     return m1.file_name === m2.file_name &&
@@ -24,6 +25,11 @@ const MessageView = React.memo(({m}: MessageViewProps) => {
     const loc: Location = {file_name: m.file_name, column: c, line: l}
     const shouldColorize = m.severity === 'error';
     let text = escapeHtml(m.text)
+    text = text.replace(trythis.regexGM, (_, tactic) => {
+        const command = encodeURI('command:_lean.pasteTacticSuggestion?' +
+            JSON.stringify([m, tactic]));
+        return `${trythis.magicWord}<a class="link" href="${command}" title="${tactic}">${tactic}</a>`
+    });
     text = shouldColorize ? colorizeMessage(text) : text;
     const title = `${b}:${l}:${c}`;
     return <details open>
