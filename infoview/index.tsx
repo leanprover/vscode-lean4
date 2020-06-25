@@ -1,4 +1,4 @@
-import { post, PositionEvent, ConfigEvent, SyncPinEvent, PauseEvent, ContinueEvent, ToggleUpdatingEvent, TogglePinEvent, AllMessagesEvent } from './server';
+import { post, PositionEvent, ConfigEvent, SyncPinEvent, PauseEvent, ContinueEvent, ToggleUpdatingEvent, TogglePinEvent, AllMessagesEvent, currentAllMessages, currentConfig } from './server';
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 import { ServerStatus, Config, defaultConfig,  Location, locationKey, locationEq } from '../src/shared';
@@ -39,8 +39,8 @@ interface InfoProps {
 
 function Main(props: {}) {
     if (!props) { return null }
-    const [config, setConfig] = React.useState(defaultConfig);
-    const [messages, setMessages] = React.useState<Message[]>([]);
+    const [config, setConfig] = React.useState(currentConfig);
+    const [messages, setMessages] = React.useState<Message[]>(currentAllMessages);
     const [curLoc, setCurLoc] = React.useState<InfoProps>({paused: false});
     React.useEffect(() => {
         const subscriptions = [
@@ -100,10 +100,9 @@ function Infos({curLoc, setCurLoc}): JSX.Element {
     return <>
         {pinnedLocs.map(({loc, paused}, i) => {
             const isCursor = locationEq(loc,curLoc.loc);
-            return <Info key={locationKey(loc)} loc={loc} isPaused={paused} setPaused={setPause(i)} isPinned={true} isCursor={isCursor} onPin={unpin(i)}/>}) }
+            return <Info key={locationKey(loc)} loc={loc} isPaused={paused} setPaused={setPause(i)} isPinned={true} isCursor={false} onPin={unpin(i)}/>}) }
         <div>
-            {!isPinned(curLoc.loc) &&
-                <Info loc={curLoc.loc} isPaused={curLoc.paused} setPaused={setPause()} key={pinnedLocs.length} isPinned={false} isCursor={true} onPin={pin}/>}
+            <Info loc={curLoc.loc} isPaused={curLoc.paused} setPaused={setPause()} key={pinnedLocs.length} isPinned={false} isCursor={true} onPin={pin}/>
         </div>
     </>;
 }

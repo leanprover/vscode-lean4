@@ -21,8 +21,10 @@ export function edit(loc: Location, text: string) {
 }
 
 export const PositionEvent: Event<Location> = new Event();
-const InnerConfigEvent: Event<Partial<Config>> = new Event();
-export const ConfigEvent: Signal<Config> = (new SignalBuilder()).scan((acc, x) => ({...acc, ...x}), defaultConfig, InnerConfigEvent);
+
+export let currentConfig: Config = defaultConfig;
+export const ConfigEvent: Event<Config> = new Event();
+
 ConfigEvent.on(c => {
     console.log('config updated: ', c);
 });
@@ -35,11 +37,18 @@ export const TogglePinEvent: Event<{}> = new Event();
 export const ServerRestartEvent: Event<{}> = new Event();
 export const AllMessagesEvent: Event<Message[]> = new Event();
 
+export let currentAllMessages: Message[] = [];
+AllMessagesEvent.on((msgs) => currentAllMessages = msgs);
+ServerRestartEvent.on(() => currentAllMessages = []);
+
 window.addEventListener('message', event => { // messages from the extension
     const message: ToInfoviewMessage = event.data; // The JSON data our extension sent
     switch (message.command) {
         case 'position': PositionEvent.fire(message.loc); break;
-        case 'on_config_change': InnerConfigEvent.fire(message.config); break;
+        case 'on_config_change':
+            currentConfig = { ...currentConfig, ...message.config };
+            ConfigEvent.fire(currentConfig);
+            break;
         case 'sync_pin': SyncPinEvent.fire(message); break;
         case 'pause': PauseEvent.fire(message); break;
         case 'continue': ContinueEvent.fire(message); break;

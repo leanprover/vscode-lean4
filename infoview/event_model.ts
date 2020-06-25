@@ -1,6 +1,6 @@
 import { Signal, SignalBuilder } from './util';
 import { Event, CurrentTasksResponse, GoalState, Message, WidgetIdentifier } from 'lean-client-js-core'
-import { global_server, ServerRestartEvent, ConfigEvent, AllMessagesEvent } from './server';
+import { global_server, ServerRestartEvent, ConfigEvent, AllMessagesEvent, currentAllMessages, currentConfig } from './server';
 import {Location, locationKey,} from '../src/shared';
 import { GetMessagesFor } from './messages';
 import * as React from 'react';
@@ -60,7 +60,8 @@ export function infoEvents(sb: SignalBuilder, onProps: Signal<InfoProps>): Signa
 
     const onMessage = sb.map(({msgs, loc, config}) => {
         return {messages: loc ? GetMessagesFor(msgs, loc, config) : []};
-    }, sb.zip({msgs: AllMessagesEvent, loc: throttled_loc, config: ConfigEvent}));
+    }, sb.zip({msgs: AllMessagesEvent, loc: throttled_loc, config: ConfigEvent},
+        {msgs: currentAllMessages, loc: null, config: currentConfig}));
 
     const {result, isRunning} = sb.throttleTask<any, Partial<InfoState>>(async () => {
         const loc = onLoc.value;
