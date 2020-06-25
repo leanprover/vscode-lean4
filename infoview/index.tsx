@@ -98,12 +98,12 @@ function Infos({curLoc, setCurLoc}): JSX.Element {
         post({command:'sync_pin', pins: pins.map(x => x.loc)})
     }
     return <>
-        {pinnedLocs.map(({loc, paused}, i) => {
-            const isCursor = locationEq(loc,curLoc.loc);
-            return <Info key={locationKey(loc)} loc={loc} isPaused={paused} setPaused={setPause(i)} isPinned={true} isCursor={false} onPin={unpin(i)}/>}) }
         <div>
-            <Info loc={curLoc.loc} isPaused={curLoc.paused} setPaused={setPause()} key={pinnedLocs.length} isPinned={false} isCursor={true} onPin={pin}/>
+            {pinnedLocs.map(({loc, paused}, i) => {
+                const isCursor = locationEq(loc,curLoc.loc);
+                return <Info key={locationKey(loc)} loc={loc} isPaused={paused} setPaused={setPause(i)} isPinned={true} isCursor={false} onPin={unpin(i)}/>}) }
         </div>
+        <Info loc={curLoc.loc} isPaused={curLoc.paused} setPaused={setPause()} isPinned={false} isCursor={true} onPin={pin}/>
     </>;
 }
 
