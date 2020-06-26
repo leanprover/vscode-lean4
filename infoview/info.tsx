@@ -22,14 +22,13 @@ interface InfoProps {
     loc: Location;
     isPinned: boolean;
     isCursor: boolean;
-    onEdit: (l: Location, text: string) => void;
     onPin: (new_pin_state: boolean) => void;
     isPaused: boolean;
     setPaused: (paused: boolean) => void;
 }
 
 export function Info(props: InfoProps) {
-    const {setPaused, onPin, onEdit, isCursor, isPinned} = props;
+    const {setPaused, onPin, isCursor, isPinned} = props;
     const {loc, isLoading:loading, isUpdating:updating, isPaused: paused, error:updateError, goalState, widget, messages, forceUpdate} = useInfo(props);
     const config    = React.useContext(ConfigContext);
 
@@ -75,7 +74,7 @@ export function Info(props: InfoProps) {
                         </div> }
                 </div>
                 <div>
-                    <Widget widget={widget} fileName={loc.file_name} onEdit={onEdit} />
+                    <Widget widget={widget} fileName={loc.file_name} />
                 </div>
                 <details open={!widget} className={goalState ? '' : 'dn'}>
                     <summary className="mv2 pointer">{widget ? 'Plaintext Tactic State' : 'Tactic State'}</summary>

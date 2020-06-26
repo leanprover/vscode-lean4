@@ -8,6 +8,14 @@ export function post(message: FromInfoviewMessage) { // send a message to the ex
     vscode.postMessage(message);
 }
 
+export function postInsertText(loc: Location, text: string) {
+    return post({ command: 'insert_text', loc, text });
+}
+
+export function postClearHighlight() { return post({ command: 'stop_hover'}); }
+export function postHighlightPosition(loc: Location) { return post({ command: 'hover_position', loc}); }
+export function postReveal(loc: Location) { return post({ command: 'reveal', loc}) }
+
 export const PositionEvent: Event<Location> = new Event();
 const InnerConfigEvent: Event<Partial<Config>> = new Event();
 export const ConfigEvent: Signal<Config> = (new SignalBuilder()).scan((acc, x) => ({...acc, ...x}), defaultConfig, InnerConfigEvent);

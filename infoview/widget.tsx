@@ -1,8 +1,8 @@
 import * as React from 'react';
 import * as ReactPopper from 'react-popper';
 import './popper.css';
-import { WidgetComponent, WidgetHtml, WidgetElement, WidgetEventRequest, WidgetIdentifier } from 'lean-client-js-node';
-import { global_server } from './server';
+import { WidgetComponent, WidgetHtml, WidgetElement, WidgetEventRequest, WidgetIdentifier, WidgetData } from 'lean-client-js-node';
+import { global_server, postInsertText, postReveal, postHighlightPosition, postClearHighlight } from './server';
 import { Location } from '../src/shared';
 import { useIsVisible } from './collapsing';
 
@@ -31,7 +31,6 @@ function Popper(props: {children: React.ReactNode[]; popperContent: any; refEltT
 
 export interface WidgetProps {
     widget?: WidgetIdentifier;
-    onEdit?: (l: Location, text: string) => void;
     fileName: string;
 }
 
@@ -61,7 +60,32 @@ class WidgetErrorBoundary extends React.Component<{children: any},{error?: {mess
     }
 }
 
-export function Widget({ widget, fileName, onEdit }: WidgetProps): JSX.Element {
+/** [todo] pending adding to lean-client-js */
+export type WidgetEffect =
+| {kind: 'insert_text'; text: string}
+| {kind: 'reveal_position'; file_name: string; line: number; column: number}
+| {kind: 'highlight_position'; file_name: string; line: number; column: number}
+| {kind: 'clear_highlighting'}
+| {kind: 'custom'; key: string; value: string}
+
+function applyWidgetEffect(widget: WidgetIdentifier, file_name: string, effect: WidgetEffect) {
+    switch (effect.kind) {
+        case 'insert_text':
+            const loc = {file_name, line: widget.line, column: widget.column};
+            postInsertText(loc, effect.text);
+            break;
+        case 'reveal_position': postReveal(effect); break;
+        case 'highlight_position': postHighlightPosition(effect); break;
+        case 'clear_highlighting': postClearHighlight(); break;
+        case 'custom':
+            console.log(`Custom widget effect: ${effect.key} -- ${effect.value}`);
+            break;
+        default:
+            break;
+    }
+}
+
+export function Widget({ widget, fileName }: WidgetProps): JSX.Element {
     const [html, setHtml] = React.useState<WidgetComponent>();
     const [node, isVisible] = useIsVisible();
     React.useEffect(() => {
@@ -95,10 +119,17 @@ export function Widget({ widget, fileName, onEdit }: WidgetProps): JSX.Element {
         if (!update_result.record) { return; }
         const record = update_result.record;
         if (record.status === 'success' && record.widget) {
+            const effects: WidgetEffect[] | undefined = (record as any).effects;
+            if (effects) {
+                for (const effect of effects) {
+                    applyWidgetEffect(widget, fileName, effect);
+                }
+            }
             setHtml(record.widget.html);
         } else if (record.status === 'edit') {
+            // @deprecated case
             const loc = { line: widget.line, column: widget.column, file_name: fileName };
-            if (onEdit) onEdit(loc, record.action);
+            postInsertText(loc, record.action);
             setHtml(record.widget.html);
         } else if (record.status === 'invalid_handler') {
             console.warn(`No widget_event update for ${message.handler}: invalid handler.`)
