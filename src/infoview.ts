@@ -165,6 +165,7 @@ export class InfoProvider implements Disposable {
 
     private openPreview(editor: TextEditor) {
         let column = editor ? editor.viewColumn + 1 : ViewColumn.Two;
+        const loc = this.getActiveCursorLocation();
         if (column === 4) { column = ViewColumn.Three; }
         if (this.webviewPanel) {
             this.webviewPanel.reveal(column, true);
@@ -181,7 +182,7 @@ export class InfoProvider implements Disposable {
             this.webviewPanel.onDidDispose(() => this.webviewPanel = null);
             this.webviewPanel.webview.onDidReceiveMessage((message) => this.handleMessage(message), undefined, this.subscriptions);
         }
-        this.sendPosition();
+        if (loc !== null) { this.postMessage({ command: 'position', loc }); }
         this.sendConfig();
         this.postMessage({command: 'all_messages', messages: this.server.messages});
     }

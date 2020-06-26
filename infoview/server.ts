@@ -1,6 +1,5 @@
 import { Server, Transport, Connection, Event, TransportError, Message } from 'lean-client-js-core';
 import { ToInfoviewMessage, FromInfoviewMessage, Config, Location, defaultConfig } from '../src/shared';
-import { SignalBuilder, Signal } from './util';
 declare const acquireVsCodeApi;
 const vscode = acquireVsCodeApi();
 
@@ -21,6 +20,8 @@ export function edit(loc: Location, text: string) {
 }
 
 export const PositionEvent: Event<Location> = new Event();
+export let globalCurrentLoc: Location = null;
+PositionEvent.on((loc) => globalCurrentLoc = loc);
 
 export let currentConfig: Config = defaultConfig;
 export const ConfigEvent: Event<Config> = new Event();
