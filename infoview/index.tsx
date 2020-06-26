@@ -6,9 +6,10 @@ import { Message } from 'lean-client-js-core';
 import './tachyons.css' // stylesheet assumed by Lean widgets. See https://tachyons.io/ for documentation
 import './index.css'
 import { Info } from './info';
-import { Messages, processMessages } from './messages';
+import { Messages, processMessages, ProcessedMessage } from './messages';
 import { Details } from './collapsing';
 import { useEvent } from './util';
+import { ContinueIcon, PauseIcon } from './svg_icons';
 
 export const ConfigContext = React.createContext<Config>(defaultConfig);
 export const LocationContext = React.createContext<Location | null>(null);
@@ -86,10 +87,27 @@ function Infos({curLoc}: {curLoc: Location}): JSX.Element {
     </>;
 }
 
-function AllMessages({allMessages}): JSX.Element {
+function usePaused<T>(isPaused: boolean, t: T): T {
+    const old = React.useRef<T>(t);
+    if (!isPaused) old.current = t;
+    return old.current;
+}
+
+function AllMessages({allMessages: allMessages0}: {allMessages: ProcessedMessage[]}): JSX.Element {
     const config = React.useContext(ConfigContext);
+    const [isPaused, setPaused] = React.useState<boolean>(false);
+    const allMessages = usePaused(isPaused, allMessages0);
     return <Details open={!config.infoViewAutoOpenShowGoal}>
-        <summary>All Messages ({allMessages.length})</summary>
+        <summary>
+            All Messages ({allMessages.length})
+            <span className="fr">
+                <a className="link pointer mh2 dim"
+                        onClick={e => { e.preventDefault(); setPaused(!isPaused)}}
+                        title={isPaused ? 'continue updating' : 'pause updating'}>
+                    {isPaused ? <ContinueIcon/> : <PauseIcon/>}
+                </a>
+            </span>
+        </summary>
         <div className="ml1"> <Messages messages={allMessages}/> </div>
     </Details>;
 }
