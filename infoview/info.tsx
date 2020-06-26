@@ -5,7 +5,7 @@ import { LocationContext, ConfigContext } from '.';
 import { Widget } from './widget';
 import { Goal } from './goal';
 import { Messages, processMessages, ProcessedMessage, GetMessagesFor } from './messages';
-import { basename } from './util';
+import { basename, useEvent } from './util';
 import { CopyToCommentIcon, PinnedIcon, PinIcon, ContinueIcon, PauseIcon, RefreshIcon, GoToFileIcon } from './svg_icons';
 import { Details } from './collapsing';
 import { Event, InfoResponse, CurrentTasksResponse, Message } from 'lean-client-js-core';
@@ -55,13 +55,6 @@ function isLoading(ts: CurrentTasksResponse, l: Location): boolean {
 
 function isDone(ts: CurrentTasksResponse) {
     return ts.tasks.length === 0;
-}
-
-function useEvent<T>(ev: Event<T>, f: (_: T) => void, dependencies?: React.DependencyList) {
-    React.useEffect(() => {
-        const h = ev.on(f);
-        return () => h.dispose();
-    }, dependencies)
 }
 
 function useMappedEvent<T, S>(ev: Event<T>, initial: S, f: (_: T) => S, deps?: React.DependencyList): S {
@@ -166,24 +159,10 @@ export function Info(props: InfoProps) {
 
     // If we are the cursor infoview, then we should subscribe to
     // some commands from the extension
-    React.useEffect(() => {
-        if (isCursor) {
-            const h = CopyToCommentEvent.on(copyGoalToComment);
-            return () => h.dispose();
-        }
-    }, [info]);
-
-    React.useEffect(() => {
-        if (isCursor) {
-            const subscriptions = [
-                PauseEvent.on(l => setPaused(true)),
-                ContinueEvent.on(l => setPaused(false)),
-                ToggleUpdatingEvent.on(l => setPaused(!isCurrentlyPaused.current)),
-            ];
-
-            return () => { for (const s of subscriptions) s.dispose(); }
-        }
-    }, [isCursor]);
+    useEvent(CopyToCommentEvent, () => isCursor && copyGoalToComment(), [isCursor, info]);
+    useEvent(PauseEvent, () => isCursor && setPaused(true), [isCursor]);
+    useEvent(ContinueEvent, () => isCursor && setPaused(false), [isCursor]);
+    useEvent(ToggleUpdatingEvent, () => isCursor && setPaused(!isCurrentlyPaused.current), [isCursor]);
 
     const [displayMode, setDisplayMode] = React.useState<'widget' | 'text'>('widget');
     const widgetModeSwitcher =

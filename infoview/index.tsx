@@ -8,6 +8,7 @@ import './index.css'
 import { Info } from './info';
 import { Messages, processMessages } from './messages';
 import { Details } from './collapsing';
+import { useEvent } from './util';
 
 export const ConfigContext = React.createContext<Config>(defaultConfig);
 export const LocationContext = React.createContext<Location | null>(null);
@@ -37,15 +38,9 @@ function Main(props: {}) {
     const [config, setConfig] = React.useState(currentConfig);
     const [messages, setMessages] = React.useState<Message[]>(currentAllMessages);
     const [curLoc, setCurLoc] = React.useState<Location>(globalCurrentLoc);
-    React.useEffect(() => {
-        const subscriptions = [
-            AllMessagesEvent.on(x => setMessages(x)),
-            PositionEvent.on(loc => setCurLoc(loc)),
-            ConfigEvent.on(l => setConfig(l)),
-        ];
-
-        return () => { for (const s of subscriptions) s.dispose(); }
-    }, []);
+    useEvent(AllMessagesEvent, (msgs) => setMessages(msgs), []);
+    useEvent(PositionEvent, (loc) => setCurLoc(loc), []);
+    useEvent(ConfigEvent, (cfg) => setConfig(cfg), []);
     if (!curLoc) return <p>Click somewhere in the Lean file to enable the info view.</p>;
     const allMessages = processMessages(messages.filter((m) => curLoc && m.file_name === curLoc.file_name));
     return <div className="ma1">
@@ -57,14 +52,8 @@ function Main(props: {}) {
 }
 
 function Infos({curLoc}: {curLoc: Location}): JSX.Element {
-    React.useEffect(() => {
-        const subscriptions = [
-            SyncPinEvent.on(l => setPinnedLocs(l.pins)),
-            TogglePinEvent.on(() => isPinned(curLoc) ? unpin()() : pin() )
-        ];
-
-        return () => { for (const s of subscriptions) s.dispose(); }
-    }, []);
+    useEvent(SyncPinEvent, (syncMsg) => setPinnedLocs(syncMsg.pins), []);
+    useEvent(TogglePinEvent, () => isPinned(curLoc) ? unpin()() : pin());
     const [pinnedLocs, setPinnedLocs] = React.useState<PinnedLocation[]>([]);
     const isPinned = (loc: Location) => pinnedLocs.some((l) => locationEq(l, loc));
     const pinKey = React.useRef<number>(0);
