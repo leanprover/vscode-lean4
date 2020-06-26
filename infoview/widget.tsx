@@ -74,8 +74,8 @@ function applyWidgetEffect(widget: WidgetIdentifier, file_name: string, effect: 
             const loc = {file_name, line: widget.line, column: widget.column};
             postInsertText(loc, effect.text);
             break;
-        case 'reveal_position': postReveal(effect); break;
-        case 'highlight_position': postHighlightPosition(effect); break;
+        case 'reveal_position': postReveal({file_name: effect.file_name || file_name, line: effect.line, column: effect.column}); break;
+        case 'highlight_position': postHighlightPosition({file_name: effect.file_name || file_name, line: effect.line, column: effect.column}); break;
         case 'clear_highlighting': postClearHighlight(); break;
         case 'custom':
             console.log(`Custom widget effect: ${effect.key} -- ${effect.value}`);
