@@ -1,6 +1,5 @@
-import { readFileSync } from 'fs';
-import { InfoResponse, Message, Connection } from 'lean-client-js-node';
-import { basename, join } from 'path';
+import { InfoResponse, Connection } from 'lean-client-js-node';
+import { join } from 'path';
 import {
     commands, Disposable, DocumentSelector,
     ExtensionContext, languages, Position, Range,
@@ -9,7 +8,7 @@ import {
     Uri, ViewColumn, WebviewPanel, window, workspace,
 } from 'vscode';
 import { Server } from './server';
-import { ToInfoviewMessage, FromInfoviewMessage, Location, InsertTextMessage, ServerRequestMessage, RevealMessage, HoverPositionMessage, locationEq } from './shared'
+import { ToInfoviewMessage, FromInfoviewMessage, PinnedLocation, InsertTextMessage, ServerRequestMessage, RevealMessage, HoverPositionMessage, locationEq, Location } from './shared'
 import { StaticServer } from './staticserver';
 
 export class InfoProvider implements Disposable {
@@ -22,16 +21,12 @@ export class InfoProvider implements Disposable {
     private statusShown: boolean = false;
 
     private started: boolean = false;
-    private stopped: boolean = false;
 
-    private pins: Location[] | null;
+    private pins: PinnedLocation[] | null;
 
     private stylesheet: string = null;
 
-    private messageFormatters: ((text: string, msg: Message) => string)[] = [];
-
     private hoverDecorationType: TextEditorDecorationType;
-    private stickyDecorationType: TextEditorDecorationType;
 
     constructor(private server: Server, private leanDocs: DocumentSelector, private context: ExtensionContext, private staticServer: StaticServer) {
 
@@ -40,10 +35,6 @@ export class InfoProvider implements Disposable {
         this.hoverDecorationType = window.createTextEditorDecorationType({
             backgroundColor: 'red', // make configurable?
             border: '3px solid red',
-        });
-        this.stickyDecorationType = window.createTextEditorDecorationType({
-            backgroundColor: 'blue', // make configurable?
-            border: '3px solid blue',
         });
         this.updateStylesheet();
         this.makeProxyConnection();
@@ -87,7 +78,7 @@ export class InfoProvider implements Disposable {
                         newPosition = e.document.validatePosition(newPosition);
                         const new_pin = this.makeLocation(pin.file_name, newPosition);
                         if (!locationEq(new_pin, pin)) {changed = true; }
-                        return new_pin;
+                        return { ...new_pin, key: pin.key };
                     });
                     if (changed) {
                         this.postMessage({
@@ -150,10 +141,6 @@ export class InfoProvider implements Disposable {
         for (const s of this.subscriptions) { s.dispose(); }
     }
 
-    addMessageFormatter(f: (text: string, msg: Message) => string) {
-        this.messageFormatters.push(f);
-    }
-
     private updateStylesheet() {
         const fontFamily =
             // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
@@ -178,6 +165,7 @@ export class InfoProvider implements Disposable {
 
     private openPreview(editor: TextEditor) {
         let column = editor ? editor.viewColumn + 1 : ViewColumn.Two;
+        const loc = this.getActiveCursorLocation();
         if (column === 4) { column = ViewColumn.Three; }
         if (this.webviewPanel) {
             this.webviewPanel.reveal(column, true);
@@ -194,7 +182,7 @@ export class InfoProvider implements Disposable {
             this.webviewPanel.onDidDispose(() => this.webviewPanel = null);
             this.webviewPanel.webview.onDidReceiveMessage((message) => this.handleMessage(message), undefined, this.subscriptions);
         }
-        this.sendPosition();
+        if (loc !== null) { this.postMessage({ command: 'position', loc }); }
         this.sendConfig();
         this.postMessage({command: 'all_messages', messages: this.server.messages});
     }

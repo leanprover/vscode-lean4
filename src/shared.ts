@@ -11,9 +11,10 @@ export interface Location {
     column: number;
 }
 
-export function locationKey(l: Location): string {
-    return `${l.file_name}:${l.line}:${l.column}`;
+export interface PinnedLocation extends Location {
+    key: number;
 }
+
 export function locationEq(l1: Location, l2: Location) {
     return l1.column === l2.column && l1.line === l2.line && l1.file_name === l2.file_name
 }
@@ -79,7 +80,7 @@ export interface HoverPositionMessage {
 
 export interface SyncPinMessage {
     command: 'sync_pin';
-    pins: Location[];
+    pins: PinnedLocation[];
 }
 
 /** Message from the infoview to the extension. */

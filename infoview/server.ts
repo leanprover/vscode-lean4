@@ -1,6 +1,5 @@
 import { Server, Transport, Connection, Event, TransportError, Message } from 'lean-client-js-core';
-import { ToInfoviewMessage, FromInfoviewMessage, Config, Location, defaultConfig } from '../src/shared';
-import { SignalBuilder, Signal } from './util';
+import { ToInfoviewMessage, FromInfoviewMessage, Config, Location, defaultConfig, PinnedLocation } from '../src/shared';
 declare const acquireVsCodeApi;
 const vscode = acquireVsCodeApi();
 
@@ -8,34 +7,51 @@ export function post(message: FromInfoviewMessage) { // send a message to the ex
     vscode.postMessage(message);
 }
 
-export function postInsertText(loc: Location, text: string) {
-    return post({ command: 'insert_text', loc, text });
+export function clearHighlight() { return post({ command: 'stop_hover'}); }
+export function highlightPosition(loc: Location) { return post({ command: 'hover_position', loc}); }
+export function copyToComment(text: string) {
+    post({ command: 'insert_text', text: `/-\n${text}\n-/\n`});
 }
 
-export function postClearHighlight() { return post({ command: 'stop_hover'}); }
-export function postHighlightPosition(loc: Location) { return post({ command: 'hover_position', loc}); }
-export function postReveal(loc: Location) { return post({ command: 'reveal', loc}) }
+export function reveal(loc: Location) {
+    post({ command: 'reveal', loc });
+}
+
+export function edit(loc: Location, text: string) {
+    post({ command: 'insert_text', loc, text });
+}
 
 export const PositionEvent: Event<Location> = new Event();
-const InnerConfigEvent: Event<Partial<Config>> = new Event();
-export const ConfigEvent: Signal<Config> = (new SignalBuilder()).scan((acc, x) => ({...acc, ...x}), defaultConfig, InnerConfigEvent);
+export let globalCurrentLoc: Location = null;
+PositionEvent.on((loc) => globalCurrentLoc = loc);
+
+export let currentConfig: Config = defaultConfig;
+export const ConfigEvent: Event<Config> = new Event();
+
 ConfigEvent.on(c => {
     console.log('config updated: ', c);
 });
-export const SyncPinEvent: Event<{pins: Location[]}> = new Event();
+export const SyncPinEvent: Event<{pins: PinnedLocation[]}> = new Event();
 export const PauseEvent: Event<{}> = new Event();
 export const ContinueEvent: Event<{}> = new Event();
 export const ToggleUpdatingEvent: Event<{}> = new Event();
 export const CopyToCommentEvent: Event<{}> = new Event();
 export const TogglePinEvent: Event<{}> = new Event();
 export const ServerRestartEvent: Event<{}> = new Event();
-export const AllMessages: Event<Message[]> = new Event();
+export const AllMessagesEvent: Event<Message[]> = new Event();
+
+export let currentAllMessages: Message[] = [];
+AllMessagesEvent.on((msgs) => currentAllMessages = msgs);
+ServerRestartEvent.on(() => currentAllMessages = []);
 
 window.addEventListener('message', event => { // messages from the extension
     const message: ToInfoviewMessage = event.data; // The JSON data our extension sent
     switch (message.command) {
         case 'position': PositionEvent.fire(message.loc); break;
-        case 'on_config_change': InnerConfigEvent.fire(message.config); break;
+        case 'on_config_change':
+            currentConfig = { ...currentConfig, ...message.config };
+            ConfigEvent.fire(currentConfig);
+            break;
         case 'sync_pin': SyncPinEvent.fire(message); break;
         case 'pause': PauseEvent.fire(message); break;
         case 'continue': ContinueEvent.fire(message); break;
@@ -43,7 +59,7 @@ window.addEventListener('message', event => { // messages from the extension
         case 'copy_to_comment': CopyToCommentEvent.fire(message); break;
         case 'toggle_pin': TogglePinEvent.fire(message); break;
         case 'restart': ServerRestartEvent.fire(message); break;
-        case 'all_messages': AllMessages.fire(message.messages); break;
+        case 'all_messages': AllMessagesEvent.fire(message.messages); break;
         case 'server_event': break;
         case 'server_error': break;
     }
@@ -102,7 +118,7 @@ class ProxyConnectionClient implements Connection {
 
 export const global_server = new Server(new ProxyTransport());
 global_server.logMessagesToConsole = true;
-global_server.allMessages.on(x => AllMessages.fire(x.msgs));
+global_server.allMessages.on(x => AllMessagesEvent.fire(x.msgs));
 global_server.connect();
 
 post({command:'request_config'});

@@ -1,10 +1,8 @@
 import * as React from 'react';
 import * as ReactPopper from 'react-popper';
 import './popper.css';
-import { WidgetComponent, WidgetHtml, WidgetElement, WidgetEventRequest, WidgetIdentifier, WidgetData } from 'lean-client-js-node';
-import { global_server, postInsertText, postReveal, postHighlightPosition, postClearHighlight } from './server';
-import { Location } from '../src/shared';
-import { useIsVisible } from './collapsing';
+import { WidgetComponent, WidgetHtml, WidgetElement, WidgetEventRequest, WidgetIdentifier } from 'lean-client-js-node';
+import { global_server, edit, reveal, highlightPosition } from './server';
 
 function Popper(props: {children: React.ReactNode[]; popperContent: any; refEltTag: any; refEltAttrs: any}) {
     const { children, popperContent, refEltTag, refEltAttrs } = props;
@@ -72,11 +70,11 @@ function applyWidgetEffect(widget: WidgetIdentifier, file_name: string, effect: 
     switch (effect.kind) {
         case 'insert_text':
             const loc = {file_name, line: widget.line, column: widget.column};
-            postInsertText(loc, effect.text);
+            edit(loc, effect.text);
             break;
-        case 'reveal_position': postReveal({file_name: effect.file_name || file_name, line: effect.line, column: effect.column}); break;
-        case 'highlight_position': postHighlightPosition({file_name: effect.file_name || file_name, line: effect.line, column: effect.column}); break;
-        case 'clear_highlighting': postClearHighlight(); break;
+        case 'reveal_position': reveal({file_name: effect.file_name || file_name, line: effect.line, column: effect.column}); break;
+        case 'highlight_position': highlightPosition({file_name: effect.file_name || file_name, line: effect.line, column: effect.column}); break;
+        case 'clear_highlighting': clearHighlight(); break;
         case 'custom':
             console.log(`Custom widget effect: ${effect.key} -- ${effect.value}`);
             break;
@@ -85,11 +83,9 @@ function applyWidgetEffect(widget: WidgetIdentifier, file_name: string, effect: 
     }
 }
 
-export function Widget({ widget, fileName }: WidgetProps): JSX.Element {
+export const Widget = React.memo(({ widget, fileName }: WidgetProps) => {
     const [html, setHtml] = React.useState<WidgetComponent>();
-    const [node, isVisible] = useIsVisible();
     React.useEffect(() => {
-        if (!isVisible) {return; }
         async function loadHtml() {
             setHtml((await global_server.send({
                 command: 'get_widget',
@@ -104,7 +100,7 @@ export function Widget({ widget, fileName }: WidgetProps): JSX.Element {
         } else {
             setHtml(widget && widget.html);
         }
-    }, [fileName, widget, isVisible]);
+    }, [fileName, widget]);
     if (!widget) return null;
     async function post(e: any) {
         const message: WidgetEventRequest = {
@@ -127,9 +123,9 @@ export function Widget({ widget, fileName }: WidgetProps): JSX.Element {
             }
             setHtml(record.widget.html);
         } else if (record.status === 'edit') {
-            // @deprecated case
+            // Lean < 3.17
             const loc = { line: widget.line, column: widget.column, file_name: fileName };
-            postInsertText(loc, record.action);
+            edit(loc, record.action);
             setHtml(record.widget.html);
         } else if (record.status === 'invalid_handler') {
             console.warn(`No widget_event update for ${message.handler}: invalid handler.`)
@@ -137,12 +133,18 @@ export function Widget({ widget, fileName }: WidgetProps): JSX.Element {
             console.error(`Update gave an error: ${record.message || record}`);
         }
     }
-    return <div ref={node}>
+    return <div>
         <WidgetErrorBoundary>
             { html ? <ViewHtml html={html} post={post}/> : null }
         </WidgetErrorBoundary>
     </div>
-}
+}, (a, b) => a.fileName === b.fileName &&
+    !!a.widget === !!b.widget &&
+    (!a.widget || a.widget === b.widget ||
+        a.widget.line === b.widget.line &&
+        a.widget.column === b.widget.column &&
+        a.widget.id === b.widget.id &&
+        a.widget.html === b.widget.html));
 
 interface HtmlProps {
     html: WidgetComponent;

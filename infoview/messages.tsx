@@ -1,36 +1,42 @@
 import { basename, escapeHtml, colorizeMessage } from './util';
-import { Message, WidgetIdentifier } from 'lean-client-js-node';
+import { Message } from 'lean-client-js-node';
 import * as React from 'react';
 import { Location, Config } from '../src/shared';
 import { CopyToCommentIcon, GoToFileIcon } from './svg_icons';
-import { post } from './server';
+import { copyToComment, reveal } from './server';
 import { Widget } from './widget';
+import * as trythis from '../src/trythis';
 
 function compareMessages(m1: Message, m2: Message): boolean {
-    return (m1.file_name === m2.file_name &&
+    return m1.file_name === m2.file_name &&
         m1.pos_line === m2.pos_line && m1.pos_col === m2.pos_col &&
-        m1.severity === m2.severity && m1.caption === m2.caption && m1.text === m2.text);
+        m1.severity === m2.severity && m1.caption === m2.caption && m1.text === m2.text &&
+        !!m1.widget === !!m2.widget && (!m1.widget ||
+            m1.widget.line === m2.widget.line && m1.widget.column === m2.widget.column && m1.widget.id === m2.widget.id);
 }
 
 interface MessageViewProps {
     m: Message;
-    onCopyToComment?: (x: string) => void;
 }
 
-export function MessageView(props: MessageViewProps) {
-    const {m, onCopyToComment} = props;
+const MessageView = React.memo(({m}: MessageViewProps) => {
     const b = escapeHtml(basename(m.file_name));
     const l = m.pos_line; const c = m.pos_col;
     const loc: Location = {file_name: m.file_name, column: c, line: l}
     const shouldColorize = m.severity === 'error';
     let text = escapeHtml(m.text)
+    text = text.replace(trythis.regexGM, (_, tactic) => {
+        const command = encodeURI('command:_lean.pasteTacticSuggestion?' +
+            JSON.stringify([m, tactic]));
+        return `${trythis.magicWord}<a class="link" href="${command}" title="${tactic}">${tactic}</a>`
+    });
     text = shouldColorize ? colorizeMessage(text) : text;
     const title = `${b}:${l}:${c}`;
     return <details open>
         <summary className={m.severity + ' mv2 pointer'}>{title}
                 <span className="fr">
-                    <a className={'link pointer mh2 dim '} onClick={e => { e.preventDefault(); post({command: 'reveal', loc}); }} title="reveal file location"><GoToFileIcon/></a>
-                    {onCopyToComment && <a className="link pointer mh2 dim" title="copy message to comment" onClick={e => {e.preventDefault(); onCopyToComment(m.text)}}><CopyToCommentIcon/></a>}
+                    <a className={'link pointer mh2 dim '} onClick={e => { e.preventDefault(); reveal(loc); }} title="reveal file location"><GoToFileIcon/></a>
+                    { m.widget ? null : <a className="link pointer mh2 dim" title="copy message to comment" onClick={e => {e.preventDefault(); copyToComment(m.text)}}><CopyToCommentIcon/></a> }
                 </span>
         </summary>
         <div className="ml1">
@@ -39,35 +45,34 @@ export function MessageView(props: MessageViewProps) {
             }
         </div>
     </details>
-}
+}, (a,b) => compareMessages(a.m, b.m));
 
 interface MessagesProps {
-    messages: (Message & {key?})[];
-    onCopyToComment?: (text: string) => void;
+    messages: ProcessedMessage[];
 }
 
 export function Messages(props: MessagesProps): JSX.Element {
     const should_hide = !props.messages || props.messages.length === 0;
     if (should_hide) {return <>No messages.</>}
-    const msgs = (props.messages || []).map((m,i) =>
-      <MessageView m={m} key={m.key || i} onCopyToComment={props.onCopyToComment}/>);
+    const msgs = props.messages.map((m) =>
+      <MessageView m={m} key={m.key} />);
     return <>{msgs}</>;
 }
 
+export interface ProcessedMessage extends Message {
+    key: string;
+}
+
 /** Some processing for preparing all messages for viewing. */
-export function processMessages(messages: Message[], file_name): (Message & {key: string})[] {
-    const newmsgs = []
-    for (const m of messages) {
-        if (file_name && m.file_name !== file_name) {continue;}
-        let key = `${m.file_name}:${m.pos_line}:${m.pos_col}--${m.text.substr(0, 10)}`;
-        while (newmsgs.some(x => x.key === key)) {
-            key += "'";
-        }
-        newmsgs.push({...m, key});
-    }
-    return newmsgs.sort((a, b) => a.pos_line === b.pos_line
-            ? a.pos_col - b.pos_col
-            : a.pos_line - b.pos_line)
+export function processMessages(messages: Message[]): ProcessedMessage[] {
+    const keys = {};
+    return messages
+        .sort((a, b) => a.pos_line === b.pos_line ? a.pos_col - b.pos_col : a.pos_line - b.pos_line)
+        .map((m) => {
+            const key0 = `${m.pos_line}:${m.pos_col}`;
+            keys[key0] = (keys[key0] || 0)+1;
+            return { ...m, key: `${key0}:${keys[key0]}` };
+        });
 }
 
 export function GetMessagesFor(allMessages: Message[], loc: Location, config: Config) {
