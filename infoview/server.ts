@@ -1,5 +1,5 @@
 import { Server, Transport, Connection, Event, TransportError, Message } from 'lean-client-js-core';
-import { ToInfoviewMessage, FromInfoviewMessage, Config, Location, defaultConfig } from '../src/shared';
+import { ToInfoviewMessage, FromInfoviewMessage, Config, Location, defaultConfig, PinnedLocation } from '../src/shared';
 declare const acquireVsCodeApi;
 const vscode = acquireVsCodeApi();
 
@@ -29,7 +29,7 @@ export const ConfigEvent: Event<Config> = new Event();
 ConfigEvent.on(c => {
     console.log('config updated: ', c);
 });
-export const SyncPinEvent: Event<{pins: Location[]}> = new Event();
+export const SyncPinEvent: Event<{pins: PinnedLocation[]}> = new Event();
 export const PauseEvent: Event<{}> = new Event();
 export const ContinueEvent: Event<{}> = new Event();
 export const ToggleUpdatingEvent: Event<{}> = new Event();

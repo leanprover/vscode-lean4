@@ -8,7 +8,7 @@ import {
     Uri, ViewColumn, WebviewPanel, window, workspace,
 } from 'vscode';
 import { Server } from './server';
-import { ToInfoviewMessage, FromInfoviewMessage, Location, InsertTextMessage, ServerRequestMessage, RevealMessage, HoverPositionMessage, locationEq } from './shared'
+import { ToInfoviewMessage, FromInfoviewMessage, PinnedLocation, InsertTextMessage, ServerRequestMessage, RevealMessage, HoverPositionMessage, locationEq, Location } from './shared'
 import { StaticServer } from './staticserver';
 
 export class InfoProvider implements Disposable {
@@ -22,7 +22,7 @@ export class InfoProvider implements Disposable {
 
     private started: boolean = false;
 
-    private pins: Location[] | null;
+    private pins: PinnedLocation[] | null;
 
     private stylesheet: string = null;
 
@@ -78,7 +78,7 @@ export class InfoProvider implements Disposable {
                         newPosition = e.document.validatePosition(newPosition);
                         const new_pin = this.makeLocation(pin.file_name, newPosition);
                         if (!locationEq(new_pin, pin)) {changed = true; }
-                        return new_pin;
+                        return { ...new_pin, key: pin.key };
                     });
                     if (changed) {
                         this.postMessage({

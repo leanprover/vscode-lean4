@@ -1,7 +1,7 @@
-import { post, PositionEvent, ConfigEvent, SyncPinEvent, PauseEvent, ContinueEvent, ToggleUpdatingEvent, TogglePinEvent, AllMessagesEvent, currentAllMessages, currentConfig, globalCurrentLoc } from './server';
+import { post, PositionEvent, ConfigEvent, SyncPinEvent, TogglePinEvent, AllMessagesEvent, currentAllMessages, currentConfig, globalCurrentLoc } from './server';
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
-import { ServerStatus, Config, defaultConfig,  Location, locationKey, locationEq } from '../src/shared';
+import { ServerStatus, Config, defaultConfig,  Location, locationEq, PinnedLocation } from '../src/shared';
 import { Message } from 'lean-client-js-core';
 import './tachyons.css' // stylesheet assumed by Lean widgets. See https://tachyons.io/ for documentation
 import './index.css'
@@ -57,7 +57,6 @@ function Main(props: {}) {
 }
 
 function Infos({curLoc}: {curLoc: Location}): JSX.Element {
-    // TODO: sync pins reverts pause state
     React.useEffect(() => {
         const subscriptions = [
             SyncPinEvent.on(l => setPinnedLocs(l.pins)),
@@ -66,26 +65,33 @@ function Infos({curLoc}: {curLoc: Location}): JSX.Element {
 
         return () => { for (const s of subscriptions) s.dispose(); }
     }, []);
-    const [pinnedLocs, setPinnedLocs] = React.useState<Location[]>([]);
+    const [pinnedLocs, setPinnedLocs] = React.useState<PinnedLocation[]>([]);
     const isPinned = (loc: Location) => pinnedLocs.some((l) => locationEq(l, loc));
+    const pinKey = React.useRef<number>(0);
     const pin = () => {
         if (isPinned(curLoc)) {return; }
-        const pins = [...pinnedLocs, curLoc];
+        pinKey.current += 1;
+        const pins = [...pinnedLocs, { ...curLoc, key: pinKey.current }];
         setPinnedLocs(pins);
-        post({command:'sync_pin', pins})
+        post({command:'sync_pin', pins});
     }
-    const unpin = (idx?) => () => {
-        if (idx === undefined) {
-            idx = pinnedLocs.findIndex(p => locationEq(p, curLoc));
+    const unpin = (key?: number) => () => {
+        if (key === undefined) {
+            const pinned = pinnedLocs.find(p => locationEq(p, curLoc));
+            if (pinned) {
+                key = pinned.key;
+            } else {
+                return;
+            }
         }
-        const pins = pinnedLocs.filter((l,i) => i !== idx);
+        const pins = pinnedLocs.filter((l) => l.key !== key);
         setPinnedLocs(pins);
-        post({command:'sync_pin', pins})
+        post({command:'sync_pin', pins});
     }
     return <>
         <div>
-            {pinnedLocs.map((loc, i) =>
-                <Info key={locationKey(loc)} loc={loc} isPinned={true} isCursor={false} onPin={unpin(i)}/>)}
+            {pinnedLocs.map((loc) =>
+                <Info key={loc.key} loc={loc} isPinned={true} isCursor={false} onPin={unpin(loc.key)}/>)}
         </div>
         <Info loc={curLoc} isPinned={false} isCursor={true} onPin={pin}/>
     </>;
