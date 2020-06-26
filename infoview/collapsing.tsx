@@ -22,14 +22,20 @@ export function useIsVisible(): [any, boolean] {
     return [node, isVisible]
 }
 
-export function Details({open: initiallyOpen, children: [summary, ...children]}: {open?: boolean; children: [JSX.Element, ...JSX.Element[]]}): JSX.Element {
-    const [isOpen, setOpen] = React.useState<boolean>(initiallyOpen === undefined ? false : true);
+interface DetailsProps {
+    initiallyOpen?: boolean;
+    children: [JSX.Element, ...JSX.Element[]];
+    setOpenRef?: React.MutableRefObject<(_: boolean) => void>;
+}
+export function Details({initiallyOpen, children: [summary, ...children], setOpenRef}: DetailsProps): JSX.Element {
+    const [isOpen, setOpen] = React.useState<boolean>(initiallyOpen === undefined ? false : initiallyOpen);
     const setupEventListener = React.useCallback((node?: HTMLDetailsElement) => {
         if (node !== null) {
             node.addEventListener('toggle', () => setOpen(node.open));
         }
     }, []);
-    return <details ref={setupEventListener} open={initiallyOpen}>
+    if (setOpenRef) setOpenRef.current = setOpen;
+    return <details ref={setupEventListener} open={isOpen}>
         {summary}
         { isOpen && children }
     </details>;

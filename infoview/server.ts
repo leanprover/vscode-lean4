@@ -37,6 +37,7 @@ export const CopyToCommentEvent: Event<{}> = new Event();
 export const TogglePinEvent: Event<{}> = new Event();
 export const ServerRestartEvent: Event<{}> = new Event();
 export const AllMessagesEvent: Event<Message[]> = new Event();
+export const ExpandAllMessagesEvent: Event<{}> = new Event();
 
 export let currentAllMessages: Message[] = [];
 AllMessagesEvent.on((msgs) => currentAllMessages = msgs);
@@ -58,6 +59,7 @@ window.addEventListener('message', event => { // messages from the extension
         case 'toggle_pin': TogglePinEvent.fire(message); break;
         case 'restart': ServerRestartEvent.fire(message); break;
         case 'all_messages': AllMessagesEvent.fire(message.messages); break;
+        case 'expand_all_messages': ExpandAllMessagesEvent.fire({}); break;
         case 'server_event': break;
         case 'server_error': break;
     }

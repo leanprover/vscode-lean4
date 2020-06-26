@@ -182,7 +182,7 @@ export function Info(props: InfoProps) {
     const forceUpdate = () => !isCurrentlyPaused.current && stateRef.current.triggerUpdate();
 
     return <LocationContext.Provider value={loc}>
-        <Details open>
+        <Details initiallyOpen>
             <summary style={{transition: 'color 0.5s ease'}} className={'mv2 ' + statusColor}>
                 {locationString}
                 {isPinned && !isPaused && ' (pinned)'}
@@ -206,7 +206,7 @@ export function Info(props: InfoProps) {
                 </div>
                 <div>
                     { (widget || goalState) &&
-                        <Details open>
+                        <Details initiallyOpen>
                             <summary>
                                 Tactic state
                                 { widget && <span className='fr'>{widgetModeSwitcher}</span> }
@@ -220,7 +220,7 @@ export function Info(props: InfoProps) {
                 </div>
                 <div>
                     { messages.length > 0 &&
-                        <Details open>
+                        <Details initiallyOpen>
                             <summary className="mv2 pointer">Messages ({messages.length})</summary>
                             <div className="ml1">
                                 <Messages messages={messages}/>

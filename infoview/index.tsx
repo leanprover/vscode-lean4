@@ -1,4 +1,4 @@
-import { post, PositionEvent, ConfigEvent, SyncPinEvent, TogglePinEvent, AllMessagesEvent, currentAllMessages, currentConfig, globalCurrentLoc } from './server';
+import { post, PositionEvent, ConfigEvent, SyncPinEvent, TogglePinEvent, AllMessagesEvent, currentAllMessages, currentConfig, globalCurrentLoc, ExpandAllMessagesEvent } from './server';
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 import { ServerStatus, Config, defaultConfig,  Location, locationEq, PinnedLocation } from '../src/shared';
@@ -97,7 +97,9 @@ function AllMessages({allMessages: allMessages0}: {allMessages: ProcessedMessage
     const config = React.useContext(ConfigContext);
     const [isPaused, setPaused] = React.useState<boolean>(false);
     const allMessages = usePaused(isPaused, allMessages0);
-    return <Details open={!config.infoViewAutoOpenShowGoal}>
+    const setOpenRef = React.useRef<(_: boolean) => true>();
+    useEvent(ExpandAllMessagesEvent, () => setOpenRef.current(true));
+    return <Details setOpenRef={setOpenRef} initiallyOpen={!config.infoViewAutoOpenShowGoal}>
         <summary>
             All Messages ({allMessages.length})
             <span className="fr">

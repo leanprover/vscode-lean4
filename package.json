@@ -314,6 +314,12 @@
 				"when": "editorTextFocus && editorLangId == lean"
 			},
 			{
+				"command": "lean.displayList",
+				"key": "ctrl+shift+alt+enter",
+				"mac": "cmd+shift+alt+enter",
+				"when": "editorTextFocus && editorLangId == lean"
+			},
+			{
 				"command": "lean.input.convert",
 				"key": "tab",
 				"mac": "tab",
