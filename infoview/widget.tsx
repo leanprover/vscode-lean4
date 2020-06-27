@@ -79,6 +79,7 @@ function applyWidgetEffect(widget: WidgetIdentifier, file_name: string, effect: 
             console.log(`Custom widget effect: ${effect.key} -- ${effect.value}`);
             break;
         default:
+            console.error(`Unrecognised widget effect: ${effect}`);
             break;
     }
 }
