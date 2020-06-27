@@ -99,5 +99,6 @@ export type ToInfoviewMessage =
     | { command: 'position'; loc: Location}
     | { command: 'on_config_change'; config: Partial<Config>}
     | { command: 'all_messages'; messages: Message[]}
+    | { command: 'expand_all_messages' }
     | SyncPinMessage
     | { command: 'pause' | 'continue' | 'toggle_updating' | 'copy_to_comment' | 'toggle_pin' | 'restart'}
