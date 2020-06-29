@@ -79,7 +79,7 @@ class ProxyConnectionClient implements Connection {
     error: Event<TransportError>;
     jsonMessage: Event<any>;
     alive: boolean;
-    messageListener;
+    messageListener: (event: MessageEvent) => void;
     send(jsonMsg: any) {
         post({
             command: 'server_request',
@@ -96,7 +96,7 @@ class ProxyConnectionClient implements Connection {
         this.alive = true;
         this.jsonMessage = new Event();
         this.error = new Event();
-        this.messageListener = event => { // messages from the extension
+        this.messageListener = (event) => { // messages from the extension
             const message: ToInfoviewMessage = event.data; // The JSON data our extension sent
             // console.log('incoming:', message);
             switch (message.command) {
