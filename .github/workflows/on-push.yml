@@ -12,3 +12,7 @@ jobs:
       - run: npm run lint
       - run: npm run compile
       - run: npm run package
+      - uses: actions/upload-artifact@v2
+        with:
+          name: vscode-lean
+          path: 'lean-*.vsix'
