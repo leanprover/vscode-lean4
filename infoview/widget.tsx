@@ -3,7 +3,6 @@ import * as ReactPopper from 'react-popper';
 import './popper.css';
 import { WidgetComponent, WidgetHtml, WidgetElement, WidgetEventRequest, WidgetIdentifier } from 'lean-client-js-node';
 import { global_server, edit } from './server';
-import { useIsVisible } from './collapsing';
 
 function Popper(props: {children: React.ReactNode[]; popperContent: any; refEltTag: any; refEltAttrs: any}) {
     const { children, popperContent, refEltTag, refEltAttrs } = props;
@@ -124,7 +123,7 @@ function isWidgetElement(w: WidgetHtml): w is WidgetElement {
     return (typeof w === 'object') && (w as any).t;
 }
 
-function ViewHtml(props: {html: WidgetHtml; post}) {
+function ViewHtml(props: {html: WidgetHtml; post: (msg: any) => void}) {
     const {html, ...rest} = props;
     if (typeof html === 'string') {
         return html;
@@ -135,7 +134,7 @@ function ViewHtml(props: {html: WidgetHtml; post}) {
     }
 }
 
-function ViewWidgetElement(props: {w: WidgetElement; post}) {
+function ViewWidgetElement(props: {w: WidgetElement; post: (msg: any) => void}) {
     const {w, post, ...rest} = props;
     const { t:tag, c:children, tt:tooltip } = w;
     let { a:attributes, e:events } = w;

@@ -2,10 +2,10 @@ import * as React from 'react';
 
 /** Returns `[node, isVisible]`. Attach `node` to the dom element you care about as `<div ref={node}>...</div>` and
  * `isVisible` will change depending on whether the node is visible in the viewport or not. */
-export function useIsVisible(): [any, boolean] {
+export function useIsVisible(): [(element: HTMLElement) => void, boolean] {
     const [isVisible,setIsVisible] = React.useState<boolean>(false);
     const observer = React.useRef<IntersectionObserver>(null);
-    const node = React.useCallback<any>(n => {
+    const node = React.useCallback<(element: HTMLElement) => void>(n => {
         if (observer.current) {
             observer.current.disconnect();
         }

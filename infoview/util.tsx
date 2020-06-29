@@ -20,7 +20,7 @@ export function colorizeMessage(goal: string): string {
         .replace(/^([^:\n< ][^:\n⊢{[(⦃]*) :/mg, '<strong class="goal-hyp">$1</strong> :');
 }
 
-export function basename(path) { return path.split(/[\\/]/).pop(); }
+export function basename(path: string) { return path.split(/[\\/]/).pop(); }
 
 export function useEvent<T>(ev: Event<T>, f: (_: T) => void, dependencies?: React.DependencyList) {
     React.useEffect(() => {
