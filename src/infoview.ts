@@ -101,7 +101,7 @@ export class InfoProvider implements Disposable {
             }),
             commands.registerTextEditorCommand('lean.displayList', (editor) => {
                 this.openPreview(editor);
-                this.postMessage({ command: 'expand_all_messages' });
+                this.postMessage({ command: 'toggle_all_messages' });
             }),
             commands.registerTextEditorCommand('lean.infoView.copyToComment',() =>
                 this.postMessage({ command: 'copy_to_comment' })

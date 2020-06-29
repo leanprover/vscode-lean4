@@ -25,7 +25,7 @@ export function useIsVisible(): [any, boolean] {
 interface DetailsProps {
     initiallyOpen?: boolean;
     children: [JSX.Element, ...JSX.Element[]];
-    setOpenRef?: React.MutableRefObject<(_: boolean) => void>;
+    setOpenRef?: React.MutableRefObject<React.Dispatch<React.SetStateAction<boolean>>>;
 }
 export function Details({initiallyOpen, children: [summary, ...children], setOpenRef}: DetailsProps): JSX.Element {
     const [isOpen, setOpen] = React.useState<boolean>(initiallyOpen === undefined ? false : initiallyOpen);
