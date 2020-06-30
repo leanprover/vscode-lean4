@@ -3,7 +3,7 @@ import { CancellationToken, commands, Disposable, DocumentFilter, Hover,
     TextDocumentChangeEvent, TextEditor, TextEditorDecorationType,
     TextEditorSelectionChangeEvent, window, workspace } from 'vscode';
 
-export interface Translations { [abbrev: string]: string }
+export interface Translations { [abbrev: string]: string | null }
 
 function inputModeEnabled(): boolean {
     return workspace.getConfiguration('lean.input').get('enabled', true);
@@ -42,7 +42,8 @@ export class LeanInputExplanationHover implements HoverProvider, Disposable {
         this.reverseTranslations = {};
         const allTranslations = { ...this.translations, ...customTranslations };
         for (const abbrev of Object.getOwnPropertyNames(allTranslations)) {
-            const unicode = allTranslations[abbrev];
+            const unicode: string | null = allTranslations[abbrev];
+            if (!unicode) { continue; }
             if (!this.reverseTranslations[unicode]) {
                 this.reverseTranslations[unicode] = [];
             }
