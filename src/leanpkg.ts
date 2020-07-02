@@ -87,7 +87,7 @@ export class LeanpkgService implements TaskProvider, Disposable {
 You are running Lean in a directory without a leanpkg.toml file, this is NOT
 supported.  Please open the directoy containing the leanpkg.toml file
 instead. [More details
-here](https://github.com/leanprover-community/mathlib/blob/master/docs/install/project.md)`);
+here](https://leanprover-community.github.io/install/project.html)`);
             }
         } else if (!fs.existsSync(this.leanpkgPath)) {
             this.requestLeanpkgConfigure('Lean: leanpkg.path does not exist');
