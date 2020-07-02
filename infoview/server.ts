@@ -43,7 +43,7 @@ export const CopyToCommentEvent: Event<{}> = new Event();
 export const TogglePinEvent: Event<{}> = new Event();
 export const ServerRestartEvent: Event<{}> = new Event();
 export const AllMessagesEvent: Event<Message[]> = new Event();
-export const ExpandAllMessagesEvent: Event<{}> = new Event();
+export const ToggleAllMessagesEvent: Event<{}> = new Event();
 
 export let currentAllMessages: Message[] = [];
 AllMessagesEvent.on((msgs) => currentAllMessages = msgs);
@@ -65,7 +65,7 @@ window.addEventListener('message', event => { // messages from the extension
         case 'toggle_pin': TogglePinEvent.fire(message); break;
         case 'restart': ServerRestartEvent.fire(message); break;
         case 'all_messages': AllMessagesEvent.fire(message.messages); break;
-        case 'expand_all_messages': ExpandAllMessagesEvent.fire({}); break;
+        case 'toggle_all_messages': ToggleAllMessagesEvent.fire({}); break;
         case 'server_event': break;
         case 'server_error': break;
     }
@@ -85,7 +85,7 @@ class ProxyConnectionClient implements Connection {
     error: Event<TransportError>;
     jsonMessage: Event<any>;
     alive: boolean;
-    messageListener;
+    messageListener: (event: MessageEvent) => void;
     send(jsonMsg: any) {
         post({
             command: 'server_request',
@@ -102,7 +102,7 @@ class ProxyConnectionClient implements Connection {
         this.alive = true;
         this.jsonMessage = new Event();
         this.error = new Event();
-        this.messageListener = event => { // messages from the extension
+        this.messageListener = (event) => { // messages from the extension
             const message: ToInfoviewMessage = event.data; // The JSON data our extension sent
             // console.log('incoming:', message);
             switch (message.command) {

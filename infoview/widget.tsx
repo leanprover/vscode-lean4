@@ -158,7 +158,7 @@ function isWidgetElement(w: WidgetHtml): w is WidgetElement {
     return (typeof w === 'object') && (w as any).t;
 }
 
-function ViewHtml(props: {html: WidgetHtml; post}) {
+function ViewHtml(props: {html: WidgetHtml; post: (msg: any) => void}) {
     const {html, ...rest} = props;
     if (typeof html === 'string') {
         return html;
@@ -169,7 +169,7 @@ function ViewHtml(props: {html: WidgetHtml; post}) {
     }
 }
 
-function ViewWidgetElement(props: {w: WidgetElement; post}) {
+function ViewWidgetElement(props: {w: WidgetElement; post: (msg: any) => void}) {
     const {w, post, ...rest} = props;
     const { t:tag, c:children, tt:tooltip } = w;
     let { a:attributes, e:events } = w;
