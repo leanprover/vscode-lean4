@@ -92,6 +92,7 @@ export type FromInfoviewMessage =
     | {command: 'stop_hover'}
     | SyncPinMessage
     | {command: 'request_config'}
+    | {command: 'copy_text'; text: string}
 
 /** Message from the extension to the infoview. */
 export type ToInfoviewMessage =

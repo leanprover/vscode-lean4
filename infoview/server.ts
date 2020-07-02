@@ -21,6 +21,10 @@ export function edit(loc: Location, text: string) {
     post({ command: 'insert_text', loc, text });
 }
 
+export function copyText(text: string) {
+    post({ command: 'copy_text', text});
+}
+
 export const PositionEvent: Event<Location> = new Event();
 export let globalCurrentLoc: Location = null;
 PositionEvent.on((loc) => globalCurrentLoc = loc);

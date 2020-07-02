@@ -5,7 +5,7 @@ import {
     ExtensionContext, languages, Position, Range,
     Selection, StatusBarAlignment, StatusBarItem, TextEditor,
     TextEditorDecorationType, TextEditorRevealType,
-    Uri, ViewColumn, WebviewPanel, window, workspace,
+    Uri, ViewColumn, WebviewPanel, window, workspace, env,
 } from 'vscode';
 import { Server } from './server';
 import { ToInfoviewMessage, FromInfoviewMessage, PinnedLocation, InsertTextMessage, ServerRequestMessage, RevealMessage, HoverPositionMessage, locationEq, Location } from './shared'
@@ -191,7 +191,7 @@ export class InfoProvider implements Disposable {
         this.postMessage({command: 'all_messages', messages: this.server.messages});
     }
     /** Handle a message incoming from the webview. */
-    private handleMessage(message: FromInfoviewMessage) {
+    private async handleMessage(message: FromInfoviewMessage) {
         switch (message.command) {
             case 'hover_position':
                 this.hoverEditorPosition(message);
@@ -201,6 +201,10 @@ export class InfoProvider implements Disposable {
                 return;
             case 'insert_text':
                 this.handleInsertText(message);
+                return;
+            case 'copy_text':
+                await env.clipboard.writeText(message.text);
+                await window.showInformationMessage(`Copied to clipboard: ${message.text}`);
                 return;
             case 'server_request':
                 this.handleServerRequest(message);

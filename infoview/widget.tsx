@@ -2,7 +2,7 @@ import * as React from 'react';
 import * as ReactPopper from 'react-popper';
 import './popper.css';
 import { WidgetComponent, WidgetHtml, WidgetElement, WidgetEventRequest, WidgetIdentifier } from 'lean-client-js-node';
-import { global_server, edit, reveal, highlightPosition, clearHighlight } from './server';
+import { global_server, edit, reveal, highlightPosition, clearHighlight, copyText } from './server';
 
 function Popper(props: {children: React.ReactNode[]; popperContent: any; refEltTag: any; refEltAttrs: any}) {
     const { children, popperContent, refEltTag, refEltAttrs } = props;
@@ -65,6 +65,7 @@ export type WidgetEffect =
 | {kind: 'highlight_position'; file_name: string; line: number; column: number}
 | {kind: 'clear_highlighting'}
 | {kind: 'custom'; key: string; value: string}
+| {kind: 'copy_text'; text: string}
 
 function applyWidgetEffect(widget: WidgetIdentifier, file_name: string, effect: WidgetEffect) {
     switch (effect.kind) {
@@ -75,6 +76,7 @@ function applyWidgetEffect(widget: WidgetIdentifier, file_name: string, effect: 
         case 'reveal_position': reveal({file_name: effect.file_name || file_name, line: effect.line, column: effect.column}); break;
         case 'highlight_position': highlightPosition({file_name: effect.file_name || file_name, line: effect.line, column: effect.column}); break;
         case 'clear_highlighting': clearHighlight(); break;
+        case 'copy_text': copyText(effect.text); break;
         case 'custom':
             console.log(`Custom widget effect: ${effect.key} -- ${effect.value}`);
             break;
