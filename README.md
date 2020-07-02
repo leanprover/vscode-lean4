@@ -24,7 +24,7 @@ We currently support a variety of features.
 
 ## Requirements
 
-This extension requires an installation of [Lean](https://leanprover.github.io). As of version 0.12.1, the extension can install Lean for you using [elan](https://github.com/Kha/elan). See the [mathlib installation docs](https://github.com/leanprover-community/mathlib#installation) for alternative instructions.
+This extension requires an installation of [Lean](https://leanprover.github.io). As of version 0.12.1, the extension can install Lean for you using [elan](https://github.com/Kha/elan). See the [mathlib installation docs](https://leanprover-community.github.io/get_started.html) for alternative instructions.
 
 On Windows, if you installed Lean using MSYS2, you need to add both `C:\msys64\mingw64\bin` (or wherever you installed MSYS2) and `C:\projects\lean\bin` (or wherever you installed Lean) to the system `PATH` environment variable. To do this, press <kbd>Win</kbd>+<kbd>Pause</kbd> > go to Advanced System Settings > go to Environment variables. Under system variables (not user variables) find the `Path` variable, and add these two folders.
 
