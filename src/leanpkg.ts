@@ -82,13 +82,34 @@ export class LeanpkgService implements TaskProvider, Disposable {
             const leanFiles = await workspace.findFiles('**/*.lean', undefined, 1);
             // Only show warning if there are Lean files, see https://github.com/leanprover/vscode-lean/issues/133
             // (The extension is also activated for Markdown files.)
-            if (leanFiles.length > 0) {
-                window.showWarningMessage(`
+            if (leanFiles.length === 0) return;
+
+            let folder = workspace.rootPath;
+            while (true) {
+                const parent = path.dirname(folder);
+                if (parent === folder) break;
+                if (!fs.existsSync(path.join(parent, 'leanpkg.toml'))) {
+                    folder = parent;
+                    continue;
+                }
+
+                const ok = 'Switch to correct folder';
+                const admonition =
+                    'You are running Lean in a directory without a leanpkg.toml file, this is NOT ' +
+                    'supported.  Please open the directory containing the leanpkg.toml file ' +
+                    `instead (which is ${parent}).`;
+                const clicked = await window.showErrorMessage(admonition, {modal: true}, ok);
+                if (clicked === ok) {
+                    workspace.updateWorkspaceFolders(0, 1, { uri: Uri.file(parent) });
+                }
+                return;
+            }
+
+            await window.showWarningMessage(`
 You are running Lean in a directory without a leanpkg.toml file, this is NOT
-supported.  Please open the directoy containing the leanpkg.toml file
+supported.  Please open the directory containing the leanpkg.toml file
 instead. [More details
 here](https://leanprover-community.github.io/install/project.html)`);
-            }
         } else if (!fs.existsSync(this.leanpkgPath)) {
             this.requestLeanpkgConfigure('Lean: leanpkg.path does not exist');
         } else if (fs.statSync(this.leanpkgPath) < fs.statSync(this.leanpkgToml)) {
