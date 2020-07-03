@@ -88,7 +88,10 @@ export class LeanpkgService implements TaskProvider, Disposable {
             while (true) {
                 const parent = path.dirname(folder);
                 if (parent === folder) break;
-                if (!fs.existsSync(path.join(parent, 'leanpkg.toml'))) continue;
+                if (!fs.existsSync(path.join(parent, 'leanpkg.toml'))) {
+                    folder = parent;
+                    continue;
+                }
 
                 const ok = 'Switch to correct folder';
                 const admonition =
