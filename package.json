@@ -199,6 +199,12 @@
 				}
 			},
 			{
+				"command": "lean.displayList",
+				"category": "Lean",
+				"title": "Info View: Expand \"All Messages\"",
+				"description": "Expand the \"All Messages\" widget in the info view."
+			},
+			{
 				"command": "lean.openDocView",
 				"category": "Lean",
 				"title": "Open Documentation View",
@@ -208,7 +214,7 @@
 				"command": "lean.infoView.copyToComment",
 				"category": "Lean",
 				"title": "Info View: Copy Contents to Comment",
-				"description": "Copy the current contents of the info view into a new comment on the next line.",
+				"description": "Copy the contents of the currently active tactic state widget to a new comment on the previous line.",
 				"icon": {
 					"dark": "./media/copy-to-comment-dark.svg",
 					"light": "./media/copy-to-comment-light.svg"
@@ -218,7 +224,7 @@
 				"command": "lean.infoView.toggleStickyPosition",
 				"category": "Lean",
 				"title": "Info View: Toggle Pin",
-				"description": "Mark the current position of the cursor for goal reporting, instead of tracking the cursor.",
+				"description": "Create or remove a tactic state widget pinned to show the goal at the current position.",
 				"icon": {
 					"dark": "./media/toggle-sticky-position-dark.svg",
 					"light": "./media/toggle-sticky-position-light.svg"
@@ -228,7 +234,7 @@
 				"command": "lean.infoView.toggleUpdating",
 				"category": "Lean",
 				"title": "Info View: Toggle Updating",
-				"description": "Pause / Continue live updating of the info view."
+				"description": "Pause / Continue live updating of the main tactic state widget."
 			},
 			{
 				"command": "lean.roiMode.select",
@@ -243,16 +249,16 @@
 				"description": "Disable automatic checking of Lean code."
 			},
 			{
-				"command": "lean.roiMode.cursor",
-				"category": "Lean",
-				"title": "Check Cursor + 5 Lines",
-				"description": "Automatically check until 5 lines below the cursor."
-			},
-			{
 				"command": "lean.roiMode.visibleFiles",
 				"category": "Lean",
 				"title": "Check Visible Files",
 				"description": "Automatically check all files that are visible."
+			},
+			{
+				"command": "lean.roiMode.linesAndAbove",
+				"category": "Lean",
+				"title": "Check visible lines and above",
+				"description": "Automatically check all visible lines and lines above them."
 			},
 			{
 				"command": "lean.roiMode.openFiles",
