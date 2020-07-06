@@ -12,20 +12,20 @@ export class TacticSuggestions implements Disposable, CodeActionProvider {
 
     constructor(private server: Server, infoView: InfoProvider, private leanDocs: DocumentSelector) {
 
-        const commandHandler = (textEditor: TextEditor) => {
+        const commandHandler = async (textEditor: TextEditor) => {
             const msg = this.findSelectedMessage(textEditor);
             if (msg === null) return;
 
-            this.pasteIntoEditor(msg, textEditor, null);
+            await this.pasteIntoEditor(msg, textEditor, null);
         };
 
-        const infoViewCommandHandler = (m: Message, suggestion: string) => {
+        const infoViewCommandHandler = async (m: Message, suggestion: string) => {
             const textEditor = this.findTextEditor(m.file_name);
 
-            this.pasteIntoEditor(m, textEditor, suggestion);
+            await this.pasteIntoEditor(m, textEditor, suggestion);
 
             // Focus text editor
-            window.showTextDocument(textEditor.document, {viewColumn:textEditor.viewColumn});
+            await window.showTextDocument(textEditor.document, {viewColumn:textEditor.viewColumn});
         };
 
         this.subscriptions.push(
@@ -35,7 +35,7 @@ export class TacticSuggestions implements Disposable, CodeActionProvider {
         );
     }
 
-    dispose() {
+    dispose(): void {
         for (const s of this.subscriptions) { s.dispose(); }
     }
 

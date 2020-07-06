@@ -56,7 +56,7 @@ export class Server extends leanclient.Server {
         this.attachEventHandlers();
     }
 
-    connect() {
+    connect(): void {
         try {
             this.messages = [];
 
@@ -104,7 +104,7 @@ export class Server extends leanclient.Server {
             this.restarted.fire(null);
 
         } catch (e) {
-            this.requestRestart(e.message);
+            void this.requestRestart(e.message);
         }
     }
 
@@ -117,7 +117,7 @@ export class Server extends leanclient.Server {
         stderrOutput = stderrOutput || window.createOutputChannel('Lean: Server Errors');
         stderrOutput.clear();
 
-        this.error.on((e) => {
+        this.error.on(async (e) => {
             switch (e.error) {
                 case 'stderr':
                     stderrOutput.append(e.chunk);
@@ -133,10 +133,10 @@ export class Server extends leanclient.Server {
                     const msg = e.message.startsWith('Unable to start') ?
                         ` --- The lean.executablePath "${this.executablePath}" ` +
                         'may be incorrect, make sure it is a valid Lean executable' : '';
-                    this.requestRestart(e.message + msg);
+                    await this.requestRestart(e.message + msg);
                     break;
                 case 'unrelated':
-                    window.showWarningMessage(e.message);
+                    await window.showWarningMessage(e.message);
                     break;
             }
 
@@ -161,12 +161,12 @@ export class Server extends leanclient.Server {
             }, curTasks.tasks.length === 0));
     }
 
-    restart() {
+    restart(): void {
         super.restart();
         stderrOutput.appendLine('----- user triggered restart -----');
     }
 
-    async installElan() {
+    async installElan(): Promise<void> {
         if(this.executablePath !== 'lean') {
             await window.showErrorMessage(
               "It looks like you've modified the `lean.executablePath` user setting.\n" +
@@ -210,7 +210,7 @@ export class Server extends leanclient.Server {
         }
     }
 
-    async requestRestart(message: string, justWarning?: boolean) {
+    async requestRestart(message: string, justWarning?: boolean): Promise<void> {
         const restartItem = 'Restart server';
         const installElanItem = 'Install Lean using elan';
 
@@ -220,7 +220,7 @@ export class Server extends leanclient.Server {
         if (item === restartItem) {
             this.restart();
         } else if (item === installElanItem) {
-            this.installElan();
+            await this.installElan();
         }
     }
 }

@@ -46,7 +46,7 @@ export class StaticServer implements Disposable {
         return `http://127.0.0.1:${this.port()}/${this.key}/${encodeURI(fileName)}`;
     }
 
-    dispose() {
+    dispose(): void {
         this.server.close();
     }
 }

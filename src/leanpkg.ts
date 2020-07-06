@@ -11,8 +11,8 @@ export class LeanpkgService implements TaskProvider, Disposable {
     private leanpkgPath = path.join(workspace.rootPath, 'leanpkg.path');
 
     constructor(private server: Server) {
-        this.checkLeanpkgPathFile();
-        this.checkLeanpkgPathContents();
+        void this.checkLeanpkgPathFile();
+        void this.checkLeanpkgPathContents();
         this.subscriptions.push(workspace.registerTaskProvider('leanpkg', this));
 
         const watcher = workspace.createFileSystemWatcher('**/leanpkg.*');
@@ -22,15 +22,15 @@ export class LeanpkgService implements TaskProvider, Disposable {
         this.subscriptions.push(watcher);
     }
 
-    dispose() {
+    dispose(): void {
         for (const s of this.subscriptions) { s.dispose(); }
     }
 
-    private handleFileChanged(uri: Uri) {
+    private async handleFileChanged(uri: Uri) {
         if (uri.fsPath === path.join(workspace.rootPath, 'leanpkg.toml')) {
-            this.checkLeanpkgPathFile();
+            await this.checkLeanpkgPathFile();
         } else if (uri.fsPath === path.join(workspace.rootPath, 'leanpkg.path')) {
-            this.checkLeanpkgPathContents(true);
+            await this.checkLeanpkgPathContents(true);
         }
     }
 
@@ -68,16 +68,16 @@ export class LeanpkgService implements TaskProvider, Disposable {
         return 'leanpkg';
     }
 
-    checkLeanpkgPathContents(promptForRestart?: boolean) {
+    private async checkLeanpkgPathContents(promptForRestart?: boolean) {
         const oldContents = this.leanpkgPathContents;
         this.leanpkgPathContents = fs.existsSync(this.leanpkgPath) &&
             fs.readFileSync(this.leanpkgPath).toString();
         if (oldContents !== this.leanpkgPathContents && promptForRestart) {
-            this.server.requestRestart('Lean: leanpkg.path changed.', true);
+            await this.server.requestRestart('Lean: leanpkg.path changed.', true);
         }
     }
 
-    async checkLeanpkgPathFile() {
+    private async checkLeanpkgPathFile() {
         if (!fs.existsSync(this.leanpkgToml) && !fs.existsSync(this.leanpkgPath)) {
             const leanFiles = await workspace.findFiles('**/*.lean', undefined, 1);
             // Only show warning if there are Lean files, see https://github.com/leanprover/vscode-lean/issues/133
@@ -111,13 +111,13 @@ supported.  Please open the directory containing the leanpkg.toml file
 instead (using "File / Open Folder..."). [More details
 here](https://leanprover-community.github.io/install/project.html)`);
         } else if (!fs.existsSync(this.leanpkgPath)) {
-            this.requestLeanpkgConfigure('Lean: leanpkg.path does not exist');
+            await this.requestLeanpkgConfigure('Lean: leanpkg.path does not exist');
         } else if (fs.statSync(this.leanpkgPath) < fs.statSync(this.leanpkgToml)) {
-            this.requestLeanpkgConfigure('Lean: leanpkg.path out of date');
+            await this.requestLeanpkgConfigure('Lean: leanpkg.path out of date');
         }
     }
 
-    async requestLeanpkgConfigure(message: string) {
+    private async requestLeanpkgConfigure(message: string) {
         const configureItem = 'Run leanpkg configure.';
         const chosen = await window.showErrorMessage(message, configureItem);
         if (chosen === configureItem) {
@@ -125,17 +125,17 @@ here](https://leanprover-community.github.io/install/project.html)`);
         }
     }
 
-    async configure() {
+    private async configure() {
         await commands.executeCommand('workbench.action.tasks.runTask',
             'leanpkg: configure');
     }
 
-    async build() {
+    private async build() {
         await commands.executeCommand('workbench.action.tasks.runTask',
             'leanpkg: build');
     }
 
-    async upgrade() {
+    private async upgrade() {
         await commands.executeCommand('workbench.action.tasks.runTask',
             'leanpkg: upgrade');
     }

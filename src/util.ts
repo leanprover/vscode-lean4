@@ -18,7 +18,7 @@ export class LowPassFilter<T> {
     // scheduledTimer is non-null iff we did not propagate a change yet.
     private scheduledTimer: NodeJS.Timer;
 
-    input(t: T, now?: boolean) {
+    input(t: T, now?: boolean): void {
         this.currentValue = t;
         if (!this.scheduledTimer) {
             this.scheduledTimer =
@@ -27,7 +27,7 @@ export class LowPassFilter<T> {
         if (now) { this.updateNow(); }
     }
 
-    updateNow() {
+    updateNow(): void {
         if (this.scheduledTimer) {
             this.scheduledTimer = null;
             this.emitter.fire(this.currentValue);

@@ -59,7 +59,7 @@ export class LeanDiagnosticsProvider implements Disposable {
             this.collection.set(fileNameToUri.get(file), diags));
     }
 
-    dispose() {
+    dispose(): void {
         for (const s of this.subscriptions) { s.dispose(); }
      }
 }

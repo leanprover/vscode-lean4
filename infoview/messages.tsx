@@ -65,7 +65,7 @@ export interface ProcessedMessage extends Message {
 
 /** Some processing for preparing all messages for viewing. */
 export function processMessages(messages: Message[]): ProcessedMessage[] {
-    const keys = {};
+    const keys: { [key: string]: number } = {};
     return messages
         .sort((a, b) => a.pos_line === b.pos_line ? a.pos_col - b.pos_col : a.pos_line - b.pos_line)
         .map((m) => {
@@ -75,7 +75,7 @@ export function processMessages(messages: Message[]): ProcessedMessage[] {
         });
 }
 
-export function GetMessagesFor(allMessages: Message[], loc: Location, config: Config) {
+export function GetMessagesFor(allMessages: Message[], loc: Location, config: Config): Message[] {
     let msgs: Message[];
     /* Heuristic: find first position to the left which has messages attached,
         from that on show all messages in this line */

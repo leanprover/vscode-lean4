@@ -3,25 +3,25 @@ import { ToInfoviewMessage, FromInfoviewMessage, Config, Location, defaultConfig
 declare const acquireVsCodeApi;
 const vscode = acquireVsCodeApi();
 
-export function post(message: FromInfoviewMessage) { // send a message to the extension
+export function post(message: FromInfoviewMessage): void { // send a message to the extension
     vscode.postMessage(message);
 }
 
-export function clearHighlight() { return post({ command: 'stop_hover'}); }
-export function highlightPosition(loc: Location) { return post({ command: 'hover_position', loc}); }
-export function copyToComment(text: string) {
+export function clearHighlight(): void { return post({ command: 'stop_hover'}); }
+export function highlightPosition(loc: Location): void { return post({ command: 'hover_position', loc}); }
+export function copyToComment(text: string): void {
     post({ command: 'insert_text', text: `/-\n${text}\n-/\n`});
 }
 
-export function reveal(loc: Location) {
+export function reveal(loc: Location): void {
     post({ command: 'reveal', loc });
 }
 
-export function edit(loc: Location, text: string) {
+export function edit(loc: Location, text: string): void {
     post({ command: 'insert_text', loc, text });
 }
 
-export function copyText(text: string) {
+export function copyText(text: string): void {
     post({ command: 'copy_text', text});
 }
 
@@ -36,21 +36,21 @@ ConfigEvent.on(c => {
     console.log('config updated: ', c);
 });
 export const SyncPinEvent: Event<{pins: PinnedLocation[]}> = new Event();
-export const PauseEvent: Event<{}> = new Event();
-export const ContinueEvent: Event<{}> = new Event();
-export const ToggleUpdatingEvent: Event<{}> = new Event();
-export const CopyToCommentEvent: Event<{}> = new Event();
-export const TogglePinEvent: Event<{}> = new Event();
-export const ServerRestartEvent: Event<{}> = new Event();
+export const PauseEvent: Event<unknown> = new Event();
+export const ContinueEvent: Event<unknown> = new Event();
+export const ToggleUpdatingEvent: Event<unknown> = new Event();
+export const CopyToCommentEvent: Event<unknown> = new Event();
+export const TogglePinEvent: Event<unknown> = new Event();
+export const ServerRestartEvent: Event<unknown> = new Event();
 export const AllMessagesEvent: Event<Message[]> = new Event();
-export const ToggleAllMessagesEvent: Event<{}> = new Event();
+export const ToggleAllMessagesEvent: Event<unknown> = new Event();
 
 export let currentAllMessages: Message[] = [];
 AllMessagesEvent.on((msgs) => currentAllMessages = msgs);
 ServerRestartEvent.on(() => currentAllMessages = []);
 
 window.addEventListener('message', event => { // messages from the extension
-    const message: ToInfoviewMessage = event.data; // The JSON data our extension sent
+    const message = event.data as ToInfoviewMessage; // The JSON data our extension sent
     switch (message.command) {
         case 'position': PositionEvent.fire(message.loc); break;
         case 'on_config_change':
@@ -103,17 +103,15 @@ class ProxyConnectionClient implements Connection {
         this.jsonMessage = new Event();
         this.error = new Event();
         this.messageListener = (event) => { // messages from the extension
-            const message: ToInfoviewMessage = event.data; // The JSON data our extension sent
+            const message = event.data as ToInfoviewMessage; // The JSON data our extension sent
             // console.log('incoming:', message);
             switch (message.command) {
                 case 'server_event': {
-                    const payload = JSON.parse(message.payload);
-                    this.jsonMessage.fire(payload);
+                    this.jsonMessage.fire(JSON.parse(message.payload));
                     break;
                 }
                 case 'server_error': {
-                    const payload = JSON.parse(message.payload);
-                    this.error.fire(payload);
+                    this.error.fire(JSON.parse(message.payload));
                     break;
                 }
             }

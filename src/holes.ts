@@ -63,13 +63,13 @@ export class LeanHoles implements Disposable, CodeActionProvider {
         }
 
         if (res.message) {
-            window.showInformationMessage(res.message);
+            void window.showInformationMessage(res.message);
         }
         if (res.replacements && res.replacements.alternatives) {
             // TODO(gabriel): ask user if more than one alternative
             for (const editor of window.visibleTextEditors) {
                 if (editor.document.fileName === file) {
-                    editor.edit((builder) => {
+                    await editor.edit((builder) => {
                         builder.replace(mkRange(res.replacements),
                             res.replacements.alternatives[0].code);
                     });
@@ -93,7 +93,7 @@ export class LeanHoles implements Disposable, CodeActionProvider {
         return cmds;
     }
 
-    dispose() {
+    dispose(): void {
         for (const s of this.subscriptions) { s.dispose(); }
     }
 }

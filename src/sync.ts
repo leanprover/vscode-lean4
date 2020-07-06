@@ -26,16 +26,16 @@ export class LeanSyncService implements Disposable {
         workspace.textDocuments.forEach((doc) => this.syncDoc(doc));
     }
 
-    private syncDoc(doc: TextDocument) {
+    private async syncDoc(doc: TextDocument) {
         if (!languages.match(this.documentFilter, doc)) { return; }
         if (!this.didAutoStartServer && !this.server.alive()) {
             this.didAutoStartServer = true;
             this.server.connect();
         }
-        this.server.sync(doc.fileName, doc.getText());
+        await this.server.sync(doc.fileName, doc.getText());
     }
 
-    dispose() {
+    dispose(): void {
         for (const s of this.subscriptions) { s.dispose(); }
     }
 }

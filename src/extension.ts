@@ -22,11 +22,11 @@ import { LibraryNoteLinkProvider } from './librarynote';
 
 // Seeing .olean files in the source tree is annoying, we should
 // just globally hide them.
-function configExcludeOLean() {
+async function configExcludeOLean() {
     const files = workspace.getConfiguration('files');
     const exclude = files.get('exclude');
     exclude['**/*.olean'] = true;
-    files.update('exclude', exclude, true);
+    await files.update('exclude', exclude, true);
 }
 
 const LEAN_MODE: DocumentFilter = {
@@ -35,8 +35,8 @@ const LEAN_MODE: DocumentFilter = {
     // scheme: 'file',
 };
 
-export function activate(context: ExtensionContext) {
-    configExcludeOLean();
+export function activate(context: ExtensionContext): void {
+    void configExcludeOLean();
 
     const server = new Server();
     context.subscriptions.push(server);
@@ -74,7 +74,7 @@ export function activate(context: ExtensionContext) {
             LEAN_MODE, new LeanCompletionItemProvider(server), '.'));
 
     // Register support for unicode input.
-    (async () => {
+    void (async () => {
         const translations: any = await loadJsonFile(context.asAbsolutePath('translations.json'));
         const inputLanguages: string[] = inputModeLanguages();
         const hoverProvider =
@@ -85,9 +85,10 @@ export function activate(context: ExtensionContext) {
     })();
 
     // Load the language-configuration manually, so that we can set the wordPattern.
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     let langConf = Uri.file(context.asAbsolutePath('language-configuration.json')).toJSON();
-    langConf = { comments: langConf.comments, brackets: langConf.brackets,
-        autoClosingPairs: langConf.autoClosingPairs, surroundingPairs: langConf.surroundingPairs,
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    langConf = { comments: langConf.comments, brackets: langConf.brackets, autoClosingPairs: langConf.autoClosingPairs, surroundingPairs: langConf.surroundingPairs,
         wordPattern: /(-?\d*\.\d\w*)|([^`~!@$%^&*()-=+\[{\]}⟨⟩⦃⦄⟦⟧⟮⟯‹›\\|;:",./?\s]+)/ };
     context.subscriptions.push(
         languages.setLanguageConfiguration('lean', langConf),

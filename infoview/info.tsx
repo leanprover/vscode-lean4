@@ -86,9 +86,9 @@ interface InfoState {
     loading: boolean;
     response?: InfoResponse;
     messages: ProcessedMessage[];
-    error?: any;
+    error?: string;
     triggerUpdate: () => void;
-};
+}
 
 function infoState(isPaused: boolean, loc: Location): InfoState {
     const loading = useMappedEvent(global_server.tasks, false, (t) => isLoading(t, loc), [loc]);
@@ -116,7 +116,7 @@ function infoState(isPaused: boolean, loc: Location): InfoState {
             }
             setError(null);
         } catch (err) {
-            setError(err);
+            setError('' + err);
             setResponse(null);
             if (err === 'interrupted') {
                 triggerUpdate();
@@ -140,7 +140,7 @@ function infoState(isPaused: boolean, loc: Location): InfoState {
     return { loc, loading, response, error, messages, triggerUpdate };
 }
 
-export function Info(props: InfoProps) {
+export function Info(props: InfoProps): JSX.Element {
     const {isCursor, isPinned, onPin} = props;
 
     const [isPaused, setPaused] = React.useState<boolean>(false);

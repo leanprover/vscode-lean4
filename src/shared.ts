@@ -15,7 +15,7 @@ export interface PinnedLocation extends Location {
     key: number;
 }
 
-export function locationEq(l1: Location, l2: Location) {
+export function locationEq(l1: Location, l2: Location): boolean {
     return l1.column === l2.column && l1.line === l2.line && l1.file_name === l2.file_name
 }
 
@@ -34,9 +34,16 @@ export interface InfoProps extends Location {
     base_name: string;     // = basename(fileName)
 }
 
+export interface InfoViewTacticStateFilter {
+    name?: string;
+    regex: string;
+    match: boolean;
+    flags: string;
+}
+
 export interface Config {
-    filterIndex;
-    infoViewTacticStateFilters: any[];
+    filterIndex: number;
+    infoViewTacticStateFilters: InfoViewTacticStateFilter[];
     infoViewAllErrorsOnLine: boolean;
     infoViewAutoOpenShowGoal: boolean;
 }

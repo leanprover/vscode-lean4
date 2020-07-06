@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import * as React from 'react';
 import * as ReactPopper from 'react-popper';
 import './popper.css';
@@ -99,7 +100,7 @@ export const Widget = React.memo(({ widget, fileName }: WidgetProps) => {
             })).widget.html);
         }
         if (widget && !widget.html) {
-            loadHtml();
+            void loadHtml();
         } else {
             setHtml(widget && widget.html);
         }

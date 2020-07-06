@@ -8,7 +8,7 @@ export class LeanHoverProvider implements HoverProvider {
         this.server = server;
     }
 
-    async provideHover(document: TextDocument, position: Position) {
+    async provideHover(document: TextDocument, position: Position): Promise<Hover> {
         const response = await this.server.info(document.fileName, position.line + 1, position.character);
         if (response.record) {
             const contents: MarkdownString[] = [];

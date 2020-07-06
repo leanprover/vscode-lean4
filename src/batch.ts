@@ -9,7 +9,7 @@ export function batchExecuteFile(
     server: Server,
     editor: TextEditor,
     edit: TextEditorEdit,
-    args: any[]) {
+    args: any[]): void {
     batchOutputChannel = batchOutputChannel ||
         window.createOutputChannel('Lean: Batch File Output');
 

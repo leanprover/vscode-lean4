@@ -25,7 +25,7 @@ export class LeanStatusBarItem implements Disposable {
         }
     }
 
-    update() {
+    update(): void {
         let text = 'Lean: ';
 
         const serverStatus = this.server.statusChanged.currentValue;
@@ -53,7 +53,7 @@ export class LeanStatusBarItem implements Disposable {
         this.statusBarItem.text = text;
     }
 
-    dispose() {
+    dispose(): void {
         this.statusBarItem.dispose();
         for (const s of this.subscriptions) { s.dispose(); }
     }

@@ -9,7 +9,7 @@ interface GoalProps {
 export function Goal(props: GoalProps): JSX.Element {
     const config = React.useContext(ConfigContext);
     const reFilters = config.infoViewTacticStateFilters || [];
-    const [filterIndex, setFilterIndex] = React.useState(config.filterIndex ?? -1);
+    const [filterIndex, setFilterIndex] = React.useState<number>(config.filterIndex ?? -1);
     if (!props.goalState) { return null; }
     let goalString = props.goalState.replace(/^(no goals)/mg, 'goals accomplished')
     goalString = RegExp('^\\d+ goals|goals accomplished', 'mg').test(goalString) ? goalString : '1 goal\n'.concat(goalString);

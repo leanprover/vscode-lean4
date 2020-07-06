@@ -20,9 +20,9 @@ export function colorizeMessage(goal: string): string {
         .replace(/^([^:\n< ][^:\n⊢{[(⦃]*) :/mg, '<strong class="goal-hyp">$1</strong> :');
 }
 
-export function basename(path: string) { return path.split(/[\\/]/).pop(); }
+export function basename(path: string): string { return path.split(/[\\/]/).pop(); }
 
-export function useEvent<T>(ev: Event<T>, f: (_: T) => void, dependencies?: React.DependencyList) {
+export function useEvent<T>(ev: Event<T>, f: (_: T) => void, dependencies?: React.DependencyList): void {
     React.useEffect(() => {
         const h = ev.on(f);
         return () => h.dispose();

@@ -38,7 +38,7 @@ export class LeanTaskGutter implements Disposable {
         }
     }
 
-    dispose() {
+    dispose(): void {
         this.decoration.dispose();
         for (const s of this.subscriptions) { s.dispose(); }
     }
@@ -75,7 +75,7 @@ export class LeanTaskMessages implements Disposable {
         diagsPerFile.forEach((diags, file) => this.collection.set(Uri.file(file), diags));
     }
 
-    dispose() {
+    dispose(): void {
         this.collection.dispose();
         for (const s of this.subscriptions) { s.dispose(); }
     }

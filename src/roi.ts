@@ -38,7 +38,7 @@ export class RoiManager implements Disposable {
             case 'project': this.mode = RoiMode.ProjectFiles; break;
             default: this.mode = RoiMode.VisibleLinesAndAbove;
         }
-        this.send();
+        void this.send();
 
         this.subscriptions.push(commands.registerCommand('lean.roiMode.select', async () => {
             const items: (QuickPickItem & {mode: RoiMode})[] = [
@@ -74,7 +74,7 @@ export class RoiManager implements Disposable {
                 },
             ];
             const selected = await window.showQuickPick(items);
-            if (selected) { this.check(selected.mode); }
+            if (selected) { await this.check(selected.mode); }
         }));
         this.subscriptions.push(commands.registerCommand('lean.roiMode.nothing',
             () => this.check(RoiMode.Nothing)));
@@ -125,18 +125,18 @@ export class RoiManager implements Disposable {
         }
     }
 
-    async send() {
+    async send(): Promise<void> {
         const roi = await this.compute();
         await this.server.roi(this.modeString(), roi);
     }
 
-    check(mode: RoiMode) {
+    async check(mode: RoiMode): Promise<void> {
         this.mode = mode;
         this.modeChangedEmitter.fire(mode);
-        this.send();
+        await this.send();
     }
 
-    dispose() {
+    dispose(): void {
         for (const s of this.subscriptions) { s.dispose(); }
     }
 }

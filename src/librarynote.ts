@@ -28,6 +28,6 @@ export class LibraryNoteLinkProvider implements DocumentLinkProvider {
                 }
             }
         }
-        window.showErrorMessage(`Library note "${noteName}" not found.`);
+        await window.showErrorMessage(`Library note "${noteName}" not found.`);
     }
 }

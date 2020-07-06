@@ -74,21 +74,21 @@ export class LeanInputExplanationHover implements HoverProvider, Disposable {
         return new Hover(hoverMarkdown, hoverRange);
     }
 
-    dispose() {
+    dispose(): void {
         for (const s of this.subscriptions) { s.dispose(); }
     }
 }
 /* Each editor has their own abbreviation handler. */
 class TextEditorAbbrevHandler {
-    range: Range;
+    range: Range | undefined;
 
     constructor(public editor: TextEditor, private abbreviator: LeanInputAbbreviator) {}
 
-    private updateRange(range?: Range) {
+    private async updateRange(range?: Range) {
         if (range && !range.isSingleLine) { range = null; }
         this.range = range;
         this.editor.setDecorations(this.abbreviator.decorationType, range ? [range] : []);
-        this.abbreviator.updateInputActive();
+        await this.abbreviator.updateInputActive();
 
         // HACK: support \{{}} and \[[]]
         const hackyReplacements: {[input: string]: string} = {
@@ -102,11 +102,11 @@ class TextEditorAbbrevHandler {
         if (range) {
             const replacement = hackyReplacements[this.editor.document.getText(range)];
             if (replacement) {
-                this.editor.edit((builder) => {
+                await this.editor.edit((builder) => {
                     builder.replace(range, replacement);
                     const pos = range.start.translate(0, 1);
                     this.editor.selection = new Selection(pos, pos);
-                    this.updateRange();
+                    void this.updateRange();
                 });
             }
         }
@@ -119,7 +119,7 @@ class TextEditorAbbrevHandler {
         return this.range.end.character - this.range.start.character;
     }
 
-    convertRange(newRange?: Range) {
+    async convertRange(newRange?: Range) {
         if (!this.range || this.rangeSize < 2) { return this.updateRange(); }
 
         const range = this.range;
@@ -136,17 +136,17 @@ class TextEditorAbbrevHandler {
                 // existing line would leave the cursor four characters too far right.
                 await this.editor.edit((builder) => builder.replace(range, replacement));
                 if (newRange) {
-                    this.updateRange(new Range(
+                    await this.updateRange(new Range(
                         newRange.start.translate(0, replacement.length - toReplace.length),
                         newRange.end.translate(0, replacement.length - toReplace.length)));
                 }
             }, 0);
         }
 
-        this.updateRange(newRange);
+        await this.updateRange(newRange);
     }
 
-    onChanged(ev: TextDocumentChangeEvent) {
+    async onChanged(ev: TextDocumentChangeEvent) {
         if (ev.contentChanges.length === 0) {
             // This event is triggered by files.autoSave=onDelay
             return;
@@ -162,7 +162,7 @@ class TextEditorAbbrevHandler {
                 }
             } else if (change.range.start.isEqual(this.range.end)) {
                 if (change.text === this.leader && this.rangeSize === 1) {
-                    this.updateRange();
+                    await this.updateRange();
                     return this.editor.edit((builder) =>
                         builder.delete(new Range(change.range.start, change.range.end.translate(0, 1))));
                 } else if (change.text === this.leader) {
@@ -181,12 +181,12 @@ class TextEditorAbbrevHandler {
                 this.range.end.translate(0, change.text.length - change.rangeLength)));
         }
 
-        this.updateRange();
+        await this.updateRange();
     }
 
-    onSelectionChanged(ev: TextEditorSelectionChangeEvent) {
-        if (ev.selections.length !== 1 || !this.range.contains(ev.selections[0].active)) {
-            this.convertRange();
+    async onSelectionChanged(ev: TextEditorSelectionChangeEvent) {
+        if (ev.selections.length !== 1 || !this.range || !this.range.contains(ev.selections[0].active)) {
+            await this.convertRange();
         }
     }
 }
@@ -227,10 +227,10 @@ export class LeanInputAbbreviator {
 
         this.subscriptions.push(window.onDidChangeActiveTextEditor(() => this.updateInputActive()));
 
-        this.subscriptions.push(commands.registerTextEditorCommand('lean.input.convert', (editor, edit) => {
+        this.subscriptions.push(commands.registerTextEditorCommand('lean.input.convert', async (editor, edit) => {
             const handler = this.handlers.get(editor);
             if (handler) {
-                handler.convertRange();
+                await handler.convertRange();
             }
         }));
 
@@ -243,8 +243,8 @@ export class LeanInputAbbreviator {
         }));
     }
 
-    private setInputActive(isActive: boolean) {
-        commands.executeCommand('setContext', 'lean.input.isActive', isActive);
+    private async setInputActive(isActive: boolean) {
+        await commands.executeCommand('setContext', 'lean.input.isActive', isActive);
     }
 
     get active(): boolean {
@@ -252,8 +252,8 @@ export class LeanInputAbbreviator {
         return handler && !!handler.range;
     }
 
-    updateInputActive() {
-        this.setInputActive(this.active);
+    async updateInputActive(): Promise<void> {
+        await this.setInputActive(this.active);
     }
 
     findReplacement(typedAbbrev: string): string | undefined {
@@ -284,7 +284,7 @@ export class LeanInputAbbreviator {
         return !!languages.match(this.languages,document);
     }
 
-    private onChanged(ev: TextDocumentChangeEvent) {
+    private async onChanged(ev: TextDocumentChangeEvent) {
         const editor = window.activeTextEditor;
 
         if (editor.document !== ev.document) { return; } // change happened in active editor
@@ -294,10 +294,10 @@ export class LeanInputAbbreviator {
         if (!this.handlers.has(editor)) {
             this.handlers.set(editor, new TextEditorAbbrevHandler(editor, this));
         }
-        this.handlers.get(editor).onChanged(ev);
+        await this.handlers.get(editor).onChanged(ev);
     }
 
-    private onSelectionChanged(ev: TextEditorSelectionChangeEvent) {
+    private async onSelectionChanged(ev: TextEditorSelectionChangeEvent) {
         const editor = window.activeTextEditor;
 
         if (editor !== ev.textEditor) { return; } // change happened in active editor
@@ -305,11 +305,11 @@ export class LeanInputAbbreviator {
         if (!this.isSupportedFile(editor.document)) { return; } // Lean file
 
         if (this.handlers.has(editor)) {
-            this.handlers.get(editor).onSelectionChanged(ev);
+            await this.handlers.get(editor).onSelectionChanged(ev);
         }
     }
 
-    dispose() {
+    dispose(): void {
         this.decorationType.dispose();
         for (const s of this.subscriptions) {
             s.dispose();

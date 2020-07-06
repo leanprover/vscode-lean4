@@ -8,7 +8,7 @@ import {
     Uri, ViewColumn, WebviewPanel, window, workspace, env,
 } from 'vscode';
 import { Server } from './server';
-import { ToInfoviewMessage, FromInfoviewMessage, PinnedLocation, InsertTextMessage, ServerRequestMessage, RevealMessage, HoverPositionMessage, locationEq, Location } from './shared'
+import { ToInfoviewMessage, FromInfoviewMessage, PinnedLocation, InsertTextMessage, ServerRequestMessage, RevealMessage, HoverPositionMessage, locationEq, Location, InfoViewTacticStateFilter } from './shared'
 import { StaticServer } from './staticserver';
 
 export class InfoProvider implements Disposable {
@@ -39,22 +39,22 @@ export class InfoProvider implements Disposable {
         this.updateStylesheet();
         this.makeProxyConnection();
         this.subscriptions.push(
-            this.server.restarted.on(() => {
-                this.autoOpen();
-                this.postMessage({command: 'restart'});
+            this.server.restarted.on(async () => {
+                await this.autoOpen();
+                await this.postMessage({command: 'restart'});
             }),
             window.onDidChangeActiveTextEditor(() => this.sendPosition()),
             window.onDidChangeTextEditorSelection(() => this.sendPosition()),
-            workspace.onDidChangeConfiguration((e) => {
+            workspace.onDidChangeConfiguration(async (e) => {
                 // regression; changing the style needs a reload. :/
                 this.updateStylesheet();
-                this.sendConfig();
+                await this.sendConfig();
                 if (!workspace.getConfiguration('lean').get('typeInStatusBar') && this.statusShown) {
                     this.statusBarItem.hide();
                     this.statusShown = false;
                 }
             }),
-            workspace.onDidChangeTextDocument((e) => {
+            workspace.onDidChangeTextDocument(async (e) => {
                 if (this.pins && this.pins.length !== 0) {
                     // stupid cursor math that should be in the vscode API
                     let changed: boolean = false;
@@ -81,44 +81,34 @@ export class InfoProvider implements Disposable {
                         return { ...new_pin, key: pin.key };
                     });
                     if (changed) {
-                        this.postMessage({
+                        await this.postMessage({
                             command: 'sync_pin',
                             pins: this.pins,
                         });
                     }
-                    this.sendPosition();
+                    await this.sendPosition();
                 }
             }),
             commands.registerCommand('_lean.revealPosition', this.revealEditorPosition.bind(this)),
-            commands.registerCommand('_lean.infoView.pause', () => {
-                this.postMessage({ command: 'pause' })
-            }),
-            commands.registerCommand('_lean.infoView.continue', () => {
-                this.postMessage({ command: 'continue' })
-            }),
-            commands.registerTextEditorCommand('lean.displayGoal', (editor) => {
-                this.openPreview(editor);
-            }),
-            commands.registerTextEditorCommand('lean.displayList', (editor) => {
-                this.openPreview(editor);
-                this.postMessage({ command: 'toggle_all_messages' });
+            commands.registerCommand('_lean.infoView.pause', () => this.postMessage({ command: 'pause' })),
+            commands.registerCommand('_lean.infoView.continue', () => this.postMessage({ command: 'continue' })),
+            commands.registerTextEditorCommand('lean.displayGoal', (editor) => this.openPreview(editor)),
+            commands.registerTextEditorCommand('lean.displayList', async (editor) => {
+                await this.openPreview(editor);
+                await this.postMessage({ command: 'toggle_all_messages' });
             }),
             commands.registerTextEditorCommand('lean.infoView.copyToComment',() =>
                 this.postMessage({ command: 'copy_to_comment' })
             ),
-            commands.registerCommand('lean.infoView.toggleUpdating', () => {
-                this.postMessage({ command: 'toggle_updating' })
-            }),
-            commands.registerTextEditorCommand('lean.infoView.toggleStickyPosition', (editor) => {
-                this.postMessage({ command: 'toggle_pin' })
-            }),
+            commands.registerCommand('lean.infoView.toggleUpdating', () => this.postMessage({ command: 'toggle_updating' })),
+            commands.registerTextEditorCommand('lean.infoView.toggleStickyPosition', () => this.postMessage({ command: 'toggle_pin' })),
         );
         if (this.server.alive()) {
-            this.autoOpen();
+            void this.autoOpen();
         }
     }
 
-    makeProxyConnection() {
+    private makeProxyConnection() {
         if (this.proxyConnection) {
             this.proxyConnection.dispose();
         }
@@ -140,7 +130,7 @@ export class InfoProvider implements Disposable {
 
     }
 
-    dispose() {
+    dispose(): void {
         this.proxyConnection.dispose();
         for (const s of this.subscriptions) { s.dispose(); }
     }
@@ -160,14 +150,14 @@ export class InfoProvider implements Disposable {
         this.stylesheet = fontCodeCSS + configCSS;
     }
 
-    private autoOpen() {
+    private async autoOpen() {
         if (!this.started && workspace.getConfiguration('lean').get('infoViewAutoOpen')) {
             this.started = true;
-            this.openPreview(window.activeTextEditor);
+            await this.openPreview(window.activeTextEditor);
         }
     }
 
-    private openPreview(editor: TextEditor) {
+    private async openPreview(editor: TextEditor) {
         let column = editor ? editor.viewColumn + 1 : ViewColumn.Two;
         const loc = this.getActiveCursorLocation();
         if (column === 4) { column = ViewColumn.Three; }
@@ -186,9 +176,9 @@ export class InfoProvider implements Disposable {
             this.webviewPanel.onDidDispose(() => this.webviewPanel = null);
             this.webviewPanel.webview.onDidReceiveMessage((message) => this.handleMessage(message), undefined, this.subscriptions);
         }
-        if (loc !== null) { this.postMessage({ command: 'position', loc }); }
-        this.sendConfig();
-        this.postMessage({command: 'all_messages', messages: this.server.messages});
+        if (loc !== null) { await this.postMessage({ command: 'position', loc }); }
+        await this.sendConfig();
+        await this.postMessage({command: 'all_messages', messages: this.server.messages});
     }
     /** Handle a message incoming from the webview. */
     private async handleMessage(message: FromInfoviewMessage) {
@@ -200,7 +190,7 @@ export class InfoProvider implements Disposable {
                 this.stopHover(message);
                 return;
             case 'insert_text':
-                this.handleInsertText(message);
+                await this.handleInsertText(message);
                 return;
             case 'copy_text':
                 await env.clipboard.writeText(message.text);
@@ -210,24 +200,23 @@ export class InfoProvider implements Disposable {
                 this.handleServerRequest(message);
                 return;
             case 'reveal':
-                this.revealEditorPosition(Uri.parse(message.loc.file_name), message.loc.line, message.loc.column);
+                await this.revealEditorPosition(Uri.parse(message.loc.file_name), message.loc.line, message.loc.column);
                 return;
             case 'sync_pin':
                 this.pins = message.pins;
                 return;
             case 'request_config':
-                this.sendConfig();
-                this.postMessage({command: 'all_messages', messages: this.server.messages});
+                await this.sendConfig();
+                await this.postMessage({command: 'all_messages', messages: this.server.messages});
                 return;
         }
     }
     private handleServerRequest(message: ServerRequestMessage) {
-        const msg = JSON.parse(message.payload);
-        this.proxyConnection.send(msg);
+        this.proxyConnection.send(JSON.parse(message.payload));
     }
     private async handleInsertText(message: InsertTextMessage) {
         const new_command = message.text;
-        let editor = null;
+        let editor: TextEditor = null;
         if (message.loc) {
            editor = window.visibleTextEditors.find(e => e.document.fileName === message.loc.file_name);
         } else {
@@ -266,11 +255,11 @@ export class InfoProvider implements Disposable {
         }
     }
 
-    private sendConfig() {
-        this.postMessage({
+    private async sendConfig() {
+        await this.postMessage({
             command: 'on_config_change',
             config: {
-                infoViewTacticStateFilters: workspace.getConfiguration('lean').get('infoViewTacticStateFilters', []),
+                infoViewTacticStateFilters: (workspace.getConfiguration('lean').get('infoViewTacticStateFilters', []) as InfoViewTacticStateFilter[]),
                 filterIndex: workspace.getConfiguration('lean').get('infoViewFilterIndex', -1),
                 infoViewAllErrorsOnLine: workspace.getConfiguration('lean').get('infoViewAllErrorsOnLine', false),
                 infoViewAutoOpenShowGoal: workspace.getConfiguration('lean').get('infoViewAutoOpenShowGoal', true)
@@ -327,10 +316,10 @@ export class InfoProvider implements Disposable {
         }
     }
 
-    private sendPosition() {
+    private async sendPosition() {
         const loc = this.getActiveCursorLocation();
         if (loc === null) {return; }
-        this.postMessage({
+        await this.postMessage({
             command: 'position',
             loc,
         });

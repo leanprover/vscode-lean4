@@ -37,32 +37,7 @@ module.exports = {
                 "default": "array"
             }
         ],
-        "@typescript-eslint/ban-types": [
-            "error",
-            {
-                "types": {
-                    "Object": {
-                        "message": "Avoid using the `Object` type. Did you mean `object`?"
-                    },
-                    "Function": {
-                        "message": "Avoid using the `Function` type. Prefer a specific function type, like `() => void`."
-                    },
-                    "Boolean": {
-                        "message": "Avoid using the `Boolean` type. Did you mean `boolean`?"
-                    },
-                    "Number": {
-                        "message": "Avoid using the `Number` type. Did you mean `number`?"
-                    },
-                    "String": {
-                        "message": "Avoid using the `String` type. Did you mean `string`?"
-                    },
-                    "Symbol": {
-                        "message": "Avoid using the `Symbol` type. Did you mean `symbol`?"
-                    }
-                }
-            }
-        ],
-        "@typescript-eslint/class-name-casing": "error",
+        "@typescript-eslint/ban-types": "off",
         "@typescript-eslint/consistent-type-assertions": "error",
         "@typescript-eslint/explicit-member-accessibility": [
             "error",
@@ -83,10 +58,15 @@ module.exports = {
         "@typescript-eslint/no-inferrable-types": "off",
         "@typescript-eslint/no-use-before-define": "off",
         "@typescript-eslint/no-misused-promises": "off",
+        "@typescript-eslint/no-unsafe-return": "off",
+        "@typescript-eslint/no-unsafe-member-access": "off",
+        "@typescript-eslint/no-unsafe-call": "off",
         "@typescript-eslint/no-var-requires": "error",
         "@typescript-eslint/prefer-for-of": "error",
         "@typescript-eslint/prefer-function-type": "error",
         "@typescript-eslint/prefer-namespace-keyword": "error",
+        "@typescript-eslint/restrict-plus-operands": "off",
+        "@typescript-eslint/restrict-template-expressions": "off",
         "@typescript-eslint/quotes": [
             "error",
             "single",

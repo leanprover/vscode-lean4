@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import axios from 'axios';
 import cheerio = require('cheerio');
 import { URL } from 'url';
@@ -7,7 +8,7 @@ import * as fs from 'fs';
 import { join } from 'path';
 import { StaticServer } from './staticserver';
 
-export function mkCommandUri(commandName: string, ...args: any): string {
+export function mkCommandUri(commandName: string, ...args: any[]): string {
     return `command:${commandName}?${encodeURIComponent(JSON.stringify(args))}`;
 }
 
@@ -29,7 +30,7 @@ export class DocViewProvider implements Disposable {
             commands.registerCommand('lean.openTryIt', (code) => this.tryIt(code)),
             commands.registerCommand('lean.openExample', (file) => this.example(file)),
         );
-        this.offerToOpenProjectDocumentation();
+        void this.offerToOpenProjectDocumentation();
     }
 
     private async offerToOpenProjectDocumentation() {
@@ -122,7 +123,7 @@ export class DocViewProvider implements Disposable {
         }
     }
 
-    async setHtml() {
+    async setHtml(): Promise<void> {
         const {webview} = this.getWebview();
 
         const url = this.currentURL;
@@ -197,7 +198,7 @@ export class DocViewProvider implements Disposable {
     }
 
     /** Called by the user clicking a link. */
-    async open(url?: string) {
+    async open(url?: string): Promise<void> {
         if (url) {
             this.backstack.push(this.currentURL);
             this.forwardstack = [];
@@ -206,21 +207,21 @@ export class DocViewProvider implements Disposable {
         await this.setHtml();
     }
 
-    async back() {
+    async back(): Promise<void> {
         if (this.backstack.length === 0) {return;}
         this.forwardstack.push(this.currentURL);
         this.currentURL = this.backstack.pop();
         await this.setHtml();
     }
 
-    async forward() {
+    async forward(): Promise<void> {
         if (this.forwardstack.length === 0) {return;}
         this.backstack.push(this.currentURL);
         this.currentURL = this.forwardstack.pop();
         await this.setHtml();
     }
 
-    dispose() {
+    dispose(): void {
         for (const s of this.subscriptions) { s.dispose(); }
     }
 }
