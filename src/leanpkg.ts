@@ -96,8 +96,8 @@ export class LeanpkgService implements TaskProvider, Disposable {
                 const ok = 'Switch to correct folder';
                 const admonition =
                     'You are running Lean in a directory without a leanpkg.toml file, this is NOT ' +
-                    'supported.  Please open the directory containing the leanpkg.toml file ' +
-                    `instead (which is ${parent}).`;
+                    'supported.  Please switch to the folder containing the leanpkg.toml file ' +
+                    `instead (which is ${parent}).  You can also do this manually using "File / Open Folder...".`;
                 const clicked = await window.showErrorMessage(admonition, {modal: true}, ok);
                 if (clicked === ok) {
                     workspace.updateWorkspaceFolders(0, 1, { uri: Uri.file(parent) });
@@ -108,7 +108,7 @@ export class LeanpkgService implements TaskProvider, Disposable {
             await window.showWarningMessage(`
 You are running Lean in a directory without a leanpkg.toml file, this is NOT
 supported.  Please open the directory containing the leanpkg.toml file
-instead. [More details
+instead (using "File / Open Folder..."). [More details
 here](https://leanprover-community.github.io/install/project.html)`);
         } else if (!fs.existsSync(this.leanpkgPath)) {
             this.requestLeanpkgConfigure('Lean: leanpkg.path does not exist');
