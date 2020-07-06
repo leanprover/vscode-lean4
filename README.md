@@ -37,7 +37,7 @@ We currently support a variety of features. For basic VS Code editor features, s
 The info view panel is essential to working interactively with Lean. It shows:
 - tactic state widgets, with context information (hypotheses, goals) at each point in a proof / definition,
   - (in Lean 3.15.0c and newer) "expected type" widgets display the context for subterms.
-  - (in Lean 3.150c and newer) the types of subterms in the context can be inspected interactively.
+  - (in Lean 3.15.0c and newer) the types of subterms in the context can be inspected interactively.
 - the "All Messages" widget, which shows all info, warning, and error messages from the Lean server, and
 - (in Lean 3.15.0c and newer) other [custom widgets](https://leanprover-community.github.io/mathlib_docs/core/init/meta/widget/basic.html) can be rendered in the info view.
 
