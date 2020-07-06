@@ -7,6 +7,8 @@ export function post(message: FromInfoviewMessage) { // send a message to the ex
     vscode.postMessage(message);
 }
 
+export function clearHighlight() { return post({ command: 'stop_hover'}); }
+export function highlightPosition(loc: Location) { return post({ command: 'hover_position', loc}); }
 export function copyToComment(text: string) {
     post({ command: 'insert_text', text: `/-\n${text}\n-/\n`});
 }
@@ -17,6 +19,10 @@ export function reveal(loc: Location) {
 
 export function edit(loc: Location, text: string) {
     post({ command: 'insert_text', loc, text });
+}
+
+export function copyText(text: string) {
+    post({ command: 'copy_text', text});
 }
 
 export const PositionEvent: Event<Location> = new Event();

@@ -2,7 +2,7 @@ import * as React from 'react';
 import * as ReactPopper from 'react-popper';
 import './popper.css';
 import { WidgetComponent, WidgetHtml, WidgetElement, WidgetEventRequest, WidgetIdentifier } from 'lean-client-js-node';
-import { global_server, edit } from './server';
+import { global_server, edit, reveal, highlightPosition, clearHighlight, copyText } from './server';
 
 function Popper(props: {children: React.ReactNode[]; popperContent: any; refEltTag: any; refEltAttrs: any}) {
     const { children, popperContent, refEltTag, refEltAttrs } = props;
@@ -58,6 +58,34 @@ class WidgetErrorBoundary extends React.Component<{children: any},{error?: {mess
     }
 }
 
+/** [todo] pending adding to lean-client-js */
+export type WidgetEffect =
+| {kind: 'insert_text'; text: string}
+| {kind: 'reveal_position'; file_name: string; line: number; column: number}
+| {kind: 'highlight_position'; file_name: string; line: number; column: number}
+| {kind: 'clear_highlighting'}
+| {kind: 'custom'; key: string; value: string}
+| {kind: 'copy_text'; text: string}
+
+function applyWidgetEffect(widget: WidgetIdentifier, file_name: string, effect: WidgetEffect) {
+    switch (effect.kind) {
+        case 'insert_text':
+            const loc = {file_name, line: widget.line, column: widget.column};
+            edit(loc, effect.text);
+            break;
+        case 'reveal_position': reveal({file_name: effect.file_name || file_name, line: effect.line, column: effect.column}); break;
+        case 'highlight_position': highlightPosition({file_name: effect.file_name || file_name, line: effect.line, column: effect.column}); break;
+        case 'clear_highlighting': clearHighlight(); break;
+        case 'copy_text': copyText(effect.text); break;
+        case 'custom':
+            console.log(`Custom widget effect: ${effect.key} -- ${effect.value}`);
+            break;
+        default:
+            console.error(`Unrecognised widget effect: ${effect}`);
+            break;
+    }
+}
+
 export const Widget = React.memo(({ widget, fileName }: WidgetProps) => {
     const [html, setHtml] = React.useState<WidgetComponent>();
     React.useEffect(() => {
@@ -90,8 +118,15 @@ export const Widget = React.memo(({ widget, fileName }: WidgetProps) => {
         if (!update_result.record) { return; }
         const record = update_result.record;
         if (record.status === 'success' && record.widget) {
+            const effects: WidgetEffect[] | undefined = (record as any).effects;
+            if (effects) {
+                for (const effect of effects) {
+                    applyWidgetEffect(widget, fileName, effect);
+                }
+            }
             setHtml(record.widget.html);
         } else if (record.status === 'edit') {
+            // Lean < 3.17
             const loc = { line: widget.line, column: widget.column, file_name: fileName };
             edit(loc, record.action);
             setHtml(record.widget.html);
