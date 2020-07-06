@@ -201,8 +201,8 @@
 			{
 				"command": "lean.displayList",
 				"category": "Lean",
-				"title": "Info View: Expand \"All Messages\"",
-				"description": "Expand the \"All Messages\" widget in the info view."
+				"title": "Info View: Toggle \"All Messages\"",
+				"description": "Toggles the \"All Messages\" widget in the info view."
 			},
 			{
 				"command": "lean.openDocView",

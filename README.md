@@ -185,7 +185,7 @@ The format below is: "`lean.commandName` (command name): description", where `le
 
 * `lean.displayGoal` (Lean: Info View: Display Goal): open the info view panel (bound to <kbd>ctrl</kbd>+<kbd>shift</kbd>+<kbd>enter</kbd> by default)
 
-* `lean.displayList` (Lean: Info View: Expand "All Messages"): expand the "All messages" widget in the info view (bound to <kbd>ctrl</kbd>+<kbd>alt</kbd>+<kbd>shift</kbd>+<kbd>enter</kbd> by default)
+* `lean.displayList` (Lean: Info View: Toggle "All Messages"): toggles the "All messages" widget in the info view (bound to <kbd>ctrl</kbd>+<kbd>alt</kbd>+<kbd>shift</kbd>+<kbd>enter</kbd> by default)
 
 * `lean.infoView.copyToComment` (Lean: Info View: Copy Contents to Comment): copy the contents of the currently active tactic state widget into a new comment on the previous line (same as clicking on the <img src="media/copy-to-comment.png" width="16px"> icon)
 
