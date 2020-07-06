@@ -80,6 +80,8 @@ export class RoiManager implements Disposable {
             () => this.check(RoiMode.Nothing)));
         this.subscriptions.push(commands.registerCommand('lean.roiMode.visibleFiles',
             () => this.check(RoiMode.VisibleFiles)));
+        this.subscriptions.push(commands.registerCommand('lean.roiMode.linesAndAbove',
+            () => this.check(RoiMode.VisibleLinesAndAbove)));
         this.subscriptions.push(commands.registerCommand('lean.roiMode.openFiles',
             () => this.check(RoiMode.OpenFiles)));
         this.subscriptions.push(commands.registerCommand('lean.roiMode.projectFiles',
