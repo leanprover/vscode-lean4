@@ -62,6 +62,16 @@ export class DocViewProvider implements Disposable {
             this.webview = window.createWebviewPanel('lean', 'Lean Documentation',
                 { viewColumn: 3, preserveFocus: true }, options);
             this.webview.onDidDispose(() => this.webview = null);
+
+            let first = true;
+            this.webview.onDidChangeViewState(async () => {
+                if (first) {
+                    first = false;
+                    // super hacky way to show both infoview and docview in a split
+                    await commands.executeCommand('workbench.action.focusRightGroup');
+                    await commands.executeCommand('workbench.action.moveEditorToBelowGroup');
+                }
+            });
         }
         return this.webview;
     }
