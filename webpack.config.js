@@ -19,7 +19,30 @@ function getWebviewConfig(env) {
 				},
 				{
 					test: /\.css/,
-					use: ['style-loader', 'css-loader']
+					use: [{
+						loader: 'style-loader',
+						options: {
+							// copied from https://webpack.js.org/loaders/style-loader/#insert
+							// makes sure that the styles are inserted at the top of the head object instead of the default behaviour at the bottom.
+							insert: function insertAtTop(element) {
+								var parent = document.querySelector('head');
+								// eslint-disable-next-line no-underscore-dangle
+								var lastInsertedElement =
+									window._lastElementInsertedByStyleLoader;
+
+								if (!lastInsertedElement) {
+									parent.insertBefore(element, parent.firstChild);
+								} else if (lastInsertedElement.nextSibling) {
+									parent.insertBefore(element, lastInsertedElement.nextSibling);
+								} else {
+									parent.appendChild(element);
+								}
+
+								// eslint-disable-next-line no-underscore-dangle
+								window._lastElementInsertedByStyleLoader = element;
+							},
+						},
+					}, 'css-loader']
 				},
 				{
 					test: /\.svg/,
@@ -80,7 +103,7 @@ function getExtensionConfig(env) {
 	return config;
 }
 
-module.exports =  function(env) {
+module.exports = function (env) {
 	env = env || {};
 	env.production = !!env.production;
 	return [getWebviewConfig(env), getExtensionConfig(env)];
