@@ -72,7 +72,7 @@ export class TacticSuggestions implements Disposable, CodeActionProvider {
 
         // Start of the tactic call to replace
         const startLine = m.pos_line - 1;
-        var startCol = m.pos_col;
+        let startCol = m.pos_col;
 
         // Try to determine the end of the tactic call to replace.
         // Heuristic: Find the next comma, semicolon, unmatched closing bracket,
