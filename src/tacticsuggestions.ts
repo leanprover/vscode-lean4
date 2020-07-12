@@ -115,13 +115,24 @@ export class TacticSuggestions implements Disposable, CodeActionProvider {
         const lastPos = new Position(endLine, endCol)
         textEditor.selection = new Selection(lastPos, lastPos)
 
-        // Now check for `by ` before the tactic call, 
-        // and `exact ` at the beginning of the suggestion
+        // Now check for `exact ` at the beginning of the suggestion 
+        // and `by ` before the tactic call (or `begin ` before, and `, end` after)
         // and if both occur, remove them.
         if (suggestion.startsWith('exact ')) {
-            if (textEditor.document.lineAt(startLine).text.substring(0, startCol).endsWith('by ')) {
+            const pre = textEditor.document.lineAt(startLine).text.substring(0, startCol);
+            // First check for `by `:
+            if (pre.endsWith('by ')) {
                 startCol = startCol - 3;
                 suggestion = suggestion.substring(6);
+            // Then check for `begin ... end`:
+            } else if (pre.endsWith('begin ')) {
+                const post = textEditor.document.lineAt(endLine).text.substring(endCol);
+                const matches = post.match(/^,?\s*end/g);
+                if (matches) {
+                    startCol = startCol - 6;
+                    endCol = endCol + matches[0].length;
+                    suggestion = suggestion.substring(6);
+                }
             }
         }
 
