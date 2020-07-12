@@ -115,7 +115,7 @@ export class TacticSuggestions implements Disposable, CodeActionProvider {
         const lastPos = new Position(endLine, endCol)
         textEditor.selection = new Selection(lastPos, lastPos)
 
-        // Now check for `exact ` at the beginning of the suggestion 
+        // Now check for `exact ` at the beginning of the suggestion
         // and `by ` before the tactic call (or `begin ` before, and `, end` after)
         // and if both occur, remove them.
         if (suggestion.startsWith('exact ')) {
