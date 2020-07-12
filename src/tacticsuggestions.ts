@@ -72,7 +72,7 @@ export class TacticSuggestions implements Disposable, CodeActionProvider {
 
         // Start of the tactic call to replace
         const startLine = m.pos_line - 1;
-        const startCol = m.pos_col;
+        var startCol = m.pos_col;
 
         // Try to determine the end of the tactic call to replace.
         // Heuristic: Find the next comma, semicolon, unmatched closing bracket,
@@ -114,6 +114,16 @@ export class TacticSuggestions implements Disposable, CodeActionProvider {
         // Jump to the end of the tactic call
         const lastPos = new Position(endLine, endCol)
         textEditor.selection = new Selection(lastPos, lastPos)
+
+        // Now check for `by ` before the tactic call, 
+        // and `exact ` at the beginning of the suggestion
+        // and if both occur, remove them.
+        if (suggestion.startsWith('exact ')) {
+            if (textEditor.document.lineAt(startLine).text.substring(0, startCol).endsWith('by ')) {
+                startCol = startCol - 3;
+                suggestion = suggestion.substring(6);
+            }
+        }
 
         // Replace tactic call by suggestion
         const range = new Range(
