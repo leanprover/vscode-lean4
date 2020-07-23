@@ -129,8 +129,6 @@
         ["｢", "｣"],
         ["\"", "\""],
         ["'", "'"]
-    ]
-    // this doesn't work right now: (https://github.com/Microsoft/vscode/issues/14221)"
-    // wordPattern" : ""
-    // we must set it programatically
+    ],
+    "wordPattern" : "(-?\\d*\\.\\d\\w*)|([^`~!@$%^&*()-=+\\[{\\]}⟨⟩⦃⦄⟦⟧⟮⟯‹›\\\\|;:",./?\\s]+)"
 }

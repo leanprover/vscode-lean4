@@ -84,16 +84,6 @@ export function activate(context: ExtensionContext): void {
             new LeanInputAbbreviator(translations));
     })();
 
-    // Load the language-configuration manually, so that we can set the wordPattern.
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    let langConf = Uri.file(context.asAbsolutePath('language-configuration.json')).toJSON();
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    langConf = { comments: langConf.comments, brackets: langConf.brackets, autoClosingPairs: langConf.autoClosingPairs, surroundingPairs: langConf.surroundingPairs,
-        wordPattern: /(-?\d*\.\d\w*)|([^`~!@$%^&*()-=+\[{\]}⟨⟩⦃⦄⟦⟧⟮⟯‹›\\|;:",./?\s]+)/ };
-    context.subscriptions.push(
-        languages.setLanguageConfiguration('lean', langConf),
-    );
-
     // Register support for definition support.
     context.subscriptions.push(
         languages.registerDefinitionProvider(
