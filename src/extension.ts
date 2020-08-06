@@ -1,5 +1,6 @@
+import semver = require('semver');
 import loadJsonFile = require('load-json-file');
-import { commands, DocumentFilter, ExtensionContext, languages, Uri, workspace } from 'vscode';
+import { commands, DocumentFilter, ExtensionContext, languages, workspace, version } from 'vscode';
 import { batchExecuteFile } from './batch';
 import { LeanCompletionItemProvider } from './completion';
 import { LeanDefinitionProvider } from './definition';
@@ -101,19 +102,23 @@ export function activate(context: ExtensionContext): void {
     // Add item to the status bar.
     context.subscriptions.push(new LeanStatusBarItem(server, roiManager));
 
-    const staticServer = new StaticServer(context);
-    context.subscriptions.push(staticServer);
-    staticServer.server.on('listening', () => {
-
-    // Add info view: listing either the current goal state or a list of all error messages
-    const infoView = new InfoProvider(server, LEAN_MODE, context, staticServer);
-    context.subscriptions.push(infoView);
-
-    context.subscriptions.push(new DocViewProvider(staticServer));
-
-    // Tactic suggestions
-    context.subscriptions.push(new TacticSuggestions(server, infoView, LEAN_MODE));
-    });
+    let staticServer = null;
+    function waitStaticServer() {
+        // Add info view: listing either the current goal state or a list of all error messages
+        const infoView = new InfoProvider(server, LEAN_MODE, context, staticServer);
+        context.subscriptions.push(infoView);
+        context.subscriptions.push(new DocViewProvider(staticServer));
+        // Tactic suggestions
+        context.subscriptions.push(new TacticSuggestions(server, infoView, LEAN_MODE));
+    }
+    // https://github.com/microsoft/vscode/issues/89038 fixed in 1.46
+    if (semver.gte(version, '1.46.0')) {
+        waitStaticServer();
+    } else {
+        staticServer = new StaticServer(context);
+        context.subscriptions.push(staticServer);
+        staticServer.server.on('listening', waitStaticServer);
+    }
 
     context.subscriptions.push(new LeanpkgService(server));
 
