@@ -22,7 +22,7 @@ export class DocViewProvider implements Disposable {
     private currentURL: string | undefined = undefined;
     private backstack: string[] = [];
     private forwardstack: string[] = [];
-    constructor(private staticServer: StaticServer) {
+    constructor(private staticServer?: StaticServer) {
         this.subscriptions.push(
             commands.registerCommand('lean.openDocView', (url) => this.open(url)),
             commands.registerCommand('lean.backDocView', () => this.back()),
@@ -126,8 +126,12 @@ export class DocViewProvider implements Disposable {
                 return '';
             }
             const path = Uri.parse(uri.toString()).fsPath;
-            // workaround for https://github.com/microsoft/vscode/issues/89038
-            return this.staticServer.mkUri(path);
+            if (this.staticServer) {
+                // workaround for https://github.com/microsoft/vscode/issues/89038
+                return this.staticServer.mkUri(path);
+            } else {
+                return this.webview.webview.asWebviewUri(Uri.parse(uri.toString())).toString();
+            }
         } else {
             return uri.toString();
         }

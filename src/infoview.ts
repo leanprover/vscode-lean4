@@ -28,7 +28,7 @@ export class InfoProvider implements Disposable {
 
     private hoverDecorationType: TextEditorDecorationType;
 
-    constructor(private server: Server, private leanDocs: DocumentSelector, private context: ExtensionContext, private staticServer: StaticServer) {
+    constructor(private server: Server, private leanDocs: DocumentSelector, private context: ExtensionContext, private staticServer?: StaticServer) {
 
         this.statusBarItem = window.createStatusBarItem(StatusBarAlignment.Right, 1000);
 
@@ -344,8 +344,13 @@ export class InfoProvider implements Disposable {
     }
 
     private getMediaPath(mediaFile: string): string {
-        // workaround for https://github.com/microsoft/vscode/issues/89038
-        return this.staticServer.mkUri(join(this.context.extensionPath, 'media', mediaFile));
+        if (this.staticServer) {
+            // workaround for https://github.com/microsoft/vscode/issues/89038
+            return this.staticServer.mkUri(join(this.context.extensionPath, 'media', mediaFile));
+        } else {
+            return this.webviewPanel.webview.asWebviewUri(
+                Uri.file(join(this.context.extensionPath, 'media', mediaFile))).toString();
+        }
     }
 
     private initialHtml() {
