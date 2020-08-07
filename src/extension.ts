@@ -111,8 +111,8 @@ export function activate(context: ExtensionContext): void {
         // Tactic suggestions
         context.subscriptions.push(new TacticSuggestions(server, infoView, LEAN_MODE));
     }
-    // https://github.com/microsoft/vscode/issues/89038 fixed in 1.46
-    if (semver.gte(version, '1.46.0')) {
+    // https://github.com/microsoft/vscode/issues/89038 fixed in 1.47
+    if (semver.gte(version, '1.47.0')) {
         waitStaticServer();
     } else {
         staticServer = new StaticServer(context);
