@@ -1,6 +1,6 @@
-import { CancellationToken, commands, Disposable, DocumentFilter, Hover,
+import { CancellationToken, commands, Disposable, Hover,
     HoverProvider, languages, Position, Range, Selection, TextDocument,
-    TextDocumentChangeEvent, TextEditor, TextEditorDecorationType,
+    TextDocumentChangeEvent, TextDocumentContentChangeEvent, TextEditor, TextEditorDecorationType,
     TextEditorSelectionChangeEvent, window, workspace } from 'vscode';
 
 export interface Translations { [abbrev: string]: string | null }
@@ -80,7 +80,7 @@ export class LeanInputExplanationHover implements HoverProvider, Disposable {
 }
 /* Each editor has their own abbreviation handler. */
 class TextEditorAbbrevHandler {
-    ranges: (Range | undefined)[] = [];
+    ranges: Range[] = [];
 
     constructor(public editor: TextEditor, private abbreviator: LeanInputAbbreviator) {}
 
@@ -139,6 +139,17 @@ class TextEditorAbbrevHandler {
         await this.updateRanges(newRanges);
     }
 
+    async deleteRanges() {
+        await this.editor.edit((builder) => {
+            this.ranges.forEach(range => builder.delete(range))
+        });
+        await this.updateRanges([]);
+    }
+
+    rangeAdjacentToChange(change: TextDocumentContentChangeEvent): Range {
+        return this.ranges.find(range => range.contains(change.range) && range.start.isBefore(change.range.start));
+    }
+
     async onChanged({ contentChanges: changes }: TextDocumentChangeEvent) {
         if (changes.length === 0) {
             // This event is triggered by files.autoSave=onDelay
@@ -148,8 +159,16 @@ class TextEditorAbbrevHandler {
         const ranges : Range[] = []
         let isInsert : boolean
 
+        // double leader character (e.g. to type \n)
+        if(changes.every(change => {
+            const range = this.rangeAdjacentToChange(change);
+            return change.text === this.leader && range && (range.end.character - range.start.character) === 1;
+        })) {
+            return await this.deleteRanges();
+        }
+
         changes.forEach(change => {
-            const existingRange = this.ranges.find(range => range.contains(change.range) && range.start.isBefore(change.range.start));
+            const existingRange = this.rangeAdjacentToChange(change)
 
             // insert
             if (!existingRange && change.text === this.leader) {
