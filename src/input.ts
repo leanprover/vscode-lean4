@@ -1,6 +1,6 @@
-import { CancellationToken, commands, Disposable, DocumentFilter, Hover,
+import { CancellationToken, commands, Disposable, Hover,
     HoverProvider, languages, Position, Range, Selection, TextDocument,
-    TextDocumentChangeEvent, TextEditor, TextEditorDecorationType,
+    TextDocumentChangeEvent, TextDocumentContentChangeEvent, TextEditor, TextEditorDecorationType,
     TextEditorSelectionChangeEvent, window, workspace } from 'vscode';
 
 export interface Translations { [abbrev: string]: string | null }
@@ -80,14 +80,14 @@ export class LeanInputExplanationHover implements HoverProvider, Disposable {
 }
 /* Each editor has their own abbreviation handler. */
 class TextEditorAbbrevHandler {
-    range: Range | undefined;
+    ranges: Range[] = [];
 
     constructor(public editor: TextEditor, private abbreviator: LeanInputAbbreviator) {}
 
-    private async updateRange(range?: Range) {
-        if (range && !range.isSingleLine) { range = null; }
-        this.range = range;
-        this.editor.setDecorations(this.abbreviator.decorationType, range ? [range] : []);
+    private async updateRanges(ranges: Range[]) {
+        this.ranges = ranges;
+
+        this.editor.setDecorations(this.abbreviator.decorationType, ranges);
         await this.abbreviator.updateInputActive();
 
         // HACK: support \{{}} and \[[]]
@@ -99,94 +99,104 @@ class TextEditorAbbrevHandler {
             [this.leader + 'f<>']: '‹›',
             [this.leader + 'f<<>>']: '«»',
         };
-        if (range) {
-            const replacement = hackyReplacements[this.editor.document.getText(range)];
-            if (replacement) {
-                await this.editor.edit((builder) => {
+
+        await this.editor.edit((builder) => {
+            ranges.forEach(range => {
+                const replacement = hackyReplacements[this.editor.document.getText(range)];
+
+                if(replacement) {
                     builder.replace(range, replacement);
                     const pos = range.start.translate(0, 1);
                     this.editor.selection = new Selection(pos, pos);
-                    void this.updateRange();
-                });
-            }
-        }
+                }
+            })
+        })
     }
 
     get leader(): string { return this.abbreviator.leader; }
     get enabled(): boolean { return this.abbreviator.enabled; }
 
-    get rangeSize(): number {
-        return this.range.end.character - this.range.start.character;
-    }
+    async convertRanges(trailingLeader: boolean = false) {
+        const newRanges : Range[] = [];
 
-    async convertRange(newRange?: Range) {
-        if (!this.range || this.rangeSize < 2) { return this.updateRange(); }
+        await this.editor.edit((builder) => {
+            this.ranges.forEach(range => {
+                const toReplace = this.editor.document.getText(range);
 
-        const range = this.range;
+                const abbreviation = toReplace.slice(1);
+                const replacement = toReplace.startsWith(this.leader) && this.abbreviator.findReplacement(abbreviation);
 
-        const toReplace = this.editor.document.getText(range);
-        if (!toReplace.startsWith(this.leader)) { return this.updateRange(); }
-
-        const abbreviation = toReplace.slice(1);
-        const replacement = this.abbreviator.findReplacement(abbreviation);
-
-        if (replacement) {
-            setTimeout(async () => {
-                // Without the timeout hack, inserting `\delta ` at the beginning of an
-                // existing line would leave the cursor four characters too far right.
-                await this.editor.edit((builder) => builder.replace(range, replacement));
-                if (newRange) {
-                    await this.updateRange(new Range(
-                        newRange.start.translate(0, replacement.length - toReplace.length),
-                        newRange.end.translate(0, replacement.length - toReplace.length)));
+                if(replacement) builder.replace(range, replacement)
+                if(trailingLeader) {
+                    newRanges.push(new Range(
+                        range.end.translate(0, replacement.length - (toReplace.length + 1)),
+                        range.end.translate(0, replacement.length - toReplace.length)
+                    ))
                 }
-            }, 0);
-        }
+            })
+        })
 
-        await this.updateRange(newRange);
+        await this.updateRanges(newRanges);
     }
 
-    async onChanged(ev: TextDocumentChangeEvent) {
-        if (ev.contentChanges.length === 0) {
+    async deleteRanges() {
+        await this.editor.edit((builder) => {
+            this.ranges.forEach(range => builder.delete(range))
+        });
+        await this.updateRanges([]);
+    }
+
+    rangeAdjacentToChange(change: TextDocumentContentChangeEvent): Range {
+        return this.ranges.find(range => range.contains(change.range) && range.start.isBefore(change.range.start));
+    }
+
+    async onChanged({ contentChanges: changes }: TextDocumentChangeEvent) {
+        if (changes.length === 0) {
             // This event is triggered by files.autoSave=onDelay
             return;
         }
-        if (ev.contentChanges.length !== 1) { return this.updateRange(); } // single change
-        const change = ev.contentChanges[0];
 
-        if (change.text.length === 1 || change.text === '\r\n') {
-            // insert (or right paren overwriting)
-            if (!this.range) {
-                if (change.text === this.leader) {
-                    return this.updateRange(new Range(change.range.start, change.range.start.translate(0, 1)));
-                }
-            } else if (change.range.start.isEqual(this.range.end)) {
-                if (change.text === this.leader && this.rangeSize === 1) {
-                    await this.updateRange();
-                    return this.editor.edit((builder) =>
-                        builder.delete(new Range(change.range.start, change.range.end.translate(0, 1))));
-                } else if (change.text === this.leader) {
-                    return this.convertRange(
-                        new Range(change.range.start, change.range.start.translate(0, 1)));
-                } else if (/^\s+$/.exec(change.text)) {
-                    // whitespace
-                    return this.convertRange();
-                }
+        const ranges : Range[] = []
+        let isInsert : boolean
+
+        // double leader character (e.g. to type \n)
+        if(changes.every(change => {
+            const range = this.rangeAdjacentToChange(change);
+            return change.text === this.leader && range && (range.end.character - range.start.character) === 1;
+        })) {
+            return await this.deleteRanges();
+        }
+
+        changes.forEach(change => {
+            const existingRange = this.rangeAdjacentToChange(change)
+
+            // insert
+            if (!existingRange && change.text === this.leader) {
+                ranges.push(new Range(change.range.start, change.range.start.translate(0, 1)));
+                isInsert = true;
             }
-        }
 
-        if (this.range && this.range.contains(change.range) && this.range.start.isBefore(change.range.start)) {
-            // modification
-            return this.updateRange(new Range(this.range.start,
-                this.range.end.translate(0, change.text.length - change.rangeLength)));
-        }
+            if (existingRange) {
+                // modification
+                ranges.push(new Range(existingRange.start,
+                    existingRange.end.translate(0, change.text.length - change.rangeLength)));
+            }
+        })
 
-        await this.updateRange();
+        await this.updateRanges(ranges)
+
+        if(!isInsert && changes.every(change => /^\s+$/.exec(change.text) || change.text === this.leader)) {
+            await this.convertRanges(changes[0].text === this.leader);
+        }
     }
 
     async onSelectionChanged(ev: TextEditorSelectionChangeEvent) {
-        if (ev.selections.length !== 1 || !this.range || !this.range.contains(ev.selections[0].active)) {
-            await this.convertRange();
+        const rangesUnselected = this.ranges.every(range => {
+            return !ev.selections.some(selection => range.contains(selection.active))
+        })
+
+        if (rangesUnselected) {
+            await this.convertRanges();
         }
     }
 }
@@ -230,8 +240,17 @@ export class LeanInputAbbreviator {
         this.subscriptions.push(commands.registerTextEditorCommand('lean.input.convert', async (editor, edit) => {
             const handler = this.handlers.get(editor);
             if (handler) {
-                await handler.convertRange();
+                await handler.convertRanges();
             }
+        }));
+
+        this.subscriptions.push(commands.registerTextEditorCommand('lean.input.convertWithNewline', async (editor) => {
+            const handler = this.handlers.get(editor);
+            if (handler) {
+                await handler.convertRanges();
+            }
+
+            return commands.executeCommand('type', { source: 'keyboard', text: '\n' });
         }));
 
         this.subscriptions.push(workspace.onDidChangeConfiguration(() => {
@@ -249,7 +268,7 @@ export class LeanInputAbbreviator {
 
     get active(): boolean {
         const handler = this.handlers.get(window.activeTextEditor);
-        return handler && !!handler.range;
+        return handler && (handler.ranges.length > 0);
     }
 
     async updateInputActive(): Promise<void> {
