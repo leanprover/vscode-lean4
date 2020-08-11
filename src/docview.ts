@@ -110,6 +110,7 @@ export class DocViewProvider implements Disposable {
                     'https://leanprover.github.io/theorem_proving_in_lean/',
                 'Reference Manual': 'https://leanprover.github.io/reference/',
                 'Mathematics in Lean': 'https://avigad.github.io/mathematics_in_lean/',
+                'Logic and Proof': 'http://leanprover.github.io/logic_and_proof/',
             };
             for (const book of Object.getOwnPropertyNames(books)) {
                 body.append($('<p>').append($('<a>').attr('href', books[book]).text(book)));
