@@ -335,7 +335,7 @@
 				"command": "lean.input.convertWithNewline",
 				"key": "enter",
 				"mac": "enter",
-				"when": "editorTextFocus && editorLangId == lean && lean.input.isActive && !suggestWidgetVisible && !renameInputVisible && !inSnippetMode && !quickFixWidgetVisible && !vim.active || vim.mode == 'Insert' "
+				"when": "editorTextFocus && editorLangId == lean && lean.input.isActive && !suggestWidgetVisible && !renameInputVisible && !inSnippetMode && !quickFixWidgetVisible && (!vim.active || vim.mode == 'Insert')"
 			},
 			{
 				"command": "lean.batchExecute",
