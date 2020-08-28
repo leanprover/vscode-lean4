@@ -47,7 +47,13 @@ function getWebviewConfig(env) {
 				{
 					test: /\.svg/,
 					use: ['svg-loader']
-				}
+				},
+				{
+					test: /\.(woff|woff2|ttf)$/,
+					use: {
+					  loader: 'url-loader',
+					},
+				},
 			]
 		},
 		resolve: {
