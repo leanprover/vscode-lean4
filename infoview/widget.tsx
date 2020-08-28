@@ -5,6 +5,7 @@ import './popper.css';
 import { WidgetComponent, WidgetHtml, WidgetElement, WidgetEventRequest, WidgetIdentifier } from 'lean-client-js-node';
 import { global_server, edit, reveal, highlightPosition, clearHighlight, copyText } from './server';
 
+import 'katex/dist/katex.min.css';
 import * as Katex from 'react-katex';
 
 /** Certain tags given by the lean widget code should be rendered as special components.
