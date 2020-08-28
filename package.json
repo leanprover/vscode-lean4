@@ -444,7 +444,7 @@
 		"ts-loader": "^6.2.1",
 		"typescript": "^3.9.6",
 		"url-loader": "^4.1.0",
-		"vsce": "^1.77.0",
+		"vsce": "^1.79.3",
 		"webpack": "^4.41.6",
 		"webpack-cli": "^3.3.12"
 	},
