@@ -5,6 +5,16 @@ import './popper.css';
 import { WidgetComponent, WidgetHtml, WidgetElement, WidgetEventRequest, WidgetIdentifier } from 'lean-client-js-node';
 import { global_server, edit, reveal, highlightPosition, clearHighlight, copyText } from './server';
 
+import * as Katex from 'react-katex';
+
+/** Certain tags given by the lean widget code should be rendered as special components.
+ * When rendering an element, this dictionary is first checked.
+ */
+const tagComponentDictionary = {
+    'InlineMath': Katex.InlineMath,
+    'BlockMath': Katex.BlockMath,
+}
+
 function Popper(props: {children: React.ReactNode[]; popperContent: any; refEltTag: any; refEltAttrs: any}) {
     const { children, popperContent, refEltTag, refEltAttrs } = props;
     const [referenceElement, setReferenceElement] = React.useState(null);
@@ -172,9 +182,11 @@ function ViewHtml(props: {html: WidgetHtml; post: (msg: any) => void}) {
 
 function ViewWidgetElement(props: {w: WidgetElement; post: (msg: any) => void}) {
     const {w, post, ...rest} = props;
-    const { t:tag, c:children, tt:tooltip } = w;
+    const { c:children, tt:tooltip } = w;
+    let tag = w.t;
     let { a:attributes, e:events } = w;
-    if (tag === 'hr') { return <hr />; }
+    if (tag === 'hr') { return <hr/>; }
+    tag = tagComponentDictionary[tag] || tag;
     attributes = attributes || {};
     events = events || {};
     const new_attrs: any = {};
