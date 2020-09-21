@@ -69,6 +69,8 @@ export class TacticSuggestions implements Disposable, CodeActionProvider {
             if (!suggs) return;
             suggestion = suggs[1];
         }
+        // remove leading and trailing whitespace
+        suggestion = suggestion.trim();
 
         // Start of the tactic call to replace
         const startLine = m.pos_line - 1;
