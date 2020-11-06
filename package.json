@@ -310,6 +310,12 @@
 				"language": "leanmarkdown",
 				"scopeName": "source.lean.markdown",
 				"path": "./syntaxes/lean-markdown.json"
+			},
+			{
+				"scopeName": "markdown.lean.codeblock",
+				"path": "./syntaxes/codeblock.json",
+				"injectTo": ["text.html.markdown"],
+				"embeddedLanguages": {"meta.embedded.block.lean":"lean"}
 			}
 		],
 		"keybindings": [
