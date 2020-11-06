@@ -314,8 +314,12 @@
 			{
 				"scopeName": "markdown.lean.codeblock",
 				"path": "./syntaxes/codeblock.json",
-				"injectTo": ["text.html.markdown"],
-				"embeddedLanguages": {"meta.embedded.block.lean":"lean"}
+				"injectTo": [
+					"text.html.markdown"
+				],
+				"embeddedLanguages": {
+					"meta.embedded.block.lean": "lean"
+				}
 			}
 		],
 		"keybindings": [
