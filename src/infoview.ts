@@ -215,7 +215,7 @@ export class InfoProvider implements Disposable {
         this.proxyConnection.send(JSON.parse(message.payload));
     }
     private async handleInsertText(message: InsertTextMessage) {
-        const new_command = message.text;
+        let new_command = message.text;
         let editor: TextEditor = null;
         if (message.loc) {
            editor = window.visibleTextEditors.find(e => e.document.fileName === message.loc.file_name);
@@ -232,14 +232,10 @@ export class InfoProvider implements Disposable {
         const prev_line = editor.document.lineAt(pos.line - 1);
         const spaces = prev_line.firstNonWhitespaceCharacterIndex;
         const margin_str = [...Array(spaces).keys()].map(x => ' ').join('');
-
-        // [hack] for now, we assume that there is only ever one command per line
-        // and that the command should be inserted on the line above this one.
-
+        new_command = new_command.replace(/\n/g, '\n' + margin_str);
+        new_command = `\n${margin_str}${new_command}`;
         await editor.edit((builder) => {
-            builder.insert(
-                prev_line.range.end,
-                `\n${margin_str}${new_command}`);
+            builder.insert(prev_line.range.end, new_command);
         });
         editor.selection = new Selection(pos.line, spaces, pos.line, spaces);
     }

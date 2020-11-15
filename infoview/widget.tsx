@@ -72,7 +72,7 @@ class WidgetErrorBoundary extends React.Component<{children: any},{error?: {mess
 
 /** [todo] pending adding to lean-client-js */
 export type WidgetEffect =
-| {kind: 'insert_text'; text: string}
+| {kind: 'insert_text'; text: string, line?: number; line_type?: 'relative' | 'absolute'}
 | {kind: 'reveal_position'; file_name: string; line: number; column: number}
 | {kind: 'highlight_position'; file_name: string; line: number; column: number}
 | {kind: 'clear_highlighting'}
@@ -82,7 +82,19 @@ export type WidgetEffect =
 function applyWidgetEffect(widget: WidgetIdentifier, file_name: string, effect: WidgetEffect) {
     switch (effect.kind) {
         case 'insert_text':
-            const loc = {file_name, line: widget.line, column: widget.column};
+            let line = widget.line;
+            if (effect.line_type && effect.line) {
+                if (effect.line_type === 'relative') {
+                    line = widget.line + effect.line;
+                } else {
+                    line = effect.line
+                }
+            }
+            const loc = {
+                file_name,
+                line,
+                column: widget.column
+            };
             edit(loc, effect.text);
             break;
         case 'reveal_position': reveal({file_name: effect.file_name || file_name, line: effect.line, column: effect.column}); break;
