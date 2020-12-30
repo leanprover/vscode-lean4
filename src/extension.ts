@@ -1,8 +1,7 @@
 import { workspace, commands, window, languages, ExtensionContext, TextDocument } from 'vscode'
 import { promisify } from 'util'
 import { exec } from 'child_process'
-import loadJsonFile = require('load-json-file')
-import { inputModeLanguages, LeanInputAbbreviator, LeanInputExplanationHover } from './input'
+import { AbbreviationFeature } from './features/abbreviation'
 import {
     LanguageClient,
     LanguageClientOptions,
@@ -104,13 +103,7 @@ export async function activate(context: ExtensionContext): Promise<any> {
     workspace.onDidOpenTextDocument(setLean4LanguageId)
 
     // Register support for unicode input
-    const translations: any = await loadJsonFile(context.asAbsolutePath('translations.json'))
-    const inputLanguages: string[] = inputModeLanguages()
-    const hoverProvider =
-        languages.registerHoverProvider(inputLanguages, new LeanInputExplanationHover(translations))
-    context.subscriptions.push(
-        hoverProvider,
-        new LeanInputAbbreviator(translations))
+    context.subscriptions.push(new AbbreviationFeature());
 
     context.subscriptions.push(commands.registerCommand('lean4.refreshFileDependencies', () => {
         const editor = window.activeTextEditor

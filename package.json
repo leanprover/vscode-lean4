@@ -140,12 +140,6 @@
 				"when": "editorTextFocus && editorLangId == lean4 && lean4.input.isActive"
 			},
 			{
-				"command": "lean4.input.convertWithNewline",
-				"key": "enter",
-				"mac": "enter",
-				"when": "editorTextFocus && editorLangId == lean4 && lean4.input.isActive && !suggestWidgetVisible && !renameInputVisible && !inSnippetMode && !quickFixWidgetVisible && !vim.active || editorTextFocus && editorLangId == lean4 && lean4.input.isActive && !suggestWidgetVisible && !renameInputVisible && !inSnippetMode && !quickFixWidgetVisible && vim.mode == 'Insert'"
-			},
-			{
 				"command": "lean4.refreshFileDependencies",
 				"key": "ctrl+shift+x",
 				"mac": "cmd+shift+x",
@@ -198,6 +192,7 @@
 		"lean-client-js-core": "^1.5.0",
 		"lean-client-js-node": "^1.5.0",
 		"load-json-file": "6.2.0",
+		"mobx": "5.15.7",
 		"react-katex": "^2.0.2",
 		"semver": "^7.3.2",
 		"username": "^5.1.0",
