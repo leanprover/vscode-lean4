@@ -1,5 +1,4 @@
 import semver = require('semver');
-import loadJsonFile = require('load-json-file');
 import { commands, DocumentFilter, ExtensionContext, languages, workspace, version } from 'vscode';
 import { batchExecuteFile } from './batch';
 import { LeanCompletionItemProvider } from './completion';
@@ -10,7 +9,7 @@ import { LeanHoles } from './holes';
 import { TacticSuggestions } from './tacticsuggestions';
 import { LeanHoverProvider } from './hover';
 import { InfoProvider } from './infoview';
-import { inputModeLanguages, LeanInputAbbreviator, LeanInputExplanationHover } from './input';
+import { AbbreviationFeature } from './features/abbreviation';
 import { LeanpkgService } from './leanpkg';
 import { RoiManager } from './roi';
 import { LeanWorkspaceSymbolProvider } from './search';
@@ -75,15 +74,7 @@ export function activate(context: ExtensionContext): void {
             LEAN_MODE, new LeanCompletionItemProvider(server), '.'));
 
     // Register support for unicode input.
-    void (async () => {
-        const translations: any = await loadJsonFile(context.asAbsolutePath('translations.json'));
-        const inputLanguages: string[] = inputModeLanguages();
-        const hoverProvider =
-            languages.registerHoverProvider(inputLanguages, new LeanInputExplanationHover(translations));
-        context.subscriptions.push(
-            hoverProvider,
-            new LeanInputAbbreviator(translations));
-    })();
+    context.subscriptions.push(new AbbreviationFeature());
 
     // Register support for definition support.
     context.subscriptions.push(

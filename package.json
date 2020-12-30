@@ -342,12 +342,6 @@
 				"when": "editorTextFocus && editorLangId == lean && lean.input.isActive"
 			},
 			{
-				"command": "lean.input.convertWithNewline",
-				"key": "enter",
-				"mac": "enter",
-				"when": "editorTextFocus && editorLangId == lean && lean.input.isActive && !suggestWidgetVisible && !renameInputVisible && !inSnippetMode && !quickFixWidgetVisible && !vim.active || editorTextFocus && editorLangId == lean && lean.input.isActive && !suggestWidgetVisible && !renameInputVisible && !inSnippetMode && !quickFixWidgetVisible && vim.mode == 'Insert'"
-			},
-			{
 				"command": "lean.batchExecute",
 				"key": "ctrl+shift+r",
 				"mac": "cmd+shift+r",
@@ -431,6 +425,7 @@
 		"lean-client-js-core": "^1.5.0",
 		"lean-client-js-node": "^1.5.0",
 		"load-json-file": "6.2.0",
+		"mobx": "5.15.7",
 		"react-katex": "^2.0.2",
 		"semver": "^7.3.2",
 		"username": "^5.1.0"
