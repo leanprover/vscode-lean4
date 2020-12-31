@@ -1,0 +1,15 @@
+{
+	"editor.insertSpaces": false,
+	"typescript.tsc.autoDetect": "off",
+	"typescript.preferences.quoteStyle": "single",
+	"editor.codeActionsOnSave": {
+		"source.fixAll.eslint": true
+	},
+	"files.exclude": {
+		"out": true,
+		"node_modules": true
+	},
+	"search.exclude": {
+		"out": true
+	},
+}

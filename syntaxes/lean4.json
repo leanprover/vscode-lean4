@@ -1,0 +1,110 @@
+{
+  "name": "Lean",
+  "scopeName": "source.lean",
+  "fileTypes": ["lean"],
+  "patterns": [
+    {"include": "#comments"},
+    {
+      "begin": "\\b(?<!\\.)(inductive|coinductive|structure|theorem|axiom|axioms|abbreviation|lemma|definition|def|instance|class|constant)\\b\\s+(\\{[^}]*\\})?",
+      "beginCaptures": {
+        "1": {"name": "keyword.other.definitioncommand.lean"}
+      },
+      "patterns": [
+        {"include": "#comments"},
+        {"include": "#definitionName"},
+        {"match": ","}
+      ],
+      "end": "(?=\\bwith\\b|\\bextends\\b|[:\\|\\(\\[\\{⦃<>])",
+      "name": "meta.definitioncommand.lean"
+    },
+    { "match": "\\b(Prop|Type|Sort)\\b", "name": "storage.type.lean" },
+    { "match": "\\battribute\\b\\s*\\[[^\\]]*\\]", "name": "storage.modifier.lean" },
+    { "match": "@\\[[^\\]]*\\]", "name": "storage.modifier.lean" },
+    {
+      "match": "\\b(?<!\\.)(private|meta|mutual|protected|noncomputable)\\b",
+      "name": "keyword.control.definition.modifier.lean"
+    },
+    { "match": "\\b(sorry)\\b", "name": "invalid.illegal.lean" },
+    { "match": "#print\\s+(def|definition|inductive|instance|structure|axiom|axioms|class)\\b", "name": "keyword.other.command.lean" },
+    { "match": "#(print|eval|reduce|check|help|exit|find|where)\\b", "name": "keyword.other.command.lean" },
+    {
+      "match": "\\b(?<!\\.)(import|export|prelude|theory|definition|def|abbreviation|instance|renaming|hiding|exposing|parameter|parameters|begin|constant|constants|lemma|variable|variables|theorem|example|open|axiom|inductive|coinductive|with|structure|universe|universes|alias|precedence|reserve|postfix|prefix|infix|infixl|infixr|notation|end|using|namespace|section|local|set_option|extends|include|omit|class|classes|instances|raw|run_cmd|restate_axiom)(?!\\.)\\b",
+      "name": "keyword.other.lean"
+    },
+    {
+      "match": "\\b(?<!\\.)(calc|have|this|match|do|suffices|show|by|in|at|let|forall|fun|exists|assume|from|obtain|haveI|λ)(?!\\.)\\b",
+      "name": "keyword.other.lean"
+    },
+    {"begin": "«", "end": "»", "contentName": "entity.name.lean"},
+    { "match": "\\b(?<!\\.)(if|then|else)\\b", "name": "keyword.control.lean" },
+    {
+      "begin": "\"", "end": "\"",
+      "beginCaptures": {"0": {"name": "punctuation.definition.string.begin.lean"}},
+      "endCaptures": {"0": {"name": "punctuation.definition.string.end.lean"}},
+      "name": "string.quoted.double.lean",
+      "patterns": [
+        {"match": "\\\\[\\\\\"nt']", "name": "constant.character.escape.lean"},
+        {"match": "\\\\x[0-9A-Fa-f][0-9A-Fa-f]", "name": "constant.character.escape.lean"},
+        {"match": "\\\\u[0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f]", "name": "constant.character.escape.lean"}
+      ]
+    },
+    { "name": "string.quoted.single.lean", "match": "'[^\\\\']'" },
+    { "name": "string.quoted.single.lean", "match": "'(\\\\(x..|u....|.))'",
+      "captures": {"1": {"name": "constant.character.escape.lean"}} },
+    {"match": "`+[^\\[(]\\S+", "name": "entity.name.lean"},
+    { "match": "\\b([0-9]+|0([xX][0-9a-fA-F]+))\\b", "name": "constant.numeric.lean" }
+  ],
+  "repository": {
+    "dashComment": {
+      "begin": "(--)", "end": "$",
+      "beginCaptures": {"0": {"name": "punctuation.definition.comment.lean"}},
+      "name": "comment.line.double-dash.lean",
+      "patterns": [
+        {"include": "source.lean.markdown"}
+      ]
+    },
+    "docComment": {
+      "begin": "/--", "end": "-/", "name": "comment.block.documentation.lean",
+      "patterns": [
+        {"include": "source.lean.markdown"},
+        {"include": "#blockComment"}
+      ]
+    },
+    "stringBlock": {
+      "begin": "/-\"", "end": "\"-/", "name": "comment.block.string.lean",
+      "patterns": [
+        {"include": "source.lean.markdown"},
+        {"include": "#blockComment"}
+      ]
+    },
+    "modDocComment": {
+      "begin": "/-!", "end": "-/", "name": "comment.block.documentation.lean",
+      "patterns": [
+        {"include": "source.lean.markdown"},
+        {"include": "#blockComment"}
+      ]
+    },
+    "blockComment": {
+      "begin": "/-", "end": "-/", "name": "comment.block.lean",
+      "patterns": [
+        {"include": "source.lean.markdown"},
+        {"include": "#blockComment"}
+      ]
+    },
+    "comments": {
+      "patterns": [
+        {"include": "#dashComment"},
+        {"include": "#docComment"},
+        {"include": "#stringBlock"},
+        {"include": "#modDocComment"},
+        {"include": "#blockComment"}
+      ]
+    },
+    "definitionName": {
+      "patterns": [
+        {"match": "\\b[^:«»\\(\\)\\{\\}[:space:]=→λ∀?][^:«»\\(\\)\\{\\}[:space:]]*", "name": "entity.name.function.lean"},
+        {"begin": "«", "end": "»", "contentName": "entity.name.function.lean"}
+      ]
+    }
+  }
+}

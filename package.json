@@ -1,0 +1,135 @@
+{
+	"name": "lean4",
+	"description": "An extension for VS Code which provides support for the Lean 4 language.",
+	"license": "MIT",
+	"version": "0.0.1",
+	"repository": {
+		"type": "git",
+		"url": ""
+	},
+	"publisher": "",
+	"categories": [
+		"Programming Languages"
+	],
+	"engines": {
+		"vscode": "^1.43.0"
+	},
+	"activationEvents": [
+		"onLanguage:lean4"
+	],
+	"main": "./out/extension",
+	"contributes": {
+		"configuration": {
+			"type": "object",
+			"title": "Lean4",
+			"properties": {
+				"lean4.trace.server": {
+					"scope": "window",
+					"type": "string",
+					"enum": [
+						"off",
+						"messages",
+						"verbose"
+					],
+					"default": "off",
+					"description": "Traces the communication between VS Code and the language server."
+				},
+				"lean.input.enabled": {
+					"type": "boolean",
+					"default": true,
+					"description": "Enable Lean input mode."
+				},
+				"lean.input.customTranslations": {
+					"type": "object",
+					"items": {
+						"type": "string",
+						"description": "Unicode character to translate to"
+					},
+					"default": {},
+					"description": "Add additional input Unicode translations. Example: `{\"foo\": \"☺\"}` will correct `\\foo` to `☺`."
+				},
+				"lean.input.languages": {
+					"type": "array",
+					"default": [
+						"lean4"
+					],
+					"description": "Enable Lean Unicode input in other file types.",
+					"items": {
+						"type": "string",
+						"description": "the name of a language, e.g. 'lean', 'markdown'"
+					}
+				},
+				"lean.input.leader": {
+					"type": "string",
+					"default": "\\",
+					"description": "Leader key to trigger input mode."
+				}
+			}
+		},
+		"configurationDefaults": {
+			"[lean]": {
+				"editor.tabSize": 2
+			}
+		},
+		"languages": [
+			{
+				"id": "lean4",
+				"aliases": [
+					"Lean",
+					"lean",
+					"lean4"
+				],
+				"extensions": [
+					".lean"
+				],
+				"configuration": "./language-configuration.json"
+			},
+			{
+				"id": "leanmarkdown",
+				"aliases": [],
+				"extensions": [
+					".leanmarkdown"
+				],
+				"configuration": "./language-configuration.json"
+			}
+		],
+		"grammars": [
+			{
+				"language": "lean4",
+				"scopeName": "source.lean",
+				"path": "./syntaxes/lean4.json"
+			},
+			{
+				"language": "leanmarkdown",
+				"scopeName": "source.lean.markdown",
+				"path": "./syntaxes/lean-markdown.json"
+			},
+			{
+				"scopeName": "markdown.lean.codeblock",
+				"path": "./syntaxes/codeblock.json",
+				"injectTo": [
+					"text.html.markdown"
+				],
+				"embeddedLanguages": {
+					"meta.embedded.block.lean": "lean"
+				}
+			}
+		]
+	},
+	"scripts": {
+		"vscode:prepublish": "npm run compile",
+		"compile": "tsc -b",
+		"watch": "tsc -b -w"
+	},
+	"dependencies": {
+		"vscode-languageclient": "^6.1.3",
+		"load-json-file": "6.2.0"
+	},
+	"devDependencies": {
+		"@types/vscode": "1.43.0",
+		"@types/node": "^12.12.0",
+		"eslint": "^6.4.0",
+		"@typescript-eslint/parser": "^2.3.0",
+		"typescript": "^4.0.2"
+	}
+}
