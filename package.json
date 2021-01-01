@@ -23,6 +23,26 @@
 			"type": "object",
 			"title": "Lean4",
 			"properties": {
+				"lean4.binPath": {
+					"type": "string",
+					"default": "$LEAN4_HOME/build/$RELEASE_OR_DEBUG/stage1/bin/lean",
+					"description": "Path to the Lean 4 binary."
+				},
+				"lean4.libPath": {
+					"type": "string",
+					"default": "$LEAN4_HOME/build/$RELEASE_OR_DEBUG/stage1/lib/lean/",
+					"description": "Path to the library directory of the Lean 4 binary where .oleans are stored."
+				},
+				"lean4.serverLogging.enabled": {
+					"type": "boolean",
+					"default": false,
+					"description": "Enable Lean 4 server logging."
+				},
+				"lean4.serverLogging.path": {
+					"type": "string",
+					"default": ".",
+					"description": "Path to the directory where Lean 4 server log files are stored."
+				},
 				"lean4.trace.server": {
 					"scope": "window",
 					"type": "string",
@@ -34,12 +54,12 @@
 					"default": "off",
 					"description": "Traces the communication between VS Code and the language server."
 				},
-				"lean.input.enabled": {
+				"lean4.input.enabled": {
 					"type": "boolean",
 					"default": true,
 					"description": "Enable Lean input mode."
 				},
-				"lean.input.customTranslations": {
+				"lean4.input.customTranslations": {
 					"type": "object",
 					"items": {
 						"type": "string",
@@ -48,7 +68,7 @@
 					"default": {},
 					"description": "Add additional input Unicode translations. Example: `{\"foo\": \"☺\"}` will correct `\\foo` to `☺`."
 				},
-				"lean.input.languages": {
+				"lean4.input.languages": {
 					"type": "array",
 					"default": [
 						"lean4"
@@ -59,7 +79,7 @@
 						"description": "the name of a language, e.g. 'lean', 'markdown'"
 					}
 				},
-				"lean.input.leader": {
+				"lean4.input.leader": {
 					"type": "string",
 					"default": "\\",
 					"description": "Leader key to trigger input mode."

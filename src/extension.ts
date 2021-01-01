@@ -3,7 +3,7 @@
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 
-import { languages, ExtensionContext } from 'vscode';
+import { workspace, languages, ExtensionContext } from 'vscode';
 import loadJsonFile = require('load-json-file');
 import { inputModeLanguages, LeanInputAbbreviator, LeanInputExplanationHover } from './input';
 import {
@@ -11,6 +11,22 @@ import {
 	LanguageClientOptions,
 	ServerOptions,
 } from 'vscode-languageclient';
+
+function binPath(): string {
+	return workspace.getConfiguration('lean4').get('binPath', '$LEAN4_HOME/build/$RELEASE_OR_DEBUG/stage1/bin/lean');
+}
+
+function libPath(): string {
+	return workspace.getConfiguration('lean4').get('libPath', '$LEAN4_HOME/build/$RELEASE_OR_DEBUG/stage1/lib/lean/')
+}
+
+function serverLoggingEnabled(): boolean {
+	return workspace.getConfiguration('lean4.serverLogging').get('enabled', false);
+}
+
+function serverLoggingPath(): string {
+	return workspace.getConfiguration('lean4.serverLogging').get('path', '.');
+}
 
 let client: LanguageClient;
 
@@ -24,22 +40,20 @@ export function activate(context: ExtensionContext) {
         context.subscriptions.push(
             hoverProvider,
             new LeanInputAbbreviator(translations));
-    })();
+	})();
 
-	// TODO: Load these from config
 	let serverOptions: ServerOptions = {
-		command: "$LEAN4_HOME/build/$RELEASE_OR_DEBUG/stage1/bin/lean/",
+		command: binPath(),
 		args: ["--server"],
 		options: {
-		  env: {
-			LEAN_PATH: "$LEAN4_HOME/build/$RELEASE_OR_DEBUG/stage1/lib/lean/",
-			// Set to use a different Lean binary for the worker
-			//, LEAN_WORKER_PATH: "$LEAN4_HOME/build/$RELEASE_OR_DEBUG/stage1/bin/lean"
-			// Add this to log LSP messages to a folder
-			// LEAN_SERVER_LOG_DIR: "my/log/dir"
-		  }
+		 	env: {
+				LEAN_PATH: libPath()
+		  	}
 		}
-	  };
+	};
+	if (serverLoggingEnabled()) {
+		serverOptions.options.env["LEAN_SERVER_LOG_DIR"] = serverLoggingPath()
+	}
 
 	let clientOptions: LanguageClientOptions = {
 		documentSelector: [{ scheme: 'file', language: 'lean4' }]
@@ -47,7 +61,7 @@ export function activate(context: ExtensionContext) {
 
 	client = new LanguageClient(
 		'lean4',
-		'Lean 4 LSP client',
+		'Lean 4',
 		serverOptions,
 		clientOptions
 	);

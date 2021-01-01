@@ -13,9 +13,10 @@ As of now, the extension supports the following features:
 ## Running the client
 - Run `npm install` in this folder. This installs all necessary npm modules.
 - Open VS Code on this folder.
-- Edit `command` and `LEAN_PATH` in `src/extension.ts` to point to your Lean 4 binary and library folder. Note that the path may look different if you are running a Nix installation of Lean.
+- Open your VSCode `settings.json` file by pressing Ctrl+Shift+P and selecting `Preferences: Open Settings (JSON)`.
+- Add the properties `lean4.binPath: "path_to_lean4_binary"` and `lean4.libPath: "path_to_lean4_library"` to the settings JSON object and set both paths to point to the corresponding file or folder on your system.
 - Press Ctrl+Shift+B to compile the client.
-- Switch to the Debug viewlet.
+- Switch to the Debug viewlet (Ctrl+Shift+D).
 - Select `Launch Client` from the drop down.
 - Run the launch config.
 
