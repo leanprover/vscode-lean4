@@ -9,6 +9,7 @@ As of now, the extension supports the following features:
 - Diagnostics
 - Syntax highlighting with basic Lean 4 syntax rules
 - `\foo` unicode shortcuts
+- Command to refresh file dependencies using Ctrl+Shift+R after recompilation
 
 ## Running the client
 - Run `npm install` in this folder. This installs all necessary npm modules.

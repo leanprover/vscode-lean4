@@ -3,7 +3,7 @@
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 
-import { workspace, languages, ExtensionContext } from 'vscode';
+import { workspace, commands, window, languages, ExtensionContext } from 'vscode';
 import loadJsonFile = require('load-json-file');
 import { inputModeLanguages, LeanInputAbbreviator, LeanInputExplanationHover } from './input';
 import {
@@ -32,14 +32,14 @@ let client: LanguageClient;
 
 export function activate(context: ExtensionContext) {
 	// Register support for unicode input.
-    void (async () => {
-        const translations: any = await loadJsonFile(context.asAbsolutePath('translations.json'));
-        const inputLanguages: string[] = inputModeLanguages();
-        const hoverProvider =
-            languages.registerHoverProvider(inputLanguages, new LeanInputExplanationHover(translations));
-        context.subscriptions.push(
-            hoverProvider,
-            new LeanInputAbbreviator(translations));
+	void (async () => {
+		const translations: any = await loadJsonFile(context.asAbsolutePath('translations.json'));
+		const inputLanguages: string[] = inputModeLanguages();
+		const hoverProvider =
+			languages.registerHoverProvider(inputLanguages, new LeanInputExplanationHover(translations));
+		context.subscriptions.push(
+			hoverProvider,
+			new LeanInputAbbreviator(translations));
 	})();
 
 	let serverOptions: ServerOptions = {
@@ -48,7 +48,7 @@ export function activate(context: ExtensionContext) {
 		options: {
 		 	env: {
 				LEAN_PATH: libPath()
-		  	}
+			}
 		}
 	};
 	if (serverLoggingEnabled()) {
@@ -65,6 +65,21 @@ export function activate(context: ExtensionContext) {
 		serverOptions,
 		clientOptions
 	);
+
+	context.subscriptions.push(commands.registerCommand('lean4.refreshFileDependencies', () => {
+		const editor = window.activeTextEditor;
+		if (!editor) { return; }
+		let doc = editor.document;
+		client.sendNotification("textDocument/didClose", { "textDocument": doc.uri });
+		client.sendNotification("textDocument/didOpen", {
+			"textDocument": {
+				"uri": doc.uri,
+				"languageId": "lean4",
+				"version": 1,
+				"text": doc.getText()
+			}
+		})
+	}));
 
 	client.start();
 }

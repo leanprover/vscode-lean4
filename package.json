@@ -21,7 +21,7 @@
 	"contributes": {
 		"configuration": {
 			"type": "object",
-			"title": "Lean4",
+			"title": "Lean 4",
 			"properties": {
 				"lean4.binPath": {
 					"type": "string",
@@ -90,6 +90,30 @@
 			"[lean]": {
 				"editor.tabSize": 2
 			}
+		},
+		"commands": [
+			{
+				"command": "lean4.refreshFileDependencies",
+				"category": "Lean 4",
+				"title": "Refresh file dependencies",
+				"description": "Restarts the file worker for the file that is currently focused to refresh the dependencies."
+			}
+		],
+		"keybindings": [
+			{
+				"command": "lean4.refreshFileDependencies",
+				"key": "ctrl+shift+r",
+				"mac": "cmd+shift+r",
+				"when": "editorTextFocus && editorLangId == lean4"
+			}
+		],
+		"menus": {
+			"commandPalette": [
+				{
+					"command": "lean4.refreshFileDependencies",
+					"when": "editorLangId == lean4"
+				}
+			]
 		},
 		"languages": [
 			{
