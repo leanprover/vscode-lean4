@@ -10,6 +10,7 @@ As of now, the extension supports the following features:
 - Syntax highlighting with basic Lean 4 syntax rules
 - `\foo` unicode shortcuts
 - Command to refresh file dependencies using Ctrl+Shift+R after recompilation
+- [Breadcrumbs](https://code.visualstudio.com/Docs/editor/editingevolved#_breadcrumbs)
 
 ## Running the client
 - Run `npm install` in this folder. This installs all necessary npm modules.
