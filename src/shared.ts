@@ -70,6 +70,7 @@ export interface InsertTextMessage {
     /** If no location is given set to be the cursor position. */
     loc?: Location;
     text: string;
+    insert_type: 'absolute' | 'relative';
 }
 export interface RevealMessage {
     command: 'reveal';

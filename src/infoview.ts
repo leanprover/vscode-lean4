@@ -215,7 +215,6 @@ export class InfoProvider implements Disposable {
         this.proxyConnection.send(JSON.parse(message.payload));
     }
     private async handleInsertText(message: InsertTextMessage) {
-        const new_command = message.text;
         let editor: TextEditor = null;
         if (message.loc) {
            editor = window.visibleTextEditors.find(e => e.document.fileName === message.loc.file_name);
@@ -227,25 +226,33 @@ export class InfoProvider implements Disposable {
         }
         if (!editor) {return; }
         const pos = message.loc ? this.positionOfLocation(message.loc) : editor.selection.active;
-        const current_selection_range = editor.selection;
-        const cursor_pos = current_selection_range.active;
-        const prev_line = editor.document.lineAt(pos.line - 1);
-        const spaces = prev_line.firstNonWhitespaceCharacterIndex;
-        const margin_str = [...Array(spaces).keys()].map(x => ' ').join('');
+        const insert_type = message.insert_type ?? 'relative';
+        if (insert_type === 'relative') {
+            // in this case, assume that we actually want to insert at the same
+            // indentation level as the neighboring text
+            const current_selection_range = editor.selection;
+            const cursor_pos = current_selection_range.active;
+            const prev_line = editor.document.lineAt(pos.line - 1);
+            const spaces = prev_line.firstNonWhitespaceCharacterIndex;
+            const margin_str = [...Array(spaces).keys()].map(x => ' ').join('');
 
-        // [hack] for now, we assume that there is only ever one command per line
-        // and that the command should be inserted on the line above this one.
+            let new_command = message.text.replace(/\n/g, '\n' + margin_str);
+            new_command = `\n${margin_str}${new_command}`;
 
-        await editor.edit((builder) => {
-            builder.insert(
-                prev_line.range.end,
-                `\n${margin_str}${new_command}`);
-        });
-        editor.selection = new Selection(pos.line, spaces, pos.line, spaces);
+            await editor.edit((builder) => {
+                builder.insert(prev_line.range.end, new_command);
+            });
+            editor.selection = new Selection(pos.line, spaces, pos.line, spaces);
+        } else {
+            await editor.edit((builder) => {
+                builder.insert(pos, message.text);
+            });
+            editor.selection = new Selection(pos, pos)
+        }
     }
 
     private positionOfLocation(l: Location): Position {
-        return new Position(l.line - 1, l.column);
+        return new Position(l.line - 1, l.column ?? 0);
     }
     private makeLocation(file_name: string, pos: Position): Location {
         return {

@@ -72,7 +72,7 @@ class WidgetErrorBoundary extends React.Component<{children: any},{error?: {mess
 
 /** [todo] pending adding to lean-client-js */
 export type WidgetEffect =
-| {kind: 'insert_text'; text: string}
+| {kind: 'insert_text', text: string, line?: number; column?: number; file_name?: string; insert_type?: 'relative' | 'absolute'}
 | {kind: 'reveal_position'; file_name: string; line: number; column: number}
 | {kind: 'highlight_position'; file_name: string; line: number; column: number}
 | {kind: 'clear_highlighting'}
@@ -82,8 +82,15 @@ export type WidgetEffect =
 function applyWidgetEffect(widget: WidgetIdentifier, file_name: string, effect: WidgetEffect) {
     switch (effect.kind) {
         case 'insert_text':
-            const loc = {file_name, line: widget.line, column: widget.column};
-            edit(loc, effect.text);
+            const insert_type = effect.insert_type ?? 'relative';
+            if (insert_type === 'relative') {
+                const line = widget.line + (effect.line ?? 0);
+                edit({file_name, line, column:0}, effect.text, 'relative');
+            } else if (insert_type === 'absolute') {
+                edit({file_name:effect.file_name ?? file_name, line: effect.line, column: effect.column}, effect.text, 'absolute')
+            } else {
+                throw new Error(`unrecognised effect insert type ${insert_type}`);
+            }
             break;
         case 'reveal_position': reveal({file_name: effect.file_name || file_name, line: effect.line, column: effect.column}); break;
         case 'highlight_position': highlightPosition({file_name: effect.file_name || file_name, line: effect.line, column: effect.column}); break;

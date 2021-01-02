@@ -1,5 +1,5 @@
 import { Server, Transport, Connection, Event, TransportError, Message } from 'lean-client-js-core';
-import { ToInfoviewMessage, FromInfoviewMessage, Config, Location, defaultConfig, PinnedLocation } from '../src/shared';
+import { ToInfoviewMessage, FromInfoviewMessage, Config, Location, defaultConfig, PinnedLocation, InsertTextMessage } from '../src/shared';
 declare const acquireVsCodeApi;
 const vscode = acquireVsCodeApi();
 
@@ -10,15 +10,15 @@ export function post(message: FromInfoviewMessage): void { // send a message to 
 export function clearHighlight(): void { return post({ command: 'stop_hover'}); }
 export function highlightPosition(loc: Location): void { return post({ command: 'hover_position', loc}); }
 export function copyToComment(text: string): void {
-    post({ command: 'insert_text', text: `/-\n${text}\n-/\n`});
+    post({ command: 'insert_text', text: `/-\n${text}\n-/\n`, insert_type: 'relative'});
 }
 
 export function reveal(loc: Location): void {
     post({ command: 'reveal', loc });
 }
 
-export function edit(loc: Location, text: string): void {
-    post({ command: 'insert_text', loc, text });
+export function edit(loc: Location, text: string, insert_type : InsertTextMessage['insert_type'] = 'relative'): void {
+    post({ command: 'insert_text', loc, text, insert_type });
 }
 
 export function copyText(text: string): void {
