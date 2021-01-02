@@ -451,6 +451,7 @@
 		"@typescript-eslint/parser": "^3.5.0",
 		"css-loader": "^3.6.0",
 		"eslint": "^7.4.0",
+		"ovsx": "0.1.0-next.72b2e9d",
 		"react": "^16.13.1",
 		"react-dom": "^16.13.1",
 		"react-popper": "^2.2.3",
