@@ -7,7 +7,7 @@ This extension is intended mostly for debugging purposes and to provide a tool t
 
 As of now, the extension supports the following features:
 - Diagnostics
-- Syntax highlighting with Lean 3 syntax rules
+- Syntax highlighting with basic Lean 4 syntax rules
 - `\foo` unicode shortcuts
 
 ## Running the client
