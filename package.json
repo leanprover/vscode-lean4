@@ -22,27 +22,27 @@
 				"lean.executablePath": {
 					"type": "string",
 					"default": "lean",
-					"description": "Path to the Lean executable to use. DO NOT CHANGE from the default `lean` unless you know what you're doing!"
+					"markdownDescription": "Path to the Lean executable to use. **DO NOT CHANGE** from the default `lean` unless you know what you're doing!"
 				},
 				"lean.leanpkgPath": {
 					"type": "string",
 					"default": "leanpkg",
-					"description": "Path to the leanpkg executable to use. DO NOT CHANGE from the default `leanpkg` unless you know what you're doing!"
+					"markdownDescription": "Path to the leanpkg executable to use. **DO NOT CHANGE** from the default `leanpkg` unless you know what you're doing!"
 				},
 				"lean.memoryLimit": {
 					"type": "number",
 					"default": 4096,
-					"description": "Set a memory limit (in megabytes) for the Lean server."
+					"markdownDescription": "Set a memory limit (in megabytes) for the Lean server."
 				},
 				"lean.timeLimit": {
 					"type": "number",
 					"default": 100000,
-					"description": "Set a deterministic timeout (it is approximately the maximum number of memory allocations in thousands) for the Lean server."
+					"markdownDescription": "Set a deterministic timeout (it is approximately the maximum number of memory allocations in thousands) for the Lean server."
 				},
 				"lean.extraOptions": {
 					"type": "array",
 					"default": [],
-					"description": "Extra command-line options for the Lean server.",
+					"markdownDescription": "Extra command-line options for the Lean server.",
 					"items": {
 						"type": "string",
 						"description": "a single command-line argument"
@@ -51,17 +51,17 @@
 				"lean.progressMessages": {
 					"type": "boolean",
 					"default": false,
-					"description": "Show error messages where Lean is still checking."
+					"markdownDescription": "Show error messages where Lean is still checking."
 				},
 				"lean.roiModeDefault": {
 					"type": "string",
 					"default": "visible",
-					"description": "Set the default region of interest mode (nothing, visible, lines, linesAndAbove, open, or project) for the Lean extension."
+					"markdownDescription": "Set the default region of interest mode (nothing, visible, lines, linesAndAbove, open, or project) for the Lean extension."
 				},
 				"lean.input.enabled": {
 					"type": "boolean",
 					"default": true,
-					"description": "Enable Lean input mode."
+					"markdownDescription": "Enable Lean input mode."
 				},
 				"lean.input.customTranslations": {
 					"type": "object",
@@ -70,14 +70,14 @@
 						"description": "Unicode character to translate to"
 					},
 					"default": {},
-					"description": "Add additional input Unicode translations. Example: `{\"foo\": \"☺\"}` will correct `\\foo` to `☺`."
+					"markdownDescription": "Add additional input Unicode translations. Example: `{\"foo\": \"☺\"}` will correct `\\foo` to `☺`."
 				},
 				"lean.input.languages": {
 					"type": "array",
 					"default": [
 						"lean"
 					],
-					"description": "Enable Lean Unicode input in other file types.",
+					"markdownDescription": "Enable Lean Unicode input in other file types.",
 					"items": {
 						"type": "string",
 						"description": "the name of a language, e.g. 'lean', 'markdown'"
@@ -86,27 +86,27 @@
 				"lean.input.leader": {
 					"type": "string",
 					"default": "\\",
-					"description": "Leader key to trigger input mode."
+					"markdownDescription": "Leader key to trigger input mode."
 				},
 				"lean.infoViewAllErrorsOnLine": {
 					"type": "boolean",
 					"default": false,
-					"description": "Info view: show all errors on the current line, instead of just the ones on the right of the cursor."
+					"markdownDescription": "Info view: show all errors on the current line, instead of just the ones on the right of the cursor."
 				},
 				"lean.infoViewAutoOpen": {
 					"type": "boolean",
 					"default": true,
-					"description": "Info view: open info view when Lean extension is activated."
+					"markdownDescription": "Info view: open info view when Lean extension is activated."
 				},
 				"lean.infoViewAutoOpenShowGoal": {
 					"type": "boolean",
 					"default": true,
-					"description": "Info view: auto open shows goal and messages for the current line (instead of all messages for the whole file)"
+					"markdownDescription": "Info view: auto open shows goal and messages for the current line (instead of all messages for the whole file)"
 				},
 				"lean.infoViewStyle": {
 					"type": "string",
 					"default": "",
-					"description": "Add an additional CSS snippet to the info view."
+					"markdownDescription": "Add an additional CSS snippet to the info view."
 				},
 				"lean.infoViewTacticStateFilters": {
 					"type": "array",
@@ -123,7 +123,7 @@
 							"flags": ""
 						}
 					],
-					"description": "An array of objects containing regular expression strings that can be used to filter (positively or negatively) the tactic state in the info view. Set to an empty array '[]' to hide the filter select dropdown.\n \n Each object must contain the following keys: 'regex': string, 'match': boolean, 'flags': string.\n 'regex' is a properly-escaped regex string,\n 'match' = true (false) means blocks in the tactic state matching 'regex' will be included (excluded) in the info view, \n 'flags' are additional flags passed to the JavaScript RegExp constructor.\n The 'name' key is optional and may contain a string that is displayed in the dropdown instead of the full regex details.",
+					"markdownDescription": "An array of objects containing regular expression strings that can be used to filter (positively or negatively) the tactic state in the info view. Set to an empty array `[]` to hide the filter select dropdown.\n \n Each object must contain the following keys: 'regex': string, 'match': boolean, 'flags': string.\n 'regex' is a properly-escaped regex string,\n 'match' = true (false) means blocks in the tactic state matching 'regex' will be included (excluded) in the info view, \n 'flags' are additional flags passed to the JavaScript `RegExp` constructor.\n The 'name' key is optional and may contain a string that is displayed in the dropdown instead of the full regex details.",
 					"items": {
 						"type": "object",
 						"description": "an object with required properties 'regex': string, 'match': boolean, and 'flags': string, and optional property 'name': string",
@@ -155,17 +155,17 @@
 				"lean.infoViewFilterIndex": {
 					"type": "number",
 					"default": -1,
-					"description": "Index of the filter applied to the tactic state (in the array infoViewTacticStateFilters). An index of -1 means no filter is applied."
+					"markdownDescription": "Index of the filter applied to the tactic state (in the array infoViewTacticStateFilters). An index of -1 means no filter is applied."
 				},
 				"lean.typeInStatusBar": {
 					"type": "boolean",
 					"default": true,
-					"description": "Show the type of term under the cursor in the status bar."
+					"markdownDescription": "Show the type of term under the cursor in the status bar."
 				},
 				"lean.typesInCompletionList": {
 					"type": "boolean",
 					"default": false,
-					"description": "Display types of all items in the list of completions. By default, only the type of the highlighted item is shown."
+					"markdownDescription": "Display types of all items in the list of completions. By default, only the type of the highlighted item is shown."
 				}
 			}
 		},
