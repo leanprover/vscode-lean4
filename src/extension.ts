@@ -40,7 +40,10 @@ export function activate(context: ExtensionContext) {
 
 	let serverOptions: ServerOptions = {
 		command: binPath(),
-		args: ["--server"]
+		args: ["--server"],
+		options: {
+			env: {}
+		}
 	};
 	if (serverLoggingEnabled()) {
 		serverOptions.options.env["LEAN_SERVER_LOG_DIR"] = serverLoggingPath()
