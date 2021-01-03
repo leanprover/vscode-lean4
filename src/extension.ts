@@ -70,10 +70,15 @@ export function activate(context: ExtensionContext) {
 		const editor = window.activeTextEditor;
 		if (!editor) { return; }
 		let doc = editor.document;
-		client.sendNotification("textDocument/didClose", { "textDocument": doc.uri });
+		let uri = doc.uri.toString();
+		client.sendNotification("textDocument/didClose", {
+			"textDocument": {
+				"uri": uri
+			}
+		});
 		client.sendNotification("textDocument/didOpen", {
 			"textDocument": {
-				"uri": doc.uri,
+				"uri": uri,
 				"languageId": "lean4",
 				"version": 1,
 				"text": doc.getText()
