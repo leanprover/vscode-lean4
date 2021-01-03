@@ -98,6 +98,7 @@ class TextEditorAbbrevHandler {
             [this.leader + '([])'] : '⟮⟯',
             [this.leader + 'f<>']: '‹›',
             [this.leader + 'f<<>>']: '«»',
+            [this.leader + '[--]']: '⁅⁆',
         };
 
         await this.editor.edit((builder) => {
