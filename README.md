@@ -13,10 +13,9 @@ As of now, the extension supports the following features:
 - [Breadcrumbs](https://code.visualstudio.com/Docs/editor/editingevolved#_breadcrumbs)
 
 ## Running the client
+Assuming `lean` is in your `PATH` (e.g. using [`elan`](https://github.com/Kha/elan)):
 - Run `npm install` in this folder. This installs all necessary npm modules.
 - Open VS Code on this folder.
-- Open your VSCode `settings.json` file by pressing Ctrl+Shift+P and selecting `Preferences: Open Settings (JSON)`.
-- Add the properties `lean4.binPath: "path_to_lean4_binary"` and `lean4.libPath: "path_to_lean4_library"` to the settings JSON object and set both paths to point to the corresponding file or folder on your system.
 - Press Ctrl+Shift+B to compile the client.
 - Switch to the Debug viewlet (Ctrl+Shift+D).
 - Select `Launch Client` from the drop down.

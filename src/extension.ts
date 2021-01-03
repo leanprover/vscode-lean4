@@ -13,11 +13,7 @@ import {
 } from 'vscode-languageclient';
 
 function binPath(): string {
-	return workspace.getConfiguration('lean4').get('binPath', '$LEAN4_HOME/build/$RELEASE_OR_DEBUG/stage1/bin/lean');
-}
-
-function libPath(): string {
-	return workspace.getConfiguration('lean4').get('libPath', '$LEAN4_HOME/build/$RELEASE_OR_DEBUG/stage1/lib/lean/')
+	return workspace.getConfiguration('lean4').get('binPath', 'lean');
 }
 
 function serverLoggingEnabled(): boolean {
@@ -44,12 +40,7 @@ export function activate(context: ExtensionContext) {
 
 	let serverOptions: ServerOptions = {
 		command: binPath(),
-		args: ["--server"],
-		options: {
-		 	env: {
-				LEAN_PATH: libPath()
-			}
-		}
+		args: ["--server"]
 	};
 	if (serverLoggingEnabled()) {
 		serverOptions.options.env["LEAN_SERVER_LOG_DIR"] = serverLoggingPath()
