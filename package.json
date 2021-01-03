@@ -8,7 +8,7 @@
 		"url": "https://github.com/mhuisi/vscode-lean4"
 	},
 	"author": "mhuisi",
-	"publisher": "",
+	"publisher": "mhuisi",
 	"categories": [
 		"Programming Languages"
 	],
@@ -18,7 +18,7 @@
 	"activationEvents": [
 		"onLanguage:lean4"
 	],
-	"main": "./out/extension",
+	"main": "./out/src/extension",
 	"contributes": {
 		"configuration": {
 			"type": "object",
@@ -162,8 +162,7 @@
 		"watch": "tsc -b -w"
 	},
 	"dependencies": {
-		"vscode-languageclient": "^6.1.3",
-		"load-json-file": "6.2.0"
+		"vscode-languageclient": "^6.1.3"
 	},
 	"devDependencies": {
 		"@types/vscode": "1.43.0",

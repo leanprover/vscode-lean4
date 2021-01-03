@@ -4,7 +4,7 @@
  * ------------------------------------------------------------------------------------------ */
 
 import { workspace, commands, window, languages, ExtensionContext } from 'vscode';
-import loadJsonFile = require('load-json-file');
+import * as translations from '../translations.json';
 import { inputModeLanguages, LeanInputAbbreviator, LeanInputExplanationHover } from './input';
 import {
 	LanguageClient,
@@ -28,15 +28,12 @@ let client: LanguageClient;
 
 export function activate(context: ExtensionContext) {
 	// Register support for unicode input.
-	void (async () => {
-		const translations: any = await loadJsonFile(context.asAbsolutePath('translations.json'));
-		const inputLanguages: string[] = inputModeLanguages();
-		const hoverProvider =
-			languages.registerHoverProvider(inputLanguages, new LeanInputExplanationHover(translations));
-		context.subscriptions.push(
-			hoverProvider,
-			new LeanInputAbbreviator(translations));
-	})();
+	const inputLanguages: string[] = inputModeLanguages();
+	const hoverProvider =
+		languages.registerHoverProvider(inputLanguages, new LeanInputExplanationHover(translations));
+	context.subscriptions.push(
+		hoverProvider,
+		new LeanInputAbbreviator(translations));
 
 	let serverOptions: ServerOptions = {
 		command: binPath(),
