@@ -5,8 +5,9 @@
 	"version": "0.0.1",
 	"repository": {
 		"type": "git",
-		"url": ""
+		"url": "https://github.com/mhuisi/vscode-lean4"
 	},
+	"author": "mhuisi",
 	"publisher": "",
 	"categories": [
 		"Programming Languages"
