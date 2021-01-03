@@ -15,7 +15,7 @@ As of now, the extension supports the following features:
 ## Running the client
 Add `lean` to your `PATH` (e.g. using [`elan`](https://github.com/Kha/elan)) and install the extension from the [marketplace](https://marketplace.visualstudio.com/items?itemName=mhuisi.lean4).
 
-# Building the client
+## Building the client
 Assuming `lean` is in your `PATH` (e.g. using [`elan`](https://github.com/Kha/elan)):
 - Run `npm install` in this folder. This installs all necessary npm modules.
 - Open VS Code on this folder.
