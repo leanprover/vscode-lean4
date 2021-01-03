@@ -39,6 +39,7 @@ export function activate(context: ExtensionContext) {
 		command: binPath(),
 		args: ["--server"],
 		options: {
+			shell: true,
 			env: {}
 		}
 	};
