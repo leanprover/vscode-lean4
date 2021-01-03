@@ -25,13 +25,8 @@
 			"properties": {
 				"lean4.binPath": {
 					"type": "string",
-					"default": "$LEAN4_HOME/build/$RELEASE_OR_DEBUG/stage1/bin/lean",
+					"default": "lean",
 					"description": "Path to the Lean 4 binary."
-				},
-				"lean4.libPath": {
-					"type": "string",
-					"default": "$LEAN4_HOME/build/$RELEASE_OR_DEBUG/stage1/lib/lean/",
-					"description": "Path to the library directory of the Lean 4 binary where .oleans are stored."
 				},
 				"lean4.serverLogging.enabled": {
 					"type": "boolean",
