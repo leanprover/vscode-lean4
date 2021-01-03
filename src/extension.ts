@@ -40,7 +40,7 @@ export function activate(context: ExtensionContext) {
 		args: ["--server"],
 		options: {
 			shell: true,
-			env: {}
+			env: { ...process.env }
 		}
 	};
 	if (serverLoggingEnabled()) {
