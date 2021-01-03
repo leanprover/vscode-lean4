@@ -2,7 +2,7 @@
 	"name": "lean4",
 	"description": "An extension for VS Code which provides support for the Lean 4 language.",
 	"license": "MIT",
-	"version": "0.0.1",
+	"version": "0.0.2",
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/mhuisi/vscode-lean4"
