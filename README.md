@@ -13,7 +13,7 @@ As of now, the extension supports the following features:
 - [Breadcrumbs](https://code.visualstudio.com/Docs/editor/editingevolved#_breadcrumbs)
 
 ## Running the client
-Add `lean` to your `PATH` (e.g. using [`elan`](https://github.com/Kha/elan) and set your `LEAN_PATH` if you are working on a project other than Lean 4 itself as described [here](https://leanprover.github.io/lean4/doc/setup.html#basic-setup)). Then, install the extension from the [marketplace](https://marketplace.visualstudio.com/items?itemName=mhuisi.lean4). If you are using the [nix setup](https://leanprover.github.io/lean4/doc/setup.html#nix-setup), you can also run VSCode using the nix integration mentioned [here](https://leanprover.github.io/lean4/doc/setup.html#basic-commands).
+Add `lean` to your `PATH` (e.g. using [`elan`](https://github.com/Kha/elan)) and set your `LEAN_PATH` if you are working on a project other than Lean 4 itself as described [here](https://leanprover.github.io/lean4/doc/setup.html#basic-setup)). Then, install the extension from the [marketplace](https://marketplace.visualstudio.com/items?itemName=mhuisi.lean4). If you are using the [nix setup](https://leanprover.github.io/lean4/doc/setup.html#nix-setup), you can also run VSCode using the nix integration mentioned [here](https://leanprover.github.io/lean4/doc/setup.html#basic-commands).
 
 You may first need to disable the Lean 3 VSCode extension if you have it installed.
 
