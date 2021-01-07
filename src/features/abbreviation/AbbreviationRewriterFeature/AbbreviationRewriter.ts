@@ -136,9 +136,11 @@ export class AbbreviationRewriter {
 				// Apply the replacement of abbreviations to the selections.
 				let newSel = s;
 				for (const r of replacements) {
-					if (r.range.isBefore(newSel)) {
+					if (r.range.isBefore(newSel) && !r.range.containsRange(newSel)) {
+						// don't do this on ` \abbr| `
 						newSel = newSel.move(r.newText.length - r.range.length);
-					} else if (!r.range.isAfter(newSel)) {
+					} else if (!r.range.isAfter(newSel) || r.range.containsRange(newSel)) {
+						// do this on ` \abbr| ` or ` \ab|br `
 						// newSel and r.range intersect
 						const offset = newSel.offset - r.range.offset;
 						const newOffset = r.transformOffsetInRange(offset);
