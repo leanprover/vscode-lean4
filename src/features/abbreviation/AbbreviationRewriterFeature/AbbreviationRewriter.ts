@@ -99,63 +99,76 @@ export class AbbreviationRewriter {
 			this.trackedAbbreviations.delete(a);
 		}
 
+		// Wait for VS Code to trigger `onDidChangeTextEditorSelection`
+		await waitForNextTick();
+
+		const cursorVar = '$CURSOR';
+		const replacements = new Array<{
+			range: Range;
+			newText: string;
+			transformOffsetInRange: (offset: number) => number;
+		}>();
+		for (const abbr of abbreviations) {
+			const symbol = abbr.matchingSymbol;
+			if (symbol) {
+				const newText = symbol.replace(cursorVar, '');
+				let cursorOffset = symbol.indexOf(cursorVar);
+				if (cursorOffset === -1) {
+					// position the cursor after the inserted symbol
+					cursorOffset = newText.length;
+				}
+				replacements.push({
+					range: abbr.range,
+					newText,
+					transformOffsetInRange: (offset) => cursorOffset,
+				});
+			}
+		}
+		// Process replacements with highest offset first
+		replacements.sort((a, b) => b.range.offset - a.range.offset);
+
+		// We cannot rely on VS Code to update the selections -
+		// it becomes janky if symbols are inserted that are longer
+		// than their abbreviation. It also does not really work for \[[]].
+		const newSelections = this.textEditor.selections
+			.map((s) => fromVsCodeRange(s, this.textEditor.document))
+			.map((s) => {
+				// Apply the replacement of abbreviations to the selections.
+				let newSel = s;
+				for (const r of replacements) {
+					if (r.range.isBefore(newSel)) {
+						newSel = newSel.move(r.newText.length - r.range.length);
+					} else if (!r.range.isAfter(newSel)) {
+						// newSel and r.range intersect
+						const offset = newSel.offset - r.range.offset;
+						const newOffset = r.transformOffsetInRange(offset);
+						newSel = newSel.move(newOffset - offset);
+					}
+				}
+				return newSel;
+			});
+
 		// We don't want replaced symbols (e.g. "\") to trigger abbreviations.
 		this.ignoreTextChange = true;
 		try {
-			const selections = this.textEditor.selections.map((s) =>
-				fromVsCodeRange(s, this.textEditor.document)
-			);
-			const selectedAbbreviations = abbreviations
-				.map((abbr) => ({
-					abbr,
-					selection: selections.find((s) =>
-						abbr.range.containsRange(s)
-					),
-				}))
-				.filter(
-					(abbr) =>
-						abbr.selection !== undefined &&
-						abbr.abbr.matchingSymbol !== undefined
-				);
-
-			const unrelatedSelections = selections.filter(
-				(s) => !selectedAbbreviations.some((a) => a.selection === s)
-			);
-
-			const cursorVar = '$CURSOR';
-			const updatedAbbrevSelections = selectedAbbreviations
-				.map((a) => a.abbr)
-				.map((abbr) => {
-					const s = abbr.matchingSymbol || '';
-					let cursorOffset = s.indexOf(cursorVar);
-					if (cursorOffset === -1) {
-						// position the cursor after the inserted symbol
-						cursorOffset = s.length;
-					}
-					return new Range(abbr.range.offset + cursorOffset, 0);
-				});
-
-			this.textEditor.selections = unrelatedSelections
-				.concat(updatedAbbrevSelections)
-				.map((r) => {
-					const vr = toVsCodeRange(r, this.textEditor.document);
-					return new vscode.Selection(vr.start, vr.end);
-				});
-
 			await this.textEditor.edit((builder) => {
-				for (const abbr of abbreviations) {
-					if (abbr.matchingSymbol) {
-						builder.replace(
-							toVsCodeRange(abbr.range, this.textEditor.document),
-							abbr.matchingSymbol.replace(cursorVar, '')
-						);
-					}
+				for (const r of replacements) {
+					builder.replace(
+						toVsCodeRange(r.range, this.textEditor.document),
+						r.newText
+					);
 				}
 			});
 		} catch (e) {
 			console.error('Error while replacing abbreviation: ', e);
 		}
 		this.ignoreTextChange = false;
+
+		this.textEditor.selections = newSelections.map((s) => {
+			const vr = toVsCodeRange(s, this.textEditor.document);
+			return new vscode.Selection(vr.start, vr.end);
+		});
+
 		this.updateState();
 	}
 
@@ -226,4 +239,8 @@ function toVsCodeRange(range: Range, doc: vscode.TextDocument): vscode.Range {
 	const start = doc.positionAt(range.offset);
 	const end = doc.positionAt(range.offsetEnd + 1);
 	return new vscode.Range(start, end);
+}
+
+function waitForNextTick(): Promise<void> {
+	return new Promise((res) => setTimeout(res, 0));
 }
