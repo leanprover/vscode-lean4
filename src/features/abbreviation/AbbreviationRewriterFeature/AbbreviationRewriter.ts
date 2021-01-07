@@ -19,7 +19,7 @@ export class AbbreviationRewriter {
 		textDecoration: 'underline',
 	});
 
-	private ignoreTextChange = false;
+	private dontTrackNewAbbr = false;
 
 	constructor(
 		private readonly config: AbbreviationConfig,
@@ -31,9 +31,6 @@ export class AbbreviationRewriter {
 		this.disposables.push(
 			workspace.onDidChangeTextDocument((e) => {
 				if (e.document !== this.textEditor.document) {
-					return;
-				}
-				if (this.ignoreTextChange) {
 					return;
 				}
 
@@ -151,7 +148,7 @@ export class AbbreviationRewriter {
 			});
 
 		// We don't want replaced symbols (e.g. "\") to trigger abbreviations.
-		this.ignoreTextChange = true;
+		this.dontTrackNewAbbr = true;
 		try {
 			await this.textEditor.edit((builder) => {
 				for (const r of replacements) {
@@ -164,7 +161,7 @@ export class AbbreviationRewriter {
 		} catch (e) {
 			console.error('Error while replacing abbreviation: ', e);
 		}
-		this.ignoreTextChange = false;
+		this.dontTrackNewAbbr = false;
 
 		this.textEditor.selections = newSelections.map((s) => {
 			const vr = toVsCodeRange(s, this.textEditor.document);
@@ -212,8 +209,8 @@ export class AbbreviationRewriter {
 				this.trackedAbbreviations.delete(abbr);
 			}
 		}
-
-		if (text === this.config.abbreviationCharacter.get() && !affectedAbbr) {
+ 
+		if (text === this.config.abbreviationCharacter.get() && !affectedAbbr && !this.dontTrackNewAbbr) {
 			const abbr = new TrackedAbbreviation(
 				new Range(range.offset + 1, 0),
 				'',
