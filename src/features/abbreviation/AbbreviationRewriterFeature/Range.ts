@@ -59,6 +59,9 @@ export class Range {
 		return this.offset <= other.offset && other.offsetEnd <= this.offsetEnd;
 	}
 
+	/**
+	 * Check whether this range if after `range`.
+	 */
 	isAfter(range: Range): boolean {
 		/*
 		 *     0  1  2  3  4  5
@@ -71,6 +74,9 @@ export class Range {
 		return range.offsetEnd < this.offset;
 	}
 
+	/**
+	 * Check whether this range if before `range`.
+	 */
 	isBefore(range: Range): boolean {
 		/*
 		 *     0  1  2  3  4  5
