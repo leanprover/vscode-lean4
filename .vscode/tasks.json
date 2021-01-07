@@ -7,7 +7,7 @@
 			"label": "watch",
 			"type": "npm",
 			"script": "watch",
-			"problemMatcher": "$tsc-watch",
+			"problemMatcher": "$ts-webpack-watch",
 			"isBackground": true,
 			"presentation": {
 				"reveal": "never"
@@ -18,7 +18,7 @@
 			"label": "compile",
 			"type": "npm",
 			"script": "compile",
-			"problemMatcher": "$tsc",
+			"problemMatcher": "$ts-webpack",
 			"presentation": {
 				"reveal": "never"
 			},
