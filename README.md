@@ -212,6 +212,7 @@ The format below is: "`lean.commandName` (command name): description", where `le
 * Run `git clone https://github.com/leanprover/vscode-lean`
 * Run `npm install` in the `vscode-lean` directory
 * Install the [ESLint extension for vscode](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint)
+* Install the [Webpack Problem Matcher extension for vscode](https://marketplace.visualstudio.com/items?itemName=eamodio.tsl-problem-matcher)
 * Open the `vscode-lean` directory in VS Code and start developing (<kbd>F5</kbd> starts the debugger)
 
 ## Release Notes
