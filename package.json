@@ -93,6 +93,12 @@
 				"category": "Lean 4",
 				"title": "Refresh file dependencies",
 				"description": "Restarts the file worker for the file that is currently focused to refresh the dependencies."
+			},
+			{
+				"command": "lean4.restartServer",
+				"category": "Lean 4",
+				"title": "Restart server",
+				"description": "Restarts the entire language server."
 			}
 		],
 		"keybindings": [

@@ -26,14 +26,11 @@ function serverLoggingPath(): string {
 
 let client: LanguageClient;
 
-export function activate(context: ExtensionContext) {
-	// Register support for unicode input.
-	const inputLanguages: string[] = inputModeLanguages();
-	const hoverProvider =
-		languages.registerHoverProvider(inputLanguages, new LeanInputExplanationHover(translations));
-	context.subscriptions.push(
-		hoverProvider,
-		new LeanInputAbbreviator(translations));
+function restartServer() {
+	if (client) {
+		client.stop();
+		client = undefined;
+	}
 
 	let serverOptions: ServerOptions = {
 		command: binPath(),
@@ -58,6 +55,18 @@ export function activate(context: ExtensionContext) {
 		clientOptions
 	);
 
+	client.start();
+}
+
+export function activate(context: ExtensionContext) {
+	// Register support for unicode input.
+	const inputLanguages: string[] = inputModeLanguages();
+	const hoverProvider =
+		languages.registerHoverProvider(inputLanguages, new LeanInputExplanationHover(translations));
+	context.subscriptions.push(
+		hoverProvider,
+		new LeanInputAbbreviator(translations));
+
 	context.subscriptions.push(commands.registerCommand('lean4.refreshFileDependencies', () => {
 		const editor = window.activeTextEditor;
 		if (!editor) { return; }
@@ -78,7 +87,11 @@ export function activate(context: ExtensionContext) {
 		})
 	}));
 
-	client.start();
+	context.subscriptions.push(commands.registerCommand("lean4.restartServer", function () {
+		restartServer();
+	}));
+
+	restartServer();
 }
 
 export function deactivate(): Thenable<void> | undefined {
