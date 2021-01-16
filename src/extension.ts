@@ -103,7 +103,7 @@ export async function activate(context: ExtensionContext): Promise<any> {
     workspace.onDidOpenTextDocument(setLean4LanguageId)
 
     // Register support for unicode input
-    context.subscriptions.push(new AbbreviationFeature());
+    context.subscriptions.push(new AbbreviationFeature())
 
     context.subscriptions.push(commands.registerCommand('lean4.refreshFileDependencies', () => {
         const editor = window.activeTextEditor
