@@ -1,4 +1,4 @@
-import { assert } from '../../../utils/assert';
+import { assert } from '../../utils/assert';
 
 /**
  * A general purpose range implementation.

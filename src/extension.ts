@@ -1,7 +1,7 @@
 import { workspace, commands, window, languages, ExtensionContext, TextDocument } from 'vscode'
 import { promisify } from 'util'
 import { exec } from 'child_process'
-import { AbbreviationFeature } from './features/abbreviation'
+import { AbbreviationFeature } from './abbreviation'
 import {
     LanguageClient,
     LanguageClientOptions,

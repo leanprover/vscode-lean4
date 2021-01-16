@@ -54,6 +54,11 @@
 					"default": "\\",
 					"markdownDescription": "Leader key to trigger input mode."
 				},
+				"lean4.input.eagerReplacementEnabled": {
+					"type": "boolean",
+					"default": true,
+					"markdownDescription": "Enable eager replacement of abbreviations that uniquely identify a symbol."
+				},
 				"lean4.serverLogging.enabled": {
 					"type": "boolean",
 					"default": false,

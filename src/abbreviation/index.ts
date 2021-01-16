@@ -1,8 +1,8 @@
 import { Disposable, languages } from 'vscode';
-import { autorunDisposable } from '../../utils/autorunDisposable';
+import { autorunDisposable } from '../utils/autorunDisposable';
 import { AbbreviationHoverProvider } from './AbbreviationHoverProvider';
 import { AbbreviationProvider } from './AbbreviationProvider';
-import { AbbreviationRewriterFeature } from './AbbreviationRewriterFeature/AbbreviationRewriterFeature';
+import { AbbreviationRewriterFeature } from './rewriter/AbbreviationRewriterFeature';
 import { AbbreviationConfig } from './config';
 
 export class AbbreviationFeature {
