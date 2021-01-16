@@ -1,6 +1,6 @@
 import { observable } from 'mobx';
 import { Disposable, TextEditor, window } from 'vscode';
-import { autorunDisposable } from '../../../utils/autorunDisposable';
+import { autorunDisposable } from '../../utils/autorunDisposable';
 import { AbbreviationProvider } from '../AbbreviationProvider';
 import { AbbreviationConfig } from '../config';
 import { AbbreviationRewriter } from './AbbreviationRewriter';

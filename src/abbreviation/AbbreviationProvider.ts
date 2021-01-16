@@ -1,6 +1,6 @@
 import { computed } from 'mobx';
 import { Disposable } from 'vscode';
-import { autorunDisposable } from '../../utils/autorunDisposable';
+import { autorunDisposable } from '../utils/autorunDisposable';
 import * as abbreviations from './abbreviations.json';
 import { SymbolsByAbbreviation, AbbreviationConfig } from './config';
 

@@ -88,6 +88,11 @@
 					"default": "\\",
 					"markdownDescription": "Leader key to trigger input mode."
 				},
+				"lean.input.eagerReplacementEnabled": {
+					"type": "boolean",
+					"default": true,
+					"markdownDescription": "Enable eager replacement of abbreviations that uniquely identify a symbol."
+				},
 				"lean.infoViewAllErrorsOnLine": {
 					"type": "boolean",
 					"default": false,

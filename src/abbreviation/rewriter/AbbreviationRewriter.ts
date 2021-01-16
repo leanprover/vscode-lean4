@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { commands, Disposable, TextEditor, window, workspace } from 'vscode';
-import { assert } from '../../../utils/assert';
+import { assert } from '../../utils/assert';
 import { AbbreviationProvider } from '../AbbreviationProvider';
 import { AbbreviationConfig } from '../config';
 import { Range } from './Range';
@@ -51,7 +51,8 @@ export class AbbreviationRewriter {
 					[...this.trackedAbbreviations].filter(
 						(abbr) =>
 							abbr.finished ||
-							abbr.isAbbreviationUniqueAndComplete
+							(this.config.eagerReplacementEnabled.get() &&
+								abbr.isAbbreviationUniqueAndComplete)
 					)
 				);
 			})
@@ -133,10 +134,16 @@ export class AbbreviationRewriter {
 				// Apply the replacement of abbreviations to the selections.
 				let newSel = s;
 				for (const r of replacements) {
-					if (r.range.isBefore(newSel) && !r.range.containsRange(newSel)) {
+					if (
+						r.range.isBefore(newSel) &&
+						!r.range.containsRange(newSel)
+					) {
 						// don't do this on ` \abbr| `
 						newSel = newSel.move(r.newText.length - r.range.length);
-					} else if (!r.range.isAfter(newSel) || r.range.containsRange(newSel)) {
+					} else if (
+						!r.range.isAfter(newSel) ||
+						r.range.containsRange(newSel)
+					) {
 						// do this on ` \abbr| ` or ` \ab|br `
 						// newSel and r.range intersect
 						const offset = newSel.offset - r.range.offset;
@@ -209,8 +216,12 @@ export class AbbreviationRewriter {
 				this.trackedAbbreviations.delete(abbr);
 			}
 		}
- 
-		if (text === this.config.abbreviationCharacter.get() && !affectedAbbr && !this.dontTrackNewAbbr) {
+
+		if (
+			text === this.config.abbreviationCharacter.get() &&
+			!affectedAbbr &&
+			!this.dontTrackNewAbbr
+		) {
 			const abbr = new TrackedAbbreviation(
 				new Range(range.offset + 1, 0),
 				'',

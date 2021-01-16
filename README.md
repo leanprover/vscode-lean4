@@ -125,6 +125,8 @@ This extension contributes the following settings (for a complete list, open the
 
 ### Input / editing settings
 
+* `lean.input.eagerReplacementEnabled`: enables/disables eager replacement as soon as the abbreviation is unique (`true` by default)
+
 * `lean.input.leader`: character to type to trigger Unicode input mode (`\` by default)
 
 * `lean.input.languages`: allows the Unicode input functionality to be used in other languages

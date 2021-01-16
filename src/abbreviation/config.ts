@@ -1,7 +1,4 @@
-import {
-	serializerWithDefault,
-	VsCodeSetting,
-} from '../../utils/VsCodeSetting';
+import { serializerWithDefault, VsCodeSetting } from '../utils/VsCodeSetting';
 
 /**
  * Exposes (observable) settings for the abbreviation feature.
@@ -23,6 +20,13 @@ export class AbbreviationConfig {
 		'lean.input.customTranslations',
 		{
 			serializer: serializerWithDefault<SymbolsByAbbreviation>({}),
+		}
+	);
+
+	readonly eagerReplacementEnabled = new VsCodeSetting(
+		'lean.input.eagerReplacementEnabled',
+		{
+			serializer: serializerWithDefault(true),
 		}
 	);
 }
