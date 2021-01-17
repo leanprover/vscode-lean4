@@ -1,5 +1,5 @@
 out
 node_modules
 *.vsix
-media/index.js
-infoview/dist
+old/media/index.js
+old/infoview/dist
