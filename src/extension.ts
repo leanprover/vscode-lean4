@@ -28,8 +28,8 @@ async function checkLean4(): Promise<boolean> {
 		folderPath = folders[0].uri.fsPath
 	}
 
-    // We assume that vscode-lean and vscode-lean4 have the same `executablePath`,
-    // otherwise we cannot guarantee that both extensions will not launch at the same time.
+	// We assume that vscode-lean and vscode-lean4 have the same `executablePath`,
+	// otherwise we cannot guarantee that both extensions will not launch at the same time.
 	const cmd = `${executablePath()} --version`
 	try {
 		// If folderPath is undefined, this will use the process environment for cwd.
