@@ -1,6 +1,8 @@
 import semver = require('semver');
 import loadJsonFile = require('load-json-file');
-import { commands, DocumentFilter, ExtensionContext, languages, workspace, version } from 'vscode';
+import { promisify } from 'util'
+import { exec } from 'child_process'
+import { commands, DocumentFilter, ExtensionContext, languages, workspace, version, window } from 'vscode';
 import { batchExecuteFile } from './batch';
 import { LeanCompletionItemProvider } from './completion';
 import { LeanDefinitionProvider } from './definition';
@@ -21,6 +23,44 @@ import { LeanTaskGutter, LeanTaskMessages } from './taskgutter';
 import { StaticServer } from './staticserver';
 import { LibraryNoteLinkProvider } from './librarynote';
 
+function executablePath(): string {
+	return workspace.getConfiguration('lean').get('lean.executablePath', 'lean')
+}
+
+async function checkLean3(): Promise<boolean> {
+	const folders = workspace.workspaceFolders
+	let folderPath: string
+	if (folders) {
+		folderPath = folders[0].uri.fsPath
+    }
+    // We assume that vscode-lean and vscode-lean4 have the same `executablePath`,
+    // otherwise we cannot guarantee that both extensions will not launch at the same time.
+	const cmd = `${executablePath()} --version`
+	try {
+		// If folderPath is undefined, this will use the process environment for cwd.
+		// Specifically, if the extension was not opened inside of a folder, it
+        // looks for a global installation of Lean.
+        // In vscode-lean4 we do this for single-file language server support,
+        // here we do it to give the LeanpkgService a chance to display its error
+        // when we already know that vscode-lean4 will not be activated.
+        const { stdout, stderr } = await promisify(exec)(cmd, {cwd: folderPath})
+		const filterVersion = /Lean \(version (\d+)\.(\d+)\.(\d+), commit [^,]+, \w+\)/
+		const match = filterVersion.exec(stdout)
+		if (!match) {
+			void window.showErrorMessage(`'${cmd}' returned incorrect version string '${stdout}'.`)
+			return false
+        }
+		const major = match[1]
+		if (major !== '3') {
+			return false
+        }
+		return true
+	} catch (err) {
+		void window.showErrorMessage(`Could not find Lean version by running '${cmd}'.`)
+		return false
+	}
+}
+
 // Seeing .olean files in the source tree is annoying, we should
 // just globally hide them.
 async function configExcludeOLean() {
@@ -36,7 +76,12 @@ const LEAN_MODE: DocumentFilter = {
     // scheme: 'file',
 };
 
-export function activate(context: ExtensionContext): void {
+export async function activate(context: ExtensionContext): Promise<void> {
+    const isLean3 = await checkLean3();
+    if (!isLean3) {
+        return;
+    }
+
     void configExcludeOLean();
 
     const server = new Server();
@@ -75,15 +120,13 @@ export function activate(context: ExtensionContext): void {
             LEAN_MODE, new LeanCompletionItemProvider(server), '.'));
 
     // Register support for unicode input.
-    void (async () => {
-        const translations: any = await loadJsonFile(context.asAbsolutePath('translations.json'));
-        const inputLanguages: string[] = inputModeLanguages();
-        const hoverProvider =
-            languages.registerHoverProvider(inputLanguages, new LeanInputExplanationHover(translations));
-        context.subscriptions.push(
-            hoverProvider,
-            new LeanInputAbbreviator(translations));
-    })();
+    const translations: any = await loadJsonFile(context.asAbsolutePath('translations.json'));
+    const inputLanguages: string[] = inputModeLanguages();
+    const hoverProvider =
+        languages.registerHoverProvider(inputLanguages, new LeanInputExplanationHover(translations));
+    context.subscriptions.push(
+        hoverProvider,
+        new LeanInputAbbreviator(translations));
 
     // Register support for definition support.
     context.subscriptions.push(
