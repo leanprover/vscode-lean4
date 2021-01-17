@@ -2,7 +2,7 @@ import semver = require('semver');
 import loadJsonFile = require('load-json-file');
 import { promisify } from 'util'
 import { exec } from 'child_process'
-import { commands, DocumentFilter, ExtensionContext, languages, workspace, version, window } from 'vscode';
+import { commands, DocumentFilter, ExtensionContext, languages, workspace, version } from 'vscode';
 import { batchExecuteFile } from './batch';
 import { LeanCompletionItemProvider } from './completion';
 import { LeanDefinitionProvider } from './definition';
