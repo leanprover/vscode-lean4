@@ -24,38 +24,38 @@ import { StaticServer } from './staticserver';
 import { LibraryNoteLinkProvider } from './librarynote';
 
 function executablePath(): string {
-	return workspace.getConfiguration('lean').get('lean.executablePath', 'lean')
+    return workspace.getConfiguration('lean').get('lean.executablePath', 'lean')
 }
 
 async function checkLean3(): Promise<boolean> {
-	const folders = workspace.workspaceFolders
-	let folderPath: string
-	if (folders) {
-		folderPath = folders[0].uri.fsPath
+    const folders = workspace.workspaceFolders
+    let folderPath: string
+    if (folders) {
+        folderPath = folders[0].uri.fsPath
     }
     // We assume that vscode-lean and vscode-lean4 have the same `executablePath`,
     // otherwise we cannot guarantee that both extensions will not launch at the same time.
-	const cmd = `${executablePath()} --version`
-	try {
-		// If folderPath is undefined, this will use the process environment for cwd.
-		// Specifically, if the extension was not opened inside of a folder, it
+    const cmd = `${executablePath()} --version`
+    try {
+        // If folderPath is undefined, this will use the process environment for cwd.
+        // Specifically, if the extension was not opened inside of a folder, it
         // looks for a global installation of Lean.
         // In vscode-lean4 we do this for single-file language server support,
         // here we do it to use the same binary as vscode-lean4.
         const { stdout, stderr } = await promisify(exec)(cmd, {cwd: folderPath})
-		const filterVersion = /Lean \(version (\d+)\.(\d+)\.([^,]+), commit [^,]+, \w+\)/
-		const match = filterVersion.exec(stdout)
-		if (!match) {
-			return true
+        const filterVersion = /Lean \(version (\d+)\.(\d+)\.([^,]+), commit [^,]+, \w+\)/
+        const match = filterVersion.exec(stdout)
+        if (!match) {
+            return true
         }
-		const major = match[1]
-		if (major !== '3') {
-			return false
+        const major = match[1]
+        if (major !== '3') {
+            return false
         }
-		return true
-	} catch (err) {
-		return true
-	}
+        return true
+    } catch (err) {
+        return true
+    }
 }
 
 // Seeing .olean files in the source tree is annoying, we should
