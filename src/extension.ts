@@ -41,14 +41,12 @@ async function checkLean3(): Promise<boolean> {
 		// Specifically, if the extension was not opened inside of a folder, it
         // looks for a global installation of Lean.
         // In vscode-lean4 we do this for single-file language server support,
-        // here we do it to give the LeanpkgService a chance to display its error
-        // when we already know that vscode-lean4 will not be activated.
+        // here we do it to use the same binary as vscode-lean4.
         const { stdout, stderr } = await promisify(exec)(cmd, {cwd: folderPath})
-		const filterVersion = /Lean \(version (\d+)\.(\d+)\.(\d+), commit [^,]+, \w+\)/
+		const filterVersion = /Lean \(version (\d+)\.(\d+)\.([^,]+), commit [^,]+, \w+\)/
 		const match = filterVersion.exec(stdout)
 		if (!match) {
-			void window.showErrorMessage(`'${cmd}' returned incorrect version string '${stdout}'.`)
-			return false
+			return true
         }
 		const major = match[1]
 		if (major !== '3') {
@@ -56,8 +54,7 @@ async function checkLean3(): Promise<boolean> {
         }
 		return true
 	} catch (err) {
-		void window.showErrorMessage(`Could not find Lean version by running '${cmd}'.`)
-		return false
+		return true
 	}
 }
 
