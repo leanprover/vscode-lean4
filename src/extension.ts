@@ -1,127 +1,151 @@
-import semver = require('semver');
-import loadJsonFile = require('load-json-file');
-import { commands, DocumentFilter, ExtensionContext, languages, workspace, version } from 'vscode';
-import { batchExecuteFile } from './batch';
-import { LeanCompletionItemProvider } from './completion';
-import { LeanDefinitionProvider } from './definition';
-import { LeanDiagnosticsProvider } from './diagnostics';
-import { DocViewProvider } from './docview';
-import { LeanHoles } from './holes';
-import { TacticSuggestions } from './tacticsuggestions';
-import { LeanHoverProvider } from './hover';
-import { InfoProvider } from './infoview';
-import { inputModeLanguages, LeanInputAbbreviator, LeanInputExplanationHover } from './input';
-import { LeanpkgService } from './leanpkg';
-import { RoiManager } from './roi';
-import { LeanWorkspaceSymbolProvider } from './search';
-import { Server } from './server';
-import { LeanStatusBarItem } from './statusbar';
-import { LeanSyncService } from './sync';
-import { LeanTaskGutter, LeanTaskMessages } from './taskgutter';
-import { StaticServer } from './staticserver';
-import { LibraryNoteLinkProvider } from './librarynote';
+import { workspace, commands, window, languages, ExtensionContext, TextDocument } from 'vscode'
+import { promisify } from 'util'
+import { exec } from 'child_process'
+import loadJsonFile = require('load-json-file')
+import { inputModeLanguages, LeanInputAbbreviator, LeanInputExplanationHover } from './input'
+import {
+	LanguageClient,
+	LanguageClientOptions,
+	ServerOptions,
+} from 'vscode-languageclient'
 
-// Seeing .olean files in the source tree is annoying, we should
-// just globally hide them.
-async function configExcludeOLean() {
-    const files = workspace.getConfiguration('files');
-    const exclude = files.get('exclude');
-    exclude['**/*.olean'] = true;
-    await files.update('exclude', exclude, true);
+function executablePath(): string {
+	return workspace.getConfiguration('lean').get('lean.executablePath', 'lean')
 }
 
-const LEAN_MODE: DocumentFilter = {
-    language: 'lean',
-    // The doc view uses the untitled scheme.
-    // scheme: 'file',
-};
+function serverLoggingEnabled(): boolean {
+	return workspace.getConfiguration('lean4.serverLogging').get('enabled', false)
+}
 
-export function activate(context: ExtensionContext): void {
-    void configExcludeOLean();
+function serverLoggingPath(): string {
+	return workspace.getConfiguration('lean4.serverLogging').get('path', '.')
+}
 
-    const server = new Server();
-    context.subscriptions.push(server);
+async function checkLean4(): Promise<boolean> {
+	const folders = workspace.workspaceFolders
+	let folderPath: string
+	if (folders) {
+		folderPath = folders[0].uri.fsPath
+	}
 
-    const roiManager = new RoiManager(server, LEAN_MODE);
-    context.subscriptions.push(roiManager);
+    // We assume that vscode-lean and vscode-lean4 have the same `executablePath`,
+    // otherwise we cannot guarantee that both extensions will not launch at the same time.
+	const cmd = `${executablePath()} --version`
+	try {
+		// If folderPath is undefined, this will use the process environment for cwd.
+		// Specifically, if the extension was not opened inside of a folder, it
+		// looks for a global installation of Lean. This way, we can support
+		// single file editing.
+		const { stdout, stderr } = await promisify(exec)(cmd, {cwd: folderPath})
+		const filterVersion = /Lean \(version (\d+)\.(\d+)\.(\d+), commit [^,]+, \w+\)/
+		const match = filterVersion.exec(stdout)
+		if (!match) {
+			void window.showErrorMessage(`'${cmd}' returned incorrect version string '${stdout}'.`)
+			return false
+		}
+		const major = match[1]
+		if (major !== '4') {
+			return false
+		}
+		return true
+	} catch (err) {
+		void window.showErrorMessage(`Could not find Lean version by running '${cmd}'.`)
+		return false
+	}
+}
 
-    // The sync service starts automatically starts
-    // the server when it sees a *.lean file.
-    context.subscriptions.push(new LeanSyncService(server, LEAN_MODE));
+let client: LanguageClient
 
-    // Setup the commands.
-    context.subscriptions.push(
-        commands.registerCommand('lean.restartServer', () => server.restart()),
-        commands.registerTextEditorCommand('lean.batchExecute',
-            (editor, edit, args) => { batchExecuteFile(server, editor, edit, args); }),
-    );
+function restartServer(): void {
+	if (client) {
+		void client.stop()
+		client = undefined
+	}
+	const serverOptions: ServerOptions = {
+		command: executablePath(),
+		args: ['--server'],
+		options: {
+			shell: true,
+			env: { ...process.env }
+		}
+	}
+	if (serverLoggingEnabled()) {
+		serverOptions.options.env.LEAN_SERVER_LOG_DIR = serverLoggingPath()
+	}
+	const clientOptions: LanguageClientOptions = {
+		documentSelector: [{ scheme: 'file', language: 'lean4' }]
+	}
+	client = new LanguageClient(
+		'lean4',
+		'Lean 4',
+		serverOptions,
+		clientOptions
+	)
+	client.start()
+}
 
-    context.subscriptions.push(new LeanDiagnosticsProvider(server));
+export async function activate(context: ExtensionContext): Promise<void> {
+	const isLean4 = await checkLean4()
+	if (!isLean4) {
+		return
+	}
 
-    // Task messages.
-    context.subscriptions.push(
-        new LeanTaskGutter(server, context),
-        new LeanTaskMessages(server),
-    );
+	// All open .lean files of this workspace are assumed to be Lean 4 files.
+	// We need to do this because by default, .lean is associated with language id `lean`,
+	// i.e. Lean 3. vscode-lean is expected to yield when isLean4 is true.
+	const setLean4LanguageId = (textDocument: TextDocument) => {
+		if (textDocument.languageId === 'lean') {
+			void languages.setTextDocumentLanguage(textDocument, 'lean4')
+		}
+	}
+	for (const textDocument of workspace.textDocuments) {
+		setLean4LanguageId(textDocument)
+	}
+	workspace.onDidOpenTextDocument(setLean4LanguageId)
 
-    // Register the support for hovering.
-    context.subscriptions.push(
-        languages.registerHoverProvider(LEAN_MODE,
-            new LeanHoverProvider(server)));
+	// Register support for unicode input
+	const translations: any = await loadJsonFile(context.asAbsolutePath('translations.json'))
+	const inputLanguages: string[] = inputModeLanguages()
+	const hoverProvider =
+		languages.registerHoverProvider(inputLanguages, new LeanInputExplanationHover(translations))
+	context.subscriptions.push(
+		hoverProvider,
+		new LeanInputAbbreviator(translations))
 
-    // Register support for completion.
-    context.subscriptions.push(
-        languages.registerCompletionItemProvider(
-            LEAN_MODE, new LeanCompletionItemProvider(server), '.'));
+	context.subscriptions.push(commands.registerCommand('lean4.refreshFileDependencies', () => {
+		const editor = window.activeTextEditor
+		if (!editor) { return }
+		const doc = editor.document
+		const uri = doc.uri.toString()
+		// This causes a text document version number discontinuity. In
+		// (didChange (oldVersion) => refreshFileDependencies => didChange (newVersion))
+		// the client emits newVersion = oldVersion + 1, despite the fact that the
+		// didOpen packet emitted below initializes the version number to be 1.
+		// This is not a problem though, since both client and server are fine
+		// as long as the version numbers are monotonous.
+		client.sendNotification('textDocument/didClose', {
+			'textDocument': {
+				uri
+			}
+		})
+		client.sendNotification('textDocument/didOpen', {
+			'textDocument': {
+				uri,
+				'languageId': 'lean4',
+				'version': 1,
+				'text': doc.getText()
+			}
+		})
+	}))
 
-    // Register support for unicode input.
-    void (async () => {
-        const translations: any = await loadJsonFile(context.asAbsolutePath('translations.json'));
-        const inputLanguages: string[] = inputModeLanguages();
-        const hoverProvider =
-            languages.registerHoverProvider(inputLanguages, new LeanInputExplanationHover(translations));
-        context.subscriptions.push(
-            hoverProvider,
-            new LeanInputAbbreviator(translations));
-    })();
+	context.subscriptions.push(commands.registerCommand('lean4.restartServer', restartServer));
 
-    // Register support for definition support.
-    context.subscriptions.push(
-        languages.registerDefinitionProvider(
-            LEAN_MODE, new LeanDefinitionProvider(server)));
+	restartServer()
+}
 
-    // Search
-    context.subscriptions.push(
-        languages.registerWorkspaceSymbolProvider(
-            new LeanWorkspaceSymbolProvider(server)));
-
-    // Holes
-    context.subscriptions.push(new LeanHoles(server, LEAN_MODE));
-
-
-    // Add item to the status bar.
-    context.subscriptions.push(new LeanStatusBarItem(server, roiManager));
-
-    let staticServer = null;
-    function waitStaticServer() {
-        // Add info view: listing either the current goal state or a list of all error messages
-        const infoView = new InfoProvider(server, LEAN_MODE, context, staticServer);
-        context.subscriptions.push(infoView);
-        context.subscriptions.push(new DocViewProvider(staticServer));
-        // Tactic suggestions
-        context.subscriptions.push(new TacticSuggestions(server, infoView, LEAN_MODE));
-    }
-    // https://github.com/microsoft/vscode/issues/89038 fixed in 1.47
-    if (semver.gte(version, '1.47.0')) {
-        waitStaticServer();
-    } else {
-        staticServer = new StaticServer(context);
-        context.subscriptions.push(staticServer);
-        staticServer.server.on('listening', waitStaticServer);
-    }
-
-    context.subscriptions.push(new LeanpkgService(server));
-
-    context.subscriptions.push(languages.registerDocumentLinkProvider(LEAN_MODE,
-        new LibraryNoteLinkProvider()));
+export function deactivate(): Thenable<void> | undefined {
+	if (!client) {
+		return undefined
+	}
+	return client.stop()
 }

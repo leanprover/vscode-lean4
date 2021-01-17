@@ -1,8 +1,8 @@
 {
-	"name": "lean",
-	"displayName": "lean",
-	"description": "An extension for VS Code which provides support for the Lean language.",
-	"version": "0.16.20",
+	"name": "lean4",
+	"displayName": "lean4",
+	"description": "An extension for VS Code which provides support for the Lean 4 language.",
+	"version": "0.0.7",
 	"publisher": "jroesch",
 	"engines": {
 		"vscode": "^1.38.0"
@@ -17,53 +17,19 @@
 	"contributes": {
 		"configuration": {
 			"type": "object",
-			"title": "Lean",
+			"title": "Lean 4",
 			"properties": {
-				"lean.executablePath": {
+				"lean4.executablePath": {
 					"type": "string",
 					"default": "lean",
 					"markdownDescription": "Path to the Lean executable to use. **DO NOT CHANGE** from the default `lean` unless you know what you're doing!"
 				},
-				"lean.leanpkgPath": {
-					"type": "string",
-					"default": "leanpkg",
-					"markdownDescription": "Path to the leanpkg executable to use. **DO NOT CHANGE** from the default `leanpkg` unless you know what you're doing!"
-				},
-				"lean.memoryLimit": {
-					"type": "number",
-					"default": 4096,
-					"markdownDescription": "Set a memory limit (in megabytes) for the Lean server."
-				},
-				"lean.timeLimit": {
-					"type": "number",
-					"default": 100000,
-					"markdownDescription": "Set a deterministic timeout (it is approximately the maximum number of memory allocations in thousands) for the Lean server."
-				},
-				"lean.extraOptions": {
-					"type": "array",
-					"default": [],
-					"markdownDescription": "Extra command-line options for the Lean server.",
-					"items": {
-						"type": "string",
-						"description": "a single command-line argument"
-					}
-				},
-				"lean.progressMessages": {
-					"type": "boolean",
-					"default": false,
-					"markdownDescription": "Show error messages where Lean is still checking."
-				},
-				"lean.roiModeDefault": {
-					"type": "string",
-					"default": "visible",
-					"markdownDescription": "Set the default region of interest mode (nothing, visible, lines, linesAndAbove, open, or project) for the Lean extension."
-				},
-				"lean.input.enabled": {
+				"lean4.input.enabled": {
 					"type": "boolean",
 					"default": true,
 					"markdownDescription": "Enable Lean input mode."
 				},
-				"lean.input.customTranslations": {
+				"lean4.input.customTranslations": {
 					"type": "object",
 					"items": {
 						"type": "string",
@@ -72,211 +38,52 @@
 					"default": {},
 					"markdownDescription": "Add additional input Unicode translations. Example: `{\"foo\": \"☺\"}` will correct `\\foo` to `☺`."
 				},
-				"lean.input.languages": {
+				"lean4.input.languages": {
 					"type": "array",
 					"default": [
-						"lean"
+						"lean4"
 					],
 					"markdownDescription": "Enable Lean Unicode input in other file types.",
 					"items": {
 						"type": "string",
-						"description": "the name of a language, e.g. 'lean', 'markdown'"
+						"description": "the name of a language, e.g. 'lean', 'lean4', 'markdown'"
 					}
 				},
-				"lean.input.leader": {
+				"lean4.input.leader": {
 					"type": "string",
 					"default": "\\",
 					"markdownDescription": "Leader key to trigger input mode."
 				},
-				"lean.infoViewAllErrorsOnLine": {
+				"lean4.serverLogging.enabled": {
 					"type": "boolean",
 					"default": false,
-					"markdownDescription": "Info view: show all errors on the current line, instead of just the ones on the right of the cursor."
+					"description": "Enable Lean 4 server logging."
 				},
-				"lean.infoViewAutoOpen": {
-					"type": "boolean",
-					"default": true,
-					"markdownDescription": "Info view: open info view when Lean extension is activated."
-				},
-				"lean.infoViewAutoOpenShowGoal": {
-					"type": "boolean",
-					"default": true,
-					"markdownDescription": "Info view: auto open shows goal and messages for the current line (instead of all messages for the whole file)"
-				},
-				"lean.infoViewStyle": {
+				"lean4.serverLogging.path": {
 					"type": "string",
-					"default": "",
-					"markdownDescription": "Add an additional CSS snippet to the info view."
-				},
-				"lean.infoViewTacticStateFilters": {
-					"type": "array",
-					"default": [
-						{
-							"regex": "^_",
-							"match": false,
-							"flags": ""
-						},
-						{
-							"name": "goals only",
-							"regex": "^(⊢|\\d+ goals|case|$)",
-							"match": true,
-							"flags": ""
-						}
-					],
-					"markdownDescription": "An array of objects containing regular expression strings that can be used to filter (positively or negatively) the tactic state in the info view. Set to an empty array `[]` to hide the filter select dropdown.\n \n Each object must contain the following keys: 'regex': string, 'match': boolean, 'flags': string.\n 'regex' is a properly-escaped regex string,\n 'match' = true (false) means blocks in the tactic state matching 'regex' will be included (excluded) in the info view, \n 'flags' are additional flags passed to the JavaScript `RegExp` constructor.\n The 'name' key is optional and may contain a string that is displayed in the dropdown instead of the full regex details.",
-					"items": {
-						"type": "object",
-						"description": "an object with required properties 'regex': string, 'match': boolean, and 'flags': string, and optional property 'name': string",
-						"properties": {
-							"name": {
-								"type": "string",
-								"description": "name displayed in the dropdown"
-							},
-							"regex": {
-								"type": "string",
-								"description": "a properly-escaped regex string, e.g. '^_' matches any string beginning with an underscore"
-							},
-							"match": {
-								"type": "boolean",
-								"description": "whether tactic state lines matching the value of 'regex' should be included (true) or excluded (false)"
-							},
-							"flags": {
-								"type": "string",
-								"description": "additional flags passed to the RegExp constructor, e.g. 'i' for ignore case"
-							}
-						},
-						"required": [
-							"regex",
-							"match",
-							"flags"
-						]
-					}
-				},
-				"lean.infoViewFilterIndex": {
-					"type": "number",
-					"default": -1,
-					"markdownDescription": "Index of the filter applied to the tactic state (in the array infoViewTacticStateFilters). An index of -1 means no filter is applied."
-				},
-				"lean.typeInStatusBar": {
-					"type": "boolean",
-					"default": true,
-					"markdownDescription": "Show the type of term under the cursor in the status bar."
-				},
-				"lean.typesInCompletionList": {
-					"type": "boolean",
-					"default": false,
-					"markdownDescription": "Display types of all items in the list of completions. By default, only the type of the highlighted item is shown."
+					"default": ".",
+					"description": "Path to the directory where Lean 4 server log files are stored."
 				}
 			}
 		},
 		"commands": [
 			{
-				"command": "lean.restartServer",
-				"category": "Lean",
+				"command": "lean4.restartServer",
+				"category": "Lean 4",
 				"title": "Restart",
 				"description": "Restart the Language Server."
 			},
 			{
-				"command": "lean.pasteTacticSuggestion",
-				"category": "Lean",
-				"title": "Paste Tactic Suggestion",
-				"description": "Pastes a suggestion provided by a tactic (e.g. from squeeze_simp)"
-			},
-			{
-				"command": "lean.input.convert",
-				"category": "Lean",
+				"command": "lean4.input.convert",
+				"category": "Lean 4",
 				"title": "Input: Convert Current Abbreviation",
 				"description": "Converts the current abbreviation (e.g. \\lam)."
 			},
 			{
-				"command": "lean.displayGoal",
-				"category": "Lean",
-				"title": "Info View: Display Goal",
-				"description": "Display the goal and any messages at the current position in the info view.",
-				"icon": {
-					"dark": "./media/display-goal-dark.svg",
-					"light": "./media/display-goal-light.svg"
-				}
-			},
-			{
-				"command": "lean.displayList",
-				"category": "Lean",
-				"title": "Info View: Toggle \"All Messages\"",
-				"description": "Toggles the \"All Messages\" widget in the info view."
-			},
-			{
-				"command": "lean.openDocView",
-				"category": "Lean",
-				"title": "Open Documentation View",
-				"description": "Open documentation panel"
-			},
-			{
-				"command": "lean.infoView.copyToComment",
-				"category": "Lean",
-				"title": "Info View: Copy Contents to Comment",
-				"description": "Copy the contents of the currently active tactic state widget to a new comment on the previous line.",
-				"icon": {
-					"dark": "./media/copy-to-comment-dark.svg",
-					"light": "./media/copy-to-comment-light.svg"
-				}
-			},
-			{
-				"command": "lean.infoView.toggleStickyPosition",
-				"category": "Lean",
-				"title": "Info View: Toggle Pin",
-				"description": "Create or remove a tactic state widget pinned to show the goal at the current position.",
-				"icon": {
-					"dark": "./media/toggle-sticky-position-dark.svg",
-					"light": "./media/toggle-sticky-position-light.svg"
-				}
-			},
-			{
-				"command": "lean.infoView.toggleUpdating",
-				"category": "Lean",
-				"title": "Info View: Toggle Updating",
-				"description": "Pause / Continue live updating of the main tactic state widget."
-			},
-			{
-				"command": "lean.roiMode.select",
-				"category": "Lean",
-				"title": "Select Region-of-interest",
-				"description": "Select files to be checked by the Lean server."
-			},
-			{
-				"command": "lean.roiMode.nothing",
-				"category": "Lean",
-				"title": "Check Nothing",
-				"description": "Disable automatic checking of Lean code."
-			},
-			{
-				"command": "lean.roiMode.visibleFiles",
-				"category": "Lean",
-				"title": "Check Visible Files",
-				"description": "Automatically check all files that are visible."
-			},
-			{
-				"command": "lean.roiMode.linesAndAbove",
-				"category": "Lean",
-				"title": "Check visible lines and above",
-				"description": "Automatically check all visible lines and lines above them."
-			},
-			{
-				"command": "lean.roiMode.openFiles",
-				"category": "Lean",
-				"title": "Check Open Files",
-				"description": "Automatically check all opened files."
-			},
-			{
-				"command": "lean.roiMode.projectFiles",
-				"category": "Lean",
-				"title": "Check Project Files",
-				"description": "Automatically check all files in the workspace."
-			},
-			{
-				"command": "lean.batchExecute",
-				"category": "Lean",
-				"title": "Batch Execute File",
-				"description": "Execute the current file using Lean."
+				"command": "lean4.refreshFileDependencies",
+				"category": "Lean 4",
+				"title": "Refresh file dependencies",
+				"description": "Restarts the file worker for the file that is currently focused to refresh the dependencies."
 			}
 		],
 		"languages": [
@@ -288,7 +95,10 @@
 				],
 				"extensions": [
 					".lean"
-				],
+				]
+			},
+			{
+				"id": "lean4",
 				"configuration": "./language-configuration.json"
 			},
 			{
@@ -302,9 +112,9 @@
 		],
 		"grammars": [
 			{
-				"language": "lean",
-				"scopeName": "source.lean",
-				"path": "./syntaxes/lean.json"
+				"language": "lean4",
+				"scopeName": "source.lean4",
+				"path": "./syntaxes/lean4.json"
 			},
 			{
 				"language": "leanmarkdown",
@@ -312,106 +122,63 @@
 				"path": "./syntaxes/lean-markdown.json"
 			},
 			{
-				"scopeName": "markdown.lean.codeblock",
+				"scopeName": "markdown.lean4.codeblock",
 				"path": "./syntaxes/codeblock.json",
 				"injectTo": [
 					"text.html.markdown"
 				],
 				"embeddedLanguages": {
-					"meta.embedded.block.lean": "lean"
+					"meta.embedded.block.lean4": "lean4"
 				}
 			}
 		],
 		"keybindings": [
 			{
-				"command": "lean.displayGoal",
-				"key": "ctrl+shift+enter",
-				"mac": "cmd+shift+enter",
-				"when": "editorTextFocus && editorLangId == lean"
-			},
-			{
-				"command": "lean.displayList",
-				"key": "ctrl+shift+alt+enter",
-				"mac": "cmd+shift+alt+enter",
-				"when": "editorTextFocus && editorLangId == lean"
-			},
-			{
-				"command": "lean.input.convert",
+				"command": "lean4.input.convert",
 				"key": "tab",
 				"mac": "tab",
-				"when": "editorTextFocus && editorLangId == lean && lean.input.isActive"
+				"when": "editorTextFocus && editorLangId == lean4 && lean4.input.isActive"
 			},
 			{
-				"command": "lean.input.convertWithNewline",
+				"command": "lean4.input.convertWithNewline",
 				"key": "enter",
 				"mac": "enter",
-				"when": "editorTextFocus && editorLangId == lean && lean.input.isActive && !suggestWidgetVisible && !renameInputVisible && !inSnippetMode && !quickFixWidgetVisible && !vim.active || editorTextFocus && editorLangId == lean && lean.input.isActive && !suggestWidgetVisible && !renameInputVisible && !inSnippetMode && !quickFixWidgetVisible && vim.mode == 'Insert'"
+				"when": "editorTextFocus && editorLangId == lean4 && lean4.input.isActive && !suggestWidgetVisible && !renameInputVisible && !inSnippetMode && !quickFixWidgetVisible && !vim.active || editorTextFocus && editorLangId == lean4 && lean4.input.isActive && !suggestWidgetVisible && !renameInputVisible && !inSnippetMode && !quickFixWidgetVisible && vim.mode == 'Insert'"
 			},
 			{
-				"command": "lean.batchExecute",
-				"key": "ctrl+shift+r",
-				"mac": "cmd+shift+r",
-				"when": "editorTextFocus && editorLangId == lean"
-			},
-			{
-				"command": "lean.pasteTacticSuggestion",
-				"key": "alt+v",
-				"mac": "alt+v",
-				"when": "editorTextFocus && editorLangId == lean"
+				"command": "lean4.refreshFileDependencies",
+				"key": "ctrl+shift+x",
+				"mac": "cmd+shift+x",
+				"when": "editorTextFocus && editorLangId == lean4"
 			}
 		],
 		"menus": {
 			"commandPalette": [
 				{
-					"command": "lean.displayGoal",
-					"when": "editorLangId == lean"
+					"command": "lean4.input.convert",
+					"when": "editorLangId == lean4 && lean4.input.isActive"
 				},
 				{
-					"command": "lean.input.convert",
-					"when": "editorLangId == lean && lean.input.isActive"
+					"command": "lean4.refreshFileDependencies",
+					"when": "editorLangId == lean4"
 				},
 				{
-					"command": "lean.batchExecute",
-					"when": "editorLangId == lean"
-				},
-				{
-					"command": "lean.infoView.copyToComment",
-					"when": "editorLangId == lean"
-				},
-				{
-					"command": "lean.infoView.toggleStickyPosition",
-					"when": "editorLangId == lean"
-				},
-				{
-					"command": "lean.infoView.toggleUpdating",
-					"when": "editorLangId == lean || infoViewFocused"
-				}
-			],
-			"editor/title": [
-				{
-					"command": "lean.displayGoal",
-					"when": "editorLangId == lean",
-					"group": "navigation@2"
+					"command": "lean4.restartServer",
+					"when": "editorLangId == lean4"
 				}
 			]
 		},
 		"configurationDefaults": {
-			"[lean]": {
+			"[lean4]": {
 				"editor.tabSize": 2
 			}
 		}
 	},
 	"activationEvents": [
 		"onLanguage:lean",
+		"onLanguage:lean4",
 		"onLanguage:markdown",
-		"onCommand:lean.restartSever",
-		"onCommand:lean.infoDocument.toggleMode",
-		"onCommand:lean.roiMode.select",
-		"onCommand:lean.roiMode.nothing",
-		"onCommand:lean.roiMode.cursor",
-		"onCommand:lean.roiMode.visibleFiles",
-		"onCommand:lean.roiMode.openFiles",
-		"onCommand:lean.roiMode.projectFiles"
+		"onCommand:lean4.restartServer"
 	],
 	"main": "./out/extension",
 	"scripts": {
@@ -433,7 +200,8 @@
 		"load-json-file": "6.2.0",
 		"react-katex": "^2.0.2",
 		"semver": "^7.3.2",
-		"username": "^5.1.0"
+		"username": "^5.1.0",
+		"vscode-languageclient": "^6.1.3"
 	},
 	"devDependencies": {
 		"@popperjs/core": "^2.4.4",

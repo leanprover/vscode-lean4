@@ -31,15 +31,15 @@
 				{
 					"begin": "(^|\\G)(\\s*)(.*)",
 					"while": "(^|\\G)(?!\\s*([`~]{3,})\\s*$)",
-					"contentName": "meta.embedded.block.lean",
+					"contentName": "meta.embedded.block.lean4",
 					"patterns": [
 						{
-							"include": "source.lean"
+							"include": "source.lean4"
 						}
 					]
 				}
 			]
 		}
 	},
-	"scopeName": "markdown.lean.codeblock"
+	"scopeName": "markdown.lean4.codeblock"
 }

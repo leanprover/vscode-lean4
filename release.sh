@@ -14,7 +14,7 @@ new_version="$1"
 sed -i 's/"version": ".*"/"version": "'$new_version'"/' package.json
 npm i
 git commit -am "Release $new_version"
-git tag -a v$new_version -m "vscode-lean $new_version"
+git tag -a v$new_version -m "vscode-lean4 $new_version"
 
 ./node_modules/.bin/vsce publish
 
@@ -24,4 +24,4 @@ git push
 git push --tags
 
 ./node_modules/.bin/vsce package
-hub release create -m "vscode-lean $new_version" v$new_version -a lean-$new_version.vsix
+hub release create -m "vscode-lean4 $new_version" v$new_version -a lean4-$new_version.vsix

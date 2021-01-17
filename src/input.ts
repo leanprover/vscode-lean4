@@ -6,19 +6,19 @@ import { CancellationToken, commands, Disposable, Hover,
 export interface Translations { [abbrev: string]: string | null }
 
 function inputModeEnabled(): boolean {
-    return workspace.getConfiguration('lean.input').get('enabled', true);
+    return workspace.getConfiguration('lean4.input').get('enabled', true);
 }
 
 function inputModeLeader(): string {
-    return workspace.getConfiguration('lean.input').get('leader', '\\');
+    return workspace.getConfiguration('lean4.input').get('leader', '\\');
 }
 
 export function inputModeLanguages(): string[] {
-    return workspace.getConfiguration('lean.input').get('languages', ['lean']);
+    return workspace.getConfiguration('lean4.input').get('languages', ['lean4']);
 }
 
 function inputModeCustomTranslations(): Translations {
-    return workspace.getConfiguration('lean.input').get('customTranslations', {});
+    return workspace.getConfiguration('lean4.input').get('customTranslations', {});
 }
 
 /** Adds hover behaviour for getting translations of unicode characters. Eg: "Type ⊓ using \glb or \sqcap"  */
@@ -238,14 +238,14 @@ export class LeanInputAbbreviator {
 
         this.subscriptions.push(window.onDidChangeActiveTextEditor(() => this.updateInputActive()));
 
-        this.subscriptions.push(commands.registerTextEditorCommand('lean.input.convert', async (editor, edit) => {
+        this.subscriptions.push(commands.registerTextEditorCommand('lean4.input.convert', async (editor, edit) => {
             const handler = this.handlers.get(editor);
             if (handler) {
                 await handler.convertRanges();
             }
         }));
 
-        this.subscriptions.push(commands.registerTextEditorCommand('lean.input.convertWithNewline', async (editor) => {
+        this.subscriptions.push(commands.registerTextEditorCommand('lean4.input.convertWithNewline', async (editor) => {
             const handler = this.handlers.get(editor);
             if (handler) {
                 await handler.convertRanges();
@@ -264,7 +264,7 @@ export class LeanInputAbbreviator {
     }
 
     private async setInputActive(isActive: boolean) {
-        await commands.executeCommand('setContext', 'lean.input.isActive', isActive);
+        await commands.executeCommand('setContext', 'lean4.input.isActive', isActive);
     }
 
     get active(): boolean {
