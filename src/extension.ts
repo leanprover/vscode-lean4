@@ -1,8 +1,6 @@
 import semver = require('semver');
 import loadJsonFile = require('load-json-file');
-import { promisify } from 'util'
-import { exec } from 'child_process'
-import { commands, DocumentFilter, ExtensionContext, languages, workspace, version } from 'vscode';
+import { commands, DocumentFilter, ExtensionContext, languages, workspace, version, extensions } from 'vscode';
 import { batchExecuteFile } from './batch';
 import { LeanCompletionItemProvider } from './completion';
 import { LeanDefinitionProvider } from './definition';
@@ -23,39 +21,12 @@ import { LeanTaskGutter, LeanTaskMessages } from './taskgutter';
 import { StaticServer } from './staticserver';
 import { LibraryNoteLinkProvider } from './librarynote';
 
-function executablePath(): string {
-    return workspace.getConfiguration('lean').get('lean.executablePath', 'lean')
-}
-
 async function checkLean3(): Promise<boolean> {
-    const folders = workspace.workspaceFolders
-    let folderPath: string
-    if (folders) {
-        folderPath = folders[0].uri.fsPath
+    const lean4 = extensions.getExtension('leanprover.lean4');
+    if (!lean4) {
+        return true;
     }
-    // We assume that vscode-lean and vscode-lean4 have the same `executablePath`,
-    // otherwise we cannot guarantee that both extensions will not launch at the same time.
-    const cmd = `${executablePath()} --version`
-    try {
-        // If folderPath is undefined, this will use the process environment for cwd.
-        // Specifically, if the extension was not opened inside of a folder, it
-        // looks for a global installation of Lean.
-        // In vscode-lean4 we do this for single-file language server support,
-        // here we do it to use the same binary as vscode-lean4.
-        const { stdout, stderr } = await promisify(exec)(cmd, {cwd: folderPath})
-        const filterVersion = /Lean \(version (\d+)\.(\d+)\.([^,]+), commit [^,]+, \w+\)/
-        const match = filterVersion.exec(stdout)
-        if (!match) {
-            return true
-        }
-        const major = match[1]
-        if (major !== '3') {
-            return false
-        }
-        return true
-    } catch (err) {
-        return true
-    }
+    return (await lean4.activate()).aborted;
 }
 
 // Seeing .olean files in the source tree is annoying, we should
