@@ -27,20 +27,17 @@ async function checkLean4(): Promise<boolean> {
     if (folders) {
         folderPath = folders[0].uri.fsPath
     }
-
-    // We assume that vscode-lean and vscode-lean4 have the same `executablePath`,
-    // otherwise we cannot guarantee that both extensions will not launch at the same time.
     const cmd = `${executablePath()} --version`
     try {
         // If folderPath is undefined, this will use the process environment for cwd.
         // Specifically, if the extension was not opened inside of a folder, it
-        // looks for a global installation of Lean. This way, we can support
+        // looks for a global (default) installation of Lean. This way, we can support
         // single file editing.
         const { stdout, stderr } = await promisify(exec)(cmd, {cwd: folderPath})
         const filterVersion = /Lean \(version (\d+)\.(\d+)\.([^,]+), commit [^,]+, \w+\)/
         const match = filterVersion.exec(stdout)
         if (!match) {
-            void window.showErrorMessage(`'${cmd}' returned incorrect version string '${stdout}'.`)
+            void window.showErrorMessage(`lean4: '${cmd}' returned incorrect version string '${stdout}'.`)
             return false
         }
         const major = match[1]
@@ -49,7 +46,7 @@ async function checkLean4(): Promise<boolean> {
         }
         return true
     } catch (err) {
-        void window.showErrorMessage(`Could not find Lean version by running '${cmd}'.`)
+        void window.showErrorMessage(`lean4: Could not find Lean version by running '${cmd}'.`)
         return false
     }
 }
@@ -84,10 +81,13 @@ function restartServer(): void {
     client.start()
 }
 
-export async function activate(context: ExtensionContext): Promise<void> {
+export async function activate(context: ExtensionContext): Promise<any> {
     const isLean4 = await checkLean4()
+    // API provided to vscode-lean. If aborted is false, (i.e. vscode-lean4 is being activated),
+    // vscode-lean will not activate.
+    const api = { aborted: !isLean4 }
     if (!isLean4) {
-        return
+        return api
     }
 
     // All open .lean files of this workspace are assumed to be Lean 4 files.
@@ -141,6 +141,7 @@ export async function activate(context: ExtensionContext): Promise<void> {
     context.subscriptions.push(commands.registerCommand('lean4.restartServer', restartServer));
 
     restartServer()
+    return api
 }
 
 export function deactivate(): Thenable<void> | undefined {

@@ -3,7 +3,7 @@
 	"displayName": "lean4",
 	"description": "An extension for VS Code which provides support for the Lean 4 language.",
 	"version": "0.0.7",
-	"publisher": "jroesch",
+	"publisher": "leanprover",
 	"engines": {
 		"vscode": "^1.38.0"
 	},
@@ -233,10 +233,5 @@
 		"webpack-cli": "^3.3.12"
 	},
 	"icon": "images/lean_logo.png",
-	"license": "Apache-2.0",
-	"__metadata": {
-		"id": "e5e5c0e2-0fb3-4f00-9c79-5b15f9ff8430",
-		"publisherDisplayName": "jroesch",
-		"publisherId": "7875b14e-7883-4853-ac79-bfe9296fab82"
-	}
+	"license": "Apache-2.0"
 }
