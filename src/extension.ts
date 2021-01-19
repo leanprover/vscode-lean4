@@ -1,6 +1,6 @@
 import semver = require('semver');
 import loadJsonFile = require('load-json-file');
-import { commands, DocumentFilter, ExtensionContext, languages, workspace, version } from 'vscode';
+import { commands, DocumentFilter, ExtensionContext, languages, workspace, version, extensions } from 'vscode';
 import { batchExecuteFile } from './batch';
 import { LeanCompletionItemProvider } from './completion';
 import { LeanDefinitionProvider } from './definition';
@@ -21,6 +21,14 @@ import { LeanTaskGutter, LeanTaskMessages } from './taskgutter';
 import { StaticServer } from './staticserver';
 import { LibraryNoteLinkProvider } from './librarynote';
 
+async function checkLean3(): Promise<boolean> {
+    const lean4 = extensions.getExtension('leanprover.lean4');
+    if (!lean4) {
+        return true;
+    }
+    return !(await lean4.activate()).isLean4Project;
+}
+
 // Seeing .olean files in the source tree is annoying, we should
 // just globally hide them.
 async function configExcludeOLean() {
@@ -36,7 +44,12 @@ const LEAN_MODE: DocumentFilter = {
     // scheme: 'file',
 };
 
-export function activate(context: ExtensionContext): void {
+export async function activate(context: ExtensionContext): Promise<void> {
+    const isLean3 = await checkLean3();
+    if (!isLean3) {
+        return;
+    }
+
     void configExcludeOLean();
 
     const server = new Server();
@@ -75,15 +88,13 @@ export function activate(context: ExtensionContext): void {
             LEAN_MODE, new LeanCompletionItemProvider(server), '.'));
 
     // Register support for unicode input.
-    void (async () => {
-        const translations: any = await loadJsonFile(context.asAbsolutePath('translations.json'));
-        const inputLanguages: string[] = inputModeLanguages();
-        const hoverProvider =
-            languages.registerHoverProvider(inputLanguages, new LeanInputExplanationHover(translations));
-        context.subscriptions.push(
-            hoverProvider,
-            new LeanInputAbbreviator(translations));
-    })();
+    const translations: any = await loadJsonFile(context.asAbsolutePath('translations.json'));
+    const inputLanguages: string[] = inputModeLanguages();
+    const hoverProvider =
+        languages.registerHoverProvider(inputLanguages, new LeanInputExplanationHover(translations));
+    context.subscriptions.push(
+        hoverProvider,
+        new LeanInputAbbreviator(translations));
 
     // Register support for definition support.
     context.subscriptions.push(
