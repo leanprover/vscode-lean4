@@ -26,7 +26,7 @@ async function checkLean3(): Promise<boolean> {
     if (!lean4) {
         return true;
     }
-    return (await lean4.activate()).aborted;
+    return !(await lean4.activate()).isLean4Project;
 }
 
 // Seeing .olean files in the source tree is annoying, we should
