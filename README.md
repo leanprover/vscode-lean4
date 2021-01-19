@@ -219,6 +219,10 @@ The format below is: "`lean.commandName` (command name): description", where `le
 
 ## Release Notes
 
+### 0.16.21
+* Improved Lean input mode.  The `lean.input.convertWithNewline` command has been removed.  Abbreviations are now converted eagerly; this can be disabled with the `lean.input.eagerReplacementEnabled` option.
+* Both the Lean 3 and Lean 4 extension can be installed at the same time now.
+
 ### 0.16.0
 * Info view redesign: tactic state and messages are now combined in one window. Multiple positions can be pinned. Types in the tactic state widget can be expanded by clicking on them (when using Lean 3.15.0c and newer)!
 
