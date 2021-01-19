@@ -82,11 +82,11 @@ function restartServer(): void {
 }
 
 export async function activate(context: ExtensionContext): Promise<any> {
-    const isLean4 = await checkLean4()
-    // API provided to vscode-lean. If aborted is false, (i.e. vscode-lean4 is being activated),
+    const isLean4Project = await checkLean4()
+    // API provided to vscode-lean. If isLean4Project is true, (i.e. vscode-lean4 is being activated),
     // vscode-lean will not activate.
-    const api = { aborted: !isLean4 }
-    if (!isLean4) {
+    const api = { isLean4Project }
+    if (!isLean4Project) {
         return api
     }
 
