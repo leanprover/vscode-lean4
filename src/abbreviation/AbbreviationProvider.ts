@@ -47,6 +47,15 @@ export class AbbreviationProvider implements Disposable {
 		return [...result.values()];
 	}
 
+	/**
+	 * Computes the replacement text for a typed abbreviation (excl. leader).
+	 * This converts the longest non-empty prefix with the best-matching abbreviation.
+	 *
+	 * For example:
+	 *   getReplacementText("alp") returns "α"
+	 *   getReplacementText("alp7") returns "α7"
+	 *   getReplacementText("") returns undefined
+	 */
 	getReplacementText(abbrev: string): string | undefined {
 		if (abbrev in this.cache) {
 			return this.cache[abbrev];
@@ -57,16 +66,21 @@ export class AbbreviationProvider implements Disposable {
 	}
 
 	private _getReplacementText(abbrev: string): string | undefined {
+		if (abbrev.length === 0) {
+			return undefined;
+		}
+
 		const matchingSymbol = this.findSymbolsByAbbreviationPrefix(abbrev)[0];
 		if (matchingSymbol) {
 			return matchingSymbol;
-		} else if (abbrev.length > 0) {
-			const prefixReplacement = this.getReplacementText(
-				abbrev.slice(0, abbrev.length - 1)
-			);
-			if (prefixReplacement) {
-				return prefixReplacement + abbrev.slice(abbrev.length - 1);
-			}
+		}
+
+		// Convert the `alp` in `\alp7`
+		const prefixReplacement = this.getReplacementText(
+			abbrev.slice(0, abbrev.length - 1)
+		);
+		if (prefixReplacement) {
+			return prefixReplacement + abbrev.slice(abbrev.length - 1);
 		}
 
 		return undefined;
