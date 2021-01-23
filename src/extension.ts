@@ -9,7 +9,7 @@ import {
 } from 'vscode-languageclient'
 
 function executablePath(): string {
-    return workspace.getConfiguration('lean').get('lean.executablePath', 'lean')
+    return workspace.getConfiguration('lean4').get('executablePath', 'lean')
 }
 
 function serverLoggingEnabled(): boolean {
