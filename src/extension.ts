@@ -33,7 +33,7 @@ async function checkLean4(): Promise<boolean> {
         // looks for a global (default) installation of Lean. This way, we can support
         // single file editing.
         const { stdout, stderr } = await promisify(exec)(cmd, {cwd: folderPath})
-        const filterVersion = /Lean \(version (\d+)\.(\d+)\.([^,]+), commit [^,]+, \w+\)/
+        const filterVersion = /version (\d+)\.\d+\..+/
         const match = filterVersion.exec(stdout)
         if (!match) {
             void window.showErrorMessage(`lean4: '${cmd}' returned incorrect version string '${stdout}'.`)
