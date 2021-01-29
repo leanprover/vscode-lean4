@@ -8,11 +8,24 @@
     { "match": "\\battribute\\b\\s*\\[[^\\]]*\\]", "name": "storage.modifier.lean4" },
     { "match": "@\\[[^\\]]*\\]", "name": "storage.modifier.lean4" },
     {
-      "match": "\\b(?<!\\.)(partial|unsafe|private|protected)(?!\\.)\\b",
+      "match": "\\b(?<!\\.)(partial|unsafe|private|protected|noncomputable)(?!\\.)\\b",
       "name": "storage.modifier.lean4"
     },
     { "match": "\\bsorry\\b", "name": "invalid.illegal.lean4" },
     { "match": "#(print|eval|reduce|check|check_failure)\\b", "name": "keyword.other.lean4" },
+    {
+      "begin": "\\b(?<!\\.)(inductive|coinductive|structure|theorem|axiom|abbrev|lemma|def|instance|class|constant)\\b\\s+(\\{[^}]*\\})?",
+      "beginCaptures": {
+        "1": {"name": "keyword.other.definitioncommand.lean4"}
+      },
+      "patterns": [
+        {"include": "#comments"},
+        {"include": "#definitionName"},
+        {"match": ","}
+      ],
+      "end": "(?=\\bwith\\b|\\bextends\\b|\\bwhere\\b|[:\\|\\(\\[\\{⦃<>])",
+      "name": "meta.definitioncommand.lean4"
+    },
     {
       "match": "\\b(?<!\\.)(theorem|def|class|structure|instance|set_option|example|inductive|coinductive|axiom|constant|universe|universes|variable|variables|import|open|export|theory|prelude|renaming|hiding|exposing|do|by|let|extends|mutual|mut|where|rec|syntax|macro_rules|macro|deriving|fun|section|namespace|end|infix|infixl|infixr|postfix|prefix|notation|abbrev|if|then|else|calc|match|with|for|in|unless|try|catch|finally|return|continue|break)(?!\\.)\\b",
       "name": "keyword.other.lean4"
@@ -35,6 +48,12 @@
     { "match": "\\b([0-9]+|0([xX][0-9a-fA-F]+)|[-]?(0|[1-9][0-9]*)(\\.[0-9]+)?([eE][+-]?[0-9]+)?)\\b", "name": "constant.numeric.lean4" }
   ],
   "repository": {
+    "definitionName": {
+      "patterns": [
+        {"match": "\\b[^:«»\\(\\)\\{\\}[:space:]=→λ∀?][^:«»\\(\\)\\{\\}[:space:]]*", "name": "entity.name.function.lean4"},
+        {"begin": "«", "end": "»", "contentName": "entity.name.function.lean4"}
+      ]
+    },
     "dashComment": {
       "begin": "--", "end": "$",
       "name": "comment.line.double-dash.lean4",
