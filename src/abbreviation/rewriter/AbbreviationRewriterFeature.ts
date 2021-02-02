@@ -1,5 +1,5 @@
 import { observable } from 'mobx';
-import { Disposable, TextEditor, window } from 'vscode';
+import { Disposable, languages, TextEditor, window } from 'vscode';
 import { autorunDisposable } from '../../utils/autorunDisposable';
 import { AbbreviationProvider } from '../AbbreviationProvider';
 import { AbbreviationConfig } from '../config';
@@ -16,7 +16,7 @@ export class AbbreviationRewriterFeature {
 	private activeTextEditor: TextEditor | undefined;
 
 	constructor(
-		config: AbbreviationConfig,
+		private readonly config: AbbreviationConfig,
 		abbreviationProvider: AbbreviationProvider
 	) {
 		this.activeTextEditor = window.activeTextEditor;
@@ -26,7 +26,7 @@ export class AbbreviationRewriterFeature {
 				this.activeTextEditor = e;
 			}),
 			autorunDisposable((disposables) => {
-				if (this.activeTextEditor && config.inputModeEnabled) {
+				if (this.activeTextEditor && this.shouldEnableRewriterForEditor(this.activeTextEditor)) {
 					// This creates an abbreviation rewriter for the active text editor.
 					// Old rewriters are disposed automatically.
 					// This is also updated when this feature is turned off/on.
@@ -40,6 +40,16 @@ export class AbbreviationRewriterFeature {
 				}
 			})
 		);
+	}
+
+	private shouldEnableRewriterForEditor(editor: TextEditor): boolean {
+		if (!this.config.inputModeEnabled) {
+			return false;
+		}
+		if (!languages.match(this.config.languages.get(), editor.document)) {
+			return false;
+		}
+		return true;
 	}
 
 	dispose(): void {
