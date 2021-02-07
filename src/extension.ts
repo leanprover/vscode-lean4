@@ -2,23 +2,9 @@ import { workspace, commands, window, languages, ExtensionContext, TextDocument 
 import { promisify } from 'util'
 import { exec } from 'child_process'
 import { AbbreviationFeature } from './abbreviation'
-import {
-    LanguageClient,
-    LanguageClientOptions,
-    ServerOptions,
-} from 'vscode-languageclient'
-
-function executablePath(): string {
-    return workspace.getConfiguration('lean4').get('executablePath', 'lean')
-}
-
-function serverLoggingEnabled(): boolean {
-    return workspace.getConfiguration('lean4.serverLogging').get('enabled', false)
-}
-
-function serverLoggingPath(): string {
-    return workspace.getConfiguration('lean4.serverLogging').get('path', '.')
-}
+import { executablePath } from './config'
+import { LeanClient } from './leanclient'
+import { InfoView } from './infoview'
 
 async function checkLean4(): Promise<boolean> {
     const folders = workspace.workspaceFolders
@@ -50,35 +36,8 @@ async function checkLean4(): Promise<boolean> {
     }
 }
 
-let client: LanguageClient
-
-function restartServer(): void {
-    if (client) {
-        void client.stop()
-        client = undefined
-    }
-    const serverOptions: ServerOptions = {
-        command: executablePath(),
-        args: ['--server'],
-        options: {
-            shell: true,
-            env: { ...process.env }
-        }
-    }
-    if (serverLoggingEnabled()) {
-        serverOptions.options.env.LEAN_SERVER_LOG_DIR = serverLoggingPath()
-    }
-    const clientOptions: LanguageClientOptions = {
-        documentSelector: [{ scheme: 'file', language: 'lean4' }]
-    }
-    client = new LanguageClient(
-        'lean4',
-        'Lean 4',
-        serverOptions,
-        clientOptions
-    )
-    client.start()
-}
+const client: LeanClient = new LeanClient()
+let infoView: InfoView
 
 export async function activate(context: ExtensionContext): Promise<any> {
     const isLean4Project = await checkLean4()
@@ -105,40 +64,39 @@ export async function activate(context: ExtensionContext): Promise<any> {
     // Register support for unicode input
     context.subscriptions.push(new AbbreviationFeature())
 
-    context.subscriptions.push(commands.registerCommand('lean4.refreshFileDependencies', () => {
-        const editor = window.activeTextEditor
-        if (!editor) { return }
-        const doc = editor.document
-        const uri = doc.uri.toString()
-        // This causes a text document version number discontinuity. In
-        // (didChange (oldVersion) => refreshFileDependencies => didChange (newVersion))
-        // the client emits newVersion = oldVersion + 1, despite the fact that the
-        // didOpen packet emitted below initializes the version number to be 1.
-        // This is not a problem though, since both client and server are fine
-        // as long as the version numbers are monotonous.
-        client.sendNotification('textDocument/didClose', {
-            'textDocument': {
-                uri
-            }
-        })
-        client.sendNotification('textDocument/didOpen', {
-            'textDocument': {
-                uri,
-                'languageId': 'lean4',
-                'version': 1,
-                'text': doc.getText()
-            }
-        })
+    infoView = new InfoView(context)
+
+    // NOTE(Marc): This runs quite rarely, but I hope that it's good enough for now.
+    // I tried using languages.onDidChangeDiagnostics, which yields `language client not ready yet` errors.
+    // Maybe this is fixed for a newer version of the LSP client, I don't know.
+    window.onDidChangeTextEditorSelection(async e => {
+        if (!e.selections) {
+            infoView.wipeGoalsIfOpen()
+            return
+        }
+        const response: any = await client.requestPlainGoals(e.textEditor.document, e.selections[0].active) as Promise<any>
+        if (!response) {
+            infoView.wipeGoalsIfOpen()
+            return
+        }
+        infoView.displayGoals(response.rendered)
+    })
+
+    context.subscriptions.push(commands.registerCommand('lean4.plainInfoView.toggleAutoUpdate', () => {
+        infoView.toggleAutoUpdate()
     }))
+    context.subscriptions.push(commands.registerCommand('lean4.refreshFileDependencies', () => {
+        if (!window.activeTextEditor) { return }
+        client.refreshFileDependencies(window.activeTextEditor)
+    }))
+    context.subscriptions.push(commands.registerCommand('lean4.restartServer', () => client.restart()));
 
-    context.subscriptions.push(commands.registerCommand('lean4.restartServer', restartServer));
-
-    restartServer()
+    void client.start()
     return api
 }
 
 export function deactivate(): Thenable<void> | undefined {
-    if (!client) {
+    if (!client.isStarted()) {
         return undefined
     }
     return client.stop()

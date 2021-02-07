@@ -75,8 +75,14 @@
 			{
 				"command": "lean4.restartServer",
 				"category": "Lean 4",
-				"title": "Restart",
-				"description": "Restart the Language Server."
+				"title": "Restart Server",
+				"description": "Restart the language server."
+			},
+			{
+				"command": "lean4.refreshFileDependencies",
+				"category": "Lean 4",
+				"title": "Refresh File Dependencies",
+				"description": "Restarts the file worker for the file that is currently focused to refresh the dependencies."
 			},
 			{
 				"command": "lean4.input.convert",
@@ -85,10 +91,10 @@
 				"description": "Converts the current abbreviation (e.g. \\lam)."
 			},
 			{
-				"command": "lean4.refreshFileDependencies",
+				"command": "lean4.plainInfoView.toggleAutoUpdate",
 				"category": "Lean 4",
-				"title": "Refresh file dependencies",
-				"description": "Restarts the file worker for the file that is currently focused to refresh the dependencies."
+				"title": "InfoView: Toggle Auto Update",
+				"description": "Toggles whether the info view should update automatically or freeze."
 			}
 		],
 		"languages": [
@@ -149,6 +155,12 @@
 				"key": "ctrl+shift+x",
 				"mac": "cmd+shift+x",
 				"when": "editorTextFocus && editorLangId == lean4"
+			},
+			{
+				"command": "lean4.plainInfoView.toggleAutoUpdate",
+				"key": "ctrl+shift+t",
+				"mac": "cmd+shift+t",
+				"when": "editorTextFocus && editorLangId == lean4"
 			}
 		],
 		"menus": {
@@ -156,6 +168,10 @@
 				{
 					"command": "lean4.input.convert",
 					"when": "editorLangId == lean4 && lean4.input.isActive"
+				},
+				{
+					"command": "lean4.plainInfoView.toggleAutoUpdate",
+					"when": "editorLangId == lean4"
 				},
 				{
 					"command": "lean4.refreshFileDependencies",
