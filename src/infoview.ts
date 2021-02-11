@@ -200,7 +200,7 @@ export class InfoProvider implements Disposable {
                 this.handleServerRequest(message);
                 return;
             case 'reveal':
-                await this.revealEditorPosition(Uri.parse(message.loc.file_name), message.loc.line, message.loc.column);
+                await this.revealEditorPosition(Uri.file(message.loc.file_name), message.loc.line, message.loc.column);
                 return;
             case 'sync_pin':
                 this.pins = message.pins;
