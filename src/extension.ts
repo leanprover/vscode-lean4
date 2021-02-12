@@ -51,13 +51,13 @@ export async function activate(context: ExtensionContext): Promise<any> {
     // All open .lean files of this workspace are assumed to be Lean 4 files.
     // We need to do this because by default, .lean is associated with language id `lean`,
     // i.e. Lean 3. vscode-lean is expected to yield when isLean4 is true.
-    const setLean4LanguageId = (textDocument: TextDocument) => {
+    const setLean4LanguageId = async (textDocument: TextDocument) => {
         if (textDocument.languageId === 'lean') {
-            void languages.setTextDocumentLanguage(textDocument, 'lean4')
+            await languages.setTextDocumentLanguage(textDocument, 'lean4')
         }
     }
     for (const textDocument of workspace.textDocuments) {
-        setLean4LanguageId(textDocument)
+        await setLean4LanguageId(textDocument)
     }
     workspace.onDidOpenTextDocument(setLean4LanguageId)
 
