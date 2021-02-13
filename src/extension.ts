@@ -70,6 +70,9 @@ export async function activate(context: ExtensionContext): Promise<any> {
     // I tried using languages.onDidChangeDiagnostics, which yields `language client not ready yet` errors.
     // Maybe this is fixed for a newer version of the LSP client, I don't know.
     window.onDidChangeTextEditorSelection(async e => {
+        if (e.textEditor?.document?.languageId !== 'lean4') {
+            return
+        }
         if (!e.selections) {
             infoView.wipeGoalsIfOpen()
             return
