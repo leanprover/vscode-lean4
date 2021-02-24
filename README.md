@@ -12,6 +12,10 @@ If no blue underline is displayed, make sure that Lean 4 is installed correctly 
 
 If the blue underline is displayed but the type is not displayed when hovering over `1`, make sure that you are using a nightly build of Lean 4, not the stable version.
 
+### Using the nix setup instead
+1. Install Lean 4 using [the nix setup](https://leanprover.github.io/lean4/doc/setup.html#nix-setup).
+2. Create a Lean 4 nix project and run the pinned version of VSCode as described [here](https://leanprover.github.io/lean4/doc/setup.html#basic-commands).
+
 ## Functionality
 As of now, the extension supports the following features:
 - Diagnostics
