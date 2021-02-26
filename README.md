@@ -16,6 +16,9 @@ If the blue underline is displayed but the type is not displayed when hovering o
 1. Install Lean 4 using [the Nix setup](https://leanprover.github.io/lean4/doc/setup.html#nix-setup).
 2. Create a Lean 4 Nix project and run the pinned version of VSCode as described [here](https://leanprover.github.io/lean4/doc/setup.html#basic-commands).
 
+## Refreshing file dependencies
+As of now, after changing and rebuilding the dependency of a Lean 4 file, the language server needs to be manually informed that it should re-elaborate the full file, including the imports. This can be done using the `Lean 4: Refresh File Dependencies` command, which can be activated via Ctrl+Shift+X by default.
+
 ## Functionality
 As of now, the extension supports the following features:
 - Diagnostics
