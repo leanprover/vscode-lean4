@@ -1,6 +1,7 @@
 import { Server, Transport, Connection, Event, TransportError, Message } from 'lean-client-js-core';
 import { ToInfoviewMessage, FromInfoviewMessage, Config, Location, defaultConfig, PinnedLocation, InsertTextMessage } from '../src/shared';
 declare const acquireVsCodeApi;
+// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
 const vscode = acquireVsCodeApi();
 
 export function post(message: FromInfoviewMessage): void { // send a message to the extension
