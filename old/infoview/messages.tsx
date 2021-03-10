@@ -2,8 +2,8 @@ import { basename, escapeHtml, colorizeMessage } from './util';
 import { Message } from 'lean-client-js-node';
 import * as React from 'react';
 import { Location, Config } from '../src/shared';
-import { CopyToCommentIcon, GoToFileIcon } from './svg_icons';
-import { copyToComment, reveal } from './server';
+import { ClippyIcon, CopyToCommentIcon, GoToFileIcon } from './svg_icons';
+import { copyText, copyToComment, reveal } from './server';
 import { Widget } from './widget';
 import * as trythis from '../src/trythis';
 
@@ -37,6 +37,7 @@ const MessageView = React.memo(({m}: MessageViewProps) => {
                 <span className="fr">
                     <a className={'link pointer mh2 dim '} onClick={e => { e.preventDefault(); reveal(loc); }} title="reveal file location"><GoToFileIcon/></a>
                     { m.widget ? null : <a className="link pointer mh2 dim" title="copy message to comment" onClick={e => {e.preventDefault(); copyToComment(m.text)}}><CopyToCommentIcon/></a> }
+                    { m.widget ? null : <a className="link pointer mh2 dim" title="copy message to clipboard" onClick={e => {e.preventDefault(); copyText(m.text)}}><ClippyIcon/></a> }
                 </span>
         </summary>
         <div className="ml1">

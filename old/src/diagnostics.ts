@@ -12,6 +12,27 @@ function toSeverity(severity: Severity): DiagnosticSeverity {
     }
 }
 
+const MAX_MESSAGES = 2**13;
+const MAX_MESSAGE_SIZE = 2**18;
+function truncateMessages(msgs: Message[]): Message[] {
+    if (msgs.length >= MAX_MESSAGES) {
+        msgs = msgs.slice(0, MAX_MESSAGES - 1);
+        msgs.push({
+            ...msgs.pop(),
+            severity: 'error',
+            caption: undefined,
+            text: `Too many errors, only showing the first ${MAX_MESSAGES}.`,
+        });
+    }
+    msgs = msgs.map((msg) => ({
+        ...msg,
+        text: msg.text.length <= MAX_MESSAGE_SIZE ? msg.text :
+            msg.text.slice(0, MAX_MESSAGE_SIZE) +
+                `\n(message too long, truncated at ${MAX_MESSAGE_SIZE} characters)`,
+    }));
+    return msgs;
+}
+
 export class LeanDiagnosticsProvider implements Disposable {
     collection: DiagnosticCollection;
     private subscriptions: Disposable[] = [];
@@ -29,6 +50,10 @@ export class LeanDiagnosticsProvider implements Disposable {
     private updateDiagnostics(messages: Message[]) {
         const diagnosticMap = new Map<string, Diagnostic[]>();
         const docMap = new Map<string, TextDocument>();
+
+        // HACK: limit number and size of messages, see
+        // https://leanprover.zulipchat.com/#narrow/stream/113488-general/topic/folding.20problems.20problem
+        messages = truncateMessages(messages);
 
         for (const message of messages) {
             const line = Math.max(message.pos_line - 1, 0);

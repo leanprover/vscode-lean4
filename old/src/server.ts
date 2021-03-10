@@ -10,27 +10,6 @@ import { LowPassFilter } from './util';
 import { ServerStatus } from './shared';
 
 
-const MAX_MESSAGES = 2**13;
-const MAX_MESSAGE_SIZE = 2**18;
-function truncateMessages(msgs: Message[]): Message[] {
-    if (msgs.length >= MAX_MESSAGES) {
-        msgs = msgs.slice(0, MAX_MESSAGES - 1);
-        msgs.push({
-            ...msgs.pop(),
-            severity: 'error',
-            caption: undefined,
-            text: `Too many errors, only showing the first ${MAX_MESSAGES}.`,
-        });
-    }
-    msgs = msgs.map((msg) => ({
-        ...msg,
-        text: msg.text.length <= MAX_MESSAGE_SIZE ? msg.text :
-            msg.text.slice(0, MAX_MESSAGE_SIZE) +
-                `\n(message too long, truncated at ${MAX_MESSAGE_SIZE} characters)`,
-    }));
-    return msgs;
-}
-
 // A global channel for storing the contents of stderr.
 let stderrOutput: OutputChannel;
 
@@ -109,10 +88,6 @@ export class Server extends leanclient.Server {
     }
 
     private attachEventHandlers() {
-        // HACK: limit number and size of messages, see
-        // https://leanprover-community.github.io/archive/113488general/25177foldingproblemsproblem.html
-        this.allMessages.on((res) => res.msgs = truncateMessages(res.msgs));
-
         // When attaching event handlers ensure the global error log is clear.
         stderrOutput = stderrOutput || window.createOutputChannel('Lean: Server Errors');
         stderrOutput.clear();
