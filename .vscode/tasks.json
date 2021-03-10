@@ -7,7 +7,31 @@
 			"label": "watch",
 			"type": "npm",
 			"script": "watch",
-			"problemMatcher": "$ts-webpack-watch",
+			"problemMatcher": {
+				"owner": "typescript",
+				"source": "ts",
+				"fileLocation": "absolute",
+				"applyTo": "closedDocuments",
+				"pattern": [
+					{
+						"regexp": "\\[tsl\\] (ERROR|WARNING) in (.*)?\\((\\d+),(\\d+)\\)",
+						"severity": 1,
+						"file": 2,
+						"line": 3,
+						"column": 4
+					},
+					{
+						"regexp": "\\s*TS(\\d+):\\s*(.*)$",
+						"code": 1,
+						"message": 2
+					}
+				],
+				"background": {
+					"activeOnStart": true,
+					"beginsPattern": "^extension:",
+					"endsPattern": "webpack .* compiled .* in "
+				}
+			},
 			"isBackground": true,
 			"presentation": {
 				"reveal": "never"
@@ -18,7 +42,26 @@
 			"label": "compile",
 			"type": "npm",
 			"script": "compile",
-			"problemMatcher": "$ts-webpack",
+			"problemMatcher": {
+				"owner": "typescript",
+				"source": "ts",
+				"fileLocation": "absolute",
+				"applyTo": "closedDocuments",
+				"pattern": [
+					{
+						"regexp": "\\[tsl\\] (ERROR|WARNING) in (.*)?\\((\\d+),(\\d+)\\)",
+						"severity": 1,
+						"file": 2,
+						"line": 3,
+						"column": 4
+					},
+					{
+						"regexp": "\\s*TS(\\d+):\\s*(.*)$",
+						"code": 1,
+						"message": 2
+					}
+				]
+			},
 			"presentation": {
 				"reveal": "never"
 			},

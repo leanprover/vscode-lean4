@@ -146,8 +146,5 @@ class VsCodeSettingResource {
 	}
 }
 
-workspace.onDidChangeConfiguration(() => {
-	runInAction('Update Configuration', () => {
-		VsCodeSettingResource.onConfigChange.fire(undefined);
-	});
-});
+workspace.onDidChangeConfiguration(() =>
+	runInAction(() => VsCodeSettingResource.onConfigChange.fire(undefined)));

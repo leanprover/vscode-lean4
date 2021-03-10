@@ -3,7 +3,7 @@ import {
     LanguageClient,
     LanguageClientOptions,
     ServerOptions
-} from 'vscode-languageclient'
+} from 'vscode-languageclient/node'
 import { executablePath, serverLoggingEnabled, serverLoggingPath } from './config'
 import { assert } from './utils/assert'
 
