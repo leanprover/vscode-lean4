@@ -8,7 +8,7 @@ function getWebviewConfig(env) {
 		name: 'webview',
 		mode: env.production ? 'production' : 'development',
 		entry: {
-			index: './old/infoview/index.tsx'
+			index: './infoview/index.tsx'
 		},
 		module: {
 			rules: [
@@ -112,5 +112,5 @@ function getExtensionConfig(env) {
 module.exports = function (env) {
 	env = env || {};
 	env.production = !!env.production;
-	return [getExtensionConfig(env)];
+	return [getWebviewConfig(env), getExtensionConfig(env)];
 };

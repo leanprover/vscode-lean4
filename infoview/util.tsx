@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Event } from 'lean-client-js-core';
+import { Event } from './event';
 
 // https://stackoverflow.com/questions/6234773/can-i-escape-html-special-chars-in-javascript
 export function escapeHtml(s: string): string {

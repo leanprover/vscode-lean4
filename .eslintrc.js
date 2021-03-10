@@ -22,7 +22,7 @@ module.exports = {
     ],
     "parser": "@typescript-eslint/parser",
     "parserOptions": {
-        "project": ["./tsconfig.json"],
+        "project": ["./tsconfig.json", "./infoview/tsconfig.json"],
         "sourceType": "module"
     },
     "plugins": [
@@ -67,6 +67,8 @@ module.exports = {
         "@typescript-eslint/prefer-namespace-keyword": "error",
         "@typescript-eslint/restrict-plus-operands": "off",
         "@typescript-eslint/restrict-template-expressions": "off",
+        "@typescript-eslint/require-await": "off",
+        "@typescript-eslint/no-unsafe-assignment": "off",
         "@typescript-eslint/quotes": [
             "error",
             "single",
