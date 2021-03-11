@@ -309,6 +309,15 @@
 				}
 			]
 		},
+		"semanticTokenScopes": [
+			{
+				"scopes": {
+					"keyword": [
+						"keyword.other"
+					]
+				}
+			}
+		],
 		"configurationDefaults": {
 			"[lean4]": {
 				"editor.tabSize": 2
