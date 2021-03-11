@@ -5,6 +5,7 @@ import { AbbreviationFeature } from './abbreviation'
 import { executablePath } from './config'
 import { LeanClient } from './leanclient'
 import { InfoProvider } from './infoview'
+import { LeanTaskGutter } from './taskgutter'
 
 async function checkLean4(): Promise<boolean> {
     const folders = workspace.workspaceFolders
@@ -64,6 +65,8 @@ export async function activate(context: ExtensionContext): Promise<any> {
     context.subscriptions.push(new AbbreviationFeature())
 
     context.subscriptions.push(new InfoProvider(client, {language: 'lean4'}, context))
+
+    context.subscriptions.push(new LeanTaskGutter(client, context))
 
     context.subscriptions.push(commands.registerCommand('lean4.refreshFileDependencies', () => {
         if (!window.activeTextEditor) { return }

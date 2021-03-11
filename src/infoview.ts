@@ -75,6 +75,7 @@ export class InfoProvider implements Disposable {
                 await this.webviewApi?.restarted();
                 await this.sendMessages();
             }),
+            this.client.progressChanged(async (p) => await this.webviewApi?.progress(p)),
             window.onDidChangeActiveTextEditor(() => this.sendPosition()),
             window.onDidChangeTextEditorSelection(() => this.sendPosition()),
             workspace.onDidChangeConfiguration(async (e) => {
@@ -185,6 +186,7 @@ export class InfoProvider implements Disposable {
         if (loc !== null) { await this.webviewApi?.position(loc); }
         await this.sendConfig();
         await this.sendMessages();
+        await this.webviewApi?.progress(this.client.progress)
     }
 
     private async sendMessages() {

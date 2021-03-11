@@ -1,17 +1,16 @@
-import { TextDocument, Position, TextEditor, EventEmitter, Uri, Diagnostic } from 'vscode'
+import { TextDocument, Position, TextEditor, EventEmitter, Uri, Diagnostic, window, workspace, languages } from 'vscode'
 import {
     LanguageClient,
     LanguageClientOptions,
     ServerOptions
 } from 'vscode-languageclient/node'
 import { executablePath, serverLoggingEnabled, serverLoggingPath } from './config'
+import { PlainGoal, ServerProgress } from './leanclientTypes'
 import { assert } from './utils/assert'
 
-export interface PlainGoal {
-    rendered: string;
-    // since 2021-03-10
-    goals?: string[];
-}
+const processingMessage = 'processing...'
+
+const documentSelector = { scheme: 'file', language: 'lean4' }
 
 export class LeanClient {
     client: LanguageClient
@@ -21,6 +20,10 @@ export class LeanClient {
 
     private diagnosticsEmitter = new EventEmitter<{uri: Uri, diagnostics: Diagnostic[]}>()
     diagnostics = this.diagnosticsEmitter.event
+
+    progress: ServerProgress = {}
+    private progressChangedEmitter = new EventEmitter<ServerProgress>()
+    progressChanged = this.progressChangedEmitter.event
 
     async restart(): Promise<void> {
         if (this.isStarted()) {
@@ -38,14 +41,20 @@ export class LeanClient {
             serverOptions.options.env.LEAN_SERVER_LOG_DIR = serverLoggingPath()
         }
         const clientOptions: LanguageClientOptions = {
-            documentSelector: [{ scheme: 'file', language: 'lean4' }],
+            documentSelector: [documentSelector],
             middleware: {
                 handleDiagnostics: (uri, diagnostics, next) => {
-                    next(uri, diagnostics);
+                    const processedUntil = diagnostics.find((d) =>
+                        d.message === processingMessage)?.range?.start?.line
+                    this.setProgress({...this.progress, [uri.toString()]: processedUntil})
+                    next(uri, diagnostics.filter((d) => d.message !== processingMessage));
                     this.diagnosticsEmitter.fire({uri, diagnostics})
                 },
             },
         }
+        this.setProgress(Object.assign({}, ...workspace.textDocuments
+            .filter((doc) => languages.match(documentSelector, doc))
+            .map((doc) => ({[doc.uri.toString()]: 0}))))
         this.client = new LanguageClient(
             'lean4',
             'Lean 4',
@@ -67,6 +76,7 @@ export class LeanClient {
     async stop(): Promise<void> {
         assert(() => this.isStarted())
         await this.client.stop()
+        this.setProgress({})
         this.client = undefined
     }
 
@@ -100,5 +110,10 @@ export class LeanClient {
         return this.client.sendRequest(
             '$/lean/plainGoal',
             this.client.code2ProtocolConverter.asTextDocumentPositionParams(doc, position))
+    }
+
+    private setProgress(newProgress: ServerProgress) {
+        this.progress = newProgress
+        this.progressChangedEmitter.fire(newProgress)
     }
 }

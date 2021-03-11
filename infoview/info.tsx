@@ -1,13 +1,14 @@
 import * as React from 'react';
-import { copyToCommentEvent, copyToComment, pauseEvent, continueEvent, toggleUpdating, serverRestarted, allMessagesEvent, requestPlainGoal, reveal } from './server';
+import { copyToCommentEvent, copyToComment, pauseEvent, continueEvent, toggleUpdating, serverRestarted, allMessagesEvent, requestPlainGoal, reveal, progressEvent } from './server';
 import { LocationContext, ConfigContext } from '.';
 import { Goal } from './goal';
 import { Messages, processMessages, ProcessedMessage, getMessagesFor } from './messages';
 import { basename, useEvent } from './util';
 import { CopyToCommentIcon, PinnedIcon, PinIcon, ContinueIcon, PauseIcon, RefreshIcon, GoToFileIcon } from './svg_icons';
 import { Details } from './collapsing';
-import { InfoviewLocation, Message, PlainGoal } from '../src/infoviewApi';
+import { InfoviewLocation, Message } from '../src/infoviewApi';
 import { Event } from './event';
+import { PlainGoal, ServerProgress } from '../src/leanclientTypes';
 
 type InfoStatus = 'updating' | 'error' | 'pinned' | 'cursor' | 'loading';
 
@@ -26,14 +27,13 @@ interface InfoProps {
     onPin: (newPinState: boolean) => void;
 }
 
-// function isLoading(ts: CurrentTasksResponse, l: InfoviewLocation): boolean {
-//     return l &&
-//         ts.tasks.some(t => t.uri === l.uri && t.pos_line < l.line && l.line < t.end_pos_line);
-// }
+function isLoading(ts: ServerProgress, l: InfoviewLocation): boolean {
+    return l && ts[l.uri] !== undefined && l.line <= ts[l.uri];
+}
 
-// function isDone(ts: CurrentTasksResponse) {
-//     return ts.tasks.length === 0;
-// }
+function isDone(ts: ServerProgress, l: InfoviewLocation) {
+    return l && ts[l.uri] === undefined
+}
 
 function useMappedEvent<T, S>(ev: Event<T>, initial: S, f: (_: T) => S, deps?: React.DependencyList): S {
     const [s, setS] = React.useState<S>(initial);
@@ -69,8 +69,7 @@ interface InfoState {
 }
 
 function infoState(isPaused: boolean, loc: InfoviewLocation): InfoState {
-    const loading = false; // TODO
-    // useMappedEvent(global_server.tasks, false, (t) => isLoading(t, loc), [loc]);
+    const loading = useMappedEvent(progressEvent, false, (t) => isLoading(t, loc), [loc]);
 
     const [goal, setGoal] = React.useState<PlainGoal>();
     const [error, setError] = React.useState<string>();
@@ -91,8 +90,8 @@ function infoState(isPaused: boolean, loc: InfoviewLocation): InfoState {
         }
     });
 
-    const tasksFinished = true;
-    // useMappedEvent(global_server.tasks, true, (t) => isDone(t) ? new Object() : false);
+    const tasksFinished = useMappedEvent(progressEvent, true,
+        (t) => isDone(t, loc) ? new Object() : false, [loc]);
     React.useEffect(() => triggerUpdate(), [loc, isPaused, tasksFinished]);
     useEvent(serverRestarted, triggerUpdate);
     // useEvent(global_server.error, triggerUpdate);

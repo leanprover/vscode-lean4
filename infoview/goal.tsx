@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { escapeHtml } from './util';
 import { ConfigContext } from './index';
-import { PlainGoal } from '../src/infoviewApi';
+import { PlainGoal } from '../src/leanclientTypes';
 
 interface GoalProps {
     plainGoals: PlainGoal;

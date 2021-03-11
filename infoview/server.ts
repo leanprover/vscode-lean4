@@ -1,6 +1,7 @@
 import { Config, defaultConfig, InfoviewLocation, InfoviewExtensionApi, InfoviewWebviewApi, obtainApi, PinnedLocation, registerApi, Message } from '../src/infoviewApi';
 import { RpcBrowser } from '@sap-devx/webview-rpc/out.browser/rpc-browser.js';
 import { Event } from './event';
+import { ServerProgress } from '../src/leanclientTypes';
 declare const acquireVsCodeApi;
 const vscode = acquireVsCodeApi();
 
@@ -35,6 +36,7 @@ export const togglePinEvent: Event<unknown> = registerEvent('togglePin');
 export const serverRestarted: Event<unknown> = registerEvent('restarted');
 export const allMessagesEvent: Event<Message[]> = registerEvent('messages');
 export const toggleAllMessagesEvent: Event<unknown> = registerEvent('toggleAllMessages');
+export const progressEvent: Event<ServerProgress> = registerEvent('progress');
 
 allMessagesEvent.current = [];
 configEvent.current = defaultConfig;

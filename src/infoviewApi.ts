@@ -1,4 +1,5 @@
 import { RpcCommon } from '@sap-devx/webview-rpc/out.ext/rpc-common'
+import { PlainGoal, ServerProgress } from './leanclientTypes';
 
 export interface InfoviewLocation {
     uri: string;
@@ -40,11 +41,6 @@ export interface Message extends InfoviewLocation {
     severity: MessageSeverity;
     message: string;
 }
-export interface PlainGoal {
-    rendered: string;
-    // since 2021-03-10
-    goals?: string[];
-}
 
 export interface InfoviewExtensionApi {
     syncPins(pins: PinnedLocation[]): Promise<unknown>;
@@ -62,6 +58,7 @@ export interface InfoviewWebviewApi {
     position(loc: InfoviewLocation): Promise<unknown>;
     setConfig(config: Config): Promise<unknown>;
     messages(messages: Message[]): Promise<unknown>;
+    progress(progress: ServerProgress): Promise<void>;
     setPaused(paused: boolean): Promise<unknown>;
     toggleAllMessages(): Promise<unknown>;
     toggleUpdating(): Promise<unknown>;
