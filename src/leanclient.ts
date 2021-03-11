@@ -1,4 +1,5 @@
-import { TextDocument, Position, TextEditor, EventEmitter, Uri, Diagnostic, window, workspace, languages } from 'vscode'
+import { TextDocument, Position, TextEditor, EventEmitter, Uri, Diagnostic,
+    workspace, languages, DocumentHighlight, Range, DocumentHighlightKind } from 'vscode'
 import {
     LanguageClient,
     LanguageClientOptions,
@@ -11,6 +12,8 @@ import { assert } from './utils/assert'
 const processingMessage = 'processing...'
 
 const documentSelector = { scheme: 'file', language: 'lean4' }
+
+const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 export class LeanClient {
     client: LanguageClient
@@ -50,6 +53,33 @@ export class LeanClient {
                     next(uri, diagnostics.filter((d) => d.message !== processingMessage));
                     this.diagnosticsEmitter.fire({uri, diagnostics})
                 },
+                provideDocumentHighlights: async (doc, pos, ctok, next) => {
+                    const leanHighlights = await next(doc, pos, ctok);
+                    if (leanHighlights?.length) return leanHighlights;
+
+                    // vscode doesn't fall back to textual highlights,
+                    // so we need to do that manually
+                    await new Promise((res) => setTimeout(res, 250));
+                    if (ctok.isCancellationRequested) return;
+
+                    const wordRange = doc.getWordRangeAtPosition(pos);
+                    if (!wordRange) return;
+                    const word = doc.getText(wordRange);
+
+                    const highlights: DocumentHighlight[] = [];
+                    const text = doc.getText();
+                    const nonWordPattern = '[`~@$%^&*()-=+\\[{\\]}⟨⟩⦃⦄⟦⟧⟮⟯‹›\\\\|;:\",./\\s]|^|$'
+                    const regexp = new RegExp(`(?<=${nonWordPattern})${escapeRegExp(word)}(?=${nonWordPattern})`, 'g')
+                    for (const match of text.matchAll(regexp)) {
+                        const start = doc.positionAt(match.index)
+                        highlights.push({
+                            range: new Range(start, start.translate(0, match[0].length)),
+                            kind: DocumentHighlightKind.Text,
+                        })
+                    }
+
+                    return highlights;
+                }
             },
         }
         this.setProgress(Object.assign({}, ...workspace.textDocuments
