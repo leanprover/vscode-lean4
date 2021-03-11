@@ -85,7 +85,7 @@ function infoState(isPaused: boolean, loc: InfoviewLocation): InfoState {
             setGoal(plainGoal);
             setError(null);
         } catch (err) {
-            setError('' + err);
+            setError(typeof err === 'string' ? err : JSON.stringify(err));
             setGoal(null);
         }
     });
@@ -157,7 +157,7 @@ export function Info(props: InfoProps): JSX.Element {
                 <div>
                     {!loading && error &&
                         <div className="error">
-                            Error updating: {'' + error}.
+                            Error updating: {error}.
                             <a className="link pointer dim" onClick={e => forceUpdate()}>Try again.</a>
                         </div> }
                 </div>
