@@ -9,10 +9,11 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - run: npm install
-      - run: npm run lint
       - run: npm run compile
       - run: npm run package
       - uses: actions/upload-artifact@v2
         with:
           name: vscode-lean4
           path: 'lean4-*.vsix'
+      - run: npm run lint
+      - run: npm list --production --parseable --depth=99999 --loglevel=error
