@@ -5,55 +5,41 @@ declare const acquireVsCodeApi;
 const vscode = acquireVsCodeApi();
 
 const rpc = new RpcBrowser(window, vscode);
-export const serverApi: InfoviewExtensionApi = obtainApi(rpc);
+const serverApi: InfoviewExtensionApi = obtainApi(rpc);
 
 export function copyToComment(text: string): Promise<unknown> {
     return serverApi.insertText(`/-\n${text}\n-/\n`, 'relative');
 }
 
 // eslint-disable-next-line @typescript-eslint/unbound-method
-export const reveal = serverApi.reveal;
+export const {reveal, copyText, syncPins, requestPlainGoal} = serverApi;
 
 // eslint-disable-next-line @typescript-eslint/unbound-method
 export const edit = serverApi.insertText;
 
-// eslint-disable-next-line @typescript-eslint/unbound-method
-export const copyText = serverApi.copyText;
+function registerEvent<Name extends keyof InfoviewWebviewApi>(name: Name):
+        (InfoviewWebviewApi[Name] extends (_: infer T) => Promise<unknown> ? Event<T> : void) {
+    const ev = new Event();
+    registerApi(rpc, {[name]: async (val) => ev.fire(val)});
+    return ev as any;
+}
 
-export const PositionEvent: Event<InfoviewLocation> = new Event();
-export let globalCurrentLoc: InfoviewLocation = null;
-PositionEvent.on((loc) => globalCurrentLoc = loc);
+export const position: Event<InfoviewLocation> = registerEvent('position');
+export const configEvent: Event<Config> = registerEvent('setConfig');
+export const syncPinsEvent: Event<PinnedLocation[]> = registerEvent('syncPins');
+export const pauseEvent: Event<unknown> = new Event();
+export const continueEvent: Event<unknown> = new Event();
+export const toggleUpdating: Event<unknown> = registerEvent('toggleUpdating');
+export const copyToCommentEvent: Event<unknown> = registerEvent('copyToComment');
+export const togglePinEvent: Event<unknown> = registerEvent('togglePin');
+export const serverRestarted: Event<unknown> = registerEvent('restarted');
+export const allMessagesEvent: Event<Message[]> = registerEvent('messages');
+export const toggleAllMessagesEvent: Event<unknown> = registerEvent('toggleAllMessages');
 
-export let currentConfig: Config = defaultConfig;
-export const ConfigEvent: Event<Config> = new Event();
+allMessagesEvent.current = [];
+configEvent.current = defaultConfig;
+serverRestarted.on(() => allMessagesEvent.current = []);
 
-ConfigEvent.on(c => console.log('config updated: ', c));
-export const SyncPinEvent: Event<PinnedLocation[]> = new Event();
-export const PauseEvent: Event<unknown> = new Event();
-export const ContinueEvent: Event<unknown> = new Event();
-export const ToggleUpdatingEvent: Event<unknown> = new Event();
-export const CopyToCommentEvent: Event<unknown> = new Event();
-export const TogglePinEvent: Event<unknown> = new Event();
-export const ServerRestartEvent: Event<unknown> = new Event();
-export const AllMessagesEvent: Event<Message[]> = new Event();
-export const ToggleAllMessagesEvent: Event<unknown> = new Event();
-
-export let currentAllMessages: Message[] = [];
-AllMessagesEvent.on((msgs) => currentAllMessages = msgs);
-ServerRestartEvent.on(() => currentAllMessages = []);
-
-registerApi<InfoviewWebviewApi>(rpc, {
-    position: async (pos) => PositionEvent.fire(pos),
-    setConfig: async (config) => {
-        currentConfig = config;
-        ConfigEvent.fire(currentConfig);
-    },
-    syncPins: async (pins) => SyncPinEvent.fire(pins),
-    setPaused: async (paused) => (paused ? PauseEvent : ContinueEvent).fire(undefined),
-    toggleUpdating: async () => ToggleUpdatingEvent.fire(undefined),
-    copyToComment: async () => CopyToCommentEvent.fire(undefined),
-    togglePin: async () => TogglePinEvent.fire(undefined),
-    restarted: async () => ServerRestartEvent.fire(undefined),
-    messages: async (msgs) => AllMessagesEvent.fire(msgs),
-    toggleAllMessages: async () => ToggleAllMessagesEvent.fire(undefined),
+registerApi<Partial<InfoviewWebviewApi>>(rpc, {
+    setPaused: async (paused) => (paused ? pauseEvent : continueEvent).fire(undefined),
 });

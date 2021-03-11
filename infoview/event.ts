@@ -4,6 +4,7 @@ export interface EventListenerHandle {
 
 export class Event<E> {
     handlers: ((_: E) => any)[] = [];
+    current?: E;
 
     on(handler: (_: E) => any): EventListenerHandle {
         this.handlers.push(handler);
@@ -11,6 +12,7 @@ export class Event<E> {
     }
 
     fire(event: E): void {
+        this.current = event;
         for (const h of this.handlers) {
             h(event);
         }

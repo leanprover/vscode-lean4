@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { CopyToCommentEvent, copyToComment, PauseEvent, ContinueEvent, ToggleUpdatingEvent, ServerRestartEvent, AllMessagesEvent, currentAllMessages, serverApi } from './server';
+import { copyToCommentEvent, copyToComment, pauseEvent, continueEvent, toggleUpdating, serverRestarted, allMessagesEvent, requestPlainGoal, reveal } from './server';
 import { LocationContext, ConfigContext } from '.';
 import { Goal } from './goal';
 import { Messages, processMessages, ProcessedMessage, getMessagesFor } from './messages';
@@ -82,7 +82,7 @@ function infoState(isPaused: boolean, loc: InfoviewLocation): InfoState {
             return;
         }
         try {
-            const plainGoal = await serverApi.requestPlainGoal(loc);
+            const plainGoal = await requestPlainGoal(loc);
             setGoal(plainGoal);
             setError(null);
         } catch (err) {
@@ -94,7 +94,7 @@ function infoState(isPaused: boolean, loc: InfoviewLocation): InfoState {
     const tasksFinished = true;
     // useMappedEvent(global_server.tasks, true, (t) => isDone(t) ? new Object() : false);
     React.useEffect(() => triggerUpdate(), [loc, isPaused, tasksFinished]);
-    useEvent(ServerRestartEvent, triggerUpdate);
+    useEvent(serverRestarted, triggerUpdate);
     // useEvent(global_server.error, triggerUpdate);
 
     const config = React.useContext(ConfigContext);
@@ -102,8 +102,8 @@ function infoState(isPaused: boolean, loc: InfoviewLocation): InfoState {
     const updateMsgs = (msgs: Message[]) => {
         setMessages(loc ? processMessages(getMessagesFor(msgs, loc, config)) : []);
     };
-    React.useEffect(() => updateMsgs(currentAllMessages), [loc, config]);
-    useEvent(AllMessagesEvent, updateMsgs, [loc, config]);
+    React.useEffect(() => updateMsgs(allMessagesEvent.current), [loc, config]);
+    useEvent(allMessagesEvent, updateMsgs, [loc, config]);
 
     return { loc, loading, goal, error, messages, triggerUpdate };
 }
@@ -126,10 +126,10 @@ export function Info(props: InfoProps): JSX.Element {
 
     // If we are the cursor infoview, then we should subscribe to
     // some commands from the extension
-    useEvent(CopyToCommentEvent, () => isCursor && copyGoalToComment(), [isCursor, goal]);
-    useEvent(PauseEvent, () => isCursor && setPaused(true), [isCursor]);
-    useEvent(ContinueEvent, () => isCursor && setPaused(false), [isCursor]);
-    useEvent(ToggleUpdatingEvent, () => isCursor && setPaused(!isCurrentlyPaused.current), [isCursor]);
+    useEvent(copyToCommentEvent, () => isCursor && copyGoalToComment(), [isCursor, goal]);
+    useEvent(pauseEvent, () => isCursor && setPaused(true), [isCursor]);
+    useEvent(continueEvent, () => isCursor && setPaused(false), [isCursor]);
+    useEvent(toggleUpdating, () => isCursor && setPaused(!isCurrentlyPaused.current), [isCursor]);
 
     const status: InfoStatus = loading ? 'loading' : error ? 'error' : isPinned ? 'pinned' : 'cursor';
     const statusColor = statusColTable[status];
@@ -148,7 +148,7 @@ export function Info(props: InfoProps): JSX.Element {
                 {isPinned && isPaused && ' (pinned and paused)'}
                 <span className="fr">
                     {goal && <a className="link pointer mh2 dim" title="copy state to comment" onClick={e => {e.preventDefault(); copyGoalToComment()}}><CopyToCommentIcon/></a>}
-                    {isPinned && <a className={'link pointer mh2 dim '} onClick={e => { e.preventDefault(); void serverApi.reveal(loc); }} title="reveal file location"><GoToFileIcon/></a>}
+                    {isPinned && <a className={'link pointer mh2 dim '} onClick={e => { e.preventDefault(); void reveal(loc); }} title="reveal file location"><GoToFileIcon/></a>}
                     <a className="link pointer mh2 dim" onClick={e => { e.preventDefault(); onPin(!isPinned)}} title={isPinned ? 'unpin' : 'pin'}>{isPinned ? <PinnedIcon/> : <PinIcon/>}</a>
                     <a className="link pointer mh2 dim" onClick={e => { e.preventDefault(); setPaused(!isPaused)}} title={isPaused ? 'continue updating' : 'pause updating'}>{isPaused ? <ContinueIcon/> : <PauseIcon/>}</a>
                     { !isPaused && <a className={'link pointer mh2 dim'} onClick={e => { e.preventDefault(); forceUpdate(); }} title="update"><RefreshIcon/></a> }
