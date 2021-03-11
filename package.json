@@ -68,6 +68,75 @@
 					"type": "string",
 					"default": ".",
 					"description": "Path to the directory where Lean 4 server log files are stored."
+				},
+				"lean4.infoViewAllErrorsOnLine": {
+					"type": "boolean",
+					"default": true,
+					"markdownDescription": "Info view: show all errors on the current line, instead of just the ones on the right of the cursor."
+				},
+				"lean4.infoViewAutoOpen": {
+					"type": "boolean",
+					"default": true,
+					"markdownDescription": "Info view: open info view when Lean extension is activated."
+				},
+				"lean4.infoViewAutoOpenShowGoal": {
+					"type": "boolean",
+					"default": true,
+					"markdownDescription": "Info view: auto open shows goal and messages for the current line (instead of all messages for the whole file)"
+				},
+				"lean4.infoViewStyle": {
+					"type": "string",
+					"default": "",
+					"markdownDescription": "Add an additional CSS snippet to the info view."
+				},
+				"lean4.infoViewTacticStateFilters": {
+					"type": "array",
+					"default": [
+						{
+							"regex": "^_",
+							"match": false,
+							"flags": ""
+						},
+						{
+							"name": "goals only",
+							"regex": "^(⊢|\\d+ goals|case|$)",
+							"match": true,
+							"flags": ""
+						}
+					],
+					"markdownDescription": "An array of objects containing regular expression strings that can be used to filter (positively or negatively) the tactic state in the info view. Set to an empty array `[]` to hide the filter select dropdown.\n \n Each object must contain the following keys: 'regex': string, 'match': boolean, 'flags': string.\n 'regex' is a properly-escaped regex string,\n 'match' = true (false) means blocks in the tactic state matching 'regex' will be included (excluded) in the info view, \n 'flags' are additional flags passed to the JavaScript `RegExp` constructor.\n The 'name' key is optional and may contain a string that is displayed in the dropdown instead of the full regex details.",
+					"items": {
+						"type": "object",
+						"description": "an object with required properties 'regex': string, 'match': boolean, and 'flags': string, and optional property 'name': string",
+						"properties": {
+							"name": {
+								"type": "string",
+								"description": "name displayed in the dropdown"
+							},
+							"regex": {
+								"type": "string",
+								"description": "a properly-escaped regex string, e.g. '^_' matches any string beginning with an underscore"
+							},
+							"match": {
+								"type": "boolean",
+								"description": "whether tactic state lines matching the value of 'regex' should be included (true) or excluded (false)"
+							},
+							"flags": {
+								"type": "string",
+								"description": "additional flags passed to the RegExp constructor, e.g. 'i' for ignore case"
+							}
+						},
+						"required": [
+							"regex",
+							"match",
+							"flags"
+						]
+					}
+				},
+				"lean4.infoViewFilterIndex": {
+					"type": "number",
+					"default": -1,
+					"markdownDescription": "Index of the filter applied to the tactic state (in the array infoViewTacticStateFilters). An index of -1 means no filter is applied."
 				}
 			}
 		},
@@ -91,10 +160,46 @@
 				"description": "Converts the current abbreviation (e.g. \\lam)."
 			},
 			{
-				"command": "lean4.plainInfoView.toggleAutoUpdate",
+				"command": "lean4.displayGoal",
 				"category": "Lean 4",
-				"title": "InfoView: Toggle Auto Update",
-				"description": "Toggles whether the info view should update automatically or freeze."
+				"title": "Info View: Display Goal",
+				"description": "Display the goal and any messages at the current position in the info view.",
+				"icon": {
+					"dark": "./media/display-goal-dark.svg",
+					"light": "./media/display-goal-light.svg"
+				}
+			},
+			{
+				"command": "lean4.displayList",
+				"category": "Lean 4",
+				"title": "Info View: Toggle \"All Messages\"",
+				"description": "Toggles the \"All Messages\" widget in the info view."
+			},
+			{
+				"command": "lean4.infoView.copyToComment",
+				"category": "Lean 4",
+				"title": "Info View: Copy Contents to Comment",
+				"description": "Copy the contents of the currently active tactic state widget to a new comment on the previous line.",
+				"icon": {
+					"dark": "./media/copy-to-comment-dark.svg",
+					"light": "./media/copy-to-comment-light.svg"
+				}
+			},
+			{
+				"command": "lean4.infoView.toggleStickyPosition",
+				"category": "Lean 4",
+				"title": "Info View: Toggle Pin",
+				"description": "Create or remove a tactic state widget pinned to show the goal at the current position.",
+				"icon": {
+					"dark": "./media/toggle-sticky-position-dark.svg",
+					"light": "./media/toggle-sticky-position-light.svg"
+				}
+			},
+			{
+				"command": "lean4.infoView.toggleUpdating",
+				"category": "Lean 4",
+				"title": "Info View: Toggle Updating",
+				"description": "Pause / Continue live updating of the main tactic state widget."
 			}
 		],
 		"languages": [
@@ -157,10 +262,16 @@
 				"when": "editorTextFocus && editorLangId == lean4"
 			},
 			{
-				"command": "lean4.plainInfoView.toggleAutoUpdate",
-				"key": "ctrl+shift+t",
-				"mac": "cmd+shift+t",
-				"when": "editorTextFocus && editorLangId == lean4"
+				"command": "lean4.displayGoal",
+				"key": "ctrl+shift+enter",
+				"mac": "cmd+shift+enter",
+				"when": "editorTextFocus && editorLangId == lean"
+			},
+			{
+				"command": "lean4.displayList",
+				"key": "ctrl+shift+alt+enter",
+				"mac": "cmd+shift+alt+enter",
+				"when": "editorTextFocus && editorLangId == lean"
 			}
 		],
 		"menus": {
@@ -170,16 +281,31 @@
 					"when": "editorLangId == lean4 && lean4.input.isActive"
 				},
 				{
-					"command": "lean4.plainInfoView.toggleAutoUpdate",
+					"command": "lean4.refreshFileDependencies",
 					"when": "editorLangId == lean4"
 				},
 				{
-					"command": "lean4.refreshFileDependencies",
+					"command": "lean4.displayGoal",
+					"when": "editorLangId == lean4"
+				},
+				{
+					"command": "lean4.infoView.copyToComment",
+					"when": "editorLangId == lean4"
+				},
+				{
+					"command": "lean4.infoView.toggleStickyPosition",
 					"when": "editorLangId == lean4"
 				},
 				{
 					"command": "lean4.restartServer",
 					"when": "editorLangId == lean4"
+				}
+			],
+			"editor/title": [
+				{
+					"command": "lean4.displayGoal",
+					"when": "editorLangId == lean4",
+					"group": "navigation@2"
 				}
 			]
 		},
@@ -204,6 +330,7 @@
 		"package": "vsce package"
 	},
 	"dependencies": {
+		"@sap-devx/webview-rpc": "^0.3.1",
 		"axios": "^0.21.1",
 		"carrier": "0.3.0",
 		"express": "^4.17.1",

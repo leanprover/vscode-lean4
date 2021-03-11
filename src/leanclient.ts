@@ -1,4 +1,4 @@
-import { TextDocument, Position, TextEditor } from 'vscode'
+import { TextDocument, Position, TextEditor, EventEmitter, Uri, Diagnostic } from 'vscode'
 import {
     LanguageClient,
     LanguageClientOptions,
@@ -7,8 +7,20 @@ import {
 import { executablePath, serverLoggingEnabled, serverLoggingPath } from './config'
 import { assert } from './utils/assert'
 
+export interface PlainGoal {
+    rendered: string;
+    // since 2021-03-10
+    goals?: string[];
+}
+
 export class LeanClient {
-    private client: LanguageClient
+    client: LanguageClient
+
+    private restartedEmitter = new EventEmitter()
+    restarted = this.restartedEmitter.event
+
+    private diagnosticsEmitter = new EventEmitter<{uri: Uri, diagnostics: Diagnostic[]}>()
+    diagnostics = this.diagnosticsEmitter.event
 
     async restart(): Promise<void> {
         if (this.isStarted()) {
@@ -26,7 +38,13 @@ export class LeanClient {
             serverOptions.options.env.LEAN_SERVER_LOG_DIR = serverLoggingPath()
         }
         const clientOptions: LanguageClientOptions = {
-            documentSelector: [{ scheme: 'file', language: 'lean4' }]
+            documentSelector: [{ scheme: 'file', language: 'lean4' }],
+            middleware: {
+                handleDiagnostics: (uri, diagnostics, next) => {
+                    next(uri, diagnostics);
+                    this.diagnosticsEmitter.fire({uri, diagnostics})
+                },
+            },
         }
         this.client = new LanguageClient(
             'lean4',
@@ -35,6 +53,7 @@ export class LeanClient {
             clientOptions
         )
         this.client.start()
+        this.restartedEmitter.fire(undefined)
     }
 
     start(): Promise<void> {
@@ -76,7 +95,7 @@ export class LeanClient {
         })
     }
 
-    requestPlainGoals(doc: TextDocument, position: Position): Promise<any> {
+    requestPlainGoals(doc: TextDocument, position: Position): Promise<PlainGoal> {
         assert(() => this.isStarted())
         return this.client.sendRequest(
             '$/lean/plainGoal',

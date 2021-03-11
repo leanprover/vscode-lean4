@@ -4,7 +4,7 @@ import { exec } from 'child_process'
 import { AbbreviationFeature } from './abbreviation'
 import { executablePath } from './config'
 import { LeanClient } from './leanclient'
-import { InfoView } from './infoview'
+import { InfoProvider } from './infoview'
 
 async function checkLean4(): Promise<boolean> {
     const folders = workspace.workspaceFolders
@@ -37,7 +37,6 @@ async function checkLean4(): Promise<boolean> {
 }
 
 const client: LeanClient = new LeanClient()
-let infoView: InfoView
 
 export async function activate(context: ExtensionContext): Promise<any> {
     const isLean4Project = await checkLean4()
@@ -64,30 +63,8 @@ export async function activate(context: ExtensionContext): Promise<any> {
     // Register support for unicode input
     context.subscriptions.push(new AbbreviationFeature())
 
-    infoView = new InfoView(context)
+    context.subscriptions.push(new InfoProvider(client, {language: 'lean4'}, context))
 
-    // NOTE(Marc): This runs quite rarely, but I hope that it's good enough for now.
-    // I tried using languages.onDidChangeDiagnostics, which yields `language client not ready yet` errors.
-    // Maybe this is fixed for a newer version of the LSP client, I don't know.
-    window.onDidChangeTextEditorSelection(async e => {
-        if (e.textEditor?.document?.languageId !== 'lean4') {
-            return
-        }
-        if (!e.selections) {
-            infoView.wipeGoalsIfOpen()
-            return
-        }
-        const response: any = await client.requestPlainGoals(e.textEditor.document, e.selections[0].active) as Promise<any>
-        if (!response) {
-            infoView.wipeGoalsIfOpen()
-            return
-        }
-        infoView.displayGoals(response.rendered)
-    })
-
-    context.subscriptions.push(commands.registerCommand('lean4.plainInfoView.toggleAutoUpdate', () => {
-        infoView.toggleAutoUpdate()
-    }))
     context.subscriptions.push(commands.registerCommand('lean4.refreshFileDependencies', () => {
         if (!window.activeTextEditor) { return }
         client.refreshFileDependencies(window.activeTextEditor)
