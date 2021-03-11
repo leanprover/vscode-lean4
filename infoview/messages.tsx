@@ -3,10 +3,7 @@ import * as React from 'react';
 import { ClippyIcon, CopyToCommentIcon, GoToFileIcon } from './svg_icons';
 import { copyText, copyToComment, reveal } from './server';
 import { Config, InfoviewLocation, Message } from '../src/infoviewApi';
-
-function compareMessages(m1: Message, m2: Message): boolean {
-    return JSON.stringify(m1) === JSON.stringify(m2); // FIXME
-}
+import isEqual from 'react-fast-compare';
 
 interface MessageViewProps {
     m: Message;
@@ -33,7 +30,7 @@ const MessageView = React.memo(({m}: MessageViewProps) => {
             <pre className="font-code" style={{whiteSpace: 'pre-wrap'}} dangerouslySetInnerHTML={{ __html: text }} />
         </div>
     </details>
-}, (a,b) => compareMessages(a.m, b.m));
+}, isEqual);
 
 interface MessagesProps {
     messages: ProcessedMessage[];
