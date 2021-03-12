@@ -9,31 +9,9 @@ import { LeanClient } from './leanclient';
 import { RpcExtension } from '@sap-devx/webview-rpc/out.ext/rpc-extension'
 import { InfoviewExtensionApi, InfoviewWebviewApi, obtainApi,
     PinnedLocation, registerApi, locationEq, InfoviewLocation,
-    Message, InfoViewTacticStateFilter } from './infoviewApi'
-
-function getInfoViewStyle(): string {
-    return workspace.getConfiguration('lean4').get('infoViewStyle');
-}
-
-function getInfoViewAutoOpen(): boolean {
-    return workspace.getConfiguration('lean4').get('infoViewAutoOpen');
-}
-
-function getInfoViewAutoOpenShowGoal(): boolean {
-    return workspace.getConfiguration('lean4').get('infoViewAutoOpenShowGoal', true);
-}
-
-function getInfoViewAllErrorsOnLine(): boolean {
-    return workspace.getConfiguration('lean4').get('infoViewAllErrorsOnLine', true);
-}
-
-function getInfoViewTacticStateFilters(): InfoViewTacticStateFilter[] {
-    return workspace.getConfiguration('lean4').get('infoViewTacticStateFilters', []);
-}
-
-function getInfoViewFilterIndex(): number {
-    return workspace.getConfiguration('lean4').get('infoViewFilterIndex', -1);
-}
+    Message } from './infoviewApi'
+import { getInfoViewAllErrorsOnLine, getInfoViewAutoOpen, getInfoViewAutoOpenShowGoal,
+    getInfoViewFilterIndex, getInfoViewStyle, getInfoViewTacticStateFilters } from './config';
 
 export class InfoProvider implements Disposable {
     /** Instance of the panel. */
