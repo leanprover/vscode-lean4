@@ -7,6 +7,21 @@ interface GoalProps {
     plainGoals: PlainGoal;
 }
 
+export function getGoals(plainGoals: PlainGoal): string[] {
+    if (plainGoals.goals) return plainGoals.goals
+    const goals: string[] = [];
+    const r = /```lean\n([^`]*)```/g
+    let match: RegExpExecArray
+    const unformatted = plainGoals.rendered;
+    do {
+        match = r.exec(unformatted)
+        if (match) {
+            goals.push(match[1])
+        }
+    } while (match)
+    return goals;
+}
+
 function emphasizeMessage(goal: string): string {
     return goal
         .replace(/([^`~@$%^&*()-=+\[{\]}⟨⟩⦃⦄⟦⟧⟮⟯‹›\\|;:",.\/\s]+)✝([¹²³⁴-⁹⁰]*)/g, '<span class="goal-inaccessible">$1$2</span>')
@@ -21,19 +36,7 @@ export function Goal({plainGoals}: GoalProps): JSX.Element {
     const [filterIndex, setFilterIndex] = React.useState<number>(config.filterIndex ?? -1);
     if (!plainGoals) return null;
 
-    let goals = plainGoals.goals;
-    if (!goals) {
-        goals = [];
-        const r = /```lean\n([^`]*)```/g
-        let match: RegExpExecArray
-        const unformatted = plainGoals.rendered;
-        do {
-            match = r.exec(unformatted)
-            if (match) {
-                goals.push(match[1])
-            }
-        } while (match)
-    }
+    let goals = getGoals(plainGoals);
 
     if (!(reFilters.length === 0 || filterIndex === -1)) {
         goals = goals.map((g) =>

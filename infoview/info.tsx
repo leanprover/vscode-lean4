@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { copyToCommentEvent, copyToComment, pauseEvent, continueEvent, toggleUpdating, serverRestarted, allMessagesEvent, requestPlainGoal, reveal, progressEvent } from './server';
 import { LocationContext, ConfigContext } from '.';
-import { Goal } from './goal';
+import { getGoals, Goal } from './goal';
 import { Messages, processMessages, ProcessedMessage, getMessagesFor } from './messages';
 import { basename, useEvent } from './util';
 import { CopyToCommentIcon, PinnedIcon, PinIcon, ContinueIcon, PauseIcon, RefreshIcon, GoToFileIcon } from './svg_icons';
@@ -120,7 +120,9 @@ export function Info(props: InfoProps): JSX.Element {
     const {loc, goal, error, loading, messages} = stateRef.current;
 
     function copyGoalToComment() {
-        if (goal?.rendered) void copyToComment(goal.rendered);
+        if (goal) {
+            void copyToComment(getGoals(goal).join('\n\n'));
+        }
     }
 
     // If we are the cursor infoview, then we should subscribe to
