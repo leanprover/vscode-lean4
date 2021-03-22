@@ -28,7 +28,7 @@ interface InfoProps {
 }
 
 function isLoading(ts: ServerProgress, l: InfoviewLocation): boolean {
-    return l && ts[l.uri] !== undefined && l.line <= ts[l.uri];
+    return l && ts[l.uri] !== undefined && ts[l.uri] <= l.line
 }
 
 function isDone(ts: ServerProgress, l: InfoviewLocation) {
