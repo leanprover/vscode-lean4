@@ -1,6 +1,8 @@
 import { TextDocument, Position, TextEditor, EventEmitter, Uri, Diagnostic,
-    workspace, languages, DocumentHighlight, Range, DocumentHighlightKind } from 'vscode'
+    workspace, languages, DocumentHighlight, Range, DocumentHighlightKind, window, Disposable } from 'vscode'
 import {
+    DidOpenTextDocumentNotification,
+    DocumentFilter,
     LanguageClient,
     LanguageClientOptions,
     Protocol2CodeConverter,
@@ -13,7 +15,10 @@ import { assert } from './utils/assert'
 
 const processingMessage = 'processing...'
 
-const documentSelector = { scheme: 'file', language: 'lean4' }
+const documentSelector: DocumentFilter = {
+    scheme: 'file',
+    language: 'lean4',
+}
 
 const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
@@ -25,7 +30,7 @@ export function getFullRange(diag: Diagnostic): Range {
     return (diag as any)?.fullRange || diag.range;
 }
 
-export class LeanClient {
+export class LeanClient implements Disposable {
     client: LanguageClient
 
     private restartedEmitter = new EventEmitter()
@@ -37,6 +42,20 @@ export class LeanClient {
     progress: ServerProgress = {}
     private progressChangedEmitter = new EventEmitter<ServerProgress>()
     progressChanged = this.progressChangedEmitter.event
+
+    private subscriptions: Disposable[] = []
+
+    private isOpen: Set<string> = new Set()
+
+    constructor() {
+        this.subscriptions.push(window.onDidChangeVisibleTextEditors((es) =>
+            es.forEach((e) => this.open(e.document))));
+    }
+
+    dispose(): void {
+        this.subscriptions.forEach((s) => s.dispose())
+        if (this.isStarted()) void this.stop()
+    }
 
     async restart(): Promise<void> {
         if (this.isStarted()) {
@@ -69,6 +88,18 @@ export class LeanClient {
                     next(uri, diagnostics);
                     this.diagnosticsEmitter.fire({uri, diagnostics})
                 },
+
+                didOpen: () => {
+                    // Ignore opening of documents for ctrl+hover
+                    // https://github.com/microsoft/vscode/issues/78453
+                    return;
+                },
+
+                didClose: (doc, next) => {
+                    if (!this.isOpen.delete(doc.uri.toString())) return;
+                    next(doc);
+                },
+
                 provideDocumentHighlights: async (doc, pos, ctok, next) => {
                     const leanHighlights = await next(doc, pos, ctok);
                     if (leanHighlights?.length) return leanHighlights;
@@ -109,6 +140,9 @@ export class LeanClient {
         )
         this.patchProtocol2CodeConverter(this.client.protocol2CodeConverter)
         this.client.start()
+        this.isOpen = new Set()
+        await this.client.onReady()
+        window.visibleTextEditors.forEach((e) => this.open(e.document));
         this.restartedEmitter.fire(undefined)
     }
 
@@ -123,6 +157,29 @@ export class LeanClient {
             return diag
         }
         p2c.asDiagnostics = (diags) => diags.map((d) => p2c.asDiagnostic(d))
+    }
+
+    private async open(doc: TextDocument) {
+        // All open .lean files of this workspace are assumed to be Lean 4 files.
+        // We need to do this because by default, .lean is associated with language id `lean`,
+        // i.e. Lean 3. vscode-lean is expected to yield when isLean4 is true.
+        if (doc.languageId === 'lean') {
+            // Only change the id for *visible* documents,
+            // because this closes and then reopens the document.
+            await languages.setTextDocumentLanguage(doc, 'lean4')
+        } else if (doc.languageId !== 'lean4') {
+            return
+        }
+        if (this.isOpen.has(doc.uri.toString())) return;
+        this.isOpen.add(doc.uri.toString())
+        this.client.sendNotification(DidOpenTextDocumentNotification.type, {
+            textDocument: {
+                uri: doc.uri.toString(),
+                languageId: doc.languageId,
+                version: 1,
+                text: doc.getText(),
+            },
+        });
     }
 
     start(): Promise<void> {

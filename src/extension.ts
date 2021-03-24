@@ -37,8 +37,6 @@ async function checkLean4(): Promise<boolean> {
     }
 }
 
-const client: LeanClient = new LeanClient()
-
 export async function activate(context: ExtensionContext): Promise<any> {
     const isLean4Project = await checkLean4()
     // API provided to vscode-lean. If isLean4Project is true, (i.e. vscode-lean4 is being activated),
@@ -48,18 +46,13 @@ export async function activate(context: ExtensionContext): Promise<any> {
         return api
     }
 
-    // All open .lean files of this workspace are assumed to be Lean 4 files.
-    // We need to do this because by default, .lean is associated with language id `lean`,
-    // i.e. Lean 3. vscode-lean is expected to yield when isLean4 is true.
-    const setLean4LanguageId = async (textDocument: TextDocument) => {
-        if (textDocument.languageId === 'lean') {
-            await languages.setTextDocumentLanguage(textDocument, 'lean4')
-        }
-    }
     for (const textDocument of workspace.textDocuments) {
-        await setLean4LanguageId(textDocument)
+        if (textDocument.languageId === 'lean')
+            await languages.setTextDocumentLanguage(textDocument, 'lean4')
     }
-    workspace.onDidOpenTextDocument(setLean4LanguageId)
+
+    const client: LeanClient = new LeanClient()
+    context.subscriptions.push(client)
 
     // Register support for unicode input
     context.subscriptions.push(new AbbreviationFeature())
@@ -76,11 +69,4 @@ export async function activate(context: ExtensionContext): Promise<any> {
 
     void client.start()
     return api
-}
-
-export function deactivate(): Thenable<void> | undefined {
-    if (!client.isStarted()) {
-        return undefined
-    }
-    return client.stop()
 }
