@@ -135,7 +135,7 @@ export function Info(props: InfoProps): JSX.Element {
     const status: InfoStatus = loading ? 'loading' : error ? 'error' : isPinned ? 'pinned' : 'cursor';
     const statusColor = statusColTable[status];
     const nothingToShow = !goal && !messages.length;
-    const locationString = loc && `${basename(loc.uri)}:${loc.line}:${loc.character}`;
+    const locationString = loc && `${basename(loc.uri)}:${loc.line+1}:${loc.character}`;
 
     // TODO: updating of paused views
     const forceUpdate = () => !isCurrentlyPaused.current && stateRef.current.triggerUpdate();

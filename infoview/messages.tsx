@@ -16,7 +16,7 @@ const MessageView = React.memo(({m}: MessageViewProps) => {
     const shouldColorize = m.severity === 0;
     let text = escapeHtml(m.message)
     text = shouldColorize ? colorizeMessage(text) : text;
-    const title = `${b}:${line}:${character}`;
+    const title = `${b}:${line+1}:${character}`;
     return <details open>
         <summary className={m.severity + ' mv2 pointer'}>{title}
             <span className="fr">
