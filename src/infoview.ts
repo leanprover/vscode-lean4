@@ -5,11 +5,12 @@ import {
     Selection, TextEditor, TextEditorRevealType,
     Uri, ViewColumn, WebviewPanel, window, workspace, env,
 } from 'vscode';
-import { LeanClient } from './leanclient';
+import { getFullRange, LeanClient } from './leanclient';
 import { RpcExtension } from '@sap-devx/webview-rpc/out.ext/rpc-extension'
 import { InfoviewExtensionApi, InfoviewWebviewApi, obtainApi,
     PinnedLocation, registerApi, locationEq, InfoviewLocation,
-    Message } from './infoviewApi'
+    Message,
+    InfoviewRange} from './infoviewApi'
 import { getInfoViewAllErrorsOnLine, getInfoViewAutoOpen, getInfoViewAutoOpenShowGoal,
     getInfoViewFilterIndex, getInfoViewStyle, getInfoViewTacticStateFilters } from './config';
 
@@ -170,14 +171,18 @@ export class InfoProvider implements Disposable {
     private async sendMessages() {
         if (!this.webviewApi) return;
         const messages: Message[] = [];
+        const asRange = (range: Range): InfoviewRange => ({
+            start: {line: range.start.line, character: range.start.character},
+            end: {line: range.end.line, character: range.end.character},
+        });
         this.client.client.diagnostics?.forEach((uri, diags) => {
             for (const diag of diags) {
                 messages.push({
+                    ...asRange(diag.range),
                     uri: uri.toString(),
-                    line: diag.range.start.line,
-                    character: diag.range.start.character,
                     severity: diag.severity,
                     message: diag.message,
+                    fullRange: asRange(getFullRange(diag)),
                 });
             }
         });

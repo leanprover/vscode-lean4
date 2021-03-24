@@ -1,10 +1,18 @@
 import { RpcCommon } from '@sap-devx/webview-rpc/out.ext/rpc-common'
 import { PlainGoal, ServerProgress } from './leanclientTypes';
 
-export interface InfoviewLocation {
-    uri: string;
+export interface InfoviewPosition {
     line: number;
     character: number;
+}
+
+export interface InfoviewRange {
+    start: InfoviewPosition;
+    end: InfoviewPosition;
+}
+
+export interface InfoviewLocation extends InfoviewPosition {
+    uri: string;
 }
 
 export interface PinnedLocation extends InfoviewLocation {
@@ -37,7 +45,9 @@ export const defaultConfig: Config = {
 
 export type MessageSeverity = number;
 
-export interface Message extends InfoviewLocation {
+export interface Message extends InfoviewRange {
+    uri: string;
+    fullRange: InfoviewRange;
     severity: MessageSeverity;
     message: string;
 }

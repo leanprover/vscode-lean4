@@ -3,8 +3,10 @@ import { TextDocument, Position, TextEditor, EventEmitter, Uri, Diagnostic,
 import {
     LanguageClient,
     LanguageClientOptions,
+    Protocol2CodeConverter,
     ServerOptions
 } from 'vscode-languageclient/node'
+import * as ls from 'vscode-languageserver-protocol';
 import { executablePath, serverLoggingEnabled, serverLoggingPath } from './config'
 import { PlainGoal, ServerProgress } from './leanclientTypes'
 import { assert } from './utils/assert'
@@ -14,6 +16,14 @@ const processingMessage = 'processing...'
 const documentSelector = { scheme: 'file', language: 'lean4' }
 
 const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+interface Lean4Diagnostic extends ls.Diagnostic {
+    fullRange: ls.Range;
+}
+
+export function getFullRange(diag: Diagnostic): Range {
+    return (diag as any)?.fullRange || diag.range;
+}
 
 export class LeanClient {
     client: LanguageClient
@@ -91,8 +101,22 @@ export class LeanClient {
             serverOptions,
             clientOptions
         )
+        this.patchProtocol2CodeConverter(this.client.protocol2CodeConverter)
         this.client.start()
         this.restartedEmitter.fire(undefined)
+    }
+
+    private patchProtocol2CodeConverter(p2c: Protocol2CodeConverter) {
+        // eslint-disable-next-line @typescript-eslint/unbound-method
+        const oldAsDiagnostic = p2c.asDiagnostic
+        p2c.asDiagnostic = function (protDiag: Lean4Diagnostic): Diagnostic {
+            const diag = oldAsDiagnostic.apply(this, [protDiag])
+            if (protDiag.fullRange) {
+                diag.fullRange = p2c.asRange(protDiag.fullRange)
+            }
+            return diag
+        }
+        p2c.asDiagnostics = (diags) => diags.map((d) => p2c.asDiagnostic(d))
     }
 
     start(): Promise<void> {
