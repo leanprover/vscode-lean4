@@ -60,7 +60,13 @@ export class LeanClient {
                     const processedUntil = diagnostics.find((d) =>
                         d.message === processingMessage)?.range?.start?.line
                     this.setProgress({...this.progress, [uri.toString()]: processedUntil})
-                    next(uri, diagnostics.filter((d) => d.message !== processingMessage));
+                    diagnostics = diagnostics.filter((d) => d.message !== processingMessage);
+                    for (const diag of diagnostics) {
+                        if (diag.source === 'Lean 4 server') {
+                            diag.source = 'Lean 4';
+                        }
+                    }
+                    next(uri, diagnostics);
                     this.diagnosticsEmitter.fire({uri, diagnostics})
                 },
                 provideDocumentHighlights: async (doc, pos, ctok, next) => {
