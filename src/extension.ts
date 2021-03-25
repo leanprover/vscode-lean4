@@ -46,10 +46,8 @@ export async function activate(context: ExtensionContext): Promise<any> {
         return api
     }
 
-    for (const textDocument of workspace.textDocuments) {
-        if (textDocument.languageId === 'lean')
-            await languages.setTextDocumentLanguage(textDocument, 'lean4')
-    }
+    await Promise.all(workspace.textDocuments.map(async (doc) =>
+        doc.languageId === 'lean' && languages.setTextDocumentLanguage(doc, 'lean4')))
 
     const client: LeanClient = new LeanClient()
     context.subscriptions.push(client)
