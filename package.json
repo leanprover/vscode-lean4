@@ -265,13 +265,13 @@
 				"command": "lean4.displayGoal",
 				"key": "ctrl+shift+enter",
 				"mac": "cmd+shift+enter",
-				"when": "editorTextFocus && editorLangId == lean"
+				"when": "editorTextFocus && editorLangId == lean4"
 			},
 			{
 				"command": "lean4.displayList",
 				"key": "ctrl+shift+alt+enter",
 				"mac": "cmd+shift+alt+enter",
-				"when": "editorTextFocus && editorLangId == lean"
+				"when": "editorTextFocus && editorLangId == lean4"
 			}
 		],
 		"menus": {
