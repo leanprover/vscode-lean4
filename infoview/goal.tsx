@@ -24,7 +24,7 @@ export function getGoals(plainGoals: PlainGoal): string[] {
 
 function emphasizeMessage(goal: string): string {
     return goal
-        .replace(/([^`~@$%^&*()-=+\[{\]}⟨⟩⦃⦄⟦⟧⟮⟯‹›\\|;:",.\/\s]+)✝([¹²³⁴-⁹⁰]*)/g, '<span class="goal-inaccessible">$1$2</span>')
+        .replace(/([^`~@$%^&*()-=+\[{\]}⟨⟩⦃⦄⟦⟧⟮⟯‹›\\|;:",.\/\s]+)(✝)([¹²³⁴-⁹⁰]*)/g, '<span class="goal-inaccessible">$1$2$3</span>')
         .replace(/^(⊢) /mg, '<strong class="goal-vdash">$1</strong> ')
         .replace(/^(case) /mg, '<strong class="goal-case">$1</strong> ')
         .replace(/^([^:\n< ][^:\n⊢{[(⦃]*) :/mg, '<strong class="goal-hyp">$1</strong> :')
