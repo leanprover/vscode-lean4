@@ -2,7 +2,7 @@
 	"name": "lean4",
 	"displayName": "lean4",
 	"description": "An extension for VS Code which provides support for the Lean 4 language.",
-	"version": "0.0.16",
+	"version": "0.0.17",
 	"publisher": "leanprover",
 	"engines": {
 		"vscode": "^1.38.0"
