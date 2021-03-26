@@ -6,19 +6,18 @@ import {
     Uri, ViewColumn, WebviewPanel, window, workspace, env,
 } from 'vscode';
 import { getFullRange, LeanClient } from './leanclient';
-import { RpcExtension } from '@sap-devx/webview-rpc/out.ext/rpc-extension'
-import { InfoviewExtensionApi, InfoviewWebviewApi, obtainApi,
-    PinnedLocation, registerApi, locationEq, InfoviewLocation,
-    Message,
-    InfoviewRange} from './infoviewApi'
+import { InfoviewExtensionApi, InfoviewWebviewApi,
+    PinnedLocation, InfoviewLocation, Message, locationEq,
+    InfoviewRange } from './infoviewApi'
 import { getInfoViewAllErrorsOnLine, getInfoViewAutoOpen, getInfoViewAutoOpenShowGoal,
     getInfoViewFilterIndex, getInfoViewStyle, getInfoViewTacticStateFilters } from './config';
+import { Rpc } from './rpc';
 
 export class InfoProvider implements Disposable {
     /** Instance of the panel. */
     private webviewPanel: WebviewPanel;
     private subscriptions: Disposable[] = [];
-    private webviewRpc: RpcExtension;
+    private webviewRpc: Rpc;
     private webviewApi?: InfoviewWebviewApi;
 
     private started: boolean = false;
@@ -152,9 +151,10 @@ export class InfoProvider implements Disposable {
                     enableScripts: true,
                     enableCommandUris: true,
                 });
-            this.webviewRpc = new RpcExtension(this.webviewPanel.webview);
-            registerApi(this.webviewRpc, this.extensionApi);
-            this.webviewApi = obtainApi(this.webviewRpc);
+            this.webviewRpc = new Rpc((m) => this.webviewPanel.webview.postMessage(m));
+            this.webviewPanel.webview.onDidReceiveMessage((m) => this.webviewRpc.messageReceived(m))
+            this.webviewRpc.register(this.extensionApi)
+            this.webviewApi = this.webviewRpc.getApi();
             this.webviewPanel.webview.html = this.initialHtml();
             this.webviewPanel.onDidDispose(() => {
                 this.webviewPanel = null;

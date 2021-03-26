@@ -1,4 +1,3 @@
-import { RpcCommon } from '@sap-devx/webview-rpc/out.ext/rpc-common'
 import { PlainGoal, ServerProgress } from './leanclientTypes';
 
 export interface InfoviewPosition {
@@ -74,17 +73,4 @@ export interface InfoviewWebviewApi {
     toggleUpdating(): Promise<unknown>;
     togglePin(): Promise<unknown>;
     copyToComment(): Promise<unknown>;
-}
-
-export function obtainApi<T>(rpc: RpcCommon): T {
-    return new Proxy({}, {
-        get: (_, prop) => (...args) =>
-            rpc.invoke(prop as string, args)
-    }) as any
-}
-
-export function registerApi<T>(rpc: RpcCommon, api: T): void {
-    for (const name of Object.getOwnPropertyNames(api)) {
-        rpc.registerMethod({name, func: api[name] as Function})
-    }
 }

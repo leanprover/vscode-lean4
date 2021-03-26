@@ -1,12 +1,13 @@
-import { Config, defaultConfig, InfoviewLocation, InfoviewExtensionApi, InfoviewWebviewApi, obtainApi, PinnedLocation, registerApi, Message } from '../src/infoviewApi';
-import { RpcBrowser } from '@sap-devx/webview-rpc/out.browser/rpc-browser.js';
+import { Config, defaultConfig, InfoviewLocation, InfoviewExtensionApi, InfoviewWebviewApi, PinnedLocation, Message } from '../src/infoviewApi';
 import { Event } from './event';
 import { ServerProgress } from '../src/leanclientTypes';
+import {Rpc} from '../src/rpc';
 declare const acquireVsCodeApi;
 const vscode = acquireVsCodeApi();
 
-const rpc = new RpcBrowser(window, vscode);
-const serverApi: InfoviewExtensionApi = obtainApi(rpc);
+const rpc = new Rpc((m) => vscode.postMessage(m));
+window.addEventListener('message', (e) => rpc.messageReceived(e.data))
+const serverApi: InfoviewExtensionApi = rpc.getApi();
 
 export function copyToComment(text: string): Promise<unknown> {
     return serverApi.insertText(`/-\n${text}\n-/\n`, 'relative');
@@ -21,7 +22,7 @@ export const edit = serverApi.insertText;
 function registerEvent<Name extends keyof InfoviewWebviewApi>(name: Name):
         (InfoviewWebviewApi[Name] extends (_: infer T) => Promise<unknown> ? Event<T> : void) {
     const ev = new Event();
-    registerApi(rpc, {[name]: async (val) => ev.fire(val)});
+    rpc.register({[name]: async (val) => ev.fire(val)});
     return ev as any;
 }
 
@@ -42,6 +43,6 @@ allMessagesEvent.current = [];
 configEvent.current = defaultConfig;
 serverRestarted.on(() => allMessagesEvent.current = []);
 
-registerApi<Partial<InfoviewWebviewApi>>(rpc, {
+rpc.register<Partial<InfoviewWebviewApi>>({
     setPaused: async (paused) => (paused ? pauseEvent : continueEvent).fire(undefined),
 });
