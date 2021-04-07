@@ -72,22 +72,22 @@
 				"lean4.infoViewAllErrorsOnLine": {
 					"type": "boolean",
 					"default": true,
-					"markdownDescription": "Info view: show all errors on the current line, instead of just the ones on the right of the cursor."
+					"markdownDescription": "Infoview: show all errors on the current line, instead of just the ones on the right of the cursor."
 				},
 				"lean4.infoViewAutoOpen": {
 					"type": "boolean",
 					"default": true,
-					"markdownDescription": "Info view: open info view when Lean extension is activated."
+					"markdownDescription": "Infoview: open infoview when Lean extension is activated."
 				},
 				"lean4.infoViewAutoOpenShowGoal": {
 					"type": "boolean",
 					"default": true,
-					"markdownDescription": "Info view: auto open shows goal and messages for the current line (instead of all messages for the whole file)"
+					"markdownDescription": "Infoview: auto open shows goal and messages for the current line (instead of all messages for the whole file)"
 				},
 				"lean4.infoViewStyle": {
 					"type": "string",
 					"default": "",
-					"markdownDescription": "Add an additional CSS snippet to the info view."
+					"markdownDescription": "Add an additional CSS snippet to the infoview."
 				},
 				"lean4.infoViewTacticStateFilters": {
 					"type": "array",
@@ -104,7 +104,7 @@
 							"flags": ""
 						}
 					],
-					"markdownDescription": "An array of objects containing regular expression strings that can be used to filter (positively or negatively) the tactic state in the info view. Set to an empty array `[]` to hide the filter select dropdown.\n \n Each object must contain the following keys: 'regex': string, 'match': boolean, 'flags': string.\n 'regex' is a properly-escaped regex string,\n 'match' = true (false) means blocks in the tactic state matching 'regex' will be included (excluded) in the info view, \n 'flags' are additional flags passed to the JavaScript `RegExp` constructor.\n The 'name' key is optional and may contain a string that is displayed in the dropdown instead of the full regex details.",
+					"markdownDescription": "An array of objects containing regular expression strings that can be used to filter (positively or negatively) the tactic state in the infoview. Set to an empty array `[]` to hide the filter select dropdown.\n \n Each object must contain the following keys: 'regex': string, 'match': boolean, 'flags': string.\n 'regex' is a properly-escaped regex string,\n 'match' = true (false) means blocks in the tactic state matching 'regex' will be included (excluded) in the infoview, \n 'flags' are additional flags passed to the JavaScript `RegExp` constructor.\n The 'name' key is optional and may contain a string that is displayed in the dropdown instead of the full regex details.",
 					"items": {
 						"type": "object",
 						"description": "an object with required properties 'regex': string, 'match': boolean, and 'flags': string, and optional property 'name': string",
@@ -162,8 +162,8 @@
 			{
 				"command": "lean4.displayGoal",
 				"category": "Lean 4",
-				"title": "Info View: Display Goal",
-				"description": "Display the goal and any messages at the current position in the info view.",
+				"title": "Infoview: Display Goal",
+				"description": "Display the goal and any messages at the current position in the infoview.",
 				"icon": {
 					"dark": "./media/display-goal-dark.svg",
 					"light": "./media/display-goal-light.svg"
@@ -172,13 +172,13 @@
 			{
 				"command": "lean4.displayList",
 				"category": "Lean 4",
-				"title": "Info View: Toggle \"All Messages\"",
-				"description": "Toggles the \"All Messages\" widget in the info view."
+				"title": "Infoview: Toggle \"All Messages\"",
+				"description": "Toggles the \"All Messages\" widget in the infoview."
 			},
 			{
 				"command": "lean4.infoView.copyToComment",
 				"category": "Lean 4",
-				"title": "Info View: Copy Contents to Comment",
+				"title": "Infoview: Copy Contents to Comment",
 				"description": "Copy the contents of the currently active tactic state widget to a new comment on the previous line.",
 				"icon": {
 					"dark": "./media/copy-to-comment-dark.svg",
@@ -188,7 +188,7 @@
 			{
 				"command": "lean4.infoView.toggleStickyPosition",
 				"category": "Lean 4",
-				"title": "Info View: Toggle Pin",
+				"title": "Infoview: Toggle Pin",
 				"description": "Create or remove a tactic state widget pinned to show the goal at the current position.",
 				"icon": {
 					"dark": "./media/toggle-sticky-position-dark.svg",
@@ -198,7 +198,7 @@
 			{
 				"command": "lean4.infoView.toggleUpdating",
 				"category": "Lean 4",
-				"title": "Info View: Toggle Updating",
+				"title": "Infoview: Toggle Updating",
 				"description": "Pause / Continue live updating of the main tactic state widget."
 			}
 		],

@@ -21,7 +21,7 @@ function Main(props: {}) {
     useEvent(allMessagesEvent, (msgs) => setMessages(msgs), []);
     useEvent(positionEvent, (loc) => setCurLoc(loc), []);
     useEvent(configEvent, (cfg) => setConfig(cfg), []);
-    if (!curLoc) return <p>Click somewhere in the Lean file to enable the info view.</p>;
+    if (!curLoc) return <p>Click somewhere in the Lean file to enable the infoview.</p>;
     const allMessages = processMessages(messages.filter((m) => curLoc && m.uri === curLoc.uri));
     return <div className="ma1">
         <ConfigContext.Provider value={config}>
