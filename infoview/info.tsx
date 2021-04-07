@@ -69,24 +69,35 @@ interface InfoState {
 }
 
 function infoState(isPaused: boolean, loc: InfoviewLocation): InfoState {
-    const loading = useMappedEvent(progressEvent, false, (t) => isLoading(t, loc), [loc]);
+    const serverProcessing = useMappedEvent(progressEvent, false, (t) => isLoading(t, loc), [loc]);
 
     const [goal, setGoal] = React.useState<PlainGoal>();
     const [error, setError] = React.useState<string>();
-    const triggerUpdate = delayedThrottled(loading ? 500 : 50, async () => {
+    const [fetchingInfo, setFetchingInfo] = React.useState<boolean>();
+    const triggerUpdate = delayedThrottled(serverProcessing ? 500 : 50, async () => {
         if (isPaused) return;
         if (!loc) {
             setGoal(null);
             setError(null);
+            setFetchingInfo(false);
             return;
         }
         try {
             const plainGoal = await requestPlainGoal(loc);
             setGoal(plainGoal);
             setError(null);
+            setFetchingInfo(false);
         } catch (err) {
-            setError(typeof err === 'string' ? err : JSON.stringify(err));
-            setGoal(null);
+            if (err?.code === -32801) {
+                // Document has been changed since we made the request, try again
+                setError(null);
+                setFetchingInfo(true);
+                triggerUpdate();
+            } else {
+                setError(typeof err === 'string' ? err : JSON.stringify(err));
+                setGoal(null);
+                setFetchingInfo(false);
+            }
         }
     });
 
@@ -104,7 +115,7 @@ function infoState(isPaused: boolean, loc: InfoviewLocation): InfoState {
     React.useEffect(() => updateMsgs(allMessagesEvent.current), [loc, config]);
     useEvent(allMessagesEvent, updateMsgs, [loc, config]);
 
-    return { loc, loading, goal, error, messages, triggerUpdate };
+    return { loc, loading: serverProcessing || fetchingInfo, goal, error, messages, triggerUpdate };
 }
 
 export function Info(props: InfoProps): JSX.Element {
