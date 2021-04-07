@@ -96,7 +96,7 @@ export class Server extends leanclient.Server {
             switch (e.error) {
                 case 'stderr':
                     stderrOutput.append(e.chunk);
-                    stderrOutput.show();
+                    stderrOutput.show(true);
                     break;
                 case 'connect':
                     // json parsing errors
