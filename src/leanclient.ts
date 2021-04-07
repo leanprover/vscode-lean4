@@ -141,7 +141,12 @@ export class LeanClient implements Disposable {
         this.patchProtocol2CodeConverter(this.client.protocol2CodeConverter)
         this.client.start()
         this.isOpen = new Set()
-        await this.client.onReady()
+        await this.client.onReady();
+
+        // HACK
+        (this.client as any)._serverProcess.stderr.on('data', () =>
+            this.client.outputChannel.show(true))
+
         window.visibleTextEditors.forEach((e) => this.open(e.document));
         this.restartedEmitter.fire(undefined)
     }
