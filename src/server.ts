@@ -180,7 +180,7 @@ export class Server extends leanclient.Server {
             // Now show the terminal and run elan.
             terminal.show();
             terminal.sendText(
-              'curl https://raw.githubusercontent.com/Kha/elan/master/elan-init.sh -sSf | sh && ' +
+              'curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh && ' +
               'echo && read -n 1 -s -r -p "Press any key to start Lean" && exit\n');
         }
     }
