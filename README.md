@@ -8,7 +8,7 @@ We currently support a variety of features. For basic VS Code editor features, s
 
 ### Lean language server support
 
-* Automatic installation of Lean via [elan](https://github.com/Kha/elan)
+* Automatic installation of Lean via [elan](https://github.com/leanprover/elan)
 * Incremental compilation and checking via the Lean server
 * Hover shows documentation, types, and Unicode input help:
   * Here's an example from the [Lean tutorials project](https://github.com/leanprover-community/tutorials):
