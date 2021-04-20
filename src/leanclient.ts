@@ -155,6 +155,10 @@ export class LeanClient implements Disposable {
         // eslint-disable-next-line @typescript-eslint/unbound-method
         const oldAsDiagnostic = p2c.asDiagnostic
         p2c.asDiagnostic = function (protDiag: Lean4Diagnostic): Diagnostic {
+            if (!protDiag.message) {
+                // Fixes: Notification handler 'textDocument/publishDiagnostics' failed with message: message must be set
+                protDiag.message = ' ';
+            }
             const diag = oldAsDiagnostic.apply(this, [protDiag])
             if (protDiag.fullRange) {
                 diag.fullRange = p2c.asRange(protDiag.fullRange)
