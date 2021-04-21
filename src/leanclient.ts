@@ -8,10 +8,11 @@ import {
     Protocol2CodeConverter,
     ServerOptions
 } from 'vscode-languageclient/node'
-import * as ls from 'vscode-languageserver-protocol';
-import { executablePath, serverLoggingEnabled, serverLoggingPath } from './config'
+import * as ls from 'vscode-languageserver-protocol'
+import { executablePath, serverEnvPaths, serverLoggingEnabled, serverLoggingPath } from './config'
 import { PlainGoal, ServerProgress } from './leanclientTypes'
 import { assert } from './utils/assert'
+import * as path from 'path'
 
 const processingMessage = 'processing...'
 
@@ -61,16 +62,22 @@ export class LeanClient implements Disposable {
         if (this.isStarted()) {
             await this.stop()
         }
+        const env = { ...process.env }
+        const paths = serverEnvPaths()
+        if (paths.length != 0) {
+            const PathKey = env.Path ? 'Path' : 'PATH'
+            env[PathKey] = paths.join(path.delimiter) + path.delimiter + process.env.Path
+        }
+        if (serverLoggingEnabled()) {
+            env.LEAN_SERVER_LOG_DIR = serverLoggingPath()
+        }
         const serverOptions: ServerOptions = {
             command: executablePath(),
             args: ['--server'],
             options: {
                 shell: true,
-                env: { ...process.env }
+                env: env
             }
-        }
-        if (serverLoggingEnabled()) {
-            serverOptions.options.env.LEAN_SERVER_LOG_DIR = serverLoggingPath()
         }
         const clientOptions: LanguageClientOptions = {
             documentSelector: [documentSelector],

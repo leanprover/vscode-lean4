@@ -59,6 +59,15 @@
 					"default": true,
 					"markdownDescription": "Enable eager replacement of abbreviations that uniquely identify a symbol."
 				},
+				"lean4.serverEnvPaths": {
+					"type": "array",
+					"default": [],
+					"description": "Paths to add to the Lean 4 server environment.",
+					"items": {
+						"type": "string",
+						"description": "a path to add to the environment"
+					}
+				},
 				"lean4.serverLogging.enabled": {
 					"type": "boolean",
 					"default": false,

@@ -8,6 +8,10 @@ export function executablePath(): string {
     return workspace.getConfiguration('lean4').get('executablePath', 'lean')
 }
 
+export function serverEnvPaths(): string[] {
+    return workspace.getConfiguration('lean4').get('serverEnvPaths', [])
+}
+
 export function serverLoggingEnabled(): boolean {
     return workspace.getConfiguration('lean4.serverLogging').get('enabled', false)
 }
