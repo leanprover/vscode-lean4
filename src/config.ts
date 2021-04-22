@@ -8,6 +8,10 @@ export function executablePath(): string {
     return workspace.getConfiguration('lean4').get('executablePath', 'lean')
 }
 
+export function serverEnv(): object {
+    return workspace.getConfiguration('lean4').get('serverEnv', {})
+}
+
 export function serverEnvPaths(): string[] {
     return workspace.getConfiguration('lean4').get('serverEnvPaths', [])
 }
