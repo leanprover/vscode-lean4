@@ -60,18 +60,18 @@
 					"markdownDescription": "Enable eager replacement of abbreviations that uniquely identify a symbol."
 				},
 				"lean4.serverEnv": {
-          "type": "object",
-          "default": {},
-          "description": "Environment variables to add to the Lean 4 server environment",
-          "additionalProperties": {
-            "type": "string",
-            "description": "environment variable to add"
-          }
-        },
+					"type": "object",
+					"default": {},
+					"description": "Environment variables to add to the Lean 4 server environment",
+					"additionalProperties": {
+						"type": "string",
+						"description": "environment variable to add"
+					}
+				},
 				"lean4.serverEnvPaths": {
 					"type": "array",
 					"default": [],
-					"description": "Paths to add to the Lean 4 server environment.",
+					"description": "Paths to add to the Lean 4 server environment PATH variable.",
 					"items": {
 						"type": "string",
 						"description": "a path to add to the environment"

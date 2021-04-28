@@ -65,8 +65,8 @@ export class LeanClient implements Disposable {
         const env = Object.assign({}, process.env, serverEnv());
         const paths = serverEnvPaths()
         if (paths.length != 0) {
-            const PathKey = env.Path ? 'Path' : 'PATH'
-            env[PathKey] = paths.join(path.delimiter) + path.delimiter + process.env.Path
+            const pathKey = process.platform === 'win32' ? 'Path' : 'PATH'
+            env[pathKey] = paths.join(path.delimiter) + path.delimiter + process.env.Path
         }
         if (serverLoggingEnabled()) {
             env.LEAN_SERVER_LOG_DIR = serverLoggingPath()
