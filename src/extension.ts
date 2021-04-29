@@ -1,8 +1,8 @@
 import { workspace, commands, window, languages, ExtensionContext, TextDocument } from 'vscode'
 import { promisify } from 'util'
-import { exec } from 'child_process'
+import { execFile } from 'child_process'
 import { AbbreviationFeature } from './abbreviation'
-import { executablePath } from './config'
+import { executablePath, addServerEnvPaths } from './config'
 import { LeanClient } from './leanclient'
 import { InfoProvider } from './infoview'
 import { LeanTaskGutter } from './taskgutter'
@@ -13,17 +13,20 @@ async function checkLean4(): Promise<boolean> {
     if (folders) {
         folderPath = folders[0].uri.fsPath
     }
-    const cmd = `${executablePath()} --version`
+    
+    const env = addServerEnvPaths(process.env);
+    const cmd = executablePath()
+    const options = ['--version']
     try {
         // If folderPath is undefined, this will use the process environment for cwd.
         // Specifically, if the extension was not opened inside of a folder, it
         // looks for a global (default) installation of Lean. This way, we can support
         // single file editing.
-        const { stdout, stderr } = await promisify(exec)(cmd, {cwd: folderPath})
+        const { stdout, stderr } = await promisify(execFile)(cmd, options, {cwd: folderPath, env: env })
         const filterVersion = /version (\d+)\.\d+\..+/
         const match = filterVersion.exec(stdout)
         if (!match) {
-            void window.showErrorMessage(`lean4: '${cmd}' returned incorrect version string '${stdout}'.`)
+            void window.showErrorMessage(`lean4: '${cmd} ${options}' returned incorrect version string '${stdout}'.`)
             return false
         }
         const major = match[1]
@@ -32,7 +35,7 @@ async function checkLean4(): Promise<boolean> {
         }
         return true
     } catch (err) {
-        void window.showErrorMessage(`lean4: Could not find Lean version by running '${cmd}'.`)
+        void window.showErrorMessage(`lean4: Could not find Lean version by running '${cmd} ${options}'.`)
         return false
     }
 }

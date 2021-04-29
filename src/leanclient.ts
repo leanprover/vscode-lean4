@@ -9,7 +9,7 @@ import {
     ServerOptions
 } from 'vscode-languageclient/node'
 import * as ls from 'vscode-languageserver-protocol'
-import { executablePath, serverEnv, serverEnvPaths, serverLoggingEnabled, serverLoggingPath } from './config'
+import { executablePath, addServerEnvPaths, serverLoggingEnabled, serverLoggingPath } from './config'
 import { PlainGoal, ServerProgress } from './leanclientTypes'
 import { assert } from './utils/assert'
 import * as path from 'path'
@@ -62,12 +62,7 @@ export class LeanClient implements Disposable {
         if (this.isStarted()) {
             await this.stop()
         }
-        const env = Object.assign({}, process.env, serverEnv());
-        const paths = serverEnvPaths()
-        if (paths.length != 0) {
-            const pathKey = process.platform === 'win32' ? 'Path' : 'PATH'
-            env[pathKey] = paths.join(path.delimiter) + path.delimiter + process.env.Path
-        }
+        const env = addServerEnvPaths(process.env);
         if (serverLoggingEnabled()) {
             env.LEAN_SERVER_LOG_DIR = serverLoggingPath()
         }
