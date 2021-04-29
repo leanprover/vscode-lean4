@@ -2,10 +2,11 @@ import { workspace, commands, window, languages, ExtensionContext, TextDocument 
 import { promisify } from 'util'
 import { exec } from 'child_process'
 import { AbbreviationFeature } from './abbreviation'
-import { executablePath } from './config'
+import { executablePath, addServerEnvPaths } from './config'
 import { LeanClient } from './leanclient'
 import { InfoProvider } from './infoview'
 import { LeanTaskGutter } from './taskgutter'
+import * as path from 'path'
 
 async function checkLean4(): Promise<boolean> {
     const folders = workspace.workspaceFolders
@@ -13,13 +14,15 @@ async function checkLean4(): Promise<boolean> {
     if (folders) {
         folderPath = folders[0].uri.fsPath
     }
+    
+    const env = addServerEnvPaths(process.env);
     const cmd = `${executablePath()} --version`
     try {
         // If folderPath is undefined, this will use the process environment for cwd.
         // Specifically, if the extension was not opened inside of a folder, it
         // looks for a global (default) installation of Lean. This way, we can support
         // single file editing.
-        const { stdout, stderr } = await promisify(exec)(cmd, {cwd: folderPath})
+        const { stdout, stderr } = await promisify(exec)(cmd, {cwd: folderPath, env: env })
         const filterVersion = /version (\d+)\.\d+\..+/
         const match = filterVersion.exec(stdout)
         if (!match) {
