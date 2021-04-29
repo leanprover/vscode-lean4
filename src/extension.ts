@@ -15,7 +15,7 @@ async function checkLean4(): Promise<boolean> {
     }
     
     const env = addServerEnvPaths(process.env);
-    const cmd = `${executablePath()}`
+    const cmd = executablePath()
     const options = ['--version']
     try {
         // If folderPath is undefined, this will use the process environment for cwd.
