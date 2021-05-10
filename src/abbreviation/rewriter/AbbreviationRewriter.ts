@@ -156,8 +156,9 @@ export class AbbreviationRewriter {
 
 		// We don't want replaced symbols (e.g. "\") to trigger abbreviations.
 		this.dontTrackNewAbbr = true;
+		let ok = false;
 		try {
-			await this.textEditor.edit((builder) => {
+			ok = await this.textEditor.edit((builder) => {
 				for (const r of replacements) {
 					builder.replace(
 						toVsCodeRange(r.range, this.textEditor.document),
@@ -170,10 +171,17 @@ export class AbbreviationRewriter {
 		}
 		this.dontTrackNewAbbr = false;
 
-		this.textEditor.selections = newSelections.map((s) => {
-			const vr = toVsCodeRange(s, this.textEditor.document);
-			return new vscode.Selection(vr.start, vr.end);
-		});
+		if (ok) {
+			this.textEditor.selections = newSelections.map((s) => {
+				const vr = toVsCodeRange(s, this.textEditor.document);
+				return new vscode.Selection(vr.start, vr.end);
+			});
+		}
+		else {
+			// Our edit did not succeed, do not update the selections.
+			// This can happen if `waitForNextTick` waits too long.
+			console.warn('Unable to replace abbreviation');
+		}
 
 		this.updateState();
 	}
