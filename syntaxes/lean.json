@@ -17,44 +17,63 @@
       "end": "(?=\\bwith\\b|\\bextends\\b|[:\\|\\(\\[\\{⦃<>])",
       "name": "meta.definitioncommand.lean"
     },
-    { "match": "\\b(Prop|Type|Sort)\\b", "name": "storage.type.lean" },
-    { "match": "\\battribute\\b\\s*\\[[^\\]]*\\]", "name": "storage.modifier.lean" },
-    { "match": "@\\[[^\\]]*\\]", "name": "storage.modifier.lean" },
+    { "begin": "\\battribute\\b\\s*\\[",
+      "end": "\\]",
+      "patterns": [
+        {"include": "#expressions"}
+      ],
+      "name": "storage.modifier.lean" },
+    { "begin": "@\\[",
+      "end": "\\]",
+      "patterns": [
+        {"include": "#expressions"}
+      ],
+      "name": "storage.modifier.lean"},
     {
       "match": "\\b(?<!\\.)(private|meta|mutual|protected|noncomputable)\\b",
       "name": "keyword.control.definition.modifier.lean"
     },
-    { "match": "\\b(sorry)\\b", "name": "invalid.illegal.lean" },
     { "match": "#print\\s+(def|definition|inductive|instance|structure|axiom|axioms|class)\\b", "name": "keyword.other.command.lean" },
     { "match": "#(print|eval|reduce|check|help|exit|find|where)\\b", "name": "keyword.other.command.lean" },
     {
-      "match": "\\b(?<!\\.)(import|export|prelude|theory|definition|def|abbreviation|instance|renaming|hiding|exposing|parameter|parameters|begin|constant|constants|lemma|variable|variables|theorem|example|open|axiom|inductive|coinductive|with|structure|universe|universes|alias|precedence|reserve|postfix|prefix|infix|infixl|infixr|notation|end|using|namespace|section|local|set_option|extends|include|omit|class|classes|instances|raw|run_cmd|restate_axiom)(?!\\.)\\b",
+      "match": "\\b(?<!\\.)(import|export|prelude|theory|definition|def|abbreviation|instance|renaming|hiding|exposing|parameter|parameters|constant|constants|lemma|variable|variables|theorem|example|open|axiom|inductive|coinductive|with|structure|universe|universes|alias|precedence|reserve|postfix|prefix|infix|infixl|infixr|notation|namespace|section|local|set_option|extends|include|omit|class|classes|instances|raw|run_cmd|restate_axiom)(?!\\.)\\b",
       "name": "keyword.other.lean"
     },
-    {
-      "match": "\\b(?<!\\.)(calc|have|this|match|do|suffices|show|by|in|at|let|forall|fun|exists|assume|from|obtain|haveI|λ)(?!\\.)\\b",
-      "name": "keyword.other.lean"
-    },
-    {"begin": "«", "end": "»", "contentName": "entity.name.lean"},
-    { "match": "\\b(?<!\\.)(if|then|else)\\b", "name": "keyword.control.lean" },
-    {
-      "begin": "\"", "end": "\"",
-      "beginCaptures": {"0": {"name": "punctuation.definition.string.begin.lean"}},
-      "endCaptures": {"0": {"name": "punctuation.definition.string.end.lean"}},
-      "name": "string.quoted.double.lean",
-      "patterns": [
-        {"match": "\\\\[\\\\\"nt']", "name": "constant.character.escape.lean"},
-        {"match": "\\\\x[0-9A-Fa-f][0-9A-Fa-f]", "name": "constant.character.escape.lean"},
-        {"match": "\\\\u[0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f]", "name": "constant.character.escape.lean"}
-      ]
-    },
-    { "name": "string.quoted.single.lean", "match": "'[^\\\\']'" },
-    { "name": "string.quoted.single.lean", "match": "'(\\\\(x..|u....|.))'",
-      "captures": {"1": {"name": "constant.character.escape.lean"}} },
-    {"match": "`+[^\\[(]\\S+", "name": "entity.name.lean"},
-    { "match": "\\b([0-9]+|0([xX][0-9a-fA-F]+))\\b", "name": "constant.numeric.lean" }
+    { "include": "#expressions" }
   ],
   "repository": {
+    "expressions": {
+      "patterns": [
+        { "match": "\\b(Prop|Type|Sort)\\b", "name": "storage.type.lean" },
+        { "match": "\\b(sorry)\\b", "name": "invalid.illegal.lean" },
+        { "begin": "«", "end": "»", "contentName": "entity.name.lean"},
+        { "match": "\\b(?<!\\.)(if|then|else)\\b", "name": "keyword.control.lean" },
+        {
+          "begin": "\"", "end": "\"",
+          "beginCaptures": {"0": {"name": "punctuation.definition.string.begin.lean"}},
+          "endCaptures": {"0": {"name": "punctuation.definition.string.end.lean"}},
+          "name": "string.quoted.double.lean",
+          "patterns": [
+            {"match": "\\\\[\\\\\"nt']", "name": "constant.character.escape.lean"},
+            {"match": "\\\\x[0-9A-Fa-f][0-9A-Fa-f]", "name": "constant.character.escape.lean"},
+            {"match": "\\\\u[0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f]", "name": "constant.character.escape.lean"}
+          ]
+        },
+        { "name": "string.quoted.single.lean", "match": "'[^\\\\']'" },
+        { "name": "string.quoted.single.lean", "match": "'(\\\\(x..|u....|.))'",
+          "captures": {"1": {"name": "constant.character.escape.lean"}} },
+        {"match": "`+[^\\[(]\\S+", "name": "entity.name.lean"},
+        { "match": "\\b([0-9]+|0([xX][0-9a-fA-F]+))\\b", "name": "constant.numeric.lean" },
+        {
+          "match": "\\b(?<!\\.)(calc|have|this|match|do|suffices|show|by|in|at|let|forall|fun|exists|assume|from|obtain|haveI|λ)(?!\\.)\\b",
+          "name": "keyword.other.lean"
+        },
+        {
+          "match": "\\b(?<!\\.)(begin|end|using)(?!\\.)\\b",
+          "name": "keyword.other.lean"
+        }
+      ]
+    },
     "dashComment": {
       "begin": "(--)", "end": "$",
       "beginCaptures": {"0": {"name": "punctuation.definition.comment.lean"}},
