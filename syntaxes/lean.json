@@ -71,7 +71,10 @@
         {
           "match": "\\b(?<!\\.)(begin|end|using)(?!\\.)\\b",
           "name": "keyword.other.lean"
-        }
+        },
+        { "include": "#dashComment"},
+        { "include": "#blockComment"},
+        { "include": "#stringBlock"}
       ]
     },
     "dashComment": {
