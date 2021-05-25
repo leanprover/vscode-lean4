@@ -232,9 +232,15 @@
           "patterns" : [
             { "begin": "(?<=\\[)(?=[^\\]]*:)", "end": ":",
               "comment": "This fails to match the instance name on pathological cases like `[where«is the ]» : oops]`, but no one really writes that anyway, right?",
-              "contentName": "meta.type.lean",
               "patterns" : [
                 {"include": "#binderName"}
+              ]
+            },
+            {
+              "begin": "", "end": "(?!\\G)",
+              "contentName": "meta.type.lean",
+              "patterns": [
+                { "include": "#expressions" }
               ]
             },
             { "include": "#expressions" }
