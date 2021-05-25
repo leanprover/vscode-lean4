@@ -2,6 +2,7 @@
   "name": "Lean",
   "scopeName": "source.lean",
   "fileTypes": ["lean"],
+  "comments": "Lean is full of types; `x < 0` is a type, as are many more complex statements. Highlighting these is probably unhelpful, so we use `meta.type.lean` instead of `entity.name.type.lean` to prevent the type color being used everywhere.",
   "patterns": [
     {"include": "#comments"},
     {
@@ -12,9 +13,17 @@
       "patterns": [
         {"include": "#comments"},
         {"include": "#definitionName"},
-        {"match": ","}
+        {"match": ","},
+        {"include": "#binders"},
+        {
+          "begin": ":(?!=)", "end": "(?=\\bwith\\b|\\bextends\\b|:=|\\|)",
+          "contentName": "meta.type.lean",
+          "patterns" : [
+            {"include": "#expressions"}
+          ]
+        }
       ],
-      "end": "(?=\\bwith\\b|\\bextends\\b|[:\\|\\(\\[\\{⦃<>])",
+      "end": "(?=\\bwith\\b|\\bextends\\b|:=|\\|)",
       "name": "meta.definitioncommand.lean"
     },
     { "begin": "\\battribute\\b\\s*\\[",
@@ -36,8 +45,17 @@
     { "match": "#print\\s+(def|definition|inductive|instance|structure|axiom|axioms|class)\\b", "name": "keyword.other.command.lean" },
     { "match": "#(print|eval|reduce|check|help|exit|find|where)\\b", "name": "keyword.other.command.lean" },
     {
-      "match": "\\b(?<!\\.)(import|export|prelude|theory|definition|def|abbreviation|instance|renaming|hiding|exposing|parameter|parameters|constant|constants|lemma|variable|variables|theorem|example|open|axiom|inductive|coinductive|with|structure|universe|universes|alias|precedence|reserve|postfix|prefix|infix|infixl|infixr|notation|namespace|section|local|set_option|extends|include|omit|class|classes|instances|raw|run_cmd|restate_axiom)(?!\\.)\\b",
+      "match": "\\b(?<!\\.)(import|export|prelude|theory|definition|def|abbreviation|instance|renaming|hiding|exposing|constant|lemma|theorem|example|open|axiom|inductive|coinductive|with|structure|universe|universes|alias|precedence|reserve|postfix|prefix|infix|infixl|infixr|notation|namespace|section|local|set_option|extends|include|omit|class|classes|instances|raw|run_cmd|restate_axiom)(?!\\.)\\b",
       "name": "keyword.other.lean"
+    },
+    { "begin": "\\b(?<!\\.)(variable|variables|parameter|parameters|constants)(?!\\.)\\b",
+      "end": "(?!\\s|\\(|\\[|⦃|\\{)",
+      "beginCaptures": {"1": {"name": "keyword.other.lean"}},
+      "comment": "While we could use #abbreviatedBinders here, it's impossible to know whether `variables x y` is legal without knowing if `x` and `y` are keywords.",
+      "patterns": [
+        {"include": "#comments"},
+        {"include": "#binders"}
+      ]
     },
     { "include": "#expressions" }
   ],
@@ -64,13 +82,45 @@
           "captures": {"1": {"name": "constant.character.escape.lean"}} },
         {"match": "`+[^\\[(]\\S+", "name": "entity.name.lean"},
         { "match": "\\b([0-9]+|0([xX][0-9a-fA-F]+))\\b", "name": "constant.numeric.lean" },
+
         {
-          "match": "\\b(?<!\\.)(calc|have|this|match|do|suffices|show|by|in|at|let|forall|fun|exists|assume|from|obtain|haveI|λ)(?!\\.)\\b",
+          "begin": "\\b(?<!\\.)(fun|forall|assume|exists|λ)(?!\\.)\\b", "end": ",",
+          "beginCaptures": {"0": {"name": "keyword.other.lean"}},
+          "comment": "Binders to show in blue.",
+          "patterns": [
+            { "include": "#comments" },
+            { "include": "#abbreviatedBinders" }
+          ]
+        },
+        {
+          "begin": "(Π|∀|∃|∃!|Σ)", "end": ",",
+          "comment": "Note that we restrict ourselves to binders from core lean.",
+          "patterns": [
+            { "include": "#comments" },
+            { "include": "#abbreviatedBinders" }
+          ]
+        },
+        {
+          "match": "\\b(?<!\\.)(calc|have|this|match|do|suffices|show|by|in|at|let|from|obtain|haveI)(?!\\.)\\b",
           "name": "keyword.other.lean"
         },
         {
           "match": "\\b(?<!\\.)(begin|end|using)(?!\\.)\\b",
           "name": "keyword.other.lean"
+        },
+        {
+          "begin": "\\(", "end": "\\)",
+          "comment": "Type annotations",
+          "name": "meta.parens",
+          "patterns" : [
+            { "begin": ":", "end": "(?=\\))",
+              "contentName": "meta.type.lean",
+              "patterns" : [
+                {"include": "#expressions"}
+              ]
+            },
+            { "include": "#expressions" }
+          ]
         },
         { "include": "#dashComment"},
         { "include": "#blockComment"},
@@ -124,8 +174,85 @@
     },
     "definitionName": {
       "patterns": [
-        {"match": "\\b[^:«»\\(\\)\\{\\}[:space:]=→λ∀?][^:«»\\(\\)\\{\\}[:space:]]*", "name": "entity.name.function.lean"},
+        {"match": "\\b[^:«»\\(\\)\\{\\},[:space:]=→λ∀?][^:«»\\(\\)\\{\\},[:space:]]*", "name": "entity.name.function.lean"},
         {"begin": "«", "end": "»", "contentName": "entity.name.function.lean"}
+      ]
+    },
+    "binderName": {
+      "patterns": [
+        {"match": "\\b[^:«»\\(\\)\\{\\},[:space:]=→λ∀?][^:«»\\(\\)\\{\\},[:space:]]*", "name": "variable.parameter.lean"},
+        {"begin": "«", "end": "»", "contentName": "variable.parameter.lean"}
+      ]
+    },
+    "binders": {
+      "comment": "This defined patterns for matching binders surrounded by (), {}, [], and ⦃⦄.",
+      "patterns": [
+        {
+          "begin": "\\(", "end": "\\)",
+          "name": "meta.binder.explicit",
+          "patterns" : [
+            { "begin": ":", "end": "(?=\\))",
+              "contentName": "meta.type.lean",
+              "patterns" : [
+                {"include": "#expressions"}
+              ]
+            },
+            { "include": "#binderName" }
+          ]
+        },
+        {
+          "begin": "\\{", "end": "\\}",
+          "name": "meta.binder.implicit",
+          "patterns" : [
+            { "begin": ":", "end": "(?=\\})",
+              "contentName": "meta.type.lean",
+              "patterns" : [
+                {"include": "#expressions"}
+              ]
+            },
+            { "include": "#binderName" }
+          ]
+        },
+        {
+          "begin": "⦃|\\{\\{", "end": "⦄|\\}\\}",
+          "name": "meta.binder.semiimplicit",
+          "patterns" : [
+            { "begin": ":", "end": "(?=\\⦄)",
+              "contentName": "meta.type.lean",
+              "patterns" : [
+                {"include": "#expressions"}
+              ]
+            },
+            { "include": "#binderName" }
+          ]
+        },
+        {
+          "begin": "\\[", "end": "\\]",
+          "name": "meta.binder.typeclass",
+          "patterns" : [
+            { "begin": "(?<=\\[)(?=[^\\]]*:)", "end": ":",
+              "comment": "This fails to match the instance name on pathological cases like `[where«is the ]» : oops]`, but no one really writes that anyway, right?",
+              "contentName": "meta.type.lean",
+              "patterns" : [
+                {"include": "#binderName"}
+              ]
+            },
+            { "include": "#expressions" }
+          ]
+        }
+      ]
+    },
+    "abbreviatedBinders": {
+      "comment": "This extends `#binders` with parenthesis-free binders.",
+      "patterns" : [
+        { "include": "#binders"},
+        { "include": "#binderName" },
+        { "begin": ":", "end": "(?=\\,)",
+          "contentName": "meta.type.lean",
+          "patterns" : [
+            {"include": "#expressions"}
+          ]
+        }
       ]
     }
   }
