@@ -204,8 +204,7 @@ export function Info(props: InfoProps): JSX.Element {
                             <a className="link pointer dim" onClick={e => forceUpdate()}>Try again.</a>
                         </div> }
                 </div>
-                <div>
-                    { (widget || goalState) &&
+                <div style={{display: widget || goalState ? 'block' : 'none'}}>
                         <Details initiallyOpen>
                             <summary>
                                 Tactic state
@@ -216,16 +215,15 @@ export function Info(props: InfoProps): JSX.Element {
                                     <Widget widget={widget} fileName={loc.file_name} /> :
                                     <Goal goalState={goalState} /> }
                             </div>
-                        </Details> }
+                        </Details>
                 </div>
-                <div>
-                    { messages.length > 0 &&
+                <div style={{display: messages.length > 0 ? 'block' : 'none'}}>
                         <Details initiallyOpen>
                             <summary className="mv2 pointer">Messages ({messages.length})</summary>
                             <div className="ml1">
                                 <Messages messages={messages}/>
                             </div>
-                        </Details> }
+                        </Details>
                 </div>
                 {nothingToShow && (
                     loading ? 'Loading...' :
