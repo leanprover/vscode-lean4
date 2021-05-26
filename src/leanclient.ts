@@ -9,7 +9,7 @@ import {
     ServerOptions
 } from 'vscode-languageclient/node'
 import * as ls from 'vscode-languageserver-protocol'
-import { executablePath, addServerEnvPaths, serverLoggingEnabled, serverLoggingPath } from './config'
+import { executablePath, addServerEnvPaths, serverLoggingEnabled, serverLoggingPath, getElaborationDelay } from './config'
 import { PlainGoal, ServerProgress } from './leanclientTypes'
 import { assert } from './utils/assert'
 import * as path from 'path'
@@ -76,6 +76,9 @@ export class LeanClient implements Disposable {
         }
         const clientOptions: LanguageClientOptions = {
             documentSelector: [documentSelector],
+            initializationOptions: {
+                editDelay: getElaborationDelay(),
+            },
             middleware: {
                 handleDiagnostics: (uri, diagnostics, next) => {
                     const processedUntil = diagnostics.find((d) =>
