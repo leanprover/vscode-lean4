@@ -71,7 +71,7 @@ export class LeanClient implements Disposable {
             args: ['--server'],
             options: {
                 shell: true,
-                env: env
+                env
             }
         }
         const clientOptions: LanguageClientOptions = {
