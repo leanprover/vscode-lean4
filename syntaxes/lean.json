@@ -6,9 +6,14 @@
   "patterns": [
     {"include": "#comments"},
     {
-      "begin": "\\b(?<!\\.)(inductive|coinductive|structure|theorem|axiom|axioms|abbreviation|lemma|definition|def|instance|class|constant)\\b\\s+(\\{[^}]*\\})?",
+      "comment": "Commands which accept a definition and universe arguments",
+      "begin": "\\b(?<!\\.)(inductive|coinductive|structure|theorem|abbreviation|lemma|definition|def|class)\\b\\s+((\\{)([^}]*)(\\}))?",
       "beginCaptures": {
-        "1": {"name": "keyword.other.definitioncommand.lean"}
+        "1": {"name": "keyword.other.definitioncommand.lean"},
+        "2": {"name": "meta.binder.universe.lean"},
+        "3": {"name": "punctuation.definition.binder.universe.begin.lean"},
+        "4": {"name": "variable.other.constant.universe.lean"},
+        "5": {"name": "punctuation.definition.binder.universe.end.lean"}
       },
       "patterns": [
         {"include": "#comments"},
@@ -26,6 +31,51 @@
       "end": "(?=\\bwith\\b|\\bextends\\b|:=|\\|)",
       "name": "meta.definitioncommand.lean"
     },
+    {
+      "comment": "Commands which accept a definition",
+      "begin": "\\b(?<!\\.)(example|instance)\\b\\s+",
+      "beginCaptures": {
+        "1": {"name": "keyword.other.definitioncommand.lean"}
+      },
+      "patterns": [
+        {"include": "#comments"},
+        {"include": "#definitionName"},
+        {"match": ","},
+        {"include": "#binders"},
+        {
+          "begin": ":(?!=)", "end": "(?=:=|\\|)",
+          "contentName": "meta.type.lean",
+          "patterns" : [
+            {"include": "#expressions"}
+          ]
+        }
+      ],
+      "end": "(?=:=|\\|)",
+      "name": "meta.definitioncommand.lean"
+    },
+    {
+      "comment": "Commands which accept no definition",
+      "begin": "\\b(?<!\\.)(axiom|axioms|constant)\\b\\s+(\\{[^}]*\\})?",
+      "beginCaptures": {
+        "1": {"name": "keyword.other.definitioncommand.lean"}
+      },
+      "patterns": [
+        {"include": "#comments"},
+        {"include": "#definitionName"},
+        {"match": ","},
+        {"include": "#binders"},
+        {
+          "begin": ":(?!=)", "end": "$",
+          "contentName": "meta.type.lean",
+          "patterns" : [
+            {"include": "#expressions"}
+          ]
+        }
+      ],
+      "end": "$",
+      "name": "meta.definitioncommand.lean"
+    },
+
     { "begin": "\\battribute\\b\\s*\\[",
       "end": "\\]",
       "patterns": [
@@ -49,7 +99,7 @@
       "name": "keyword.other.lean"
     },
     { "begin": "\\b(?<!\\.)(variable|variables|parameter|parameters|constants)(?!\\.)\\b",
-      "end": "(?!\\s|\\(|\\[|⦃|\\{)",
+      "end": "(?!$|[\\s\\n]|\\(|\\[|⦃|\\{|--|/-)",
       "beginCaptures": {"1": {"name": "keyword.other.lean"}},
       "comment": "While we could use #abbreviatedBinders here, it's impossible to know whether `variables x y` is legal without knowing if `x` and `y` are keywords.",
       "patterns": [
@@ -190,8 +240,11 @@
         {
           "begin": "\\(", "end": "\\)",
           "name": "meta.binder.explicit",
+          "beginCaptures": {"0": {"name": "punctuation.definition.binder.explicit.begin.lean"}},
+          "endCaptures": {"0": {"name": "punctuation.definition.binder.explicit.end.lean"}},
           "patterns" : [
             { "begin": ":", "end": "(?=\\))",
+              "beginCaptures": {"0": {"name": "punctuation.separator.type.lean"}},
               "contentName": "meta.type.lean",
               "patterns" : [
                 {"include": "#expressions"}
@@ -203,8 +256,11 @@
         {
           "begin": "\\{", "end": "\\}",
           "name": "meta.binder.implicit",
+          "beginCaptures": {"0": {"name": "punctuation.definition.binder.implicit.begin.lean"}},
+          "endCaptures": {"0": {"name": "punctuation.definition.binder.implicit.end.lean"}},
           "patterns" : [
             { "begin": ":", "end": "(?=\\})",
+              "beginCaptures": {"0": {"name": "punctuation.separator.type.lean"}},
               "contentName": "meta.type.lean",
               "patterns" : [
                 {"include": "#expressions"}
@@ -216,8 +272,11 @@
         {
           "begin": "⦃|\\{\\{", "end": "⦄|\\}\\}",
           "name": "meta.binder.semiimplicit",
+          "beginCaptures": {"0": {"name": "punctuation.definition.binder.semiimplicit.begin.lean"}},
+          "endCaptures": {"0": {"name": "punctuation.definition.binder.semiimplicit.end.lean"}},
           "patterns" : [
             { "begin": ":", "end": "(?=\\⦄)",
+              "beginCaptures": {"0": {"name": "punctuation.separator.type.lean"}},
               "contentName": "meta.type.lean",
               "patterns" : [
                 {"include": "#expressions"}
@@ -229,8 +288,11 @@
         {
           "begin": "\\[", "end": "\\]",
           "name": "meta.binder.typeclass",
+          "beginCaptures": {"0": {"name": "punctuation.definition.binder.typeclass.begin.lean"}},
+          "endCaptures": {"0": {"name": "punctuation.definition.binder.typeclass.end.lean"}},
           "patterns" : [
             { "begin": "(?<=\\[)(?=[^\\]]*:)", "end": ":",
+              "endCaptures": {"0": {"name": "punctuation.separator.type.lean"}},
               "comment": "This fails to match the instance name on pathological cases like `[where«is the ]» : oops]`, but no one really writes that anyway, right?",
               "patterns" : [
                 {"include": "#binderName"}
@@ -242,8 +304,7 @@
               "patterns": [
                 { "include": "#expressions" }
               ]
-            },
-            { "include": "#expressions" }
+            }
           ]
         }
       ]
@@ -254,6 +315,7 @@
         { "include": "#binders"},
         { "include": "#binderName" },
         { "begin": ":", "end": "(?=\\,)",
+          "beginCaptures": {"0": {"name": "punctuation.separator.type.lean"}},
           "contentName": "meta.type.lean",
           "patterns" : [
             {"include": "#expressions"}
