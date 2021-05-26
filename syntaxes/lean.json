@@ -164,6 +164,7 @@
           "name": "meta.parens",
           "patterns" : [
             { "begin": ":", "end": "(?=\\))",
+              "beginCaptures": {"0": {"name": "punctuation.separator.type.lean"}},
               "contentName": "meta.type.lean",
               "patterns" : [
                 {"include": "#expressions"}
@@ -224,13 +225,13 @@
     },
     "definitionName": {
       "patterns": [
-        {"match": "\\b[^:«»\\(\\)\\{\\},[:space:]=→λ∀?][^:«»\\(\\)\\{\\},[:space:]]*", "name": "entity.name.function.lean"},
+        {"match": "\\b[^:«»\\(\\)\\{\\}⦃⦄,[:space:]=→λ∀?][^:«»\\(\\)\\{\\}⦃⦄,[:space:]]*", "name": "entity.name.function.lean"},
         {"begin": "«", "end": "»", "contentName": "entity.name.function.lean"}
       ]
     },
     "binderName": {
       "patterns": [
-        {"match": "\\b[^:«»\\(\\)\\{\\},[:space:]=→λ∀?][^:«»\\(\\)\\{\\},[:space:]]*", "name": "variable.parameter.lean"},
+        {"match": "\\b[^:«»\\(\\)\\{\\}⦃⦄,[:space:]=→λ∀?][^:«»\\(\\)\\{\\}⦃⦄,[:space:]]*", "name": "variable.parameter.lean"},
         {"begin": "«", "end": "»", "contentName": "variable.parameter.lean"}
       ]
     },
@@ -275,7 +276,7 @@
           "beginCaptures": {"0": {"name": "punctuation.definition.binder.semiimplicit.begin.lean"}},
           "endCaptures": {"0": {"name": "punctuation.definition.binder.semiimplicit.end.lean"}},
           "patterns" : [
-            { "begin": ":", "end": "(?=\\⦄)",
+            { "begin": ":", "end": "(?=⦄|\\})",
               "beginCaptures": {"0": {"name": "punctuation.separator.type.lean"}},
               "contentName": "meta.type.lean",
               "patterns" : [
