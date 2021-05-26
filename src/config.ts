@@ -65,3 +65,7 @@ export function getInfoViewTacticStateFilters(): InfoViewTacticStateFilter[] {
 export function getInfoViewFilterIndex(): number {
     return workspace.getConfiguration('lean4').get('infoViewFilterIndex', -1);
 }
+
+export function getElaborationDelay(): number {
+    return workspace.getConfiguration('lean4').get('elaborationDelay', 200);
+}

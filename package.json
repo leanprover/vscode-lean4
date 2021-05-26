@@ -156,6 +156,11 @@
 					"type": "number",
 					"default": -1,
 					"markdownDescription": "Index of the filter applied to the tactic state (in the array infoViewTacticStateFilters). An index of -1 means no filter is applied."
+				},
+				"lean4.elaborationDelay": {
+					"type": "number",
+					"default": 200,
+					"description": "Time (in milliseconds) which must pass since latest edit until elaboration begins. Lower values may make editing feel faster at the cost of higher CPU usage."
 				}
 			}
 		},
