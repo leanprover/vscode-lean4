@@ -276,7 +276,7 @@
           "beginCaptures": {"0": {"name": "punctuation.definition.binder.semiimplicit.begin.lean"}},
           "endCaptures": {"0": {"name": "punctuation.definition.binder.semiimplicit.end.lean"}},
           "patterns" : [
-            { "begin": ":", "end": "(?=⦄|\\})",
+            { "begin": ":", "end": "(?=⦄|\\}\\})",
               "beginCaptures": {"0": {"name": "punctuation.separator.type.lean"}},
               "contentName": "meta.type.lean",
               "patterns" : [
