@@ -10,7 +10,7 @@ import {
 } from 'vscode-languageclient/node'
 import * as ls from 'vscode-languageserver-protocol'
 import { executablePath, addServerEnvPaths, serverLoggingEnabled, serverLoggingPath, getElaborationDelay } from './config'
-import { PlainGoal, ServerProgress } from './leanclientTypes'
+import { PlainGoal, PlainTermGoal, ServerProgress } from './leanclientTypes'
 import { assert } from './utils/assert'
 import * as path from 'path'
 
@@ -240,6 +240,12 @@ export class LeanClient implements Disposable {
         assert(() => this.isStarted())
         return this.client.sendRequest(
             '$/lean/plainGoal',
+            this.client.code2ProtocolConverter.asTextDocumentPositionParams(doc, position))
+    }
+
+    requestPlainTermGoal(doc: TextDocument, position: Position): Promise<PlainTermGoal> {
+        return this.client.sendRequest(
+            '$/lean/plainTermGoal',
             this.client.code2ProtocolConverter.asTextDocumentPositionParams(doc, position))
     }
 

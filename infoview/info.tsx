@@ -1,14 +1,14 @@
 import * as React from 'react';
-import { copyToCommentEvent, copyToComment, pauseEvent, continueEvent, toggleUpdating, serverRestarted, allMessagesEvent, requestPlainGoal, reveal, progressEvent } from './server';
+import { copyToCommentEvent, copyToComment, pauseEvent, continueEvent, toggleUpdating, serverRestarted, allMessagesEvent, requestPlainGoal, reveal, progressEvent, requestPlainTermGoal } from './server';
 import { LocationContext, ConfigContext } from '.';
-import { getGoals, Goal } from './goal';
+import { getGoals, Goal, TermGoal } from './goal';
 import { Messages, processMessages, ProcessedMessage, getMessagesFor } from './messages';
 import { basename, useEvent } from './util';
 import { CopyToCommentIcon, PinnedIcon, PinIcon, ContinueIcon, PauseIcon, RefreshIcon, GoToFileIcon } from './svg_icons';
 import { Details } from './collapsing';
 import { InfoviewLocation, Message } from '../src/infoviewApi';
 import { Event } from './event';
-import { PlainGoal, ServerProgress } from '../src/leanclientTypes';
+import { PlainGoal, PlainTermGoal, ServerProgress } from '../src/leanclientTypes';
 
 type InfoStatus = 'updating' | 'error' | 'pinned' | 'cursor' | 'loading';
 
@@ -63,6 +63,7 @@ interface InfoState {
     loc: InfoviewLocation;
     loading: boolean;
     goal?: PlainGoal;
+    termGoal?: PlainTermGoal;
     messages: ProcessedMessage[];
     error?: string;
     triggerUpdate: () => void;
@@ -71,7 +72,7 @@ interface InfoState {
 function infoState(isPaused: boolean, loc: InfoviewLocation): InfoState {
     const serverProcessing = useMappedEvent(progressEvent, false, (t) => isLoading(t, loc), [loc]);
 
-    const [goal, setGoal] = React.useState<PlainGoal>();
+    const [goal, setGoal] = React.useState<{goal: PlainGoal, termGoal: PlainTermGoal}>();
     const [error, setError] = React.useState<string>();
     const [fetchingInfo, setFetchingInfo] = React.useState<boolean>();
     const triggerUpdate = delayedThrottled(serverProcessing ? 500 : 50, async () => {
@@ -82,9 +83,26 @@ function infoState(isPaused: boolean, loc: InfoviewLocation): InfoState {
             setFetchingInfo(false);
             return;
         }
+
+        // Start both goal requests before awaiting them.
+        const plainGoalReq = requestPlainGoal(loc);
+        const plainTermGoalReq = requestPlainTermGoal(loc);
+
+        let plainTermGoal: PlainTermGoal;
         try {
-            const plainGoal = await requestPlainGoal(loc);
-            setGoal(plainGoal);
+            plainTermGoal = await plainTermGoalReq;
+        } catch (err) {
+            if (err?.code === -32801) {
+                // Document has been changed since we made the request, try again
+                setError(null);
+                setFetchingInfo(true);
+                triggerUpdate();
+                return;
+            }
+        }
+
+        try {
+            setGoal({goal: await plainGoalReq, termGoal: plainTermGoal});
             setError(null);
             setFetchingInfo(false);
         } catch (err) {
@@ -115,7 +133,7 @@ function infoState(isPaused: boolean, loc: InfoviewLocation): InfoState {
     React.useEffect(() => updateMsgs(allMessagesEvent.current), [loc, config]);
     useEvent(allMessagesEvent, updateMsgs, [loc, config]);
 
-    return { loc, loading: serverProcessing || fetchingInfo, goal, error, messages, triggerUpdate };
+    return { loc, loading: serverProcessing || fetchingInfo, goal: goal?.goal, termGoal: goal?.termGoal, error, messages, triggerUpdate };
 }
 
 export function Info(props: InfoProps): JSX.Element {
@@ -128,7 +146,7 @@ export function Info(props: InfoProps): JSX.Element {
     const stateRef = React.useRef<InfoState>({loc: null, loading: true, messages: [], triggerUpdate: () => {}});
     const newState = infoState(isPaused, (isPaused && stateRef.current.loc) || props.loc);
     if (!isPaused) stateRef.current = newState;
-    const {loc, goal, error, loading, messages} = stateRef.current;
+    const {loc, goal, termGoal, error, loading, messages} = stateRef.current;
 
     function copyGoalToComment() {
         if (goal) {
@@ -145,7 +163,7 @@ export function Info(props: InfoProps): JSX.Element {
 
     const status: InfoStatus = loading ? 'loading' : error ? 'error' : isPinned ? 'pinned' : 'cursor';
     const statusColor = statusColTable[status];
-    const nothingToShow = !goal && !messages.length;
+    const nothingToShow = !goal && !termGoal && !messages.length;
     const locationString = loc && `${basename(loc.uri)}:${loc.line+1}:${loc.character}`;
 
     // TODO: updating of paused views
@@ -181,6 +199,16 @@ export function Info(props: InfoProps): JSX.Element {
                             </summary>
                             <div className='ml1'>
                                 <Goal plainGoals={goal} />
+                            </div>
+                        </Details>
+                </div>
+                <div style={{display: termGoal ? 'block' : 'none'}}>
+                        <Details initiallyOpen>
+                            <summary>
+                                Expected type
+                            </summary>
+                            <div className='ml1'>
+                                <TermGoal termGoal={termGoal} />
                             </div>
                         </Details>
                 </div>

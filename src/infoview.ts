@@ -38,6 +38,10 @@ export class InfoProvider implements Disposable {
             await this.client.requestPlainGoals(await workspace.openTextDocument(Uri.parse(loc.uri)),
                 this.positionOfLocation(loc)),
 
+        requestPlainTermGoal: async (loc: InfoviewLocation) =>
+            await this.client.requestPlainTermGoal(await workspace.openTextDocument(Uri.parse(loc.uri)),
+                this.positionOfLocation(loc)),
+
         reveal: async (loc) =>
             await this.revealEditorPosition(Uri.parse(loc.uri), loc.line, loc.character),
 

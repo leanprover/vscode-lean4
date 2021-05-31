@@ -1,4 +1,4 @@
-import { PlainGoal, ServerProgress } from './leanclientTypes';
+import { PlainGoal, PlainTermGoal, ServerProgress } from './leanclientTypes';
 
 export interface InfoviewPosition {
     line: number;
@@ -55,6 +55,7 @@ export interface InfoviewExtensionApi {
     syncPins(pins: PinnedLocation[]): Promise<unknown>;
     copyText(text: string): Promise<unknown>;
     requestPlainGoal(loc: InfoviewLocation): Promise<PlainGoal>;
+    requestPlainTermGoal(loc: InfoviewLocation): Promise<PlainTermGoal>;
     reveal(loc: InfoviewLocation): Promise<unknown>;
 
     /** If no location is given set to be the cursor position. */

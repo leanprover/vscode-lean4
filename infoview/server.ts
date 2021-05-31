@@ -14,7 +14,7 @@ export function copyToComment(text: string): Promise<unknown> {
 }
 
 // eslint-disable-next-line @typescript-eslint/unbound-method
-export const {reveal, copyText, syncPins, requestPlainGoal} = serverApi;
+export const {reveal, copyText, syncPins, requestPlainGoal, requestPlainTermGoal} = serverApi;
 
 // eslint-disable-next-line @typescript-eslint/unbound-method
 export const edit = serverApi.insertText;

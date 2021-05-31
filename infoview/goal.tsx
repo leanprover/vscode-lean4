@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { escapeHtml } from './util';
 import { ConfigContext } from './index';
-import { PlainGoal } from '../src/leanclientTypes';
+import { PlainGoal, PlainTermGoal } from '../src/leanclientTypes';
 
 interface GoalProps {
     plainGoals: PlainGoal;
@@ -66,4 +66,10 @@ export function Goal({plainGoals}: GoalProps): JSX.Element {
                 <pre key={i} className="font-code" style={{whiteSpace: 'pre-wrap'}} dangerouslySetInnerHTML={{ __html: g }} />)}
     </div>
 
+}
+
+export function TermGoal({termGoal}: {termGoal: PlainTermGoal}): JSX.Element {
+    if (!termGoal?.goal) return null;
+    // TODO
+    return Goal({plainGoals: {rendered: null, goals: [termGoal.goal]}});
 }
