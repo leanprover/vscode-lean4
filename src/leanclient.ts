@@ -6,13 +6,29 @@ import {
     LanguageClient,
     LanguageClientOptions,
     Protocol2CodeConverter,
-    ServerOptions
+    ServerOptions,
+    VersionedTextDocumentIdentifier
 } from 'vscode-languageclient/node'
 import * as ls from 'vscode-languageserver-protocol'
 import { executablePath, addServerEnvPaths, serverLoggingEnabled, serverLoggingPath, getElaborationDelay } from './config'
 import { PlainGoal, PlainTermGoal, ServerProgress } from './leanclientTypes'
 import { assert } from './utils/assert'
-import * as path from 'path'
+
+export interface LeanFileProgressProcessingInfo {
+    /** Range which is still being processed */
+    range: ls.Range;
+}
+
+export interface LeanFileProgressParams {
+    /** The text document to which this progress notification applies. */
+    textDocument: VersionedTextDocumentIdentifier;
+
+    /**
+     * Array containing the parts of the file which are still being processed.
+     * The array should be empty if and only if the server is finished processing.
+     */
+    processing: LeanFileProgressProcessingInfo[];
+}
 
 const processingMessage = 'processing...'
 
@@ -48,6 +64,8 @@ export class LeanClient implements Disposable {
 
     private isOpen: Set<string> = new Set()
 
+    hasFileProgressSupport: boolean = false
+
     constructor() {
         this.subscriptions.push(window.onDidChangeVisibleTextEditors((es) =>
             es.forEach((e) => this.open(e.document))));
@@ -81,10 +99,12 @@ export class LeanClient implements Disposable {
             },
             middleware: {
                 handleDiagnostics: (uri, diagnostics, next) => {
-                    const processedUntil = diagnostics.find((d) =>
-                        d.message === processingMessage)?.range?.start?.line
-                    this.setProgress({...this.progress, [uri.toString()]: processedUntil})
-                    diagnostics = diagnostics.filter((d) => d.message !== processingMessage);
+                    if (!this.hasFileProgressSupport) {
+                        const processedUntil = diagnostics.find((d) =>
+                            d.message === processingMessage)?.range?.start?.line
+                        this.setProgress({...this.progress, [uri.toString()]: processedUntil})
+                        diagnostics = diagnostics.filter((d) => d.message !== processingMessage);
+                    }
                     for (const diag of diagnostics) {
                         if (diag.source === 'Lean 4 server') {
                             diag.source = 'Lean 4';
@@ -147,6 +167,14 @@ export class LeanClient implements Disposable {
         this.client.start()
         this.isOpen = new Set()
         await this.client.onReady();
+
+        this.client.onNotification('$/lean/fileProgress', (params: LeanFileProgressParams) => {
+            this.hasFileProgressSupport = true;
+            const uri = this.client.protocol2CodeConverter.asUri(params.textDocument.uri)
+            const processedUntil = params.processing.length === 0 ? undefined :
+                Math.min(...params.processing.map((p) => p.range.start.line));
+            this.setProgress({...this.progress, [uri.toString()]: processedUntil})
+        });
 
         // HACK
         (this.client as any)._serverProcess.stderr.on('data', () =>
