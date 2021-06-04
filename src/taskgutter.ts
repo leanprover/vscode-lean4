@@ -14,10 +14,7 @@ class LeanFileTaskGutter {
         const oldProcessed = this.processed;
         this.processed = processed;
         if (processed === undefined) {
-            if (this.timeout !== undefined) {
-                clearTimeout(this.timeout)
-                this.timeout = undefined;
-            }
+            this.clearTimeout();
             this.updateDecos();
         } else if (this.timeout === undefined) {
             this.schedule(oldProcessed === undefined ? 500 : 20)
@@ -31,6 +28,13 @@ class LeanFileTaskGutter {
         }, ms)
     }
 
+    private clearTimeout() {
+        if (this.timeout !== undefined) {
+            clearTimeout(this.timeout)
+            this.timeout = undefined;
+        }
+    }
+
     private updateDecos() {
         for (const editor of window.visibleTextEditors) {
             if (editor.document.uri.toString() === this.uri) {
@@ -40,6 +44,10 @@ class LeanFileTaskGutter {
                 }]);
             }
         }
+    }
+
+    dispose() {
+        this.clearTimeout();
     }
 }
 
@@ -83,8 +91,12 @@ export class LeanTaskGutter implements Disposable {
                 this.gutters[uri] = new LeanFileTaskGutter(uri, this.decoration, processed)
             }
         }
-        Object.getOwnPropertyNames(this.gutters).forEach((uri) =>
-            uris[uri] || (this.gutters[uri] = undefined));
+        for (const uri of Object.getOwnPropertyNames(this.gutters)) {
+            if (!uris[uri]) {
+                this.gutters[uri].dispose();
+                this.gutters[uri] = undefined;
+            }
+        }
     }
 
     dispose(): void {
