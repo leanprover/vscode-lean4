@@ -24,7 +24,8 @@ As of now, the extension supports the following features:
 - Diagnostics
 - Syntax highlighting with basic Lean 4 syntax rules
 - `\foo` unicode shortcuts
-- A simple infoview since [leanprover/lean4@ec903f58](https://github.com/leanprover/lean4/commit/ec903f58d294cc7c57008a9cf754745fa7024f8c) (2021-02-04)
+- Semantic highlighting since [leanprover/lean4@5df753f3](https://github.com/leanprover/lean4/commit/5df753f3381dca714d0e81727d38feba765d6234) (2021-03-17)
+- An infoview since [leanprover/lean4@ec903f58](https://github.com/leanprover/lean4/commit/ec903f58d294cc7c57008a9cf754745fa7024f8c) (2021-02-04)
 - Go to definition since [leanprover/lean4@e627ad30](https://github.com/leanprover/lean4/commit/e627ad308d0d19d0407c0c7cb3ec82fb93fc12ea) (2021-01-19)
 - Type information & documentation on hover since [leanprover/lean4@d7c201a2](https://github.com/leanprover/lean4/commit/d7c201a2d4c4a0d0e76405e6d5325b63cb08ea11) (2021-01-15)
 - [Breadcrumbs](https://code.visualstudio.com/Docs/editor/editingevolved#_breadcrumbs)
@@ -39,3 +40,54 @@ As of now, the extension supports the following features:
 - Switch to the Debug viewlet (Ctrl+Shift+D).
 - Select `Launch Client` from the drop down.
 - Run the launch config.
+
+## Changelog
+### 0.0.29 (Jun 4, 2021)
+- Adds support for term mode goals. Discussion at [leanprover/lean4#504](https://github.com/leanprover/lean4/issues/504).
+
+### 0.0.26 - 0.0.28 (May 26, 2021)
+- Adds an option `lean4.elaborationDelay` to configure the delay after which the Lean 4 server starts elaborating with all accumulated changes.
+
+### 0.0.10 - 0.0.25 (Apr 28, 2021)
+- Adds the options `lean4.serverEnvPaths` and `lean4.serverEnv` for adding environment variables and PATH components to the Lean 4 server environment.
+
+### 0.0.7 - 0.0.9 (Mar 11, 2021)
+- Ports the current [vscode-lean](https://github.com/leanprover/vscode-lean) infoview to vscode-lean4. Removes the `lean4.plainInfoView.toggleAutoUpdate` command and adds the following configuration options and commands:
+  - Configuration options:
+    - `lean4.infoViewAllErrorsOnLine`
+    - `lean4.infoViewAutoOpen`
+    - `lean4.infoViewAutoOpenShowGoal`
+    - `lean4.infoViewStyle`
+    - `lean4.infoViewTacticStateFilters`
+    - `lean4.infoViewFilterIndex`
+  - Commands:
+    - `lean4.displayGoal` (Ctrl+Shift+Enter)
+    - `lean4.displayList` (Ctrl+Shift+Alt+Enter)
+    - `lean4.infoView.copyToComment`
+    - `lean4.infoView.toggleStickyPosition`
+    - `lean4.infoView.toggleUpdating`
+
+### 0.0.3 - 0.0.6 (Feb 12, 2021)
+- Implements a very basic infoview to display plaintext Lean 4 goals with basic highlighting. Includes a command `lean4.plainInfoView.toggleAutoUpdate` (Ctrl+Shift+T).
+
+### 0.0.2 (Jan 26, 2021)
+- Ports the rewrite of the abbreviation feature from [vscode-lean](https://github.com/leanprover/vscode-lean) to vscode-lean4. A discussion can be found at [leanprover/vscode-lean#240](https://github.com/leanprover/vscode-lean/pull/240).
+
+### 0.0.1 (Jan 19, 2021)
+- Ports previous barebones version of vscode-lean4 to start its history on top of [vscode-lean](https://github.com/leanprover/vscode-lean) for easier porting of PRs of vscode-lean to vscode-lean4. Includes the following features:
+  - An LSP client
+  - Support for Unicode abbreviations as taken from vscode-lean
+  - A Lean 4 syntax declaration
+  - A compatibility layer to enable users to install both vscode-lean and vscode-lean4 despite the file suffix conflict (see discussion in [leanprover/vscode-lean#253](https://github.com/leanprover/vscode-lean/pull/253))
+  - The following configuration options:
+    - `lean4.executablePath`
+    - `lean4.input.enabled`
+    - `lean4.input.customTranslations`
+    - `lean4.input.languages`
+    - `lean4.input.leader`
+    - `lean4.serverLogging.enabled`
+    - `lean4.serverLogging.path`
+  - The following commands:
+    - `lean4.restartServer`
+    - `lean4.input.convert` (Tab)
+    - `lean4.refreshFileDependencies` (Ctrl+Shift+X)
