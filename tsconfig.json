@@ -12,18 +12,8 @@
         "sourceMap": true,
         "alwaysStrict": true,
         "rootDir": "./src",
-        "jsx": "preserve",
-        "typeRoots": [
-            "./node_modules/@types",
-            "./src/typings"
-        ]
     },
     "include": [
         "src/**/*"
     ],
-    "exclude": [
-        "node_modules",
-        "old",
-        ".vscode-test"
-    ]
 }

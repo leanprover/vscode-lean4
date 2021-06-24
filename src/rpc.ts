@@ -18,7 +18,7 @@ export class Rpc {
                 try {
                     this.sendMessage({ seqNum, result: await this.methods[name](...args) })
                 } catch (ex) {
-                    this.sendMessage({ seqNum, exception: ex === undefined ? 'error' : ex })
+                    this.sendMessage({ seqNum, exception: ex === undefined ? 'error' : ex.toString() })
                 }
             })()
         }
@@ -33,8 +33,10 @@ export class Rpc {
     invoke(name: string, args: any[]): Promise<any> {
         this.seqNum += 1
         const seqNum = this.seqNum
-        this.sendMessage({seqNum, name, args})
-        return new Promise((resolve, reject) => this.pending[seqNum] = {resolve, reject})
+        return new Promise((resolve, reject) => {
+            this.pending[seqNum] = {resolve, reject};
+            this.sendMessage({seqNum, name, args});
+        });
     }
 
     getApi<T>(): T {

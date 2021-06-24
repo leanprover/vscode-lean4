@@ -1,4 +1,4 @@
-import { Disposable, ExtensionContext, OverviewRulerLane, Range, TextEditorDecorationType, window, workspace } from 'vscode';
+import { Disposable, ExtensionContext, OverviewRulerLane, Range, TextEditorDecorationType, window } from 'vscode';
 import { LeanClient } from './leanclient';
 import { ServerProgress } from './leanclientTypes';
 

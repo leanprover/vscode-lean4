@@ -1,5 +1,5 @@
 import { workspace } from 'vscode'
-import { InfoViewTacticStateFilter } from './infoviewApi';
+import { InfoviewTacticStateFilter } from 'lean4-infoview';
 import * as path from 'path';
 
 // TODO: does currently not contain config options for `./abbreviation`
@@ -7,18 +7,18 @@ import * as path from 'path';
 
 // Make a copy of the passed process environment that includes the user's
 // `lean4.serverEnvPaths` in the path key, and adds the key/value pairs from
-// `lean4.serverEnv`. Both of these settings can be found in the user's 
+// `lean4.serverEnv`. Both of these settings can be found in the user's
 // settings.json file
 export function addServerEnvPaths(input_env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
-    let env = Object.assign({}, input_env, serverEnv());
-    let paths = serverEnvPaths()
-    if (paths.length != 0) {
+    const env = Object.assign({}, input_env, serverEnv());
+    const paths = serverEnvPaths()
+    if (paths.length !== 0) {
         if (process.platform === 'win32') {
             env['Path'] = paths.join(path.delimiter) + path.delimiter + process.env.Path
         } else {
             env['PATH'] = paths.join(path.delimiter) + path.delimiter + process.env.PATH
         }
-    }  
+    }
     return env
 }
 
@@ -58,7 +58,7 @@ export function getInfoViewAllErrorsOnLine(): boolean {
     return workspace.getConfiguration('lean4').get('infoViewAllErrorsOnLine', true);
 }
 
-export function getInfoViewTacticStateFilters(): InfoViewTacticStateFilter[] {
+export function getInfoViewTacticStateFilters(): InfoviewTacticStateFilter[] {
     return workspace.getConfiguration('lean4').get('infoViewTacticStateFilters', []);
 }
 

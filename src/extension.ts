@@ -1,4 +1,4 @@
-import { workspace, commands, window, languages, ExtensionContext, TextDocument } from 'vscode'
+import { workspace, commands, window, languages, ExtensionContext } from 'vscode'
 import { promisify } from 'util'
 import { execFile } from 'child_process'
 import { AbbreviationFeature } from './abbreviation'
@@ -13,7 +13,7 @@ async function checkLean4(): Promise<boolean> {
     if (folders) {
         folderPath = folders[0].uri.fsPath
     }
-    
+
     const env = addServerEnvPaths(process.env);
     const cmd = executablePath()
     const options = ['--version']
@@ -22,7 +22,7 @@ async function checkLean4(): Promise<boolean> {
         // Specifically, if the extension was not opened inside of a folder, it
         // looks for a global (default) installation of Lean. This way, we can support
         // single file editing.
-        const { stdout, stderr } = await promisify(execFile)(cmd, options, {cwd: folderPath, env: env })
+        const { stdout, stderr } = await promisify(execFile)(cmd, options, {cwd: folderPath, env })
         const filterVersion = /version (\d+)\.\d+\..+/
         const match = filterVersion.exec(stdout)
         if (!match) {
