@@ -1,36 +1,20 @@
 import { TextDocument, Position, TextEditor, EventEmitter, Uri, Diagnostic,
     workspace, languages, DocumentHighlight, Range, DocumentHighlightKind, window, Disposable } from 'vscode'
 import {
+    DidChangeTextDocumentParams,
+    DidCloseTextDocumentParams,
     DidOpenTextDocumentNotification,
     DocumentFilter,
     LanguageClient,
     LanguageClientOptions,
     Protocol2CodeConverter,
+    PublishDiagnosticsParams,
     ServerOptions,
-    VersionedTextDocumentIdentifier
 } from 'vscode-languageclient/node'
 import * as ls from 'vscode-languageserver-protocol'
 import { executablePath, addServerEnvPaths, serverLoggingEnabled, serverLoggingPath, getElaborationDelay } from './config'
-import { PlainGoal, PlainTermGoal, ServerProgress } from './leanclientTypes'
 import { assert } from './utils/assert'
-
-export interface LeanFileProgressProcessingInfo {
-    /** Range which is still being processed */
-    range: ls.Range;
-}
-
-export interface LeanFileProgressParams {
-    /** The text document to which this progress notification applies. */
-    textDocument: VersionedTextDocumentIdentifier;
-
-    /**
-     * Array containing the parts of the file which are still being processed.
-     * The array should be empty if and only if the server is finished processing.
-     */
-    processing: LeanFileProgressProcessingInfo[];
-}
-
-const processingMessage = 'processing...'
+import { PlainGoal, PlainTermGoal, LeanFileProgressParams } from 'lean4-infoview';
 
 const documentSelector: DocumentFilter = {
     scheme: 'file',
@@ -43,6 +27,11 @@ interface Lean4Diagnostic extends ls.Diagnostic {
     fullRange: ls.Range;
 }
 
+export interface ServerProgress {
+    // Line number
+    [uri: string]: number | undefined;
+}
+
 export function getFullRange(diag: Diagnostic): Range {
     return (diag as any)?.fullRange || diag.range;
 }
@@ -53,18 +42,22 @@ export class LeanClient implements Disposable {
     private restartedEmitter = new EventEmitter()
     restarted = this.restartedEmitter.event
 
-    private diagnosticsEmitter = new EventEmitter<{uri: Uri, diagnostics: Diagnostic[]}>()
+    private diagnosticsEmitter = new EventEmitter<PublishDiagnosticsParams>()
     diagnostics = this.diagnosticsEmitter.event
 
     progress: ServerProgress = {}
     private progressChangedEmitter = new EventEmitter<ServerProgress>()
     progressChanged = this.progressChangedEmitter.event
 
+    private didChangeEmitter = new EventEmitter<DidChangeTextDocumentParams>()
+    didChange = this.didChangeEmitter.event
+
+    private didCloseEmitter = new EventEmitter<DidCloseTextDocumentParams>();
+    didClose = this.didCloseEmitter.event
+
     private subscriptions: Disposable[] = []
 
     private isOpen: Set<string> = new Set()
-
-    hasFileProgressSupport: boolean = false
 
     constructor() {
         this.subscriptions.push(window.onDidChangeVisibleTextEditors((es) =>
@@ -99,19 +92,22 @@ export class LeanClient implements Disposable {
             },
             middleware: {
                 handleDiagnostics: (uri, diagnostics, next) => {
-                    if (!this.hasFileProgressSupport) {
-                        const processedUntil = diagnostics.find((d) =>
-                            d.message === processingMessage)?.range?.start?.line
-                        this.setProgress({...this.progress, [uri.toString()]: processedUntil})
-                        diagnostics = diagnostics.filter((d) => d.message !== processingMessage);
-                    }
                     for (const diag of diagnostics) {
                         if (diag.source === 'Lean 4 server') {
                             diag.source = 'Lean 4';
                         }
                     }
                     next(uri, diagnostics);
-                    this.diagnosticsEmitter.fire({uri, diagnostics})
+                    const uri_ = this.client.code2ProtocolConverter.asUri(uri);
+                    const diagnostics_ = [];
+                    for (const d of diagnostics) {
+                        const d_: Lean4Diagnostic = {
+                            ...this.client.code2ProtocolConverter.asDiagnostic(d),
+                            fullRange: this.client.code2ProtocolConverter.asRange((d as any).fullRange)
+                        };
+                        diagnostics_.push(d_);
+                    }
+                    this.diagnosticsEmitter.fire({uri: uri_, diagnostics: diagnostics_});
                 },
 
                 didOpen: () => {
@@ -120,9 +116,17 @@ export class LeanClient implements Disposable {
                     return;
                 },
 
+                didChange: (data, next) => {
+                    next(data);
+                    const params = this.client.code2ProtocolConverter.asChangeTextDocumentParams(data);
+                    this.didChangeEmitter.fire(params);
+                },
+
                 didClose: (doc, next) => {
                     if (!this.isOpen.delete(doc.uri.toString())) return;
                     next(doc);
+                    const params = this.client.code2ProtocolConverter.asTextDocumentIdentifier(doc);
+                    this.didCloseEmitter.fire({textDocument: params});
                 },
 
                 provideDocumentHighlights: async (doc, pos, ctok, next) => {
@@ -169,7 +173,6 @@ export class LeanClient implements Disposable {
         await this.client.onReady();
 
         this.client.onNotification('$/lean/fileProgress', (params: LeanFileProgressParams) => {
-            this.hasFileProgressSupport = true;
             const uri = this.client.protocol2CodeConverter.asUri(params.textDocument.uri)
             const processedUntil = params.processing.length === 0 ? undefined :
                 Math.min(...params.processing.map((p) => p.range.start.line));

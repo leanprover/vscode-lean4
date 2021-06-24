@@ -41,7 +41,7 @@ export class Rpc {
 
     getApi<T>(): T {
         return new Proxy({}, {
-            get: (_, prop) => (...args) =>
+            get: (_, prop) => (...args: any) =>
                 this.invoke(prop as string, args)
         }) as any
     }

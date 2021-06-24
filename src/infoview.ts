@@ -5,10 +5,9 @@ import {
     Selection, TextEditor, TextEditorRevealType,
     Uri, ViewColumn, WebviewPanel, window, workspace, env,
 } from 'vscode';
-import { getFullRange, LeanClient } from './leanclient';
-import { InfoviewExtensionApi, InfoviewWebviewApi,
-    PinnedLocation, InfoviewLocation, Message, locationEq,
-    InfoviewRange } from './infoviewApi'
+import { TextDocumentIdentifier } from 'vscode-languageserver-protocol';
+import { EditorApi, InfoviewApi } from 'lean4-infoview';
+import { LeanClient } from './leanclient';
 import { getInfoViewAllErrorsOnLine, getInfoViewAutoOpen, getInfoViewAutoOpenShowGoal,
     getInfoViewFilterIndex, getInfoViewStyle, getInfoViewTacticStateFilters } from './config';
 import { Rpc } from './rpc';
@@ -18,35 +17,105 @@ export class InfoProvider implements Disposable {
     private webviewPanel: WebviewPanel;
     private subscriptions: Disposable[] = [];
     private webviewRpc: Rpc;
-    private webviewApi?: InfoviewWebviewApi;
+    private webviewApi?: InfoviewApi;
 
     private started: boolean = false;
 
-    private pins: PinnedLocation[] | null;
-
     private stylesheet: string = null;
 
-    private extensionApi: InfoviewExtensionApi = {
-        copyText: async (text) => {
+    // Subscriptions are counted and only disposed when count === 0.
+    private serverNotifSubscriptions: Map<string, [number, Disposable]> = new Map();
+    private clientNotifSubscriptions: Map<string, [number, Disposable]> = new Map();
+
+    private editorApi : EditorApi = {
+        sendClientRequest: async <T extends TextDocumentIdentifier, U>(method: string, req: T): Promise<U> => {
+            return await this.client.client.sendRequest(method, req);
+        },
+        subscribeServerNotifications: async (method) => {
+            const el = this.serverNotifSubscriptions.get(method);
+            if (el) {
+                const [count, h] = el;
+                this.serverNotifSubscriptions.set(method, [count + 1, h]);
+                return;
+            }
+
+            // NOTE(WN): For non-custom notifications we cannot call LanguageClient.onNotification
+            // here because that *ovewrites* the notification handler rather than registers an extra one.
+            // So we have to add a bunch of event emitters to `LeanClient.`
+            if (method.startsWith('$')) {
+                const h = this.client.client.onNotification(method, (params) => {
+                    void this.webviewApi.gotServerNotification(method, params);
+                });
+                this.serverNotifSubscriptions.set(method, [0, h]);
+            } else if (method === 'textDocument/publishDiagnostics') {
+                const h = this.client.diagnostics((params) => {
+                    void this.webviewApi.gotServerNotification(method, params);
+                });
+                this.serverNotifSubscriptions.set(method, [0, h]);
+            } else if (method === '$/lean/fileProgress') {
+                const h = this.client.progressChanged((params) => {
+                    throw new Error('unimplemented'); // TODO convert "params" to params
+                    void this.webviewApi.gotServerNotification(method, params);
+                });
+                this.serverNotifSubscriptions.set(method, [0, h]);
+            } else {
+                throw new Error(`subscription to ${method} server notifications not implemented`);
+            }
+        },
+        unsubscribeServerNotifications: async (method) => {
+            const [count, h] = this.serverNotifSubscriptions.get(method);
+            if (count === 1) {
+                h.dispose();
+                this.serverNotifSubscriptions.delete(method);
+            } else {
+                this.serverNotifSubscriptions.set(method, [count - 1, h])
+            }
+        },
+        subscribeClientNotifications: async (method) => {
+            const el = this.clientNotifSubscriptions.get(method);
+            if (el) {
+                const [count, d] = el;
+                this.clientNotifSubscriptions.set(method, [count + 1, d]);
+                return;
+            }
+
+            if (method === 'textDocument/didChange') {
+                const h = this.client.didChange((params) => {
+                    void this.webviewApi.sentClientNotification(method, params);
+                });
+                this.clientNotifSubscriptions.set(method, [0, h]);
+            } else if (method === 'textDocument/didClose') {
+                const h = this.client.didClose((params) => {
+                    void this.webviewApi.sentClientNotification(method, params);
+                });
+                this.clientNotifSubscriptions.set(method, [0, h]);
+            } else {
+                throw new Error(`Subscription to '${method}' client notifications not implemented`);
+            }
+        },
+        unsubscribeClientNotifications: async (method) => {
+            const [count, h] = this.clientNotifSubscriptions.get(method);
+            if (count === 1) {
+                h.dispose();
+                this.clientNotifSubscriptions.delete(method);
+            } else {
+                this.clientNotifSubscriptions.set(method, [count - 1, h])
+            }
+        },
+        copyToClipboard: async (text) => {
             await env.clipboard.writeText(text);
             await window.showInformationMessage(`Copied to clipboard: ${text}`);
         },
-
-        syncPins: async (pins) => this.pins = pins,
-
-        requestPlainGoal: async (loc: InfoviewLocation) =>
-            await this.client.requestPlainGoals(await workspace.openTextDocument(Uri.parse(loc.uri)),
-                this.positionOfLocation(loc)),
-
-        requestPlainTermGoal: async (loc: InfoviewLocation) =>
-            await this.client.requestPlainTermGoal(await workspace.openTextDocument(Uri.parse(loc.uri)),
-                this.positionOfLocation(loc)),
-
-        reveal: async (loc) =>
-            await this.revealEditorPosition(Uri.parse(loc.uri), loc.line, loc.character),
-
-        insertText: async (text, type, loc) =>
-            await this.handleInsertText(text, type, loc),
+        applyEdits: async (edits) => {
+            throw new Error('unimplemented');
+            //await this.handleInsertText(text, type, loc),
+        },
+        showDocument: async (show) => {
+            void this.revealEditorSelection(
+                Uri.parse(show.uri),
+                this.client.client.protocol2CodeConverter.asRange(show.selection)
+            );
+        },
     };
 
     constructor(private client: LeanClient, private leanDocs: DocumentSelector, private context: ExtensionContext) {
@@ -54,10 +123,8 @@ export class InfoProvider implements Disposable {
         this.subscriptions.push(
             this.client.restarted(async () => {
                 await this.autoOpen();
-                await this.webviewApi?.restarted();
-                await this.sendMessages();
+                // TODO(WN): await this.sendMessages();
             }),
-            this.client.progressChanged(async (p) => await this.webviewApi?.progress(p)),
             window.onDidChangeActiveTextEditor(() => this.sendPosition()),
             window.onDidChangeTextEditorSelection(() => this.sendPosition()),
             workspace.onDidChangeConfiguration(async (e) => {
@@ -65,51 +132,20 @@ export class InfoProvider implements Disposable {
                 this.updateStylesheet();
                 await this.sendConfig();
             }),
-            this.client.diagnostics(() => void this.sendMessages()),
             workspace.onDidChangeTextDocument(async (e) => {
-                if (this.pins && this.pins.length !== 0) {
-                    // stupid cursor math that should be in the vscode API
-                    let changed: boolean = false;
-                    this.pins = this.pins.map(pin => {
-                        if (pin.uri !== e.document.uri.toString()) { return pin; }
-                        let newPosition = this.positionOfLocation(pin);
-                        for (const chg of e.contentChanges) {
-                            if (newPosition.isAfterOrEqual(chg.range.start)) {
-                                let lines = 0;
-                            for (const c of chg.text) if (c === '\n') lines++;
-                            newPosition = new Position(
-                                chg.range.start.line + Math.max(0, newPosition.line - chg.range.end.line) + lines,
-                                newPosition.line > chg.range.end.line ?
-                                newPosition.character :
-                                lines === 0 ?
-                                chg.range.start.character + Math.max(0, newPosition.character - chg.range.end.character) + chg.text.length :
-                                9999 // too lazy to get column positioning right, and end of the line is a good place
-                                );
-                            }
-                        }
-                        newPosition = e.document.validatePosition(newPosition);
-                        const newPin: InfoviewLocation = {
-                            line: newPosition.line,
-                            character: newPosition.character,
-                            uri: pin.uri,
-                        };
-                        if (!locationEq(newPin, pin)) { changed = true; }
-                        return { ...newPin, key: pin.key };
-                    });
-                    if (changed) {
-                        await this.webviewApi?.syncPins(this.pins);
-                    }
-                    await this.sendPosition();
-                }
+                await this.sendPosition();
             }),
             commands.registerTextEditorCommand('lean4.displayGoal', (editor) => this.openPreview(editor)),
             commands.registerTextEditorCommand('lean4.displayList', async (editor) => {
                 await this.openPreview(editor);
-                await this.webviewApi?.toggleAllMessages();
+                await this.webviewApi?.requestedAction({kind: 'toggleAllMessages'});
             }),
-            commands.registerTextEditorCommand('lean4.infoView.copyToComment',() => this.webviewApi?.copyToComment()),
-            commands.registerCommand('lean4.infoView.toggleUpdating', () => this.webviewApi?.toggleUpdating()),
-            commands.registerTextEditorCommand('lean4.infoView.toggleStickyPosition', () => this.webviewApi?.togglePin()),
+            commands.registerTextEditorCommand('lean4.infoView.copyToComment',
+                () => this.webviewApi?.requestedAction({kind: 'copyToComment'})),
+            commands.registerCommand('lean4.infoView.toggleUpdating', () =>
+                this.webviewApi?.requestedAction({kind: 'togglePaused'})),
+            commands.registerTextEditorCommand('lean4.infoView.toggleStickyPosition',
+                () => this.webviewApi?.requestedAction({kind: 'togglePin'})),
         );
         if (this.client.isStarted()) {
             void this.autoOpen();
@@ -142,7 +178,6 @@ export class InfoProvider implements Disposable {
 
     private async openPreview(editor: TextEditor) {
         let column = editor ? editor.viewColumn + 1 : ViewColumn.Two;
-        const loc = this.getActiveCursorLocation();
         if (column === 4) { column = ViewColumn.Three; }
         if (this.webviewPanel) {
             this.webviewPanel.reveal(column, true);
@@ -157,7 +192,7 @@ export class InfoProvider implements Disposable {
                 });
             this.webviewRpc = new Rpc((m) => this.webviewPanel.webview.postMessage(m));
             this.webviewPanel.webview.onDidReceiveMessage((m) => this.webviewRpc.messageReceived(m))
-            this.webviewRpc.register(this.extensionApi)
+            this.webviewRpc.register(this.editorApi);
             this.webviewApi = this.webviewRpc.getApi();
             this.webviewPanel.webview.html = this.initialHtml();
             this.webviewPanel.onDidDispose(() => {
@@ -166,34 +201,11 @@ export class InfoProvider implements Disposable {
                 this.webviewApi = null;
             });
         }
-        if (loc !== null) { await this.webviewApi?.position(loc); }
+        await this.sendPosition();
         await this.sendConfig();
-        await this.sendMessages();
-        await this.webviewApi?.progress(this.client.progress)
     }
 
-    private async sendMessages() {
-        if (!this.webviewApi) return;
-        const messages: Message[] = [];
-        const asRange = (range: Range): InfoviewRange => ({
-            start: {line: range.start.line, character: range.start.character},
-            end: {line: range.end.line, character: range.end.character},
-        });
-        this.client.client.diagnostics?.forEach((uri, diags) => {
-            for (const diag of diags) {
-                messages.push({
-                    ...asRange(diag.range),
-                    uri: uri.toString(),
-                    severity: diag.severity,
-                    message: diag.message,
-                    fullRange: asRange(getFullRange(diag)),
-                });
-            }
-        });
-        await this.webviewApi.messages(messages);
-    }
-
-    private async handleInsertText(text: string, type: string, loc?: InfoviewLocation) {
+   /* private async handleInsertText(text: string, type: string, loc?: string) {
         let editor: TextEditor = null;
         if (loc) {
            editor = window.visibleTextEditors.find(e => e.document.uri.toString() === loc.uri);
@@ -225,32 +237,19 @@ export class InfoProvider implements Disposable {
             });
             editor.selection = new Selection(pos, pos)
         }
-    }
-
-    private positionOfLocation(l: InfoviewLocation): Position {
-        return new Position(l.line, l.character);
-    }
-
-    private makeLocation(uri: Uri, pos: Position): InfoviewLocation {
-        return {
-            uri: uri.toString(),
-            line: pos.line,
-            character: pos.character,
-        }
-    }
+    } */
 
     private async sendConfig() {
-        await this.webviewApi?.setConfig({
-            infoViewTacticStateFilters: getInfoViewTacticStateFilters(),
-            filterIndex: getInfoViewFilterIndex(),
-            infoViewAllErrorsOnLine: getInfoViewAllErrorsOnLine(),
-            infoViewAutoOpenShowGoal: getInfoViewAutoOpenShowGoal(),
-        });
+       await this.webviewApi?.changedInfoviewConfig({
+           infoViewTacticStateFilters: getInfoViewTacticStateFilters(),
+           filterIndex: getInfoViewFilterIndex(),
+           infoViewAllErrorsOnLine: getInfoViewAllErrorsOnLine(),
+           infoViewAutoOpenShowGoal: getInfoViewAutoOpenShowGoal(),
+       });
     }
 
-    private async revealEditorPosition(uri: Uri, line: number, column: number) {
-        const pos = new Position(line, column);
-        let editor = null;
+    private async revealEditorSelection(uri: Uri, selection?: Range) {
+        let editor: TextEditor = null;
         for (const e of window.visibleTextEditors) {
             if (e.document.uri.toString() === uri.toString()) {
                 editor = e;
@@ -259,22 +258,25 @@ export class InfoProvider implements Disposable {
         }
         if (!editor) {
             const c = window.activeTextEditor ? window.activeTextEditor.viewColumn : ViewColumn.One;
-            const td = await workspace.openTextDocument(uri);
-            editor = await window.showTextDocument(td, c, false);
+            editor = await window.showTextDocument(uri, { viewColumn: c, preserveFocus: false });
         }
-        editor.revealRange(new Range(pos, pos), TextEditorRevealType.InCenterIfOutsideViewport);
-        editor.selection = new Selection(pos, pos);
+        if (selection !== undefined) {
+            editor.revealRange(selection, TextEditorRevealType.InCenterIfOutsideViewport);
+            editor.selection = new Selection(selection.start, selection.end);
+        }
     }
 
     private async sendPosition() {
-        const loc = this.getActiveCursorLocation();
-        if (loc === null) { return; }
-        await this.webviewApi?.position(loc);
-    }
-
-    private getActiveCursorLocation(): InfoviewLocation | null {
-        if (!window.activeTextEditor || !languages.match(this.leanDocs, window.activeTextEditor.document)) {return null; }
-        return this.makeLocation(window.activeTextEditor.document.uri, window.activeTextEditor.selection.active);
+        if (!window.activeTextEditor || !languages.match(this.leanDocs, window.activeTextEditor.document)) { return null; }
+        const uri = window.activeTextEditor.document.uri;
+        const selection = window.activeTextEditor.selection;
+        await this.webviewApi?.changedCursorLocation({
+            uri: uri.toString(),
+            range: {
+                start: selection.start,
+                end: selection.end
+            }
+        });
     }
 
     private getMediaPath(mediaFile: string): string {
@@ -294,7 +296,7 @@ export class InfoProvider implements Disposable {
             </head>
             <body>
                 <div id="react_root"></div>
-                <script src="${this.getMediaPath('index.js')}"></script>
+                <script src="${this.getMediaPath('webview.js')}"></script>
             </body>
             </html>`
     }

@@ -1,6 +1,5 @@
 import { Disposable, ExtensionContext, OverviewRulerLane, Range, TextEditorDecorationType, window } from 'vscode';
-import { LeanClient } from './leanclient';
-import { ServerProgress } from './leanclientTypes';
+import { LeanClient, ServerProgress } from './leanclient';
 
 class LeanFileTaskGutter {
     private timeout: NodeJS.Timeout
