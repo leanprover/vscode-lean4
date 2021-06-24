@@ -355,6 +355,10 @@
 		"onCommand:lean4.restartServer"
 	],
 	"main": "./out/extension",
+	"files": [
+		"./out/extension.js",
+		"./media"
+	],
 	"scripts": {
 		"vscode:prepublish": "webpack --env production",
 		"compile": "webpack --env development",
