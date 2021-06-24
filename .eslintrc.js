@@ -130,15 +130,7 @@ module.exports = {
         ],
         "prefer-const": "error",
         "radix": "error",
-        "spaced-comment": [
-            "error",
-            "always",
-            {
-                "markers": [
-                    "/"
-                ]
-            }
-        ],
+        "spaced-comment": "off",
         "use-isnan": "error",
         "valid-typeof": "off",
     }
