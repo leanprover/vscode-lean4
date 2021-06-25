@@ -1,0 +1,7 @@
+{
+  "packages": [
+    "lean4-infoview",
+    "vscode-lean4"
+  ],
+  "version": "independent"
+}

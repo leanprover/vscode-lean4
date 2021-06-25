@@ -14,7 +14,7 @@ import {
 import * as ls from 'vscode-languageserver-protocol'
 import { executablePath, addServerEnvPaths, serverLoggingEnabled, serverLoggingPath, getElaborationDelay } from './config'
 import { assert } from './utils/assert'
-import { PlainGoal, PlainTermGoal, LeanFileProgressParams } from 'lean4-infoview';
+import { PlainGoal, PlainTermGoal, LeanFileProgressParams } from '@lean4/infoview';
 
 const documentSelector: DocumentFilter = {
     scheme: 'file',

@@ -1,0 +1,9 @@
+# HACK: see https://github.com/Microsoft/vscode-vsce/issues/12#issuecomment-306078884
+*
+*/**
+../**
+
+!out
+!media
+!images
+!syntaxes

@@ -16,12 +16,12 @@ npm i
 git commit -am "Release $new_version"
 git tag -a v$new_version -m "vscode-lean4 $new_version"
 
-./node_modules/.bin/vsce publish
+npx vsce publish
 
-./node_modules/.bin/ovsx publish
+npx ovsx publish
 
 git push
 git push --tags
 
-./node_modules/.bin/vsce package
+npx vsce package
 hub release create -m "vscode-lean4 $new_version" v$new_version -a lean4-$new_version.vsix

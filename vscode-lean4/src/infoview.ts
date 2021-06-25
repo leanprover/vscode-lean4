@@ -6,7 +6,7 @@ import {
     Uri, ViewColumn, WebviewPanel, window, workspace, env,
 } from 'vscode';
 import { TextDocumentIdentifier } from 'vscode-languageserver-protocol';
-import { EditorApi, InfoviewApi } from 'lean4-infoview';
+import { EditorApi, InfoviewApi } from '@lean4/infoview';
 import { LeanClient } from './leanclient';
 import { getInfoViewAllErrorsOnLine, getInfoViewAutoOpen, getInfoViewAutoOpenShowGoal,
     getInfoViewFilterIndex, getInfoViewStyle, getInfoViewTacticStateFilters } from './config';

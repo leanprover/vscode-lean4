@@ -33,13 +33,8 @@ As of now, the extension supports the following features:
 - Command to restart the full Lean 4 server, accessible via Ctrl+Shift+P
 - Compatibility with the [Lean 3 VSCode extension](https://github.com/leanprover/vscode-lean)
 
-## Building the client
-- Run `npm install` in this folder. This installs all necessary npm modules.
-- Open VS Code on this folder.
-- Press Ctrl+Shift+B to compile the client.
-- Switch to the Debug viewlet (Ctrl+Shift+D).
-- Select `Launch Client` from the drop down.
-- Run the launch config.
+## Building
+See the outer [README](../README.md).
 
 ## Changelog
 ### 0.0.29 (Jun 4, 2021)

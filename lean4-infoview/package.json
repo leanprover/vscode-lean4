@@ -1,5 +1,5 @@
 {
-  "name": "lean4-infoview",
+  "name": "@lean4/infoview",
   "version": "0.1.0",
   "description": "An interactive display for the Lean 4 theorem prover",
   "scripts": {
@@ -7,8 +7,11 @@
     "build": "webpack",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "main": "dist/index.js",
+  "main": "dist/index",
   "types": "dist/index",
+  "files": [
+    "dist/*"
+  ],
   "license": "Apache-2.0",
   "devDependencies": {
     "@testing-library/jest-dom": "^5.14.1",

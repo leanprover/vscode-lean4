@@ -5,7 +5,7 @@
 	"version": "0.0.31",
 	"publisher": "leanprover",
 	"engines": {
-		"vscode": "^1.38.0"
+		"vscode": "^1.57.0"
 	},
 	"categories": [
 		"Programming Languages"
@@ -355,13 +355,9 @@
 		"onCommand:lean4.restartServer"
 	],
 	"main": "./out/extension",
-	"files": [
-		"./out/extension.js",
-		"./media"
-	],
 	"scripts": {
 		"vscode:prepublish": "webpack --env production",
-		"compile": "webpack --env development",
+		"build": "webpack --env development",
 		"watch": "webpack --env development --watch",
 		"lint": "eslint -c ./.eslintrc.js ./src/**/*.ts",
 		"package": "vsce package"
@@ -369,7 +365,7 @@
 	"dependencies": {
 		"mobx": "5.15.7",
 		"vscode-languageclient": "^7.0.0",
-		"lean4-infoview": "file:../lean4-infoview"
+		"@lean4/infoview": "^0.1.0"
 	},
 	"devDependencies": {
 		"@types/node": "^14.17.4",
@@ -382,7 +378,7 @@
 		"ts-loader": "^8.3.0",
 		"typescript": "^4.3.4",
 		"utf-8-validate": "^5.0.5",
-		"vsce": "^1.94.0",
+		"vsce": "~1.91.0",
 		"webpack": "^5.40.0",
 		"webpack-cli": "^4.7.2"
 	},

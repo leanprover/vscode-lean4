@@ -1,0 +1,13 @@
+{
+  "name": "@lean4/repo",
+  "private": true,
+  "scripts": {
+    "build": "lerna run build",
+    "watch": "lerna run --parallel watch",
+    "package": "lerna run package",
+    "lint": "lerna run lint"
+  },
+  "devDependencies": {
+    "lerna": "^4.0.0"
+  }
+}

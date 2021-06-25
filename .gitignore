@@ -4,6 +4,6 @@ dist/
 
 ## Output
 node_modules/
-media/webview.js*
+**/media/webview.*
 *.tsbuildinfo
 *.vsix

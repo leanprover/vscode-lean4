@@ -39,9 +39,9 @@
 			"group": "build"
 		},
 		{
-			"label": "compile",
+			"label": "build",
 			"type": "npm",
-			"script": "compile",
+			"script": "build",
 			"problemMatcher": {
 				"owner": "typescript",
 				"source": "ts",

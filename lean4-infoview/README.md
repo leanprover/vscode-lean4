@@ -4,7 +4,7 @@ This package is a React app providing the interactive Lean 4 infoview. It can be
 
 ## Hosting
 
-A hosting editor needs to be able to display a minimal webpage (e.g. via a Webkit panel, or in an external browser). The webpage should set up a connection to the editor as defined in [`src/infoviewApi.ts`](src/infoviewApi.ts) and invoke the [`renderInfoview`](src/index.ts) entry point. The `lean4-infoview` library is distributed as an UMD module with external dependencies given in [`webpack.config.js`](webpack.config.js) `externals` .
+A hosting editor needs to be able to display a minimal webpage (e.g. via a Webkit panel, or in an external browser). The webpage should set up a connection to the editor as defined in [`src/infoviewApi.ts`](src/infoviewApi.ts) and invoke the [`renderInfoview`](src/index.ts) entry point. The `lean4-infoview` library is distributed as an UMD module with external dependencies specified in [`webpack.config.js`](webpack.config.js) `externals` .
 
 ## Editor support
 
