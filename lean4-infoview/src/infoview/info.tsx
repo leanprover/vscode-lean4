@@ -116,40 +116,48 @@ export function InfoDisplay(props0: InfoDisplayProps) {
 
     const nothingToShow = !error && !goal && !termGoal && messages.length === 0;
 
+    const hasError = status === 'error' && error;
+    const hasGoal = status !== 'error' && goal;
+    const hasTermGoal = status !== 'error' && termGoal;
+    const hasMessages = status !== 'error' && messages.length !== 0;
+
     return (
     <Details initiallyOpen>
         <InfoStatusBar {...props} triggerUpdate={triggerDisplayUpdate} isPaused={isPaused} setPaused={setPaused} copyGoalToComment={copyGoalToComment} />
         <div className="ml1">
-            {status === 'error' && error &&
+            {hasError &&
                 <div className="error">
                     Error updating: {error}.
                     <a className="link pointer dim" onClick={e => { e.preventDefault(); triggerDisplayUpdate(); }}>Try again.</a>
                 </div>}
-            {status !== 'error' && goal && 
+            <div style={{display: hasGoal ? 'block' : 'none'}}>
                 <Details initiallyOpen>
                     <summary>
                         Tactic state
                     </summary>
                     <div className='ml1'>
-                        <Goal plainGoal={goal} />
+                        {hasGoal && <Goal plainGoal={goal!} />}
                     </div>
-                </Details>}
-            {status !== 'error' && termGoal && 
+                </Details>
+            </div>
+            <div style={{display: hasTermGoal ? 'block' : 'none'}}>
                 <Details initiallyOpen>
                     <summary>
                         Expected type
                     </summary>
                     <div className='ml1'>
-                        <TermGoal termGoal={termGoal} />
+                        {hasTermGoal && <TermGoal termGoal={termGoal!} />}
                     </div>
-                </Details>}
-            {status !== 'error' && messages.length !== 0 &&
+                </Details>
+            </div>
+            <div style={{display: hasMessages ? 'block' : 'none'}}>
                 <Details initiallyOpen>
                     <summary className="mv2 pointer">Messages ({messages.length})</summary>
                     <div className="ml1">
                         <MessagesAtFile uri={pos.uri} messages={messages}/>
                     </div>
-                </Details>}
+                </Details>
+            </div>
             {nothingToShow && (
                 isPaused ?
                     <span>Updating is paused. <a className="link pointer dim" onClick={e => { e.preventDefault(); triggerDisplayUpdate(); }}>Refresh</a> or <a className="link pointer dim" onClick={e => { e.preventDefault(); setPaused(false); }}>resume updating</a> to see information.</span> :
