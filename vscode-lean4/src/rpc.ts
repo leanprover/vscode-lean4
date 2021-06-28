@@ -18,7 +18,7 @@ export class Rpc {
                 try {
                     this.sendMessage({ seqNum, result: await this.methods[name](...args) })
                 } catch (ex) {
-                    this.sendMessage({ seqNum, exception: ex === undefined ? 'error' : ex.toString() })
+                    this.sendMessage({ seqNum, exception: ex === undefined ? 'error' : ex })
                 }
             })()
         }
