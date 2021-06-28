@@ -1,5 +1,5 @@
 import { TextDocument, Position, TextEditor, EventEmitter, Diagnostic,
-    workspace, languages, DocumentHighlight, Range, DocumentHighlightKind, window, Disposable } from 'vscode'
+    languages, DocumentHighlight, Range, DocumentHighlightKind, window, Disposable, Uri } from 'vscode'
 import {
     DidChangeTextDocumentParams,
     DidCloseTextDocumentParams,
@@ -14,7 +14,7 @@ import {
 import * as ls from 'vscode-languageserver-protocol'
 import { executablePath, addServerEnvPaths, serverLoggingEnabled, serverLoggingPath, getElaborationDelay } from './config'
 import { assert } from './utils/assert'
-import { PlainGoal, PlainTermGoal, LeanFileProgressParams } from '@lean4/infoview';
+import { PlainGoal, PlainTermGoal, LeanFileProgressParams, LeanFileProgressProcessingInfo } from '@lean4/infoview';
 
 const documentSelector: DocumentFilter = {
     scheme: 'file',
@@ -27,10 +27,7 @@ interface Lean4Diagnostic extends ls.Diagnostic {
     fullRange: ls.Range;
 }
 
-export interface ServerProgress {
-    // Line number
-    [uri: string]: number | undefined;
-}
+export type ServerProgress = Map<Uri, LeanFileProgressProcessingInfo[]>;
 
 export function getFullRange(diag: Diagnostic): Range {
     return (diag as any)?.fullRange || diag.range;
@@ -54,7 +51,7 @@ export class LeanClient implements Disposable {
     /** Fires whenever a custom notification (i.e. one not defined in LSP) is received. */
     customNotification = this.customNotificationEmitter.event;
 
-    progress: ServerProgress = {}
+    progress: ServerProgress = new Map()
     private progressChangedEmitter = new EventEmitter<ServerProgress>()
     progressChanged = this.progressChangedEmitter.event
 
@@ -163,9 +160,6 @@ export class LeanClient implements Disposable {
                 }
             },
         }
-        this.setProgress(Object.assign({}, ...workspace.textDocuments
-            .filter((doc) => languages.match(documentSelector, doc))
-            .map((doc) => ({[doc.uri.toString()]: 0}))))
         this.client = new LanguageClient(
             'lean4',
             'Lean 4',
@@ -185,9 +179,8 @@ export class LeanClient implements Disposable {
                 if (method === '$/lean/fileProgress') {
                     const params = params_ as LeanFileProgressParams;
                     const uri = this.client.protocol2CodeConverter.asUri(params.textDocument.uri)
-                    const processedUntil = params.processing.length === 0 ? undefined :
-                        Math.min(...params.processing.map((p) => p.range.start.line));
-                    this.setProgress({...this.progress, [uri.toString()]: processedUntil})
+                    const newProgress = new Map(this.progress);
+                    this.setProgress(newProgress.set(uri, params.processing));
                 }
 
                 this.customNotificationEmitter.fire({method, params: params_});
@@ -253,7 +246,7 @@ export class LeanClient implements Disposable {
     async stop(): Promise<void> {
         assert(() => this.isStarted())
         await this.client.stop()
-        this.setProgress({})
+        this.setProgress(new Map())
         this.client = undefined
     }
 

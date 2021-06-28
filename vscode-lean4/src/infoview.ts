@@ -6,11 +6,12 @@ import {
     Uri, ViewColumn, WebviewPanel, window, workspace, env,
 } from 'vscode';
 import { TextDocumentIdentifier } from 'vscode-languageserver-protocol';
-import { EditorApi, InfoviewApi } from '@lean4/infoview';
+import { EditorApi, InfoviewApi, LeanFileProgressParams } from '@lean4/infoview';
 import { LeanClient } from './leanclient';
 import { getInfoViewAllErrorsOnLine, getInfoViewAutoOpen, getInfoViewAutoOpenShowGoal,
     getInfoViewFilterIndex, getInfoViewStyle, getInfoViewTacticStateFilters } from './config';
 import { Rpc } from './rpc';
+import { PublishDiagnosticsParams } from 'vscode-languageclient';
 
 export class InfoProvider implements Disposable {
     /** Instance of the panel, if it is open. Otherwise `undefined`. */
@@ -195,6 +196,8 @@ export class InfoProvider implements Disposable {
         // so when it is first started we must re-send those as if the server did.
         await this.sendPosition();
         await this.sendConfig();
+        await this.sendDiagnostics();
+        await this.sendProgress();
     }
 
    /* private async handleInsertText(text: string, type: string, loc?: string) {
@@ -238,6 +241,31 @@ export class InfoProvider implements Disposable {
            infoViewAllErrorsOnLine: getInfoViewAllErrorsOnLine(),
            infoViewAutoOpenShowGoal: getInfoViewAutoOpenShowGoal(),
        });
+    }
+
+    private async sendDiagnostics() {
+        if (!this.webviewPanel) return;
+        this.client.client.diagnostics?.forEach(async (uri, diags) => {
+            const params: PublishDiagnosticsParams = {
+                uri: this.client.client.code2ProtocolConverter.asUri(uri),
+                diagnostics: diags.map(d => this.client.client.code2ProtocolConverter.asDiagnostic(d)),
+            };
+            await this.webviewPanel.api.gotServerNotification('textDocument/publishDiagnostics', params);
+        });
+    }
+
+    private async sendProgress() {
+        if (!this.webviewPanel) return;
+        for (const [uri, processing] of this.client.progress) {
+            const params: LeanFileProgressParams = {
+                textDocument: {
+                    uri: this.client.client.code2ProtocolConverter.asUri(uri),
+                    version: 0, // HACK: The infoview ignores this
+                },
+                processing,
+            };
+            await this.webviewPanel.api.gotServerNotification('$/lean/fileProgress', params);
+        }
     }
 
     private async revealEditorSelection(uri: Uri, selection?: Range) {
