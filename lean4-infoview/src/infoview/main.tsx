@@ -9,8 +9,8 @@ import './index.css';
 import { Infos } from './infos';
 import { AllMessages } from './messages';
 import { useEvent, useServerNotificationState } from './util';
-import { LeanDiagnostic } from '../lspTypes';
-import { EditorContext, ConfigContext, DiagnosticsContext } from './contexts';
+import { LeanDiagnostic, LeanFileProgressParams, LeanFileProgressProcessingInfo } from '../lspTypes';
+import { EditorContext, ConfigContext, DiagnosticsContext, ProgressContext } from './contexts';
 import { EditorConnection, EditorEvents } from './editorConnection';
 import { defaultInfoviewConfig, EditorApi, InfoviewApi } from '../infoviewApi';
 import { Event } from './event';
@@ -22,7 +22,7 @@ function Main(props: {}) {
     /* Set up updates to the global infoview state on editor events. */
     const [config, setConfig] = React.useState(defaultInfoviewConfig);
     useEvent(ec.events.changedInfoviewConfig, cfg => setConfig(cfg), []);
-    const [allDiags, _] = useServerNotificationState(
+    const [allDiags, _0] = useServerNotificationState(
         'textDocument/publishDiagnostics',
         new Map<DocumentUri, LeanDiagnostic[]>(),
         (allDiags, params: PublishDiagnosticsParams) => {
@@ -36,6 +36,15 @@ function Main(props: {}) {
         },
         []
     );
+    const [allProgress, _1] = useServerNotificationState(
+        '$/lean/fileProgress',
+        new Map<DocumentUri, LeanFileProgressProcessingInfo[]>(),
+        (allProgress, params: LeanFileProgressParams) => {
+            const newProgress = new Map(allProgress);
+            return newProgress.set(params.textDocument.uri, params.processing);
+        },
+        []
+    );
     const [curUri, setCurUri] = React.useState<DocumentUri>('');
     useEvent(ec.events.changedCursorLocation, loc => setCurUri(loc.uri), []);
 
@@ -44,12 +53,14 @@ function Main(props: {}) {
     return (
     <ConfigContext.Provider value={config}>
         <DiagnosticsContext.Provider value={allDiags}>
-            <div className="ma1">
-                <Infos />
-                <div className="mv2">
-                    <AllMessages uri={curUri} />
+            <ProgressContext.Provider value={allProgress}>
+                <div className="ma1">
+                    <Infos />
+                    <div className="mv2">
+                        <AllMessages uri={curUri} />
+                    </div>
                 </div>
-            </div>
+            </ProgressContext.Provider>
         </DiagnosticsContext.Provider>
     </ConfigContext.Provider>
     );

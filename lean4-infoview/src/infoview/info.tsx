@@ -2,10 +2,10 @@ import * as React from 'react';
 import { Location } from 'vscode-languageserver-protocol';
 
 import { getGoals, Goal, TermGoal } from './goal';
-import { basename, DocumentPosition, RangeHelpers, useEvent, usePausableState, useServerNotificationState } from './util';
+import { basename, DocumentPosition, RangeHelpers, useEvent, usePausableState } from './util';
 import { Details } from './collapsing';
-import { PlainGoal, PlainTermGoal, LeanFileProgressParams, LeanDiagnostic } from '../lspTypes';
-import { EditorContext } from './contexts';
+import { PlainGoal, PlainTermGoal, LeanDiagnostic } from '../lspTypes';
+import { EditorContext, ProgressContext } from './contexts';
 import { MessagesAtFile, useMessagesFor } from './messages';
 
 type InfoStatus = 'loading' | 'updating' | 'error' | 'ready';
@@ -167,8 +167,11 @@ export function InfoDisplay(props0: InfoDisplayProps) {
     );
 }
 
-function isLoading(ts: LeanFileProgressParams, p: DocumentPosition): boolean {
-    return ts.processing.some(i => RangeHelpers.contains(i.range, p));
+function useIsProcessingAt(p: DocumentPosition): boolean {
+    const allProgress = React.useContext(ProgressContext);
+    const processing = allProgress.get(p.uri);
+    if (!processing) return false;
+    return processing.some(i => RangeHelpers.contains(i.range, p));
 }
 
 /**
@@ -221,12 +224,7 @@ export function Info(props: InfoProps) {
     const [error, setError] = React.useState<string>();
 
     const messages = useMessagesFor(pos);
-    const [serverIsProcessing, _] = useServerNotificationState(
-        '$/lean/fileProgress',
-        false,
-        (_, params: LeanFileProgressParams) => isLoading(params, pos),
-        [pos.uri, pos.line, pos.character]
-    );
+    const serverIsProcessing = useIsProcessingAt(pos);
 
     const triggerUpdate = useDelayedThrottled(serverIsProcessing ? 500 : 50, async () => {
         setStatus('updating');
