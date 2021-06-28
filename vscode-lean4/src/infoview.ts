@@ -42,19 +42,14 @@ export class InfoProvider implements Disposable {
             // NOTE(WN): For non-custom notifications we cannot call LanguageClient.onNotification
             // here because that *ovewrites* the notification handler rather than registers an extra one.
             // So we have to add a bunch of event emitters to `LeanClient.`
-            if (method.startsWith('$')) {
-                const h = this.client.client.onNotification(method, (params) => {
-                    void this.webviewApi.gotServerNotification(method, params);
-                });
-                this.serverNotifSubscriptions.set(method, [0, h]);
-            } else if (method === 'textDocument/publishDiagnostics') {
+            if (method === 'textDocument/publishDiagnostics') {
                 const h = this.client.diagnostics((params) => {
                     void this.webviewApi.gotServerNotification(method, params);
                 });
                 this.serverNotifSubscriptions.set(method, [0, h]);
-            } else if (method === '$/lean/fileProgress') {
-                const h = this.client.progressChanged((params) => {
-                    throw new Error('unimplemented'); // TODO convert "params" to params
+            } else if (method.startsWith('$')) {
+                const h = this.client.customNotification(({method: thisMethod, params}) => {
+                    if (thisMethod !== method) return;
                     void this.webviewApi.gotServerNotification(method, params);
                 });
                 this.serverNotifSubscriptions.set(method, [0, h]);

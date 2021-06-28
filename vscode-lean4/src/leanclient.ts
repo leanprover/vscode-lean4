@@ -1,4 +1,4 @@
-import { TextDocument, Position, TextEditor, EventEmitter, Uri, Diagnostic,
+import { TextDocument, Position, TextEditor, EventEmitter, Diagnostic,
     workspace, languages, DocumentHighlight, Range, DocumentHighlightKind, window, Disposable } from 'vscode'
 import {
     DidChangeTextDocumentParams,
@@ -39,24 +39,29 @@ export function getFullRange(diag: Diagnostic): Range {
 export class LeanClient implements Disposable {
     client: LanguageClient
 
-    private restartedEmitter = new EventEmitter()
-    restarted = this.restartedEmitter.event
+    private subscriptions: Disposable[] = []
+
+    private didChangeEmitter = new EventEmitter<DidChangeTextDocumentParams>()
+    didChange = this.didChangeEmitter.event
 
     private diagnosticsEmitter = new EventEmitter<PublishDiagnosticsParams>()
     diagnostics = this.diagnosticsEmitter.event
+
+    private didCloseEmitter = new EventEmitter<DidCloseTextDocumentParams>();
+    didClose = this.didCloseEmitter.event
+
+    private customNotificationEmitter = new EventEmitter<{method: string, params: any}>();
+    /** Fires whenever a custom notification (i.e. one not defined in LSP) is received. */
+    customNotification = this.customNotificationEmitter.event;
 
     progress: ServerProgress = {}
     private progressChangedEmitter = new EventEmitter<ServerProgress>()
     progressChanged = this.progressChangedEmitter.event
 
-    private didChangeEmitter = new EventEmitter<DidChangeTextDocumentParams>()
-    didChange = this.didChangeEmitter.event
+    private restartedEmitter = new EventEmitter()
+    restarted = this.restartedEmitter.event
 
-    private didCloseEmitter = new EventEmitter<DidCloseTextDocumentParams>();
-    didClose = this.didCloseEmitter.event
-
-    private subscriptions: Disposable[] = []
-
+    /** Files which are open. */
     private isOpen: Set<string> = new Set()
 
     constructor() {
@@ -172,12 +177,22 @@ export class LeanClient implements Disposable {
         this.isOpen = new Set()
         await this.client.onReady();
 
-        this.client.onNotification('$/lean/fileProgress', (params: LeanFileProgressParams) => {
-            const uri = this.client.protocol2CodeConverter.asUri(params.textDocument.uri)
-            const processedUntil = params.processing.length === 0 ? undefined :
-                Math.min(...params.processing.map((p) => p.range.start.line));
-            this.setProgress({...this.progress, [uri.toString()]: processedUntil})
-        });
+        // HACK(WN): Register a default notification handler to fire on custom notifications.
+        // There is an API for this in vscode-jsonrpc but not in vscode-languageclient, so we
+        // hack around its implementation.
+        this.client.onNotification({
+            method: (method: string, params_: any) => {
+                if (method === '$/lean/fileProgress') {
+                    const params = params_ as LeanFileProgressParams;
+                    const uri = this.client.protocol2CodeConverter.asUri(params.textDocument.uri)
+                    const processedUntil = params.processing.length === 0 ? undefined :
+                        Math.min(...params.processing.map((p) => p.range.start.line));
+                    this.setProgress({...this.progress, [uri.toString()]: processedUntil})
+                }
+
+                this.customNotificationEmitter.fire({method, params: params_});
+            }
+        } as any, null);
 
         // HACK
         (this.client as any)._serverProcess.stderr.on('data', () =>
