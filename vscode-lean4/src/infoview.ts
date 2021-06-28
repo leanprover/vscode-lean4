@@ -1,7 +1,7 @@
 import { join } from 'path';
 import {
     commands, Disposable, DocumentSelector,
-    ExtensionContext, languages, Position, Range,
+    ExtensionContext, languages, Range,
     Selection, TextEditor, TextEditorRevealType,
     Uri, ViewColumn, WebviewPanel, window, workspace, env,
 } from 'vscode';
@@ -13,13 +13,9 @@ import { getInfoViewAllErrorsOnLine, getInfoViewAutoOpen, getInfoViewAutoOpenSho
 import { Rpc } from './rpc';
 
 export class InfoProvider implements Disposable {
-    /** Instance of the panel. */
-    private webviewPanel: WebviewPanel;
+    /** Instance of the panel, if it is open. Otherwise `undefined`. */
+    private webviewPanel?: WebviewPanel & {rpc: Rpc, api: InfoviewApi};
     private subscriptions: Disposable[] = [];
-    private webviewRpc: Rpc;
-    private webviewApi?: InfoviewApi;
-
-    private started: boolean = false;
 
     private stylesheet: string = null;
 
@@ -44,13 +40,13 @@ export class InfoProvider implements Disposable {
             // So we have to add a bunch of event emitters to `LeanClient.`
             if (method === 'textDocument/publishDiagnostics') {
                 const h = this.client.diagnostics((params) => {
-                    void this.webviewApi.gotServerNotification(method, params);
+                    void this.webviewPanel?.api.gotServerNotification(method, params);
                 });
                 this.serverNotifSubscriptions.set(method, [0, h]);
             } else if (method.startsWith('$')) {
                 const h = this.client.customNotification(({method: thisMethod, params}) => {
                     if (thisMethod !== method) return;
-                    void this.webviewApi.gotServerNotification(method, params);
+                    void this.webviewPanel?.api.gotServerNotification(method, params);
                 });
                 this.serverNotifSubscriptions.set(method, [0, h]);
             } else {
@@ -76,12 +72,12 @@ export class InfoProvider implements Disposable {
 
             if (method === 'textDocument/didChange') {
                 const h = this.client.didChange((params) => {
-                    void this.webviewApi.sentClientNotification(method, params);
+                    void this.webviewPanel?.api.sentClientNotification(method, params);
                 });
                 this.clientNotifSubscriptions.set(method, [0, h]);
             } else if (method === 'textDocument/didClose') {
                 const h = this.client.didClose((params) => {
-                    void this.webviewApi.sentClientNotification(method, params);
+                    void this.webviewPanel?.api.sentClientNotification(method, params);
                 });
                 this.clientNotifSubscriptions.set(method, [0, h]);
             } else {
@@ -118,29 +114,30 @@ export class InfoProvider implements Disposable {
         this.subscriptions.push(
             this.client.restarted(async () => {
                 await this.autoOpen();
-                // TODO(WN): await this.sendMessages();
+                // NOTE(WN): We do not re-send state such as diagnostics to the infoview here
+                // because a restarted server will send those on its own.
             }),
             window.onDidChangeActiveTextEditor(() => this.sendPosition()),
             window.onDidChangeTextEditorSelection(() => this.sendPosition()),
-            workspace.onDidChangeConfiguration(async (e) => {
+            workspace.onDidChangeConfiguration(async (_e) => {
                 // regression; changing the style needs a reload. :/
                 this.updateStylesheet();
                 await this.sendConfig();
             }),
-            workspace.onDidChangeTextDocument(async (e) => {
+            workspace.onDidChangeTextDocument(async (_e) => {
                 await this.sendPosition();
             }),
             commands.registerTextEditorCommand('lean4.displayGoal', (editor) => this.openPreview(editor)),
             commands.registerTextEditorCommand('lean4.displayList', async (editor) => {
                 await this.openPreview(editor);
-                await this.webviewApi?.requestedAction({kind: 'toggleAllMessages'});
+                await this.webviewPanel?.api.requestedAction({kind: 'toggleAllMessages'});
             }),
             commands.registerTextEditorCommand('lean4.infoView.copyToComment',
-                () => this.webviewApi?.requestedAction({kind: 'copyToComment'})),
+                () => this.webviewPanel?.api.requestedAction({kind: 'copyToComment'})),
             commands.registerCommand('lean4.infoView.toggleUpdating', () =>
-                this.webviewApi?.requestedAction({kind: 'togglePaused'})),
+                this.webviewPanel?.api.requestedAction({kind: 'togglePaused'})),
             commands.registerTextEditorCommand('lean4.infoView.toggleStickyPosition',
-                () => this.webviewApi?.requestedAction({kind: 'togglePin'})),
+                () => this.webviewPanel?.api.requestedAction({kind: 'togglePin'})),
         );
         if (this.client.isStarted()) {
             void this.autoOpen();
@@ -165,8 +162,7 @@ export class InfoProvider implements Disposable {
     }
 
     private async autoOpen() {
-        if (!this.started && getInfoViewAutoOpen()) {
-            this.started = true;
+        if (!this.webviewPanel && getInfoViewAutoOpen()) {
             await this.openPreview(window.activeTextEditor);
         }
     }
@@ -177,25 +173,26 @@ export class InfoProvider implements Disposable {
         if (this.webviewPanel) {
             this.webviewPanel.reveal(column, true);
         } else {
-            this.webviewPanel = window.createWebviewPanel('lean4', 'Lean Infoview',
+            const webviewPanel = window.createWebviewPanel('lean4', 'Lean Infoview',
                 { viewColumn: column, preserveFocus: true },
                 {
                     enableFindWidget: true,
                     retainContextWhenHidden: true,
                     enableScripts: true,
                     enableCommandUris: true,
-                });
-            this.webviewRpc = new Rpc((m) => this.webviewPanel.webview.postMessage(m));
-            this.webviewPanel.webview.onDidReceiveMessage((m) => this.webviewRpc.messageReceived(m))
-            this.webviewRpc.register(this.editorApi);
-            this.webviewApi = this.webviewRpc.getApi();
-            this.webviewPanel.webview.html = this.initialHtml();
-            this.webviewPanel.onDidDispose(() => {
-                this.webviewPanel = null;
-                this.webviewRpc = null;
-                this.webviewApi = null;
+                }) as WebviewPanel & {rpc: Rpc, api: InfoviewApi};
+            webviewPanel.rpc = new Rpc(m => webviewPanel.webview.postMessage(m));
+            webviewPanel.rpc.register(this.editorApi);
+            webviewPanel.webview.onDidReceiveMessage(m => webviewPanel.rpc.messageReceived(m))
+            webviewPanel.api = webviewPanel.rpc.getApi();
+            webviewPanel.onDidDispose(() => {
+                this.webviewPanel = undefined;
             });
+            this.webviewPanel = webviewPanel;
+            webviewPanel.webview.html = this.initialHtml();
         }
+        // The infoview listens for server notifications such as diagnostics passively,
+        // so when it is first started we must re-send those as if the server did.
         await this.sendPosition();
         await this.sendConfig();
     }
@@ -235,7 +232,7 @@ export class InfoProvider implements Disposable {
     } */
 
     private async sendConfig() {
-       await this.webviewApi?.changedInfoviewConfig({
+       await this.webviewPanel?.api.changedInfoviewConfig({
            infoViewTacticStateFilters: getInfoViewTacticStateFilters(),
            filterIndex: getInfoViewFilterIndex(),
            infoViewAllErrorsOnLine: getInfoViewAllErrorsOnLine(),
@@ -265,7 +262,7 @@ export class InfoProvider implements Disposable {
         if (!window.activeTextEditor || !languages.match(this.leanDocs, window.activeTextEditor.document)) { return null; }
         const uri = window.activeTextEditor.document.uri;
         const selection = window.activeTextEditor.selection;
-        await this.webviewApi?.changedCursorLocation({
+        await this.webviewPanel?.api.changedCursorLocation({
             uri: uri.toString(),
             range: {
                 start: selection.start,
