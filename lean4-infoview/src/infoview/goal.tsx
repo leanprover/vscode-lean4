@@ -27,7 +27,6 @@ function emphasizeMessage(goal: string): string {
 }
 
 export function Goal({plainGoal}: {plainGoal: PlainGoal}): JSX.Element {
-    if(!plainGoal) return <></>;
     const config = React.useContext(ConfigContext);
     const reFilters = config.infoViewTacticStateFilters || [];
     const [filterIndex, setFilterIndex] = React.useState<number>(config.filterIndex ?? -1);
@@ -65,7 +64,6 @@ export function Goal({plainGoal}: {plainGoal: PlainGoal}): JSX.Element {
 }
 
 export function TermGoal({termGoal}: {termGoal: PlainTermGoal}): JSX.Element {
-    if(!termGoal) return <></>;
     // TODO
     return Goal({plainGoal: {rendered: '', goals: [termGoal.goal]}});
 }

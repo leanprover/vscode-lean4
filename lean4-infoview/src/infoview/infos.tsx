@@ -95,11 +95,5 @@ export function Infos() {
     infoProps.push({ kind: 'cursor', onPin: pin });
     infoProps = addUniqueKeys(infoProps, i => i.pos ? DocumentPosition.toString(i.pos) : 'cursor');
 
-    return (
-    <>
-    <div>
-        {infoProps.map (ps => <Info {...ps} />)}
-    </div>
-    </>
-    );
+    return <div> {infoProps.map (ps => <Info {...ps} />)} </div>;
 }

@@ -20,7 +20,7 @@ const MessageView = React.memo(({uri, diag}: MessageViewProps) => {
     const shouldColorize = diag.severity === DiagnosticSeverity.Error;
     let text = escapeHtml(diag.message)
     text = shouldColorize ? colorizeMessage(text) : text;
-    const severityClass: {[name: number]: string} = diag.severity ? {
+    const severityClass = diag.severity ? {
         [DiagnosticSeverity.Error]: 'error',
         [DiagnosticSeverity.Warning]: 'warning',
         [DiagnosticSeverity.Information]: 'information',

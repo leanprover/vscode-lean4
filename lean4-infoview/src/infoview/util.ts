@@ -79,11 +79,14 @@ export function useServerNotificationEffect<T>(method: string, f: (params: T) =>
       () => {},
       (ex) => { console.error(`Failed subscribing to server notification '${method}': ${ex}`); }
     );
-    ec.events.gotServerNotification.on(([thisMethod, params]: [string, T]) => {
+    const h = ec.events.gotServerNotification.on(([thisMethod, params]: [string, T]) => {
       if (thisMethod !== method) return;
       f(params);
     });
-    return () => void ec.api.unsubscribeServerNotifications(method);
+    return () => {
+      h.dispose();
+      void ec.api.unsubscribeServerNotifications(method);
+    };
   }, deps);
 }
 
@@ -108,11 +111,14 @@ export function useClientNotificationEffect<T>(method: string, f: (params: T) =>
       () => {},
       (ex) => { console.error(`Failed subscribing to client notification '${method}': ${ex}`); }
     );
-    ec.events.sentClientNotification.on(([thisMethod, params]: [string, T]) => {
+    const h = ec.events.sentClientNotification.on(([thisMethod, params]: [string, T]) => {
       if (thisMethod !== method) return;
       f(params);
     });
-    return () => void ec.api.unsubscribeClientNotifications(method);
+    return () => {
+      h.dispose();
+      void ec.api.unsubscribeClientNotifications(method);
+    };
   }, deps);
 }
 
