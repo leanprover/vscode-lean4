@@ -1,9 +1,15 @@
-import { Location, ShowDocumentParams, TextDocumentEdit } from "vscode-languageserver-protocol"
+import { Location, ShowDocumentParams, TextDocumentPositionParams } from "vscode-languageserver-protocol"
 
 export interface EditorFsApi {
   stat(path: string): Promise<any>;
   read(path: string): Promise<Uint8Array>;
 }
+
+/**
+ * An insert `here` should be written exactly at the specified position,
+ * while one `above` should go on the preceding line.
+ */
+export type TextInsertKind = 'here' | 'above';
 
 /** Functionality which the hosting editor must provide to the infoview. */
 export interface EditorApi {
@@ -40,10 +46,10 @@ export interface EditorApi {
    */
   //emulateServerNotification(method: string, params: any): Promise<void>;
 
-  /** Apply edits to the workspace. */
-  applyEdits(edits: TextDocumentEdit[]): Promise<void>
+  /** Insert text into a document. When `pos` is not present, write at the current cursor location. */
+  insertText(text: string, kind: TextInsertKind, pos?: TextDocumentPositionParams): Promise<void>
 
-  /** Highlights a range in a document in the editor. */
+  /** Highlight a range in a document in the editor. */
   showDocument(show: ShowDocumentParams): Promise<void>;
 }
 

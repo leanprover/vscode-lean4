@@ -1,4 +1,4 @@
-import { Location, ShowDocumentParams } from "vscode-languageserver-protocol";
+import { ErrorCodes, Location, ShowDocumentParams } from "vscode-languageserver-protocol";
 
 import { Eventify } from "./event";
 import { DocumentPosition } from "./util";
@@ -32,12 +32,7 @@ export class EditorConnection {
 
   /** Copies the text to a comment at the cursor position. */
   copyToComment(text: string): void {
-    return; // TODO
-    //const edit: TextDocumentEdit = {
-    //
-    //};
-    // ec.api.applyEdits([edit]);
-    // return serverApi.insertText(`/-\n${text}\n-/\n`, 'relative');
+    this.api.insertText(`/-\n${text}\n-/\n`, 'above');
   }
 
   requestPlainGoal(pos: DocumentPosition): Promise<PlainGoal | undefined> {

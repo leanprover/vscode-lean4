@@ -3,10 +3,10 @@ import {
     commands, Disposable, DocumentSelector,
     ExtensionContext, languages, Range,
     Selection, TextEditor, TextEditorRevealType,
-    Uri, ViewColumn, WebviewPanel, window, workspace, env,
+    Uri, ViewColumn, WebviewPanel, window, workspace, env, Position,
 } from 'vscode';
 import { TextDocumentIdentifier } from 'vscode-languageserver-protocol';
-import { EditorApi, InfoviewApi, LeanFileProgressParams } from '@lean4/infoview';
+import { EditorApi, InfoviewApi, LeanFileProgressParams, TextInsertKind } from '@lean4/infoview';
 import { LeanClient } from './leanclient';
 import { getInfoViewAllErrorsOnLine, getInfoViewAutoOpen, getInfoViewAutoOpenShowGoal,
     getInfoViewFilterIndex, getInfoViewStyle, getInfoViewTacticStateFilters } from './config';
@@ -98,9 +98,14 @@ export class InfoProvider implements Disposable {
             await env.clipboard.writeText(text);
             await window.showInformationMessage(`Copied to clipboard: ${text}`);
         },
-        applyEdits: async (edits) => {
-            throw new Error('unimplemented');
-            //await this.handleInsertText(text, type, loc),
+        insertText: async (text, kind, tdpp) => {
+            let uri: Uri | undefined
+            let pos: Position | undefined
+            if (tdpp) {
+                uri = this.client.client.protocol2CodeConverter.asUri(tdpp.textDocument.uri);
+                pos = this.client.client.protocol2CodeConverter.asPosition(tdpp.position);
+            }
+            await this.handleInsertText(text, kind, uri, pos);
         },
         showDocument: async (show) => {
             void this.revealEditorSelection(
@@ -200,40 +205,6 @@ export class InfoProvider implements Disposable {
         await this.sendProgress();
     }
 
-   /* private async handleInsertText(text: string, type: string, loc?: string) {
-        let editor: TextEditor = null;
-        if (loc) {
-           editor = window.visibleTextEditors.find(e => e.document.uri.toString() === loc.uri);
-        } else {
-            editor = window.activeTextEditor;
-            if (!editor) { // sometimes activeTextEditor is null.
-                editor = window.visibleTextEditors[0];
-            }
-        }
-        if (!editor) return;
-        const pos = loc ? this.positionOfLocation(loc) : editor.selection.active;
-        if (type === 'relative') {
-            // in this case, assume that we actually want to insert at the same
-            // indentation level as the neighboring text
-            const prev_line = editor.document.lineAt(pos.line - 1);
-            const spaces = prev_line.firstNonWhitespaceCharacterIndex;
-            const margin_str = [...Array(spaces).keys()].map(x => ' ').join('');
-
-            let new_command = text.replace(/\n/g, '\n' + margin_str);
-            new_command = `\n${margin_str}${new_command}`;
-
-            await editor.edit((builder) => {
-                builder.insert(prev_line.range.end, new_command);
-            });
-            editor.selection = new Selection(pos.line, spaces, pos.line, spaces);
-        } else {
-            await editor.edit((builder) => {
-                builder.insert(pos, text);
-            });
-            editor.selection = new Selection(pos, pos)
-        }
-    } */
-
     private async sendConfig() {
        await this.webviewPanel?.api.changedInfoviewConfig({
            infoViewTacticStateFilters: getInfoViewTacticStateFilters(),
@@ -268,6 +239,19 @@ export class InfoProvider implements Disposable {
         }
     }
 
+    private async sendPosition() {
+        if (!window.activeTextEditor || !languages.match(this.leanDocs, window.activeTextEditor.document)) { return null; }
+        const uri = window.activeTextEditor.document.uri;
+        const selection = window.activeTextEditor.selection;
+        await this.webviewPanel?.api.changedCursorLocation({
+            uri: uri.toString(),
+            range: {
+                start: selection.start,
+                end: selection.end
+            }
+        });
+    }
+
     private async revealEditorSelection(uri: Uri, selection?: Range) {
         let editor: TextEditor = null;
         for (const e of window.visibleTextEditors) {
@@ -286,17 +270,38 @@ export class InfoProvider implements Disposable {
         }
     }
 
-    private async sendPosition() {
-        if (!window.activeTextEditor || !languages.match(this.leanDocs, window.activeTextEditor.document)) { return null; }
-        const uri = window.activeTextEditor.document.uri;
-        const selection = window.activeTextEditor.selection;
-        await this.webviewPanel?.api.changedCursorLocation({
-            uri: uri.toString(),
-            range: {
-                start: selection.start,
-                end: selection.end
+    private async handleInsertText(text: string, kind: TextInsertKind, uri?: Uri, pos?: Position) {
+        let editor: TextEditor | undefined
+        if (uri) {
+           editor = window.visibleTextEditors.find(e => e.document.uri === uri);
+        } else {
+            editor = window.activeTextEditor;
+            if (!editor) { // sometimes activeTextEditor is null.
+                editor = window.visibleTextEditors[0];
             }
-        });
+        }
+        if (!editor) return;
+        pos = pos ? pos : editor.selection.active;
+        if (kind === 'above') {
+            // in this case, assume that we actually want to insert at the same
+            // indentation level as the neighboring text
+            const prev_line = editor.document.lineAt(pos.line - 1);
+            const spaces = prev_line.firstNonWhitespaceCharacterIndex;
+            const margin_str = [...Array(spaces).keys()].map(x => ' ').join('');
+
+            let new_command = text.replace(/\n/g, '\n' + margin_str);
+            new_command = `\n${margin_str}${new_command}`;
+
+            await editor.edit((builder) => {
+                builder.insert(prev_line.range.end, new_command);
+            });
+            editor.selection = new Selection(pos.line, spaces, pos.line, spaces);
+        } else {
+            await editor.edit((builder) => {
+                builder.insert(pos, text);
+            });
+            editor.selection = new Selection(pos, pos)
+        }
     }
 
     private getMediaPath(mediaFile: string): string {
