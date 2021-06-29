@@ -32,7 +32,7 @@ export class EditorConnection {
 
   /** Copies the text to a comment at the cursor position. */
   copyToComment(text: string): void {
-    this.api.insertText(`/-\n${text}\n-/\n`, 'above');
+    this.api.insertText(`/-\n${text}\n-/`, 'above');
   }
 
   requestPlainGoal(pos: DocumentPosition): Promise<PlainGoal | undefined> {
