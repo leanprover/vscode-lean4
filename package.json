@@ -4,7 +4,6 @@
   "scripts": {
     "build": "lerna run build",
     "watch": "lerna run --parallel watch",
-    "package": "lerna run build; lerna run package",
     "lint": "lerna run lint"
   },
   "devDependencies": {

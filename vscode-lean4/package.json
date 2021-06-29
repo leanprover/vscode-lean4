@@ -357,7 +357,7 @@
 	"main": "./out/extension",
 	"scripts": {
 		"vscode:prepublish": "webpack --env production",
-		"build": "webpack --env development",
+		"build": "webpack --env production",
 		"watch": "webpack --env development --watch",
 		"lint": "eslint -c ./.eslintrc.js ./src/**/*.ts",
 		"package": "vsce package"
