@@ -2,8 +2,22 @@ export class Rpc {
     private seqNum = 0
     private methods: {[name: string]: (...args: any[]) => Promise<any>} = {}
     private pending: {[seqNum: number]: {resolve: (_: any) => void, reject: (_: string) => void}} = {}
+    /** Resolves when the other side send us the init message. */
+    private initPromise: Promise<void>
+    private resolveInit?: () => void
 
-    constructor(readonly sendMessage: (msg: any) => void) {}
+    constructor(readonly sendMessage: (msg: any) => void) {
+        this.initPromise = new Promise((resolve) => {
+            const interval = setInterval(() => {
+                sendMessage({kind: 'initialize'})
+            }, 50)
+            this.resolveInit = () => {
+                clearInterval(interval as any)
+                sendMessage({kind: 'initialize'})
+                resolve()
+            }
+        })
+    }
 
     register<T>(methods: T): void {
         this.methods = {...this.methods, ...methods}
@@ -11,6 +25,10 @@ export class Rpc {
 
     // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
     messageReceived(msg: any): void {
+        if (msg.kind && msg.kind === 'initialize' && this.resolveInit) {
+            this.resolveInit()
+            return
+        }
         const {seqNum, name, args, result, exception} = msg
         if (seqNum === undefined) return
         if (name !== undefined) {
@@ -30,7 +48,8 @@ export class Rpc {
         delete this.pending[seqNum]
     }
 
-    invoke(name: string, args: any[]): Promise<any> {
+    async invoke(name: string, args: any[]): Promise<any> {
+        await this.initPromise
         this.seqNum += 1
         const seqNum = this.seqNum
         return new Promise((resolve, reject) => {
