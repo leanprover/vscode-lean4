@@ -13,7 +13,6 @@ export class Rpc {
             }, 50)
             this.resolveInit = () => {
                 clearInterval(interval as any)
-                sendMessage({kind: 'initialize'})
                 resolve()
             }
         })
@@ -25,8 +24,12 @@ export class Rpc {
 
     // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
     messageReceived(msg: any): void {
-        if (msg.kind && msg.kind === 'initialize' && this.resolveInit) {
-            this.resolveInit()
+        if (msg.kind) {
+            if (msg.kind === 'initialize') {
+                this.sendMessage({kind: 'initialized'})
+            } else if (msg.kind === 'initialized' && this.resolveInit) {
+                this.resolveInit()
+            }
             return
         }
         const {seqNum, name, args, result, exception} = msg
