@@ -2,7 +2,7 @@ import { Disposable, ExtensionContext, OverviewRulerLane, Range, TextEditorDecor
 import { LeanClient } from './leanclient';
 
 class LeanFileTaskGutter {
-    private timeout: NodeJS.Timeout
+    private timeout?: NodeJS.Timeout
 
     constructor(private uri: string, private decoration: TextEditorDecorationType, private processed: number | undefined) {
         this.schedule(100)
@@ -53,7 +53,7 @@ class LeanFileTaskGutter {
 export class LeanTaskGutter implements Disposable {
     private decoration: TextEditorDecorationType;
     private status: { [uri: string]: number | undefined } = {};
-    private gutters: { [uri: string]: LeanFileTaskGutter } = {};
+    private gutters: { [uri: string]: LeanFileTaskGutter | undefined } = {};
     private subscriptions: Disposable[] = [];
 
     constructor(client: LeanClient, context: ExtensionContext) {
@@ -95,7 +95,7 @@ export class LeanTaskGutter implements Disposable {
         }
         for (const uri of Object.getOwnPropertyNames(this.gutters)) {
             if (!uris[uri]) {
-                this.gutters[uri].dispose();
+                this.gutters[uri]?.dispose();
                 this.gutters[uri] = undefined;
             }
         }

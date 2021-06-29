@@ -18,7 +18,7 @@ export class InfoProvider implements Disposable {
     private webviewPanel?: WebviewPanel & {rpc: Rpc, api: InfoviewApi};
     private subscriptions: Disposable[] = [];
 
-    private stylesheet: string = null;
+    private stylesheet: string = '';
 
     // Subscriptions are counted and only disposed when count === 0.
     private serverNotifSubscriptions: Map<string, [number, Disposable]> = new Map();
@@ -55,7 +55,9 @@ export class InfoProvider implements Disposable {
             }
         },
         unsubscribeServerNotifications: async (method) => {
-            const [count, h] = this.serverNotifSubscriptions.get(method);
+            const el = this.serverNotifSubscriptions.get(method);
+            if (!el) throw new Error(`trying to unsubscribe from '${method}' with no active subscriptions`);
+            const [count, h] = el;
             if (count === 1) {
                 h.dispose();
                 this.serverNotifSubscriptions.delete(method);
@@ -86,7 +88,9 @@ export class InfoProvider implements Disposable {
             }
         },
         unsubscribeClientNotifications: async (method) => {
-            const [count, h] = this.clientNotifSubscriptions.get(method);
+            const el = this.clientNotifSubscriptions.get(method);
+            if (!el) throw new Error(`trying to unsubscribe from '${method}' with no active subscriptions`);
+            const [count, h] = el;
             if (count === 1) {
                 h.dispose();
                 this.clientNotifSubscriptions.delete(method);
@@ -305,7 +309,7 @@ export class InfoProvider implements Disposable {
     }
 
     private getMediaPath(mediaFile: string): string {
-        return this.webviewPanel.webview.asWebviewUri(
+        return this.webviewPanel?.webview.asWebviewUri(
             Uri.file(join(this.context.extensionPath, 'media', mediaFile))).toString();
     }
 
