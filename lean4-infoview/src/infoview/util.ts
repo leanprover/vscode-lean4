@@ -75,10 +75,9 @@ export function useEvent<T>(ev: Event<T>, f: (_: T) => void, dependencies?: Reac
 export function useServerNotificationEffect<T>(method: string, f: (params: T) => void, deps?: React.DependencyList): void {
   const ec = React.useContext(EditorContext);
   React.useEffect(() => {
-    void ec.api.subscribeServerNotifications(method).then(
-      () => {},
-      (ex) => { console.error(`Failed subscribing to server notification '${method}': ${ex}`); }
-    );
+    void ec.api.subscribeServerNotifications(method).catch(ex => {
+      console.error(`Failed subscribing to server notification '${method}': ${ex}`);
+    });
     const h = ec.events.gotServerNotification.on(([thisMethod, params]: [string, T]) => {
       if (thisMethod !== method) return;
       f(params);
@@ -107,10 +106,9 @@ export function useServerNotificationState<S, T>(method: string, initial: S, f: 
 export function useClientNotificationEffect<T>(method: string, f: (params: T) => void, deps?: React.DependencyList): void {
   const ec = React.useContext(EditorContext);
   React.useEffect(() => {
-    void ec.api.subscribeClientNotifications(method).then(
-      () => {},
-      (ex) => { console.error(`Failed subscribing to client notification '${method}': ${ex}`); }
-    );
+    void ec.api.subscribeClientNotifications(method).catch(ex => {
+      console.error(`Failed subscribing to client notification '${method}': ${ex}`);
+    });
     const h = ec.events.sentClientNotification.on(([thisMethod, params]: [string, T]) => {
       if (thisMethod !== method) return;
       f(params);

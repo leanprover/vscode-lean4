@@ -20,8 +20,10 @@ export function Infos() {
             let changed: boolean = false;
             const newPins = pinnedPoss.map(pin => {
                 if (pin.uri !== params.textDocument.uri) return pin;
-
-                let newPin = pin;
+                // NOTE(WN): It's important to make a clone here, otherwise this
+                // actually mutates the pin. React state updates must be pure.
+                // See https://github.com/facebook/react/issues/12856
+                let newPin: Keyed<DocumentPosition> = { ...pin };
                 for (const chg of params.contentChanges) {
                     if (!TextDocumentContentChangeEvent.isIncremental(chg)) {
                         changed = true;
