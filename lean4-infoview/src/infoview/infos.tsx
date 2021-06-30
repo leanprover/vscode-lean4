@@ -2,7 +2,7 @@ import * as React from "react";
 import { DidChangeTextDocumentParams, DidCloseTextDocumentParams, Location, TextDocumentContentChangeEvent } from "vscode-languageserver-protocol";
 
 import { EditorContext } from "./contexts";
-import { addUniqueKeys, DocumentPosition, PositionHelpers, useClientNotificationEffect, useClientNotificationState, useEvent } from "./util";
+import { DocumentPosition, Keyed, PositionHelpers, useClientNotificationEffect, useClientNotificationState, useEvent } from "./util";
 import { Info, InfoProps } from "./info";
 
 /** Manages and displays pinned infos, as well as info for the current location. */
@@ -13,7 +13,7 @@ export function Infos() {
     // earlier in the text such that a pin has to move up or down.
     const [pinnedPoss, setPinnedPoss] = useClientNotificationState(
         'textDocument/didChange',
-        new Array<DocumentPosition>(),
+        new Array<Keyed<DocumentPosition>>(),
         (pinnedPoss, params: DidChangeTextDocumentParams) => {
             if (pinnedPoss.length === 0) return pinnedPoss;
 
@@ -41,10 +41,13 @@ export function Infos() {
                 // TODO use a valid position instead of 9999
                 //newPosition = e.document.validatePosition(newPosition);
                 if (!DocumentPosition.isEqual(newPin, pin)) changed = true;
+
+                // NOTE(WN): We maintain the `key` when a pin is moved around to maintain
+                // its component identity and minimise flickering.
                 return newPin;
             });
 
-            if (changed) return newPins.filter(p => p !== null) as DocumentPosition[];
+            if (changed) return newPins.filter(p => p !== null) as Keyed<DocumentPosition>[];
             return pinnedPoss;
         },
         []
@@ -65,13 +68,15 @@ export function Infos() {
     const curPos: DocumentPosition = { uri: curLoc.uri, ...curLoc.range.start };
 
     // Update pins on UI actions
+    const pinKey = React.useRef<number>(0);
     const isPinned = (pinnedPoss: DocumentPosition[], pos: DocumentPosition) => {
         return pinnedPoss.some(p => DocumentPosition.isEqual(p, pos));
     }
     const pin = React.useCallback((pos: DocumentPosition) => {
         setPinnedPoss(pinnedPoss => {
             if (isPinned(pinnedPoss, pos)) return pinnedPoss;
-            return [ ...pinnedPoss, pos ];
+            pinKey.current += 1;
+            return [ ...pinnedPoss, { ...pos, key: pinKey.current.toString() } ];
         });
     }, []);
     const unpin = React.useCallback((pos: DocumentPosition) => {
@@ -84,16 +89,18 @@ export function Infos() {
     // Toggle pin at current position when the editor requests it
     useEvent(ec.events.requestedAction, act => {
         if (act.kind !== 'togglePin') return;
-        setPinnedPoss(pinnedPoss =>
-            isPinned(pinnedPoss, curPos) ?
-                pinnedPoss.filter(p => !DocumentPosition.isEqual(p, curPos)) :
-                [ ...pinnedPoss, curPos ]
-        );
+        setPinnedPoss(pinnedPoss => {
+            if (isPinned(pinnedPoss, curPos)) {
+                return pinnedPoss.filter(p => !DocumentPosition.isEqual(p, curPos));
+            } else {
+                pinKey.current += 1;
+                return [ ...pinnedPoss, { ...curPos, key: pinKey.current.toString() } ];
+            }
+        });
     }, [curPos.uri, curPos.line, curPos.character]);
 
-    let infoProps: InfoProps[] = pinnedPoss.map(pos => { return { kind: 'pin', onPin: unpin, pos }; });
-    infoProps.push({ kind: 'cursor', onPin: pin });
-    infoProps = addUniqueKeys(infoProps, i => i.pos ? DocumentPosition.toString(i.pos) : 'cursor');
+    let infoProps: Keyed<InfoProps>[] = pinnedPoss.map(pos => { return { kind: 'pin', onPin: unpin, pos, key: pos.key }; });
+    infoProps.push({ kind: 'cursor', onPin: pin, key: 'cursor' });
 
     return <div> {infoProps.map (ps => <Info {...ps} />)} </div>;
 }
