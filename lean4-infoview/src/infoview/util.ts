@@ -15,7 +15,7 @@ export namespace DocumentPosition {
 
   export function toTdpp(p: DocumentPosition): TextDocumentPositionParams {
     return { textDocument: { uri: p.uri },
-             position: p }
+             position: { line: p.line, character: p.character } }
   }
 
   export function toString(p: DocumentPosition) {
@@ -157,12 +157,8 @@ export function useLogState(): [string, (...msg: any[]) => void] {
 
   function outputLog(...msg: any[]) {
     console.log(...msg);
-    const fmt = msg.reduce((acc, val) => {
-        return acc + ' ' + val.toString();
-      }, '');
-    setLog((log) => {
-      return log + fmt + '\n';
-    });
+    const fmt = msg.reduce((acc, val) => acc + ' ' + val.toString(), '');
+    setLog(log => log + fmt + '\n');
   }
 
   return [log, outputLog];

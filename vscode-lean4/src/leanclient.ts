@@ -1,6 +1,7 @@
 import { TextDocument, Position, TextEditor, EventEmitter, Diagnostic,
     languages, DocumentHighlight, Range, DocumentHighlightKind, window, Disposable, Uri } from 'vscode'
 import {
+    Code2ProtocolConverter,
     DidChangeTextDocumentParams,
     DidCloseTextDocumentParams,
     DidOpenTextDocumentNotification,
@@ -166,7 +167,7 @@ export class LeanClient implements Disposable {
             serverOptions,
             clientOptions
         )
-        this.patchProtocol2CodeConverter(this.client.protocol2CodeConverter)
+        this.patchConverters(this.client.protocol2CodeConverter, this.client.code2ProtocolConverter)
         this.client.start()
         this.isOpen = new Set()
         await this.client.onReady();
@@ -195,7 +196,7 @@ export class LeanClient implements Disposable {
         this.restartedEmitter.fire(undefined)
     }
 
-    private patchProtocol2CodeConverter(p2c: Protocol2CodeConverter) {
+    private patchConverters(p2c: Protocol2CodeConverter, c2p: Code2ProtocolConverter) {
         // eslint-disable-next-line @typescript-eslint/unbound-method
         const oldAsDiagnostic = p2c.asDiagnostic
         p2c.asDiagnostic = function (protDiag: Lean4Diagnostic): Diagnostic {
@@ -204,12 +205,19 @@ export class LeanClient implements Disposable {
                 protDiag.message = ' ';
             }
             const diag = oldAsDiagnostic.apply(this, [protDiag])
-            if (protDiag.fullRange) {
-                diag.fullRange = p2c.asRange(protDiag.fullRange)
-            }
+            diag.fullRange = p2c.asRange(protDiag.fullRange)
             return diag
         }
-        p2c.asDiagnostics = (diags) => diags.map((d) => p2c.asDiagnostic(d))
+        p2c.asDiagnostics = (diags) => diags.map(d => p2c.asDiagnostic(d))
+
+        // eslint-disable-next-line @typescript-eslint/unbound-method
+        const c2pAsDiagnostic = c2p.asDiagnostic;
+        c2p.asDiagnostic = function (diag: Diagnostic & {fullRange : Range}): Lean4Diagnostic {
+            const protDiag = c2pAsDiagnostic.apply(this, [diag])
+            protDiag.fullRange = c2p.asRange(diag.fullRange)
+            return protDiag
+        }
+        c2p.asDiagnostics = (diags) => diags.map(d => c2p.asDiagnostic(d))
     }
 
     private async open(doc: TextDocument) {
@@ -273,19 +281,6 @@ export class LeanClient implements Disposable {
                 'text': doc.getText()
             }
         })
-    }
-
-    requestPlainGoals(doc: TextDocument, position: Position): Promise<PlainGoal> {
-        assert(() => this.isStarted())
-        return this.client.sendRequest(
-            '$/lean/plainGoal',
-            this.client.code2ProtocolConverter.asTextDocumentPositionParams(doc, position))
-    }
-
-    requestPlainTermGoal(doc: TextDocument, position: Position): Promise<PlainTermGoal> {
-        return this.client.sendRequest(
-            '$/lean/plainTermGoal',
-            this.client.code2ProtocolConverter.asTextDocumentPositionParams(doc, position))
     }
 
     private setProgress(newProgress: ServerProgress) {

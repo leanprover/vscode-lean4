@@ -3,7 +3,7 @@ import {
     commands, Disposable, DocumentSelector,
     ExtensionContext, languages, Range,
     Selection, TextEditor, TextEditorRevealType,
-    Uri, ViewColumn, WebviewPanel, window, workspace, env, Position,
+    Uri, ViewColumn, WebviewPanel, window, workspace, env, Position, Diagnostic,
 } from 'vscode';
 import { TextDocumentIdentifier } from 'vscode-languageserver-protocol';
 import { EditorApi, InfoviewApi, LeanFileProgressParams, TextInsertKind } from '@lean4/infoview';
@@ -223,7 +223,7 @@ export class InfoProvider implements Disposable {
         this.client.client.diagnostics?.forEach(async (uri, diags) => {
             const params: PublishDiagnosticsParams = {
                 uri: this.client.client.code2ProtocolConverter.asUri(uri),
-                diagnostics: diags.map(d => this.client.client.code2ProtocolConverter.asDiagnostic(d)),
+                diagnostics: this.client.client.code2ProtocolConverter.asDiagnostics(diags as Diagnostic[]),
             };
             await this.webviewPanel.api.gotServerNotification('textDocument/publishDiagnostics', params);
         });
