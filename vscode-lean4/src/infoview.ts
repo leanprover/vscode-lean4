@@ -25,8 +25,11 @@ export class InfoProvider implements Disposable {
     private clientNotifSubscriptions: Map<string, [number, Disposable]> = new Map();
 
     private editorApi : EditorApi = {
-        sendClientRequest: async <T extends TextDocumentIdentifier, U>(method: string, req: T): Promise<U> => {
-            return await this.client.client.sendRequest(method, req);
+        sendClientRequest: async (method: string, params: any): Promise<any> => {
+            return this.client.client.sendRequest(method, params);
+        },
+        sendClientNotification: async (method: string, params: any): Promise<void> => {
+            void this.client.client.sendNotification(method, params);
         },
         subscribeServerNotifications: async (method) => {
             const el = this.serverNotifSubscriptions.get(method);
