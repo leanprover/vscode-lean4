@@ -1,0 +1,15 @@
+{
+	"extends": "../tsconfig",
+	"compilerOptions": {
+		"jsx": "react-jsx",
+		"strict": true,
+		"lib": [
+			"dom",
+			"es6",
+		],
+		"rootDir": "../",
+	},
+	"include": [
+		"./**/*",
+	],
+}

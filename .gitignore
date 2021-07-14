@@ -1,5 +1,9 @@
-out
-node_modules
+## Build directories
+out/
+dist/
+
+## Output
+node_modules/
+**/media/webview.*
+*.tsbuildinfo
 *.vsix
-media/index.js*
-infoview/dist

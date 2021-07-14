@@ -1,0 +1,33 @@
+{
+  "compilerOptions": {
+    /* Code generation */
+    "target": "es6",
+    "module": "es6",
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "es6"
+    ],
+    "allowJs": true,
+    "jsx": "react-jsx",
+    "esModuleInterop": true,
+
+    /* Type-checking */
+    "strict": true,
+    "noFallthroughCasesInSwitch": true,
+    "skipLibCheck": true,
+
+    /* Module resolution */
+    "moduleResolution": "node",
+    "allowSyntheticDefaultImports": true,
+    "forceConsistentCasingInFileNames": true,
+
+    /* Output */
+    "composite": true,
+    "rootDir": "src/",
+    "outDir": "dist/",
+    "declaration": true,
+  },
+
+  "include": ["src/**/*"],
+}

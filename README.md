@@ -33,12 +33,16 @@ As of now, the extension supports the following features:
 - Command to restart the full Lean 4 server, accessible via Ctrl+Shift+P
 - Compatibility with the [Lean 3 VSCode extension](https://github.com/leanprover/vscode-lean)
 
-## Building the client
-- Run `npm install` in this folder. This installs all necessary npm modules.
+## For developers
+The repository contains NPM packages implementing editor integration for the Lean 4 programming language. The VSCode extension proper is in [`vscode-lean4`](vscode-lean4/), while [`lean4-infoview`](lean4-infoview/) implements the information display. We build the packages in tandem using Lerna.
+
+### Building
+- Run `npm install` in this folder. This installs the Lerna package manager.
+- Run `npx lerna bootstrap`. This sets up the project's dependencies.
 - Open VS Code on this folder.
-- Press Ctrl+Shift+B to compile the client.
+- Press Ctrl+Shift+B to compile the extension. This step is needed for a working development setup.
 - Switch to the Debug viewlet (Ctrl+Shift+D).
-- Select `Launch Client` from the drop down.
+- Select `Launch Extension` from the drop down.
 - Run the launch config.
 
 ## Changelog

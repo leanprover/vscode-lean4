@@ -10,18 +10,22 @@ if [ -z "$OVSX_PAT" ]; then
 fi
 
 set -ex
+
+npm install
+npx lerna bootstrap
+npm run build
+
 new_version="$1"
-sed -i 's/"version": ".*"/"version": "'$new_version'"/' package.json
-npm i
+sed -i 's/"version": ".*"/"version": "'$new_version'"/' vscode-lean4/package.json
 git commit -am "Release $new_version"
 git tag -a v$new_version -m "vscode-lean4 $new_version"
 
-./node_modules/.bin/vsce publish
+npx lerna exec --scope=lean4 npx -- vsce publish
 
-./node_modules/.bin/ovsx publish
+npx lerna exec --scope=lean4 npx -- ovsx publish
 
 git push
 git push --tags
 
-./node_modules/.bin/vsce package
-hub release create -m "vscode-lean4 $new_version" v$new_version -a lean4-$new_version.vsix
+npx lerna run --scope=lean4 package
+hub release create -m "vscode-lean4 $new_version" v$new_version -a vscode-lean4/lean4-$new_version.vsix
