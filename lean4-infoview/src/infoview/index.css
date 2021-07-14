@@ -16,7 +16,7 @@ html,body {
 .vscode-light .goal-vdash { color: #367cb6; }
 .vscode-light .goal-case { color: #1f7a1f; }
 .vscode-light .goal-hyp { color: #cc7a00; }
-.vscode-light .goal-inaccessible { color: #A9A9A9; }
+.vscode-light .goal-inaccessible { color: #777; }
 
 .highlight { /* Used to denote text highlighted by the pretty-print expression widget. */
     background-color: #96ccff;
