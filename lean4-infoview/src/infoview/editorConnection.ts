@@ -1,4 +1,4 @@
-import { ErrorCodes, Location, ShowDocumentParams } from "vscode-languageserver-protocol";
+import { Location, ShowDocumentParams } from "vscode-languageserver-protocol";
 
 import { Eventify } from "./event";
 import { DocumentPosition } from "./util";

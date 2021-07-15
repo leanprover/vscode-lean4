@@ -11,6 +11,7 @@ import { AllMessages } from './messages';
 import { useEvent, useServerNotificationState } from './util';
 import { LeanDiagnostic, LeanFileProgressParams, LeanFileProgressProcessingInfo } from '../lspTypes';
 import { EditorContext, ConfigContext, DiagnosticsContext, ProgressContext } from './contexts';
+import { WithRpcSessions } from './rpcSessions';
 import { EditorConnection, EditorEvents } from './editorConnection';
 import { defaultInfoviewConfig, EditorApi, InfoviewApi } from '../infoviewApi';
 import { Event } from './event';
@@ -54,12 +55,14 @@ function Main(props: {}) {
     <ConfigContext.Provider value={config}>
         <DiagnosticsContext.Provider value={allDiags}>
             <ProgressContext.Provider value={allProgress}>
-                <div className="ma1">
-                    <Infos />
-                    <div className="mv2">
-                        <AllMessages uri={curUri} />
+                <WithRpcSessions>
+                    <div className="ma1">
+                        <Infos />
+                        <div className="mv2">
+                            <AllMessages uri={curUri} />
+                        </div>
                     </div>
-                </div>
+                </WithRpcSessions>
             </ProgressContext.Provider>
         </DiagnosticsContext.Provider>
     </ConfigContext.Provider>

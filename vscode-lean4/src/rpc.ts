@@ -39,6 +39,7 @@ export class Rpc {
                 try {
                     this.sendMessage({ seqNum, result: await this.methods[name](...args) })
                 } catch (ex) {
+                    // TODO(WN): somehow `ex.message` is lost here on going through `webview.postMessage`
                     this.sendMessage({ seqNum, exception: ex === undefined ? 'error' : ex })
                 }
             })()

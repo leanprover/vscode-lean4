@@ -12,5 +12,7 @@
     "eslint.workingDirectories": [
         "./lean4-infoview",
         "./vscode-lean4",
-    ]
+    ],
+    "files.insertFinalNewline": true,
+    "files.trimTrailingWhitespace": true
 }
