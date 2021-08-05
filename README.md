@@ -39,6 +39,7 @@ The repository contains NPM packages implementing editor integration for the Lea
 ### Building
 - Run `npm install` in this folder. This installs the Lerna package manager.
 - Run `npx lerna bootstrap`. This sets up the project's dependencies.
+- Run `npx lerna run build`. This compiles the extension (which is necessary for go-to-definition in vscode).
 - Open VS Code on this folder.
 - Press Ctrl+Shift+B to compile the extension. This step is needed for a working development setup.
 - Switch to the Debug viewlet (Ctrl+Shift+D).
