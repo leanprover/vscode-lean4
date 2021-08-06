@@ -23,7 +23,7 @@ interface RpcCallParams extends TextDocumentPositionParams {
 interface RpcReleaseParams {
     uri: DocumentUri
     sessionId: string
-    ref: RpcPtr<any>
+    refs: RpcPtr<any>[]
 }
 
 const RpcNeedsReconnect = -32900
@@ -31,22 +31,41 @@ const RpcNeedsReconnect = -32900
 class RpcSession {
     #ec: EditorConnection
     #uri: DocumentUri
+    /** A timeout mechanism for notifying the server about batches of GC'd refs in fewer messages. */
+    #releaseTimeout?: number
+    #refsToRelease: RpcPtr<any>[]
     #finalizers: FinalizationRegistry<RpcPtr<any>>
 
     constructor(readonly sessionId: string, uri: DocumentUri, ec: EditorConnection) {
         this.#ec = ec
         this.#uri = uri
-        // Here we hook into the JS GC and send release-reference requests whenever
-        // the GC finalizes an `RpcPtr`. Requires ES2021.
+        // Here we hook into the JS GC and send release-reference notifications
+        // whenever the GC finalizes a number of `RpcPtr`s. Requires ES2021.
+        this.#refsToRelease = []
         this.#finalizers = new FinalizationRegistry(ptr => {
-            const params: RpcReleaseParams = {
-                uri: this.#uri,
-                sessionId: this.sessionId,
-                ref: ptr,
+            if (this.#releaseTimeout !== undefined) clearTimeout(this.#releaseTimeout)
+            this.#refsToRelease.push(ptr)
+
+            const sendReleaseNotif = () => {
+                const params: RpcReleaseParams = {
+                    uri: this.#uri,
+                    sessionId: this.sessionId,
+                    refs: this.#refsToRelease,
+                }
+                void this.#ec.api.sendClientNotification('$/lean/rpc/release', params)
+                this.#releaseTimeout = undefined
+                this.#refsToRelease = []
             }
 
-            // TODO(WN): batch multiple of these into a single notif
-            void this.#ec.api.sendClientNotification('$/lean/rpc/release', params)
+            // We release eagerly instead of delaying when this many refs become garbage
+            const maxBatchSize = 100
+            if (this.#refsToRelease.length > maxBatchSize) {
+                sendReleaseNotif()
+            } else {
+                this.#releaseTimeout = window.setTimeout(() => {
+                    sendReleaseNotif()
+                }, 100)
+            }
         })
     }
 
@@ -57,12 +76,10 @@ class RpcSession {
             method: method,
             params: params,
         }
-        return this.#ec.api.sendClientRequest('$/lean/rpc/call', rpcParams)
-            .then(val => {
-                // const s = JSON.stringify(val)
-                // console.log(`'${method}(${JSON.stringify(params)})' at '${pos.line}:${pos.character}' -> '${s.length < 200 ? s : '(..)'}'`)
-                return val
-            })
+        const val = await this.#ec.api.sendClientRequest('$/lean/rpc/call', rpcParams)
+        // const s = JSON.stringify(val)
+        // console.log(`'${method}(${JSON.stringify(params)})' at '${pos.line}:${pos.character}' -> '${s.length < 200 ? s : '(..)'}'`)
+        return val
     }
 
     registerRef(ptr: RpcPtr<any>) {
