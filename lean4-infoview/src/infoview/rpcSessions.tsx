@@ -26,6 +26,13 @@ interface RpcReleaseParams {
     refs: RpcPtr<any>[]
 }
 
+interface RpcKeepAliveParams {
+    uri: DocumentUri
+    sessionId: string
+}
+
+const keepAlivePeriodMs = 10000
+
 const RpcNeedsReconnect = -32900
 
 class RpcSession {
@@ -39,6 +46,16 @@ class RpcSession {
     constructor(readonly sessionId: string, uri: DocumentUri, ec: EditorConnection) {
         this.#ec = ec
         this.#uri = uri
+
+        // We setup a recurring timer to keep the RPC session alive.
+        setInterval(() => {
+            const params: RpcKeepAliveParams = {
+                uri: this.#uri,
+                sessionId: this.sessionId,
+            }
+            void this.#ec.api.sendClientNotification('$/lean/rpc/keepAlive', params)
+        }, keepAlivePeriodMs)
+
         // Here we hook into the JS GC and send release-reference notifications
         // whenever the GC finalizes a number of `RpcPtr`s. Requires ES2021.
         this.#refsToRelease = []
@@ -161,7 +178,7 @@ export class RpcSessions {
         try {
             const ret = await sesh.call(pos, method, params)
             return ret
-        } catch (ex) {
+        } catch (ex: any) {
             if (ex.code === RpcNeedsReconnect) {
                 // Are we reconnecting yet?
                 if (!this.#connecting.has(pos.uri)) {
