@@ -56,24 +56,24 @@ export interface EditorApi {
 }
 
 export interface InfoviewTacticStateFilter {
-    name?: string;
-    regex: string;
-    match: boolean;
-    flags: string;
+  name?: string;
+  regex: string;
+  match: boolean;
+  flags: string;
 }
 
 export interface InfoviewConfig {
-    filterIndex: number;
-    infoViewTacticStateFilters: InfoviewTacticStateFilter[];
-    infoViewAllErrorsOnLine: boolean;
-    infoViewAutoOpenShowGoal: boolean;
+  filterIndex: number;
+  infoViewTacticStateFilters: InfoviewTacticStateFilter[];
+  infoViewAllErrorsOnLine: boolean;
+  infoViewAutoOpenShowGoal: boolean;
 }
 
 export const defaultInfoviewConfig: InfoviewConfig = {
-    filterIndex: -1,
-    infoViewTacticStateFilters: [],
-    infoViewAllErrorsOnLine: true,
-    infoViewAutoOpenShowGoal: true,
+  filterIndex: -1,
+  infoViewTacticStateFilters: [],
+  infoViewAllErrorsOnLine: true,
+  infoViewAutoOpenShowGoal: true,
 }
 
 export type InfoviewAction =
@@ -96,9 +96,11 @@ export interface InfoviewApi {
   /**
    * Must fire whenever the user moves their cursor or makes a selection.
    * When no selection is made, `loc.range.start` must equal `loc.range.end`.
+   * Must fire with `undefined` when the cursor moves to "nowhere" (e.g. all
+   * files are closed).
    */
   // TODO maybe change Location.Range to something aware of directionality (cursor at start/end of selection)
-  changedCursorLocation(loc: Location): Promise<void>;
+  changedCursorLocation(loc?: Location): Promise<void>;
 
   /**
    * Must fire whenever the infoview configuration changes.

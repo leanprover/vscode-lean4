@@ -65,7 +65,7 @@ export function Infos() {
     );
 
     const [curLoc, setCurLoc] = React.useState<Location>(ec.events.changedCursorLocation.current!);
-    useEvent(ec.events.changedCursorLocation, setCurLoc, []);
+    useEvent(ec.events.changedCursorLocation, loc => loc && setCurLoc(loc), []);
 
     const curPos: DocumentPosition = { uri: curLoc.uri, ...curLoc.range.start };
 
