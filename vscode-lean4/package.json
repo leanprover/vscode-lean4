@@ -78,6 +78,15 @@
 						"description": "a path to add to the environment"
 					}
 				},
+				"lean4.serverArgs": {
+					"type": "array",
+					"default": [],
+					"description": "Arguments to pass to the Lean 4 server.",
+					"items": {
+						"type": "string",
+						"description": "an argument to pass to the server"
+					}
+				},
 				"lean4.serverLogging.enabled": {
 					"type": "boolean",
 					"default": false,

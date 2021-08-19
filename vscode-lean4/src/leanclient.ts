@@ -13,7 +13,7 @@ import {
     ServerOptions,
 } from 'vscode-languageclient/node'
 import * as ls from 'vscode-languageserver-protocol'
-import { executablePath, addServerEnvPaths, serverLoggingEnabled, serverLoggingPath, getElaborationDelay } from './config'
+import { executablePath, addServerEnvPaths, serverArgs, serverLoggingEnabled, serverLoggingPath, getElaborationDelay } from './config'
 import { assert } from './utils/assert'
 import { PlainGoal, PlainTermGoal, LeanFileProgressParams, LeanFileProgressProcessingInfo } from '@lean4/infoview';
 
@@ -82,7 +82,7 @@ export class LeanClient implements Disposable {
         }
         const serverOptions: ServerOptions = {
             command: executablePath(),
-            args: ['--server'],
+            args: ['--server'].concat(serverArgs()),
             options: {
                 shell: true,
                 env
