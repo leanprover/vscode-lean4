@@ -34,6 +34,10 @@ export function serverEnvPaths(): string[] {
     return workspace.getConfiguration('lean4').get('serverEnvPaths', [])
 }
 
+export function serverArgs(): string[] {
+    return workspace.getConfiguration('lean4').get('serverArgs', [])
+}
+
 export function serverLoggingEnabled(): boolean {
     return workspace.getConfiguration('lean4.serverLogging').get('enabled', false)
 }
