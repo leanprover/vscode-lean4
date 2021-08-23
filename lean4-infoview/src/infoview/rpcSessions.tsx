@@ -10,7 +10,6 @@ interface RpcConnectParams {
 }
 
 interface RpcConnected {
-    uri: DocumentUri
     sessionId: string
 }
 
@@ -127,27 +126,16 @@ export class RpcSessions {
     }
 
     private connectAt(uri: DocumentUri): void {
-        // NOTE(WN): a request would be slightly simpler to handle than a notification,
-        // but would complicate the server more.
-
         if (this.#connecting.has(uri)) {
             throw `already connecting at '${uri}'`
         }
         if (this.#connected.has(uri)) {
             this.#connected.delete(uri)
         }
-        const newSesh = new Promise<RpcSession>(resolve => {
-            const h = this.#ec.events.gotServerNotification.on(([method, params]) => {
-                if (method !== '$/lean/rpc/connected') return
-                const conn: RpcConnected = params
-                if (conn.uri !== uri) return
-                resolve(new RpcSession(params.sessionId, conn.uri, this.#ec))
-                h.dispose() // this works, somehow
-            })
-        })
-        this.#connecting.set(uri, newSesh)
         const connParams: RpcConnectParams = { uri }
-        this.#ec.api.sendClientNotification('$/lean/rpc/connect', connParams)
+        const newSesh: Promise<RpcSession> = this.#ec.api.sendClientRequest('$/lean/rpc/connect', connParams)
+            .then((conn: RpcConnected) => new RpcSession(conn.sessionId, uri, this.#ec))
+        this.#connecting.set(uri, newSesh)
         newSesh.then(newSesh => {
             this.#connected.set(uri, newSesh)
             this.#connecting.delete(uri)
@@ -218,10 +206,6 @@ export function WithRpcSessions({ children }: { children: React.ReactNode }) {
     const ec = React.useContext(EditorContext)
     const [sessions, setSessions] = React.useState<RpcSessions>(new RpcSessions(ec))
     sessions.setSelf = setSessions
-
-    useServerNotificationEffect('$/lean/rpc/connected', _ => {
-        // Just subscribe here, but actually handle internally
-    }, [])
 
     return <RpcContext.Provider value={sessions}>
         {children}
