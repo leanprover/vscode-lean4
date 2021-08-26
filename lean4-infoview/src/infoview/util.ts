@@ -139,7 +139,7 @@ export function useClientNotificationState<S, T>(method: string, initial: S, f: 
  * - for as long as `isPaused` is set, `tPausable` holds its initial value (the `t` passed before pausing)
  *   rather than updates with changes to `t`.
  * - `tRef` can be used to overwrite the paused state
- * 
+ *
  * To pause child components, `startPaused` can be passed in their props.
  */
 export function usePausableState<T>(startPaused: boolean, t: T): [boolean, React.Dispatch<React.SetStateAction<boolean>>, T, React.MutableRefObject<T>] {
@@ -167,8 +167,8 @@ export function useLogState(): [string, (...msg: any[]) => void] {
 export type Keyed<T> = T & { key: string };
 
 /**
- * Adds a unique `key` property to each element in `elems` starting from
- * the (possibly non-injective) values of `getId`.
+ * Adds a unique `key` property to each element in `elems` using
+ * the values of (possibly non-injective) `getId`.
  */
 export function addUniqueKeys<T>(elems: T[], getId: (el: T) => string): Keyed<T>[] {
     const keys: { [key: string]: number } = {};

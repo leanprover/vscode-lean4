@@ -32,3 +32,20 @@ export interface LeanFileProgressParams {
      */
     processing: LeanFileProgressProcessingInfo[];
 }
+
+// https://stackoverflow.com/a/56749647
+declare const tag: unique symbol;
+export type RpcPtr<T> = { readonly [tag]: T, p: string }
+
+export namespace RpcPtr {
+
+export function copy<T>(p: RpcPtr<T>): RpcPtr<T> {
+    return { p: p.p } as RpcPtr<T>;
+}
+
+/** Turns a reference into a unique string. Useful for React `key`s. */
+export function toKey(p: RpcPtr<any>): string {
+    return p.p;
+}
+
+}
