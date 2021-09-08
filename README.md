@@ -43,7 +43,8 @@ The repository contains NPM packages implementing editor integration for the Lea
 - Open VS Code on this folder.
 - Press Ctrl+Shift+B to compile the extension. This step is needed for a working development setup.
 - Switch to the Debug viewlet (Ctrl+Shift+D).
-- Select `Launch Extension` from the drop down.
+- Select the green triangle next to `Launch Extension` from the drop down in top left of the Debug panel and you should see a new VSCode window open with this
+freshly built extension installed.
 - Run the launch config.
 
 ## Changelog
