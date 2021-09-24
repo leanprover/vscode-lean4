@@ -233,6 +233,12 @@
 				"category": "Lean 4",
 				"title": "Infoview: Toggle Updating",
 				"description": "Pause / Continue live updating of the main tactic state widget."
+			},
+			{
+				"command": "lean4.selectInterpreter",
+				"category": "Lean 4",
+				"title": "Select Lean Interpreter",
+				"description": "Select location of the Lean interpreter to use for this project."
 			}
 		],
 		"languages": [
@@ -331,6 +337,10 @@
 				},
 				{
 					"command": "lean4.restartServer",
+					"when": "editorLangId == lean4"
+				},
+				{
+					"command": "lean4.selectInterpreter",
 					"when": "editorLangId == lean4"
 				}
 			],

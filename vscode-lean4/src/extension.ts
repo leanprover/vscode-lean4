@@ -6,6 +6,7 @@ import { executablePath, addServerEnvPaths } from './config'
 import { LeanClient } from './leanclient'
 import { InfoProvider } from './infoview'
 import { LeanTaskGutter } from './taskgutter'
+import { LocalStorageService} from './utils/localStorage'
 
 async function checkLean4(): Promise<boolean> {
     const folders = workspace.workspaceFolders
@@ -41,18 +42,25 @@ async function checkLean4(): Promise<boolean> {
 }
 
 export async function activate(context: ExtensionContext): Promise<any> {
+
     const isLean4Project = await checkLean4()
+
     // API provided to vscode-lean. If isLean4Project is true, (i.e. vscode-lean4 is being activated),
     // vscode-lean will not activate.
     const api = { isLean4Project }
-    if (!isLean4Project) {
-        return api
-    }
+
+    // we still load the client even if it fails to find lean interpreter so user can fix it
+    // via 'Lean 4: Select Interpreter' command which is handled in LeanClient.
+    // if (!isLean4Project) {
+    //      return api
+    // }
 
     await Promise.all(workspace.textDocuments.map(async (doc) =>
         doc.languageId === 'lean' && languages.setTextDocumentLanguage(doc, 'lean4')))
 
-    const client: LeanClient = new LeanClient()
+    const storageManager = new LocalStorageService(context.workspaceState);
+
+    const client: LeanClient = new LeanClient(storageManager)
     context.subscriptions.push(client)
 
     // Register support for unicode input
@@ -67,6 +75,8 @@ export async function activate(context: ExtensionContext): Promise<any> {
         client.refreshFileDependencies(window.activeTextEditor)
     }))
     context.subscriptions.push(commands.registerCommand('lean4.restartServer', () => client.restart()));
+
+    context.subscriptions.push(commands.registerCommand('lean4.selectInterpreter', () => client.selectInterpreter()));
 
     void client.start()
     return api

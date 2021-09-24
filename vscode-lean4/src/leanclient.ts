@@ -1,5 +1,6 @@
 import { TextDocument, Position, TextEditor, EventEmitter, Diagnostic,
-    languages, DocumentHighlight, Range, DocumentHighlightKind, window, Disposable, Uri } from 'vscode'
+    languages, DocumentHighlight, Range, DocumentHighlightKind, window, workspace,
+    Disposable, Uri, TextEditorOptionsChangeEvent, ConfigurationChangeEvent } from 'vscode'
 import {
     Code2ProtocolConverter,
     DidChangeTextDocumentParams,
@@ -16,6 +17,7 @@ import * as ls from 'vscode-languageserver-protocol'
 import { executablePath, addServerEnvPaths, serverArgs, serverLoggingEnabled, serverLoggingPath, getElaborationDelay } from './config'
 import { assert } from './utils/assert'
 import { PlainGoal, PlainTermGoal, LeanFileProgressParams, LeanFileProgressProcessingInfo } from '@lean4/infoview';
+import { LocalStorageService} from './utils/localStorage'
 
 const documentSelector: DocumentFilter = {
     scheme: 'file',
@@ -36,6 +38,8 @@ export function getFullRange(diag: Diagnostic): Range {
 
 export class LeanClient implements Disposable {
     client: LanguageClient
+    executable: string
+    running: boolean
 
     private subscriptions: Disposable[] = []
 
@@ -59,12 +63,21 @@ export class LeanClient implements Disposable {
     private restartedEmitter = new EventEmitter()
     restarted = this.restartedEmitter.event
 
+    private restartingEmitter = new EventEmitter()
+    restarting = this.restartingEmitter.event
+
+    private storageManager : LocalStorageService;
+
     /** Files which are open. */
     private isOpen: Set<string> = new Set()
 
-    constructor() {
+    constructor(storageManager : LocalStorageService) {
+        this.storageManager = storageManager;
+
         this.subscriptions.push(window.onDidChangeVisibleTextEditors((es) =>
             es.forEach((e) => this.open(e.document))));
+
+        this.subscriptions.push(workspace.onDidChangeConfiguration((e) => this.configChanged(e)));
     }
 
     dispose(): void {
@@ -73,15 +86,20 @@ export class LeanClient implements Disposable {
     }
 
     async restart(): Promise<void> {
+        this.restartingEmitter.fire(undefined)
+
         if (this.isStarted()) {
             await this.stop()
         }
+
+        this.executable = this.storageManager.getValue<string>('LeanPath');
+        if (!this.executable) this.executable = executablePath();
         const env = addServerEnvPaths(process.env);
         if (serverLoggingEnabled()) {
             env.LEAN_SERVER_LOG_DIR = serverLoggingPath()
         }
         const serverOptions: ServerOptions = {
-            command: executablePath(),
+            command: this.executable,
             args: ['--server'].concat(serverArgs()),
             options: {
                 shell: true,
@@ -121,6 +139,7 @@ export class LeanClient implements Disposable {
 
                 didChange: (data, next) => {
                     next(data);
+                    if (!this.running) return; // there was a problem starting lean server.
                     const params = this.client.code2ProtocolConverter.asChangeTextDocumentParams(data);
                     this.didChangeEmitter.fire(params);
                 },
@@ -128,6 +147,7 @@ export class LeanClient implements Disposable {
                 didClose: (doc, next) => {
                     if (!this.isOpen.delete(doc.uri.toString())) return;
                     next(doc);
+                    if (!this.running) return; // there was a problem starting lean server.
                     const params = this.client.code2ProtocolConverter.asTextDocumentIdentifier(doc);
                     this.didCloseEmitter.fire({textDocument: params});
                 },
@@ -168,9 +188,18 @@ export class LeanClient implements Disposable {
             clientOptions
         )
         this.patchConverters(this.client.protocol2CodeConverter, this.client.code2ProtocolConverter)
-        this.client.start()
-        this.isOpen = new Set()
-        await this.client.onReady();
+        try {
+            this.client.start()
+            this.isOpen = new Set()
+            await this.client.onReady();
+            // if we got this far then the client is happy so we are running!
+            this.running = true;
+        } catch (error) {
+            console.log(error);
+            // note; we keep the LeanClient alive so that it can be restarted if the
+            // user changes the Lean: Executable Path.
+            return;
+        }
 
         // HACK(WN): Register a default notification handler to fire on custom notifications.
         // There is an API for this in vscode-jsonrpc but not in vscode-languageclient, so we
@@ -231,6 +260,7 @@ export class LeanClient implements Disposable {
         } else if (doc.languageId !== 'lean4') {
             return
         }
+        if (!this.running) return; // there was a problem starting lean server.
         if (this.isOpen.has(doc.uri.toString())) return;
         this.isOpen.add(doc.uri.toString())
         this.client.sendNotification(DidOpenTextDocumentNotification.type, {
@@ -253,12 +283,22 @@ export class LeanClient implements Disposable {
 
     async stop(): Promise<void> {
         assert(() => this.isStarted())
-        await this.client.stop()
+        if (this.client && this.running) {
+            await this.client.stop()
+        }
         this.setProgress(new Map())
         this.client = undefined
+        this.running = false
+    }
+
+    configChanged(e : ConfigurationChangeEvent): void {
+        if (this.executable !== executablePath()){
+            void this.restart();
+        }
     }
 
     refreshFileDependencies(editor: TextEditor): void {
+        if (!this.running) return; // there was a problem starting lean server.
         assert(() => this.isStarted())
         const doc = editor.document
         const uri = doc.uri.toString()
@@ -286,5 +326,21 @@ export class LeanClient implements Disposable {
     private setProgress(newProgress: ServerProgress) {
         this.progress = newProgress
         this.progressChangedEmitter.fire(newProgress)
+    }
+
+    async selectInterpreter() : Promise<void> {
+        let defaultPath = this.storageManager.getValue<string>('LeanPath');
+        if (!defaultPath) {
+            defaultPath = 'lean';
+        }
+        const selectedProgram = await window.showInputBox({
+            title: 'Enter path',
+            value: defaultPath,
+            prompt: 'Enter full path to lean interpreter'
+        });
+        if (selectedProgram) {
+            this.storageManager.setValue<string>('LeanPath', selectedProgram);
+            void this.restart();
+        }
     }
 }

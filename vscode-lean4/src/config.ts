@@ -13,11 +13,7 @@ export function addServerEnvPaths(input_env: NodeJS.ProcessEnv): NodeJS.ProcessE
     const env = Object.assign({}, input_env, serverEnv());
     const paths = serverEnvPaths()
     if (paths.length !== 0) {
-        if (process.platform === 'win32') {
-            env['Path'] = paths.join(path.delimiter) + path.delimiter + process.env.Path
-        } else {
-            env['PATH'] = paths.join(path.delimiter) + path.delimiter + process.env.PATH
-        }
+        env['PATH'] = paths.join(path.delimiter) + path.delimiter + process.env.PATH
     }
     return env
 }

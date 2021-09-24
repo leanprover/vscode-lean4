@@ -19,6 +19,7 @@ export class InfoProvider implements Disposable {
     private subscriptions: Disposable[] = [];
 
     private stylesheet: string = '';
+    private autoOpened: boolean;
 
     // Subscriptions are counted and only disposed when count === 0.
     private serverNotifSubscriptions: Map<string, [number, Disposable]> = new Map();
@@ -26,10 +27,11 @@ export class InfoProvider implements Disposable {
 
     private editorApi : EditorApi = {
         sendClientRequest: async (method: string, params: any): Promise<any> => {
-            return this.client.client.sendRequest(method, params);
+            return this.client.running ? this.client.client.sendRequest(method, params) : undefined;
         },
         sendClientNotification: async (method: string, params: any): Promise<void> => {
-            void this.client.client.sendNotification(method, params);
+            if (this.client.running)
+                void this.client.client.sendNotification(method, params);
         },
         subscribeServerNotifications: async (method) => {
             const el = this.serverNotifSubscriptions.get(method);
@@ -106,6 +108,7 @@ export class InfoProvider implements Disposable {
             await window.showInformationMessage(`Copied to clipboard: ${text}`);
         },
         insertText: async (text, kind, tdpp) => {
+            if (!this.client.running) return;
             let uri: Uri | undefined
             let pos: Position | undefined
             if (tdpp) {
@@ -115,6 +118,7 @@ export class InfoProvider implements Disposable {
             await this.handleInsertText(text, kind, uri, pos);
         },
         showDocument: async (show) => {
+            if (!this.client.running) return;
             void this.revealEditorSelection(
                 Uri.parse(show.uri),
                 this.client.client.protocol2CodeConverter.asRange(show.selection)
@@ -125,6 +129,9 @@ export class InfoProvider implements Disposable {
     constructor(private client: LeanClient, private leanDocs: DocumentSelector, private context: ExtensionContext) {
         this.updateStylesheet();
         this.subscriptions.push(
+            this.client.restarting(async () => {
+                this.clear();
+            }),
             this.client.restarted(async () => {
                 await this.autoOpen();
                 // NOTE(WN): We do not re-send state such as diagnostics to the infoview here
@@ -175,8 +182,13 @@ export class InfoProvider implements Disposable {
     }
 
     private async autoOpen() {
-        if (!this.webviewPanel && getInfoViewAutoOpen()) {
-            await this.openPreview(window.activeTextEditor);
+        if (!this.webviewPanel && !this.autoOpened && getInfoViewAutoOpen() && window.activeTextEditor) {
+            // only auto-open for lean files, not for markdown.
+            if (languages.match(this.leanDocs, window.activeTextEditor.document)) {
+                // remember we've auto opened during this session so if user closes it it remains closed.
+                this.autoOpened = true;
+                await this.openPreview(window.activeTextEditor);
+            }
         }
     }
 
@@ -202,7 +214,7 @@ export class InfoProvider implements Disposable {
                 this.webviewPanel = undefined;
             });
             this.webviewPanel = webviewPanel;
-            webviewPanel.webview.html = this.initialHtml();
+            this.clear();
         }
         // The infoview listens for server notifications such as diagnostics passively,
         // so when it is first started we must re-send those as if the server did.
@@ -210,6 +222,12 @@ export class InfoProvider implements Disposable {
         await this.sendConfig();
         await this.sendDiagnostics();
         await this.sendProgress();
+    }
+
+    private clear() {
+        if (this.webviewPanel){
+            this.webviewPanel.webview.html = this.initialHtml();
+        }
     }
 
     private async sendConfig() {
@@ -222,7 +240,7 @@ export class InfoProvider implements Disposable {
     }
 
     private async sendDiagnostics() {
-        if (!this.webviewPanel) return;
+        if (!this.webviewPanel || !this.client.running) return;
         this.client.client.diagnostics?.forEach(async (uri, diags) => {
             const params: PublishDiagnosticsParams = {
                 uri: this.client.client.code2ProtocolConverter.asUri(uri),
@@ -233,7 +251,7 @@ export class InfoProvider implements Disposable {
     }
 
     private async sendProgress() {
-        if (!this.webviewPanel) return;
+        if (!this.webviewPanel || !this.client.running) return;
         for (const [uri, processing] of this.client.progress) {
             const params: LeanFileProgressParams = {
                 textDocument: {
@@ -248,6 +266,7 @@ export class InfoProvider implements Disposable {
 
     private async sendPosition() {
         if (!window.activeTextEditor || !languages.match(this.leanDocs, window.activeTextEditor.document)) { return null; }
+        void this.autoOpen();
         const uri = window.activeTextEditor.document.uri;
         const selection = window.activeTextEditor.selection;
         await this.webviewPanel?.api.changedCursorLocation({
