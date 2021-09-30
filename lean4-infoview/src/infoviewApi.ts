@@ -56,24 +56,24 @@ export interface EditorApi {
 }
 
 export interface InfoviewTacticStateFilter {
-  name?: string;
-  regex: string;
-  match: boolean;
-  flags: string;
+    name?: string;
+    regex: string;
+    match: boolean;
+    flags: string;
 }
 
 export interface InfoviewConfig {
-  filterIndex: number;
-  infoViewTacticStateFilters: InfoviewTacticStateFilter[];
-  infoViewAllErrorsOnLine: boolean;
-  infoViewAutoOpenShowGoal: boolean;
+    filterIndex: number;
+    infoViewTacticStateFilters: InfoviewTacticStateFilter[];
+    infoViewAllErrorsOnLine: boolean;
+    infoViewAutoOpenShowGoal: boolean;
 }
 
 export const defaultInfoviewConfig: InfoviewConfig = {
-  filterIndex: -1,
-  infoViewTacticStateFilters: [],
-  infoViewAllErrorsOnLine: true,
-  infoViewAutoOpenShowGoal: true,
+    filterIndex: -1,
+    infoViewTacticStateFilters: [],
+    infoViewAllErrorsOnLine: true,
+    infoViewAutoOpenShowGoal: true,
 }
 
 export type InfoviewAction =
