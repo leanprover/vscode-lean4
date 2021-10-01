@@ -1,5 +1,5 @@
-import * as vscode from 'vscode';
-import { commands, Disposable, TextEditor, window, workspace } from 'vscode';
+import { Range as LineColRange } from 'vscode';
+import { commands, Disposable, TextEditor, window, workspace, Selection, OutputChannel, TextDocument } from 'vscode';
 import { assert } from '../../utils/assert';
 import { AbbreviationProvider } from '../AbbreviationProvider';
 import { AbbreviationConfig } from '../config';
@@ -20,6 +20,8 @@ export class AbbreviationRewriter {
 	});
 
 	private dontTrackNewAbbr = false;
+	private stderrOutput: OutputChannel;
+	private firstOutput = true;
 
 	constructor(
 		private readonly config: AbbreviationConfig,
@@ -85,6 +87,15 @@ export class AbbreviationRewriter {
 				this.forceReplace([...this.trackedAbbreviations])
 			)
 		);
+	}
+
+	private writeError(e) {
+		this.stderrOutput  = this.stderrOutput || window.createOutputChannel('Lean: Editor');
+		this.stderrOutput.appendLine(e);
+		if (this.firstOutput){
+			this.stderrOutput.show(true);
+			this.firstOutput = false;
+		}
 	}
 
 	private async forceReplace(
@@ -167,20 +178,20 @@ export class AbbreviationRewriter {
 				}
 			});
 		} catch (e) {
-			console.error('Error while replacing abbreviation: ', e);
+			this.writeError('Error: while replacing abbreviation: ' + e);
 		}
 		this.dontTrackNewAbbr = false;
 
 		if (ok) {
 			this.textEditor.selections = newSelections.map((s) => {
 				const vr = toVsCodeRange(s, this.textEditor.document);
-				return new vscode.Selection(vr.start, vr.end);
+				return new Selection(vr.start, vr.end);
 			});
 		}
 		else {
 			// Our edit did not succeed, do not update the selections.
 			// This can happen if `waitForNextTick` waits too long.
-			console.warn('Unable to replace abbreviation');
+			this.writeError('Error: Unable to replace abbreviation');
 		}
 
 		this.updateState();
@@ -247,16 +258,16 @@ export class AbbreviationRewriter {
 	}
 }
 
-function fromVsCodeRange(range: vscode.Range, doc: vscode.TextDocument): Range {
+function fromVsCodeRange(range: LineColRange, doc: TextDocument): Range {
 	const start = doc.offsetAt(range.start);
 	const end = doc.offsetAt(range.end);
 	return new Range(start, end - start);
 }
 
-function toVsCodeRange(range: Range, doc: vscode.TextDocument): vscode.Range {
+function toVsCodeRange(range: Range, doc: TextDocument): LineColRange {
 	const start = doc.positionAt(range.offset);
 	const end = doc.positionAt(range.offsetEnd + 1);
-	return new vscode.Range(start, end);
+	return new LineColRange(start, end);
 }
 
 function waitForNextTick(): Promise<void> {
