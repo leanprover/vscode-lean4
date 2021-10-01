@@ -19,7 +19,7 @@ export class InfoProvider implements Disposable {
     private subscriptions: Disposable[] = [];
 
     private stylesheet: string = '';
-    private autoOpened: boolean;
+    private autoOpened: boolean = false;
 
     // Subscriptions are counted and only disposed when count === 0.
     private serverNotifSubscriptions: Map<string, [number, Disposable]> = new Map();
