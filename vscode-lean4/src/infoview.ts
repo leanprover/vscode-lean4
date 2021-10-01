@@ -133,6 +133,7 @@ export class InfoProvider implements Disposable {
             }),
             window.onDidChangeActiveTextEditor(() => this.sendPosition()),
             window.onDidChangeTextEditorSelection(() => this.sendPosition()),
+            client.didSetLanguage(() => this.onLanguageChanged()),
             workspace.onDidChangeConfiguration(async (_e) => {
                 // regression; changing the style needs a reload. :/
                 this.updateStylesheet();
@@ -252,9 +253,12 @@ export class InfoProvider implements Disposable {
         }
     }
 
+    private onLanguageChanged() {
+        void this.autoOpen();
+    }
+
     private async sendPosition() {
         if (!window.activeTextEditor || !languages.match(this.leanDocs, window.activeTextEditor.document)) { return null; }
-        void this.autoOpen();
         const uri = window.activeTextEditor.document.uri;
         const selection = window.activeTextEditor.selection;
         await this.webviewPanel?.api.changedCursorLocation({

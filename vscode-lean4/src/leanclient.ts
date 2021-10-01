@@ -45,6 +45,9 @@ export class LeanClient implements Disposable {
     private diagnosticsEmitter = new EventEmitter<PublishDiagnosticsParams>()
     diagnostics = this.diagnosticsEmitter.event
 
+    private didSetLanguageEmitter = new EventEmitter<string>();
+    didSetLanguage = this.didSetLanguageEmitter.event
+
     private didCloseEmitter = new EventEmitter<DidCloseTextDocumentParams>();
     didClose = this.didCloseEmitter.event
 
@@ -227,7 +230,8 @@ export class LeanClient implements Disposable {
         if (doc.languageId === 'lean') {
             // Only change the id for *visible* documents,
             // because this closes and then reopens the document.
-            await languages.setTextDocumentLanguage(doc, 'lean4')
+            await languages.setTextDocumentLanguage(doc, 'lean4');
+            this.didSetLanguageEmitter.fire(undefined);
         } else if (doc.languageId !== 'lean4') {
             return
         }
