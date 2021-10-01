@@ -39,8 +39,15 @@ export class Rpc {
                 try {
                     this.sendMessage({ seqNum, result: await this.methods[name](...args) })
                 } catch (ex) {
-                    // TODO(WN): somehow `ex.message` is lost here on going through `webview.postMessage`
-                    this.sendMessage({ seqNum, exception: ex === undefined ? 'error' : ex })
+                    if (ex === undefined) {
+                        this.sendMessage({ seqNum, exception: 'error' })
+                        return
+                    }
+                    /* Somehow certain properties (such as `ex.message`) disappear along the way
+                     * through `Webview.postMessage` but make it through in a new object. */
+                    const exOut: any = {}
+                    for (const p of Object.getOwnPropertyNames(ex)) { exOut[p] = ex[p] }
+                    this.sendMessage({ seqNum, exception: exOut })
                 }
             })()
         }
