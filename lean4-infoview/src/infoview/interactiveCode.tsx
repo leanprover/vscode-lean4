@@ -65,18 +65,31 @@ const LazyTippy = React.forwardRef<HTMLElement, TippyProps>((props, ref) => {
 /** Shows `explicitValue : itsType` and a docstring if there is one. */
 function TypePopupContents({pos, info, redrawTooltip}: {pos: DocumentPosition, info: InfoWithCtx, redrawTooltip: () => void}) {
   const rs = React.useContext(RpcContext)
+  // When `err` is defined we show the error,
+  // otherwise if `ip` is defined we show its contents,
+  // otherwise a 'loading' message.
   const [ip, setIp] = React.useState<InfoPopup>()
+  const [err, setErr] = React.useState<string>()
 
   React.useEffect(() => {
     InteractiveDiagnostics_infoToInteractive(rs, pos, info).then(val => {
       if (val) {
+        setErr(undefined)
         setIp(val)
         // We let Tippy.js know that the tooltip should be re-rendered,
         // since it has new contents.
         redrawTooltip()
       }
+    }).catch(ex => {
+      if ('message' in ex) setErr(ex.message)
+      else if ('code' in ex) setErr(`RPC error (${ex.code})`)
+      else setErr(JSON.stringify(ex))
+      redrawTooltip()
     })
   }, [])
+
+  if (err)
+    return <>Error: {err}</>
 
   if (ip) {
     return <>
