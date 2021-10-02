@@ -231,7 +231,7 @@ export class LeanClient implements Disposable {
             // Only change the id for *visible* documents,
             // because this closes and then reopens the document.
             await languages.setTextDocumentLanguage(doc, 'lean4');
-            this.didSetLanguageEmitter.fire(undefined);
+            this.didSetLanguageEmitter.fire('lean4');
         } else if (doc.languageId !== 'lean4') {
             return
         }
