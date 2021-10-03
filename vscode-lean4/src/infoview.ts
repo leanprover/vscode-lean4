@@ -19,6 +19,7 @@ export class InfoProvider implements Disposable {
     private subscriptions: Disposable[] = [];
 
     private stylesheet: string = '';
+    private autoOpened: boolean = false;
 
     // Subscriptions are counted and only disposed when count === 0.
     private serverNotifSubscriptions: Map<string, [number, Disposable]> = new Map();
@@ -132,6 +133,7 @@ export class InfoProvider implements Disposable {
             }),
             window.onDidChangeActiveTextEditor(() => this.sendPosition()),
             window.onDidChangeTextEditorSelection(() => this.sendPosition()),
+            client.didSetLanguage(() => this.onLanguageChanged()),
             workspace.onDidChangeConfiguration(async (_e) => {
                 // regression; changing the style needs a reload. :/
                 this.updateStylesheet();
@@ -175,8 +177,13 @@ export class InfoProvider implements Disposable {
     }
 
     private async autoOpen() {
-        if (!this.webviewPanel && getInfoViewAutoOpen()) {
-            await this.openPreview(window.activeTextEditor);
+        if (!this.webviewPanel && !this.autoOpened && getInfoViewAutoOpen() && window.activeTextEditor) {
+            // only auto-open for lean files, not for markdown.
+            if (languages.match(this.leanDocs, window.activeTextEditor.document)) {
+                // remember we've auto opened during this session so if user closes it it remains closed.
+                this.autoOpened = true;
+                await this.openPreview(window.activeTextEditor);
+            }
         }
     }
 
@@ -244,6 +251,10 @@ export class InfoProvider implements Disposable {
             };
             await this.webviewPanel.api.gotServerNotification('$/lean/fileProgress', params);
         }
+    }
+
+    private onLanguageChanged() {
+        void this.autoOpen();
     }
 
     private async sendPosition() {

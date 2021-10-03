@@ -55,7 +55,7 @@ export function Infos() {
         []
     );
 
-    // Remove pins for closed douments
+    // Remove pins for closed documents
     useClientNotificationEffect(
         'textDocument/didClose',
         (params: DidCloseTextDocumentParams) => {
