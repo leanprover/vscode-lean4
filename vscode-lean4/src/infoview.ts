@@ -19,7 +19,7 @@ export class InfoProvider implements Disposable {
     private subscriptions: Disposable[] = [];
 
     private stylesheet: string = '';
-    private autoOpened: boolean;
+    private autoOpened: boolean = false;
 
     // Subscriptions are counted and only disposed when count === 0.
     private serverNotifSubscriptions: Map<string, [number, Disposable]> = new Map();
@@ -139,6 +139,7 @@ export class InfoProvider implements Disposable {
             }),
             window.onDidChangeActiveTextEditor(() => this.sendPosition()),
             window.onDidChangeTextEditorSelection(() => this.sendPosition()),
+            client.didSetLanguage(() => this.onLanguageChanged()),
             workspace.onDidChangeConfiguration(async (_e) => {
                 // regression; changing the style needs a reload. :/
                 this.updateStylesheet();
@@ -262,6 +263,10 @@ export class InfoProvider implements Disposable {
             };
             await this.webviewPanel.api.gotServerNotification('$/lean/fileProgress', params);
         }
+    }
+
+    private onLanguageChanged() {
+        void this.autoOpen();
     }
 
     private async sendPosition() {

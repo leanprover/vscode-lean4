@@ -90,7 +90,7 @@ export class AbbreviationRewriter {
 	}
 
 	private writeError(e) {
-		this.stderrOutput  = this.stderrOutput || window.createOutputChannel('Lean: Client');
+		this.stderrOutput  = this.stderrOutput || window.createOutputChannel('Lean: Editor');
 		this.stderrOutput.appendLine(e);
 		if (this.firstOutput){
 			this.stderrOutput.show(true);
