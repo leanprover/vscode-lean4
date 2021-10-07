@@ -74,7 +74,7 @@ export class LeanClient implements Disposable {
 
     async restart(): Promise<void> {
         if (this.isStarted()) {
-            void this.stop()
+            await this.stop()
         }
         const env = addServerEnvPaths(process.env);
         if (serverLoggingEnabled()) {
@@ -247,7 +247,7 @@ export class LeanClient implements Disposable {
 
     async stop(): Promise<void> {
         assert(() => this.isStarted())
-        void this.client.stop()
+        await this.client.stop()
         this.setProgress(new Map())
         this.client = undefined
     }
