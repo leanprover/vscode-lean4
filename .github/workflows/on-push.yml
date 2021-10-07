@@ -11,7 +11,7 @@ jobs:
       - uses: actions/setup-node@v2
         with:
           node-version: '16'
-      - run: npm install
+      - run: npm install lerna@4.0.0
       - run: npx lerna bootstrap
       - run: npm run build
       - run: npx lerna run --scope=lean4 package
