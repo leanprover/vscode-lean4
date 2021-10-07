@@ -290,7 +290,7 @@ export class LeanClient implements Disposable {
         if (!this.running) return; // there was a problem starting lean server.
         if (this.isOpen.has(doc.uri.toString())) return;
         this.isOpen.add(doc.uri.toString())
-        this.client.sendNotification(DidOpenTextDocumentNotification.type, {
+        void this.client.sendNotification(DidOpenTextDocumentNotification.type, {
             textDocument: {
                 uri: doc.uri.toString(),
                 languageId: doc.languageId,
@@ -335,12 +335,12 @@ export class LeanClient implements Disposable {
         // didOpen packet emitted below initializes the version number to be 1.
         // This is not a problem though, since both client and server are fine
         // as long as the version numbers are monotonous.
-        this.client.sendNotification('textDocument/didClose', {
+        void this.client.sendNotification('textDocument/didClose', {
             'textDocument': {
                 uri
             }
         })
-        this.client.sendNotification('textDocument/didOpen', {
+        void this.client.sendNotification('textDocument/didOpen', {
             'textDocument': {
                 uri,
                 'languageId': 'lean4',
@@ -360,7 +360,7 @@ export class LeanClient implements Disposable {
         // user changes the Lean: Executable Path.
         const installItem = 'Install Lean';
         const selectItem = 'Select Lean Interpreter';
-        const item = await window.showErrorMessage(`Failed to find ${this.executable}`, installItem, selectItem)
+        const item = await window.showErrorMessage(`Failed to find '${this.executable}'`, installItem, selectItem)
         if (item === installItem){
             void this.installLean();
         } else if (item === selectItem){
@@ -427,7 +427,6 @@ export class LeanClient implements Disposable {
             folderPath = folders[0].uri.fsPath
         }
 
-		this.stderrOutput  = this.stderrOutput || window.createOutputChannel('Lean: Editor');
         const env = addServerEnvPaths(process.env);
 
         const options = ['--version']
@@ -436,8 +435,7 @@ export class LeanClient implements Disposable {
             // Specifically, if the extension was not opened inside of a folder, it
             // looks for a global (default) installation of Lean. This way, we can support
             // single file editing.
-            this.stderrOutput.show(true);
-            let stdout = await batchExecute(cmd, options, folderPath, this.stderrOutput)
+            const stdout = await batchExecute(cmd, options, folderPath, this.getOutputChannel())
             // const { stdout, stderr } = await promisify(execFile)(cmd, options, {cwd: folderPath, env })
             const filterVersion = /version (\d+)\.\d+\..+/
             const match = filterVersion.exec(stdout)
@@ -457,9 +455,13 @@ export class LeanClient implements Disposable {
         }
     }
 
-	private writeError(e) {
+    private getOutputChannel() : OutputChannel {
 		this.stderrOutput  = this.stderrOutput || window.createOutputChannel('Lean: Editor');
-		this.stderrOutput.appendLine(e);
 		this.stderrOutput.show(true);
+        return this.stderrOutput;
+    }
+
+	private writeError(e) {
+		this.getOutputChannel().appendLine(e);
 	}
 }
