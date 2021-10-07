@@ -10,8 +10,7 @@ export async function batchExecute(
     return new Promise(function(resolve, reject){
         let output : string = '';
 
-        const exe = spawn(executablePath, args,
-            { cwd: workingDirectory, env: {} /* TODO(gabriel): take from server */ });
+        const exe = spawn(executablePath, args, { cwd: workingDirectory });
 
         if (exe.pid === undefined) {
             resolve('program not found');

@@ -422,13 +422,13 @@ export class LeanClient implements Disposable {
 
 		this.stderrOutput  = this.stderrOutput || window.createOutputChannel('Lean: Editor');
         const env = addServerEnvPaths(process.env);
+
         const options = ['--version']
         try {
             // If folderPath is undefined, this will use the process environment for cwd.
             // Specifically, if the extension was not opened inside of a folder, it
             // looks for a global (default) installation of Lean. This way, we can support
             // single file editing.
-            this.stderrOutput.clear();
             this.stderrOutput.show(true);
             let stdout = await batchExecute(cmd, options, folderPath, this.stderrOutput)
             // const { stdout, stderr } = await promisify(execFile)(cmd, options, {cwd: folderPath, env })
