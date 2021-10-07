@@ -45,6 +45,7 @@ export class LeanClient implements Disposable {
 	private stderrOutput: OutputChannel;
     private leanInstallerLinux = 'https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh'
     private leanInstallerWindows = 'https://github.com/lovettchris/elan/raw/clovett/windows/elan-init.ps1'
+    private defaultLeanVersion = 'leanprover/lean4:nightly'
 
     private subscriptions: Disposable[] = []
 
@@ -391,7 +392,11 @@ export class LeanClient implements Disposable {
         } else {
 
             const terminalName = 'Lean installation via elan';
-            const terminalOptions: TerminalOptions = { name: terminalName };
+            let terminalOptions: TerminalOptions = { name: terminalName };
+            if (process.platform === 'win32') {
+                const windir = process.env.windir
+                terminalOptions = { name: terminalName, shellPath: `${windir}\\System32\\WindowsPowerShell\\v1.0\\powershell.exe` };
+            }
             const terminal = window.createTerminal(terminalOptions);
             // We register a listener, to restart the Lean extension once elan has finished.
             window.onDidCloseTerminal((t) => {
@@ -403,11 +408,13 @@ export class LeanClient implements Disposable {
             terminal.show();
             if (process.platform === 'win32') {
                 terminal.sendText(
-                    `curl -O --location ${this.leanInstallerWindows} && powershell -f elan-init.ps1`);
+                    `Invoke-WebRequest -Uri "${this.leanInstallerWindows}" -OutFile elan-init.ps1; ` +
+                    `.\\elan-init.ps1 --default-toolchain "${this.defaultLeanVersion}" ; ` +
+                    'del elan-init.ps1 ; Read-Host -Prompt "Press ENTER key to start Lean" ; exit\n');
             }
             else{
                 terminal.sendText(
-                    `curl ${this.leanInstallerLinux} -sSf | sh && ` +
+                    `curl ${this.leanInstallerLinux} -sSf | sh -s -- --default-toolchain ${this.defaultLeanVersion} && ` +
                     'echo && read -n 1 -s -r -p "Press any key to start Lean" && exit\n');
             }
         }
