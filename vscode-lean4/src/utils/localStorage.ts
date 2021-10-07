@@ -9,11 +9,13 @@ export class LocalStorageService {
 
     constructor(private storage: Memento) { }
 
-    getValue<T>(key : string) : T{
-        return this.storage.get<T>(key, null);
+    getLeanPath() : string
+    {
+        return this.storage.get<string>('LeanPath', null);
     }
 
-    setValue<T>(key : string, value : T) : void {
-        void this.storage.update(key, value );
+    setLeanPath(path) : void
+    {
+        void this.storage.update('LeanPath', path);
     }
 }

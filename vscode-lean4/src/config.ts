@@ -1,9 +1,26 @@
-import { workspace } from 'vscode'
+import { workspace, Uri } from 'vscode'
 import { InfoviewTacticStateFilter } from '@lean4/infoview';
 import * as path from 'path';
+import { existsSync } from 'fs';
 
 // TODO: does currently not contain config options for `./abbreviation`
 // so that it is easy to keep it in sync with vscode-lean.
+
+export function getEnvPath() : string {
+    if (process.platform === 'win32') {
+        return process.env.Path
+    } else {
+        return process.env.PATH
+    }
+}
+
+export function setEnvPath(value : string) : void {
+    if (process.platform === 'win32') {
+        process.env.Path = value
+    } else {
+        process.env.PATH = value
+    }
+}
 
 // Make a copy of the passed process environment that includes the user's
 // `lean4.serverEnvPaths` in the path key, and adds the key/value pairs from
@@ -13,11 +30,7 @@ export function addServerEnvPaths(input_env: NodeJS.ProcessEnv): NodeJS.ProcessE
     const env = Object.assign({}, input_env, serverEnv());
     const paths = serverEnvPaths()
     if (paths.length !== 0) {
-        if (process.platform === 'win32') {
-            env.Path = paths.join(path.delimiter) + path.delimiter + process.env.Path
-        } else {
-            env.PATH = paths.join(path.delimiter) + path.delimiter + process.env.PATH
-        }
+        setEnvPath(paths.join(path.delimiter) + path.delimiter + getEnvPath())
     }
     return env
 }

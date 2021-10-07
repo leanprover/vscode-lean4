@@ -1,6 +1,6 @@
-import { TextDocument, Position, TextEditor, EventEmitter, Diagnostic,
+import { TextDocument, TextEditor, EventEmitter, Diagnostic,
     languages, DocumentHighlight, Range, DocumentHighlightKind, window, workspace,
-    Disposable, Uri, TextEditorOptionsChangeEvent, ConfigurationChangeEvent } from 'vscode'
+    Disposable, Uri, ConfigurationChangeEvent, TerminalOptions, OutputChannel } from 'vscode'
 import {
     Code2ProtocolConverter,
     DidChangeTextDocumentParams,
@@ -12,12 +12,14 @@ import {
     Protocol2CodeConverter,
     PublishDiagnosticsParams,
     ServerOptions,
+    State
 } from 'vscode-languageclient/node'
 import * as ls from 'vscode-languageserver-protocol'
 import { executablePath, addServerEnvPaths, serverArgs, serverLoggingEnabled, serverLoggingPath, getElaborationDelay } from './config'
 import { assert } from './utils/assert'
 import { PlainGoal, PlainTermGoal, LeanFileProgressParams, LeanFileProgressProcessingInfo } from '@lean4/infoview';
 import { LocalStorageService} from './utils/localStorage'
+import { batchExecute } from './utils/batch'
 
 const documentSelector: DocumentFilter = {
     scheme: 'file',
@@ -40,6 +42,9 @@ export class LeanClient implements Disposable {
     client: LanguageClient
     executable: string
     running: boolean
+	private stderrOutput: OutputChannel;
+    private leanInstallerLinux = 'https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh'
+    private leanInstallerWindows = 'https://github.com/lovettchris/elan/raw/clovett/windows/elan-init.ps1'
 
     private subscriptions: Disposable[] = []
 
@@ -95,12 +100,21 @@ export class LeanClient implements Disposable {
             await this.stop()
         }
 
-        this.executable = this.storageManager.getValue<string>('LeanPath');
+        this.executable = this.storageManager.getLeanPath();
         if (!this.executable) this.executable = executablePath();
+
         const env = addServerEnvPaths(process.env);
         if (serverLoggingEnabled()) {
             env.LEAN_SERVER_LOG_DIR = serverLoggingPath()
         }
+
+        const found = await this.checkLean4(this.executable);
+        if (!found){
+            // then try something else...
+            void this.showInstallOptions();
+            return;
+        }
+
         const serverOptions: ServerOptions = {
             command: this.executable,
             args: ['--server'].concat(serverArgs()),
@@ -192,6 +206,15 @@ export class LeanClient implements Disposable {
         )
         this.patchConverters(this.client.protocol2CodeConverter, this.client.code2ProtocolConverter)
         try {
+            this.client.onDidChangeState((s) =>{
+                if (s.newState === State.Starting) {
+                    console.log('client starting');
+                } else if (s.newState === State.Running) {
+                    console.log('client running');
+                } else if (s.newState === State.Stopped) {
+                    console.log('client has stopped or it failed to start');
+                }
+            })
             this.client.start()
             this.isOpen = new Set()
             await this.client.onReady();
@@ -199,8 +222,7 @@ export class LeanClient implements Disposable {
             this.running = true;
         } catch (error) {
             console.log(error);
-            // note; we keep the LeanClient alive so that it can be restarted if the
-            // user changes the Lean: Executable Path.
+            void this.showInstallOptions();
             return;
         }
 
@@ -332,8 +354,21 @@ export class LeanClient implements Disposable {
         this.progressChangedEmitter.fire(newProgress)
     }
 
+    private async showInstallOptions() : Promise<void> {
+        // note; we keep the LeanClient alive so that it can be restarted if the
+        // user changes the Lean: Executable Path.
+        const installItem = 'Install Lean';
+        const selectItem = 'Select Lean Interpreter';
+        const item = await window.showErrorMessage(`Failed to find ${this.executable}`, installItem, selectItem)
+        if (item === installItem){
+            void this.installLean();
+        } else if (item === selectItem){
+            void this.selectInterpreter();
+        }
+    }
+
     async selectInterpreter() : Promise<void> {
-        let defaultPath = this.storageManager.getValue<string>('LeanPath');
+        let defaultPath = this.storageManager.getLeanPath();
         if (!defaultPath) {
             defaultPath = 'lean';
         }
@@ -343,8 +378,81 @@ export class LeanClient implements Disposable {
             prompt: 'Enter full path to lean interpreter'
         });
         if (selectedProgram) {
-            this.storageManager.setValue<string>('LeanPath', selectedProgram);
+            this.storageManager.setLeanPath(selectedProgram);
             void this.restart();
         }
     }
+
+    async installLean() : Promise<void> {
+        if (executablePath() !== 'lean') {
+            await window.showErrorMessage(
+              'It looks like you\'ve modified the `lean.executablePath` user setting.\n' +
+              'Please change it back to a \'lean\' before installing elan.');
+        } else {
+
+            const terminalName = 'Lean installation via elan';
+            const terminalOptions: TerminalOptions = { name: terminalName };
+            const terminal = window.createTerminal(terminalOptions);
+            // We register a listener, to restart the Lean extension once elan has finished.
+            window.onDidCloseTerminal((t) => {
+            if (t.name === terminalName) {
+                void this.restart();
+            }});
+
+            // Now show the terminal and run elan.
+            terminal.show();
+            if (process.platform === 'win32') {
+                terminal.sendText(
+                    `curl -O --location ${this.leanInstallerWindows} && powershell -f elan-init.ps1`);
+            }
+            else{
+                terminal.sendText(
+                    `curl ${this.leanInstallerLinux} -sSf | sh && ` +
+                    'echo && read -n 1 -s -r -p "Press any key to start Lean" && exit\n');
+            }
+        }
+    }
+
+    async checkLean4(cmd : string): Promise<boolean> {
+        const folders = workspace.workspaceFolders
+        let folderPath: string
+        if (folders) {
+            folderPath = folders[0].uri.fsPath
+        }
+
+		this.stderrOutput  = this.stderrOutput || window.createOutputChannel('Lean: Editor');
+        const env = addServerEnvPaths(process.env);
+        const options = ['--version']
+        try {
+            // If folderPath is undefined, this will use the process environment for cwd.
+            // Specifically, if the extension was not opened inside of a folder, it
+            // looks for a global (default) installation of Lean. This way, we can support
+            // single file editing.
+            this.stderrOutput.clear();
+            this.stderrOutput.show(true);
+            let stdout = await batchExecute(cmd, options, folderPath, this.stderrOutput)
+            // const { stdout, stderr } = await promisify(execFile)(cmd, options, {cwd: folderPath, env })
+            const filterVersion = /version (\d+)\.\d+\..+/
+            const match = filterVersion.exec(stdout)
+            if (!match) {
+                void window.showErrorMessage(`lean4: '${cmd} ${options}' returned incorrect version string '${stdout}'.`)
+                return false
+            }
+            const major = match[1]
+            if (major !== '4') {
+                return false
+            }
+            return true
+        } catch (err) {
+            void window.showErrorMessage(`lean4: Could not find Lean version by running '${cmd} ${options}'.`)
+            this.writeError(err);
+            return false
+        }
+    }
+
+	private writeError(e) {
+		this.stderrOutput  = this.stderrOutput || window.createOutputChannel('Lean: Editor');
+		this.stderrOutput.appendLine(e);
+		this.stderrOutput.show(true);
+	}
 }

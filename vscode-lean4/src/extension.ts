@@ -1,59 +1,12 @@
 import { workspace, commands, window, languages, ExtensionContext } from 'vscode'
-import { promisify } from 'util'
-import { execFile } from 'child_process'
 import { AbbreviationFeature } from './abbreviation'
-import { executablePath, addServerEnvPaths } from './config'
 import { LeanClient } from './leanclient'
 import { InfoProvider } from './infoview'
 import { LeanTaskGutter } from './taskgutter'
 import { LocalStorageService} from './utils/localStorage'
 
-async function checkLean4(): Promise<boolean> {
-    const folders = workspace.workspaceFolders
-    let folderPath: string
-    if (folders) {
-        folderPath = folders[0].uri.fsPath
-    }
-
-    const env = addServerEnvPaths(process.env);
-    const cmd = executablePath()
-    const options = ['--version']
-    try {
-        // If folderPath is undefined, this will use the process environment for cwd.
-        // Specifically, if the extension was not opened inside of a folder, it
-        // looks for a global (default) installation of Lean. This way, we can support
-        // single file editing.
-        const { stdout, stderr } = await promisify(execFile)(cmd, options, {cwd: folderPath, env })
-        const filterVersion = /version (\d+)\.\d+\..+/
-        const match = filterVersion.exec(stdout)
-        if (!match) {
-            void window.showErrorMessage(`lean4: '${cmd} ${options}' returned incorrect version string '${stdout}'.`)
-            return false
-        }
-        const major = match[1]
-        if (major !== '4') {
-            return false
-        }
-        return true
-    } catch (err) {
-        void window.showErrorMessage(`lean4: Could not find Lean version by running '${cmd} ${options}'.`)
-        return false
-    }
-}
-
 export async function activate(context: ExtensionContext): Promise<any> {
-
-    const isLean4Project = await checkLean4()
-
-    // API provided to vscode-lean. If isLean4Project is true, (i.e. vscode-lean4 is being activated),
-    // vscode-lean will not activate.
-    const api = { isLean4Project }
-
-    // we still load the client even if it fails to find lean interpreter so user can fix it
-    // via 'Lean 4: Select Interpreter' command which is handled in LeanClient.
-    // if (!isLean4Project) {
-    //      return api
-    // }
+    const api = { isLean4Project: true }
 
     await Promise.all(workspace.textDocuments.map(async (doc) =>
         doc.languageId === 'lean' && languages.setTextDocumentLanguage(doc, 'lean4')))

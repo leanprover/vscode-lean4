@@ -5,7 +5,6 @@ import {
     Selection, TextEditor, TextEditorRevealType,
     Uri, ViewColumn, WebviewPanel, window, workspace, env, Position, Diagnostic,
 } from 'vscode';
-import { TextDocumentIdentifier } from 'vscode-languageserver-protocol';
 import { EditorApi, InfoviewApi, LeanFileProgressParams, TextInsertKind } from '@lean4/infoview';
 import { LeanClient } from './leanclient';
 import { getInfoViewAllErrorsOnLine, getInfoViewAutoOpen, getInfoViewAutoOpenShowGoal,
@@ -42,7 +41,7 @@ export class InfoProvider implements Disposable {
             }
 
             // NOTE(WN): For non-custom notifications we cannot call LanguageClient.onNotification
-            // here because that *ovewrites* the notification handler rather than registers an extra one.
+            // here because that *overwrites* the notification handler rather than registers an extra one.
             // So we have to add a bunch of event emitters to `LeanClient.`
             if (method === 'textDocument/publishDiagnostics') {
                 const h = this.client.diagnostics((params) => {

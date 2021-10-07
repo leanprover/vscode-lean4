@@ -1,26 +1,32 @@
 import { NotebookCellOutput, OutputChannel } from 'vscode'
 import { spawn } from 'child_process';
 
-export async function batchExecuteFile(
+export async function batchExecute(
     executablePath: string,
     args: any[],
     workingDirectory: string,
-    channel: OutputChannel): Promise<string[]> {
+    channel: OutputChannel): Promise<string> {
 
     return new Promise(function(resolve, reject){
-        let output : string[] = []
+        let output : string = '';
 
         const exe = spawn(executablePath, args,
             { cwd: workingDirectory, env: {} /* TODO(gabriel): take from server */ });
 
+        if (exe.pid === undefined) {
+            resolve('program not found');
+        }
+
         exe.stdout.on('data', (line) => {
-            channel.appendLine(line);
-            output.push(line)
+            const s = line.toString();
+            channel.appendLine(s);
+            output += s + '\n';
         });
 
         exe.stderr.on('data', (line) => {
-            channel.appendLine(line);
-            output.push(line)
+            const s = line.toString();
+            channel.appendLine(s);
+            output += s + '\n';
         });
 
         exe.on('close', (code) => {
