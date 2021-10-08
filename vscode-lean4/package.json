@@ -383,7 +383,6 @@
 	},
 	"dependencies": {
 		"@lean4/infoview": "^0.1.0",
-		"lerna": "^4.0.0",
 		"mobx": "5.15.7",
 		"vscode-languageclient": "^8.0.0-next"
 	},
