@@ -14,7 +14,7 @@ export class LocalStorageService {
         return this.storage.get<string>('LeanPath', null);
     }
 
-    setLeanPath(path) : void
+    setLeanPath(path : string) : void
     {
         void this.storage.update('LeanPath', path);
     }
