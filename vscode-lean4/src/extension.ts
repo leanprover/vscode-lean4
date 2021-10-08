@@ -4,16 +4,34 @@ import { LeanClient } from './leanclient'
 import { InfoProvider } from './infoview'
 import { LeanTaskGutter } from './taskgutter'
 import { LocalStorageService} from './utils/localStorage'
+import { LeanInstaller } from './utils/leanInstaller'
+import { executablePath } from './config'
 
 export async function activate(context: ExtensionContext): Promise<any> {
-    const api = { isLean4Project: true }
+
+    const installer = new LeanInstaller(null)
+    const storageManager = new LocalStorageService(context.workspaceState);
+    let executable = storageManager.getLeanPath();
+    if (!executable) executable = executablePath();
+    const result = await installer.checkLeanVersion(executable)
+    let lean4Installed = true;
+    if (result.error) {
+        // then no lean version was found and we'll proceed with the
+        // idea that the LeanClient will present a UI for installing
+        // Lean 4 to bootstrap this project.
+        lean4Installed = false;
+    }
+    else if (result.version !== '4')
+    {
+        // ah, then don't activate this extension!
+        return { isLean4Project: false };
+    }
 
     await Promise.all(workspace.textDocuments.map(async (doc) =>
         doc.languageId === 'lean' && languages.setTextDocumentLanguage(doc, 'lean4')))
 
-    const storageManager = new LocalStorageService(context.workspaceState);
-
-    const client: LeanClient = new LeanClient(storageManager)
+    const outputChannel = window.createOutputChannel('Lean: Editor');
+    const client: LeanClient = new LeanClient(storageManager, outputChannel)
     context.subscriptions.push(client)
 
     // Register support for unicode input
@@ -32,5 +50,5 @@ export async function activate(context: ExtensionContext): Promise<any> {
     context.subscriptions.push(commands.registerCommand('lean4.selectInterpreter', () => client.selectInterpreter()));
 
     void client.start()
-    return api
+    return  { isLean4Project: true };
 }

@@ -9,8 +9,11 @@ export async function batchExecute(
 
     return new Promise(function(resolve, reject){
         let output : string = '';
-
-        const exe = spawn(executablePath, args, { cwd: workingDirectory });
+        let options = {}
+        if (workingDirectory !== undefined) {
+            options = { cwd: workingDirectory };
+        }
+        const exe = spawn(executablePath, args, options);
 
         if (exe.pid === undefined) {
             resolve('program not found');
@@ -18,13 +21,13 @@ export async function batchExecute(
 
         exe.stdout.on('data', (line) => {
             const s = line.toString();
-            channel.appendLine(s);
+            if (channel) channel.appendLine(s);
             output += s + '\n';
         });
 
         exe.stderr.on('data', (line) => {
             const s = line.toString();
-            channel.appendLine(s);
+            if (channel) channel.appendLine(s);
             output += s + '\n';
         });
 

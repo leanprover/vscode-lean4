@@ -42,7 +42,7 @@ export class LeanClient implements Disposable {
     client: LanguageClient
     executable: string
     running: boolean
-	private stderrOutput: OutputChannel;
+	private outputChannel: OutputChannel;
     private installer : LeanInstaller = undefined;
 
     private subscriptions: Disposable[] = []
@@ -78,15 +78,16 @@ export class LeanClient implements Disposable {
     /** Files which are open. */
     private isOpen: Set<string> = new Set()
 
-    constructor(storageManager : LocalStorageService) {
+    constructor(storageManager : LocalStorageService, outputChannel : OutputChannel) {
         this.storageManager = storageManager;
+        this.outputChannel = outputChannel;
 
         this.subscriptions.push(window.onDidChangeVisibleTextEditors((es) =>
             es.forEach((e) => this.open(e.document))));
 
         this.subscriptions.push(workspace.onDidChangeConfiguration((e) => this.configChanged(e)));
 
-        this.installer = new LeanInstaller(this.getOutputChannel());
+        this.installer = new LeanInstaller(outputChannel);
     }
 
     dispose(): void {
@@ -109,8 +110,11 @@ export class LeanClient implements Disposable {
             env.LEAN_SERVER_LOG_DIR = serverLoggingPath()
         }
 
-        const found = await this.installer.checkLean4(this.executable);
-        if (!found){
+        // check again in case user did do the install lean option.
+        this.outputChannel.show(true);
+        const found = await this.installer.checkLeanVersion(this.executable);
+        if (found.error) {
+            void window.showErrorMessage(found.error);
             // then try something else...
             void this.showInstallOptions();
             return;
@@ -366,7 +370,7 @@ export class LeanClient implements Disposable {
                 const result = await this.installer.installLean();
                 void this.restart();
             } catch (err) {
-                this.writeError(err);
+                this.outputChannel.appendLine(err);
             }
         } else if (item === selectItem){
             void this.selectInterpreter();
@@ -388,14 +392,4 @@ export class LeanClient implements Disposable {
             void this.restart();
         }
     }
-
-    private getOutputChannel() : OutputChannel {
-		this.stderrOutput  = this.stderrOutput || window.createOutputChannel('Lean: Editor');
-		this.stderrOutput.show(true);
-        return this.stderrOutput;
-    }
-
-	private writeError(e) {
-		this.getOutputChannel().appendLine(e);
-	}
 }
