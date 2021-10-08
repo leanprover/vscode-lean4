@@ -141,50 +141,6 @@ export class Server extends leanclient.Server {
         stderrOutput.appendLine('----- user triggered restart -----');
     }
 
-    async installElan(): Promise<void> {
-        if(this.executablePath !== 'lean') {
-            await window.showErrorMessage(
-              "It looks like you've modified the `lean.executablePath` user setting.\n" +
-              'Please change it back to an empty string before installing elan.');
-        } else {
-            this.hasLean = true; // make sure we only prompt to install elan once
-
-            const gitBashPath = 'C:\\Program Files\\Git\\bin\\bash.exe';
-            const msysBashPath = 'C:\\msys64\\usr\\bin\\bash.exe';
-
-            const terminalName = 'Lean installation via elan';
-
-            const terminalOptions: TerminalOptions = { name: terminalName };
-            if(process.platform === 'win32') {
-              if(existsSync(gitBashPath)) {
-                terminalOptions.shellPath = gitBashPath;
-                terminalOptions.shellArgs = [];
-              } else if(existsSync(msysBashPath)) {
-                terminalOptions.shellPath = msysBashPath;
-                terminalOptions.shellArgs = ['--login', '-i'];
-              } else {
-                  await window.showErrorMessage(
-                    "You'll need to install a terminal (e.g. Git for Windows, or MSYS2)\n" +
-                    'before we can install elan.');
-                  return;
-              }
-            }
-            const terminal = window.createTerminal(terminalOptions);
-
-            // We register a listener, to restart the Lean extension once elan has finished.
-            window.onDidCloseTerminal((t) => {
-            if (t.name === terminalName) {
-                this.restart();
-            }});
-
-            // Now show the terminal and run elan.
-            terminal.show();
-            terminal.sendText(
-              'curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh && ' +
-              'echo && read -n 1 -s -r -p "Press any key to start Lean" && exit\n');
-        }
-    }
-
     async requestRestart(message: string, justWarning?: boolean): Promise<void> {
         const restartItem = 'Restart server';
         const installElanItem = 'Install Lean using elan';
@@ -199,4 +155,3 @@ export class Server extends leanclient.Server {
         }
     }
 }
-
