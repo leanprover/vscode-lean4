@@ -110,7 +110,8 @@ export class LeanClient implements Disposable {
             env.LEAN_SERVER_LOG_DIR = serverLoggingPath()
         }
 
-        // check again in case user did do the install lean option.
+        // have to check again here in case user just did the install lean option
+        // and perhaps the install failed.
         this.outputChannel.show(true);
         const found = await this.installer.checkLeanVersion(this.executable);
         if (found.error) {
