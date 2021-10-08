@@ -2,7 +2,6 @@
 out/
 dist/
 .vs/
-.vscode/
 
 ## Output
 node_modules/
