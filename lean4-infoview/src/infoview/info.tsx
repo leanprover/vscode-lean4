@@ -241,8 +241,9 @@ function InfoAux(props: InfoProps) {
         setStatus('updating');
 
         // Start both goal requests before awaiting them.
-        const termGoalReq = getInteractiveTermGoal(rs, pos);
         const goalsReq = getInteractiveGoals(rs, pos);
+        const termGoalReq = getInteractiveTermGoal(rs, pos);
+        const allReq = Promise.all([goalsReq, termGoalReq]);
 
         function onError(err: any) {
             const errS = typeof err === 'string' ? err : JSON.stringify(err);
@@ -251,18 +252,10 @@ function InfoAux(props: InfoProps) {
         }
 
         try {
-            const goals = await goalsReq;
+            // NB: it is important to await both reqs at once, otherwise
+            // if both throw then one exception becomes unhandled.
+            const [goals, termGoal] = await allReq;
             setGoals(goals);
-        } catch (err: any) {
-            if (err?.code === -32801) {
-                // Document has been changed since we made the request, try again
-                triggerUpdate();
-                return;
-            } else { onError(err); }
-        }
-
-        try {
-            const termGoal = await termGoalReq;
             setTermGoal(termGoal);
         } catch (err: any) {
             if (err?.code === -32801) {

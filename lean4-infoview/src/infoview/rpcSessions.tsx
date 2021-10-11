@@ -181,7 +181,8 @@ export class RpcSessions {
                 }
                 return undefined
             }
-            console.error(`RPC error: ${JSON.stringify(ex)}`)
+            // NOTE: these are part of normal control, no need to spam the console
+            //console.error(`RPC error: ${JSON.stringify(ex)}`)
             throw ex
         }
     }

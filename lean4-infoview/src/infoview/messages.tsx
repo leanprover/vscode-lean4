@@ -121,12 +121,16 @@ export function WithDiagnosticsContext(props: React.PropsWithChildren<any>) {
         'textDocument/publishDiagnostics',
         new Map<DocumentUri, InteractiveDiagnostic[]>(),
         async (params: PublishDiagnosticsParams) => {
-            const diags = await getInteractiveDiagnostics(rs, { uri: params.uri, line: 0, character: 0 })
-            if (!diags) return allDiags => allDiags
-            return allDiags => {
-                const newMap = new Map(allDiags)
-                return newMap.set(params.uri, diags)
-            }
+            let diags: InteractiveDiagnostic[] | undefined
+            try {
+                diags = await getInteractiveDiagnostics(rs, { uri: params.uri, line: 0, character: 0 })
+            } catch (err: any) {}
+            if (diags)
+                return allDiags => {
+                    const newMap = new Map(allDiags)
+                    return newMap.set(params.uri, diags!)
+                }
+            else return allDiags => allDiags
         },
         []
     )
