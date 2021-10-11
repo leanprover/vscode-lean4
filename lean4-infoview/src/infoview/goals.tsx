@@ -1,5 +1,4 @@
 import * as React from 'react'
-import { v4 as uuidv4 } from 'uuid'
 import { DocumentPosition } from './util'
 import { ConfigContext } from './contexts'
 import { InteractiveCode } from './interactiveCode'
@@ -38,14 +37,13 @@ export function Goal({pos, goal}: {pos: DocumentPosition, goal: InteractiveGoal}
     return <div className="font-code tl" style={divStyle}>
         <ul className="list pl0">
             {goal.userName && <li key={'case'}><strong className="goal-case">case </strong>{goal.userName}</li>}
-            {goal.hyps.map (h => {
-
+            {goal.hyps.map ((h, i) => {
                 const names = h.names.reduce((acc, n) => acc + " " + n, "").slice(1)
-                return <li key={uuidv4()}>
+                return <li key={`hyp-${i}`}>
                     <strong className="goal-hyp">{names}</strong> : <InteractiveCode pos={pos} fmt={h.type} />{h.val && <> := <InteractiveCode pos={pos} fmt={h.val}/></>}
                 </li>
             })}
-            <li key={uuidv4()}>
+            <li key={'goal'}>
                 <strong className="goal-vdash">⊢ </strong><InteractiveCode pos={pos} fmt={goal.type} />
             </li>
         </ul>
@@ -62,7 +60,7 @@ export function Goals({pos, goals}: {pos: DocumentPosition, goals: InteractiveGo
         return <>Goals accomplished 🎉</>
     } else {
         return <>
-            {goals.goals.map (g => <Goal key={uuidv4()} pos={pos} goal={g} />)}
+            {goals.goals.map ((g, i) => <Goal key={i} pos={pos} goal={g} />)}
         </>
     }
 }

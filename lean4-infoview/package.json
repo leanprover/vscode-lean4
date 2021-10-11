@@ -21,7 +21,6 @@
     "@types/jest": "^26.0.23",
     "@types/react": "^17.0.11",
     "@types/react-dom": "^17.0.8",
-    "@types/uuid": "^8.3.1",
     "concurrently": "^6.2.0",
     "css-loader": "^5.2.6",
     "style-loader": "^2.0.0",
@@ -38,7 +37,6 @@
     "react-fast-compare": "^3.2.0",
     "react-popper": "^2.2.5",
     "tachyons": "^4.12.0",
-    "uuid": "^8.3.2",
     "vscode-codicons": "0.0.17"
   },
   "eslintConfig": {

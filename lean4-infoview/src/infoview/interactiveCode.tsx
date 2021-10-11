@@ -2,8 +2,7 @@ import * as React from 'react'
 import { Instance as TippyInstance, Props as TippyRawProps } from 'tippy.js'
 import 'tippy.js/dist/tippy.css'
 import 'tippy.js/themes/light-border.css'
-import { default as Tippy, tippy, TippyProps } from '@tippyjs/react'
-import { v4 as uuidv4 } from 'uuid'
+import { default as Tippy, TippyProps } from '@tippyjs/react'
 
 import { RpcContext } from "./contexts"
 import { DocumentPosition } from './util'
@@ -29,7 +28,7 @@ export interface InteractiveTaggedTextProps<T> extends InteractiveTextComponentP
 export function InteractiveTaggedText<T>({pos, fmt, InnerTagUi}: InteractiveTaggedTextProps<T>) {
   if ('text' in fmt) return <>{fmt.text}</>
   else if ('append' in fmt) return <>
-    {fmt.append.map(a => <InteractiveTaggedText key={uuidv4()} pos={pos} fmt={a} InnerTagUi={InnerTagUi} />)}
+    {fmt.append.map((a, i) => <InteractiveTaggedText key={i} pos={pos} fmt={a} InnerTagUi={InnerTagUi} />)}
   </>
   else if ('tag' in fmt) return <InnerTagUi pos={pos} fmt={fmt.tag[1]} tag={fmt.tag[0]} />
   else throw `malformed 'TaggedText': '${fmt}'`
