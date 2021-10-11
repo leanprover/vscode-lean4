@@ -33,7 +33,11 @@ export class LeanInstaller {
             const filterVersion = /version (\d+)\.\d+\..+/
             const match = filterVersion.exec(stdout)
             if (!match) {
-                return { version: '', error: `lean4: '${cmd} ${options}' returned incorrect version string '${stdout}'.` }
+                if (stdout === 'program not found') {
+                    return { version: '', error: `lean4: '${cmd}' program not found.` }
+                } else {
+                    return { version: '', error: `lean4: '${cmd} ${options}' returned incorrect version string '${stdout}'.` }
+                }
             }
             const major = match[1]
             return { version: major, error: null }
