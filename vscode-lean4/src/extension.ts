@@ -9,7 +9,8 @@ import { executablePath } from './config'
 
 export async function activate(context: ExtensionContext): Promise<any> {
 
-    const installer = new LeanInstaller(null)
+    const outputChannel = window.createOutputChannel('Lean: Editor');
+    const installer = new LeanInstaller(outputChannel)
     const storageManager = new LocalStorageService(context.workspaceState);
     let executable = storageManager.getLeanPath();
     if (!executable) executable = executablePath();
@@ -30,7 +31,6 @@ export async function activate(context: ExtensionContext): Promise<any> {
     await Promise.all(workspace.textDocuments.map(async (doc) =>
         doc.languageId === 'lean' && languages.setTextDocumentLanguage(doc, 'lean4')))
 
-    const outputChannel = window.createOutputChannel('Lean: Editor');
     const client: LeanClient = new LeanClient(storageManager, outputChannel)
     context.subscriptions.push(client)
 

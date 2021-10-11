@@ -283,7 +283,7 @@ export class LeanClient implements Disposable {
     private async open(doc: TextDocument) {
         // All open .lean files of this workspace are assumed to be Lean 4 files.
         // We need to do this because by default, .lean is associated with language id `lean`,
-        // i.e. Lean 3. vscode-lean is expected to yield when isLean4 is true.
+        // i.e. Lean 3. vscode-lean is expected to yield when isLean4Project is true.
         if (doc.languageId === 'lean') {
             // Only change the id for *visible* documents,
             // because this closes and then reopens the document.
@@ -365,7 +365,7 @@ export class LeanClient implements Disposable {
         // user changes the Lean: Executable Path.
         const installItem = 'Install Lean';
         const selectItem = 'Select Lean Interpreter';
-        const item = await window.showErrorMessage(`Failed to find '${this.executable}'`, installItem, selectItem)
+        const item = await window.showErrorMessage(`Failed to start '${this.executable}' language server`, installItem, selectItem)
         if (item === installItem) {
             try {
                 const result = await this.installer.installLean();
