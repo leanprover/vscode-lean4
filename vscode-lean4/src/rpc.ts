@@ -43,8 +43,9 @@ export class Rpc {
                         this.sendMessage({ seqNum, exception: 'error' })
                         return
                     }
-                    /* Somehow certain properties (such as `ex.message`) disappear along the way
-                     * through `Webview.postMessage` but make it through in a new object. */
+                    /* Certain properties (such as `ex.message`) are not /enumerable/ per ECMAScript
+                     * and disappear along the way through `Webview.postMessage`; we create a new object
+                     * so that they make it through. */
                     const exOut: any = {}
                     for (const p of Object.getOwnPropertyNames(ex)) { exOut[p] = ex[p] }
                     this.sendMessage({ seqNum, exception: exOut })
