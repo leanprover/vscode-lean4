@@ -5,7 +5,7 @@ import { batchExecute } from './batch'
 export class LeanInstaller {
 
     private leanInstallerLinux = 'https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh'
-    private leanInstallerWindows = 'https://github.com/lovettchris/elan/raw/clovett/windows/elan-init.ps1'
+    private leanInstallerWindows = 'https://raw.githubusercontent.com/leanprover/elan/master/elan-init.ps1'
     private defaultLeanVersion = 'leanprover/lean4:nightly'
     private outputChannel: OutputChannel;
 
