@@ -49,6 +49,7 @@ export function escapeHtml(s: string): string {
         .replace(/'/g, '&#039;');
 }
 
+/** @deprecated (unused) */
 export function colorizeMessage(goal: string): string {
     return goal
         .replace(/^([|⊢]) /mg, '<strong class="goal-vdash">$1</strong> ')
@@ -93,11 +94,11 @@ export function useServerNotificationEffect<T>(method: string, f: (params: T) =>
  * Returns the same tuple as `setState` such that whenever a server notification with `method`
  * arrives at the editor, the state will be updated according to `f`.
  */
-export function useServerNotificationState<S, T>(method: string, initial: S, f: (state: S, params: T) => S, deps?: React.DependencyList): [S, React.Dispatch<React.SetStateAction<S>>] {
+export function useServerNotificationState<S, T>(method: string, initial: S, f: (params: T) => Promise<(state: S) => S>, deps?: React.DependencyList): [S, React.Dispatch<React.SetStateAction<S>>] {
   const [s, setS] = React.useState<S>(initial);
 
   useServerNotificationEffect(method, (params: T) => {
-    setS(state => f(state, params));
+    f(params).then(g => setS(g))
   }, deps);
 
   return [s, setS];
@@ -134,7 +135,7 @@ export function useClientNotificationState<S, T>(method: string, initial: S, f: 
 }
 
 /**
- * Returns `[isPaused, setPaused, tRef, tPausable]` s.t.
+ * Returns `[isPaused, setPaused, tPausable, tRef]` s.t.
  * - `[isPaused, setPaused]` are the paused status state
  * - for as long as `isPaused` is set, `tPausable` holds its initial value (the `t` passed before pausing)
  *   rather than updates with changes to `t`.

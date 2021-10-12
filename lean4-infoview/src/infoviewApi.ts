@@ -96,9 +96,11 @@ export interface InfoviewApi {
   /**
    * Must fire whenever the user moves their cursor or makes a selection.
    * When no selection is made, `loc.range.start` must equal `loc.range.end`.
+   * Must fire with `undefined` when the cursor moves to "nowhere" (e.g. all
+   * files are closed).
    */
   // TODO maybe change Location.Range to something aware of directionality (cursor at start/end of selection)
-  changedCursorLocation(loc: Location): Promise<void>;
+  changedCursorLocation(loc?: Location): Promise<void>;
 
   /**
    * Must fire whenever the infoview configuration changes.

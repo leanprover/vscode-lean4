@@ -1,16 +1,16 @@
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
-import { DocumentUri, PublishDiagnosticsParams } from 'vscode-languageserver-protocol';
+import { DidCloseTextDocumentParams, DocumentUri } from 'vscode-languageserver-protocol';
 
 import 'tachyons/css/tachyons.css';
 import 'vscode-codicons/dist/codicon.css';
 import './index.css';
 
 import { Infos } from './infos';
-import { AllMessages } from './messages';
-import { useEvent, useServerNotificationState } from './util';
-import { LeanDiagnostic, LeanFileProgressParams, LeanFileProgressProcessingInfo } from '../lspTypes';
-import { EditorContext, ConfigContext, DiagnosticsContext, ProgressContext } from './contexts';
+import { AllMessages, WithDiagnosticsContext } from './messages';
+import { useClientNotificationEffect, useEvent, useServerNotificationState } from './util';
+import { LeanFileProgressParams, LeanFileProgressProcessingInfo } from '../lspTypes';
+import { EditorContext, ConfigContext, ProgressContext } from './contexts';
 import { WithRpcSessions } from './rpcSessions';
 import { EditorConnection, EditorEvents } from './editorConnection';
 import { defaultInfoviewConfig, EditorApi, InfoviewApi } from '../infoviewApi';
@@ -23,48 +23,47 @@ function Main(props: {}) {
     /* Set up updates to the global infoview state on editor events. */
     const [config, setConfig] = React.useState(defaultInfoviewConfig);
     useEvent(ec.events.changedInfoviewConfig, cfg => setConfig(cfg), []);
-    const [allDiags, _0] = useServerNotificationState(
-        'textDocument/publishDiagnostics',
-        new Map<DocumentUri, LeanDiagnostic[]>(),
-        (allDiags, params: PublishDiagnosticsParams) => {
-            const docDiags = params.diagnostics.map((d) => {
-                return { ...d as LeanDiagnostic, uri: params.uri }
-            });
-            // HACK: React does a shallow comparison and doesn't figure out
-            // it should update if only the map contents change.
-            const newMap = new Map(allDiags);
-            return newMap.set(params.uri, docDiags);
-        },
-        []
-    );
     const [allProgress, _1] = useServerNotificationState(
         '$/lean/fileProgress',
         new Map<DocumentUri, LeanFileProgressProcessingInfo[]>(),
-        (allProgress, params: LeanFileProgressParams) => {
+        async (params: LeanFileProgressParams) => (allProgress) => {
             const newProgress = new Map(allProgress);
             return newProgress.set(params.textDocument.uri, params.processing);
         },
         []
     );
-    const [curUri, setCurUri] = React.useState<DocumentUri>('');
-    useEvent(ec.events.changedCursorLocation, loc => setCurUri(loc.uri), []);
+    const [curUri, setCurUri] = React.useState<DocumentUri>();
+    useEvent(ec.events.changedCursorLocation, loc => {
+        if (loc) setCurUri(loc.uri)
+        else setCurUri(undefined)
+    }, []);
+    useClientNotificationEffect(
+        'textDocument/didClose',
+        (params: DidCloseTextDocumentParams) => {
+            if (ec.events.changedCursorLocation.current &&
+                ec.events.changedCursorLocation.current.uri == params.textDocument.uri) {
+                ec.events.changedCursorLocation.fire(undefined)
+            }
+        },
+        []
+    );
 
     if (!curUri) return <p>Click somewhere in the Lean file to enable the infoview.</p>;
 
     return (
     <ConfigContext.Provider value={config}>
-        <DiagnosticsContext.Provider value={allDiags}>
-            <ProgressContext.Provider value={allProgress}>
-                <WithRpcSessions>
+        <WithRpcSessions>
+            <WithDiagnosticsContext>
+                <ProgressContext.Provider value={allProgress}>
                     <div className="ma1">
                         <Infos />
                         <div className="mv2">
                             <AllMessages uri={curUri} />
                         </div>
                     </div>
-                </WithRpcSessions>
-            </ProgressContext.Provider>
-        </DiagnosticsContext.Provider>
+                </ProgressContext.Provider>
+            </WithDiagnosticsContext>
+        </WithRpcSessions>
     </ConfigContext.Provider>
     );
 }

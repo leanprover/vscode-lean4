@@ -1,12 +1,12 @@
 import * as React from 'react';
 import { Location } from 'vscode-languageserver-protocol';
 
-import { getGoals, Goal, TermGoal } from './goal';
+import { Goals as GoalsUi, Goal as GoalUi, goalsToString } from './goals';
 import { basename, DocumentPosition, RangeHelpers, useEvent, usePausableState } from './util';
 import { Details } from './collapsing';
-import { PlainGoal, PlainTermGoal, LeanDiagnostic } from '../lspTypes';
-import { EditorContext, ProgressContext } from './contexts';
+import { EditorContext, ProgressContext, RpcContext } from './contexts';
 import { MessagesAtFile, useMessagesFor } from './messages';
+import { getInteractiveGoals, getInteractiveTermGoal, InteractiveDiagnostic, InteractiveGoal, InteractiveGoals } from './rpcInterface';
 
 type InfoStatus = 'loading' | 'updating' | 'error' | 'ready';
 type InfoKind = 'cursor' | 'pin';
@@ -42,19 +42,19 @@ export function InfoStatusBar(props: InfoStatusBarProps) {
     const isPinned = kind === 'pin';
 
     return (
-    <summary style={{transition: 'color 0.5s ease'}} className={'mv2 ' + statusColor}>
+    <summary style={{transition: 'color 0.5s ease'}} className={'mv2 pointer' + statusColor}>
         {locationString}
         {isPinned && !isPaused && ' (pinned)'}
         {!isPinned && isPaused && ' (paused)'}
         {isPinned && isPaused && ' (pinned and paused)'}
         <span className="fr">
             {copyGoalToComment &&
-                <a className="link pointer mh2 dim codicon codicon-quote" 
+                <a className="link pointer mh2 dim codicon codicon-quote"
                    onClick={e => { e.preventDefault(); copyGoalToComment(); }}
                    title="copy state to comment" />}
             {isPinned &&
                 <a className="link pointer mh2 dim codicon codicon-go-to-file"
-                   onClick={e => { e.preventDefault(); void ec.revealPosition(pos); }} 
+                   onClick={e => { e.preventDefault(); void ec.revealPosition(pos); }}
                    title="reveal file location" />}
             <a className={"link pointer mh2 dim codicon " + (isPinned ? "codicon-pinned" : "codicon-pin")}
                 onClick={e => { e.preventDefault(); onPin(pos); }}
@@ -73,9 +73,9 @@ export function InfoStatusBar(props: InfoStatusBarProps) {
 interface InfoDisplayProps extends InfoPinnable {
     pos: DocumentPosition;
     status: InfoStatus;
-    messages: LeanDiagnostic[];
-    goal?: PlainGoal;
-    termGoal?: PlainTermGoal;
+    messages: InteractiveDiagnostic[];
+    goals?: InteractiveGoals;
+    termGoal?: InteractiveGoal;
     error?: string;
     triggerUpdate: () => Promise<void>;
 }
@@ -94,30 +94,30 @@ export function InfoDisplay(props0: InfoDisplayProps) {
         setShouldRefresh(true);
     };
 
-    const {kind, pos, status, messages, goal, termGoal, error} = props;
+    const {kind, pos, status, messages, goals, termGoal, error} = props;
 
     const ec = React.useContext(EditorContext);
     let copyGoalToComment: (() => void) | undefined = undefined;
-    if (goal) copyGoalToComment = () => { void ec.copyToComment(getGoals(goal).join('\n\n')); }
-    
+    if (goals) copyGoalToComment = () => { ec.copyToComment(goalsToString(goals)); }
+
     // If we are the cursor infoview, then we should subscribe to
-    // some commands from the extension
+    // some commands from the editor extension
     const isCursor = kind === 'cursor';
     useEvent(ec.events.requestedAction, act => {
         if (!isCursor) return;
         if (act.kind !== 'copyToComment') return;
         copyGoalToComment && copyGoalToComment();
-    }, [goal]);
+    }, [goals]);
     useEvent(ec.events.requestedAction, act => {
         if (!isCursor) return;
         if (act.kind !== 'togglePaused') return;
         setPaused(isPaused => !isPaused);
     });
 
-    const nothingToShow = !error && !goal && !termGoal && messages.length === 0;
+    const nothingToShow = !error && !goals && !termGoal && messages.length === 0;
 
     const hasError = status === 'error' && error;
-    const hasGoal = status !== 'error' && goal;
+    const hasGoals = status !== 'error' && goals;
     const hasTermGoal = status !== 'error' && termGoal;
     const hasMessages = status !== 'error' && messages.length !== 0;
 
@@ -130,29 +130,31 @@ export function InfoDisplay(props0: InfoDisplayProps) {
                     Error updating: {error}.
                     <a className="link pointer dim" onClick={e => { e.preventDefault(); triggerDisplayUpdate(); }}>Try again.</a>
                 </div>}
-            <div style={{display: hasGoal ? 'block' : 'none'}}>
+            <div style={{display: hasGoals ? 'block' : 'none'}}>
                 <Details initiallyOpen>
-                    <summary>
+                    <summary className="mv2 pointer">
                         Tactic state
                     </summary>
                     <div className='ml1'>
-                        {hasGoal && <Goal plainGoal={goal!} />}
+                        {hasGoals && <GoalsUi pos={pos} goals={goals!} />}
                     </div>
                 </Details>
             </div>
             <div style={{display: hasTermGoal ? 'block' : 'none'}}>
                 <Details initiallyOpen>
-                    <summary>
+                    <summary className="mv2 pointer">
                         Expected type
                     </summary>
                     <div className='ml1'>
-                        {hasTermGoal && <TermGoal termGoal={termGoal!} />}
+                        {hasTermGoal && <GoalUi pos={pos} goal={termGoal!} />}
                     </div>
                 </Details>
             </div>
             <div style={{display: hasMessages ? 'block' : 'none'}}>
                 <Details initiallyOpen>
-                    <summary className="mv2 pointer">Messages ({messages.length})</summary>
+                    <summary className="mv2 pointer">
+                        Messages ({messages.length})
+                    </summary>
                     <div className="ml1">
                         <MessagesAtFile uri={pos.uri} messages={messages}/>
                     </div>
@@ -210,17 +212,26 @@ export function Info(props: InfoProps) {
 
     // Note: `kind` may not change throughout the lifetime of an `Info` component,
     // otherwise the hooks will differ.
-    const pos = props.kind === 'pin' ?
-        props.pos! :
+    const pos = props.kind === 'cursor' ?
         (() => {
             const [curLoc, setCurLoc] = React.useState<Location>(ec.events.changedCursorLocation.current!);
-            useEvent(ec.events.changedCursorLocation, setCurLoc, []);
+            useEvent(ec.events.changedCursorLocation, loc => loc && setCurLoc(loc), []);
             return { uri: curLoc.uri, ...curLoc.range.start };
-        })();
+        })()
+        : props.pos!;
+
+    return (
+        <InfoAux {...props} pos={pos} />
+    );
+}
+
+function InfoAux(props: InfoProps) {
+    const rs = React.useContext(RpcContext);
+    const pos = props.pos!;
 
     const [status, setStatus] = React.useState<InfoStatus>('loading');
-    const [goal, setGoal] = React.useState<PlainGoal>();
-    const [termGoal, setTermGoal] = React.useState<PlainTermGoal>();
+    const [goals, setGoals] = React.useState<InteractiveGoals>();
+    const [termGoal, setTermGoal] = React.useState<InteractiveGoal>();
     const [error, setError] = React.useState<string>();
 
     const messages = useMessagesFor(pos);
@@ -230,8 +241,9 @@ export function Info(props: InfoProps) {
         setStatus('updating');
 
         // Start both goal requests before awaiting them.
-        const plainTermGoalReq = ec.requestPlainTermGoal(pos);
-        const plainGoalReq = ec.requestPlainGoal(pos);
+        const goalsReq = getInteractiveGoals(rs, pos);
+        const termGoalReq = getInteractiveTermGoal(rs, pos);
+        const allReq = Promise.all([goalsReq, termGoalReq]);
 
         function onError(err: any) {
             const errS = typeof err === 'string' ? err : JSON.stringify(err);
@@ -240,20 +252,12 @@ export function Info(props: InfoProps) {
         }
 
         try {
-            const plainGoal = await plainGoalReq;
-            setGoal(plainGoal);
-        } catch (err) {
-            if (err?.code === -32801) {
-                // Document has been changed since we made the request, try again
-                triggerUpdate();
-                return;
-            } else { onError(err); }
-        }
-
-        try {
-            const plainTermGoal = await plainTermGoalReq;
-            setTermGoal(plainTermGoal);
-        } catch (err) {
+            // NB: it is important to await both reqs at once, otherwise
+            // if both throw then one exception becomes unhandled.
+            const [goals, termGoal] = await allReq;
+            setGoals(goals);
+            setTermGoal(termGoal);
+        } catch (err: any) {
             if (err?.code === -32801) {
                 // Document has been changed since we made the request, try again
                 triggerUpdate();
@@ -267,6 +271,6 @@ export function Info(props: InfoProps) {
     React.useEffect(() => void triggerUpdate(), [pos.uri, pos.line, pos.character, serverIsProcessing]);
 
     return (
-    <InfoDisplay {...props} pos={pos} status={status} messages={messages} goal={goal} termGoal={termGoal} error={error} triggerUpdate={triggerUpdate} />
+        <InfoDisplay {...props} pos={pos} status={status} messages={messages} goals={goals} termGoal={termGoal} error={error} triggerUpdate={triggerUpdate} />
     );
 }

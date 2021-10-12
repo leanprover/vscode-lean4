@@ -17,7 +17,7 @@ import {
 import * as ls from 'vscode-languageserver-protocol'
 import { executablePath, addServerEnvPaths, serverArgs, serverLoggingEnabled, serverLoggingPath, getElaborationDelay } from './config'
 import { assert } from './utils/assert'
-import { PlainGoal, PlainTermGoal, LeanFileProgressParams, LeanFileProgressProcessingInfo } from '@lean4/infoview';
+import { LeanFileProgressParams, LeanFileProgressProcessingInfo } from '@lean4/infoview';
 import { LocalStorageService} from './utils/localStorage'
 import { LeanInstaller } from './utils/leanInstaller'
 
@@ -134,18 +134,12 @@ export class LeanClient implements Disposable {
             },
             middleware: {
                 handleDiagnostics: (uri, diagnostics, next) => {
-                    for (const diag of diagnostics) {
-                        if (diag.source === 'Lean 4 server') {
-                            diag.source = 'Lean 4';
-                        }
-                    }
                     next(uri, diagnostics);
                     const uri_ = this.client.code2ProtocolConverter.asUri(uri);
                     const diagnostics_ = [];
                     for (const d of diagnostics) {
-                        const d_: Lean4Diagnostic = {
+                        const d_: ls.Diagnostic = {
                             ...this.client.code2ProtocolConverter.asDiagnostic(d),
-                            fullRange: this.client.code2ProtocolConverter.asRange((d as any).fullRange)
                         };
                         diagnostics_.push(d_);
                     }
@@ -270,7 +264,7 @@ export class LeanClient implements Disposable {
 
         // eslint-disable-next-line @typescript-eslint/unbound-method
         const c2pAsDiagnostic = c2p.asDiagnostic;
-        c2p.asDiagnostic = function (diag: Diagnostic & {fullRange : Range}): Lean4Diagnostic {
+        c2p.asDiagnostic = function (diag: Diagnostic & {fullRange: Range}): Lean4Diagnostic {
             const protDiag = c2pAsDiagnostic.apply(this, [diag])
             protDiag.fullRange = c2p.asRange(diag.fullRange)
             return protDiag
