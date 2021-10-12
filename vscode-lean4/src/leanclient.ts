@@ -1,5 +1,6 @@
-import { TextDocument, Position, TextEditor, EventEmitter, Diagnostic,
-    languages, DocumentHighlight, Range, DocumentHighlightKind, window, Disposable, Uri } from 'vscode'
+import { TextDocument, Position, TextEditor, EventEmitter, Diagnostic, WorkspaceFoldersChangeEvent,
+    languages, DocumentHighlight, Range, DocumentHighlightKind, window, workspace,
+    Disposable, Uri } from 'vscode'
 import {
     Code2ProtocolConverter,
     DidChangeTextDocumentParams,
@@ -36,6 +37,7 @@ export function getFullRange(diag: Diagnostic): Range {
 
 export class LeanClient implements Disposable {
     client: LanguageClient
+    private currentFolder: string = undefined;
 
     private subscriptions: Disposable[] = []
 
@@ -68,6 +70,8 @@ export class LeanClient implements Disposable {
     constructor() {
         this.subscriptions.push(window.onDidChangeVisibleTextEditors((es) =>
             es.forEach((e) => this.open(e.document))));
+
+        this.subscriptions.push(workspace.onDidChangeWorkspaceFolders(e => this.onDidChangeWorkspaceFolders(e)));
     }
 
     dispose(): void {
@@ -237,6 +241,17 @@ export class LeanClient implements Disposable {
         }
         if (this.isOpen.has(doc.uri.toString())) return;
         this.isOpen.add(doc.uri.toString())
+
+        // check if the current workspace folder changed, and if it did, restart the
+        // lean server, since the state for this new folder needs to be reset.
+        const folder = workspace.getWorkspaceFolder(doc.uri).uri?.toString();
+        if (folder !== this.currentFolder){
+            if (this.currentFolder) {
+                await this.restart();
+            }
+            this.currentFolder = folder;
+        }
+
         this.client.sendNotification(DidOpenTextDocumentNotification.type, {
             textDocument: {
                 uri: doc.uri.toString(),
@@ -260,6 +275,10 @@ export class LeanClient implements Disposable {
         await this.client.stop()
         this.setProgress(new Map())
         this.client = undefined
+    }
+
+    onDidChangeWorkspaceFolders(e : WorkspaceFoldersChangeEvent) : void {
+        //TODO: do we need to do anything if a new workspace folder is added or removed?
     }
 
     refreshFileDependencies(editor: TextEditor): void {
