@@ -16,7 +16,7 @@ export async function batchExecute(
         const exe = spawn(executablePath, args, options);
 
         if (exe.pid === undefined) {
-            resolve('program not found');
+            resolve(undefined);
         }
 
         exe.stdout.on('data', (line) => {

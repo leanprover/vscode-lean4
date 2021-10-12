@@ -43,7 +43,8 @@ export class LeanClient implements Disposable {
     executable: string
     running: boolean
 	private outputChannel: OutputChannel;
-    private installer : LeanInstaller = undefined;
+    private installer : LeanInstaller;
+    private storageManager : LocalStorageService;
 
     private subscriptions: Disposable[] = []
 
@@ -73,21 +74,18 @@ export class LeanClient implements Disposable {
     private restartingEmitter = new EventEmitter()
     restarting = this.restartingEmitter.event
 
-    private storageManager : LocalStorageService;
-
     /** Files which are open. */
     private isOpen: Set<string> = new Set()
 
-    constructor(storageManager : LocalStorageService, outputChannel : OutputChannel) {
+    constructor(installer : LeanInstaller, storageManager : LocalStorageService, outputChannel : OutputChannel) {
         this.storageManager = storageManager;
+        this.installer = installer;
         this.outputChannel = outputChannel;
 
         this.subscriptions.push(window.onDidChangeVisibleTextEditors((es) =>
             es.forEach((e) => this.open(e.document))));
 
         this.subscriptions.push(workspace.onDidChangeConfiguration((e) => this.configChanged(e)));
-
-        this.installer = new LeanInstaller(outputChannel);
     }
 
     dispose(): void {
@@ -358,6 +356,14 @@ export class LeanClient implements Disposable {
     private setProgress(newProgress: ServerProgress) {
         this.progress = newProgress
         this.progressChangedEmitter.fire(newProgress)
+    }
+
+    async handleVersionChanged(version : string) :  Promise<void> {
+        const restartItem = 'Restart Lean';
+        const item = await window.showErrorMessage(`Lean version changed: '${version}'`, restartItem);
+        if (item === restartItem) {
+            void this.restart();
+        }
     }
 
     private async showInstallOptions() : Promise<void> {

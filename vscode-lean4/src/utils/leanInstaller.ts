@@ -6,11 +6,12 @@ export class LeanInstaller {
 
     private leanInstallerLinux = 'https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh'
     private leanInstallerWindows = 'https://raw.githubusercontent.com/leanprover/elan/master/elan-init.ps1'
-    private defaultLeanVersion = 'leanprover/lean4:nightly'
+    private defaultLeanVersion : string = null;
     private outputChannel: OutputChannel;
 
-    constructor(outputChannel: OutputChannel){
+    constructor(outputChannel: OutputChannel, version : string){
         this.outputChannel = outputChannel;
+        this.defaultLeanVersion = version;
     }
 
     async checkLeanVersion(cmd : string): Promise<{version: string, error: string}> {
@@ -29,11 +30,10 @@ export class LeanInstaller {
             // looks for a global (default) installation of Lean. This way, we can support
             // single file editing.
             const stdout = await batchExecute(cmd, options, folderPath, this.outputChannel)
-            // const { stdout, stderr } = await promisify(execFile)(cmd, options, {cwd: folderPath, env })
             const filterVersion = /version (\d+)\.\d+\..+/
             const match = filterVersion.exec(stdout)
             if (!match) {
-                if (stdout === 'program not found') {
+                if (!stdout) {
                     return { version: '', error: `lean4: '${cmd}' program not found.` }
                 } else {
                     return { version: '', error: `lean4: '${cmd} ${options}' returned incorrect version string '${stdout}'.` }
