@@ -86,5 +86,5 @@ export class LeanDiagnosticsProvider implements Disposable {
 
     dispose(): void {
         for (const s of this.subscriptions) { s.dispose(); }
-     }
+    }
 }

@@ -1,6 +1,7 @@
 import * as fs from 'fs';
 import { URL } from 'url';
-import { EventEmitter, Disposable, Uri, workspace } from 'vscode';
+import { EventEmitter, Disposable, Uri, workspace, window } from 'vscode';
+import { MarkedString } from 'vscode-languageserver-protocol';
 
 export class LeanpkgService implements Disposable {
     private leanVersion: string;
@@ -16,18 +17,31 @@ export class LeanpkgService implements Disposable {
         this.leanVersion = this.defaultVersion;
     }
 
-    async findLeanPkgVersionInfo() : Promise<string> {
+    private getWorkspaceLeanPkgUri() : Uri {
+        let rootPath = window.activeTextEditor.document.uri;
+        if (rootPath) {
+            return Uri.joinPath(rootPath, '..', this.tomlFileName);
+        }
+
         const workspaceFolders = workspace.workspaceFolders;
-        let rootPath : Uri = null;
         // TODO: support multiple workspace folders?
-        if (workspaceFolders && workspaceFolders.length > 0){
+        if (workspaceFolders && workspaceFolders.length > 0) {
             rootPath = workspaceFolders[0].uri;
         }
         if (!rootPath) {
             // what kind of vs folder is this?
+            return null;
+        }
+        return Uri.joinPath(rootPath, this.tomlFileName);
+    }
+
+    async findLeanPkgVersionInfo() : Promise<string> {
+        const path = this.getWorkspaceLeanPkgUri()
+        if (!path) {
+            // what kind of vs folder is this?
         }
         else {
-            let uri = rootPath;
+            let uri = Uri.joinPath(path, '..');
             // search parent folders for a leanpkg.toml file...
             while (true) {
                 const fileUri = Uri.joinPath(uri, this.tomlFileName);
@@ -48,7 +62,7 @@ export class LeanpkgService implements Disposable {
 
         if (this.leanpkgToml) {
             try {
-                this.leanVersion = await this.readLeanVersion(this.leanpkgToml);
+                this.leanVersion = await this.readLeanVersion();
             } catch (err) {
                 console.log(err);
             }
@@ -58,7 +72,7 @@ export class LeanpkgService implements Disposable {
         const watcher = workspace.createFileSystemWatcher('**/leanpkg.toml');
         watcher.onDidChange((u) => this.handleFileChanged(u));
         watcher.onDidCreate((u) => this.handleFileChanged(u));
-        watcher.onDidDelete((u) => this.handleFileChanged(u));
+        watcher.onDidDelete((u) => this.handleFileDeleted(u));
         this.subscriptions.push(watcher);
 
         return this.leanVersion;
@@ -73,12 +87,20 @@ export class LeanpkgService implements Disposable {
             this.leanpkgToml = uri;
         }
         if (uri.toString() === this.leanpkgToml.toString()) {
-            const version = await this.readLeanVersion(uri);
+            const version = await this.readLeanVersion();
             if (version !== this.leanVersion){
                 // raise an event so that LeanClient can trigger a restart.
                 this.leanVersion = version;
                 this.versionChangedEmitter.fire(version);
             }
+        }
+    }
+
+    private async handleFileDeleted(uri: Uri) {
+        if (this.leanpkgToml && uri.toString() === this.leanpkgToml.toString()){
+            this.leanpkgToml = null;
+            this.leanVersion = this.defaultVersion;
+            this.versionChangedEmitter.fire(this.defaultVersion);
         }
     }
 
@@ -93,8 +115,57 @@ export class LeanpkgService implements Disposable {
         return s;
     }
 
-    private async readLeanVersion(fileUri: Uri){
-        const url = new URL(fileUri.toString());
+    async writeLeanVersion(newVersion : string) : Promise<boolean> {
+        return new Promise<boolean>(async (resolve, reject) => {
+            let  uri = this.leanpkgToml;
+            if (!uri) {
+                uri = this.getWorkspaceLeanPkgUri();
+            }
+            if (uri) {
+                // create a new leanpkg.toml file!
+                const lines = await this.getUpdatedLeanPkgContent(uri, newVersion);
+                const content = lines.join('\n')
+                fs.writeFile(new URL(uri.toString()), content, (err) => {
+                    if (err) {
+                        resolve(false);
+                    } else {
+                        resolve(true);
+                    }
+                });
+            } else {
+                resolve(false);
+            }
+        });
+    }
+
+    private async getUpdatedLeanPkgContent(uri: Uri, newVersion : string) : Promise<string[]> {
+        const url = new URL(uri.toString());
+        return new Promise<string[]>((resolve, reject) => {
+            if (fs.existsSync(url)) {
+                fs.readFile(url, { encoding: 'utf-8' }, (err, data) =>{
+                    if (err) {
+                        reject(err);
+                    } else {
+                        const lines = data.split(/\r?\n/);
+                        const result : string[] = [];
+                        lines.forEach((line) =>{
+                            if (line.trim().startsWith('lean_version')){
+                                result.push(`lean_version="${newVersion}"`)
+                            } else{
+                                result.push(line);
+                            }
+                        });
+                        resolve(result);
+                    }
+                });
+            } else {
+                resolve([`lean_version="${newVersion}"`]);
+            }
+        });
+    }
+
+    private async readLeanVersion() {
+        const url = new URL(this.leanpkgToml.toString());
         return new Promise<string>((resolve, reject) => {
             if (fs.existsSync(url)) {
                 fs.readFile(url, { encoding: 'utf-8' }, (err, data) =>{

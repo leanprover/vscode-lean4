@@ -235,10 +235,10 @@
 				"description": "Pause / Continue live updating of the main tactic state widget."
 			},
 			{
-				"command": "lean4.selectInterpreter",
+				"command": "lean4.selectToolchain",
 				"category": "Lean 4",
-				"title": "Select Lean Interpreter",
-				"description": "Select location of the Lean interpreter to use for this project."
+				"title": "Select Lean Toolchain",
+				"description": "Select version of the Lean toolchain to use for this project."
 			}
 		],
 		"languages": [
@@ -340,7 +340,7 @@
 					"when": "editorLangId == lean4"
 				},
 				{
-					"command": "lean4.selectInterpreter",
+					"command": "lean4.selectToolchain",
 					"when": "editorLangId == lean4"
 				}
 			],

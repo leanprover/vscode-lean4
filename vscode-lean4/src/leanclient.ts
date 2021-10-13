@@ -19,7 +19,6 @@ import { executablePath, addServerEnvPaths, serverArgs, serverLoggingEnabled, se
 import { assert } from './utils/assert'
 import { PlainGoal, PlainTermGoal, LeanFileProgressParams, LeanFileProgressProcessingInfo } from '@lean4/infoview';
 import { LocalStorageService} from './utils/localStorage'
-import { LeanInstaller } from './utils/leanInstaller'
 
 const documentSelector: DocumentFilter = {
     scheme: 'file',
@@ -43,7 +42,6 @@ export class LeanClient implements Disposable {
     executable: string
     running: boolean
 	private outputChannel: OutputChannel;
-    private installer : LeanInstaller;
     private storageManager : LocalStorageService;
 
     private subscriptions: Disposable[] = []
@@ -74,12 +72,14 @@ export class LeanClient implements Disposable {
     private restartingEmitter = new EventEmitter()
     restarting = this.restartingEmitter.event
 
+    private serverFailedEmitter = new EventEmitter<string>();
+    serverFailed = this.serverFailedEmitter.event
+
     /** Files which are open. */
     private isOpen: Set<string> = new Set()
 
-    constructor(installer : LeanInstaller, storageManager : LocalStorageService, outputChannel : OutputChannel) {
+    constructor(storageManager : LocalStorageService, outputChannel : OutputChannel) {
         this.storageManager = storageManager;
-        this.installer = installer;
         this.outputChannel = outputChannel;
 
         this.subscriptions.push(window.onDidChangeVisibleTextEditors((es) =>
@@ -111,13 +111,6 @@ export class LeanClient implements Disposable {
         // have to check again here in case user just did the install lean option
         // and perhaps the install failed.
         this.outputChannel.show(true);
-        const found = await this.installer.checkLeanVersion(this.executable);
-        if (found.error) {
-            void window.showErrorMessage(found.error);
-            // then try something else...
-            void this.showInstallOptions();
-            return;
-        }
 
         const serverOptions: ServerOptions = {
             command: this.executable,
@@ -217,6 +210,7 @@ export class LeanClient implements Disposable {
                     console.log('client running');
                 } else if (s.newState === State.Stopped) {
                     console.log('client has stopped or it failed to start');
+                    this.running = false;
                 }
             })
             this.client.start()
@@ -225,8 +219,8 @@ export class LeanClient implements Disposable {
             // if we got this far then the client is happy so we are running!
             this.running = true;
         } catch (error) {
-            console.log(error);
-            void this.showInstallOptions();
+            this.outputChannel.appendLine(error);
+            this.serverFailedEmitter.fire(error);
             return;
         }
 
@@ -356,47 +350,5 @@ export class LeanClient implements Disposable {
     private setProgress(newProgress: ServerProgress) {
         this.progress = newProgress
         this.progressChangedEmitter.fire(newProgress)
-    }
-
-    async handleVersionChanged(version : string) :  Promise<void> {
-        const restartItem = 'Restart Lean';
-        const item = await window.showErrorMessage(`Lean version changed: '${version}'`, restartItem);
-        if (item === restartItem) {
-            void this.restart();
-        }
-    }
-
-    private async showInstallOptions() : Promise<void> {
-        // note; we keep the LeanClient alive so that it can be restarted if the
-        // user changes the Lean: Executable Path.
-        const installItem = 'Install Lean';
-        const selectItem = 'Select Lean Interpreter';
-        const item = await window.showErrorMessage(`Failed to start '${this.executable}' language server`, installItem, selectItem)
-        if (item === installItem) {
-            try {
-                const result = await this.installer.installLean();
-                void this.restart();
-            } catch (err) {
-                this.outputChannel.appendLine(err);
-            }
-        } else if (item === selectItem){
-            void this.selectInterpreter();
-        }
-    }
-
-    async selectInterpreter() : Promise<void> {
-        let defaultPath = this.storageManager.getLeanPath();
-        if (!defaultPath) {
-            defaultPath = 'lean';
-        }
-        const selectedProgram = await window.showInputBox({
-            title: 'Enter path',
-            value: defaultPath,
-            prompt: 'Enter full path to lean interpreter'
-        });
-        if (selectedProgram) {
-            this.storageManager.setLeanPath(selectedProgram);
-            void this.restart();
-        }
     }
 }

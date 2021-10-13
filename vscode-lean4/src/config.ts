@@ -1,7 +1,6 @@
 import { workspace, Uri } from 'vscode'
 import { InfoviewTacticStateFilter } from '@lean4/infoview';
 import * as path from 'path';
-import { existsSync } from 'fs';
 
 // TODO: does currently not contain config options for `./abbreviation`
 // so that it is easy to keep it in sync with vscode-lean.
@@ -33,6 +32,17 @@ export function addServerEnvPaths(input_env: NodeJS.ProcessEnv): NodeJS.ProcessE
         setEnvPath(paths.join(path.delimiter) + path.delimiter + getEnvPath())
     }
     return env
+}
+
+export function addDefaultElanPath() : void {
+    const paths = getEnvPath();
+    let elanPath = process.env.HOME + '/.elan/bin';
+    if (process.platform === 'win32') {
+        elanPath = process.env.USERPROFILE + '\\.elan\\bin';
+    }
+    if (paths.indexOf(elanPath) < 0) {
+        setEnvPath(paths + path.delimiter + elanPath);
+    }
 }
 
 export function executablePath(): string {
