@@ -175,7 +175,7 @@ export class LeanInstaller implements Disposable {
 
         if (executablePath() !== 'lean') {
             this.outputChannel.appendLine('It looks like you\'ve modified the `lean.executablePath` user setting.');
-            this.outputChannel.appendLine('Please change it back to a \'lean\' before installing elan.');
+            this.outputChannel.appendLine('Please change it back to \'lean\' before installing elan.');
             return false;
         } else {
             const terminalName = 'Lean installation via elan';
