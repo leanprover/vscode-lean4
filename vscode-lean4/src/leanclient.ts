@@ -1,6 +1,7 @@
 import { TextDocument, TextEditor, EventEmitter, Diagnostic,
     languages, DocumentHighlight, Range, DocumentHighlightKind, window, workspace,
-    Disposable, Uri, ConfigurationChangeEvent, OutputChannel } from 'vscode'
+    Disposable, Uri, ConfigurationChangeEvent, OutputChannel, DiagnosticCollection,
+    Position } from 'vscode'
 import {
     Code2ProtocolConverter,
     DidChangeTextDocumentParams,
@@ -38,10 +39,10 @@ export function getFullRange(diag: Diagnostic): Range {
 }
 
 export class LeanClient implements Disposable {
-    client: LanguageClient
-    executable: string
     running: boolean
-	private outputChannel: OutputChannel;
+	private client: LanguageClient
+    private executable: string
+    private outputChannel: OutputChannel;
     private storageManager : LocalStorageService;
 
     private subscriptions: Disposable[] = []
@@ -350,5 +351,44 @@ export class LeanClient implements Disposable {
     private setProgress(newProgress: ServerProgress) {
         this.progress = newProgress
         this.progressChangedEmitter.fire(newProgress)
+    }
+
+    // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
+    sendRequest(method: string, params: any) : Promise<any> {
+        return this.running ? this.client.sendRequest(method, params) : undefined;
+    }
+
+    // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
+    sendNotification(method: string, params: any): Promise<void> {
+        return this.running ? this.client.sendNotification(method, params) : undefined;
+    }
+
+    convertUri(uri: Uri): Uri {
+        return this.running ? Uri.parse(this.client.code2ProtocolConverter.asUri(uri)) : uri;
+    }
+
+    convertUriFromString(uri: string): Uri {
+        const u = Uri.parse(uri);
+        return this.running ? Uri.parse(this.client.code2ProtocolConverter.asUri(u)) : u;
+    }
+
+    convertPosition(pos: ls.Position) : Position | undefined {
+        return this.running ? this.client.protocol2CodeConverter.asPosition(pos) : undefined;
+    }
+
+    convertRange(range: ls.Range): Range | undefined {
+        return this.running ? this.client.protocol2CodeConverter.asRange(range) : undefined;
+    }
+
+    getDiagnosticParams(uri: Uri, diagnostics: readonly Diagnostic[]) : PublishDiagnosticsParams {
+        const params: PublishDiagnosticsParams = {
+            uri: this.convertUri(uri)?.toString(),
+            diagnostics: this.client.code2ProtocolConverter.asDiagnostics(diagnostics as Diagnostic[]),
+        };
+        return params;
+    }
+
+    getDiagnostics() : DiagnosticCollection | undefined {
+        return this.running ? this.client.diagnostics : undefined;
     }
 }

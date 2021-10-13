@@ -63,13 +63,12 @@ export class LeanInstaller implements Disposable {
         // note; we keep the LeanClient alive so that it can be restarted if the
         // user changes the Lean: Executable Path.
         const installItem = 'Install Lean';
-        const selectItem = 'Select Lean Interpreter';
+        const selectItem = 'Select Lean Toolchain';
         const item = await window.showErrorMessage(`Failed to start '${executable}' language server`, installItem, selectItem)
         if (item === installItem) {
             try {
                 const result = await this.installLean();
                 this.installChangedEmitter.fire(undefined);
-                // void this.restart();
             } catch (err) {
                 this.outputChannel.appendLine(err);
             }
@@ -105,6 +104,7 @@ export class LeanInstaller implements Disposable {
         } else if (selectedVersion) {
             // write this to the leanpkg.toml file and have the new version get
             // picked up from there.
+            this.localStorage.setLeanPath('lean'); // make sure any local full path override is cleared.
             void this.pkgService.writeLeanVersion(selectedVersion);
         }
     }

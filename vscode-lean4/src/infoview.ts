@@ -26,11 +26,10 @@ export class InfoProvider implements Disposable {
 
     private editorApi : EditorApi = {
         sendClientRequest: async (method: string, params: any): Promise<any> => {
-            return this.client.running ? this.client.client.sendRequest(method, params) : undefined;
+            return this.client.sendRequest(method, params);
         },
         sendClientNotification: async (method: string, params: any): Promise<void> => {
-            if (this.client.running)
-                void this.client.client.sendNotification(method, params);
+           return this.client.sendNotification(method, params);
         },
         subscribeServerNotifications: async (method) => {
             const el = this.serverNotifSubscriptions.get(method);
@@ -111,8 +110,8 @@ export class InfoProvider implements Disposable {
             let uri: Uri | undefined
             let pos: Position | undefined
             if (tdpp) {
-                uri = this.client.client.protocol2CodeConverter.asUri(tdpp.textDocument.uri);
-                pos = this.client.client.protocol2CodeConverter.asPosition(tdpp.position);
+                uri = this.client.convertUriFromString(tdpp.textDocument.uri);
+                pos = this.client.convertPosition(tdpp.position);
             }
             await this.handleInsertText(text, kind, uri, pos);
         },
@@ -120,7 +119,7 @@ export class InfoProvider implements Disposable {
             if (!this.client.running) return;
             void this.revealEditorSelection(
                 Uri.parse(show.uri),
-                this.client.client.protocol2CodeConverter.asRange(show.selection)
+                this.client.convertRange(show.selection)
             );
         },
     };
@@ -240,22 +239,19 @@ export class InfoProvider implements Disposable {
     }
 
     private async sendDiagnostics() {
-        if (!this.webviewPanel || !this.client.running) return;
-        this.client.client.diagnostics?.forEach(async (uri, diags) => {
-            const params: PublishDiagnosticsParams = {
-                uri: this.client.client.code2ProtocolConverter.asUri(uri),
-                diagnostics: this.client.client.code2ProtocolConverter.asDiagnostics(diags as Diagnostic[]),
-            };
+        if (!this.webviewPanel) return;
+        this.client.getDiagnostics()?.forEach(async (uri, diags) => {
+            const params = this.client.getDiagnosticParams(uri, diags)
             await this.webviewPanel.api.gotServerNotification('textDocument/publishDiagnostics', params);
         });
     }
 
     private async sendProgress() {
-        if (!this.webviewPanel || !this.client.running) return;
+        if (!this.webviewPanel) return;
         for (const [uri, processing] of this.client.progress) {
             const params: LeanFileProgressParams = {
                 textDocument: {
-                    uri: this.client.client.code2ProtocolConverter.asUri(uri),
+                    uri: this.client.convertUri(uri)?.toString(),
                     version: 0, // HACK: The infoview ignores this
                 },
                 processing,

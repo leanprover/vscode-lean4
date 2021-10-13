@@ -4,7 +4,6 @@ import { EventEmitter, Disposable, Uri, workspace, window } from 'vscode';
 import { MarkedString } from 'vscode-languageserver-protocol';
 
 export class LeanpkgService implements Disposable {
-    private leanVersion: string;
     private subscriptions: Disposable[] = [];
     private leanpkgToml : Uri = null;
     private tomlFileName : string = 'leanpkg.toml'
@@ -14,7 +13,6 @@ export class LeanpkgService implements Disposable {
     versionChanged = this.versionChangedEmitter.event
 
     constructor() {
-        this.leanVersion = this.defaultVersion;
     }
 
     private getWorkspaceLeanPkgUri() : Uri {
@@ -60,9 +58,10 @@ export class LeanpkgService implements Disposable {
             }
         }
 
+        let version = this.defaultVersion;
         if (this.leanpkgToml) {
             try {
-                this.leanVersion = await this.readLeanVersion();
+                version = await this.readLeanVersion();
             } catch (err) {
                 console.log(err);
             }
@@ -75,7 +74,7 @@ export class LeanpkgService implements Disposable {
         watcher.onDidDelete((u) => this.handleFileDeleted(u));
         this.subscriptions.push(watcher);
 
-        return this.leanVersion;
+        return version;
     }
 
     dispose(): void {
@@ -88,18 +87,14 @@ export class LeanpkgService implements Disposable {
         }
         if (uri.toString() === this.leanpkgToml.toString()) {
             const version = await this.readLeanVersion();
-            if (version !== this.leanVersion){
-                // raise an event so that LeanClient can trigger a restart.
-                this.leanVersion = version;
-                this.versionChangedEmitter.fire(version);
-            }
+            // raise an event so the extension triggers handleVersionChanged.
+            this.versionChangedEmitter.fire(version);
         }
     }
 
     private async handleFileDeleted(uri: Uri) {
         if (this.leanpkgToml && uri.toString() === this.leanpkgToml.toString()){
             this.leanpkgToml = null;
-            this.leanVersion = this.defaultVersion;
             this.versionChangedEmitter.fire(this.defaultVersion);
         }
     }
