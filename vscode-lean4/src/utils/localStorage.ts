@@ -18,4 +18,14 @@ export class LocalStorageService {
     {
         void this.storage.update('LeanPath', path);
     }
+
+    getLeanVersion() : string
+    {
+        return this.storage.get<string>('LeanVersion', null);
+    }
+
+    setLeanVersion(path : string) : void
+    {
+        void this.storage.update('LeanVersion', path);
+    }
 }

@@ -14,7 +14,7 @@ export async function activate(context: ExtensionContext): Promise<any> {
 
     const outputChannel = window.createOutputChannel('Lean: Editor');
     const storageManager = new LocalStorageService(context.workspaceState);
-    const pkgService = new LeanpkgService()
+    const pkgService = new LeanpkgService(storageManager)
     context.subscriptions.push(pkgService);
     const leanVersion = await pkgService.findLeanPkgVersionInfo();
 

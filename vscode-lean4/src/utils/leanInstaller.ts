@@ -28,9 +28,7 @@ export class LeanInstaller implements Disposable {
     }
 
     async testLeanVersion() : Promise<string> {
-        let executable = this.localStorage.getLeanPath();
-        if (!executable) executable = executablePath();
-        const found = await this.checkLeanVersion(executable);
+        const found = await this.checkLeanVersion();
         if (found.error) {
             void window.showErrorMessage(found.error);
             // then try something else...
@@ -99,17 +97,24 @@ export class LeanInstaller implements Disposable {
             });
             if (selectedProgram) {
                 this.localStorage.setLeanPath(selectedProgram);
+                this.localStorage.setLeanVersion(''); // clear the requested version as we have a full path.
                 this.installChangedEmitter.fire(selectedProgram);
             }
         } else if (selectedVersion) {
             // write this to the leanpkg.toml file and have the new version get
             // picked up from there.
             this.localStorage.setLeanPath('lean'); // make sure any local full path override is cleared.
-            void this.pkgService.writeLeanVersion(selectedVersion);
+            this.localStorage.setLeanVersion(selectedVersion);
+            this.installChangedEmitter.fire(selectedVersion);
         }
     }
 
-    async checkLeanVersion(cmd : string): Promise<{version: string, error: string}> {
+    async checkLeanVersion(): Promise<{version: string, error: string}> {
+
+        let cmd = this.localStorage.getLeanPath();
+        if (!cmd) cmd = executablePath();
+        let version = this.localStorage.getLeanVersion();
+
         const folders = workspace.workspaceFolders
         let folderPath: string
         if (folders) {
@@ -118,7 +123,11 @@ export class LeanInstaller implements Disposable {
 
         const env = addServerEnvPaths(process.env);
 
-        const options = ['--version']
+        let options = ['--version']
+        if (version) {
+            // user is requesting an explicit version!
+            options = ['+' + version, '--version']
+        }
         try {
             // If folderPath is undefined, this will use the process environment for cwd.
             // Specifically, if the extension was not opened inside of a folder, it

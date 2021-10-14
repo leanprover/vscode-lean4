@@ -103,7 +103,7 @@ export class LeanClient implements Disposable {
 
         this.executable = this.storageManager.getLeanPath();
         if (!this.executable) this.executable = executablePath();
-
+        const version = this.storageManager.getLeanVersion();
         const env = addServerEnvPaths(process.env);
         if (serverLoggingEnabled()) {
             env.LEAN_SERVER_LOG_DIR = serverLoggingPath()
@@ -113,9 +113,15 @@ export class LeanClient implements Disposable {
         // and perhaps the install failed.
         this.outputChannel.show(true);
 
+        let options = ['--server']
+        if (version) {
+            // user is requesting an explicit version for this workspace.
+            options = ['+' + version, '--server']
+        }
+
         const serverOptions: ServerOptions = {
             command: this.executable,
-            args: ['--server'].concat(serverArgs()),
+            args: options.concat(serverArgs()),
             options: {
                 shell: true,
                 env
