@@ -113,7 +113,7 @@ export class LeanInstaller implements Disposable {
 
         let cmd = this.localStorage.getLeanPath();
         if (!cmd) cmd = executablePath();
-        let version = this.localStorage.getLeanVersion();
+        const version = this.localStorage.getLeanVersion();
 
         const folders = workspace.workspaceFolders
         let folderPath: string
