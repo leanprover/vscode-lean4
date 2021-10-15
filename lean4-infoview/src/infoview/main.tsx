@@ -48,19 +48,27 @@ function Main(props: {}) {
         []
     );
 
-    if (!curUri) return <p>Click somewhere in the Lean file to enable the infoview.</p>;
+    // NB: it is important not to recreate the `WithBlah` wrappers when all
+    // files are closed since they contain state that we want to persist.
+    let ret
+    if (!curUri) {
+        ret = <p>Click somewhere in the Lean file to enable the infoview.</p>
+    } else {
+        ret =
+            (<div className="ma1">
+                <Infos />
+                <div className="mv2">
+                    <AllMessages uri={curUri} />
+                </div>
+            </div>)
+    }
 
     return (
     <ConfigContext.Provider value={config}>
         <WithRpcSessions>
             <WithDiagnosticsContext>
                 <ProgressContext.Provider value={allProgress}>
-                    <div className="ma1">
-                        <Infos />
-                        <div className="mv2">
-                            <AllMessages uri={curUri} />
-                        </div>
-                    </div>
+                    {ret}
                 </ProgressContext.Provider>
             </WithDiagnosticsContext>
         </WithRpcSessions>
