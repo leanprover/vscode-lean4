@@ -24,17 +24,17 @@ function transformGoalToInteractive(g: string): InteractiveGoal {
     let hyps: InteractiveHypothesis[] = []
     let type = ''
     for (const p of parts) {
-        console.log(`part ${p}`)
-
         if (p.match(/^(⊢) /mg)) {
             type = p.slice(2)
         } else if (p.match(/^(case) /mg)) {
             userName = p.slice(5)
         } else if (p.match(/^([^:\n< ][^:\n⊢{[(⦃]*) :/mg)) {
-            const ss = p.split(' : ')
+            const ss = p.split(':')
             let hyp: InteractiveHypothesis = {
-                names: ss[0].split(' ').map(s => s.trim()),
-                type: { text: ss.slice(1).join(' : ') }
+                names: ss[0].split(' ')
+                    .map(s => s.trim())
+                    .filter(s => s.length !== 0),
+                type: { text: ss.slice(1).join(':').trim() }
             }
             hyps.push(hyp)
         }
