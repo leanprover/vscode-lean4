@@ -4,9 +4,10 @@ import { Location } from 'vscode-languageserver-protocol';
 import { Goals as GoalsUi, Goal as GoalUi, goalsToString } from './goals';
 import { basename, DocumentPosition, RangeHelpers, useEvent, usePausableState } from './util';
 import { Details } from './collapsing';
-import { EditorContext, ProgressContext, RpcContext } from './contexts';
+import { EditorContext, ProgressContext, RpcContext, VersionContext } from './contexts';
 import { MessagesAtFile, useMessagesFor } from './messages';
 import { getInteractiveGoals, getInteractiveTermGoal, InteractiveDiagnostic, InteractiveGoal, InteractiveGoals } from './rpcInterface';
+import { updatePlainGoals, updateTermGoal } from './goalCompat';
 
 type InfoStatus = 'loading' | 'updating' | 'error' | 'ready';
 type InfoKind = 'cursor' | 'pin';
@@ -226,7 +227,10 @@ export function Info(props: InfoProps) {
 }
 
 function InfoAux(props: InfoProps) {
+    const ec = React.useContext(EditorContext)
+    const sv = React.useContext(VersionContext)
     const rs = React.useContext(RpcContext);
+
     const pos = props.pos!;
 
     const [status, setStatus] = React.useState<InfoStatus>('loading');
@@ -240,10 +244,23 @@ function InfoAux(props: InfoProps) {
     const triggerUpdate = useDelayedThrottled(serverIsProcessing ? 500 : 50, async () => {
         setStatus('updating');
 
-        // Start both goal requests before awaiting them.
-        const goalsReq = getInteractiveGoals(rs, pos);
-        const termGoalReq = getInteractiveTermGoal(rs, pos);
-        const allReq = Promise.all([goalsReq, termGoalReq]);
+        let allReq = undefined
+        if (sv.hasWidgetsV1()) {
+            // Start both goal requests before awaiting them.
+            const goalsReq = getInteractiveGoals(rs, pos);
+            const termGoalReq = getInteractiveTermGoal(rs, pos);
+            allReq = Promise.all([goalsReq, termGoalReq]);
+        } else {
+            const goalsReq = ec.requestPlainGoal(pos).then(gs => {
+                if (gs) return updatePlainGoals(gs)
+                else return undefined
+            })
+            const termGoalReq = ec.requestPlainTermGoal(pos).then(g => {
+                if (g) return updateTermGoal(g)
+                else return undefined
+            })
+            allReq = Promise.all([goalsReq, termGoalReq]);
+        }
 
         function onError(err: any) {
             const errS = typeof err === 'string' ? err : JSON.stringify(err);
