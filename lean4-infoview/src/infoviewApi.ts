@@ -1,4 +1,4 @@
-import { Location, ShowDocumentParams, TextDocumentPositionParams } from "vscode-languageserver-protocol"
+import { InitializeResult, Location, ShowDocumentParams, TextDocumentPositionParams } from "vscode-languageserver-protocol"
 
 export interface EditorFsApi {
   stat(path: string): Promise<any>;
@@ -84,6 +84,9 @@ export type InfoviewAction =
 
 /** Calls which the hosting editor must make when the corresponding events occur. */
 export interface InfoviewApi {
+  /** Must be called exactly once on initialization with the server initialization message. */
+  initialize(serverInitializeResult: InitializeResult): Promise<void>;
+
   /**
    * Must fire whenever the LSP client receives a notification with a `method`
    * that has been subscribed to through {@link EditorApi.subscribeServerNotifications}.

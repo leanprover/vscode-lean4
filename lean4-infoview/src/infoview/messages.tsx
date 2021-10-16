@@ -3,10 +3,11 @@ import fastIsEqual from 'react-fast-compare';
 import { Location, DocumentUri, DiagnosticSeverity, PublishDiagnosticsParams } from 'vscode-languageserver-protocol';
 
 import { basename, escapeHtml, RangeHelpers, usePausableState, useEvent, addUniqueKeys, DocumentPosition, useServerNotificationState } from './util';
-import { ConfigContext, EditorContext, DiagnosticsContext, RpcContext } from './contexts';
+import { ConfigContext, EditorContext, DiagnosticsContext, RpcContext, VersionContext } from './contexts';
 import { Details } from './collapsing';
 import { InteractiveMessage } from './traceExplorer';
 import { getInteractiveDiagnostics, InteractiveDiagnostic, TaggedText_stripTags } from './rpcInterface';
+import { LeanDiagnostic } from '../lspTypes';
 
 interface MessageViewProps {
     uri: DocumentUri;
@@ -117,12 +118,16 @@ export function AllMessages({uri: uri0}: { uri: DocumentUri }) {
  */
 export function WithDiagnosticsContext(props: React.PropsWithChildren<any>) {
     const rs = React.useContext(RpcContext)
+    const sv = React.useContext(VersionContext)
     const [allDiags, _0] = useServerNotificationState(
         'textDocument/publishDiagnostics',
         new Map<DocumentUri, InteractiveDiagnostic[]>(),
         async (params: PublishDiagnosticsParams) => {
             let diags: InteractiveDiagnostic[] | undefined
-            try {
+
+            if (!sv.hasWidgetsV1()) {
+                diags = params.diagnostics.map(d => { return { ...(d as LeanDiagnostic), message: { text: d.message } } })
+            } else try {
                 diags = await getInteractiveDiagnostics(rs, { uri: params.uri, line: 0, character: 0 })
             } catch (err: any) {}
             if (diags)

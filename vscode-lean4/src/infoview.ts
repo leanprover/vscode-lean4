@@ -202,6 +202,7 @@ export class InfoProvider implements Disposable {
             });
             this.webviewPanel = webviewPanel;
             webviewPanel.webview.html = this.initialHtml();
+            webviewPanel.api.initialize(this.client.client.initializeResult)
         }
         // The infoview listens for server notifications such as diagnostics passively,
         // so when it is first started we must re-send those as if the server did.
