@@ -136,7 +136,7 @@ export class RpcSessions implements Disposable {
 
     private connectAt(uri: DocumentUri): void {
         if (this.#connecting.has(uri) || this.#connected.has(uri)) {
-            throw `already connecting or connected at '${uri}'`
+            throw new Error(`already connecting or connected at '${uri}'`)
         }
         this.ensureSessionClosed(uri)
         const connParams: RpcConnectParams = { uri }
@@ -194,7 +194,7 @@ export class RpcSessions implements Disposable {
     registerRef(pos: DocumentPosition, ptr: RpcPtr<any>): void {
         void this.sessionAt(pos.uri).then(sesh => {
             if (sesh) sesh.registerRef(ptr)
-            else throw `tried to register ref in non-existent RPC session ${pos.uri}`
+            else throw new Error(`tried to register ref in non-existent RPC session ${pos.uri}`)
         })
     }
 

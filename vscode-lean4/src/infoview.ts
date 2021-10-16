@@ -5,7 +5,6 @@ import {
     Selection, TextEditor, TextEditorRevealType,
     Uri, ViewColumn, WebviewPanel, window, workspace, env, Position, Diagnostic,
 } from 'vscode';
-import { TextDocumentIdentifier } from 'vscode-languageserver-protocol';
 import { EditorApi, InfoviewApi, LeanFileProgressParams, TextInsertKind } from '@lean4/infoview';
 import { LeanClient } from './leanclient';
 import { getInfoViewAllErrorsOnLine, getInfoViewAutoOpen, getInfoViewAutoOpenShowGoal,
@@ -122,7 +121,7 @@ export class InfoProvider implements Disposable {
         },
     };
 
-    constructor(private client: LeanClient, private leanDocs: DocumentSelector, private context: ExtensionContext) {
+    constructor(private client: LeanClient, private readonly leanDocs: DocumentSelector, private context: ExtensionContext) {
         this.updateStylesheet();
         this.subscriptions.push(
             this.client.restarted(async () => {
@@ -132,12 +131,12 @@ export class InfoProvider implements Disposable {
             }),
             window.onDidChangeActiveTextEditor(() => this.sendPosition()),
             window.onDidChangeTextEditorSelection(() => this.sendPosition()),
-            workspace.onDidChangeConfiguration(async (_e) => {
+            workspace.onDidChangeConfiguration(async () => {
                 // regression; changing the style needs a reload. :/
                 this.updateStylesheet();
                 await this.sendConfig();
             }),
-            workspace.onDidChangeTextDocument(async (_e) => {
+            workspace.onDidChangeTextDocument(async () => {
                 await this.sendPosition();
             }),
             commands.registerTextEditorCommand('lean4.displayGoal', (editor) => this.openPreview(editor)),
@@ -247,7 +246,7 @@ export class InfoProvider implements Disposable {
     }
 
     private async sendPosition() {
-        if (!window.activeTextEditor || !languages.match(this.leanDocs, window.activeTextEditor.document)) { return null; }
+        if (!window.activeTextEditor || languages.match(this.leanDocs, window.activeTextEditor.document) === 0) return
         const uri = window.activeTextEditor.document.uri;
         const selection = window.activeTextEditor.selection;
         await this.webviewPanel?.api.changedCursorLocation({

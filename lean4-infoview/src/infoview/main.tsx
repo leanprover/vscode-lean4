@@ -48,8 +48,9 @@ function Main(props: {}) {
         []
     );
 
-    // NB: it is important not to recreate the `WithBlah` wrappers when all
-    // files are closed since they contain state that we want to persist.
+    // NB: the cursor may temporarily become `undefined` when a file is closed. In this case
+    // it's important not to reconstruct the `WithBlah` wrappers below since they contain state
+    // that we want to persist.
     let ret
     if (!curUri) {
         ret = <p>Click somewhere in the Lean file to enable the infoview.</p>

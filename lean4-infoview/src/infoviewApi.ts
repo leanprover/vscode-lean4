@@ -94,12 +94,12 @@ export interface InfoviewApi {
   sentClientNotification(method: string, params: any): Promise<void>;
 
   /**
-   * Must fire whenever the user moves their cursor or makes a selection.
-   * When no selection is made, `loc.range.start` must equal `loc.range.end`.
-   * Must fire with `undefined` when the cursor moves to "nowhere" (e.g. all
-   * files are closed).
+   * Must fire whenever the user moves their cursor or makes a selection while in a Lean file.
+   * Movements in other kinds of files must *not* fire this event. When no selection is made,
+   * `loc.range.start` must equal `loc.range.end`.
    */
   // TODO maybe change Location.Range to something aware of directionality (cursor at start/end of selection)
+  // TODO what to do when multiple cursors exist?
   changedCursorLocation(loc?: Location): Promise<void>;
 
   /**
