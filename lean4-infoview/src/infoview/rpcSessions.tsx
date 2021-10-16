@@ -113,7 +113,7 @@ class RpcSession implements Disposable {
 }
 
 /** Provides an interface for making RPC calls to the Lean server. */
-export class RpcSessions {
+export class RpcSessions implements Disposable {
     /** Maps each URI to the connected RPC session, if any, at the corresponding file worker. */
     #connected: Map<DocumentUri, RpcSession>
     /** Like `#connected`, but for sessions which are currently connecting. */
@@ -135,8 +135,8 @@ export class RpcSessions {
     }
 
     private connectAt(uri: DocumentUri): void {
-        if (this.#connecting.has(uri)) {
-            throw `already connecting at '${uri}'`
+        if (this.#connecting.has(uri) || this.#connected.has(uri)) {
+            throw `already connecting or connected at '${uri}'`
         }
         this.ensureSessionClosed(uri)
         const connParams: RpcConnectParams = { uri }
@@ -217,6 +217,11 @@ export class RpcSessions {
             this.#connected.delete(uri)
         })
     }
+
+    dispose() {
+        this.#connected.forEach(rs => rs.dispose())
+        this.#connecting.forEach(fut => fut.then(rs => rs.dispose()))
+    }
 }
 
 /** Manages a Lean RPC connection by providing an {@link RpcContext} to the children. */
@@ -224,6 +229,10 @@ export function WithRpcSessions({ children }: { children: React.ReactNode }) {
     const ec = React.useContext(EditorContext)
     const [sessions, setSessions] = React.useState<RpcSessions>(new RpcSessions(ec))
     sessions.setSelf = setSessions
+    React.useEffect(() => {
+        // Clean up the sessions on unmount
+        return () => sessions.dispose()
+    }, [])
 
     useClientNotificationEffect(
         'textDocument/didClose',
