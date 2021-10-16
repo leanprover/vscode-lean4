@@ -2,7 +2,7 @@
 	"name": "lean4",
 	"displayName": "lean4",
 	"description": "An extension for VS Code which provides support for the Lean 4 language.",
-	"version": "0.0.33",
+	"version": "0.0.36",
 	"publisher": "leanprover",
 	"engines": {
 		"vscode": "^1.57.0"
@@ -105,7 +105,7 @@
 				"lean4.infoViewAutoOpen": {
 					"type": "boolean",
 					"default": true,
-					"markdownDescription": "Infoview: open infoview when Lean extension is activated."
+					"markdownDescription": "Infoview: open infoview when Lean extension is activated for the first time."
 				},
 				"lean4.infoViewAutoOpenShowGoal": {
 					"type": "boolean",
