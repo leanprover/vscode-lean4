@@ -8,6 +8,7 @@
 			"es6",
 		],
 		"rootDir": "../",
+		"sourceMap": true
 	},
 	"include": [
 		"./**/*",

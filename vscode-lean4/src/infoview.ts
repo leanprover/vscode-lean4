@@ -10,7 +10,6 @@ import { LeanClient } from './leanclient';
 import { getInfoViewAllErrorsOnLine, getInfoViewAutoOpen, getInfoViewAutoOpenShowGoal,
     getInfoViewFilterIndex, getInfoViewStyle, getInfoViewTacticStateFilters } from './config';
 import { Rpc } from './rpc';
-import { PublishDiagnosticsParams } from 'vscode-languageclient';
 
 export class InfoProvider implements Disposable {
     /** Instance of the panel, if it is open. Otherwise `undefined`. */
@@ -214,7 +213,7 @@ export class InfoProvider implements Disposable {
             });
             this.webviewPanel = webviewPanel;
             webviewPanel.webview.html = this.initialHtml();
-            webviewPanel.api.initialize(this.client.initializeResult)
+            void webviewPanel.api.initialize(this.client.initializeResult)
         }
         // The infoview listens for server notifications such as diagnostics passively,
         // so when it is first started we must re-send those as if the server did.
@@ -243,6 +242,7 @@ export class InfoProvider implements Disposable {
         if (!this.webviewPanel) return;
         this.client.getDiagnostics()?.forEach(async (uri, diags) => {
             const params = this.client.getDiagnosticParams(uri, diags)
+            console.log('gotDiagnostic: ' + params.diagnostics[0].range + ', ' + params.diagnostics[0].message);
             await this.webviewPanel.api.gotServerNotification('textDocument/publishDiagnostics', params);
         });
     }

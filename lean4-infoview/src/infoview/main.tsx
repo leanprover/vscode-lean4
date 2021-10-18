@@ -97,11 +97,9 @@ export function renderInfoview(editorApi: EditorApi, uiElement: HTMLElement): In
     const infoviewApi: InfoviewApi = {
         initialize: async r => editorEvents.initialize.fire(r),
         gotServerNotification: async (method, params) => {
-            console.log("gotServerNotification: " + method);
             editorEvents.gotServerNotification.fire([method, params]);
         },
         sentClientNotification: async (method, params) => {
-            console.log("sentClientNotification: " + method);
             editorEvents.sentClientNotification.fire([method, params]);
         },
         changedCursorLocation: async loc => editorEvents.changedCursorLocation.fire(loc),
