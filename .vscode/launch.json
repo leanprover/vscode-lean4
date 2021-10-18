@@ -14,7 +14,7 @@
             "preLaunchTask": "watch",
             "debugWebviews": true,
             "rendererDebugOptions": {
-                "webRoot": "${workspaceFolder}/vscode-lean4/lean4-infoview/dist"
+                "webRoot": "${workspaceRoot}/vscode-lean4/media"
             },
         }
     ]
