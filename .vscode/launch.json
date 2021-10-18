@@ -11,7 +11,11 @@
             "stopOnEntry": false,
             "sourceMaps": true,
             "outFiles": [ "${workspaceRoot}/vscode-lean4/out/**/*.js" ],
-            "preLaunchTask": "watch"
+            "preLaunchTask": "watch",
+            "debugWebviews": true,
+            "rendererDebugOptions": {
+                "webRoot": "${workspaceFolder}/vscode-lean4/lean4-infoview/dist"
+            },
         }
     ]
 }
