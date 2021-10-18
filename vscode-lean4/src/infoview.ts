@@ -242,7 +242,6 @@ export class InfoProvider implements Disposable {
         if (!this.webviewPanel) return;
         this.client.getDiagnostics()?.forEach(async (uri, diags) => {
             const params = this.client.getDiagnosticParams(uri, diags)
-            console.log('gotDiagnostic: ' + params.diagnostics[0].range + ', ' + params.diagnostics[0].message);
             await this.webviewPanel.api.gotServerNotification('textDocument/publishDiagnostics', params);
         });
     }
