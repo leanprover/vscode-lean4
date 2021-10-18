@@ -258,7 +258,7 @@ function InfoAux(props: InfoProps) {
             const termGoalReq = ec.requestPlainTermGoal(pos).then(g => {
                 if (g) return updateTermGoal(g)
                 else return undefined
-            })
+            }).catch(() => undefined) // ignore error on Lean version that don't support term goals yet
             allReq = Promise.all([goalsReq, termGoalReq]);
         }
 
