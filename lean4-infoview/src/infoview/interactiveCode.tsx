@@ -169,7 +169,7 @@ const HoverableTypePopupSpan =
     >
       <span
         onPointerOver={onPointerOver}
-        className={isInside ? 'hover-bg-light-blue' : ''}
+        className={isInside ? 'highlight' : ''}
         onPointerOut={onPointerOut}
         onClick={onClick}
         {...props}
