@@ -124,7 +124,7 @@ export class InfoProvider implements Disposable {
         },
     };
 
-    constructor(private client: LeanClient, private leanDocs: DocumentSelector, private context: ExtensionContext) {
+    constructor(private client: LeanClient, private readonly leanDocs: DocumentSelector, private context: ExtensionContext) {
         this.updateStylesheet();
         this.subscriptions.push(
             this.client.restarting(async () => {
@@ -143,7 +143,7 @@ export class InfoProvider implements Disposable {
                 this.updateStylesheet();
                 await this.sendConfig();
             }),
-            workspace.onDidChangeTextDocument(async (_e) => {
+            workspace.onDidChangeTextDocument(async () => {
                 await this.sendPosition();
             }),
             commands.registerTextEditorCommand('lean4.displayGoal', (editor) => this.openPreview(editor)),
@@ -213,7 +213,8 @@ export class InfoProvider implements Disposable {
                 this.webviewPanel = undefined;
             });
             this.webviewPanel = webviewPanel;
-            this.clear();
+            webviewPanel.webview.html = this.initialHtml();
+            webviewPanel.api.initialize(this.client.initializeResult)
         }
         // The infoview listens for server notifications such as diagnostics passively,
         // so when it is first started we must re-send those as if the server did.
@@ -265,7 +266,7 @@ export class InfoProvider implements Disposable {
     }
 
     private async sendPosition() {
-        if (!window.activeTextEditor || !languages.match(this.leanDocs, window.activeTextEditor.document)) { return null; }
+        if (!window.activeTextEditor || languages.match(this.leanDocs, window.activeTextEditor.document) === 0) return
         void this.autoOpen();
         const uri = window.activeTextEditor.document.uri;
         const selection = window.activeTextEditor.selection;

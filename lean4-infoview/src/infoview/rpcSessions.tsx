@@ -1,9 +1,13 @@
+/**
+ * Provides classes to manage an RPC connection to the Lean server.
+ * @module
+ */
 import React from "react"
-import { DocumentUri, TextDocumentPositionParams } from "vscode-languageserver-protocol"
+import { DidCloseTextDocumentParams, Disposable, DocumentUri, TextDocumentPositionParams } from "vscode-languageserver-protocol"
 import { RpcPtr } from "../lspTypes"
 import { EditorContext, RpcContext } from "./contexts"
 import { EditorConnection } from "./editorConnection"
-import { DocumentPosition, useServerNotificationEffect } from "./util"
+import { DocumentPosition, useClientNotificationEffect } from "./util"
 
 interface RpcConnectParams {
     uri: DocumentUri
@@ -34,11 +38,12 @@ const keepAlivePeriodMs = 10000
 
 const RpcNeedsReconnect = -32900
 
-class RpcSession {
+class RpcSession implements Disposable {
     #ec: EditorConnection
     #uri: DocumentUri
     /** A timeout mechanism for notifying the server about batches of GC'd refs in fewer messages. */
     #releaseTimeout?: number
+    #keepAliveInterval: number
     #refsToRelease: RpcPtr<any>[]
     #finalizers: FinalizationRegistry<RpcPtr<any>>
 
@@ -47,7 +52,7 @@ class RpcSession {
         this.#uri = uri
 
         // We setup a recurring timer to keep the RPC session alive.
-        setInterval(() => {
+        this.#keepAliveInterval = window.setInterval(() => {
             const params: RpcKeepAliveParams = {
                 uri: this.#uri,
                 sessionId: this.sessionId,
@@ -101,10 +106,14 @@ class RpcSession {
     registerRef(ptr: RpcPtr<any>) {
         this.#finalizers.register(ptr, RpcPtr.copy(ptr))
     }
+
+    dispose() {
+        window.clearInterval(this.#keepAliveInterval)
+    }
 }
 
 /** Provides an interface for making RPC calls to the Lean server. */
-export class RpcSessions {
+export class RpcSessions implements Disposable {
     /** Maps each URI to the connected RPC session, if any, at the corresponding file worker. */
     #connected: Map<DocumentUri, RpcSession>
     /** Like `#connected`, but for sessions which are currently connecting. */
@@ -126,12 +135,10 @@ export class RpcSessions {
     }
 
     private connectAt(uri: DocumentUri): void {
-        if (this.#connecting.has(uri)) {
-            throw `already connecting at '${uri}'`
+        if (this.#connecting.has(uri) || this.#connected.has(uri)) {
+            throw new Error(`already connecting or connected at '${uri}'`)
         }
-        if (this.#connected.has(uri)) {
-            this.#connected.delete(uri)
-        }
+        this.ensureSessionClosed(uri)
         const connParams: RpcConnectParams = { uri }
         const newSesh: Promise<RpcSession> = this.#ec.api.sendClientRequest('$/lean/rpc/connect', connParams)
             .then((conn: RpcConnected) => new RpcSession(conn.sessionId, uri, this.#ec))
@@ -174,7 +181,8 @@ export class RpcSessions {
                 }
                 return undefined
             }
-            console.error(`RPC error: ${JSON.stringify(ex)}`)
+            // NOTE: these are part of normal control, no need to spam the console
+            //console.error(`RPC error: ${JSON.stringify(ex)}`)
             throw ex
         }
     }
@@ -186,7 +194,7 @@ export class RpcSessions {
     registerRef(pos: DocumentPosition, ptr: RpcPtr<any>): void {
         void this.sessionAt(pos.uri).then(sesh => {
             if (sesh) sesh.registerRef(ptr)
-            else throw `tried to register ref in non-existent RPC session ${pos.uri}`
+            else throw new Error(`tried to register ref in non-existent RPC session ${pos.uri}`)
         })
     }
 
@@ -199,6 +207,21 @@ export class RpcSessions {
         if (this.#connected.has(uri)) return this.#connected.get(uri)!.sessionId
         return ''
     }
+
+    /** Closes the RPC session at `uri` if there is one connected or connecting. */
+    ensureSessionClosed(uri: DocumentUri): void {
+        this.#connected.get(uri)?.dispose()
+        this.#connected.delete(uri)
+        this.#connecting.get(uri)?.then(sesh => {
+            sesh.dispose()
+            this.#connected.delete(uri)
+        })
+    }
+
+    dispose() {
+        this.#connected.forEach(rs => rs.dispose())
+        this.#connecting.forEach(fut => fut.then(rs => rs.dispose()))
+    }
 }
 
 /** Manages a Lean RPC connection by providing an {@link RpcContext} to the children. */
@@ -206,6 +229,18 @@ export function WithRpcSessions({ children }: { children: React.ReactNode }) {
     const ec = React.useContext(EditorContext)
     const [sessions, setSessions] = React.useState<RpcSessions>(new RpcSessions(ec))
     sessions.setSelf = setSessions
+    React.useEffect(() => {
+        // Clean up the sessions on unmount
+        return () => sessions.dispose()
+    }, [])
+
+    useClientNotificationEffect(
+        'textDocument/didClose',
+        (params: DidCloseTextDocumentParams) => {
+            sessions.ensureSessionClosed(params.textDocument.uri)
+        },
+        []
+    )
 
     return <RpcContext.Provider value={sessions}>
         {children}
