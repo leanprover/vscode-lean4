@@ -10,11 +10,12 @@ import { Infos } from './infos';
 import { AllMessages, WithDiagnosticsContext } from './messages';
 import { useClientNotificationEffect, useEvent, useServerNotificationState } from './util';
 import { LeanFileProgressParams, LeanFileProgressProcessingInfo } from '../lspTypes';
-import { EditorContext, ConfigContext, ProgressContext } from './contexts';
+import { EditorContext, ConfigContext, ProgressContext, VersionContext } from './contexts';
 import { WithRpcSessions } from './rpcSessions';
 import { EditorConnection, EditorEvents } from './editorConnection';
 import { defaultInfoviewConfig, EditorApi, InfoviewApi } from '../infoviewApi';
 import { Event } from './event';
+import { ServerVersion } from './serverVersion';
 
 function Main(props: {}) {
     if (!props) { return null }
@@ -48,19 +49,28 @@ function Main(props: {}) {
         []
     );
 
-    if (!curUri) return <p>Click somewhere in the Lean file to enable the infoview.</p>;
+    // NB: the cursor may temporarily become `undefined` when a file is closed. In this case
+    // it's important not to reconstruct the `WithBlah` wrappers below since they contain state
+    // that we want to persist.
+    let ret
+    if (!curUri) {
+        ret = <p>Click somewhere in the Lean file to enable the infoview.</p>
+    } else {
+        ret =
+            (<div className="ma1">
+                <Infos />
+                <div className="mv2">
+                    <AllMessages uri={curUri} />
+                </div>
+            </div>)
+    }
 
     return (
     <ConfigContext.Provider value={config}>
         <WithRpcSessions>
             <WithDiagnosticsContext>
                 <ProgressContext.Provider value={allProgress}>
-                    <div className="ma1">
-                        <Infos />
-                        <div className="mv2">
-                            <AllMessages uri={curUri} />
-                        </div>
-                    </div>
+                    {ret}
                 </ProgressContext.Provider>
             </WithDiagnosticsContext>
         </WithRpcSessions>
@@ -75,6 +85,7 @@ function Main(props: {}) {
  */
 export function renderInfoview(editorApi: EditorApi, uiElement: HTMLElement): InfoviewApi {
     let editorEvents: EditorEvents = {
+        initialize: new Event(),
         gotServerNotification: new Event(),
         sentClientNotification: new Event(),
         changedCursorLocation: new Event(),
@@ -84,6 +95,7 @@ export function renderInfoview(editorApi: EditorApi, uiElement: HTMLElement): In
 
     // Challenge: write a type-correct fn from `Eventify<T>` to `T` without using `any`
     const infoviewApi: InfoviewApi = {
+        initialize: async r => editorEvents.initialize.fire(r),
         gotServerNotification: async (method, params) => {
             editorEvents.gotServerNotification.fire([method, params]);
         },
@@ -97,14 +109,20 @@ export function renderInfoview(editorApi: EditorApi, uiElement: HTMLElement): In
 
     const ec = new EditorConnection(editorApi, editorEvents);
 
-    ReactDOM.render(
-        <React.StrictMode>
-            <EditorContext.Provider value={ec}>
-                <Main />
-            </EditorContext.Provider>
-        </React.StrictMode>,
-        uiElement
-    );
+    editorEvents.initialize.on(serverInitializeResult => {
+        const sv = new ServerVersion(serverInitializeResult.serverInfo!.version!)
+
+        ReactDOM.render(
+            <React.StrictMode>
+                <EditorContext.Provider value={ec}>
+                    <VersionContext.Provider value={sv}>
+                        <Main />
+                    </VersionContext.Provider>
+                </EditorContext.Provider>
+            </React.StrictMode>,
+            uiElement
+        )
+    })
 
     return infoviewApi;
 }
