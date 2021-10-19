@@ -42,18 +42,7 @@ function Main(props: {
         else setCurUri(undefined)
     }, []);
 
-    const loc = props.location;
-    if (!curUri && loc){
-        curUri = loc.uri;
-        setCurUri(curUri);
-    }
-
-    if (loc) {
-        const [curLoc, setCurLoc] = React.useState<Location>();
-        if (!curLoc) {
-            setCurLoc(loc);
-        }
-    }
+    ec.events.changedCursorLocation.current = props.location;
 
     useClientNotificationEffect(
         'textDocument/didClose',
@@ -128,7 +117,6 @@ export function renderInfoview(editorApi: EditorApi, uiElement: HTMLElement): In
 
     editorEvents.initialize.on(([serverInitializeResult, loc]: [InitializeResult, Location]) => {
 
-        debugger;
         const sv = new ServerVersion(serverInitializeResult.serverInfo!.version!)
 
         ReactDOM.render(
