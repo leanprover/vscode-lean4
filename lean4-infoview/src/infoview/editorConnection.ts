@@ -1,4 +1,4 @@
-import { Location, ShowDocumentParams } from "vscode-languageserver-protocol";
+import { Location, DocumentUri, ShowDocumentParams } from "vscode-languageserver-protocol";
 
 import { Eventify } from "./event";
 import { DocumentPosition } from "./util";
@@ -9,6 +9,8 @@ export type EditorEvents = Eventify<InfoviewApi>;
 
 export class EditorConnection {
   constructor(readonly api: EditorApi, readonly events: EditorEvents) {}
+
+  initialLocation : Location | null = null;
 
   /** Highlights the given range in a document in the editor. */
   revealLocation(loc: Location): void {

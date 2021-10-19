@@ -210,7 +210,7 @@ export class InfoProvider implements Disposable {
             });
             this.webviewPanel = webviewPanel;
             webviewPanel.webview.html = this.initialHtml();
-            await webviewPanel.api.initialize(this.client.client.initializeResult, this.getLocation(editor)?.uri)
+            await webviewPanel.api.initialize(this.client.client.initializeResult, this.getLocation(editor))
         }
 
         // The infoview listens for server notifications such as diagnostics passively,

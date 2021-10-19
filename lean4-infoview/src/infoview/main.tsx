@@ -1,6 +1,6 @@
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
-import { DidCloseTextDocumentParams, DocumentUri, InitializeResult } from 'vscode-languageserver-protocol';
+import { DidCloseTextDocumentParams, Location, DocumentUri, InitializeResult } from 'vscode-languageserver-protocol';
 
 import 'tachyons/css/tachyons.css';
 import 'vscode-codicons/dist/codicon.css';
@@ -33,11 +33,26 @@ function Main(props: {}) {
         },
         []
     );
-    const [curUri, setCurUri] = React.useState<DocumentUri>();
+
+    let [curUri, setCurUri] = React.useState<DocumentUri>();
     useEvent(ec.events.changedCursorLocation, loc => {
         if (loc) setCurUri(loc.uri)
         else setCurUri(undefined)
     }, []);
+
+    if (!curUri && ec.initialLocation){
+        curUri = ec.initialLocation?.uri;
+        setCurUri(curUri);
+    }
+
+    var loc : Location | undefined = ec.initialLocation ?? undefined;
+    if (loc) {
+        const [curLoc, setCurLoc] = React.useState<Location>();
+        if (!curLoc) {
+            setCurLoc(loc);
+        }
+    }
+
     useClientNotificationEffect(
         'textDocument/didClose',
         (params: DidCloseTextDocumentParams) => {
@@ -109,17 +124,10 @@ export function renderInfoview(editorApi: EditorApi, uiElement: HTMLElement): In
 
     const ec = new EditorConnection(editorApi, editorEvents);
 
-    editorEvents.initialize.on(([serverInitializeResult, loc]: [InitializeResult, DocumentUri]) => {
+    editorEvents.initialize.on(([serverInitializeResult, loc]: [InitializeResult, Location]) => {
 
-        console.log("Setting location: " + loc);
-        try {
-            React.useContext(EditorContext);
-            const [curUri, setCurUri] = React.useState<DocumentUri>();
-            if (loc) setCurUri(loc)
-        } catch (e) {
-            console.log("Error setting uri: " + e);
-        }
-
+        debugger;
+        ec.initialLocation = loc;
         const sv = new ServerVersion(serverInitializeResult.serverInfo!.version!)
 
         ReactDOM.render(
