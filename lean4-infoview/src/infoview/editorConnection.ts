@@ -12,6 +12,7 @@ export class EditorConnection {
 
   /** Highlights the given range in a document in the editor. */
   revealLocation(loc: Location): void {
+    debugger;
     const show: ShowDocumentParams = {
       uri: loc.uri,
       selection: loc.range,

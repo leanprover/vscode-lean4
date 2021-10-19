@@ -1,6 +1,6 @@
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
-import { DidCloseTextDocumentParams, DocumentUri } from 'vscode-languageserver-protocol';
+import { DidCloseTextDocumentParams, DocumentUri, InitializeResult } from 'vscode-languageserver-protocol';
 
 import 'tachyons/css/tachyons.css';
 import 'vscode-codicons/dist/codicon.css';
@@ -95,7 +95,7 @@ export function renderInfoview(editorApi: EditorApi, uiElement: HTMLElement): In
 
     // Challenge: write a type-correct fn from `Eventify<T>` to `T` without using `any`
     const infoviewApi: InfoviewApi = {
-        initialize: async r => editorEvents.initialize.fire(r),
+        initialize: async (r, l) => editorEvents.initialize.fire([r, l]),
         gotServerNotification: async (method, params) => {
             editorEvents.gotServerNotification.fire([method, params]);
         },
@@ -109,7 +109,17 @@ export function renderInfoview(editorApi: EditorApi, uiElement: HTMLElement): In
 
     const ec = new EditorConnection(editorApi, editorEvents);
 
-    editorEvents.initialize.on(serverInitializeResult => {
+    editorEvents.initialize.on(([serverInitializeResult, loc]: [InitializeResult, DocumentUri]) => {
+
+        console.log("Setting location: " + loc);
+        try {
+            React.useContext(EditorContext);
+            const [curUri, setCurUri] = React.useState<DocumentUri>();
+            if (loc) setCurUri(loc)
+        } catch (e) {
+            console.log("Error setting uri: " + e);
+        }
+
         const sv = new ServerVersion(serverInitializeResult.serverInfo!.version!)
 
         ReactDOM.render(

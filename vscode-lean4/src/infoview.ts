@@ -11,6 +11,7 @@ import { getInfoViewAllErrorsOnLine, getInfoViewAutoOpen, getInfoViewAutoOpenSho
     getInfoViewFilterIndex, getInfoViewStyle, getInfoViewTacticStateFilters } from './config';
 import { Rpc } from './rpc';
 import { PublishDiagnosticsParams } from 'vscode-languageclient';
+import * as ls from 'vscode-languageserver-protocol'
 
 export class InfoProvider implements Disposable {
     /** Instance of the panel, if it is open. Otherwise `undefined`. */
@@ -209,8 +210,9 @@ export class InfoProvider implements Disposable {
             });
             this.webviewPanel = webviewPanel;
             webviewPanel.webview.html = this.initialHtml();
-            await webviewPanel.api.initialize(this.client.client.initializeResult)
+            await webviewPanel.api.initialize(this.client.client.initializeResult, this.getLocation(editor)?.uri)
         }
+
         // The infoview listens for server notifications such as diagnostics passively,
         // so when it is first started we must re-send those as if the server did.
         await this.sendPosition();
@@ -257,17 +259,23 @@ export class InfoProvider implements Disposable {
         void this.autoOpen();
     }
 
-    private async sendPosition() {
-        if (!window.activeTextEditor || languages.match(this.leanDocs, window.activeTextEditor.document) === 0) return
+    private getLocation(editor : TextEditor) : ls.Location | undefined {
+        if (!editor) return undefined;
         const uri = window.activeTextEditor.document.uri;
         const selection = window.activeTextEditor.selection;
-        await this.webviewPanel?.api.changedCursorLocation({
+        return {
             uri: uri.toString(),
             range: {
                 start: selection.start,
                 end: selection.end
             }
-        });
+        };
+    }
+
+    private async sendPosition() {
+        if (!window.activeTextEditor || languages.match(this.leanDocs, window.activeTextEditor.document) === 0) return
+        const loc = this.getLocation(window.activeTextEditor);
+        await this.webviewPanel?.api.changedCursorLocation(loc);
     }
 
     private async revealEditorSelection(uri: Uri, selection?: Range) {
