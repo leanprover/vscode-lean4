@@ -67,10 +67,8 @@ export function Infos() {
     const [curLoc, setCurLoc] = React.useState<Location>(ec.events.changedCursorLocation.current!);
     useEvent(ec.events.changedCursorLocation, loc => loc && setCurLoc(loc), []);
 
-    let curPos: DocumentPosition | undefined = undefined;
-    if (curLoc) {
-        curPos = { uri: curLoc.uri, ...curLoc.range.start };
-    }
+    let curPos: DocumentPosition = { uri: curLoc.uri, ...curLoc.range.start };
+
     // Update pins on UI actions
     const pinKey = React.useRef<number>(0);
     const isPinned = (pinnedPoss: DocumentPosition[], pos: DocumentPosition) => {
@@ -90,20 +88,18 @@ export function Infos() {
         });
     }, []);
 
-    if (curPos) {
-        // Toggle pin at current position when the editor requests it
-        useEvent(ec.events.requestedAction, act => {
-            if (act.kind !== 'togglePin') return;
-            setPinnedPoss(pinnedPoss => {
-                if (isPinned(pinnedPoss, curPos!)) {
-                    return pinnedPoss.filter(p => !DocumentPosition.isEqual(p, curPos!));
-                } else {
-                    pinKey.current += 1;
-                    return [ ...pinnedPoss, { ...curPos, key: pinKey.current.toString() } ];
-                }
-            });
-        }, [curPos!.uri, curPos!.line, curPos!.character]);
-    }
+    // Toggle pin at current position when the editor requests it
+    useEvent(ec.events.requestedAction, act => {
+        if (act.kind !== 'togglePin') return;
+        setPinnedPoss(pinnedPoss => {
+            if (isPinned(pinnedPoss, curPos)) {
+                return pinnedPoss.filter(p => !DocumentPosition.isEqual(p, curPos));
+            } else {
+                pinKey.current += 1;
+                return [ ...pinnedPoss, { ...curPos, key: pinKey.current.toString() } ];
+            }
+        });
+    }, [curPos.uri, curPos.line, curPos.character]);
 
     let infoProps: Keyed<InfoProps>[] = pinnedPoss.map(pos => { return { kind: 'pin', onPin: unpin, pos, key: pos.key }; });
     infoProps.push({ kind: 'cursor', onPin: pin, key: 'cursor' });

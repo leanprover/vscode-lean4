@@ -1,4 +1,4 @@
-import { Location, DocumentUri, ShowDocumentParams } from "vscode-languageserver-protocol";
+import { Location, ShowDocumentParams } from "vscode-languageserver-protocol";
 
 import { Eventify } from "./event";
 import { DocumentPosition } from "./util";
@@ -12,7 +12,6 @@ export class EditorConnection {
 
   /** Highlights the given range in a document in the editor. */
   revealLocation(loc: Location): void {
-    debugger;
     const show: ShowDocumentParams = {
       uri: loc.uri,
       selection: loc.range,
