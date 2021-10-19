@@ -10,8 +10,6 @@ export type EditorEvents = Eventify<InfoviewApi>;
 export class EditorConnection {
   constructor(readonly api: EditorApi, readonly events: EditorEvents) {}
 
-  initialLocation : Location | null = null;
-
   /** Highlights the given range in a document in the editor. */
   revealLocation(loc: Location): void {
     debugger;

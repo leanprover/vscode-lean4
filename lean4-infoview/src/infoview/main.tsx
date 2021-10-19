@@ -17,7 +17,9 @@ import { defaultInfoviewConfig, EditorApi, InfoviewApi } from '../infoviewApi';
 import { Event } from './event';
 import { ServerVersion } from './serverVersion';
 
-function Main(props: {}) {
+function Main(props: {
+    location: Location
+    }) {
     if (!props) { return null }
     const ec = React.useContext(EditorContext);
 
@@ -40,12 +42,12 @@ function Main(props: {}) {
         else setCurUri(undefined)
     }, []);
 
-    if (!curUri && ec.initialLocation){
-        curUri = ec.initialLocation?.uri;
+    const loc = props.location;
+    if (!curUri && loc){
+        curUri = loc.uri;
         setCurUri(curUri);
     }
 
-    var loc : Location | undefined = ec.initialLocation ?? undefined;
     if (loc) {
         const [curLoc, setCurLoc] = React.useState<Location>();
         if (!curLoc) {
@@ -127,14 +129,13 @@ export function renderInfoview(editorApi: EditorApi, uiElement: HTMLElement): In
     editorEvents.initialize.on(([serverInitializeResult, loc]: [InitializeResult, Location]) => {
 
         debugger;
-        ec.initialLocation = loc;
         const sv = new ServerVersion(serverInitializeResult.serverInfo!.version!)
 
         ReactDOM.render(
             <React.StrictMode>
                 <EditorContext.Provider value={ec}>
                     <VersionContext.Provider value={sv}>
-                        <Main />
+                        <Main location={loc}/>
                     </VersionContext.Provider>
                 </EditorContext.Provider>
             </React.StrictMode>,
