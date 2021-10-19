@@ -38,8 +38,7 @@ function Main(props: {}) {
     const [curUri, setCurUri] = React.useState<DocumentUri | undefined>(uri);
 
     useEvent(ec.events.changedCursorLocation, loc => {
-        if (loc) setCurUri(loc.uri)
-        else setCurUri(undefined);
+        setCurUri(loc?.uri);
     }, []);
 
     useClientNotificationEffect(
