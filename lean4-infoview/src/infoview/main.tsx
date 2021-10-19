@@ -1,6 +1,6 @@
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
-import { DidCloseTextDocumentParams, Location, DocumentUri, InitializeResult } from 'vscode-languageserver-protocol';
+import { DidCloseTextDocumentParams, Location, DocumentUri, InitializeResult, DocumentSelector } from 'vscode-languageserver-protocol';
 
 import 'tachyons/css/tachyons.css';
 import 'vscode-codicons/dist/codicon.css';
@@ -17,9 +17,7 @@ import { defaultInfoviewConfig, EditorApi, InfoviewApi } from '../infoviewApi';
 import { Event } from './event';
 import { ServerVersion } from './serverVersion';
 
-function Main(props: {
-    location: Location
-    }) {
+function Main(props: {}) {
     if (!props) { return null }
     const ec = React.useContext(EditorContext);
 
@@ -36,13 +34,13 @@ function Main(props: {
         []
     );
 
-    let [curUri, setCurUri] = React.useState<DocumentUri>();
+    const uri = ec.events.changedCursorLocation.current?.uri;
+    const [curUri, setCurUri] = React.useState<DocumentUri | undefined>(uri);
+
     useEvent(ec.events.changedCursorLocation, loc => {
         if (loc) setCurUri(loc.uri)
-        else setCurUri(undefined)
+        else setCurUri(undefined);
     }, []);
-
-    ec.events.changedCursorLocation.current = props.location;
 
     useClientNotificationEffect(
         'textDocument/didClose',
@@ -116,14 +114,14 @@ export function renderInfoview(editorApi: EditorApi, uiElement: HTMLElement): In
     const ec = new EditorConnection(editorApi, editorEvents);
 
     editorEvents.initialize.on(([serverInitializeResult, loc]: [InitializeResult, Location]) => {
-
+        ec.events.changedCursorLocation.current = loc;
         const sv = new ServerVersion(serverInitializeResult.serverInfo!.version!)
 
         ReactDOM.render(
             <React.StrictMode>
                 <EditorContext.Provider value={ec}>
                     <VersionContext.Provider value={sv}>
-                        <Main location={loc}/>
+                        <Main/>
                     </VersionContext.Provider>
                 </EditorContext.Provider>
             </React.StrictMode>,
