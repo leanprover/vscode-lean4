@@ -84,7 +84,7 @@ export type InfoviewAction =
 
 /** Calls which the hosting editor must make when the corresponding events occur. */
 export interface InfoviewApi {
-  /** Must be called exactly once on initialization with the server initialization message. */
+  /** Must be called exactly once on initialization with the server initialization message and the current cursor position. */
   initialize(serverInitializeResult: InitializeResult, loc : Location): Promise<void>;
 
   /**
