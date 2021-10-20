@@ -100,7 +100,7 @@ class RpcSession implements Disposable {
         const val = await this.#ec.api.sendClientRequest('$/lean/rpc/call', rpcParams)
         // const s = JSON.stringify(val)
         // console.log(`'${method}(${JSON.stringify(params)})' at '${pos.line}:${pos.character}' -> '${s.length < 200 ? s : '(..)'}'`)
-        return val
+        return null;
     }
 
     registerRef(ptr: RpcPtr<any>) {
@@ -176,8 +176,13 @@ export class RpcSessions implements Disposable {
         } catch (ex: any) {
             if (ex.code === RpcNeedsReconnect) {
                 // Are we reconnecting yet?
-                if (!this.#connecting.has(pos.uri)) {
-                    this.connectAt(pos.uri)
+                const uri = pos.uri;
+                if (!this.#connecting.has(uri)) {
+                    // force a reconnect.
+                    if (this.#connected.has(uri)) {
+                       this.#connected.delete(uri);
+                    }
+                    this.connectAt(uri);
                 }
                 return undefined
             }

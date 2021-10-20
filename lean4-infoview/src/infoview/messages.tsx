@@ -53,9 +53,11 @@ const MessageView = React.memo(({uri, diag}: MessageViewProps) => {
 
 function mkMessageViewProps(uri: DocumentUri, messages: InteractiveDiagnostic[]): MessageViewProps[] {
     const views: MessageViewProps[] = messages
-        .sort(({fullRange: {end: a}}, {fullRange: {end: b}}) =>
-            a.line === b.line ? a.character - b.character : a.line - b.line
-        ).map(m => {
+        .sort((msga, msgb) => {
+            const a = msga.fullRange?.end || msga.range.end;
+            const b = msgb.fullRange?.end || msgb.range.end;
+            return a.line === b.line ? a.character - b.character : a.line - b.line
+        }).map(m => {
             return { uri, diag: m };
         });
 

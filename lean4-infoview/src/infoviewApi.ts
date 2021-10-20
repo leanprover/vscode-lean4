@@ -84,8 +84,8 @@ export type InfoviewAction =
 
 /** Calls which the hosting editor must make when the corresponding events occur. */
 export interface InfoviewApi {
-  /** Must be called exactly once on initialization with the server initialization message. */
-  initialize(serverInitializeResult: InitializeResult): Promise<void>;
+  /** Must be called exactly once on initialization with the server initialization message and the current cursor position. */
+  initialize(serverInitializeResult: InitializeResult, loc : Location): Promise<void>;
 
   /**
    * Must fire whenever the LSP client receives a notification with a `method`

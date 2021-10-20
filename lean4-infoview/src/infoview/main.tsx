@@ -1,6 +1,6 @@
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
-import { DidCloseTextDocumentParams, DocumentUri } from 'vscode-languageserver-protocol';
+import { DidCloseTextDocumentParams, Location, DocumentUri, InitializeResult, DocumentSelector } from 'vscode-languageserver-protocol';
 
 import 'tachyons/css/tachyons.css';
 import 'vscode-codicons/dist/codicon.css';
@@ -33,11 +33,14 @@ function Main(props: {}) {
         },
         []
     );
-    const [curUri, setCurUri] = React.useState<DocumentUri>();
+
+    const uri = ec.events.changedCursorLocation.current?.uri;
+    const [curUri, setCurUri] = React.useState<DocumentUri | undefined>(uri);
+
     useEvent(ec.events.changedCursorLocation, loc => {
-        if (loc) setCurUri(loc.uri)
-        else setCurUri(undefined)
+        setCurUri(loc?.uri);
     }, []);
+
     useClientNotificationEffect(
         'textDocument/didClose',
         (params: DidCloseTextDocumentParams) => {
@@ -95,7 +98,7 @@ export function renderInfoview(editorApi: EditorApi, uiElement: HTMLElement): In
 
     // Challenge: write a type-correct fn from `Eventify<T>` to `T` without using `any`
     const infoviewApi: InfoviewApi = {
-        initialize: async r => editorEvents.initialize.fire(r),
+        initialize: async (r, l) => editorEvents.initialize.fire([r, l]),
         gotServerNotification: async (method, params) => {
             editorEvents.gotServerNotification.fire([method, params]);
         },
@@ -109,14 +112,15 @@ export function renderInfoview(editorApi: EditorApi, uiElement: HTMLElement): In
 
     const ec = new EditorConnection(editorApi, editorEvents);
 
-    editorEvents.initialize.on(serverInitializeResult => {
+    editorEvents.initialize.on(([serverInitializeResult, loc]: [InitializeResult, Location]) => {
+        ec.events.changedCursorLocation.current = loc;
         const sv = new ServerVersion(serverInitializeResult.serverInfo!.version!)
 
         ReactDOM.render(
             <React.StrictMode>
                 <EditorContext.Provider value={ec}>
                     <VersionContext.Provider value={sv}>
-                        <Main />
+                        <Main/>
                     </VersionContext.Provider>
                 </EditorContext.Provider>
             </React.StrictMode>,

@@ -4,7 +4,7 @@ import { Diagnostic, Range, VersionedTextDocumentIdentifier } from 'vscode-langu
 
 /** Used in place of {@link Diagnostic} within `textDocument/publishDiagnostics`. */
 export interface LeanDiagnostic extends Diagnostic {
-    fullRange: Range;
+    fullRange?: Range; // introduced in 2021-03-10
 }
 
 export interface PlainGoal {

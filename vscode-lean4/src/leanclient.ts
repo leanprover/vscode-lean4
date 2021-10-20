@@ -147,22 +147,22 @@ export class LeanClient implements Disposable {
                     this.diagnosticsEmitter.fire({uri: uri_, diagnostics: diagnostics_});
                 },
 
-                didOpen: () => {
+                didOpen: async () => {
                     // Ignore opening of documents for ctrl+hover
                     // https://github.com/microsoft/vscode/issues/78453
                     return;
                 },
 
-                didChange: (data, next) => {
-                    next(data);
+                didChange: async (data, next) => {
+                    await next(data);
                     if (!this.running) return; // there was a problem starting lean server.
                     const params = this.client.code2ProtocolConverter.asChangeTextDocumentParams(data);
                     this.didChangeEmitter.fire(params);
                 },
 
-                didClose: (doc, next) => {
+                didClose: async (doc, next) => {
                     if (!this.isOpen.delete(doc.uri.toString())) return;
-                    next(doc);
+                    await next(doc);
                     if (!this.running) return; // there was a problem starting lean server.
                     const params = this.client.code2ProtocolConverter.asTextDocumentIdentifier(doc);
                     this.didCloseEmitter.fire({textDocument: params});

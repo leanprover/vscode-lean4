@@ -10,6 +10,8 @@ import { LeanClient } from './leanclient';
 import { getInfoViewAllErrorsOnLine, getInfoViewAutoOpen, getInfoViewAutoOpenShowGoal,
     getInfoViewFilterIndex, getInfoViewStyle, getInfoViewTacticStateFilters } from './config';
 import { Rpc } from './rpc';
+import { PublishDiagnosticsParams } from 'vscode-languageclient';
+import * as ls from 'vscode-languageserver-protocol'
 
 export class InfoProvider implements Disposable {
     /** Instance of the panel, if it is open. Otherwise `undefined`. */
@@ -213,8 +215,12 @@ export class InfoProvider implements Disposable {
             });
             this.webviewPanel = webviewPanel;
             webviewPanel.webview.html = this.initialHtml();
-            void webviewPanel.api.initialize(this.client.initializeResult)
+            if (!this.client.initializeResult.serverInfo){
+                console.log('Why is this null???');
+            }
+            await webviewPanel.api.initialize(this.client.initializeResult, this.getLocation(editor))
         }
+
         // The infoview listens for server notifications such as diagnostics passively,
         // so when it is first started we must re-send those as if the server did.
         await this.sendPosition();
@@ -264,18 +270,24 @@ export class InfoProvider implements Disposable {
         void this.autoOpen();
     }
 
-    private async sendPosition() {
-        if (!window.activeTextEditor || languages.match(this.leanDocs, window.activeTextEditor.document) === 0) return
-        void this.autoOpen();
+    private getLocation(editor : TextEditor) : ls.Location | undefined {
+        if (!editor) return undefined;
         const uri = window.activeTextEditor.document.uri;
         const selection = window.activeTextEditor.selection;
-        await this.webviewPanel?.api.changedCursorLocation({
+        return {
             uri: uri.toString(),
             range: {
                 start: selection.start,
                 end: selection.end
             }
-        });
+        };
+    }
+
+    private async sendPosition() {
+        if (!window.activeTextEditor || languages.match(this.leanDocs, window.activeTextEditor.document) === 0) return
+        void this.autoOpen();
+        const loc = this.getLocation(window.activeTextEditor);
+        await this.webviewPanel?.api.changedCursorLocation(loc);
     }
 
     private async revealEditorSelection(uri: Uri, selection?: Range) {
