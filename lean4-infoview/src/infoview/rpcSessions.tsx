@@ -177,6 +177,10 @@ export class RpcSessions implements Disposable {
             if (ex.code === RpcNeedsReconnect) {
                 // Are we reconnecting yet?
                 if (!this.#connecting.has(pos.uri)) {
+                    if (this.#connected.has(pos.uri)){
+                        // force a reconnect.
+                        this.#connected.delete(pos.uri)
+                    }
                     this.connectAt(pos.uri)
                 }
                 return undefined
