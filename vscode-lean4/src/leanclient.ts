@@ -110,21 +110,21 @@ export class LeanClient implements Disposable {
                     this.diagnosticsEmitter.fire({uri: uri_, diagnostics: diagnostics_});
                 },
 
-                didOpen: () => {
+                didOpen: async () => {
                     // Ignore opening of documents for ctrl+hover
                     // https://github.com/microsoft/vscode/issues/78453
                     return;
                 },
 
-                didChange: (data, next) => {
-                    next(data);
+                didChange: async (data, next) => {
+                    await next(data);
                     const params = this.client.code2ProtocolConverter.asChangeTextDocumentParams(data);
                     this.didChangeEmitter.fire(params);
                 },
 
-                didClose: (doc, next) => {
+                didClose: async (doc, next) => {
                     if (!this.isOpen.delete(doc.uri.toString())) return;
-                    next(doc);
+                    await next(doc);
                     const params = this.client.code2ProtocolConverter.asTextDocumentIdentifier(doc);
                     this.didCloseEmitter.fire({textDocument: params});
                 },
@@ -231,7 +231,7 @@ export class LeanClient implements Disposable {
         }
         if (this.isOpen.has(doc.uri.toString())) return;
         this.isOpen.add(doc.uri.toString())
-        this.client.sendNotification(DidOpenTextDocumentNotification.type, {
+        void this.client.sendNotification(DidOpenTextDocumentNotification.type, {
             textDocument: {
                 uri: doc.uri.toString(),
                 languageId: doc.languageId,
@@ -266,12 +266,12 @@ export class LeanClient implements Disposable {
         // didOpen packet emitted below initializes the version number to be 1.
         // This is not a problem though, since both client and server are fine
         // as long as the version numbers are monotonous.
-        this.client.sendNotification('textDocument/didClose', {
+        void this.client.sendNotification('textDocument/didClose', {
             'textDocument': {
                 uri
             }
         })
-        this.client.sendNotification('textDocument/didOpen', {
+        void this.client.sendNotification('textDocument/didOpen', {
             'textDocument': {
                 uri,
                 'languageId': 'lean4',
