@@ -133,6 +133,9 @@ export class InfoProvider implements Disposable {
             }),
             this.client.restarted(async () => {
                 await this.autoOpen();
+                if (this.webviewPanel && this.client.initializeResult && window.activeTextEditor){
+                    await this.webviewPanel.api.initialize(this.client.initializeResult, this.getLocation(window.activeTextEditor));
+                }
                 // NOTE(WN): We do not re-send state such as diagnostics to the infoview here
                 // because a restarted server will send those on its own.
             }),
@@ -215,10 +218,11 @@ export class InfoProvider implements Disposable {
             });
             this.webviewPanel = webviewPanel;
             webviewPanel.webview.html = this.initialHtml();
-            if (!this.client.initializeResult.serverInfo){
-                console.log('Why is this null???');
+
+            // this.client.initializeResult can be null if the server failed to start.
+            if (this.client.initializeResult) {
+                await webviewPanel.api.initialize(this.client.initializeResult, this.getLocation(editor))
             }
-            await webviewPanel.api.initialize(this.client.initializeResult, this.getLocation(editor))
         }
 
         // The infoview listens for server notifications such as diagnostics passively,

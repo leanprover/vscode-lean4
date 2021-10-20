@@ -206,6 +206,7 @@ export class LeanClient implements Disposable {
         this.patchConverters(this.client.protocol2CodeConverter, this.client.code2ProtocolConverter)
         try {
             this.client.onDidChangeState((s) =>{
+                // see https://github.com/microsoft/vscode-languageserver-node/issues/825
                 if (s.newState === State.Starting) {
                     console.log('client starting');
                 } else if (s.newState === State.Running) {

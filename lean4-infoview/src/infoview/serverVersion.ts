@@ -8,18 +8,24 @@ export class ServerVersion {
     minor: number
     patch: number
 
-    constructor(version: string) {
-        const vs = version.split('.')
-        if (vs.length === 2) {
-            this.major = parseInt(vs[0])
-            this.minor = parseInt(vs[1])
-            this.patch = 0
-        } else if (vs.length == 3) {
-            this.major = parseInt(vs[0])
-            this.minor = parseInt(vs[1])
-            this.patch = parseInt(vs[2])
-        } else {
-            throw new Error(`cannot parse Lean server version '${version}'`)
+    constructor(version: string | undefined) {
+        if (version) {
+            const vs = version.split('.')
+            if (vs.length === 2) {
+                this.major = parseInt(vs[0])
+                this.minor = parseInt(vs[1])
+                this.patch = 0
+            } else if (vs.length == 3) {
+                this.major = parseInt(vs[0])
+                this.minor = parseInt(vs[1])
+                this.patch = parseInt(vs[2])
+            } else {
+                throw new Error(`cannot parse Lean server version '${version}'`)
+            }
+        } else{
+            this.major = 0;
+            this.minor = 0;
+            this.patch = 0;
         }
     }
 
