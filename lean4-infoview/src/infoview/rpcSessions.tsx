@@ -100,7 +100,7 @@ class RpcSession implements Disposable {
         const val = await this.#ec.api.sendClientRequest('$/lean/rpc/call', rpcParams)
         // const s = JSON.stringify(val)
         // console.log(`'${method}(${JSON.stringify(params)})' at '${pos.line}:${pos.character}' -> '${s.length < 200 ? s : '(..)'}'`)
-        return null;
+        return val;
     }
 
     registerRef(ptr: RpcPtr<any>) {
