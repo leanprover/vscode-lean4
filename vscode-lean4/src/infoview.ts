@@ -128,6 +128,9 @@ export class InfoProvider implements Disposable {
         this.subscriptions.push(
             this.client.restarted(async () => {
                 await this.autoOpen();
+                if (this.webviewPanel) {
+                    await this.webviewPanel.api.initialize(this.client.client.initializeResult, this.getLocation(window.activeTextEditor))
+                }
                 // NOTE(WN): We do not re-send state such as diagnostics to the infoview here
                 // because a restarted server will send those on its own.
             }),
