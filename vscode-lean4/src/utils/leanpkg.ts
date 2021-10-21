@@ -17,18 +17,36 @@ export class LeanpkgService implements Disposable {
     }
 
     private getWorkspaceLeanPkgUri() : Uri {
-        let rootPath = window.activeTextEditor.document.uri;
+        let rootPath : Uri = null;
+
+        if (window.activeTextEditor && window.activeTextEditor.document.languageId == 'lean')
+        {
+            rootPath = window.activeTextEditor.document.uri;
+        }
+        else {
+            // This happens if vscode starts with a lean file open
+            // but the "Getting Started" page is active.
+            for (const editor of window.visibleTextEditors) {
+                const lang = editor.document.languageId;
+                if (lang === 'lean' || lang === 'lean4') {
+                    rootPath = editor.document.uri;
+                    break;
+                }
+            }
+        }
+
         if (rootPath) {
             return Uri.joinPath(rootPath, '..', this.tomlFileName);
         }
 
+        // this code path should never happen because lean extension is only
+        // activated when a lean file is opened, so it should have been in the
+        // list of window.visibleTextEditors.
         const workspaceFolders = workspace.workspaceFolders;
-        // TODO: support multiple workspace folders?
         if (workspaceFolders && workspaceFolders.length > 0) {
             rootPath = workspaceFolders[0].uri;
         }
         if (!rootPath) {
-            // what kind of vs folder is this?
             return null;
         }
         return Uri.joinPath(rootPath, this.tomlFileName);
