@@ -361,7 +361,7 @@ export class LeanClient implements Disposable {
     }
 
     // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-    sendNotification(method: string, params: any): Promise<void> {
+    sendNotification(method: string, params: any): void {
         return this.running ? this.client.sendNotification(method, params) : undefined;
     }
 

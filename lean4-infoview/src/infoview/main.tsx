@@ -115,6 +115,7 @@ export function renderInfoview(editorApi: EditorApi, uiElement: HTMLElement): In
     editorEvents.initialize.on(([serverInitializeResult, loc]: [InitializeResult, Location]) => {
         ec.events.changedCursorLocation.current = loc;
 
+        debugger;
         // Note that if the server fails to start serverInitializeResult can be undefined.
         // So this handles that gracefully by providing a bogus ServerVersion number 0,0,0.
         const sv = new ServerVersion(serverInitializeResult?.serverInfo?.version);

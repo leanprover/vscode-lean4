@@ -383,9 +383,9 @@
 		"package": "vsce package"
 	},
 	"dependencies": {
+		"vscode-languageclient": "^7.0.0",
 		"@lean4/infoview": "^0.1.0",
-		"mobx": "5.15.7",
-		"vscode-languageclient": "^8.0.0-next"
+		"mobx": "5.15.7"
 	},
 	"devDependencies": {
 		"@types/node": "^14.17.4",
