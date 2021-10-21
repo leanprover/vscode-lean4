@@ -12,6 +12,7 @@
   "files": [
     "dist/*"
   ],
+  "extensionKind": ["ui"],
   "license": "Apache-2.0",
   "devDependencies": {
     "@testing-library/dom": "^7.21.4",

@@ -367,6 +367,7 @@
 			}
 		}
 	},
+	"extensionKind": ["workspace"],
 	"activationEvents": [
 		"onLanguage:lean",
 		"onLanguage:lean4",
