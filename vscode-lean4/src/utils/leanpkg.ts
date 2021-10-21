@@ -16,10 +16,14 @@ export class LeanpkgService implements Disposable {
         this.localStorage = localStorage;
     }
 
+    private isLean(languageId : string) : boolean {
+        return languageId === 'lean' || languageId === 'lean4';
+    }
+
     private getWorkspaceLeanPkgUri() : Uri {
         let rootPath : Uri = null;
 
-        if (window.activeTextEditor && window.activeTextEditor.document.languageId == 'lean')
+        if (window.activeTextEditor && this.isLean(window.activeTextEditor.document.languageId))
         {
             rootPath = window.activeTextEditor.document.uri;
         }
@@ -28,7 +32,7 @@ export class LeanpkgService implements Disposable {
             // but the "Getting Started" page is active.
             for (const editor of window.visibleTextEditors) {
                 const lang = editor.document.languageId;
-                if (lang === 'lean' || lang === 'lean4') {
+                if (this.isLean(lang)) {
                     rootPath = editor.document.uri;
                     break;
                 }
