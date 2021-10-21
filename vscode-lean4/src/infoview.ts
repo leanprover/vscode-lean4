@@ -209,8 +209,16 @@ export class InfoProvider implements Disposable {
                     enableScripts: true,
                     enableCommandUris: true,
                 }) as WebviewPanel & {rpc: Rpc, api: InfoviewApi};
+
+            // Note that an extension can send data to its webviews using webview.postMessage().
+            // This method sends any JSON serializable data to the webview. The message is received
+            // inside the webview through the standard message event.
+            // The receiving of these messages is done inside webview\index.ts where it
+            // calls window.addEventListener('message',...
             webviewPanel.rpc = new Rpc(m => webviewPanel.webview.postMessage(m));
             webviewPanel.rpc.register(this.editorApi);
+
+            // Similarly, we can received data from the webview by listening to onDidReceiveMessage.
             webviewPanel.webview.onDidReceiveMessage(m => webviewPanel.rpc.messageReceived(m))
             webviewPanel.api = webviewPanel.rpc.getApi();
             webviewPanel.onDidDispose(() => {
