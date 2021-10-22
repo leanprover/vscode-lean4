@@ -60,7 +60,7 @@ export class LeanInstaller implements Disposable {
         if (!executable) executable = executablePath();
         // note; we keep the LeanClient alive so that it can be restarted if the
         // user changes the Lean: Executable Path.
-        const installItem = 'Install Lean';
+        const installItem = 'Install Lean using Elan';
         const selectItem = 'Select Lean Toolchain';
         const item = await window.showErrorMessage(`Failed to start '${executable}' language server`, installItem, selectItem)
         if (item === installItem) {
@@ -133,6 +133,7 @@ export class LeanInstaller implements Disposable {
             // Specifically, if the extension was not opened inside of a folder, it
             // looks for a global (default) installation of Lean. This way, we can support
             // single file editing.
+            this.outputChannel.show(true);
             const stdout = await batchExecute(cmd, options, folderPath, this.outputChannel)
             const filterVersion = /version (\d+)\.\d+\..+/
             const match = filterVersion.exec(stdout)
@@ -183,6 +184,7 @@ export class LeanInstaller implements Disposable {
     async installLean() : Promise<boolean> {
 
         if (executablePath() !== 'lean') {
+            this.outputChannel.show(true);
             this.outputChannel.appendLine('It looks like you\'ve modified the `lean.executablePath` user setting.');
             this.outputChannel.appendLine('Please change it back to \'lean\' before installing elan.');
             return false;
@@ -192,6 +194,7 @@ export class LeanInstaller implements Disposable {
             let elanInstalled = false;
             // See if we have elan already.
             try {
+                this.outputChannel.show(true);
                 const options = ['--version']
                 const stdout = await batchExecute('elan', options, undefined, this.outputChannel);
                 const filterVersion = /elan (\d+)\.\d+\..+/
@@ -224,6 +227,8 @@ export class LeanInstaller implements Disposable {
                 promptAndExit = 'Read-Host -Prompt "Press ENTER key to start Lean" ; exit\n'
             }
 
+            const toolchain = this.defaultLeanVersion ? `--default-toolchain "${this.defaultLeanVersion}"` : '';
+
             // Now show the terminal and run elan.
             if (elanInstalled) {
                 // ok, interesting, why did checkLean4 fail then, perhaps elan just needs to be updated?
@@ -232,12 +237,12 @@ export class LeanInstaller implements Disposable {
             else if (process.platform === 'win32') {
                 terminal.sendText(
                     `Invoke-WebRequest -Uri "${this.leanInstallerWindows}" -OutFile elan-init.ps1; ` +
-                    `.\\elan-init.ps1 --default-toolchain "${this.defaultLeanVersion}" ; ` +
+                    `.\\elan-init.ps1 "${toolchain}" ; ` +
                     `del elan-init.ps1 ; ${promptAndExit}\n`);
             }
             else{
                 terminal.sendText(
-                    `curl ${this.leanInstallerLinux} -sSf | sh -s -- --default-toolchain ${this.defaultLeanVersion} && ` +
+                    `curl ${this.leanInstallerLinux} -sSf | sh -s -- ${toolchain} && ` +
                     `echo && ${promptAndExit}`);
             }
 

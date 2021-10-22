@@ -5,7 +5,8 @@ import { LocalStorageService} from './localStorage'
 
 export class LeanpkgService implements Disposable {
     private subscriptions: Disposable[] = [];
-    private leanpkgToml : Uri = null;
+    private leanVersionFile : Uri = null;
+    private toolchainFileName : string = 'lean-toolchain'
     private tomlFileName : string = 'leanpkg.toml'
     private defaultVersion = 'leanprover/lean4:nightly';
     private localStorage : LocalStorageService;
@@ -14,13 +15,25 @@ export class LeanpkgService implements Disposable {
 
     constructor(localStorage : LocalStorageService) {
         this.localStorage = localStorage;
+
+        // track changes in the version of lean specified in the .toml file...
+        const watcher = workspace.createFileSystemWatcher('**/leanpkg.toml');
+        watcher.onDidChange((u) => this.handleFileChanged(u));
+        watcher.onDidCreate((u) => this.handleFileChanged(u));
+        watcher.onDidDelete((u) => this.handleFileDeleted(u));
+        this.subscriptions.push(watcher);
+
+        const watcher2 = workspace.createFileSystemWatcher('**/lean-toolchain');
+        watcher2.onDidChange((u) => this.handleFileChanged(u));
+        watcher2.onDidCreate((u) => this.handleFileChanged(u));
+        watcher2.onDidDelete((u) => this.handleFileDeleted(u));
     }
 
     private isLean(languageId : string) : boolean {
         return languageId === 'lean' || languageId === 'lean4';
     }
 
-    private getWorkspaceLeanPkgUri() : Uri {
+    private getWorkspaceLeanFolderUri() : Uri {
         let rootPath : Uri = null;
 
         if (window.activeTextEditor && this.isLean(window.activeTextEditor.document.languageId))
@@ -40,7 +53,7 @@ export class LeanpkgService implements Disposable {
         }
 
         if (rootPath) {
-            return Uri.joinPath(rootPath, '..', this.tomlFileName);
+            return Uri.joinPath(rootPath, '..');
         }
 
         // this code path should never happen because lean extension is only
@@ -53,49 +66,49 @@ export class LeanpkgService implements Disposable {
         if (!rootPath) {
             return null;
         }
-        return Uri.joinPath(rootPath, this.tomlFileName);
+        return rootPath;
     }
 
     async findLeanPkgVersionInfo() : Promise<string> {
-        const path = this.getWorkspaceLeanPkgUri()
+        const path = this.getWorkspaceLeanFolderUri()
         if (!path) {
             // what kind of vs folder is this?
         }
         else {
-            let uri = Uri.joinPath(path, '..');
-            // search parent folders for a leanpkg.toml file...
+            let uri = path;
+            // search parent folders for a leanpkg.toml file, or a Lake lean-toolchain file.
             while (true) {
-                const fileUri = Uri.joinPath(uri, this.tomlFileName);
-                if (fs.existsSync(new URL(fileUri.toString()))) {
-                    this.leanpkgToml = fileUri;
+                const leanToolchain = Uri.joinPath(uri, this.toolchainFileName);
+                if (fs.existsSync(new URL(leanToolchain.toString()))) {
+                    this.leanVersionFile = leanToolchain;
                     break;
                 }
                 else {
-                    const parent = Uri.joinPath(uri, '..');
-                    if (parent === uri) {
-                        // no .toml file found.
+                    const leanPkg = Uri.joinPath(uri, this.tomlFileName);
+                    if (fs.existsSync(new URL(leanPkg.toString()))) {
+                        this.leanVersionFile = leanPkg;
                         break;
                     }
-                    uri = parent;
+                    else {
+                        const parent = Uri.joinPath(uri, '..');
+                        if (parent === uri) {
+                            // no .toml file found.
+                            break;
+                        }
+                        uri = parent;
+                    }
                 }
             }
         }
 
         let version = this.defaultVersion;
-        if (this.leanpkgToml) {
+        if (this.leanVersionFile || this.leanVersionFile) {
             try {
                 version = await this.readLeanVersion();
             } catch (err) {
                 console.log(err);
             }
         }
-
-        // track changes in the version of lean specified in the .toml file...
-        const watcher = workspace.createFileSystemWatcher('**/leanpkg.toml');
-        watcher.onDidChange((u) => this.handleFileChanged(u));
-        watcher.onDidCreate((u) => this.handleFileChanged(u));
-        watcher.onDidDelete((u) => this.handleFileDeleted(u));
-        this.subscriptions.push(watcher);
 
         return version;
     }
@@ -105,10 +118,10 @@ export class LeanpkgService implements Disposable {
     }
 
     private async handleFileChanged(uri: Uri) {
-        if (!this.leanpkgToml){
-            this.leanpkgToml = uri;
+        if (!this.leanVersionFile){
+            this.leanVersionFile = uri;
         }
-        if (uri.toString() === this.leanpkgToml.toString()) {
+        if (uri.toString() === this.leanVersionFile.toString()) {
             const version = await this.readLeanVersion();
             this.localStorage.setLeanVersion('');
             // raise an event so the extension triggers handleVersionChanged.
@@ -117,9 +130,11 @@ export class LeanpkgService implements Disposable {
     }
 
     private async handleFileDeleted(uri: Uri) {
-        if (this.leanpkgToml && uri.toString() === this.leanpkgToml.toString()){
-            this.leanpkgToml = null;
-            this.versionChangedEmitter.fire(this.defaultVersion);
+        if (this.leanVersionFile && uri.toString() === this.leanVersionFile.toString()){
+            this.leanVersionFile = null;
+            // user might be switching from leanpkg to lake...
+            const version = await this.findLeanPkgVersionInfo();
+            this.versionChangedEmitter.fire(version ?? this.defaultVersion);
         }
     }
 
@@ -135,90 +150,61 @@ export class LeanpkgService implements Disposable {
     }
 
     private async readLeanVersion() {
-        const url = new URL(this.leanpkgToml.toString());
-        return new Promise<string>((resolve, reject) => {
-            if (fs.existsSync(url)) {
-                fs.readFile(url, { encoding: 'utf-8' }, (err, data) =>{
-                    if (err) {
-                        reject(err);
-                    } else {
-                        let version = this.defaultVersion;
-                        const lines = data.split(/\r?\n/);
-                        lines.forEach((line) =>{
-                            if (line.trim().startsWith('lean_version')){
-                                const p = line.split('=');
-                                if (p.length > 1){
-                                    version = this.trimQuotes(p[1]);
+        if (this.leanVersionFile.path.endsWith(this.tomlFileName))
+        {
+            const url = new URL(this.leanVersionFile.toString());
+            return new Promise<string>((resolve, reject) => {
+                if (fs.existsSync(url)) {
+                    fs.readFile(url, { encoding: 'utf-8' }, (err, data) =>{
+                        if (err) {
+                            reject(err);
+                        } else {
+                            let version : string = '';
+                            const lines = data.split(/\r?\n/);
+                            lines.forEach((line) =>{
+                                if (line.trim().startsWith('lean_version')){
+                                    const p = line.split('=');
+                                    if (!version && p.length > 1) {
+                                        version = this.trimQuotes(p[1]);
+                                    }
                                 }
+                            });
+                            if (!version) {
+                                version = this.defaultVersion
                             }
-                        });
-                        resolve(version);
-                    }
-                });
-            } else {
-                resolve(this.defaultVersion);
-            }
-        });
+                            resolve(version);
+                        }
+                    });
+                } else {
+                    resolve(this.defaultVersion);
+                }
+            });
+        } else {
+            // must be a lean-toolchain file, these are much simpler they only contain a version.
+            const url = new URL(this.leanVersionFile.toString());
+            return new Promise<string>((resolve, reject) => {
+                if (fs.existsSync(url)) {
+                    fs.readFile(url, { encoding: 'utf-8' }, (err, data) =>{
+                        if (err) {
+                            reject(err);
+                        } else {
+                            let version : string = '';
+                            const lines = data.split(/\r?\n/);
+                            lines.forEach((line) =>{
+                                if (!version && line.trim()) {
+                                    version = line.trim();
+                                }
+                            });
+                            if (!version) {
+                                version = this.defaultVersion
+                            }
+                            resolve(version);
+                        }
+                    });
+                } else {
+                    resolve(this.defaultVersion);
+                }
+            });
+        }
     }
-
-    // TODO: this task part is TBD...
-    // private mkTask(command: string): Task {
-    //     const task = new Task({ type: 'leanpkg', command }, command, 'leanpkg',
-    //         new ProcessExecution(this.leanpkgExecutable(), [command]), []);
-    //     task.group = TaskGroup.Build;
-    //     task.presentationOptions = {
-    //         echo: true,
-    //         focus: true,
-    //     };
-    //     return task;
-    // }
-
-    // provideTasks(): Task[] {
-    //     return ['build', 'configure', 'upgrade'].map((c) => this.mkTask(c));
-    // }
-    // resolveTask(task: Task): Task {
-    //     return undefined;
-    // }
-
-    // leanpkgExecutable(): string {
-    //     const config = workspace.getConfiguration('lean4');
-
-    //     let executable = this.storageManager.getLeanPath();
-    //     if (!executable) executable = executablePath();
-
-    //     const {extensionPath} = extensions.getExtension('jroesch.lean');
-    //     const leanpkg = config.get<string>('leanpkgPath').replace('%extensionPath%', extensionPath + '/');
-    //     if (leanpkg) { return leanpkg; }
-
-    //     const leanPath = config.get<string>('executablePath').replace('%extensionPath%', extensionPath + '/');
-    //     if (leanPath) {
-    //         const leanpkg2 = path.join(path.dirname(leanPath), 'leanpkg');
-    //         if (fs.existsSync(leanpkg2)) { return leanpkg2; }
-    //     }
-
-    //     return 'leanpkg';
-    // }
-
-    // private async requestLeanpkgConfigure(message: string) {
-    //     const configureItem = 'Run leanpkg configure.';
-    //     const chosen = await window.showErrorMessage(message, configureItem);
-    //     if (chosen === configureItem) {
-    //         await this.configure();
-    //     }
-    // }
-
-    // private async configure() {
-    //     await commands.executeCommand('workbench.action.tasks.runTask',
-    //         'leanpkg: configure');
-    // }
-
-    // private async build() {
-    //     await commands.executeCommand('workbench.action.tasks.runTask',
-    //         'leanpkg: build');
-    // }
-
-    // private async upgrade() {
-    //     await commands.executeCommand('workbench.action.tasks.runTask',
-    //         'leanpkg: upgrade');
-    // }
 }

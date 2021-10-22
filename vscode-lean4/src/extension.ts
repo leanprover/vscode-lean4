@@ -16,7 +16,10 @@ export async function activate(context: ExtensionContext): Promise<any> {
     const storageManager = new LocalStorageService(context.workspaceState);
     const pkgService = new LeanpkgService(storageManager)
     context.subscriptions.push(pkgService);
-    const leanVersion = await pkgService.findLeanPkgVersionInfo();
+    let leanVersion = await pkgService.findLeanPkgVersionInfo();
+    if (leanVersion) {
+        leanVersion = 'none';
+    }
 
     const installer = new LeanInstaller(outputChannel, leanVersion, storageManager,pkgService)
     context.subscriptions.push(installer);
@@ -46,7 +49,11 @@ export async function activate(context: ExtensionContext): Promise<any> {
     }))
     context.subscriptions.push(commands.registerCommand('lean4.restartServer', () => client.restart()));
 
-    installer.installChanged((v) => client.restart());
+    installer.installChanged(async (v) => {
+        // have to check again here in case elan install had --default-toolchain none.
+        await installer.testLeanVersion();
+        void client.restart()
+    });
     pkgService.versionChanged((v) => installer.handleVersionChanged(v));
     client.serverFailed((err) => installer.showInstallOptions());
 

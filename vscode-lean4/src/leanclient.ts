@@ -110,10 +110,6 @@ export class LeanClient implements Disposable {
             env.LEAN_SERVER_LOG_DIR = serverLoggingPath()
         }
 
-        // have to check again here in case user just did the install lean option
-        // and perhaps the install failed.
-        this.outputChannel.show(true);
-
         let options = ['--server']
         if (version) {
             // user is requesting an explicit version for this workspace.
@@ -153,16 +149,16 @@ export class LeanClient implements Disposable {
                     return;
                 },
 
-                didChange: async (data, next) => {
-                    await next(data);
+                didChange: (data, next) => {
+                    next(data);
                     if (!this.running) return; // there was a problem starting lean server.
                     const params = this.client.code2ProtocolConverter.asChangeTextDocumentParams(data);
                     this.didChangeEmitter.fire(params);
                 },
 
-                didClose: async (doc, next) => {
+                didClose: (doc, next) => {
                     if (!this.isOpen.delete(doc.uri.toString())) return;
-                    await next(doc);
+                    next(doc);
                     if (!this.running) return; // there was a problem starting lean server.
                     const params = this.client.code2ProtocolConverter.asTextDocumentIdentifier(doc);
                     this.didCloseEmitter.fire({textDocument: params});
@@ -244,8 +240,18 @@ export class LeanClient implements Disposable {
         } as any, null);
 
         // HACK
-        (this.client as any)._serverProcess.stderr.on('data', () =>
-            this.client.outputChannel.show(true))
+        (this.client as any)._serverProcess.stderr.on('data', (msg) => {
+            const s = msg.toString();
+            // ignore this normal message that happens on server restart.
+            if (s.trim() !== 'Watchdog error: Cannot read LSP message: Stream was closed'){
+                this.client.outputChannel.appendLine(s);
+                this.client.outputChannel.show(true);
+                // [Chris] NOTE: do we really want this at all, I'm seeing random message like this:
+                // [file:///d%3A/Temp/lean_examples/mathlib4/Mathlib/Logic/Basic.lean] Trying to release refs
+                //       '#[0, 4, 3, 2, 1, 0, 4, 3, 2, 1, 0, 4, 3, 2, 1, 0, 4, 3, 2, 1]' from outdated RPC session '18389795526673021304'.
+                // which seem like more of an internal debugging message than an end user message...
+            }
+        });
 
         window.visibleTextEditors.forEach((e) => this.open(e.document));
         this.restartedEmitter.fire(undefined)
