@@ -8,7 +8,6 @@ export class LeanInstaller implements Disposable {
 
     private leanInstallerLinux = 'https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh'
     private leanInstallerWindows = 'https://raw.githubusercontent.com/leanprover/elan/master/elan-init.ps1'
-    private defaultLeanVersion : string = null;
     private outputChannel: OutputChannel;
     private localStorage: LocalStorageService;
     private subscriptions: Disposable[] = [];
@@ -18,17 +17,16 @@ export class LeanInstaller implements Disposable {
     private installChangedEmitter = new EventEmitter<string>();
     installChanged = this.installChangedEmitter.event
 
-    constructor(outputChannel: OutputChannel, version : string, localStorage : LocalStorageService,
+    constructor(outputChannel: OutputChannel, localStorage : LocalStorageService,
                 pkgService : LeanpkgService){
         this.outputChannel = outputChannel;
-        this.defaultLeanVersion = version;
         this.localStorage = localStorage;
         this.pkgService = pkgService;
         this.subscriptions.push(commands.registerCommand('lean4.selectToolchain', () => this.selectToolchain()));
     }
 
-    async testLeanVersion() : Promise<string> {
-        const found = await this.checkLeanVersion();
+    async testLeanVersion(requestedVersion : string) : Promise<string> {
+        const found = await this.checkLeanVersion(requestedVersion);
         if (found.error) {
             void window.showErrorMessage(found.error);
             // then try something else...
@@ -46,7 +44,7 @@ export class LeanInstaller implements Disposable {
         const restartItem = 'Restart Lean';
         const item = await window.showErrorMessage(`Lean version changed: '${version}'`, restartItem);
         if (item === restartItem) {
-            const rc = await this.testLeanVersion();
+            const rc = await this.testLeanVersion(version);
             if (rc === '4'){
                 // it works, so restart the client!
                 this.installChangedEmitter.fire(undefined);
@@ -65,7 +63,7 @@ export class LeanInstaller implements Disposable {
         const item = await window.showErrorMessage(`Failed to start '${executable}' language server`, installItem, selectItem)
         if (item === installItem) {
             try {
-                const result = await this.installLean();
+                const result = await this.installElan();
                 this.installChangedEmitter.fire(undefined);
             } catch (err) {
                 this.outputChannel.appendLine(err);
@@ -109,11 +107,12 @@ export class LeanInstaller implements Disposable {
         }
     }
 
-    async checkLeanVersion(): Promise<{version: string, error: string}> {
+    async checkLeanVersion(requestedVersion : string): Promise<{version: string, error: string}> {
 
         let cmd = this.localStorage.getLeanPath();
         if (!cmd) cmd = executablePath();
-        const version = this.localStorage.getLeanVersion();
+        // if this workspace has a local override use it, otherwise fall back on the requested version.
+        const version = this.localStorage.getLeanVersion() ?? requestedVersion;
 
         const folders = workspace.workspaceFolders
         let folderPath: string
@@ -181,7 +180,7 @@ export class LeanInstaller implements Disposable {
         }
     }
 
-    async installLean() : Promise<boolean> {
+    async installElan() : Promise<boolean> {
 
         if (executablePath() !== 'lean') {
             this.outputChannel.show(true);
@@ -227,7 +226,9 @@ export class LeanInstaller implements Disposable {
                 promptAndExit = 'Read-Host -Prompt "Press ENTER key to start Lean" ; exit\n'
             }
 
-            const toolchain = this.defaultLeanVersion ? `--default-toolchain "${this.defaultLeanVersion}"` : '';
+            // we try not to mess with the --default-toolchain and only install the minimum
+            // # of toolchains to get this user up and running on the workspace they are opening.
+            const toolchain = '--default-toolchain none';
 
             // Now show the terminal and run elan.
             if (elanInstalled) {

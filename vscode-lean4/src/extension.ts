@@ -16,22 +16,12 @@ export async function activate(context: ExtensionContext): Promise<any> {
     const storageManager = new LocalStorageService(context.workspaceState);
     const pkgService = new LeanpkgService(storageManager)
     context.subscriptions.push(pkgService);
-    let leanVersion = await pkgService.findLeanPkgVersionInfo();
-    if (leanVersion) {
-        // since a lean version is defined 'lean --version' will install the
-        // version the user is requesting, so we do not need need elan to
-        // install a default version.
-        leanVersion = 'none';
-    } else {
-        // user is opening a folder with no leanpkg or lean-toolchain defined
-        // so we have to pick some lean4 version to use here.
-        leanVersion = 'leanprover/lean4:nightly';
-    }
+    const leanVersion = await pkgService.findLeanPkgVersionInfo();
 
-    const installer = new LeanInstaller(outputChannel, leanVersion, storageManager,pkgService)
+    const installer = new LeanInstaller(outputChannel, storageManager,pkgService)
     context.subscriptions.push(installer);
 
-    const result = await installer.testLeanVersion();
+    const result = await installer.testLeanVersion(leanVersion);
     if (result !== '4') {
         // ah, then don't activate this extension!
         return { isLean4Project: false };
@@ -58,7 +48,7 @@ export async function activate(context: ExtensionContext): Promise<any> {
 
     installer.installChanged(async (v) => {
         // have to check again here in case elan install had --default-toolchain none.
-        await installer.testLeanVersion();
+        await installer.testLeanVersion(leanVersion);
         void client.restart()
     });
     pkgService.versionChanged((v) => installer.handleVersionChanged(v));
