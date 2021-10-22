@@ -8,7 +8,7 @@ export class LeanpkgService implements Disposable {
     private leanVersionFile : Uri = null;
     private toolchainFileName : string = 'lean-toolchain'
     private tomlFileName : string = 'leanpkg.toml'
-    private defaultVersion = 'leanprover/lean4:nightly';
+    private defaultVersion = '';
     private localStorage : LocalStorageService;
     private versionChangedEmitter = new EventEmitter<string>();
     versionChanged = this.versionChangedEmitter.event
