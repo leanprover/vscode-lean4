@@ -2,7 +2,6 @@ import { window, workspace, TerminalOptions, OutputChannel, commands, Disposable
 import { executablePath, addServerEnvPaths } from '../config'
 import { batchExecute } from './batch'
 import { LocalStorageService} from './localStorage'
-import { LeanpkgService} from './leanpkg'
 
 export class LeanInstaller implements Disposable {
 
@@ -11,17 +10,14 @@ export class LeanInstaller implements Disposable {
     private outputChannel: OutputChannel;
     private localStorage: LocalStorageService;
     private subscriptions: Disposable[] = [];
-    private pkgService : LeanpkgService;
     private prompting : boolean = false;
 
     private installChangedEmitter = new EventEmitter<string>();
     installChanged = this.installChangedEmitter.event
 
-    constructor(outputChannel: OutputChannel, localStorage : LocalStorageService,
-                pkgService : LeanpkgService){
+    constructor(outputChannel: OutputChannel, localStorage : LocalStorageService){
         this.outputChannel = outputChannel;
         this.localStorage = localStorage;
-        this.pkgService = pkgService;
         this.subscriptions.push(commands.registerCommand('lean4.selectToolchain', () => this.selectToolchain()));
     }
 
