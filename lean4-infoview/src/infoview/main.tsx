@@ -117,11 +117,7 @@ export function renderInfoview(editorApi: EditorApi, uiElement: HTMLElement): In
 
         if (!serverInitializeResult || !serverInitializeResult.serverInfo){
             ReactDOM.render(
-                <React.StrictMode>
-                    <EditorContext.Provider value={ec}>
-                        <p>Internal error loading Lean language server</p>
-                    </EditorContext.Provider>
-                </React.StrictMode>,
+                <p>Internal error loading Lean language server</p>,
                 uiElement
             )
         } else {
