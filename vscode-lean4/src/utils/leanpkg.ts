@@ -138,17 +138,6 @@ export class LeanpkgService implements Disposable {
         }
     }
 
-    private trimQuotes(s : string) : string {
-        s = s.trim();
-        if (s.startsWith('"')){
-            s = s.substring(1);
-        }
-        if (s.endsWith('"')){
-            s = s.substring(0, s.length - 1);
-        }
-        return s;
-    }
-
     private async readLeanVersion() {
         if (this.leanVersionFile.path.endsWith(this.tomlFileName))
         {
@@ -159,19 +148,9 @@ export class LeanpkgService implements Disposable {
                         if (err) {
                             reject(err);
                         } else {
-                            let version : string = '';
-                            const lines = data.split(/\r?\n/);
-                            lines.forEach((line) =>{
-                                if (line.trim().startsWith('lean_version')){
-                                    const p = line.split('=');
-                                    if (!version && p.length > 1) {
-                                        version = this.trimQuotes(p[1]);
-                                    }
-                                }
-                            });
-                            if (!version) {
-                                version = this.defaultVersion
-                            }
+                            let version = this.defaultVersion;
+                            const match = /lean_version\s*=\s*"([^"]*)"/.exec(data.toString());
+                            if (match) version = match[1];
                             resolve(version);
                         }
                     });
@@ -188,16 +167,7 @@ export class LeanpkgService implements Disposable {
                         if (err) {
                             reject(err);
                         } else {
-                            let version : string = '';
-                            const lines = data.split(/\r?\n/);
-                            lines.forEach((line) =>{
-                                if (!version && line.trim()) {
-                                    version = line.trim();
-                                }
-                            });
-                            if (!version) {
-                                version = this.defaultVersion
-                            }
+                            const version = data.trim() ?? this.defaultVersion;
                             resolve(version);
                         }
                     });
