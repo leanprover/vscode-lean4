@@ -1,6 +1,7 @@
 ## Build directories
 out/
 dist/
+.vs/
 
 ## Output
 node_modules/

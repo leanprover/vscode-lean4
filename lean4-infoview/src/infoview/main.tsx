@@ -114,18 +114,25 @@ export function renderInfoview(editorApi: EditorApi, uiElement: HTMLElement): In
 
     editorEvents.initialize.on(([serverInitializeResult, loc]: [InitializeResult, Location]) => {
         ec.events.changedCursorLocation.current = loc;
-        const sv = new ServerVersion(serverInitializeResult.serverInfo!.version!)
 
-        ReactDOM.render(
-            <React.StrictMode>
-                <EditorContext.Provider value={ec}>
-                    <VersionContext.Provider value={sv}>
-                        <Main/>
-                    </VersionContext.Provider>
-                </EditorContext.Provider>
-            </React.StrictMode>,
-            uiElement
-        )
+        if (!serverInitializeResult || !serverInitializeResult.serverInfo){
+            ReactDOM.render(
+                <p>Internal error loading Lean language server</p>,
+                uiElement
+            )
+        } else {
+            const sv = new ServerVersion(serverInitializeResult.serverInfo!.version!);
+            ReactDOM.render(
+                <React.StrictMode>
+                    <EditorContext.Provider value={ec}>
+                        <VersionContext.Provider value={sv}>
+                            <Main/>
+                        </VersionContext.Provider>
+                    </EditorContext.Provider>
+                </React.StrictMode>,
+                uiElement
+            )
+        }
     })
 
     return infoviewApi;

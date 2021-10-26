@@ -233,6 +233,12 @@
 				"category": "Lean 4",
 				"title": "Infoview: Toggle Updating",
 				"description": "Pause / Continue live updating of the main tactic state widget."
+			},
+			{
+				"command": "lean4.selectToolchain",
+				"category": "Lean 4",
+				"title": "Select Lean Toolchain",
+				"description": "Select version of the Lean toolchain to use for this project."
 			}
 		],
 		"languages": [
@@ -332,6 +338,10 @@
 				{
 					"command": "lean4.restartServer",
 					"when": "editorLangId == lean4"
+				},
+				{
+					"command": "lean4.selectToolchain",
+					"when": "editorLangId == lean4"
 				}
 			],
 			"editor/title": [
@@ -357,6 +367,7 @@
 			}
 		}
 	},
+	"extensionKind": ["workspace"],
 	"activationEvents": [
 		"onLanguage:lean",
 		"onLanguage:lean4",
@@ -372,9 +383,9 @@
 		"package": "vsce package"
 	},
 	"dependencies": {
-		"mobx": "5.15.7",
 		"vscode-languageclient": "^7.0.0",
-		"@lean4/infoview": "^0.1.0"
+		"@lean4/infoview": "^0.1.0",
+		"mobx": "5.15.7"
 	},
 	"devDependencies": {
 		"@types/node": "^14.17.4",
@@ -383,7 +394,7 @@
 		"@typescript-eslint/eslint-plugin": "^4.28.0",
 		"@typescript-eslint/parser": "^4.28.0",
 		"eslint": "^7.29.0",
-		"ovsx": "0.1.0-next.a9154dc",
+		"ovsx": "^0.2.1",
 		"ts-loader": "^8.3.0",
 		"typescript": "^4.3.4",
 		"utf-8-validate": "^5.0.5",

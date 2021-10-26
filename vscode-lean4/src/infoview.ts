@@ -27,10 +27,10 @@ export class InfoProvider implements Disposable {
 
     private editorApi : EditorApi = {
         sendClientRequest: async (method: string, params: any): Promise<any> => {
-            return this.client.client.sendRequest(method, params);
+            return this.client.sendRequest(method, params);
         },
         sendClientNotification: async (method: string, params: any): Promise<void> => {
-            void this.client.client.sendNotification(method, params);
+           return this.client.sendNotification(method, params);
         },
         subscribeServerNotifications: async (method) => {
             const el = this.serverNotifSubscriptions.get(method);
@@ -41,7 +41,7 @@ export class InfoProvider implements Disposable {
             }
 
             // NOTE(WN): For non-custom notifications we cannot call LanguageClient.onNotification
-            // here because that *ovewrites* the notification handler rather than registers an extra one.
+            // here because that *overwrites* the notification handler rather than registers an extra one.
             // So we have to add a bunch of event emitters to `LeanClient.`
             if (method === 'textDocument/publishDiagnostics') {
                 const h = this.client.diagnostics((params) => {
@@ -107,18 +107,20 @@ export class InfoProvider implements Disposable {
             await window.showInformationMessage(`Copied to clipboard: ${text}`);
         },
         insertText: async (text, kind, tdpp) => {
+            if (!this.client.running) return;
             let uri: Uri | undefined
             let pos: Position | undefined
             if (tdpp) {
-                uri = this.client.client.protocol2CodeConverter.asUri(tdpp.textDocument.uri);
-                pos = this.client.client.protocol2CodeConverter.asPosition(tdpp.position);
+                uri = this.client.convertUriFromString(tdpp.textDocument.uri);
+                pos = this.client.convertPosition(tdpp.position);
             }
             await this.handleInsertText(text, kind, uri, pos);
         },
         showDocument: async (show) => {
+            if (!this.client.running) return;
             void this.revealEditorSelection(
                 Uri.parse(show.uri),
-                this.client.client.protocol2CodeConverter.asRange(show.selection)
+                this.client.convertRange(show.selection)
             );
         },
     };
@@ -126,10 +128,13 @@ export class InfoProvider implements Disposable {
     constructor(private client: LeanClient, private readonly leanDocs: DocumentSelector, private context: ExtensionContext) {
         this.updateStylesheet();
         this.subscriptions.push(
+            this.client.restarting(async () => {
+                this.clear();
+            }),
             this.client.restarted(async () => {
                 await this.autoOpen();
-                if (this.webviewPanel) {
-                    await this.webviewPanel.api.initialize(this.client.client.initializeResult, this.getLocation(window.activeTextEditor))
+                if (this.webviewPanel && this.client.initializeResult && window.activeTextEditor){
+                    await this.webviewPanel.api.initialize(this.client.initializeResult, this.getLocation(window.activeTextEditor));
                 }
                 // NOTE(WN): We do not re-send state such as diagnostics to the infoview here
                 // because a restarted server will send those on its own.
@@ -204,8 +209,16 @@ export class InfoProvider implements Disposable {
                     enableScripts: true,
                     enableCommandUris: true,
                 }) as WebviewPanel & {rpc: Rpc, api: InfoviewApi};
+
+            // Note that an extension can send data to its webviews using webview.postMessage().
+            // This method sends any JSON serializable data to the webview. The message is received
+            // inside the webview through the standard message event.
+            // The receiving of these messages is done inside webview\index.ts where it
+            // calls window.addEventListener('message',...
             webviewPanel.rpc = new Rpc(m => webviewPanel.webview.postMessage(m));
             webviewPanel.rpc.register(this.editorApi);
+
+            // Similarly, we can received data from the webview by listening to onDidReceiveMessage.
             webviewPanel.webview.onDidReceiveMessage(m => webviewPanel.rpc.messageReceived(m))
             webviewPanel.api = webviewPanel.rpc.getApi();
             webviewPanel.onDidDispose(() => {
@@ -213,7 +226,11 @@ export class InfoProvider implements Disposable {
             });
             this.webviewPanel = webviewPanel;
             webviewPanel.webview.html = this.initialHtml();
-            await webviewPanel.api.initialize(this.client.client.initializeResult, this.getLocation(editor))
+
+            // this.client.initializeResult can be null if the server failed to start.
+            if (this.client.initializeResult) {
+                await webviewPanel.api.initialize(this.client.initializeResult, this.getLocation(editor))
+            }
         }
 
         // The infoview listens for server notifications such as diagnostics passively,
@@ -222,6 +239,12 @@ export class InfoProvider implements Disposable {
         await this.sendConfig();
         await this.sendDiagnostics();
         await this.sendProgress();
+    }
+
+    private clear() {
+        if (this.webviewPanel){
+            this.webviewPanel.webview.html = this.initialHtml();
+        }
     }
 
     private async sendConfig() {
@@ -235,11 +258,8 @@ export class InfoProvider implements Disposable {
 
     private async sendDiagnostics() {
         if (!this.webviewPanel) return;
-        this.client.client.diagnostics?.forEach(async (uri, diags) => {
-            const params: PublishDiagnosticsParams = {
-                uri: this.client.client.code2ProtocolConverter.asUri(uri),
-                diagnostics: this.client.client.code2ProtocolConverter.asDiagnostics(diags as Diagnostic[]),
-            };
+        this.client.getDiagnostics()?.forEach(async (uri, diags) => {
+            const params = this.client.getDiagnosticParams(uri, diags)
             await this.webviewPanel.api.gotServerNotification('textDocument/publishDiagnostics', params);
         });
     }
@@ -249,7 +269,7 @@ export class InfoProvider implements Disposable {
         for (const [uri, processing] of this.client.progress) {
             const params: LeanFileProgressParams = {
                 textDocument: {
-                    uri: this.client.client.code2ProtocolConverter.asUri(uri),
+                    uri: this.client.convertUri(uri)?.toString(),
                     version: 0, // HACK: The infoview ignores this
                 },
                 processing,
@@ -277,6 +297,7 @@ export class InfoProvider implements Disposable {
 
     private async sendPosition() {
         if (!window.activeTextEditor || languages.match(this.leanDocs, window.activeTextEditor.document) === 0) return
+        void this.autoOpen();
         const loc = this.getLocation(window.activeTextEditor);
         await this.webviewPanel?.api.changedCursorLocation(loc);
     }
