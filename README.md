@@ -49,6 +49,9 @@ and you should see something like this in the `Lean: Editor` output channel:
 1. If you want to use a local version of Lean that you built yourself then
 use the `elan toolchain link name path` command and then use the VS Code
 `Lean4: Select Toolchain` command to select the toolchain name you defined.
+
+    ![select-toolchain](vscode-lean4/media/select-toolchain.png)
+
 1. This version of the VS Code extension only works on Lean 4 source files and not
 Lean 3.  There is a separate VS Code extension for Lean 3.
 
