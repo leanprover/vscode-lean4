@@ -32,6 +32,7 @@ export class EditorConnection {
 
   /** Copies the text to a comment at the cursor position. */
   copyToComment(text: string): void {
+    debugger;
     this.api.insertText(`/-\n${text}\n-/`, 'above');
   }
 
