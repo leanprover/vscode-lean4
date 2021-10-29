@@ -1,29 +1,3 @@
-<style type='text/css'>
-@font-face {
-	font-family: "codicon";
-	src: url("vscode-lean4/media/codicon.ttf") format("truetype");
-}
-
-.codicon[class*='codicon-'] {
-	font: normal normal normal 16px/1 codicon;
-	display: inline-block;
-	text-decoration: none;
-	text-rendering: auto;
-	text-align: center;
-	-webkit-font-smoothing: antialiased;
-	-moz-osx-font-smoothing: grayscale;
-	user-select: none;
-	-webkit-user-select: none;
-	-ms-user-select: none;
-}
-.codicon-pin:before { content: "\eb2b" }
-.codicon-pinned:before { content: "\eba0" }
-.codicon-go-to-file:before { content: "\ea94" }
-.codicon-debug-pause:before { content: "\ead1" }
-.codicon-debug-continue:before { content: "\eacf" }
-.codicon-refresh:before { content: "\eb37" }
-.codicon-quote:before { content: "\eb33" }
-</style>
 
 # Lean 4 VSCode Extension
 This extension provides VSCode editor support for the Lean 4 programming language.
@@ -94,7 +68,7 @@ by default.
 ## Lean editing features
 
 - Support for completing abbreviations starting with a backslash (\\).
-For example you type '\alpha` and the editor pops in the nice Unicode character
+For example you type `\alpha` and the editor pops in the nice Unicode character
 (α).
 - Support for completing the closing brace, like `()`, `{}` and `[]`
 
@@ -122,30 +96,26 @@ and you place the cursor at the end of the line `by apply And.intro` the Info Vi
 
 ![completion-example](vscode-lean4/media/infoview-overview.png)
 
-1. The info view will activate automatically when a Lean file is opened, but you can also reopen it any time using the icon in the top right of the text editor window or the <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> `Lean 4: Infoview: Display Goal` command or the key that is bound to the command, which is <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Enter</kbd> by default.
+(1). The info view will activate automatically when a Lean file is opened, but you can also reopen it any time using the icon in the top right of the text editor window or the <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> `Lean 4: Infoview: Display Goal` command or the key that is bound to the command, which is <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Enter</kbd> by default.
 
-2. Copy-to-comment: click <a class="link pointer mh2 dim codicon codicon-quote" title="copy state to comment"></a> to copy the contents of the widget to a comment in the editor.
+(2) through (6):
 
-3. Pin / unpin: click <a class="link pointer mh2 dim codicon codicon-pin" title="pin"></a> to split off a "pinned" tactic state widget, which tracks the tactic state at a fixed position, even if you move your cursor away.  You will see two new icons:
+  | Symbol | Description |
+  |--------|-------------|
+  | ![quotes](vscode-lean4/media/quotes.png) | Copy the contents of the widget to a comment in the editor. |
+  | ![pin](vscode-lean4/media/pin.png) | Split off a "pinned" tactic state widget, which tracks the tactic state at a fixed position, even if you move your cursor away.  You will see the unpin and reveal file location icons appear. |
+  | ![unpin](vscode-lean4/media/unpin.png) | Remove a pinned widget from the info view. |
+  | ![reveal](vscode-lean4/media/reveal-file-location.png) | Move the cursor in the editor to the pinned location in the file. |
+  | ![pause](vscode-lean4/media/pause.png) | Prevent the tactic state widget from updating when the file is edited. Click  to resume updates.
+  | ![continue](vscode-lean4/media/continue.png) | Once paused you can then click this icon to resume updates. |
+  | ![update](vscode-lean4/media/update.png) | Refresh the tactic state of the pinned widget. |
 
-    - Unpin: <a class="link pointer mh2 dim codicon codicon-pinned" title="unpin"></a>  to remove the pinned widget from the info view.
+(7). Types in the context can be examined in the tactic state widget using mouse hover:
 
-    - Reveal file location: <a class="link pointer mh2 dim codicon codicon-go-to-file" title="reveal file location"></a> to move the cursor in the editor to the pinned location in the file.
+  ![inspect-term-example](vscode-lean4/media/inspect-term-example.png)
 
-4. Pause / continue: clicking <a class="link pointer mh2 dim codicon codicon-debug-pause" title="pause updating"></a> will prevent the tactic state widget from updating when the file is edited. Click  to resume updates.  Once paused you can then click <a class="link pointer mh2 dim codicon codicon-debug-continue" title="pause updating"></a> to resume updates.
+(8). The "All Messages" widget can be expanded by clicking on it (or hitting the keybind for `lean4.displayList`, which is <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Enter</kbd> by default
 
-5. Update: clicking <a class="link pointer mh2 dim codicon codicon-refresh" title="update"></a> will refresh the tactic state of the pinned widget.
-
-6. Same as 4.
-
-7. Types in the context can be examined in the tactic state widget using mouse hover:
-
-![inspect-term-example](vscode-lean4/media/inspect-term-example.png)
-
-8. The "All Messages" widget can be expanded by clicking on it (or hitting the keybind for `lean4.displayList`, which is <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Enter</kbd> by default
-
-
-## Extension Settings
 
 ## Extension Settings
 
@@ -226,11 +196,11 @@ imports. This command has a default keyboard binding of <kbd>Ctrl</kbd>+<kbd>Shi
 
 * `lean4.displayList` (Lean 4: Infoview: Toggle "All Messages"): toggles the "All messages" widget in the info view (bound to <kbd>ctrl</kbd>+<kbd>alt</kbd>+<kbd>shift</kbd>+<kbd>enter</kbd> by default)
 
-* `lean4.infoView.copyToComment` (Lean 4: Infoview: Copy Contents to Comment"): if there is a valid value in the Info View marked with the <a class="link pointer mh2 dim codicon codicon-quote" title="copy state to comment"></a> icon that can be copied to a comment, this command invokes that action in the editor.
+* `lean4.infoView.copyToComment` (Lean 4: Infoview: Copy Contents to Comment"): if there is a valid value in the Info View marked with the <img height="16" src="vscode-lean4/media/quotes.png"/> icon that can be copied to a comment, this command invokes that action in the editor.
 
-* `lean4.infoView.toggleStickyPosition` (Lean 4: Infoview: Toggle Pin): enable / disable "sticky" mode. On enable, a tactic state widget will be created and pinned to this position, reporting the goal from this point even as the cursor moves and edits are made to the file. On disable the pinned widget will be removed. (same as clicking on the <a class="link pointer mh2 dim codicon codicon-pin" title="pin"></a> or <a class="link pointer mh2 dim codicon codicon-pinned" title="pin"></a> icon on the tactic state widget closest to the cursor.)
+* `lean4.infoView.toggleStickyPosition` (Lean 4: Infoview: Toggle Pin): enable / disable "sticky" mode. On enable, a tactic state widget will be created and pinned to this position, reporting the goal from this point even as the cursor moves and edits are made to the file. On disable the pinned widget will be removed. (same as clicking on the <img height="16" src="vscode-lean4/media/pin.png"/> or <img height="16" src="vscode-lean4/media/unpin.png"/> icon on the tactic state widget closest to the cursor.)
 
-* `lean4.infoView.toggleUpdating` (Lean 4: Infoview: Toggle Updating): pause / continue live updates of the main (unpinned) tactic state widget (same as clicking on the <a class="link pointer mh2 dim codicon codicon-debug-pause" title="pause updating"></a> or <a class="link pointer mh2 dim codicon codicon-debug-continue" title="pause updating"></a> icon on the main tactic state widget.)
+* `lean4.infoView.toggleUpdating` (Lean 4: Infoview: Toggle Updating): pause / continue live updates of the main (unpinned) tactic state widget (same as clicking on the <img height="16" src="vscode-lean4/media/pause.png"/> or <img height="16" src="vscode-lean4/media/continue.png"/> icon on the main tactic state widget.)
 
 
 ## For VS Code Extension developers
