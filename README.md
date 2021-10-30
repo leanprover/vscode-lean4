@@ -5,76 +5,83 @@ It is based on [vscode-lean](https://github.com/leanprover/vscode-lean).
 
 ## Installing the extension and Lean 4
 1. Install the extension from the [marketplace](https://marketplace.visualstudio.com/items?itemName=leanprover.lean4).
-1. Open a folder containing .lean code using VS Code.
+1. Open a folder containing .lean code using VS Code.  It is recommended that you open a folder that is configured using [lake](https://github.com/leanprover/lake) which is a lean package configuration tool.
 1. Open a `.lean` file and type in `#eval 1`. The extension should display a blue underline below `#eval`. Upon hovering over it, a hover panel reporting the result of the evaluation should pop up. When hovering over the `1`, a hover panel displaying the type of `1` should pop up.
 1. If `Lean` is not yet installed on your system you will see a prompt like this:
 ![prompt](vscode-lean4/media/install-elan.png)
 1. Click the "Install Lean using Elan" option and enter any options that appear
-in the terminal window, including any information about changing your PATH
-environment to point to the `elan` bin folder.  If you do need to change your PATH
-you many need to restart VS code to pick up that new environment.
+in the terminal window, and follow any instructions about changing your PATH environment to point to the `elan` bin folder.  If you do need to change your PATH you many need to restart VS code to pick up that new environment.
 1. After this succeeds the correct version of Lean will be installed by `elan`
-and you should see something like this in the `Lean: Editor` output channel:
+and you should see something like this in the `Lean: Editor` output panel:
     ```
     info: downloading component 'lean'
     info: installing component 'lean'
     Lean (version 4.0.0-nightly-2021-10-18, commit e843fb7ca5b5, Release)
     ```
-1. If you want to use a local version of Lean that you built yourself then
-use the `elan toolchain link name path` command and then use the VS Code
-`Lean4: Select Toolchain` command to select the toolchain name you defined.
-
-    ![select-toolchain](vscode-lean4/media/select-toolchain.png)
 
 1. This version of the VS Code extension only works on Lean 4 source files and not
-Lean 3.  There is a separate VS Code extension for Lean 3.
+Lean 3.  There is a separate VS Code extension for Lean 3.  You can have both extensions installed at the same time, they can live side by side.
 
-Note that once `elan` is installed you can also create a Lean 4 project using [leanpkg](https://leanprover.github.io/lean4/doc/setup.html#leanpkg) or [Lake](https://github.com/leanprover/lake/blob/master/README.md).  The VS code extension will honor the lean version specified in your
-project files.
+Note that once `elan` is installed you can also create a Lean 4 project using [leanpkg](https://leanprover.github.io/lean4/doc/setup.html#leanpkg) or [Lake](https://github.com/leanprover/lake/blob/master/README.md).  The VS code extension will honor the lean version specified in your `leanpkg.toml` or `lean-toolchain` files.
 
 ## Features
 
 The extension supports the following features.
 For basic VS Code editor features, see the [VS Code User Interface docs](https://code.visualstudio.com/docs/getstarted/userinterface).
 
-The extension provides nice integration with the Lean language server
-shown below and :
+The extension provides:
 - A set of handy `Lean4:` commands available with <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd>
 - Side-by-side compatibility with the [Lean 3 VSCode extension](https://github.com/leanprover/vscode-lean)
+- Nice integration with the Lean language server as shown below.
+- An Infoview panel showing information about your Lean programs.
 
 ## Lean language server features
 
 - Automatic installation of Lean using [elan](https://github.com/leanprover/elan).
-- Incremental compilation and checking via the Lean server (1)
+- Incremental compilation and checking via the Lean server (*)
 - Type information & documentation on hover
 - Error messages and diagnostics
 - Syntax highlighting with basic Lean 4 syntax rules
-- `\foo` unicode shortcuts
+- Easy way to enter Unicode symbols using `\` abbreviations.
 - Semantic highlighting
 - Hover shows documentation, types and Unicode input help:
+
   ![hover_example](vscode-lean4/media/hover-example.png)
-- Auto-completion drops downs based on context and type via the Lean Server.
+
+- Auto-completion drop downs based on context and type via the Lean Server.
 For example, if you type "." after `Array` you will get:
+
   ![completion-example](vscode-lean4/media/completion-example.png)
-- An infoview displaying useful information about your current Lean program.
+
+- An Infoview displaying useful information about your current Lean program.
 - Go to definition (F12)
 - [Breadcrumbs](https://code.visualstudio.com/Docs/editor/editingevolved#_breadcrumbs)
+- `Lean4: Select Toolchain` command to select the toolchain you want to use instead of the default toolchain for your current workspace.  (**)
 
-(1) Incremental updates do not yet work automatically across files, so after changing and rebuilding the dependency of a
+    ![select-toolchain](vscode-lean4/media/select-toolchain.png)
+
+
+(*) Incremental updates do not yet work automatically across files, so after changing and rebuilding the dependency of a
 Lean 4 file, the language server needs to be manually informed that it should re-elaborate the full file, including the
-imports. This can be done using the `Lean 4: Refresh File Dependencies` command, which can be activated via <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>X</kbd>
-by default.
+imports. This can be done using the `Lean 4: Refresh File Dependencies` command, which can be activated via <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>X</kbd>.
+
+(**) You can test the latest [Lean 4 master branch](https://github.com/leanprover/lean4) with this VS Code extension.  First you build Lean, then run the following commands:
+```
+cd <lean4-repo>
+cd ./build/release/stage1
+elan toolchain link master .
+```
+Now the `Lean4: Select Toolchain` will show `master` as one of the toolchains you can select.  The Lean Language Server will then be restarted automatically and will pick up your locally built version of Lean.  This is useful if you are adding features to Lean 4 that you want to test in the VS Code extension.
 
 ## Lean editing features
 
 - Support for completing abbreviations starting with a backslash (\\).
-For example you type `\alpha` and the editor pops in the nice Unicode character
-(α).
+For example you type `\alpha` and the editor automatically replaces that with the nice Unicode character (α).
 - Support for completing the closing brace, like `()`, `{}` and `[]`
 
-## Info view panel
+## Infoview panel
 
-The info view panel is essential to working interactively with Lean. It shows:
+The Infoview panel is essential to working interactively with Lean. It shows:
 - tactic state widgets, with context information (hypotheses, goals) at each point in a proof / definition,
   - **Expected type** widgets display the context for subterms.
   - the types of sub-terms in the context can be inspected interactively using mouse hover.
@@ -92,11 +99,11 @@ theorem test (p q : Prop) (hp : p) (hq : q) : p ∧ q ∧ p :=
      exact hp
 ```
 
-and you place the cursor at the end of the line `by apply And.intro` the Info View will display the following information:
+and you place the cursor at the end of the line `by apply And.intro` the Infoview will display the following information:
 
 ![completion-example](vscode-lean4/media/infoview-overview.png)
 
-(1). The info view will activate automatically when a Lean file is opened, but you can also reopen it any time using the icon in the top right of the text editor window or the <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> `Lean 4: Infoview: Display Goal` command or the key that is bound to the command, which is <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Enter</kbd> by default.
+(1). The Infoview will activate automatically when a Lean file is opened, but you can also reopen it any time using the icon in the top right of the text editor window or the <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> `Lean 4: Infoview: Display Goal` command or the key that is bound to the command, which is <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Enter</kbd> by default.
 
 (2) through (6):
 
@@ -104,7 +111,7 @@ and you place the cursor at the end of the line `by apply And.intro` the Info Vi
   |--------|-------------|
   | ![quotes](vscode-lean4/media/quotes.png) | Copy the contents of the widget to a comment in the editor. |
   | ![pin](vscode-lean4/media/pin.png) | Split off a "pinned" tactic state widget, which tracks the tactic state at a fixed position, even if you move your cursor away.  You will see the unpin and reveal file location icons appear. |
-  | ![unpin](vscode-lean4/media/unpin.png) | Remove a pinned widget from the info view. |
+  | ![unpin](vscode-lean4/media/unpin.png) | Remove a pinned widget from the Infoview. |
   | ![reveal](vscode-lean4/media/reveal-file-location.png) | Move the cursor in the editor to the pinned location in the file. |
   | ![pause](vscode-lean4/media/pause.png) | Prevent the tactic state widget from updating when the file is edited. Click  to resume updates.
   | ![continue](vscode-lean4/media/continue.png) | Once paused you can then click this icon to resume updates. |
@@ -151,15 +158,15 @@ name of the relative path to the store the logs.
 
 * `lean4.typesInCompletionList`: controls whether the types of all items in the list of completions are displayed. By default, only the type of the highlighted item is shown.
 
-### Info view settings
+### Infoview settings
 
-* `lean4.infoViewAutoOpen`: controls whether the info view is automatically displayed when the Lean extension is activated for the first time in a given VS Code workspace(`true` by default).  If you manually close the infoview it will stay closed for that workspace until.  You can then open it again using the <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> `Lean 4: Infoview: Display Goal` command.
+* `lean4.infoViewAutoOpen`: controls whether the Infoview is automatically displayed when the Lean extension is activated for the first time in a given VS Code workspace(`true` by default).  If you manually close the Infoview it will stay closed for that workspace until.  You can then open it again using the <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> `Lean 4: Infoview: Display Goal` command.
 
-* `lean4.infoViewAutoOpenShowGoal`: auto open shows goal and messages for the current line (instead of all messages for the whole file).  In this mode the InfoView updates often every time you move the cursor to a different position so it can show context sensitive information.  Default is `true`.
+* `lean4.infoViewAutoOpenShowGoal`: auto open shows goal and messages for the current line (instead of all messages for the whole file).  In this mode the Infoview updates often every time you move the cursor to a different position so it can show context sensitive information.  Default is `true`.
 
-* `lean4.infoViewTacticStateFilters`: An array of objects containing regular expression strings that can be used to filter (positively or negatively) the plain text tactic state in the info view. Set to an empty array `[]` to hide the filter select dropdown. Each object must contain the following keys:
+* `lean4.infoViewTacticStateFilters`: An array of objects containing regular expression strings that can be used to filter (positively or negatively) the plain text tactic state in the Infoview. Set to an empty array `[]` to hide the filter select dropdown. Each object must contain the following keys:
   - `regex` is a properly-escaped regex string,
-  - `match` is a boolean, where `true` (`false`) means blocks in the tactic state matching `regex` will be included (excluded) in the info view,
+  - `match` is a boolean, where `true` (`false`) means blocks in the tactic state matching `regex` will be included (excluded) in the Infoview,
   - `flags` are additional flags passed to the [JavaScript RegExp constructor](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp).
   - The `name` key is optional and may contain a string that is displayed in the dropdown instead of the full regex details.
 
@@ -190,13 +197,13 @@ imports. This command has a default keyboard binding of <kbd>Ctrl</kbd>+<kbd>Shi
 
 * `lean4.input.convert` (Lean 4: Input: Convert Current Abbreviation): converts the current abbreviation (bound to <kbd>tab</kbd> by default)
 
-### Info view commands
+### Infoview commands
 
-* `lean4.displayGoal` (Lean 4: Infoview: Display Goal): open the info view panel (bound to <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Enter</kbd> by default)
+* `lean4.displayGoal` (Lean 4: Infoview: Display Goal): open the Infoview panel (bound to <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Enter</kbd> by default)
 
-* `lean4.displayList` (Lean 4: Infoview: Toggle "All Messages"): toggles the "All messages" widget in the info view (bound to <kbd>ctrl</kbd>+<kbd>alt</kbd>+<kbd>shift</kbd>+<kbd>enter</kbd> by default)
+* `lean4.displayList` (Lean 4: Infoview: Toggle "All Messages"): toggles the "All messages" widget in the Infoview (bound to <kbd>ctrl</kbd>+<kbd>alt</kbd>+<kbd>shift</kbd>+<kbd>enter</kbd> by default)
 
-* `lean4.infoView.copyToComment` (Lean 4: Infoview: Copy Contents to Comment"): if there is a valid value in the Info View marked with the <img height="16" src="vscode-lean4/media/quotes.png"/> icon that can be copied to a comment, this command invokes that action in the editor.
+* `lean4.infoView.copyToComment` (Lean 4: Infoview: Copy Contents to Comment"): if there is a valid value in the Infoview marked with the <img height="16" src="vscode-lean4/media/quotes.png"/> icon that can be copied to a comment, this command invokes that action in the editor.
 
 * `lean4.infoView.toggleStickyPosition` (Lean 4: Infoview: Toggle Pin): enable / disable "sticky" mode. On enable, a tactic state widget will be created and pinned to this position, reporting the goal from this point even as the cursor moves and edits are made to the file. On disable the pinned widget will be removed. (same as clicking on the <img height="16" src="vscode-lean4/media/pin.png"/> or <img height="16" src="vscode-lean4/media/unpin.png"/> icon on the tactic state widget closest to the cursor.)
 
