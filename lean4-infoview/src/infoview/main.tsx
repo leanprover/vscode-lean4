@@ -21,6 +21,14 @@ function Main(props: {}) {
     if (!props) { return null }
     const ec = React.useContext(EditorContext);
 
+    const [htmlBlob, setHtmlBlob] = React.useState<string>('')
+    useEvent(ec.events.displayHtml, html => {
+        console.log('Setting html blob: ' + html);
+        setHtmlBlob(html);
+    }, [])
+
+
+
     /* Set up updates to the global infoview state on editor events. */
     const [config, setConfig] = React.useState(defaultInfoviewConfig);
     useEvent(ec.events.changedInfoviewConfig, cfg => setConfig(cfg), []);
@@ -68,6 +76,10 @@ function Main(props: {}) {
             </div>)
     }
 
+    if (htmlBlob) {
+        console.log('Rendering html blob: ' + htmlBlob);
+    }
+
     return (
     <ConfigContext.Provider value={config}>
         <WithRpcSessions>
@@ -77,6 +89,7 @@ function Main(props: {}) {
                 </ProgressContext.Provider>
             </WithDiagnosticsContext>
         </WithRpcSessions>
+        <div dangerouslySetInnerHTML={{ __html: htmlBlob}} />
     </ConfigContext.Provider>
     );
 }
@@ -94,6 +107,7 @@ export function renderInfoview(editorApi: EditorApi, uiElement: HTMLElement): In
         changedCursorLocation: new Event(),
         changedInfoviewConfig: new Event(),
         requestedAction: new Event(),
+        displayHtml: new Event(),
     };
 
     // Challenge: write a type-correct fn from `Eventify<T>` to `T` without using `any`
@@ -108,6 +122,7 @@ export function renderInfoview(editorApi: EditorApi, uiElement: HTMLElement): In
         changedCursorLocation: async loc => editorEvents.changedCursorLocation.fire(loc),
         changedInfoviewConfig: async conf => editorEvents.changedInfoviewConfig.fire(conf),
         requestedAction: async action => editorEvents.requestedAction.fire(action),
+        displayHtml: async html => editorEvents.displayHtml.fire(html),
     };
 
     const ec = new EditorConnection(editorApi, editorEvents);

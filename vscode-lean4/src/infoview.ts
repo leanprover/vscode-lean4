@@ -171,6 +171,10 @@ export class InfoProvider implements Disposable {
         for (const s of this.subscriptions) { s.dispose(); }
     }
 
+    displayHtml(html: string) : void {
+        void this.webviewPanel?.api.displayHtml(html);
+    }
+
     private updateStylesheet() {
         const fontFamily =
             workspace.getConfiguration('editor').get<string>('fontFamily').replace(/['"]/g, '');

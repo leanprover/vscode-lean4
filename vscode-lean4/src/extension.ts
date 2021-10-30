@@ -1,4 +1,4 @@
-import { workspace, commands, window, languages, ExtensionContext } from 'vscode'
+import { workspace, commands, window, languages, ExtensionContext, TextEditor, Range } from 'vscode'
 import { AbbreviationFeature } from './abbreviation'
 import { LeanClient } from './leanclient'
 import { InfoProvider } from './infoview'
@@ -7,6 +7,7 @@ import { LocalStorageService} from './utils/localStorage'
 import { LeanInstaller } from './utils/leanInstaller'
 import { LeanpkgService } from './utils/leanpkg';
 import { addDefaultElanPath } from './config';
+import { AbbreviationProvider } from './abbreviation/AbbreviationProvider'
 
 export async function activate(context: ExtensionContext): Promise<any> {
 
@@ -34,9 +35,39 @@ export async function activate(context: ExtensionContext): Promise<any> {
     context.subscriptions.push(client)
 
     // Register support for unicode input
-    context.subscriptions.push(new AbbreviationFeature())
+    const info = new InfoProvider(client, {language: 'lean4'}, context);
+    context.subscriptions.push(info)
 
-    context.subscriptions.push(new InfoProvider(client, {language: 'lean4'}, context))
+    const abbrev = new AbbreviationFeature();
+    context.subscriptions.push(abbrev);
+
+    async function checkHelp(editor : TextEditor) : Promise<void> {
+        const sel = editor.selection;
+        if (sel.end.character >= 4){
+            const range = new Range(sel.end.translate(0, - 4), sel.end);
+            const abbreviation = editor.document.getText(range);
+            if (abbreviation === 'help') {
+                // remove the help text.
+                const v = await editor.edit((builder) => {
+                    builder.replace( range, '');
+                });
+
+                // display the HTML table definition of all abbreviations.
+                const list = abbrev.abbreviations.getAbbreviationNames();
+                let help = "<div className='mv2'><table><tr><th>Abbreviation</th><th>Unicode Symbol</th></tr>"
+                for (const name of list) {
+                    const u = abbrev.abbreviations.getSymbolForAbbreviation(name);
+                    if (u.indexOf('CURSOR') < 0) {
+                        help += `<tr><td>${name}</td><td>${u}</td></tr>`;
+                    }
+                }
+                help += '</table></div>';
+                info.displayHtml(help);
+            }
+        }
+    }
+
+    abbrev.abbreviations.abbreviationCompleted((v) => checkHelp(v));
 
     context.subscriptions.push(new LeanTaskGutter(client, context))
 
