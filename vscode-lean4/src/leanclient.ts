@@ -240,17 +240,8 @@ export class LeanClient implements Disposable {
         } as any, null);
 
         // HACK
-        (this.client as any)._serverProcess.stderr.on('data', (msg) => {
-            const s = msg.toString();
-            // ignore this normal message that happens on server restart.
-            if (s.trim() !== 'Watchdog error: Cannot read LSP message: Stream was closed'){
-                this.client.outputChannel.appendLine(s);
-                this.client.outputChannel.show(true);
-                // [Chris] NOTE: do we really want this at all, I'm seeing random message like this:
-                // [file:///d%3A/Temp/lean_examples/mathlib4/Mathlib/Logic/Basic.lean] Trying to release refs
-                //       '#[0, 4, 3, 2, 1, 0, 4, 3, 2, 1, 0, 4, 3, 2, 1, 0, 4, 3, 2, 1]' from outdated RPC session '18389795526673021304'.
-                // which seem like more of an internal debugging message than an end user message...
-            }
+        (this.client as any)._serverProcess.stderr.on('data', () => {
+            this.client.outputChannel.show(true);
         });
 
         window.visibleTextEditors.forEach((e) => this.open(e.document));
