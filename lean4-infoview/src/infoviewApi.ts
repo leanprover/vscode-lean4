@@ -96,6 +96,9 @@ export interface InfoviewApi {
   /** Like {@link gotServerNotification}, but fires on subscribed client->server notifications. */
   sentClientNotification(method: string, params: any): Promise<void>;
 
+  /** Fires when the server is restarted. */
+  serverRestarted(): Promise<void>;
+
   /**
    * Must fire whenever the user moves their cursor or makes a selection while in a Lean file.
    * Movements in other kinds of files must *not* fire this event. When no selection is made,

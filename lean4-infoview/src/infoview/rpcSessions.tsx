@@ -7,7 +7,7 @@ import { DidCloseTextDocumentParams, Disposable, DocumentUri, TextDocumentPositi
 import { RpcPtr } from "../lspTypes"
 import { EditorContext, RpcContext } from "./contexts"
 import { EditorConnection } from "./editorConnection"
-import { DocumentPosition, useClientNotificationEffect } from "./util"
+import { DocumentPosition, useClientNotificationEffect, useEvent } from "./util"
 
 interface RpcConnectParams {
     uri: DocumentUri
@@ -46,6 +46,7 @@ class RpcSession implements Disposable {
     #keepAliveInterval: number
     #refsToRelease: RpcPtr<any>[]
     #finalizers: FinalizationRegistry<RpcPtr<any>>
+    #closed: boolean = false
 
     constructor(readonly sessionId: string, uri: DocumentUri, ec: EditorConnection) {
         this.#ec = ec
@@ -64,10 +65,12 @@ class RpcSession implements Disposable {
         // whenever the GC finalizes a number of `RpcPtr`s. Requires ES2021.
         this.#refsToRelease = []
         this.#finalizers = new FinalizationRegistry(ptr => {
+            if (this.#closed) return
             if (this.#releaseTimeout !== undefined) clearTimeout(this.#releaseTimeout)
             this.#refsToRelease.push(ptr)
 
             const sendReleaseNotif = () => {
+                if (this.#closed) return
                 const params: RpcReleaseParams = {
                     uri: this.#uri,
                     sessionId: this.sessionId,
@@ -91,6 +94,7 @@ class RpcSession implements Disposable {
     }
 
     async call(pos: DocumentPosition, method: string, params: any): Promise<any> {
+        if (this.#closed) throw new Error('RPC connection closed')
         const rpcParams: RpcCallParams = {
             ...DocumentPosition.toTdpp(pos),
             sessionId: this.sessionId,
@@ -108,6 +112,7 @@ class RpcSession implements Disposable {
     }
 
     dispose() {
+        this.#closed = true;
         window.clearInterval(this.#keepAliveInterval)
     }
 }
@@ -223,9 +228,13 @@ export class RpcSessions implements Disposable {
         })
     }
 
-    dispose() {
+    ensureAllSessionsClosed() {
         this.#connected.forEach(rs => rs.dispose())
         this.#connecting.forEach(fut => fut.then(rs => rs.dispose()))
+    }
+
+    dispose() {
+        this.ensureAllSessionsClosed();
     }
 }
 
@@ -246,6 +255,8 @@ export function WithRpcSessions({ children }: { children: React.ReactNode }) {
         },
         []
     )
+
+    useEvent(ec.events.serverRestarted, () => sessions.ensureAllSessionsClosed())
 
     return <RpcContext.Provider value={sessions}>
         {children}

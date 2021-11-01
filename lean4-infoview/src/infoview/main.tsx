@@ -91,6 +91,7 @@ export function renderInfoview(editorApi: EditorApi, uiElement: HTMLElement): In
         initialize: new Event(),
         gotServerNotification: new Event(),
         sentClientNotification: new Event(),
+        serverRestarted: new Event(),
         changedCursorLocation: new Event(),
         changedInfoviewConfig: new Event(),
         requestedAction: new Event(),
@@ -105,6 +106,7 @@ export function renderInfoview(editorApi: EditorApi, uiElement: HTMLElement): In
         sentClientNotification: async (method, params) => {
             editorEvents.sentClientNotification.fire([method, params]);
         },
+        serverRestarted: async () => editorEvents.serverRestarted.fire({}),
         changedCursorLocation: async loc => editorEvents.changedCursorLocation.fire(loc),
         changedInfoviewConfig: async conf => editorEvents.changedInfoviewConfig.fire(conf),
         requestedAction: async action => editorEvents.requestedAction.fire(action),
