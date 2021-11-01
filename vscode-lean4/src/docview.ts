@@ -6,36 +6,66 @@ import { commands, Disposable, Uri, ViewColumn, WebviewPanel, window,
      workspace, WebviewOptions, WebviewPanelOptions } from 'vscode';
 import * as fs from 'fs';
 import { join, sep } from 'path';
-import * as os from 'os';
+import { TempFolder } from './utils/tempFolder'
+
 
 export function mkCommandUri(commandName: string, ...args: any[]): string {
     return `command:${commandName}?${encodeURIComponent(JSON.stringify(args))}`;
 }
 
+function findActiveEditorRootPath(): string {
+    const doc = window.activeTextEditor?.document?.uri;
+    if (doc) {
+        return workspace.getWorkspaceFolder(doc).uri.fsPath;
+    }
+    return null;
+}
+
 function findProjectDocumentation(): string | null {
-    const html = join(workspace.rootPath, 'html', 'index.html');
-    return fs.existsSync(html) ? html : null;
+    const rootPath = findActiveEditorRootPath();
+    if (rootPath) {
+        let html = join(rootPath, 'html', 'index.html');
+        if (fs.existsSync(html)) {
+            return html;
+        }
+        html = join(rootPath, 'html', 'index.htm');
+        if (fs.existsSync(html)) {
+            return html;
+        }
+    }
+    return null;
+}
+
+function createLocalFileUrl(path: string){
+    const re = /\\/g;
+    return `file:${path}`.replace(re, '/');
 }
 
 export class DocViewProvider implements Disposable {
     private subscriptions: Disposable[] = [];
     private currentURL: string | undefined = undefined;
-    private backstack: string[] = [];
-    private forwardstack: string[] = [];
+    private backStack: string[] = [];
+    private forwardStack: string[] = [];
+    private tempFolder : TempFolder = null;
     constructor() {
         this.subscriptions.push(
-            commands.registerCommand('lean4.openDocView', (url) => this.open(url)),
-            commands.registerCommand('lean4.backDocView', () => this.back()),
-            commands.registerCommand('lean4.forwardDocView', () => this.forward()),
+            commands.registerCommand('lean4.docView.open', (url) => this.open(url)),
+            commands.registerCommand('lean4.docView.back', () => this.back()),
+            commands.registerCommand('lean4.docView.forward', () => this.forward()),
             commands.registerCommand('lean4.openTryIt', (code) => this.tryIt(code)),
             commands.registerCommand('lean4.openExample', (file) => this.example(file)),
         );
-        void this.offerToOpenProjectDocumentation();
+    }
+
+    private getTempFolder() : TempFolder {
+        if (!this.tempFolder){
+            this.tempFolder = new TempFolder('lean4');
+            this.subscriptions.push(this.tempFolder);
+        }
+        return this.tempFolder;
     }
 
     private async offerToOpenProjectDocumentation() {
-        if (!fs.existsSync(join(workspace.rootPath, 'leanpkg.toml')) &&
-            !fs.existsSync(join(workspace.rootPath, 'lean-toolchain'))) return;
         const projDoc = findProjectDocumentation();
         if (!projDoc) return;
         await this.open(Uri.file(projDoc).toString());
@@ -96,15 +126,15 @@ export class DocViewProvider implements Disposable {
             }
         }
         help += '\n</table></div>';
-
-        return this.openHtml(help);
+        const uri = createLocalFileUrl(this.getTempFolder().createFile('help.html', help));
+        return this.open(uri);
     }
 
     async fetch(url?: string): Promise<string> {
         if (url) {
             const uri = Uri.parse(url);
             if (uri.scheme === 'file') {
-                if (uri.fsPath.endsWith('.html')) {
+                if (uri.fsPath.endsWith('.html') || uri.fsPath.endsWith('.htm')) {
                     return fs.readFileSync(uri.fsPath).toString();
                 }
             } else {
@@ -130,15 +160,15 @@ export class DocViewProvider implements Disposable {
             }
 
             const books = {
-                'Theorem Proving in Lean':
-                    'https://leanprover.github.io/theorem_proving_in_lean/',
-                'Reference Manual': 'https://leanprover.github.io/reference/',
-                'Mathematics in Lean': 'https://avigad.github.io/mathematics_in_lean/',
-                'Logic and Proof': 'https://leanprover.github.io/logic_and_proof/',
+                'Theorem Proving in Lean': 'https://leanprover.github.io/theorem_proving_in_lean4/',
+                'Reference Manual': 'https://leanprover.github.io/lean4/doc/',
+                'Mathematics in Lean': 'https://github.com/leanprover-community/mathlib4/'
             };
             for (const book of Object.getOwnPropertyNames(books)) {
                 body.append($('<p>').append($('<a>').attr('href', books[book]).text(book)));
             }
+
+            this.currentURL = createLocalFileUrl(this.getTempFolder().createFile('index.html', $.html()));
 
             return $.html();
         }
@@ -188,17 +218,17 @@ export class DocViewProvider implements Disposable {
                 // keep links with alwaysExternal attribute
             } else if (link.attribs.tryitfile) {
                 link.attribs.title = link.attribs.title || 'Open code block (in existing file)';
-                link.attribs.href = mkCommandUri('lean.openExample', new URL(link.attribs.tryitfile, url).toString());
+                link.attribs.href = mkCommandUri('lean4.openExample', new URL(link.attribs.tryitfile, url).toString());
             } else if (tryItMatch) {
                 const code = decodeURIComponent(tryItMatch[1]);
                 link.attribs.title = link.attribs.title || 'Open code block in new editor';
-                link.attribs.href = mkCommandUri('lean.openTryIt', code);
+                link.attribs.href = mkCommandUri('lean4.openTryIt', code);
             } else {
                 const hrefUrl = new URL(link.attribs.href, url);
-                const isExternal = url && new URL(url).origin !== hrefUrl.origin;
-                if (!isExternal) {
+                const isExternal = !url || new URL(url).origin !== hrefUrl.origin;
+                if (!isExternal || hrefUrl.protocol === 'file:') {
                     link.attribs.title = link.attribs.title || link.attribs.href;
-                    link.attribs.href = mkCommandUri('lean.openDocView', hrefUrl.toString());
+                    link.attribs.href = mkCommandUri('lean4.docView.open', hrefUrl.toString());
                 }
             }
         }
@@ -230,8 +260,8 @@ export class DocViewProvider implements Disposable {
             .css('margin-left', '1em')
             .css('text-decoration', 'none')
             .text(text);
-        navDiv.append(mkLink('lean.backDocView', 'back', '⬅ back'));
-        navDiv.append(mkLink('lean.forwardDocView', 'forward', 'forward ➡'));
+        navDiv.append(mkLink('lean4.docView.back', 'back', '⬅ back'));
+        navDiv.append(mkLink('lean4.docView.forward', 'forward', 'forward ➡'));
         $('nav+*').css('margin-top','3em');
 
         webview.html = $.html();
@@ -244,25 +274,25 @@ export class DocViewProvider implements Disposable {
 
     /** Called by the user clicking a link. */
     async open(url?: string): Promise<void> {
-        if (url) {
-            this.backstack.push(this.currentURL);
-            this.forwardstack = [];
+        if (this.currentURL) {
+            this.backStack.push(this.currentURL);
+            this.forwardStack = [];
         }
         this.currentURL = url;
         await this.setHtml();
     }
 
     async back(): Promise<void> {
-        if (this.backstack.length === 0) {return;}
-        this.forwardstack.push(this.currentURL);
-        this.currentURL = this.backstack.pop();
+        if (this.backStack.length === 0) {return;}
+        this.forwardStack.push(this.currentURL);
+        this.currentURL = this.backStack.pop();
         await this.setHtml();
     }
 
     async forward(): Promise<void> {
-        if (this.forwardstack.length === 0) {return;}
-        this.backstack.push(this.currentURL);
-        this.currentURL = this.forwardstack.pop();
+        if (this.forwardStack.length === 0) {return;}
+        this.backStack.push(this.currentURL);
+        this.currentURL = this.forwardStack.pop();
         await this.setHtml();
     }
 
