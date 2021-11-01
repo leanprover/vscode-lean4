@@ -77,7 +77,7 @@ Now the `Lean4: Select Toolchain` will show `master` as one of the toolchains yo
 
 - Support for completing abbreviations starting with a backslash (\\).
 For example you type `\alpha` and the editor automatically replaces that with the nice Unicode character (α).
-- Support for completing the closing brace, like `()`, `{}` and `[]`
+- Auto-completing of brackets like `()`, `{}`, `[]`, `⟦ ⟧`, `⦃ ⦄`, `⟮ ⟯`, `⦃ ⦄` and block comments `/- ... -/`.
 
 ## Infoview panel
 
