@@ -19,9 +19,9 @@
 
 - Enable auto-install via elan.
 - Report output from `lean --version` because that may result in a long running "downloading lean" session so this output helps explain to the user why the big delay and what if anything went wrong.
-- Read lean version from the leanpkg.toml file.
+- Read Lean version from the leanpkg.toml file.
 - addDefaultElanPath so PATH environment is not needed.
-- Add support for pre-term goal lean versions.
+- Add support for pre-term goal Lean versions.
 - Add info-on-hover widgets.
 - Fix debugging of infoview source code.
 
