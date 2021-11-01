@@ -1753,6 +1753,5 @@
     "goal": "⊢",
     "Vdash": "⊩",
     "Vert": "‖",
-    "Vvdash": "⊪",
-    "help": "help"
+    "Vvdash": "⊪"
 }

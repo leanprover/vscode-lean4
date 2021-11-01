@@ -49,23 +49,6 @@ export async function activate(context: ExtensionContext): Promise<any> {
         void docview.showAbbreviations(abbrev.abbreviations.getAbbreviations());
     }))
 
-    async function checkHelp(editor : TextEditor) : Promise<void> {
-        const sel = editor.selection;
-        if (sel.end.character >= 4){
-            const range = new Range(sel.end.translate(0, - 4), sel.end);
-            const abbreviation = editor.document.getText(range);
-            if (abbreviation === 'help') {
-                // remove the help text.
-                const v = await editor.edit((builder) => {
-                    builder.replace( range, '');
-                });
-
-            }
-        }
-    }
-
-    abbrev.abbreviations.abbreviationCompleted((v) => checkHelp(v));
-
     context.subscriptions.push(new LeanTaskGutter(client, context))
 
     context.subscriptions.push(commands.registerCommand('lean4.refreshFileDependencies', () => {
