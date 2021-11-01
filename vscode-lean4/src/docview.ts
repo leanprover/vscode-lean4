@@ -6,7 +6,6 @@ import { commands, Disposable, Uri, ViewColumn, WebviewPanel, window,
      workspace, WebviewOptions, WebviewPanelOptions } from 'vscode';
 import * as fs from 'fs';
 import { join } from 'path';
-import { StaticServer } from './staticserver';
 
 export function mkCommandUri(commandName: string, ...args: any[]): string {
     return `command:${commandName}?${encodeURIComponent(JSON.stringify(args))}`;
@@ -22,7 +21,7 @@ export class DocViewProvider implements Disposable {
     private currentURL: string | undefined = undefined;
     private backstack: string[] = [];
     private forwardstack: string[] = [];
-    constructor(private staticServer?: StaticServer) {
+    constructor() {
         this.subscriptions.push(
             commands.registerCommand('lean.openDocView', (url) => this.open(url)),
             commands.registerCommand('lean.backDocView', () => this.back()),
@@ -127,12 +126,7 @@ export class DocViewProvider implements Disposable {
                 return '';
             }
             const path = Uri.parse(uri.toString()).fsPath;
-            if (this.staticServer) {
-                // workaround for https://github.com/microsoft/vscode/issues/89038
-                return this.staticServer.mkUri(path);
-            } else {
-                return this.webview.webview.asWebviewUri(Uri.parse(uri.toString())).toString();
-            }
+            return this.webview.webview.asWebviewUri(Uri.parse(uri.toString())).toString();
         } else {
             return uri.toString();
         }
