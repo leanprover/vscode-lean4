@@ -8,7 +8,9 @@ It is based on [vscode-lean](https://github.com/leanprover/vscode-lean).
 1. Open a folder containing Lean code (files with the `.lean` extension) using VS Code.  It is recommended that you open a folder that is configured using [Lake](https://github.com/leanprover/lake) which is a Lean package configuration tool.
 1. Open a Lean source file and type in `#eval 1`. The extension should display a blue underline below `#eval`. Upon hovering over it, a hover panel reporting the result of the evaluation should pop up. When hovering over the `1`, a hover panel displaying the type of `1` should pop up saying `1 : Nat` meaning 1 is a Natural number.
 1. If `Lean` is not yet installed on your system you will see a prompt like this:
-![prompt](vscode-lean4/media/install-elan.png)
+
+    ![prompt](vscode-lean4/media/install-elan.png)
+
 1. Click the "Install Lean using Elan" option and enter any options that appear
 in the terminal window, and follow any instructions about changing your PATH environment to point to the `elan` bin folder.  If you do need to change your PATH you many need to restart VS code to pick up that new environment.
 1. After this succeeds the correct version of Lean will be installed by `elan`
