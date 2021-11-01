@@ -108,24 +108,19 @@ export class DocViewProvider implements Disposable {
     }
 
     async showAbbreviations(abbreviations : Map<string, string>) : Promise<void> {
-        // display the HTML table definition of all abbreviations in 2 columns.
-        let help = "<div className='mv2'><table><tr><th>Abbreviation</th><th>Unicode Symbol</th> <th>Abbreviation</th><th>Unicode Symbol</th> </tr>\n"
-        let col = 0;
+        // display the HTML table definition of all abbreviations with a large font so each symbol is
+        // easy to examine.
+        const $ = cheerio.load('<table style="font-size:x-large"><tr><th style="text-align:left">Abbreviation</th><th style="text-align:left">Unicode Symbol</th></tr></table>');
+        const table = $('table');
         for (const name of abbreviations.keys()) {
             const u = abbreviations.get(name);
             if (u.indexOf('CURSOR') < 0) {
-                if (col === 0) {
-                    help += '<tr>';
-                }
-                help += `<td><center>${name}</center></td><td><center>${u}</center></td>`;
-                col++;
-                if (col === 2) {
-                    help += '</tr>\n';
-                    col = 0;
-                }
+                const row = table.append($('<tr>'));
+                row.append($('<td>').text(name));
+                row.append($('<td>').text(u));
             }
         }
-        help += '\n</table></div>';
+        const help = $.html();
         const uri = createLocalFileUrl(this.getTempFolder().createFile('help.html', help));
         return this.open(uri);
     }
