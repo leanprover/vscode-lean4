@@ -23,17 +23,18 @@ export class DocViewProvider implements Disposable {
     private forwardstack: string[] = [];
     constructor() {
         this.subscriptions.push(
-            commands.registerCommand('lean.openDocView', (url) => this.open(url)),
-            commands.registerCommand('lean.backDocView', () => this.back()),
-            commands.registerCommand('lean.forwardDocView', () => this.forward()),
-            commands.registerCommand('lean.openTryIt', (code) => this.tryIt(code)),
-            commands.registerCommand('lean.openExample', (file) => this.example(file)),
+            commands.registerCommand('lean4.openDocView', (url) => this.open(url)),
+            commands.registerCommand('lean4.backDocView', () => this.back()),
+            commands.registerCommand('lean4.forwardDocView', () => this.forward()),
+            commands.registerCommand('lean4.openTryIt', (code) => this.tryIt(code)),
+            commands.registerCommand('lean4.openExample', (file) => this.example(file)),
         );
         void this.offerToOpenProjectDocumentation();
     }
 
     private async offerToOpenProjectDocumentation() {
-        if (!fs.existsSync(join(workspace.rootPath, 'leanpkg.toml'))) return;
+        if (!fs.existsSync(join(workspace.rootPath, 'leanpkg.toml')) &&
+            !fs.existsSync(join(workspace.rootPath, 'lean-toolchain'))) return;
         const projDoc = findProjectDocumentation();
         if (!projDoc) return;
         await this.open(Uri.file(projDoc).toString());
@@ -136,7 +137,7 @@ export class DocViewProvider implements Disposable {
         const {webview} = this.getWebview();
 
         const url = this.currentURL;
-        let $: CheerioStatic;
+        let $: cheerio.Root;
         try {
             $ = cheerio.load(await this.fetch(url));
         } catch (e) {

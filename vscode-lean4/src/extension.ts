@@ -2,6 +2,7 @@ import { workspace, commands, window, languages, ExtensionContext, TextEditor, R
 import { AbbreviationFeature } from './abbreviation'
 import { LeanClient } from './leanclient'
 import { InfoProvider } from './infoview'
+import { DocViewProvider } from './docview';
 import { LeanTaskGutter } from './taskgutter'
 import { LocalStorageService} from './utils/localStorage'
 import { LeanInstaller } from './utils/leanInstaller'
@@ -40,6 +41,8 @@ export async function activate(context: ExtensionContext): Promise<any> {
 
     const abbrev = new AbbreviationFeature();
     context.subscriptions.push(abbrev);
+
+    context.subscriptions.push(new DocViewProvider());
 
     async function checkHelp(editor : TextEditor) : Promise<void> {
         const sel = editor.selection;
