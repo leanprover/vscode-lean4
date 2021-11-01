@@ -42,7 +42,12 @@ export async function activate(context: ExtensionContext): Promise<any> {
     const abbrev = new AbbreviationFeature();
     context.subscriptions.push(abbrev);
 
-    context.subscriptions.push(new DocViewProvider());
+    const docview = new DocViewProvider();
+    context.subscriptions.push(docview);
+
+    context.subscriptions.push(commands.registerCommand('lean4.showAllAbbreviations', () => {
+        void docview.showAbbreviations(abbrev.abbreviations.getAbbreviations());
+    }))
 
     async function checkHelp(editor : TextEditor) : Promise<void> {
         const sel = editor.selection;
@@ -55,17 +60,6 @@ export async function activate(context: ExtensionContext): Promise<any> {
                     builder.replace( range, '');
                 });
 
-                // display the HTML table definition of all abbreviations.
-                const list = abbrev.abbreviations.getAbbreviationNames();
-                let help = "<div className='mv2'><table><tr><th>Abbreviation</th><th>Unicode Symbol</th></tr>"
-                for (const name of list) {
-                    const u = abbrev.abbreviations.getSymbolForAbbreviation(name);
-                    if (u.indexOf('CURSOR') < 0) {
-                        help += `<tr><td>${name}</td><td>${u}</td></tr>`;
-                    }
-                }
-                help += '</table></div>';
-                info.displayHtml(help);
             }
         }
     }

@@ -5,7 +5,8 @@ import { URL } from 'url';
 import { commands, Disposable, Uri, ViewColumn, WebviewPanel, window,
      workspace, WebviewOptions, WebviewPanelOptions } from 'vscode';
 import * as fs from 'fs';
-import { join } from 'path';
+import { join, sep } from 'path';
+import * as os from 'os';
 
 export function mkCommandUri(commandName: string, ...args: any[]): string {
     return `command:${commandName}?${encodeURIComponent(JSON.stringify(args))}`;
@@ -76,6 +77,29 @@ export class DocViewProvider implements Disposable {
         return this.webview;
     }
 
+    async showAbbreviations(abbreviations : Map<string, string>) : Promise<void> {
+        // display the HTML table definition of all abbreviations in 2 columns.
+        let help = "<div className='mv2'><table><tr><th>Abbreviation</th><th>Unicode Symbol</th> <th>Abbreviation</th><th>Unicode Symbol</th> </tr>\n"
+        let col = 0;
+        for (const name of abbreviations.keys()) {
+            const u = abbreviations.get(name);
+            if (u.indexOf('CURSOR') < 0) {
+                if (col === 0) {
+                    help += '<tr>';
+                }
+                help += `<td><center>${name}</center></td><td><center>${u}</center></td>`;
+                col++;
+                if (col === 2) {
+                    help += '</tr>\n';
+                    col = 0;
+                }
+            }
+        }
+        help += '\n</table></div>';
+
+        return this.openHtml(help);
+    }
+
     async fetch(url?: string): Promise<string> {
         if (url) {
             const uri = Uri.parse(url);
@@ -133,17 +157,23 @@ export class DocViewProvider implements Disposable {
         }
     }
 
-    async setHtml(): Promise<void> {
+    async setHtml(html? : string): Promise<void> {
         const {webview} = this.getWebview();
 
         const url = this.currentURL;
         let $: cheerio.Root;
-        try {
-            $ = cheerio.load(await this.fetch(url));
-        } catch (e) {
-            $ = cheerio.load('<pre>');
-            $('pre').text(e.toString());
+        if (html){
+            $ = cheerio.load(html);
         }
+        else{
+            try {
+                $ = cheerio.load(await this.fetch(url));
+            } catch (e) {
+                $ = cheerio.load('<pre>');
+                $('pre').text(e.toString());
+            }
+        }
+
         for (const style of $('link[rel=stylesheet]').get()) {
             style.attribs.href = this.mkRelativeUrl(style.attribs.href, url);
         }
@@ -205,6 +235,11 @@ export class DocViewProvider implements Disposable {
         $('nav+*').css('margin-top','3em');
 
         webview.html = $.html();
+    }
+
+    async openHtml(html : string): Promise<void> {
+        this.currentURL = undefined;
+        await this.setHtml(html);
     }
 
     /** Called by the user clicking a link. */

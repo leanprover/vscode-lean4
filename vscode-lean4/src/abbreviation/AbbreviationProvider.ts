@@ -38,6 +38,15 @@ export class AbbreviationProvider implements Disposable {
 		};
 	}
 
+	getAbbreviations() : Map<string, string> {
+		const result = new Map<string, string>()
+		for (const name of this.getAbbreviationNames()) {
+            const u = this.getSymbolForAbbreviation(name);
+			result.set(name, u);
+		}
+		return result;
+	}
+
 	getAbbreviationNames() : string[] {
 		return Object.entries(this.symbolsByAbbreviation).map(([abbr]) => abbr)
 	}
