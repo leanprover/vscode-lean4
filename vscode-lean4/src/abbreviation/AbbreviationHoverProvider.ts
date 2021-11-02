@@ -9,15 +9,15 @@ import { AbbreviationConfig } from './config';
 export class AbbreviationHoverProvider implements HoverProvider {
 	constructor(
 		private readonly config: AbbreviationConfig,
-		private readonly abbrevations: AbbreviationProvider
+		private readonly abbreviations: AbbreviationProvider
 	) {}
 
 	provideHover(document: TextDocument, pos: Position): Hover | undefined {
 		const context = document.lineAt(pos.line).text.substr(pos.character);
-		const symbolsAtCursor = this.abbrevations.findSymbolsIn(context);
+		const symbolsAtCursor = this.abbreviations.findSymbolsIn(context);
 		const allAbbrevs = symbolsAtCursor.map((symbol) => ({
 			symbol,
-			abbrevs: this.abbrevations.getAllAbbreviations(symbol),
+			abbrevs: this.abbreviations.getAllAbbreviations(symbol),
 		}));
 
 		if (
