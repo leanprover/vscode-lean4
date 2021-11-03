@@ -1,12 +1,14 @@
-import { workspace, commands, window, languages, ExtensionContext } from 'vscode'
+import { workspace, commands, window, languages, ExtensionContext, TextEditor, Range } from 'vscode'
 import { AbbreviationFeature } from './abbreviation'
 import { LeanClient } from './leanclient'
 import { InfoProvider } from './infoview'
+import { DocViewProvider } from './docview';
 import { LeanTaskGutter } from './taskgutter'
 import { LocalStorageService} from './utils/localStorage'
 import { LeanInstaller } from './utils/leanInstaller'
 import { LeanpkgService } from './utils/leanpkg';
 import { addDefaultElanPath } from './config';
+import { AbbreviationProvider } from './abbreviation/AbbreviationProvider'
 
 export async function activate(context: ExtensionContext): Promise<any> {
 
@@ -34,9 +36,18 @@ export async function activate(context: ExtensionContext): Promise<any> {
     context.subscriptions.push(client)
 
     // Register support for unicode input
-    context.subscriptions.push(new AbbreviationFeature())
+    const info = new InfoProvider(client, {language: 'lean4'}, context);
+    context.subscriptions.push(info)
 
-    context.subscriptions.push(new InfoProvider(client, {language: 'lean4'}, context))
+    const abbrev = new AbbreviationFeature();
+    context.subscriptions.push(abbrev);
+
+    const docview = new DocViewProvider();
+    context.subscriptions.push(docview);
+
+    context.subscriptions.push(commands.registerCommand('lean4.docView.showAllAbbreviations', () => {
+        void docview.showAbbreviations(abbrev.abbreviations.symbolsByAbbreviation);
+    }))
 
     context.subscriptions.push(new LeanTaskGutter(client, context))
 

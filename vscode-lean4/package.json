@@ -239,6 +239,18 @@
 				"category": "Lean 4",
 				"title": "Select Lean Toolchain",
 				"description": "Select version of the Lean toolchain to use for this project."
+			},
+			{
+				"command": "lean4.docView.showAllAbbreviations",
+				"category": "Lean 4",
+				"title": "Show all abbreviations",
+				"description": "Show help page containing all abbreviations and the Unicode characters they map to."
+			},
+			{
+				"command": "lean4.docView.open",
+				"category": "Lean 4",
+				"title": "Open Documentation View",
+				"description": "Open documentation found in local 'html' folder in a separate web view panel"
 			}
 		],
 		"languages": [
@@ -342,6 +354,10 @@
 				{
 					"command": "lean4.selectToolchain",
 					"when": "editorLangId == lean4"
+				},
+				{
+					"command": "lean4.docView.showAllAbbreviations",
+					"when": "editorLangId == lean4"
 				}
 			],
 			"editor/title": [
@@ -367,7 +383,9 @@
 			}
 		}
 	},
-	"extensionKind": ["workspace"],
+	"extensionKind": [
+		"workspace"
+	],
 	"activationEvents": [
 		"onLanguage:lean",
 		"onLanguage:lean4",
@@ -383,13 +401,16 @@
 		"package": "vsce package"
 	},
 	"dependencies": {
-		"vscode-languageclient": "=7.0.0",
 		"@lean4/infoview": "^0.1.0",
-		"mobx": "5.15.7"
+		"axios": "^0.24.0",
+		"cheerio": "^1.0.0-rc.10",
+		"mobx": "5.15.7",
+		"vscode-languageclient": "=7.0.0"
 	},
 	"devDependencies": {
 		"@types/node": "^14.17.4",
 		"@types/vscode": "^1.57.0",
+		"@types/cheerio": "^0.22.29",
 		"@types/vscode-webview": "^1.57.0",
 		"@typescript-eslint/eslint-plugin": "^4.28.0",
 		"@typescript-eslint/parser": "^4.28.0",
