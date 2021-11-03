@@ -180,7 +180,8 @@ export class RpcSessions implements Disposable {
                 if (!this.#connecting.has(uri)) {
                     // force a reconnect.
                     if (this.#connected.has(uri)) {
-                       this.#connected.delete(uri);
+                        this.#connected.get(uri)?.dispose()
+                        this.#connected.delete(uri);
                     }
                     this.connectAt(uri);
                 }
@@ -219,7 +220,7 @@ export class RpcSessions implements Disposable {
         this.#connected.delete(uri)
         this.#connecting.get(uri)?.then(sesh => {
             sesh.dispose()
-            this.#connected.delete(uri)
+            this.#connecting.delete(uri)
         })
     }
 
