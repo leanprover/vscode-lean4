@@ -241,7 +241,7 @@
 				"description": "Select version of the Lean toolchain to use for this project."
 			},
 			{
-				"command": "lean4.showAllAbbreviations",
+				"command": "lean4.docView.showAllAbbreviations",
 				"category": "Lean 4",
 				"title": "Show all abbreviations",
 				"description": "Show help page containing all abbreviations and the Unicode characters they map to."
@@ -250,7 +250,7 @@
 				"command": "lean4.docView.open",
 				"category": "Lean 4",
 				"title": "Open Documentation View",
-				"description": "Open documentation panel"
+				"description": "Open documentation found in local 'html' folder in a separate web view panel"
 			}
 		],
 		"languages": [
@@ -356,7 +356,7 @@
 					"when": "editorLangId == lean4"
 				},
 				{
-					"command": "lean4.showAllAbbreviations",
+					"command": "lean4.docView.showAllAbbreviations",
 					"when": "editorLangId == lean4"
 				}
 			],

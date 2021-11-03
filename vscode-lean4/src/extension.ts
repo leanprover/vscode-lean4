@@ -45,7 +45,7 @@ export async function activate(context: ExtensionContext): Promise<any> {
     const docview = new DocViewProvider();
     context.subscriptions.push(docview);
 
-    context.subscriptions.push(commands.registerCommand('lean4.showAllAbbreviations', () => {
+    context.subscriptions.push(commands.registerCommand('lean4.docView.showAllAbbreviations', () => {
         void docview.showAbbreviations(abbrev.abbreviations.symbolsByAbbreviation);
     }))
 
