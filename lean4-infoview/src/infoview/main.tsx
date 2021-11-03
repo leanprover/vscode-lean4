@@ -93,7 +93,7 @@ export function renderInfoview(editorApi: EditorApi, uiElement: HTMLElement): In
         sentClientNotification: new Event(),
         changedCursorLocation: new Event(),
         changedInfoviewConfig: new Event(),
-        requestedAction: new Event()
+        requestedAction: new Event(),
     };
 
     // Challenge: write a type-correct fn from `Eventify<T>` to `T` without using `any`
@@ -107,7 +107,7 @@ export function renderInfoview(editorApi: EditorApi, uiElement: HTMLElement): In
         },
         changedCursorLocation: async loc => editorEvents.changedCursorLocation.fire(loc),
         changedInfoviewConfig: async conf => editorEvents.changedInfoviewConfig.fire(conf),
-        requestedAction: async action => editorEvents.requestedAction.fire(action)
+        requestedAction: async action => editorEvents.requestedAction.fire(action),
     };
 
     const ec = new EditorConnection(editorApi, editorEvents);
