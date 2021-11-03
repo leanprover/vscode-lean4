@@ -7,6 +7,7 @@ import { commands, Disposable, Uri, ViewColumn, WebviewPanel, window,
 import * as fs from 'fs';
 import { join, sep } from 'path';
 import { TempFolder } from './utils/tempFolder'
+import { SymbolsByAbbreviation } from './abbreviation/config'
 
 
 export function mkCommandUri(commandName: string, ...args: any[]): string {
@@ -107,17 +108,16 @@ export class DocViewProvider implements Disposable {
         return this.webview;
     }
 
-    async showAbbreviations(abbreviations : Map<string, string>) : Promise<void> {
+    async showAbbreviations(abbreviations : SymbolsByAbbreviation) : Promise<void> {
         // display the HTML table definition of all abbreviations with a large font so each symbol is
         // easy to examine.
         const $ = cheerio.load('<table style="font-size:x-large"><tr><th style="text-align:left">Abbreviation</th><th style="text-align:left">Unicode Symbol</th></tr></table>');
         const table = $('table');
-        for (const name of abbreviations.keys()) {
-            const u = abbreviations.get(name);
-            if (u.indexOf('CURSOR') < 0) {
+        for (const [abbr, sym] of Object.entries(abbreviations)) {
+            if (sym && sym.indexOf('CURSOR') < 0) {
                 const row = table.append($('<tr>'));
-                row.append($('<td>').text(name));
-                row.append($('<td>').text(u));
+                row.append($('<td>').text(abbr));
+                row.append($('<td>').text(sym));
             }
         }
         const help = $.html();

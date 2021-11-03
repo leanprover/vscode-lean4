@@ -114,9 +114,4 @@ export interface InfoviewApi {
    * Must fire whenever the user requests that the infoview perform an action.
    */
   requestedAction(action: InfoviewAction): Promise<void>;
-
-  /**
-   * Optional way to display custom HTML in the InfoView.
-   */
-  displayHtml(html: string): Promise<void>;
 }

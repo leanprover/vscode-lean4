@@ -30,7 +30,7 @@ export class AbbreviationProvider implements Disposable {
 	}
 
 	@computed
-	private get symbolsByAbbreviation(): SymbolsByAbbreviation {
+	get symbolsByAbbreviation(): SymbolsByAbbreviation {
 		// There are only like 1000 symbols. Building an index is not required yet.
 		return {
 			...abbreviations,

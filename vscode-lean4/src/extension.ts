@@ -46,7 +46,7 @@ export async function activate(context: ExtensionContext): Promise<any> {
     context.subscriptions.push(docview);
 
     context.subscriptions.push(commands.registerCommand('lean4.showAllAbbreviations', () => {
-        void docview.showAbbreviations(abbrev.abbreviations.getAbbreviations());
+        void docview.showAbbreviations(abbrev.abbreviations.symbolsByAbbreviation);
     }))
 
     context.subscriptions.push(new LeanTaskGutter(client, context))
