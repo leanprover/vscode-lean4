@@ -1,4 +1,4 @@
-import { NotebookCellOutput, OutputChannel } from 'vscode'
+import { OutputChannel } from 'vscode'
 import { spawn } from 'child_process';
 
 export async function batchExecute(
