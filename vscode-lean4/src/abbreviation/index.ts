@@ -7,7 +7,7 @@ import { AbbreviationConfig } from './config';
 
 export class AbbreviationFeature {
 	private readonly disposables = new Array<Disposable>();
-	abbreviations : AbbreviationProvider;
+	readonly abbreviations : AbbreviationProvider;
 
 	constructor() {
 		const config = new AbbreviationConfig();
