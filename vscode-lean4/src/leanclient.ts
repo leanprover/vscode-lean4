@@ -41,7 +41,7 @@ export function getFullRange(diag: Diagnostic): Range {
 
 export class LeanClient implements Disposable {
     running: boolean
-	private client: LanguageClient
+	private client: LanguageClient | undefined
     private executable: string
     private outputChannel: OutputChannel;
     private storageManager : LocalStorageService;
@@ -393,6 +393,6 @@ export class LeanClient implements Disposable {
     }
 
     get initializeResult() : InitializeResult | undefined {
-        return this.client.initializeResult;
+        return this.running ? this.client.initializeResult : undefined
     }
 }
