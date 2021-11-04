@@ -7,8 +7,8 @@ import 'vscode-codicons/dist/codicon.css';
 import './index.css';
 
 import { Infos } from './infos';
-import { AllMessages, WithDiagnosticsContext } from './messages';
-import { useClientNotificationEffect, useEvent, useServerNotificationState } from './util';
+import { AllMessages, WithLspDiagnosticsContext } from './messages';
+import { useClientNotificationEffect, useEvent, useEventResult, useServerNotificationState } from './util';
 import { LeanFileProgressParams, LeanFileProgressProcessingInfo } from '../lspTypes';
 import { EditorContext, ConfigContext, ProgressContext, VersionContext } from './contexts';
 import { WithRpcSessions } from './rpcSessions';
@@ -52,11 +52,16 @@ function Main(props: {}) {
         []
     );
 
+    const serverInitializeResult = useEventResult(ec.events.serverRestarted);
+    const sv = serverInitializeResult ? new ServerVersion(serverInitializeResult.serverInfo!.version!) : undefined;
+
     // NB: the cursor may temporarily become `undefined` when a file is closed. In this case
     // it's important not to reconstruct the `WithBlah` wrappers below since they contain state
     // that we want to persist.
     let ret
-    if (!curUri) {
+    if (!serverInitializeResult) {
+        ret = <p>Waiting for Lean server to start...</p>
+    } else if (!curUri) {
         ret = <p>Click somewhere in the Lean file to enable the infoview.</p>
     } else {
         ret =
@@ -70,13 +75,15 @@ function Main(props: {}) {
 
     return (
     <ConfigContext.Provider value={config}>
-        <WithRpcSessions>
-            <WithDiagnosticsContext>
+        <VersionContext.Provider value={sv}>
+            <WithLspDiagnosticsContext>
                 <ProgressContext.Provider value={allProgress}>
-                    {ret}
+                    <WithRpcSessions>
+                        {ret}
+                    </WithRpcSessions>
                 </ProgressContext.Provider>
-            </WithDiagnosticsContext>
-        </WithRpcSessions>
+            </WithLspDiagnosticsContext>
+        </VersionContext.Provider>
     </ConfigContext.Provider>
     );
 }
@@ -99,14 +106,14 @@ export function renderInfoview(editorApi: EditorApi, uiElement: HTMLElement): In
 
     // Challenge: write a type-correct fn from `Eventify<T>` to `T` without using `any`
     const infoviewApi: InfoviewApi = {
-        initialize: async (r, l) => editorEvents.initialize.fire([r, l]),
+        initialize: async l => editorEvents.initialize.fire(l),
         gotServerNotification: async (method, params) => {
             editorEvents.gotServerNotification.fire([method, params]);
         },
         sentClientNotification: async (method, params) => {
             editorEvents.sentClientNotification.fire([method, params]);
         },
-        serverRestarted: async () => editorEvents.serverRestarted.fire({}),
+        serverRestarted: async r => editorEvents.serverRestarted.fire(r),
         changedCursorLocation: async loc => editorEvents.changedCursorLocation.fire(loc),
         changedInfoviewConfig: async conf => editorEvents.changedInfoviewConfig.fire(conf),
         requestedAction: async action => editorEvents.requestedAction.fire(action),
@@ -114,28 +121,13 @@ export function renderInfoview(editorApi: EditorApi, uiElement: HTMLElement): In
 
     const ec = new EditorConnection(editorApi, editorEvents);
 
-    editorEvents.initialize.on(([serverInitializeResult, loc]: [InitializeResult, Location]) => {
-        ec.events.changedCursorLocation.current = loc;
+    editorEvents.initialize.on((loc: Location) => ec.events.changedCursorLocation.fire(loc))
 
-        if (!serverInitializeResult || !serverInitializeResult.serverInfo){
-            ReactDOM.render(
-                <p>Internal error loading Lean language server</p>,
-                uiElement
-            )
-        } else {
-            const sv = new ServerVersion(serverInitializeResult.serverInfo!.version!);
-            ReactDOM.render(
-                <React.StrictMode>
-                    <EditorContext.Provider value={ec}>
-                        <VersionContext.Provider value={sv}>
-                            <Main/>
-                        </VersionContext.Provider>
-                    </EditorContext.Provider>
-                </React.StrictMode>,
-                uiElement
-            )
-        }
-    })
+    ReactDOM.render(<React.StrictMode>
+        <EditorContext.Provider value={ec}>
+            <Main/>
+        </EditorContext.Provider>
+    </React.StrictMode>, uiElement)
 
     return infoviewApi;
 }

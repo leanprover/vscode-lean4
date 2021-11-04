@@ -128,17 +128,20 @@ export class InfoProvider implements Disposable {
     constructor(private client: LeanClient, private readonly leanDocs: DocumentSelector, private context: ExtensionContext) {
         this.updateStylesheet();
         this.subscriptions.push(
-            this.client.restarting(async () => {
-                this.clear();
-            }),
             this.client.restarted(async () => {
-                await this.autoOpen();
-                if (this.webviewPanel && this.client.initializeResult && window.activeTextEditor){
-                    await this.webviewPanel.api.initialize(this.client.initializeResult, this.getLocation(window.activeTextEditor));
-                }
-                void this.webviewPanel?.api?.serverRestarted()
-                // NOTE(WN): We do not re-send state such as diagnostics to the infoview here
-                // because a restarted server will send those on its own.
+                // This event is triggered both the first time the server starts
+                // as well as when the server restarts.
+                // The info view should auto-open the first time the server starts:
+                await this.autoOpen()
+                // Inform the server about the restart
+                await this.webviewPanel?.api?.serverRestarted(this.client?.initializeResult)
+
+                // The infoview listens for server notifications such as diagnostics passively,
+                // so when it is first started we must re-send those as if the server did.
+                await this.sendPosition();
+                await this.sendConfig();
+                await this.sendDiagnostics();
+                await this.sendProgress();
             }),
             window.onDidChangeActiveTextEditor(() => this.sendPosition()),
             window.onDidChangeTextEditorSelection(() => this.sendPosition()),
@@ -229,17 +232,8 @@ export class InfoProvider implements Disposable {
             webviewPanel.webview.html = this.initialHtml();
 
             // this.client.initializeResult can be null if the server failed to start.
-            if (this.client.initializeResult) {
-                await webviewPanel.api.initialize(this.client.initializeResult, this.getLocation(editor))
-            }
+            await webviewPanel.api.initialize(this.getLocation(editor))
         }
-
-        // The infoview listens for server notifications such as diagnostics passively,
-        // so when it is first started we must re-send those as if the server did.
-        await this.sendPosition();
-        await this.sendConfig();
-        await this.sendDiagnostics();
-        await this.sendProgress();
     }
 
     private clear() {
@@ -298,7 +292,7 @@ export class InfoProvider implements Disposable {
 
     private async sendPosition() {
         if (!window.activeTextEditor || languages.match(this.leanDocs, window.activeTextEditor.document) === 0) return
-        void this.autoOpen();
+        await this.autoOpen();
         const loc = this.getLocation(window.activeTextEditor);
         await this.webviewPanel?.api.changedCursorLocation(loc);
     }

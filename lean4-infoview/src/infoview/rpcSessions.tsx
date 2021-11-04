@@ -231,6 +231,8 @@ export class RpcSessions implements Disposable {
     ensureAllSessionsClosed() {
         this.#connected.forEach(rs => rs.dispose())
         this.#connecting.forEach(fut => fut.then(rs => rs.dispose()))
+        this.#connected.clear()
+        this.#connecting.clear()
     }
 
     dispose() {

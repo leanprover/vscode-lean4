@@ -5,7 +5,7 @@ import { Goals as GoalsUi, Goal as GoalUi, goalsToString } from './goals';
 import { basename, DocumentPosition, RangeHelpers, useEvent, usePausableState } from './util';
 import { Details } from './collapsing';
 import { EditorContext, ProgressContext, RpcContext, VersionContext } from './contexts';
-import { MessagesAtFile, useMessagesFor } from './messages';
+import { MessagesAtFile, MessagesList, useMessagesFor } from './messages';
 import { getInteractiveGoals, getInteractiveTermGoal, InteractiveDiagnostic, InteractiveGoal, InteractiveGoals } from './rpcInterface';
 import { updatePlainGoals, updateTermGoal } from './goalCompat';
 
@@ -157,7 +157,7 @@ export function InfoDisplay(props0: InfoDisplayProps) {
                         Messages ({messages.length})
                     </summary>
                     <div className="ml1">
-                        <MessagesAtFile uri={pos.uri} messages={messages}/>
+                        <MessagesList uri={pos.uri} messages={messages} />
                     </div>
                 </Details>
             </div>
@@ -245,7 +245,7 @@ function InfoAux(props: InfoProps) {
         setStatus('updating');
 
         let allReq = undefined
-        if (sv.hasWidgetsV1()) {
+        if (sv?.hasWidgetsV1()) {
             // Start both goal requests before awaiting them.
             const goalsReq = getInteractiveGoals(rs, pos);
             const termGoalReq = getInteractiveTermGoal(rs, pos);
