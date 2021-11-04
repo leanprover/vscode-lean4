@@ -220,7 +220,10 @@ export class RpcSessions implements Disposable {
         this.#connected.delete(uri)
         this.#connecting.get(uri)?.then(sesh => {
             sesh.dispose()
-            this.#connecting.delete(uri)
+            // this is not a typo, at the point this lambda executes, the uri
+            // has probably been added to this.#connected, so we have to
+            // remove it again here even though we just did that above.
+            this.#connected.delete(uri)
         })
     }
 
