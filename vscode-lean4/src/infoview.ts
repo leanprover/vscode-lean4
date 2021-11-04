@@ -21,7 +21,7 @@ export class InfoProvider implements Disposable {
     private stylesheet: string = '';
     private autoOpened: boolean = false;
 
-    // Subscriptions are counted and only disposed when count === 0.
+    // Subscriptions are counted and only disposed of when count becomes 0.
     private serverNotifSubscriptions: Map<string, [number, Disposable]> = new Map();
     private clientNotifSubscriptions: Map<string, [number, Disposable]> = new Map();
 
@@ -47,13 +47,13 @@ export class InfoProvider implements Disposable {
                 const h = this.client.diagnostics((params) => {
                     void this.webviewPanel?.api.gotServerNotification(method, params);
                 });
-                this.serverNotifSubscriptions.set(method, [0, h]);
+                this.serverNotifSubscriptions.set(method, [1, h]);
             } else if (method.startsWith('$')) {
                 const h = this.client.customNotification(({method: thisMethod, params}) => {
                     if (thisMethod !== method) return;
                     void this.webviewPanel?.api.gotServerNotification(method, params);
                 });
-                this.serverNotifSubscriptions.set(method, [0, h]);
+                this.serverNotifSubscriptions.set(method, [1, h]);
             } else {
                 throw new Error(`subscription to ${method} server notifications not implemented`);
             }
@@ -81,12 +81,12 @@ export class InfoProvider implements Disposable {
                 const h = this.client.didChange((params) => {
                     void this.webviewPanel?.api.sentClientNotification(method, params);
                 });
-                this.clientNotifSubscriptions.set(method, [0, h]);
+                this.clientNotifSubscriptions.set(method, [1, h]);
             } else if (method === 'textDocument/didClose') {
                 const h = this.client.didClose((params) => {
                     void this.webviewPanel?.api.sentClientNotification(method, params);
                 });
-                this.clientNotifSubscriptions.set(method, [0, h]);
+                this.clientNotifSubscriptions.set(method, [1, h]);
             } else {
                 throw new Error(`Subscription to '${method}' client notifications not implemented`);
             }
