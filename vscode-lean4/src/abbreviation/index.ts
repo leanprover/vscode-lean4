@@ -7,21 +7,22 @@ import { AbbreviationConfig } from './config';
 
 export class AbbreviationFeature {
 	private readonly disposables = new Array<Disposable>();
+	readonly abbreviations : AbbreviationProvider;
 
 	constructor() {
 		const config = new AbbreviationConfig();
-		const abbrevations = new AbbreviationProvider(config);
+		this.abbreviations = new AbbreviationProvider(config);
 
 		this.disposables.push(
 			autorunDisposable((disposables) => {
 				disposables.push(
 					languages.registerHoverProvider(
 						config.languages.get(),
-						new AbbreviationHoverProvider(config, abbrevations)
+						new AbbreviationHoverProvider(config, this.abbreviations)
 					)
 				);
 			}),
-			new AbbreviationRewriterFeature(config, abbrevations)
+			new AbbreviationRewriterFeature(config, this.abbreviations)
 		);
 	}
 

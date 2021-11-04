@@ -187,6 +187,8 @@ export class AbbreviationRewriter {
 				const vr = toVsCodeRange(s, this.textEditor.document);
 				return new Selection(vr.start, vr.end);
 			});
+
+			this.abbreviationProvider.onAbbreviationsCompleted(this.textEditor);
 		}
 		else {
 			// Our edit did not succeed, do not update the selections.
