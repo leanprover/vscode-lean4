@@ -117,7 +117,7 @@ export class RpcSessions implements Disposable {
     /** Maps each URI to the connected RPC session, if any, at the corresponding file worker. */
     #connected: Map<DocumentUri, RpcSession>
     /** Like `#connected`, but for sessions which are currently connecting. */
-    #connecting: Map<DocumentUri, Promise<RpcSession>>
+    #connecting: Map<DocumentUri, Promise<RpcSession | undefined>>
     #ec: EditorConnection
     setSelf: (_: (_: RpcSessions) => RpcSessions) => void
 
@@ -138,12 +138,17 @@ export class RpcSessions implements Disposable {
         if (this.#connecting.has(uri) || this.#connected.has(uri)) {
             throw new Error(`already connecting or connected at '${uri}'`)
         }
-        this.ensureSessionClosed(uri)
         const connParams: RpcConnectParams = { uri }
-        const newSesh: Promise<RpcSession> = this.#ec.api.sendClientRequest('$/lean/rpc/connect', connParams)
+        let newSesh: Promise<RpcSession | undefined> = this.#ec.api.sendClientRequest('$/lean/rpc/connect', connParams)
             .then((conn: RpcConnected) => new RpcSession(conn.sessionId, uri, this.#ec))
+            .catch(() => {
+                this.#connecting.delete(uri)
+                return undefined
+            })
         this.#connecting.set(uri, newSesh)
-        newSesh.then(newSesh => {
+        newSesh = newSesh.then((newSesh: RpcSession | undefined) => {
+            if (!newSesh) return undefined
+
             this.#connected.set(uri, newSesh)
             this.#connecting.delete(uri)
 
@@ -156,7 +161,16 @@ export class RpcSessions implements Disposable {
                 newRs.setSelf = rs.setSelf
                 return newRs
             })
+
+            return newSesh
         })
+        // NOTE(WN): because we insert into `#connecting` above, this conditional may only fail
+        // if the whole `newSesh` promise chain is executed immediately (if that's even possible).
+        // In that case we are either already connected or know we failed to do so, so don't want
+        // to mark as connecting.
+        if (this.#connecting.has(uri)) {
+            this.#connecting.set(uri, newSesh)
+        }
     }
 
     /**
@@ -179,9 +193,7 @@ export class RpcSessions implements Disposable {
                 const uri = pos.uri;
                 if (!this.#connecting.has(uri)) {
                     // force a reconnect.
-                    if (this.#connected.has(uri)) {
-                       this.#connected.delete(uri);
-                    }
+                    this.ensureSessionClosed(uri)
                     this.connectAt(uri);
                 }
                 return undefined
@@ -214,18 +226,27 @@ export class RpcSessions implements Disposable {
     }
 
     /** Closes the RPC session at `uri` if there is one connected or connecting. */
-    ensureSessionClosed(uri: DocumentUri): void {
+    ensureSessionClosed(uri: DocumentUri) {
         this.#connected.get(uri)?.dispose()
         this.#connected.delete(uri)
         this.#connecting.get(uri)?.then(sesh => {
-            sesh.dispose()
-            this.#connected.delete(uri)
+            sesh?.dispose()
+            // NOTE(WN): we defensively guard against the (unlikely) case of multiple connection
+            // attempts being made in rapid succession. This can only happen, if ever, when
+            // a file is rapidly closed and reopened multiple times.
+            if (this.#connected.get(uri)?.sessionId === sesh?.sessionId) {
+                // this is not a typo, at the point this lambda executes, the uri
+                // has probably been added to `this.#connected` by the promise chain
+                // in `connectAt` so we have to remove it again here even though we
+                // just did that above.
+                this.#connected.delete(uri)
+            }
         })
     }
 
     dispose() {
         this.#connected.forEach(rs => rs.dispose())
-        this.#connecting.forEach(fut => fut.then(rs => rs.dispose()))
+        this.#connecting.forEach(fut => fut.then(rs => rs?.dispose()))
     }
 }
 
