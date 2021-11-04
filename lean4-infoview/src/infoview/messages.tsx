@@ -140,19 +140,18 @@ export function useMessagesForFile(uri: DocumentUri, line?: number): Interactive
     const lspDiags = React.useContext(LspDiagnosticsContext)
     const [diags, setDiags] = React.useState<InteractiveDiagnostic[]>([])
     async function updateDiags() {
+        setDiags((lspDiags.get(uri) || []).map(d => ({ ...(d as LeanDiagnostic), message: { text: d.message } })));
         if (sv?.hasWidgetsV1()) {
             try {
                 const diags = await getInteractiveDiagnostics(rs, { uri, line: 0, character: 0 },
                     line ? { start: line, end: line + 1 } : undefined)
                 if (diags) {
                     setDiags(diags)
-                    return
                 }
             } catch (err: any) {
                 console.log('getInteractiveDiagnostics error ', err)
             }
         }
-        setDiags((lspDiags.get(uri) || []).map(d => ({ ...(d as LeanDiagnostic), message: { text: d.message } })));
     }
     React.useEffect(() => void updateDiags(), [uri, line, lspDiags.get(uri)])
     return diags;
