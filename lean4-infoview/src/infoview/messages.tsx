@@ -76,24 +76,36 @@ export function MessagesList({uri, messages}: {uri: DocumentUri, messages: Inter
     );
 }
 
-export interface MessagesAtFileProps {
-    uri: DocumentUri;
-}
-
-/** Shows all current messages for the given file. */
-export function MessagesAtFile({uri}: MessagesAtFileProps) {
-    return <MessagesList uri={uri} messages={useMessagesForFile(uri)}/>
+function lazy<T>(f: () => T): () => T {
+    let state: {t: T} | undefined
+    return () => {
+        if (!state) state = {t: f()}
+        return state.t
+    }
 }
 
 /** Displays all messages for the specified file. Can be paused. */
 export function AllMessages({uri: uri0}: { uri: DocumentUri }) {
     const ec = React.useContext(EditorContext);
+    const sv = React.useContext(VersionContext);
+    const rs = React.useContext(RpcContext);
     const dc = React.useContext(LspDiagnosticsContext);
     const config = React.useContext(ConfigContext);
-    let diags0 = dc.get(uri0);
-    if (!diags0) diags0 = [];
+    const diags0 = dc.get(uri0) || [];
 
-    const [isPaused, setPaused, [uri, diags], _] = usePausableState(false, [uri0, diags0]);
+    let iDiags0 = React.useMemo(() => lazy(async () => {
+        if (sv?.hasWidgetsV1()) {
+            try {
+                return await getInteractiveDiagnostics(rs, { uri: uri0, line: 0, character: 0 }) || [];
+            } catch (err: any) {
+                console.log('getInteractiveDiagnostics error ', err)
+            }
+        }
+        return diags0.map(d => ({ ...(d as LeanDiagnostic), message: { text: d.message } }));
+    }), [sv, rs, uri0, diags0]);
+
+    const [isPaused, setPaused, [uri, diags, iDiags], _] = usePausableState(false, [uri0, diags0, iDiags0]);
+    if (isPaused) void iDiags()
 
     const setOpenRef = React.useRef<React.Dispatch<React.SetStateAction<boolean>>>();
     useEvent(ec.events.requestedAction, act => {
@@ -113,9 +125,15 @@ export function AllMessages({uri: uri0}: { uri: DocumentUri }) {
                 </a>
             </span>
         </summary>
-        <MessagesAtFile uri={uri} />
+        <AllMessagesBody uri={uri} messages={iDiags} />
     </Details>
     )
+}
+
+function AllMessagesBody({uri, messages}: {uri: DocumentUri, messages: () => Promise<InteractiveDiagnostic[]>}) {
+    const [msgs, setMsgs] = React.useState<InteractiveDiagnostic[]>([])
+    React.useEffect(() => void messages().then(setMsgs), [messages])
+    return <MessagesList uri={uri} messages={msgs}/>
 }
 
 /**
