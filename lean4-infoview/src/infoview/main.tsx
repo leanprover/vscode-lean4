@@ -1,6 +1,6 @@
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
-import { DidCloseTextDocumentParams, Location, DocumentUri, InitializeResult, DocumentSelector } from 'vscode-languageserver-protocol';
+import { DidCloseTextDocumentParams, Location, DocumentUri } from 'vscode-languageserver-protocol';
 
 import 'tachyons/css/tachyons.css';
 import 'vscode-codicons/dist/codicon.css';
@@ -18,12 +18,11 @@ import { Event } from './event';
 import { ServerVersion } from './serverVersion';
 
 function Main(props: {}) {
-    if (!props) { return null }
     const ec = React.useContext(EditorContext);
 
     /* Set up updates to the global infoview state on editor events. */
-    const [config, setConfig] = React.useState(defaultInfoviewConfig);
-    useEvent(ec.events.changedInfoviewConfig, cfg => setConfig(cfg), []);
+    const config = useEventResult(ec.events.changedInfoviewConfig) || defaultInfoviewConfig;
+
     const [allProgress, _1] = useServerNotificationState(
         '$/lean/fileProgress',
         new Map<DocumentUri, LeanFileProgressProcessingInfo[]>(),
@@ -34,12 +33,7 @@ function Main(props: {}) {
         []
     );
 
-    const uri = ec.events.changedCursorLocation.current?.uri;
-    const [curUri, setCurUri] = React.useState<DocumentUri | undefined>(uri);
-
-    useEvent(ec.events.changedCursorLocation, loc => {
-        setCurUri(loc?.uri);
-    }, []);
+    const curUri = useEventResult(ec.events.changedCursorLocation)?.uri;
 
     useClientNotificationEffect(
         'textDocument/didClose',
