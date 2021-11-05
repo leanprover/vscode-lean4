@@ -73,9 +73,11 @@ export function useEvent<T>(ev: Event<T>, f: (_: T) => void, dependencies?: Reac
   }, dependencies)
 }
 
-export function useEventResult<T>(ev: Event<T>): T | undefined {
-  const [t, setT] = React.useState<T | undefined>(ev.current);
-  useEvent(ev, newT => setT(newT));
+export function useEventResult<T>(ev: Event<T>): T | undefined;
+export function useEventResult<T, S>(ev: Event<S>, map: (_: S | undefined) => T | undefined): T | undefined;
+export function useEventResult(ev: any, map?: any): any {
+  const [t, setT] = React.useState(() => map ? map(ev.current) : ev.current);
+  useEvent(ev, newT => setT(map ? map(newT) : newT));
   return t;
 }
 

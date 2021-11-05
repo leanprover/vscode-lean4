@@ -33,7 +33,7 @@ function Main(props: {}) {
         []
     );
 
-    const curUri = useEventResult(ec.events.changedCursorLocation)?.uri;
+    const curUri = useEventResult(ec.events.changedCursorLocation, loc => loc?.uri);
 
     useClientNotificationEffect(
         'textDocument/didClose',
