@@ -96,7 +96,7 @@ export interface InfoviewApi {
   /** Like {@link gotServerNotification}, but fires on subscribed client->server notifications. */
   sentClientNotification(method: string, params: any): Promise<void>;
 
-  /** Fires when the server is restarted. */
+  /** Must fire with the server's initialization message when the server is started or restarted. */
   serverRestarted(serverInitializeResult: InitializeResult): Promise<void>;
 
   /**
