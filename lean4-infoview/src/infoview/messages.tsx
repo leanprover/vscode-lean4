@@ -64,7 +64,7 @@ function mkMessageViewProps(uri: DocumentUri, messages: InteractiveDiagnostic[])
     return addUniqueKeys(views, v => DocumentPosition.toString({uri: v.uri, ...v.diag.range.start}));
 }
 
-/** Shows the given messages for the given file. */
+/** Shows the given messages assuming they are for the given file. */
 export function MessagesList({uri, messages}: {uri: DocumentUri, messages: InteractiveDiagnostic[]}) {
     const should_hide = messages.length === 0;
     if (should_hide) { return <>No messages.</> }
@@ -80,7 +80,7 @@ export interface MessagesAtFileProps {
     uri: DocumentUri;
 }
 
-/** Shows the given messages for the given file. */
+/** Shows all current messages for the given file. */
 export function MessagesAtFile({uri}: MessagesAtFileProps) {
     return <MessagesList uri={uri} messages={useMessagesForFile(uri)}/>
 }
@@ -119,8 +119,8 @@ export function AllMessages({uri: uri0}: { uri: DocumentUri }) {
 }
 
 /**
- * Provides a `DiagnosticsContext` by subscribing to server diagnostic notifications
- * and querying for interactive diagnostics whenever (LSP standard) diagnostics arrive.
+ * Provides a `LspDiagnosticsContext` which stores the latest version of the
+ * diagnostics as sent by the publishDiagnostics notification.
  */
 export function WithLspDiagnosticsContext({children}: React.PropsWithChildren<{}>) {
     const [allDiags, _0] = useServerNotificationState(

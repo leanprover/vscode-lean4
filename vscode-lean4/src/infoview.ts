@@ -231,14 +231,7 @@ export class InfoProvider implements Disposable {
             this.webviewPanel = webviewPanel;
             webviewPanel.webview.html = this.initialHtml();
 
-            // this.client.initializeResult can be null if the server failed to start.
             await webviewPanel.api.initialize(this.getLocation(editor))
-        }
-    }
-
-    private clear() {
-        if (this.webviewPanel){
-            this.webviewPanel.webview.html = this.initialHtml();
         }
     }
 

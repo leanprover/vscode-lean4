@@ -5,7 +5,7 @@ import { Goals as GoalsUi, Goal as GoalUi, goalsToString } from './goals';
 import { basename, DocumentPosition, RangeHelpers, useEvent, usePausableState } from './util';
 import { Details } from './collapsing';
 import { EditorContext, ProgressContext, RpcContext, VersionContext } from './contexts';
-import { MessagesAtFile, MessagesList, useMessagesFor } from './messages';
+import { MessagesList, useMessagesFor } from './messages';
 import { getInteractiveGoals, getInteractiveTermGoal, InteractiveDiagnostic, InteractiveGoal, InteractiveGoals } from './rpcInterface';
 import { updatePlainGoals, updateTermGoal } from './goalCompat';
 
