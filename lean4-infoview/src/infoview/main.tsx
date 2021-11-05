@@ -70,13 +70,13 @@ function Main(props: {}) {
     return (
     <ConfigContext.Provider value={config}>
         <VersionContext.Provider value={sv}>
-            <WithLspDiagnosticsContext>
-                <ProgressContext.Provider value={allProgress}>
-                    <WithRpcSessions>
+            <WithRpcSessions>
+                <WithLspDiagnosticsContext>
+                    <ProgressContext.Provider value={allProgress}>
                         {ret}
-                    </WithRpcSessions>
-                </ProgressContext.Provider>
-            </WithLspDiagnosticsContext>
+                    </ProgressContext.Provider>
+                </WithLspDiagnosticsContext>
+            </WithRpcSessions>
         </VersionContext.Provider>
     </ConfigContext.Provider>
     );
