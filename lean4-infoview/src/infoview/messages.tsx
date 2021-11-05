@@ -105,7 +105,10 @@ export function AllMessages({uri: uri0}: { uri: DocumentUri }) {
     }), [sv, rs, uri0, diags0]);
 
     const [isPaused, setPaused, [uri, diags, iDiags], _] = usePausableState(false, [uri0, diags0, iDiags0]);
-    if (isPaused) void iDiags()
+
+    // Fetch interactive diagnostics when we're entering the paused state
+    // (if they haven't already been fetched before)
+    React.useEffect(() => { isPaused && iDiags() }, [iDiags, isPaused]);
 
     const setOpenRef = React.useRef<React.Dispatch<React.SetStateAction<boolean>>>();
     useEvent(ec.events.requestedAction, act => {
