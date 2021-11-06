@@ -11,8 +11,7 @@ It is based on [vscode-lean](https://github.com/leanprover/vscode-lean).
 
     ![prompt](vscode-lean4/media/install-elan.png)
 
-1. Click the "Install Lean using Elan" option and enter any options that appear
-in the terminal window, and follow any instructions about changing your PATH environment to point to the `elan` bin folder.  If you do need to change your PATH you many need to restart VS code to pick up that new environment.
+1. Click the "Install Lean using Elan" option and enter any default options that appear in the terminal window.
 1. After this succeeds the correct version of Lean will be installed by `elan`
 and you should see something like this in the `Lean: Editor` output panel:
     ```
@@ -78,19 +77,18 @@ Now the `Lean4: Select Toolchain` will show `master` as one of the toolchains yo
 ## Lean editing features
 
 - Support for completing abbreviations starting with a backslash (\\).
-For example you type `\alpha` and the editor automatically replaces that with the nice Unicode character (α).
+For example you type `\alpha` and the editor automatically replaces that with the nice Unicode character `α`.
 - Auto-completing of brackets like `()`, `{}`, `[]`, `⟦ ⟧`, `⦃ ⦄`, `⟮ ⟯`, `⦃ ⦄` and block comments `/- ... -/`.
 
 ## Infoview panel
 
 The Infoview panel is essential to working interactively with Lean. It shows:
-- tactic state widgets, with context information (hypotheses, goals) at each point in a proof / definition,
-  - **Expected type** widgets display the context for subterms.
-  - the types of sub-terms in the context can be inspected interactively using mouse hover.
-- **All Messages** widget, which shows all info, warning, and error messages from the Lean server, and
-- Support for any custom Html widgets returned by the Lean program itself (coming soon..)
+- Tactic state widgets, with context information (hypotheses, goals) at each point in a proof / definition,
+- **Expected type** widgets display the context for subterms.
+- Types of sub-terms in the context can be inspected interactively using mouse hover.
+- **All Messages** widget, which shows all info, warning, and error messages from the Lean server for the current file.
 
-Suppose you have the following theorem from
+Suppose you have the following theorem:
 
 ```lean
 theorem test (p q : Prop) (hp : p) (hq : q) : p ∧ q ∧ p :=
@@ -112,7 +110,7 @@ and you place the cursor at the end of the line `by apply And.intro` the Infovie
   | Symbol | Description |
   |--------|-------------|
   | ![quotes](vscode-lean4/media/quotes.png) | Copy the contents of the widget to a comment in the editor. |
-  | ![pin](vscode-lean4/media/pin.png) | Split off a "pinned" tactic state widget, which tracks the tactic state at a fixed position, even if you move your cursor away.  You will see the unpin and reveal file location icons appear. |
+  | ![pin](vscode-lean4/media/pin.png) | Split off a "pinned" tactic state widget, which tracks the tactic state at a fixed position, even if you move your cursor away.  When pinned you will see the unpin and reveal file location icons appear. |
   | ![unpin](vscode-lean4/media/unpin.png) | Remove a pinned widget from the Infoview. |
   | ![reveal](vscode-lean4/media/reveal-file-location.png) | Move the cursor in the editor to the pinned location in the file. |
   | ![pause](vscode-lean4/media/pause.png) | Prevent the tactic state widget from updating when the file is edited. Click  to resume updates.
@@ -193,7 +191,7 @@ The format below is: "`lean4.commandName` (command name): description", where `l
 Lean 4 file, the language server needs to be manually informed that it should re-elaborate the full file, including the
 imports. This command has a default keyboard binding of <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>X</kbd>.
 
-& `lean4.selectToolchain` (Lean 4: Select Lean Toolchain) Select version of the Lean toolchain to use for the current workspace.  This shows the list of available toolchains returned from `elan toolchain list` and allows you to easily switch. The Lean 4 language server will automatically be restarted using the selected toolchain.  This command also provides a choice labelled `Custom` where you can enter the full path to a Lean 4 executable to use instead.  This choice is remembered in your [Workspace Settings](https://code.visualstudio.com/docs/getstarted/settings) and you can reset any custom path by setting `Custom` back to the string `lean`.
+* `lean4.selectToolchain` (Lean 4: Select Lean Toolchain) Select version of the Lean toolchain to use for the current workspace.  This shows the list of available toolchains returned from `elan toolchain list` and allows you to easily switch. The Lean 4 language server will automatically be restarted using the selected toolchain.  This command also provides a choice labelled `Custom` where you can enter the full path to a Lean 4 executable to use instead.  This choice is remembered in your [Workspace Settings](https://code.visualstudio.com/docs/getstarted/settings) and you can reset any custom path by setting `Custom` back to the string `lean`.
 
 ### Editing commands
 
