@@ -125,8 +125,13 @@ function TaggedMsg_registerRefs(rs: RpcSessions, pos: DocumentPosition, t: Tagge
 
 export type InteractiveDiagnostic = Omit<LeanDiagnostic, 'message'> & { message: TaggedText<MsgEmbed> }
 
-export async function getInteractiveDiagnostics(rs: RpcSessions, pos: DocumentPosition): Promise<InteractiveDiagnostic[] | undefined> {
-    const ret = await rs.call<InteractiveDiagnostic[]>(pos, 'Lean.Widget.getInteractiveDiagnostics', null)
+export interface LineRange {
+    start: number;
+    end: number;
+}
+
+export async function getInteractiveDiagnostics(rs: RpcSessions, pos: DocumentPosition, lineRange?: LineRange): Promise<InteractiveDiagnostic[] | undefined> {
+    const ret = await rs.call<InteractiveDiagnostic[]>(pos, 'Lean.Widget.getInteractiveDiagnostics', {lineRange})
     if (ret) {
         for (const d of ret) {
             TaggedMsg_registerRefs(rs, pos, d.message)

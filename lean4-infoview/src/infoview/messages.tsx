@@ -1,9 +1,9 @@
 import * as React from 'react';
 import fastIsEqual from 'react-fast-compare';
-import { Location, DocumentUri, DiagnosticSeverity, PublishDiagnosticsParams } from 'vscode-languageserver-protocol';
+import { Location, DocumentUri, Diagnostic, DiagnosticSeverity, PublishDiagnosticsParams } from 'vscode-languageserver-protocol';
 
 import { basename, escapeHtml, RangeHelpers, usePausableState, useEvent, addUniqueKeys, DocumentPosition, useServerNotificationState } from './util';
-import { ConfigContext, EditorContext, DiagnosticsContext, RpcContext, VersionContext } from './contexts';
+import { ConfigContext, EditorContext, LspDiagnosticsContext, RpcContext, VersionContext } from './contexts';
 import { Details } from './collapsing';
 import { InteractiveMessage } from './traceExplorer';
 import { getInteractiveDiagnostics, InteractiveDiagnostic, TaggedText_stripTags } from './rpcInterface';
@@ -64,13 +64,8 @@ function mkMessageViewProps(uri: DocumentUri, messages: InteractiveDiagnostic[])
     return addUniqueKeys(views, v => DocumentPosition.toString({uri: v.uri, ...v.diag.range.start}));
 }
 
-export interface MessagesAtFileProps {
-    uri: DocumentUri;
-    messages: InteractiveDiagnostic[];
-}
-
-/** Shows the given messages for the given file. */
-export function MessagesAtFile({uri, messages}: MessagesAtFileProps) {
+/** Shows the given messages assuming they are for the given file. */
+export function MessagesList({uri, messages}: {uri: DocumentUri, messages: InteractiveDiagnostic[]}) {
     const should_hide = messages.length === 0;
     if (should_hide) { return <>No messages.</> }
 
@@ -81,15 +76,39 @@ export function MessagesAtFile({uri, messages}: MessagesAtFileProps) {
     );
 }
 
+function lazy<T>(f: () => T): () => T {
+    let state: {t: T} | undefined
+    return () => {
+        if (!state) state = {t: f()}
+        return state.t
+    }
+}
+
 /** Displays all messages for the specified file. Can be paused. */
 export function AllMessages({uri: uri0}: { uri: DocumentUri }) {
     const ec = React.useContext(EditorContext);
-    const dc = React.useContext(DiagnosticsContext);
+    const sv = React.useContext(VersionContext);
+    const rs = React.useContext(RpcContext);
+    const dc = React.useContext(LspDiagnosticsContext);
     const config = React.useContext(ConfigContext);
-    let diags0 = dc.get(uri0);
-    if (!diags0) diags0 = [];
+    const diags0 = dc.get(uri0) || [];
 
-    const [isPaused, setPaused, [uri, diags], _] = usePausableState(false, [uri0, diags0]);
+    let iDiags0 = React.useMemo(() => lazy(async () => {
+        if (sv?.hasWidgetsV1()) {
+            try {
+                return await getInteractiveDiagnostics(rs, { uri: uri0, line: 0, character: 0 }) || [];
+            } catch (err: any) {
+                console.log('getInteractiveDiagnostics error ', err)
+            }
+        }
+        return diags0.map(d => ({ ...(d as LeanDiagnostic), message: { text: d.message } }));
+    }), [sv, rs, uri0, diags0]);
+
+    const [isPaused, setPaused, [uri, diags, iDiags], _] = usePausableState(false, [uri0, diags0, iDiags0]);
+
+    // Fetch interactive diagnostics when we're entering the paused state
+    // (if they haven't already been fetched before)
+    React.useEffect(() => { isPaused && iDiags() }, [iDiags, isPaused]);
 
     const setOpenRef = React.useRef<React.Dispatch<React.SetStateAction<boolean>>>();
     useEvent(ec.events.requestedAction, act => {
@@ -109,50 +128,57 @@ export function AllMessages({uri: uri0}: { uri: DocumentUri }) {
                 </a>
             </span>
         </summary>
-        <MessagesAtFile uri={uri} messages={diags} />
+        <AllMessagesBody uri={uri} messages={iDiags} />
     </Details>
     )
 }
 
+function AllMessagesBody({uri, messages}: {uri: DocumentUri, messages: () => Promise<InteractiveDiagnostic[]>}) {
+    const [msgs, setMsgs] = React.useState<InteractiveDiagnostic[]>([])
+    React.useEffect(() => void messages().then(setMsgs), [messages])
+    return <MessagesList uri={uri} messages={msgs}/>
+}
+
 /**
- * Provides a `DiagnosticsContext` by subscribing to server diagnostic notifications
- * and querying for interactive diagnostics whenever (LSP standard) diagnostics arrive.
+ * Provides a `LspDiagnosticsContext` which stores the latest version of the
+ * diagnostics as sent by the publishDiagnostics notification.
  */
-export function WithDiagnosticsContext(props: React.PropsWithChildren<any>) {
-    const rs = React.useContext(RpcContext)
-    const sv = React.useContext(VersionContext)
+export function WithLspDiagnosticsContext({children}: React.PropsWithChildren<{}>) {
     const [allDiags, _0] = useServerNotificationState(
         'textDocument/publishDiagnostics',
-        new Map<DocumentUri, InteractiveDiagnostic[]>(),
-        async (params: PublishDiagnosticsParams) => {
-            let diags: InteractiveDiagnostic[] | undefined
-
-            if (!sv.hasWidgetsV1()) {
-                diags = params.diagnostics.map(d => { return { ...(d as LeanDiagnostic), message: { text: d.message } } })
-            } else try {
-                diags = await getInteractiveDiagnostics(rs, { uri: params.uri, line: 0, character: 0 })
-            } catch (err: any) {}
-            if (diags)
-                return allDiags => {
-                    const newMap = new Map(allDiags)
-                    return newMap.set(params.uri, diags!)
-                }
-            else return allDiags => allDiags
-        },
+        new Map<DocumentUri, Diagnostic[]>(),
+        async (params: PublishDiagnosticsParams) => allDiags =>
+            new Map(allDiags).set(params.uri, params.diagnostics),
         []
     )
 
-    return (
-        <DiagnosticsContext.Provider value={allDiags}>
-            {props.children}
-        </DiagnosticsContext.Provider>
-    );
+    return <LspDiagnosticsContext.Provider value={allDiags}>{children}</LspDiagnosticsContext.Provider>
+}
+
+export function useMessagesForFile(uri: DocumentUri, line?: number): InteractiveDiagnostic[] {
+    const rs = React.useContext(RpcContext)
+    const sv = React.useContext(VersionContext)
+    const lspDiags = React.useContext(LspDiagnosticsContext)
+    const [diags, setDiags] = React.useState<InteractiveDiagnostic[]>([])
+    async function updateDiags() {
+        setDiags((lspDiags.get(uri) || []).map(d => ({ ...(d as LeanDiagnostic), message: { text: d.message } })));
+        if (sv?.hasWidgetsV1()) {
+            try {
+                const diags = await getInteractiveDiagnostics(rs, { uri, line: 0, character: 0 },
+                    line ? { start: line, end: line + 1 } : undefined)
+                if (diags) {
+                    setDiags(diags)
+                }
+            } catch (err: any) {
+                console.log('getInteractiveDiagnostics error ', err)
+            }
+        }
+    }
+    React.useEffect(() => void updateDiags(), [uri, line, lspDiags.get(uri)])
+    return diags;
 }
 
 export function useMessagesFor(pos: DocumentPosition): InteractiveDiagnostic[] {
     const config = React.useContext(ConfigContext);
-    const allDiags = React.useContext(DiagnosticsContext);
-    const diags = allDiags.get(pos.uri);
-    if (!diags) return [];
-    return diags.filter(d => RangeHelpers.contains(d.range, pos, config.infoViewAllErrorsOnLine));
+    return useMessagesForFile(pos.uri, pos.line).filter(d => RangeHelpers.contains(d.range, pos, config.infoViewAllErrorsOnLine));
 }

@@ -73,6 +73,14 @@ export function useEvent<T>(ev: Event<T>, f: (_: T) => void, dependencies?: Reac
   }, dependencies)
 }
 
+export function useEventResult<T>(ev: Event<T>): T | undefined;
+export function useEventResult<T, S>(ev: Event<S>, map: (_: S | undefined) => T | undefined): T | undefined;
+export function useEventResult(ev: any, map?: any): any {
+  const [t, setT] = React.useState(() => map ? map(ev.current) : ev.current);
+  useEvent(ev, newT => setT(map ? map(newT) : newT));
+  return t;
+}
+
 export function useServerNotificationEffect<T>(method: string, f: (params: T) => void, deps?: React.DependencyList): void {
   const ec = React.useContext(EditorContext);
   React.useEffect(() => {

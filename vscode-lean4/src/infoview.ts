@@ -128,16 +128,16 @@ export class InfoProvider implements Disposable {
     constructor(private client: LeanClient, private readonly leanDocs: DocumentSelector, private context: ExtensionContext) {
         this.updateStylesheet();
         this.subscriptions.push(
-            this.client.restarting(async () => {
-                this.clear();
-            }),
             this.client.restarted(async () => {
-                await this.autoOpen();
-                if (this.webviewPanel && this.client.initializeResult && window.activeTextEditor){
-                    await this.webviewPanel.api.initialize(this.client.initializeResult, this.getLocation(window.activeTextEditor));
-                }
-                // NOTE(WN): We do not re-send state such as diagnostics to the infoview here
-                // because a restarted server will send those on its own.
+                // This event is triggered both the first time the server starts
+                // as well as when the server restarts.
+
+                // The info view should auto-open the first time the server starts:
+                await this.autoOpen()
+
+                // Inform the infoview about the restart
+                // (this is redundant if the infoview was auto-opened but it doesn't hurt)
+                await this.webviewPanel?.api?.serverRestarted(this.client?.initializeResult);
             }),
             window.onDidChangeActiveTextEditor(() => this.sendPosition()),
             window.onDidChangeTextEditorSelection(() => this.sendPosition()),
@@ -168,6 +168,7 @@ export class InfoProvider implements Disposable {
     }
 
     dispose(): void {
+        this.clearNotificationHandlers();
         for (const s of this.subscriptions) { s.dispose(); }
     }
 
@@ -193,6 +194,13 @@ export class InfoProvider implements Disposable {
                 await this.openPreview(window.activeTextEditor);
             }
         }
+    }
+
+    private clearNotificationHandlers() {
+        for (const [, [, h]] of this.clientNotifSubscriptions) h.dispose();
+        this.clientNotifSubscriptions.clear();
+        for (const [, [, h]] of this.serverNotifSubscriptions) h.dispose();
+        this.serverNotifSubscriptions.clear();
     }
 
     private async openPreview(editor: TextEditor) {
@@ -222,28 +230,24 @@ export class InfoProvider implements Disposable {
             webviewPanel.webview.onDidReceiveMessage(m => webviewPanel.rpc.messageReceived(m))
             webviewPanel.api = webviewPanel.rpc.getApi();
             webviewPanel.onDidDispose(() => {
+                this.clearNotificationHandlers();
                 this.webviewPanel = undefined;
             });
             this.webviewPanel = webviewPanel;
             webviewPanel.webview.html = this.initialHtml();
 
-            // this.client.initializeResult can be null if the server failed to start.
+            await webviewPanel.api.initialize(this.getLocation(editor))
+
+            // The infoview gets information about file progress, diagnostics, etc.
+            // by listening to notifications.  Send these notifications when the infoview starts
+            // so that it has up-to-date information.
             if (this.client.initializeResult) {
-                await webviewPanel.api.initialize(this.client.initializeResult, this.getLocation(editor))
+                await this.webviewPanel.api.serverRestarted(this.client.initializeResult);
             }
-        }
-
-        // The infoview listens for server notifications such as diagnostics passively,
-        // so when it is first started we must re-send those as if the server did.
-        await this.sendPosition();
-        await this.sendConfig();
-        await this.sendDiagnostics();
-        await this.sendProgress();
-    }
-
-    private clear() {
-        if (this.webviewPanel){
-            this.webviewPanel.webview.html = this.initialHtml();
+            await this.sendPosition();
+            await this.sendConfig();
+            await this.sendDiagnostics();
+            await this.sendProgress();
         }
     }
 
@@ -297,7 +301,7 @@ export class InfoProvider implements Disposable {
 
     private async sendPosition() {
         if (!window.activeTextEditor || languages.match(this.leanDocs, window.activeTextEditor.document) === 0) return
-        void this.autoOpen();
+        await this.autoOpen();
         const loc = this.getLocation(window.activeTextEditor);
         await this.webviewPanel?.api.changedCursorLocation(loc);
     }
