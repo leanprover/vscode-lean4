@@ -131,17 +131,13 @@ export class InfoProvider implements Disposable {
             this.client.restarted(async () => {
                 // This event is triggered both the first time the server starts
                 // as well as when the server restarts.
+
                 // The info view should auto-open the first time the server starts:
                 await this.autoOpen()
-                // Inform the server about the restart
-                await this.webviewPanel?.api?.serverRestarted(this.client?.initializeResult)
 
-                // The infoview listens for server notifications such as diagnostics passively,
-                // so when it is first started we must re-send those as if the server did.
-                await this.sendPosition();
-                await this.sendConfig();
-                await this.sendDiagnostics();
-                await this.sendProgress();
+                // Inform the infoview about the restart
+                // (this is redundant if the infoview was auto-opened but it doesn't hurt)
+                await this.webviewPanel?.api?.serverRestarted(this.client?.initializeResult);
             }),
             window.onDidChangeActiveTextEditor(() => this.sendPosition()),
             window.onDidChangeTextEditorSelection(() => this.sendPosition()),
@@ -241,6 +237,17 @@ export class InfoProvider implements Disposable {
             webviewPanel.webview.html = this.initialHtml();
 
             await webviewPanel.api.initialize(this.getLocation(editor))
+
+            // The infoview gets information about file progress, diagnostics, etc.
+            // by listening to notifications.  Send these notifications when the infoview starts
+            // so that it has up-to-date information.
+            if (this.client.initializeResult) {
+                await this.webviewPanel.api.serverRestarted(this.client.initializeResult);
+            }
+            await this.sendPosition();
+            await this.sendConfig();
+            await this.sendDiagnostics();
+            await this.sendProgress();
         }
     }
 
