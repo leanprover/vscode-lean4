@@ -9,14 +9,6 @@ import { EditorContext, RpcContext } from "./contexts"
 import { EditorConnection } from "./editorConnection"
 import { DocumentPosition, useClientNotificationEffect, useEvent } from "./util"
 
-interface RpcConnectParams {
-    uri: DocumentUri
-}
-
-interface RpcConnected {
-    sessionId: string
-}
-
 interface RpcCallParams extends TextDocumentPositionParams {
     sessionId: string
     method: string
@@ -29,13 +21,6 @@ interface RpcReleaseParams {
     refs: RpcPtr<any>[]
 }
 
-interface RpcKeepAliveParams {
-    uri: DocumentUri
-    sessionId: string
-}
-
-const keepAlivePeriodMs = 10000
-
 const RpcNeedsReconnect = -32900
 
 class RpcSession implements Disposable {
@@ -43,7 +28,6 @@ class RpcSession implements Disposable {
     #uri: DocumentUri
     /** A timeout mechanism for notifying the server about batches of GC'd refs in fewer messages. */
     #releaseTimeout?: number
-    #keepAliveInterval: number
     #refsToRelease: RpcPtr<any>[]
     #finalizers: FinalizationRegistry<RpcPtr<any>>
     #closed: boolean = false
@@ -51,15 +35,6 @@ class RpcSession implements Disposable {
     constructor(readonly sessionId: string, uri: DocumentUri, ec: EditorConnection) {
         this.#ec = ec
         this.#uri = uri
-
-        // We setup a recurring timer to keep the RPC session alive.
-        this.#keepAliveInterval = window.setInterval(() => {
-            const params: RpcKeepAliveParams = {
-                uri: this.#uri,
-                sessionId: this.sessionId,
-            }
-            void this.#ec.api.sendClientNotification('$/lean/rpc/keepAlive', params)
-        }, keepAlivePeriodMs)
 
         // Here we hook into the JS GC and send release-reference notifications
         // whenever the GC finalizes a number of `RpcPtr`s. Requires ES2021.
@@ -113,7 +88,7 @@ class RpcSession implements Disposable {
 
     dispose() {
         this.#closed = true;
-        window.clearInterval(this.#keepAliveInterval)
+        this.#ec.api.closeRpcSession(this.sessionId)
     }
 }
 
@@ -143,9 +118,8 @@ export class RpcSessions implements Disposable {
         if (this.#connecting.has(uri) || this.#connected.has(uri)) {
             throw new Error(`already connecting or connected at '${uri}'`)
         }
-        const connParams: RpcConnectParams = { uri }
-        let newSesh: Promise<RpcSession | undefined> = this.#ec.api.sendClientRequest('$/lean/rpc/connect', connParams)
-            .then((conn: RpcConnected) => new RpcSession(conn.sessionId, uri, this.#ec))
+        let newSesh: Promise<RpcSession | undefined> = this.#ec.api.createRpcSession(uri)
+            .then(sessionId => new RpcSession(sessionId, uri, this.#ec))
             .catch(() => {
                 this.#connecting.delete(uri)
                 return undefined
