@@ -172,6 +172,7 @@ export class InfoProvider implements Disposable {
     }
 
     dispose(): void {
+        this.clearNotificationHandlers();
         for (const s of this.subscriptions) { s.dispose(); }
     }
 
@@ -197,6 +198,13 @@ export class InfoProvider implements Disposable {
                 await this.openPreview(window.activeTextEditor);
             }
         }
+    }
+
+    private clearNotificationHandlers() {
+        for (const [, [, h]] of this.clientNotifSubscriptions) h.dispose();
+        this.clientNotifSubscriptions.clear();
+        for (const [, [, h]] of this.serverNotifSubscriptions) h.dispose();
+        this.serverNotifSubscriptions.clear();
     }
 
     private async openPreview(editor: TextEditor) {
@@ -226,6 +234,7 @@ export class InfoProvider implements Disposable {
             webviewPanel.webview.onDidReceiveMessage(m => webviewPanel.rpc.messageReceived(m))
             webviewPanel.api = webviewPanel.rpc.getApi();
             webviewPanel.onDidDispose(() => {
+                this.clearNotificationHandlers();
                 this.webviewPanel = undefined;
             });
             this.webviewPanel = webviewPanel;
