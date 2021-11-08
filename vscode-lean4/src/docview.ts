@@ -114,8 +114,7 @@ export class DocViewProvider implements Disposable {
     }
 
     private async showAbbreviations() : Promise<void> {
-        // display the HTML table definition of all abbreviations with a large font so each symbol is
-        // easy to examine.
+        // display the HTML table definition of all abbreviations
         if (this.abbreviations) {
             const ac = new AbbreviationConfig()
             const leader = ac.abbreviationCharacter.get();
