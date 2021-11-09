@@ -45,9 +45,8 @@ export async function activate(context: ExtensionContext): Promise<any> {
     const docview = new DocViewProvider();
     context.subscriptions.push(docview);
 
-    context.subscriptions.push(commands.registerCommand('lean4.docView.showAllAbbreviations', () => {
-        void docview.showAbbreviations(abbrev.abbreviations.symbolsByAbbreviation);
-    }))
+    // pass the abbreviations through to the docview so it can show them on demand.
+    docview.setAbbreviations(abbrev.abbreviations.symbolsByAbbreviation);
 
     context.subscriptions.push(new LeanTaskGutter(client, context))
 

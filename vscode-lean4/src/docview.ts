@@ -47,6 +47,7 @@ export class DocViewProvider implements Disposable {
     private backStack: string[] = [];
     private forwardStack: string[] = [];
     private tempFolder : TempFolder = null;
+    private abbreviations: SymbolsByAbbreviation = null;
     constructor() {
         this.subscriptions.push(
             commands.registerCommand('lean4.docView.open', (url) => this.open(url)),
@@ -54,6 +55,7 @@ export class DocViewProvider implements Disposable {
             commands.registerCommand('lean4.docView.forward', () => this.forward()),
             commands.registerCommand('lean4.openTryIt', (code) => this.tryIt(code)),
             commands.registerCommand('lean4.openExample', (file) => this.example(file)),
+            commands.registerCommand('lean4.docView.showAllAbbreviations', () => this.showAbbreviations()),
         );
     }
 
@@ -63,6 +65,10 @@ export class DocViewProvider implements Disposable {
             this.subscriptions.push(this.tempFolder);
         }
         return this.tempFolder;
+    }
+
+    setAbbreviations(abbrev: SymbolsByAbbreviation) : void{
+        this.abbreviations = abbrev;
     }
 
     private async offerToOpenProjectDocumentation() {
@@ -107,23 +113,24 @@ export class DocViewProvider implements Disposable {
         return this.webview;
     }
 
-    async showAbbreviations(abbreviations : SymbolsByAbbreviation) : Promise<void> {
-        // display the HTML table definition of all abbreviations with a large font so each symbol is
-        // easy to examine.
-        const ac = new AbbreviationConfig()
-        const leader = ac.abbreviationCharacter.get();
-        const $ = cheerio.load('<table style="font-family:var(--vscode-editor-font-family);font-size:var(--vscode-editor-font-size:);"><tr><th style="text-align:left">Abbreviation</th><th style="text-align:left">Unicode Symbol</th></tr></table>');
-        const table = $('table');
-        for (const [abbr, sym] of Object.entries(abbreviations)) {
-            if (sym && sym.indexOf('CURSOR') < 0) {
-                const row = table.append($('<tr>'));
-                row.append($('<td>').text(leader + abbr));
-                row.append($('<td>').text(sym));
+    private async showAbbreviations() : Promise<void> {
+        // display the HTML table definition of all abbreviations
+        if (this.abbreviations) {
+            const ac = new AbbreviationConfig()
+            const leader = ac.abbreviationCharacter.get();
+            const $ = cheerio.load('<table style="font-family:var(--vscode-editor-font-family);font-size:var(--vscode-editor-font-size:);"><tr><th style="text-align:left">Abbreviation</th><th style="text-align:left">Unicode Symbol</th></tr></table>');
+            const table = $('table');
+            for (const [abbr, sym] of Object.entries(this.abbreviations)) {
+                if (sym && sym.indexOf('CURSOR') < 0) {
+                    const row = table.append($('<tr>'));
+                    row.append($('<td>').text(leader + abbr));
+                    row.append($('<td>').text(sym));
+                }
             }
+            const help = $.html();
+            const uri = createLocalFileUrl(this.getTempFolder().createFile('help.html', help));
+            return this.open(uri);
         }
-        const help = $.html();
-        const uri = createLocalFileUrl(this.getTempFolder().createFile('help.html', help));
-        return this.open(uri);
     }
 
     async fetch(url?: string): Promise<string> {
@@ -158,8 +165,11 @@ export class DocViewProvider implements Disposable {
             const books = {
                 'Theorem Proving in Lean': 'https://leanprover.github.io/theorem_proving_in_lean4/',
                 'Reference Manual': 'https://leanprover.github.io/lean4/doc/',
-                'Mathematics in Lean': 'https://github.com/leanprover-community/mathlib4/'
+                'Abbreviations cheat sheet': mkCommandUri('lean4.docView.showAllAbbreviations')
             };
+            // TODO: add mathlib4 when we have a book about it
+            // 'Mathematics in Lean': 'https://github.com/leanprover-community/mathlib4/',
+
             for (const book of Object.getOwnPropertyNames(books)) {
                 body.append($('<p>').append($('<a>').attr('href', books[book]).text(book)));
             }
@@ -219,7 +229,7 @@ export class DocViewProvider implements Disposable {
                 const code = decodeURIComponent(tryItMatch[1]);
                 link.attribs.title = link.attribs.title || 'Open code block in new editor';
                 link.attribs.href = mkCommandUri('lean4.openTryIt', code);
-            } else {
+            } else if (!link.attribs.href.startsWith('command:')) {
                 const hrefUrl = new URL(link.attribs.href, url);
                 const isExternal = !url || new URL(url).origin !== hrefUrl.origin;
                 if (!isExternal || hrefUrl.protocol === 'file:') {
