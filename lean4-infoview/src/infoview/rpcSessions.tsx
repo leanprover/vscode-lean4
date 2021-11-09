@@ -4,24 +4,10 @@
  */
 import React from "react"
 import { DidCloseTextDocumentParams, Disposable, DocumentUri, TextDocumentPositionParams } from "vscode-languageserver-protocol"
-import { RpcPtr } from "../lspTypes"
+import { RpcPtr, RpcCallParams, RpcNeedsReconnect, RpcReleaseParams } from "../lspTypes"
 import { EditorContext, RpcContext } from "./contexts"
 import { EditorConnection } from "./editorConnection"
 import { DocumentPosition, useClientNotificationEffect, useEvent } from "./util"
-
-interface RpcCallParams extends TextDocumentPositionParams {
-    sessionId: string
-    method: string
-    params: any
-}
-
-interface RpcReleaseParams {
-    uri: DocumentUri
-    sessionId: string
-    refs: RpcPtr<any>[]
-}
-
-const RpcNeedsReconnect = -32900
 
 class RpcSession implements Disposable {
     #ec: EditorConnection

@@ -3,28 +3,14 @@ import {
     commands, Disposable, DocumentSelector,
     ExtensionContext, languages, Range,
     Selection, TextEditor, TextEditorRevealType,
-    Uri, ViewColumn, WebviewPanel, window, workspace, env, Position, Diagnostic,
+    Uri, ViewColumn, WebviewPanel, window, workspace, env, Position,
 } from 'vscode';
-import { EditorApi, InfoviewApi, LeanFileProgressParams, TextInsertKind } from '@lean4/infoview';
+import { EditorApi, InfoviewApi, LeanFileProgressParams, TextInsertKind, RpcConnectParams, RpcConnected, RpcKeepAliveParams } from '@lean4/infoview';
 import { LeanClient } from './leanclient';
 import { getInfoViewAllErrorsOnLine, getInfoViewAutoOpen, getInfoViewAutoOpenShowGoal,
     getInfoViewFilterIndex, getInfoViewStyle, getInfoViewTacticStateFilters } from './config';
 import { Rpc } from './rpc';
 import * as ls from 'vscode-languageserver-protocol'
-import { LanguageClient } from 'vscode-languageclient/node';
-
-interface RpcConnectParams {
-    uri: ls.DocumentUri;
-}
-
-interface RpcConnected {
-    sessionId: string
-}
-
-interface RpcKeepAliveParams {
-    uri: ls.DocumentUri
-    sessionId: string
-}
 
 const keepAlivePeriodMs = 10000
 
