@@ -181,7 +181,7 @@ export class InfoProvider implements Disposable {
                 // This event is triggered both the first time the server starts
                 // as well as when the server restarts.
 
-                this.clearSessions();
+                this.clearRpcSessions();
 
                 // The info view should auto-open the first time the server starts:
                 await this.autoOpen()
@@ -220,7 +220,7 @@ export class InfoProvider implements Disposable {
 
     dispose(): void {
         this.clearNotificationHandlers();
-        this.clearSessions();
+        this.clearRpcSessions();
         for (const s of this.subscriptions) { s.dispose(); }
     }
 
@@ -255,7 +255,7 @@ export class InfoProvider implements Disposable {
         this.serverNotifSubscriptions.clear();
     }
 
-    private clearSessions() {
+    private clearRpcSessions() {
         for (const [_, sess] of this.rpcSessions) sess.dispose();
         this.rpcSessions = new Map()
     }
@@ -289,7 +289,7 @@ export class InfoProvider implements Disposable {
             webviewPanel.onDidDispose(() => {
                 this.clearNotificationHandlers();
                 this.webviewPanel = undefined;
-                this.clearSessions(); // should be after `webviewPanel = undefined`
+                this.clearRpcSessions(); // should be after `webviewPanel = undefined`
             });
             this.webviewPanel = webviewPanel;
             webviewPanel.webview.html = this.initialHtml();
