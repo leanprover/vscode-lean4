@@ -165,9 +165,11 @@ export class DocViewProvider implements Disposable {
             const books = {
                 'Theorem Proving in Lean': 'https://leanprover.github.io/theorem_proving_in_lean4/',
                 'Reference Manual': 'https://leanprover.github.io/lean4/doc/',
-                'Mathematics in Lean': 'https://github.com/leanprover-community/mathlib4/',
                 'Abbreviations cheat sheet': mkCommandUri('lean4.docView.showAllAbbreviations')
             };
+            // TODO: add mathlib4 when we have a book about it
+            // 'Mathematics in Lean': 'https://github.com/leanprover-community/mathlib4/',
+
             for (const book of Object.getOwnPropertyNames(books)) {
                 body.append($('<p>').append($('<a>').attr('href', books[book]).text(book)));
             }
