@@ -1,4 +1,4 @@
-import { Diagnostic, Range, VersionedTextDocumentIdentifier } from 'vscode-languageserver-protocol';
+import { Diagnostic, DocumentUri, Range, TextDocumentPositionParams, VersionedTextDocumentIdentifier } from 'vscode-languageserver-protocol';
 
 // Lean 4 extensions to LSP.
 
@@ -49,3 +49,30 @@ export function toKey(p: RpcPtr<any>): string {
 }
 
 }
+
+export interface RpcConnectParams {
+    uri: DocumentUri;
+}
+
+export interface RpcConnected {
+    sessionId: string
+}
+
+export interface RpcKeepAliveParams {
+    uri: DocumentUri
+    sessionId: string
+}
+
+export interface RpcCallParams extends TextDocumentPositionParams {
+    sessionId: string
+    method: string
+    params: any
+}
+
+export interface RpcReleaseParams {
+    uri: DocumentUri
+    sessionId: string
+    refs: RpcPtr<any>[]
+}
+
+export const RpcNeedsReconnect = -32900

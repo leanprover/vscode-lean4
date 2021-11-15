@@ -3,15 +3,43 @@ import {
     commands, Disposable, DocumentSelector,
     ExtensionContext, languages, Range,
     Selection, TextEditor, TextEditorRevealType,
-    Uri, ViewColumn, WebviewPanel, window, workspace, env, Position, Diagnostic,
+    Uri, ViewColumn, WebviewPanel, window, workspace, env, Position,
 } from 'vscode';
-import { EditorApi, InfoviewApi, LeanFileProgressParams, TextInsertKind } from '@lean4/infoview';
+import { EditorApi, InfoviewApi, LeanFileProgressParams, TextInsertKind, RpcConnectParams, RpcConnected, RpcKeepAliveParams } from '@lean4/infoview';
 import { LeanClient } from './leanclient';
 import { getInfoViewAllErrorsOnLine, getInfoViewAutoOpen, getInfoViewAutoOpenShowGoal,
     getInfoViewFilterIndex, getInfoViewStyle, getInfoViewTacticStateFilters } from './config';
 import { Rpc } from './rpc';
-import { PublishDiagnosticsParams } from 'vscode-languageclient';
 import * as ls from 'vscode-languageserver-protocol'
+
+const keepAlivePeriodMs = 10000
+
+async function rpcConnect(client: LeanClient, uri: ls.DocumentUri): Promise<string> {
+    const connParams: RpcConnectParams = { uri };
+    const result: RpcConnected = await client.sendRequest('$/lean/rpc/connect', connParams);
+    return result.sessionId;
+}
+
+class RpcSession implements Disposable {
+    keepAliveInterval?: NodeJS.Timeout;
+
+    constructor(client: LeanClient, public sessionId: string, public uri: ls.DocumentUri) {
+        this.keepAliveInterval = setInterval(() => {
+            const params: RpcKeepAliveParams = { uri, sessionId }
+            try {
+                client.sendNotification('$/lean/rpc/keepAlive', params)
+            } catch (e) {
+                console.log(`failed to send keepalive for ${uri}`, e)
+                clearInterval(this.keepAliveInterval)
+            }
+        }, keepAlivePeriodMs)
+    }
+
+    dispose() {
+        clearInterval(this.keepAliveInterval)
+        // TODO: at this point we could close the session
+    }
+}
 
 export class InfoProvider implements Disposable {
     /** Instance of the panel, if it is open. Otherwise `undefined`. */
@@ -24,6 +52,8 @@ export class InfoProvider implements Disposable {
     // Subscriptions are counted and only disposed of when count becomes 0.
     private serverNotifSubscriptions: Map<string, [number, Disposable]> = new Map();
     private clientNotifSubscriptions: Map<string, [number, Disposable]> = new Map();
+
+    private rpcSessions: Map<string, RpcSession> = new Map();
 
     private editorApi : EditorApi = {
         sendClientRequest: async (method: string, params: any): Promise<any> => {
@@ -123,6 +153,25 @@ export class InfoProvider implements Disposable {
                 this.client.convertRange(show.selection)
             );
         },
+
+        createRpcSession: async uri => {
+            const sessionId = await rpcConnect(this.client, uri);
+            const session = new RpcSession(this.client, sessionId, uri);
+            if (!this.webviewPanel) {
+                session.dispose();
+                throw Error('infoview disconnect while connecting to RPC session');
+            } else {
+                this.rpcSessions.set(sessionId, session);
+                return sessionId;
+            }
+        },
+        closeRpcSession: async sessionId => {
+            const session = this.rpcSessions.get(sessionId);
+            if (session) {
+                this.rpcSessions.delete(sessionId);
+                session.dispose();
+            }
+        },
     };
 
     constructor(private client: LeanClient, private readonly leanDocs: DocumentSelector, private context: ExtensionContext) {
@@ -131,6 +180,8 @@ export class InfoProvider implements Disposable {
             this.client.restarted(async () => {
                 // This event is triggered both the first time the server starts
                 // as well as when the server restarts.
+
+                this.clearRpcSessions();
 
                 // The info view should auto-open the first time the server starts:
                 await this.autoOpen()
@@ -169,6 +220,7 @@ export class InfoProvider implements Disposable {
 
     dispose(): void {
         this.clearNotificationHandlers();
+        this.clearRpcSessions();
         for (const s of this.subscriptions) { s.dispose(); }
     }
 
@@ -203,6 +255,11 @@ export class InfoProvider implements Disposable {
         this.serverNotifSubscriptions.clear();
     }
 
+    private clearRpcSessions() {
+        for (const [_, sess] of this.rpcSessions) sess.dispose();
+        this.rpcSessions = new Map()
+    }
+
     private async openPreview(editor: TextEditor) {
         let column = editor ? editor.viewColumn + 1 : ViewColumn.Two;
         if (column === 4) { column = ViewColumn.Three; }
@@ -232,6 +289,7 @@ export class InfoProvider implements Disposable {
             webviewPanel.onDidDispose(() => {
                 this.clearNotificationHandlers();
                 this.webviewPanel = undefined;
+                this.clearRpcSessions(); // should be after `webviewPanel = undefined`
             });
             this.webviewPanel = webviewPanel;
             webviewPanel.webview.html = this.initialHtml();

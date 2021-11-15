@@ -1,4 +1,4 @@
-import { InitializeResult, Location, ShowDocumentParams, TextDocumentPositionParams } from "vscode-languageserver-protocol"
+import { DocumentUri, InitializeResult, Location, ShowDocumentParams, TextDocumentPositionParams } from "vscode-languageserver-protocol"
 
 export interface EditorFsApi {
   stat(path: string): Promise<any>;
@@ -53,6 +53,16 @@ export interface EditorApi {
 
   /** Highlight a range in a document in the editor. */
   showDocument(show: ShowDocumentParams): Promise<void>;
+
+  /**
+   * Creates an RPC session for the given uri and returns the session id.
+   * The extension takes care of keeping the RPC session alive.
+   * (The infoview cannot reliably send keep-alive messages because setInterval
+   * is throttled in the infoview when the vscode window is not visible.)
+   */
+  createRpcSession(uri: DocumentUri): Promise<string>;
+  /** Closes an RPC session created with `createRpcSession`. */
+  closeRpcSession(sessionId: string): Promise<void>;
 }
 
 export interface InfoviewTacticStateFilter {
