@@ -1,7 +1,9 @@
 
 # Lean 4 VSCode Extension
-This extension provides VSCode editor support for the Lean 4 programming language.
-It is based on [vscode-lean](https://github.com/leanprover/vscode-lean).
+This extension provides VSCode editor support for the Lean 4 programming language. It is based on
+[vscode-lean](https://github.com/leanprover/vscode-lean) with the addition of an all new [Language
+Server](https://docs.microsoft.com/en-us/visualstudio/extensibility/language-server-protocol)
+implemented in Lean.
 
 ## Installing the extension and Lean 4
 1. Install the extension from the [marketplace](https://marketplace.visualstudio.com/items?itemName=leanprover.lean4).
@@ -33,8 +35,8 @@ For basic VS Code editor features, see the [VS Code User Interface docs](https:/
 The extension provides:
 - A set of handy `Lean4:` commands available with <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd>
 - Side-by-side compatibility with the [Lean 3 VSCode extension](https://github.com/leanprover/vscode-lean)
-- Nice integration with the Lean language server as shown below.
-- An Infoview panel showing information about your Lean programs.
+- Nice integration with the Lean [Language Server](https://docs.microsoft.com/en-us/visualstudio/extensibility/language-server-protocol) as shown below.
+- An Infoview panel showing interactive information about your Lean programs.
 
 ## Lean language server features
 
@@ -43,9 +45,8 @@ The extension provides:
 - Type information & documentation on hover
 - Error messages and diagnostics
 - Syntax highlighting with basic Lean 4 syntax rules
-- Easy way to enter Unicode symbols using `\` abbreviations.
 - Semantic highlighting
-- Hover shows documentation, types and Unicode input help:
+- Hover shows documentation, types:
 
   ![hover_example](vscode-lean4/media/hover-example.png)
 
@@ -55,37 +56,35 @@ For example, if you type "." after `Array` you will get:
   ![completion-example](vscode-lean4/media/completion-example.png)
 
 - An Infoview displaying useful information about your current Lean program.
-- Go to definition (F12)
+- Goto definition (F12) will work if the Lean source code is available.  A standard elan install of
+  the Lean toolchain provides Lean source code for all the Lean standard library, so you can go to
+  the definition of any standard library symbol which is very useful when you want to learn more
+  about how the library works. Note also that currently goto definition does not work if the cursor
+  is at the very end of a symbol like `Array.append|`.  Move the cursor one character to the left
+  `Array.appen|d` and it will work.  See [open issue #767](https://github.com/leanprover/lean4/issues/767).
+
 - [Breadcrumbs](https://code.visualstudio.com/Docs/editor/editingevolved#_breadcrumbs)
-- `Lean4: Select Toolchain` command to select the toolchain you want to use instead of the default toolchain for your current workspace.  (**)
-
-    ![select-toolchain](vscode-lean4/media/select-toolchain.png)
-
 
 (*) Incremental updates do not yet work automatically across files, so after changing and rebuilding the dependency of a
 Lean 4 file, the language server needs to be manually informed that it should re-elaborate the full file, including the
 imports. This can be done using the `Lean 4: Refresh File Dependencies` command, which can be activated via <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>X</kbd>.
 
-(**) You can test the latest [Lean 4 master branch](https://github.com/leanprover/lean4) with this VS Code extension.  First you build Lean, then run the following commands:
-```
-cd <lean4-repo>
-cd ./build/release/stage1
-elan toolchain link master .
-```
-Now the `Lean4: Select Toolchain` will show `master` as one of the toolchains you can select.  The Lean Language Server will then be restarted automatically and will pick up your locally built version of Lean.  This is useful if you are adding features to Lean 4 that you want to test in the VS Code extension.
-
 ## Lean editing features
 
 - Support for completing abbreviations starting with a backslash (\\).
 For example you type `\alpha` and the editor automatically replaces that with the nice Unicode character `α`.
+You can disable this feature using the `lean4.input.enabled` setting, see below.
+- When you hover the mouse over a letter that has one or more abbreviations you will see a tooltip like this:
+    ![abbreviation tip](vscode-lean4/media/abbreviation_tips.png)
 - Auto-completing of brackets like `()`, `{}`, `[]`, `⟦ ⟧`, `⦃ ⦄`, `⟮ ⟯`, `⦃ ⦄` and block comments `/- ... -/`.
+
 
 ## Infoview panel
 
 The Infoview panel is essential to working interactively with Lean. It shows:
-- Tactic state widgets, with context information (hypotheses, goals) at each point in a proof / definition,
+- **Tactic state widgets**, with context information (hypotheses, goals) at each point in a proof / definition,
 - **Expected type** widgets display the context for subterms.
-- Types of sub-terms in the context can be inspected interactively using mouse hover.
+- **Types** of sub-terms in the context can be inspected interactively using mouse hover.
 - **All Messages** widget, which shows all info, warning, and error messages from the Lean server for the current file.
 
 Suppose you have the following theorem:
@@ -104,16 +103,17 @@ and you place the cursor at the end of the line `by apply And.intro` the Infovie
 ![completion-example](vscode-lean4/media/infoview-overview.png)
 
 (1). The Infoview will activate automatically when a Lean file is opened, but you can also reopen it any time using the icon in the top right of the text editor window or the <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> `Lean 4: Infoview: Display Goal` command or the key that is bound to the command, which is <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Enter</kbd> by default.
+You can also disable auto-opening behavior using the setting `lean4.infoViewAutoOpen` described below.
 
 (2) through (6):
 
   | Symbol | Description |
   |--------|-------------|
-  | ![quotes](vscode-lean4/media/quotes.png) | Copy the contents of the widget to a comment in the editor. |
+  | ![quotes](vscode-lean4/media/quotes.png) | Copy the contents of the widget to a comment in the active text editor. |
   | ![pin](vscode-lean4/media/pin.png) | Split off a "pinned" tactic state widget, which tracks the tactic state at a fixed position, even if you move your cursor away.  When pinned you will see the unpin and reveal file location icons appear. |
   | ![unpin](vscode-lean4/media/unpin.png) | Remove a pinned widget from the Infoview. |
   | ![reveal](vscode-lean4/media/reveal-file-location.png) | Move the cursor in the editor to the pinned location in the file. |
-  | ![pause](vscode-lean4/media/pause.png) | Prevent the tactic state widget from updating when the file is edited. Click  to resume updates.
+  | ![pause](vscode-lean4/media/pause.png) | Prevent the tactic state widget from updating when the file is edited. When paused you will see the following addition icons show up.
   | ![continue](vscode-lean4/media/continue.png) | Once paused you can then click this icon to resume updates. |
   | ![update](vscode-lean4/media/update.png) | Refresh the tactic state of the pinned widget. |
 
@@ -126,15 +126,15 @@ and you place the cursor at the end of the line `by apply And.intro` the Infovie
 
 ## Extension Settings
 
-This extension contributes the following settings (for a complete list, open the VS Code Settings and scroll to "Lean configuration"):
+This extension contributes the following settings (for a complete list, open the VS Code Settings and type `Lean4` in the search box):
 
 ### Server settings
 
 * `lean4.executablePath`: specifies the name of the Lean executable to be used when starting the Lean language server. Most users (i.e. those using `elan`) should not ever need to change this. If you are bundling Lean and `vscode-lean` with [Portable mode VS Code](https://code.visualstudio.com/docs/editor/portable), you might find it useful to specify a relative path to Lean. This can be done by starting this setting string with `%extensionPath%`; the extension will replace this with the absolute path of the extension folder. For example, with the default directory setup in Portable mode, `%extensionPath%/../../../lean` will point to `lean` in the same folder as the VS Code executable / application.
 
-* `lean4.serverEnv`: specifies any Environment variables to add to the Lean 4 language server environment.  Note that when opening a remote folder using VS Code the Lean 4 language server will be running on that remote machine.
+* `lean4.serverEnv`: specifies any Environment variables to add to the Lean 4 language server environment.  Note that when opening a [remote folder](https://code.visualstudio.com/docs/remote/ssh) using VS Code the Lean 4 language server will be running on that remote machine.
 
-* `lean4.serverEnvPaths`: specifies any additional paths to add to the Lean 4 language server environment PATH variable.  Note that when opening a remote folder using VS Code the Lean 4 language server will be running on that remote machine.
+* `lean4.serverEnvPaths`: specifies any additional paths to add to the Lean 4 language server environment PATH variable.
 
 * `lean4.serverArgs`: specifies any additional arguments to pass on the `lean --server` command line.
 
@@ -191,7 +191,20 @@ The format below is: "`lean4.commandName` (command name): description", where `l
 Lean 4 file, the language server needs to be manually informed that it should re-elaborate the full file, including the
 imports. This command has a default keyboard binding of <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>X</kbd>.
 
-* `lean4.selectToolchain` (Lean 4: Select Lean Toolchain) Select version of the Lean toolchain to use for the current workspace.  This shows the list of available toolchains returned from `elan toolchain list` and allows you to easily switch. The Lean 4 language server will automatically be restarted using the selected toolchain.  This command also provides a choice labelled `Custom` where you can enter the full path to a Lean 4 executable to use instead.  This choice is remembered in your [Workspace Settings](https://code.visualstudio.com/docs/getstarted/settings) and you can reset any custom path by setting `Custom` back to the string `lean`.
+* `lean4.selectToolchain` (Lean 4: Select Lean Toolchain) Select version of the Lean toolchain to use for the current workspace.  This shows the list of available toolchains returned from `elan toolchain list` and allows you to easily switch. The Lean 4 language server will automatically be restarted using the selected toolchain.  This command also provides a choice labelled `Other...` where you can enter the full path to a Lean 4 executable to use instead.  This choice is remembered in your [Workspace Settings](https://code.visualstudio.com/docs/getstarted/settings) and you can reset any custom path by setting `Custom` back to the string `lean`.
+
+    ![select-toolchain](vscode-lean4/media/select-toolchain.png)
+
+    You can test the latest [Lean 4 master branch](https://github.com/leanprover/lean4) with this VS Code extension.  First you build Lean, then run the following commands:
+    ```
+    cd <lean4-repo>
+    elan toolchain link master ./build/release/stage1
+    ```
+    Now the `Lean4: Select Toolchain` will show `master` as one of the toolchains you can select.
+    You will then see a prompt to restart the Lean Language Server and if you click `Restart Lean`, the
+    server will be restarted automatically using the your brand new locally built version of Lean.
+    This is useful if you are adding features to Lean 4 that you want to test in the VS Code
+    extension before an official Lean4 nightly build is published.
 
 ### Editing commands
 
@@ -224,6 +237,7 @@ extension proper is in [`vscode-lean4`](vscode-lean4/), while [`lean4-infoview`]
 information display. We build the packages in tandem using Lerna.
 
 ### Building
+- Make sure you have an up to date installation of `npm` and `node.js`.  For example `npm` version 8.1.3 and `node.js` version v16.13.0.
 - Run `npm install` in this folder. This installs the Lerna package manager.
 - Run `npx lerna bootstrap`. This sets up the project's dependencies.
 - Run `npx lerna run build`. This compiles the extension (which is necessary for go-to-definition in VS Code).
