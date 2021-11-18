@@ -2,6 +2,7 @@ import { window, workspace, TerminalOptions, OutputChannel, commands, Disposable
 import { executablePath, addServerEnvPaths } from '../config'
 import { batchExecute } from './batch'
 import { LocalStorageService} from './localStorage'
+import { LeanpkgService } from './leanpkg';
 
 export class LeanInstaller implements Disposable {
 
@@ -11,13 +12,15 @@ export class LeanInstaller implements Disposable {
     private localStorage: LocalStorageService;
     private subscriptions: Disposable[] = [];
     private prompting : boolean = false;
+    private pkgService : LeanpkgService;
 
     private installChangedEmitter = new EventEmitter<string>();
     installChanged = this.installChangedEmitter.event
 
-    constructor(outputChannel: OutputChannel, localStorage : LocalStorageService){
+    constructor(outputChannel: OutputChannel, localStorage : LocalStorageService, pkgService : LeanpkgService){
         this.outputChannel = outputChannel;
         this.localStorage = localStorage;
+        this.pkgService = pkgService;
         this.subscriptions.push(commands.registerCommand('lean4.selectToolchain', () => this.selectToolchain()));
     }
 
@@ -110,10 +113,10 @@ export class LeanInstaller implements Disposable {
         // if this workspace has a local override use it, otherwise fall back on the requested version.
         const version = this.localStorage.getLeanVersion() ?? requestedVersion;
 
-        const folders = workspace.workspaceFolders
+        const folderUri = this.pkgService.getWorkspaceLeanFolderUri();
         let folderPath: string
-        if (folders) {
-            folderPath = folders[0].uri.fsPath
+        if (folderUri) {
+            folderPath = folderUri.fsPath
         }
 
         const env = addServerEnvPaths(process.env);
@@ -149,10 +152,11 @@ export class LeanInstaller implements Disposable {
     }
 
     async elanListToolChains() : Promise<string[]> {
-        const folders = workspace.workspaceFolders
+
+        const folderUri = this.pkgService.getWorkspaceLeanFolderUri();
         let folderPath: string
-        if (folders) {
-            folderPath = folders[0].uri.fsPath
+        if (folderUri) {
+            folderPath = folderUri.fsPath
         }
 
         try {
@@ -224,7 +228,7 @@ export class LeanInstaller implements Disposable {
 
             // we try not to mess with the --default-toolchain and only install the minimum
             // # of toolchains to get this user up and running on the workspace they are opening.
-            const toolchain = '--default-toolchain none';
+            const toolchain = '-y --default-toolchain none';
 
             // Now show the terminal and run elan.
             if (elanInstalled) {

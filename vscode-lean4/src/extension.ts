@@ -20,7 +20,7 @@ export async function activate(context: ExtensionContext): Promise<any> {
     context.subscriptions.push(pkgService);
     const leanVersion = await pkgService.findLeanPkgVersionInfo();
 
-    const installer = new LeanInstaller(outputChannel, storageManager)
+    const installer = new LeanInstaller(outputChannel, storageManager, pkgService)
     context.subscriptions.push(installer);
 
     const result = await installer.testLeanVersion(leanVersion);

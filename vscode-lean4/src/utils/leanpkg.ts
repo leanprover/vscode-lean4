@@ -33,7 +33,7 @@ export class LeanpkgService implements Disposable {
         return languageId === 'lean' || languageId === 'lean4';
     }
 
-    private getWorkspaceLeanFolderUri() : Uri {
+    getWorkspaceLeanFolderUri() : Uri {
         let rootPath : Uri = null;
 
         if (window.activeTextEditor && this.isLean(window.activeTextEditor.document.languageId))
