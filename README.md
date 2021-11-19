@@ -1,6 +1,6 @@
 
 # Lean 4 VSCode Extension
-This extension provides VSCode editor support for the Lean 4 programming language. It is uses the
+This extension provides VSCode editor support for the Lean 4 programming language. It uses the
 all new [Language Server](https://docs.microsoft.com/en-us/visualstudio/extensibility/language-server-protocol)
 implemented in Lean.
 
