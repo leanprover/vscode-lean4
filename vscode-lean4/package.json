@@ -379,6 +379,7 @@
 		],
 		"configurationDefaults": {
 			"[lean4]": {
+                                "editor.unicodeHighlight.ambiguousCharacters": false,
 				"editor.tabSize": 2
 			}
 		}
