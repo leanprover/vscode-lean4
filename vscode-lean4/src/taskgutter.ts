@@ -4,11 +4,11 @@ import { LeanClient } from './leanclient';
 class LeanFileTaskGutter {
     private timeout?: NodeJS.Timeout
 
-    constructor(private uri: string, private decoration: TextEditorDecorationType, private processed: number | undefined) {
+    constructor(private uri: string, private decoration: TextEditorDecorationType, private decorationError: TextEditorDecorationType, private processed: [number, boolean] | undefined) {
         this.schedule(100)
     }
 
-    setProcessed(processed: number | undefined) {
+    setProcessed(processed: [number, boolean] | undefined) {
         if (processed === this.processed) return;
         const oldProcessed = this.processed;
         this.processed = processed;
@@ -37,10 +37,25 @@ class LeanFileTaskGutter {
     private updateDecos() {
         for (const editor of window.visibleTextEditors) {
             if (editor.document.uri.toString() === this.uri) {
-                editor.setDecorations(this.decoration, this.processed === undefined ? [] : [{
-                    range: new Range(this.processed, 0, editor.document.lineCount, 0),
-                    hoverMessage: 'busily processing...',
-                }]);
+                if (this.processed === undefined) {
+                    editor.setDecorations(this.decoration, []);
+                    editor.setDecorations(this.decorationError, []);
+                } else {
+                    const [line, error] = this.processed
+                    if (error) {
+                        editor.setDecorations(this.decoration, []);
+                        editor.setDecorations(this.decorationError, [{
+                            range: new Range(line, 0, editor.document.lineCount, 0),
+                            hoverMessage: 'processing stopped',
+                        }]);
+                    } else {
+                        editor.setDecorations(this.decorationError, []);
+                        editor.setDecorations(this.decoration, [{
+                            range: new Range(line, 0, editor.document.lineCount, 0),
+                            hoverMessage: 'busily processing...',
+                        }]);
+                    }
+                }
             }
         }
     }
@@ -52,7 +67,8 @@ class LeanFileTaskGutter {
 
 export class LeanTaskGutter implements Disposable {
     private decoration: TextEditorDecorationType;
-    private status: { [uri: string]: number | undefined } = {};
+    private decorationError: TextEditorDecorationType;
+    private status: { [uri: string]: [number, boolean] | undefined } = {};
     private gutters: { [uri: string]: LeanFileTaskGutter | undefined } = {};
     private subscriptions: Disposable[] = [];
 
@@ -68,13 +84,26 @@ export class LeanTaskGutter implements Disposable {
             },
             gutterIconSize: 'contain',
         });
+        this.decorationError = window.createTextEditorDecorationType({
+            overviewRulerLane: OverviewRulerLane.Left,
+            overviewRulerColor: 'rgba(255, 0, 0, 0.5)',
+            dark: {
+                gutterIconPath: context.asAbsolutePath('media/progress-error-dark.svg'),
+            },
+            light: {
+                gutterIconPath: context.asAbsolutePath('media/progress-error-light.svg'),
+            },
+            gutterIconSize: 'contain',
+        });
 
         this.subscriptions.push(
             window.onDidChangeVisibleTextEditors(() => this.updateDecos()),
             client.progressChanged((progress) => {
                 for (const [uri, processing] of progress) {
-                    this.status[uri.toString()] = processing.length === 0 ? undefined :
-                        Math.min(...processing.map(p => p.range.start.line));
+                    this.status[uri.toString()] = processing.length === 0 ? undefined : [
+                        Math.min(...processing.map(p => p.range.start.line)),
+                        processing.some((process) => process.error)
+                    ];
                 }
                 this.updateDecos()
             }));
@@ -90,7 +119,7 @@ export class LeanTaskGutter implements Disposable {
             if (this.gutters[uri]) {
                 this.gutters[uri].setProcessed(processed)
             } else {
-                this.gutters[uri] = new LeanFileTaskGutter(uri, this.decoration, processed)
+                this.gutters[uri] = new LeanFileTaskGutter(uri, this.decoration, this.decorationError, processed)
             }
         }
         for (const uri of Object.getOwnPropertyNames(this.gutters)) {

@@ -20,6 +20,8 @@ export interface PlainTermGoal {
 export interface LeanFileProgressProcessingInfo {
     /** Range which is still being processed */
     range: Range;
+    /** If the file processing was stopped after a (fatal) error. */
+    error: boolean;
 }
 
 export interface LeanFileProgressParams {
