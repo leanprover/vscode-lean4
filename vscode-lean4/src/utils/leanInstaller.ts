@@ -1,4 +1,4 @@
-import { window, workspace, TerminalOptions, OutputChannel, commands, Disposable, EventEmitter, OpenDialogOptions } from 'vscode'
+import { window, workspace, TerminalOptions, OutputChannel, commands, Disposable, EventEmitter } from 'vscode'
 import { executablePath, addServerEnvPaths } from '../config'
 import { batchExecute } from './batch'
 import { LocalStorageService} from './localStorage'
