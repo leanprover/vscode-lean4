@@ -122,7 +122,7 @@ export class LeanInstaller implements Disposable {
         const item = await window.showErrorMessage('Cannot find a "lean-toolchain" file in this folder or any parent folder.', createItem, selectToolchain)
         if (item === createItem) {
             try {
-                this.outputChannel.appendLine(`lean4: adding lean-toolchain containing version: {this.defaultVersion}`);
+                this.outputChannel.appendLine(`lean4: adding lean-toolchain containing version: ${this.defaultVersion}`);
                 await this.pkgService.createLeanToolchain(this.defaultVersion);
                 this.installChangedEmitter.fire(undefined);
             } catch (err) {
@@ -159,7 +159,7 @@ export class LeanInstaller implements Disposable {
             // looks for a global (default) installation of Lean. This way, we can support
             // single file editing.
             this.outputChannel.show(true);
-            let stdout = await batchExecute(cmd, options, folderPath, this.outputChannel)
+            const stdout = await batchExecute(cmd, options, folderPath, this.outputChannel)
             if (stdout.indexOf('no default toolchain') > 0) {
                 return { version: '', error: 'no lean-toolchain' };
             }
