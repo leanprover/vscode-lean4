@@ -243,8 +243,8 @@ export class LeanInstaller implements Disposable {
             }
             else{
                 terminal.sendText(
-                    `curl ${this.leanInstallerLinux} -sSf | sh -s -- ${toolchain} && ` +
-                    `echo && ${promptAndExit}`);
+                    `bash -c 'curl ${this.leanInstallerLinux} -sSf | sh -s -- ${toolchain} && ` +
+                    `echo && ${promptAndExit}'`);
             }
 
             return result;
