@@ -117,6 +117,19 @@ export class LeanpkgService implements Disposable {
         for (const s of this.subscriptions) { s.dispose(); }
     }
 
+    async createLeanToolchain(version : String): Promise<Uri> {
+        await this.findLeanPkgVersionInfo();
+        if (this.leanVersionFile === null){
+            const uri = this.getWorkspaceLeanFolderUri()
+            if (uri) {
+                this.leanVersionFile = Uri.joinPath(uri, this.toolchainFileName);
+                const writer = fs.createWriteStream(new URL(this.leanVersionFile.toString()))
+                writer.write(version);
+            }
+        }
+        return this.leanVersionFile;
+    }
+
     private async handleFileChanged(uri: Uri) {
         if (!this.leanVersionFile){
             this.leanVersionFile = uri;

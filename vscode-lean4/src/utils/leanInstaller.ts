@@ -132,7 +132,14 @@ export class LeanInstaller implements Disposable {
             // looks for a global (default) installation of Lean. This way, we can support
             // single file editing.
             this.outputChannel.show(true);
-            const stdout = await batchExecute(cmd, options, folderPath, this.outputChannel)
+            let stdout = await batchExecute(cmd, options, folderPath, this.outputChannel)
+            if (stdout.indexOf('no default toolchain') > 0) {
+                this.outputChannel.appendLine('lean4: adding default toolchain version: leanprover/lean4:nightly');
+                // this folder has no lean-toolchain file, so let's try and create one.
+                await this.pkgService.createLeanToolchain('leanprover/lean4:nightly');
+                // try again
+                stdout = await batchExecute(cmd, options, folderPath, this.outputChannel)
+            }
             const filterVersion = /version (\d+)\.\d+\..+/
             const match = filterVersion.exec(stdout)
             if (!match) {
