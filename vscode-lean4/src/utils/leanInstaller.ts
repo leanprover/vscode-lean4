@@ -1,4 +1,4 @@
-import { window, workspace, TerminalOptions, OutputChannel, commands, Disposable, EventEmitter } from 'vscode'
+import { window, workspace, TerminalOptions, OutputChannel, commands, Disposable, EventEmitter, OpenDialogOptions } from 'vscode'
 import { executablePath, addServerEnvPaths } from '../config'
 import { batchExecute } from './batch'
 import { LocalStorageService} from './localStorage'
@@ -13,6 +13,7 @@ export class LeanInstaller implements Disposable {
     private subscriptions: Disposable[] = [];
     private prompting : boolean = false;
     private pkgService : LeanpkgService;
+    private defaultVersion = 'leanprover/lean4:nightly';
 
     private installChangedEmitter = new EventEmitter<string>();
     installChanged = this.installChangedEmitter.event
@@ -27,9 +28,13 @@ export class LeanInstaller implements Disposable {
     async testLeanVersion(requestedVersion : string) : Promise<string> {
         const found = await this.checkLeanVersion(requestedVersion);
         if (found.error) {
-            void window.showErrorMessage(found.error);
-            // then try something else...
-            void this.showInstallOptions();
+            if (found.error === 'no toolchain'){
+                await this.showToolchainOptions()
+            } else {
+                void window.showErrorMessage(found.error);
+                // then try something else...
+                void this.showInstallOptions();
+            }
             return '4'; // we don't know the version, so assume we can make version 4 work.
         }
         return found.version;
@@ -86,6 +91,7 @@ export class LeanInstaller implements Disposable {
                     canPickMany: false,
                 }
         );
+
         if (selectedVersion === otherPrompt) {
             const selectedProgram = await window.showInputBox({
                 title: 'Enter path',
@@ -103,6 +109,27 @@ export class LeanInstaller implements Disposable {
             this.localStorage.setLeanPath('lean'); // make sure any local full path override is cleared.
             this.localStorage.setLeanVersion(selectedVersion);
             this.installChangedEmitter.fire(selectedVersion);
+        }
+    }
+
+    async showToolchainOptions() : Promise<void> {
+        let executable = this.localStorage.getLeanPath();
+        if (!executable) executable = executablePath();
+        // note; we keep the LeanClient alive so that it can be restarted if the
+        // user changes the Lean: Executable Path.
+        const createItem = 'Create lean-toolchain file';
+        const selectToolchain = 'Select lean toolchain';
+        const item = await window.showErrorMessage('Cannot find a "lean-toolchain" file in this folder or any parent folder.', createItem, selectToolchain)
+        if (item === createItem) {
+            try {
+                this.outputChannel.appendLine(`lean4: adding lean-toolchain containing version: {this.defaultVersion}`);
+                await this.pkgService.createLeanToolchain(this.defaultVersion);
+                this.installChangedEmitter.fire(undefined);
+            } catch (err) {
+                this.outputChannel.appendLine(err);
+            }
+        } else if (item === selectToolchain) {
+            await this.selectToolchain();
         }
     }
 
@@ -134,11 +161,7 @@ export class LeanInstaller implements Disposable {
             this.outputChannel.show(true);
             let stdout = await batchExecute(cmd, options, folderPath, this.outputChannel)
             if (stdout.indexOf('no default toolchain') > 0) {
-                this.outputChannel.appendLine('lean4: adding default toolchain version: leanprover/lean4:nightly');
-                // this folder has no lean-toolchain file, so let's try and create one.
-                await this.pkgService.createLeanToolchain('leanprover/lean4:nightly');
-                // try again
-                stdout = await batchExecute(cmd, options, folderPath, this.outputChannel)
+                return { version: '', error: 'no lean-toolchain' };
             }
             const filterVersion = /version (\d+)\.\d+\..+/
             const match = filterVersion.exec(stdout)

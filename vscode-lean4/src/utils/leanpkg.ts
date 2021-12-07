@@ -101,7 +101,7 @@ export class LeanpkgService implements Disposable {
             }
         }
 
-        let version = this.defaultVersion;
+        let version = null;
         if (this.leanVersionFile || this.leanVersionFile) {
             try {
                 version = await this.readLeanVersion();

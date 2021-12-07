@@ -23,10 +23,15 @@ export async function activate(context: ExtensionContext): Promise<any> {
     const installer = new LeanInstaller(outputChannel, storageManager, pkgService)
     context.subscriptions.push(installer);
 
-    const result = await installer.testLeanVersion(leanVersion);
-    if (result !== '4') {
-        // ah, then don't activate this extension!
-        return { isLean4Project: false };
+    if (!leanVersion){
+        void installer.showToolchainOptions();
+    }
+    else {
+        const result = await installer.testLeanVersion(leanVersion);
+        if (result !== '4') {
+            // ah, then don't activate this extension!
+            return { isLean4Project: false };
+        }
     }
 
     await Promise.all(workspace.textDocuments.map(async (doc) =>
@@ -61,9 +66,12 @@ export async function activate(context: ExtensionContext): Promise<any> {
         await installer.testLeanVersion(leanVersion);
         void client.restart()
     });
+
     pkgService.versionChanged((v) => installer.handleVersionChanged(v));
     client.serverFailed((err) => installer.showInstallOptions());
 
-    void client.start()
+    if (leanVersion) {
+        void client.start();
+    }
     return  { isLean4Project: true };
 }
