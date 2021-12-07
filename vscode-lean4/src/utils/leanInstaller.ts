@@ -28,7 +28,7 @@ export class LeanInstaller implements Disposable {
     async testLeanVersion(requestedVersion : string) : Promise<string> {
         const found = await this.checkLeanVersion(requestedVersion);
         if (found.error) {
-            if (found.error === 'no toolchain'){
+            if (found.error === 'no lean-toolchain') {
                 await this.showToolchainOptions()
             } else {
                 void window.showErrorMessage(found.error);

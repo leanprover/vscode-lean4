@@ -18,11 +18,13 @@ export async function activate(context: ExtensionContext): Promise<any> {
     const storageManager = new LocalStorageService(context.workspaceState);
     const pkgService = new LeanpkgService(storageManager)
     context.subscriptions.push(pkgService);
-    const leanVersion = await pkgService.findLeanPkgVersionInfo();
+    let leanVersion = await pkgService.findLeanPkgVersionInfo();
 
     const installer = new LeanInstaller(outputChannel, storageManager, pkgService)
     context.subscriptions.push(installer);
-
+    if (!leanVersion) {
+        leanVersion = storageManager.getLeanVersion();
+    }
     if (!leanVersion){
         void installer.showToolchainOptions();
     }
