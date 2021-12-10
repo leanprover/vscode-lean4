@@ -136,11 +136,8 @@ export class LeanInstaller implements Disposable {
             await window.withProgress({
                 location: ProgressLocation.Notification,
                 title: '',
-                cancellable: true
-            }, (progress, token) => {
-                token.onCancellationRequested(() => {
-                    // TODO: cancel long running lean installs?
-                });
+                cancellable: false
+            }, (progress) => {
                 const progressChannel : OutputChannel = {
                     name : 'ProgressChannel',
                     append(value: string)
