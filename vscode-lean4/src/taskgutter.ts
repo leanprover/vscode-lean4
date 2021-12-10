@@ -1,14 +1,15 @@
 import { Disposable, ExtensionContext, OverviewRulerLane, Range, TextEditorDecorationType, window } from 'vscode';
 import { LeanClient } from './leanclient';
+import { LeanFileProgressKind } from '@lean4/infoview';
 
 class LeanFileTaskGutter {
     private timeout?: NodeJS.Timeout
 
-    constructor(private uri: string, private decoration: TextEditorDecorationType, private decorationError: TextEditorDecorationType, private processed: [number, boolean] | undefined) {
+    constructor(private uri: string, private decorations: Map<LeanFileProgressKind, [TextEditorDecorationType, string]>, private processed: Map<LeanFileProgressKind, number> | undefined) {
         this.schedule(100)
     }
 
-    setProcessed(processed: [number, boolean] | undefined) {
+    setProcessed(processed: Map<LeanFileProgressKind, number> | undefined) {
         if (processed === this.processed) return;
         const oldProcessed = this.processed;
         this.processed = processed;
@@ -38,22 +39,21 @@ class LeanFileTaskGutter {
         for (const editor of window.visibleTextEditors) {
             if (editor.document.uri.toString() === this.uri) {
                 if (this.processed === undefined) {
-                    editor.setDecorations(this.decoration, []);
-                    editor.setDecorations(this.decorationError, []);
+                    for (const [decoration, _message] of this.decorations.values()) {
+                        editor.setDecorations(decoration, [])
+                    }
                 } else {
-                    const [line, error] = this.processed
-                    if (error) {
-                        editor.setDecorations(this.decoration, []);
-                        editor.setDecorations(this.decorationError, [{
-                            range: new Range(line, 0, editor.document.lineCount, 0),
-                            hoverMessage: 'processing stopped',
-                        }]);
-                    } else {
-                        editor.setDecorations(this.decorationError, []);
-                        editor.setDecorations(this.decoration, [{
-                            range: new Range(line, 0, editor.document.lineCount, 0),
-                            hoverMessage: 'busily processing...',
-                        }]);
+                    for (const [kind, [decoration, message]] of this.decorations) {
+                        if (this.processed.has(kind)) {
+                            const line = this.processed.get(kind)
+
+                            editor.setDecorations(decoration, [{
+                                range: new Range(line, 0, editor.document.lineCount, 0),
+                                hoverMessage: message
+                            }])
+                        } else {
+                            editor.setDecorations(decoration, [])
+                        }
                     }
                 }
             }
@@ -66,44 +66,57 @@ class LeanFileTaskGutter {
 }
 
 export class LeanTaskGutter implements Disposable {
-    private decoration: TextEditorDecorationType;
-    private decorationError: TextEditorDecorationType;
-    private status: { [uri: string]: [number, boolean] | undefined } = {};
+    private decorations: Map<LeanFileProgressKind, [TextEditorDecorationType, string]> = new Map<LeanFileProgressKind, [TextEditorDecorationType, string]>();
+    private status: { [uri: string]: Map<LeanFileProgressKind, number> | undefined } = {};
     private gutters: { [uri: string]: LeanFileTaskGutter | undefined } = {};
     private subscriptions: Disposable[] = [];
 
     constructor(client: LeanClient, context: ExtensionContext) {
-        this.decoration = window.createTextEditorDecorationType({
-            overviewRulerLane: OverviewRulerLane.Left,
-            overviewRulerColor: 'rgba(255, 165, 0, 0.5)',
-            dark: {
-                gutterIconPath: context.asAbsolutePath('media/progress-dark.svg'),
-            },
-            light: {
-                gutterIconPath: context.asAbsolutePath('media/progress-light.svg'),
-            },
-            gutterIconSize: 'contain',
-        });
-        this.decorationError = window.createTextEditorDecorationType({
-            overviewRulerLane: OverviewRulerLane.Left,
-            overviewRulerColor: 'rgba(255, 0, 0, 0.5)',
-            dark: {
-                gutterIconPath: context.asAbsolutePath('media/progress-error-dark.svg'),
-            },
-            light: {
-                gutterIconPath: context.asAbsolutePath('media/progress-error-light.svg'),
-            },
-            gutterIconSize: 'contain',
-        });
+        this.decorations.set(LeanFileProgressKind.Processing, [
+            window.createTextEditorDecorationType({
+                overviewRulerLane: OverviewRulerLane.Left,
+                overviewRulerColor: 'rgba(255, 165, 0, 0.5)',
+                dark: {
+                    gutterIconPath: context.asAbsolutePath('media/progress-dark.svg'),
+                },
+                light: {
+                    gutterIconPath: context.asAbsolutePath('media/progress-light.svg'),
+                },
+                gutterIconSize: 'contain',
+            }),
+            'busily processing...'
+        ])
+        this.decorations.set(LeanFileProgressKind.FatalError, [
+            window.createTextEditorDecorationType({
+                overviewRulerLane: OverviewRulerLane.Left,
+                overviewRulerColor: 'rgba(255, 0, 0, 0.5)',
+                dark: {
+                    gutterIconPath: context.asAbsolutePath('media/progress-error-dark.svg'),
+                },
+                light: {
+                    gutterIconPath: context.asAbsolutePath('media/progress-error-light.svg'),
+                },
+                gutterIconSize: 'contain',
+            }),
+            'processing stopped'
+        ])
 
         this.subscriptions.push(
             window.onDidChangeVisibleTextEditors(() => this.updateDecos()),
             client.progressChanged((progress) => {
                 for (const [uri, processing] of progress) {
-                    this.status[uri.toString()] = processing.length === 0 ? undefined : [
-                        Math.min(...processing.map(p => p.range.start.line)),
-                        processing.some((process) => process.error)
-                    ];
+                    if (processing.length === 0) {
+                        this.status[uri.toString()] = undefined
+                    } else {
+                        const newStatus = new Map<LeanFileProgressKind, number>()
+                        for (const kind of this.decorations.keys()) {
+                            const kindProcessing = processing.filter(p => (p.kind === undefined ? LeanFileProgressKind.Processing : p.kind) === kind)
+                            if (kindProcessing.length > 0) {
+                                newStatus.set(kind, Math.min(...kindProcessing.map(p => p.range.start.line)))
+                            }
+                        }
+                        this.status[uri.toString()] = newStatus
+                    }
                 }
                 this.updateDecos()
             }));
@@ -119,7 +132,7 @@ export class LeanTaskGutter implements Disposable {
             if (this.gutters[uri]) {
                 this.gutters[uri].setProcessed(processed)
             } else {
-                this.gutters[uri] = new LeanFileTaskGutter(uri, this.decoration, this.decorationError, processed)
+                this.gutters[uri] = new LeanFileTaskGutter(uri, this.decorations, processed)
             }
         }
         for (const uri of Object.getOwnPropertyNames(this.gutters)) {
@@ -131,7 +144,7 @@ export class LeanTaskGutter implements Disposable {
     }
 
     dispose(): void {
-        this.decoration.dispose();
+        for (const [decoration, _message] of this.decorations.values()) { decoration.dispose() }
         for (const s of this.subscriptions) { s.dispose(); }
     }
 }
