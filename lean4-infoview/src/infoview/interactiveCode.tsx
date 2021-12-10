@@ -148,6 +148,14 @@ const HoverableTypePopupSpan =
   return (
     <LazyTippy
       ref={ref}
+      // To avoid weird layout bugs where Chrome does not like a <div> popping up
+      // in the middle of a string of spans, even though the div is position:absolute, it is
+      // causing newlines to appear (bug https://github.com/leanprover/vscode-lean4/issues/51).
+      // Even though the default is appendTo='parent' that is not enough because
+      // InteractiveCode -> InteractiveCodeTag -> InteractiveCode is recursive, we end up
+      // with a string of nested spans, where the the Tippy div then shows up in one of those
+      // spans rather than the end of them all.  The guaranteed solution is to move those divs
+      // to the end of the document body where that can do no harm.
       appendTo= {() => document.body}
       onCreate={inst => tippyInstance.current = inst}
       content={
