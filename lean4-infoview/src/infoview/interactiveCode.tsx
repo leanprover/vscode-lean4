@@ -58,6 +58,14 @@ const LazyTippy = React.forwardRef<HTMLElement, TippyProps>((props, ref) => {
     computedProps.content = mounted ? props.content : undefined
   }
 
+  if (computedProps.appendTo == 'parent'){
+    // need to go some levels higher because we sometimes have nested spans and so parent is
+    // not enough to avoid weird layout bugs where Chrome does not like a <div> popping up
+    // in the middle of a string of spans, even though the div is position:absolute, it is
+    // causing newlines to appear (bug https://github.com/leanprover/vscode-lean4/issues/51)
+
+  }
+
   return <Tippy {...computedProps} ref={ref} />
 })
 
@@ -148,6 +156,7 @@ const HoverableTypePopupSpan =
   return (
     <LazyTippy
       ref={ref}
+      appendTo= {() => document.body}
       onCreate={inst => tippyInstance.current = inst}
       content={
         <TypePopupContents
@@ -164,7 +173,7 @@ const HoverableTypePopupSpan =
         }
       }}
       hideOnClick={false}
-      interactive
+      interactive={true}
       trigger='manual'
     >
       <span
