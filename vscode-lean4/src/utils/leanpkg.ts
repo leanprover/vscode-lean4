@@ -8,14 +8,14 @@ export class LeanpkgService implements Disposable {
     private leanVersionFile : Uri = null;
     private toolchainFileName : string = 'lean-toolchain'
     private tomlFileName : string = 'leanpkg.toml'
-    private defaultVersion = 'leanprover/lean4:nightly';
+    private defaultToolchain : string;
     private localStorage : LocalStorageService;
     private versionChangedEmitter = new EventEmitter<string>();
     versionChanged = this.versionChangedEmitter.event
 
-    constructor(localStorage : LocalStorageService) {
+    constructor(localStorage : LocalStorageService, defaultToolchain : string) {
         this.localStorage = localStorage;
-
+        this.defaultToolchain = defaultToolchain;
         // track changes in the version of lean specified in the .toml file...
         const watcher = workspace.createFileSystemWatcher('**/leanpkg.toml');
         watcher.onDidChange((u) => this.handleFileChanged(u));
@@ -117,19 +117,6 @@ export class LeanpkgService implements Disposable {
         for (const s of this.subscriptions) { s.dispose(); }
     }
 
-    async createLeanToolchain(version : String): Promise<Uri> {
-        await this.findLeanPkgVersionInfo();
-        if (this.leanVersionFile === null){
-            const uri = this.getWorkspaceLeanFolderUri()
-            if (uri) {
-                this.leanVersionFile = Uri.joinPath(uri, this.toolchainFileName);
-                const writer = fs.createWriteStream(new URL(this.leanVersionFile.toString()))
-                writer.write(version);
-            }
-        }
-        return this.leanVersionFile;
-    }
-
     private async handleFileChanged(uri: Uri) {
         if (!this.leanVersionFile){
             this.leanVersionFile = uri;
@@ -147,7 +134,7 @@ export class LeanpkgService implements Disposable {
             this.leanVersionFile = null;
             // user might be switching from leanpkg to lake...
             const version = await this.findLeanPkgVersionInfo();
-            this.versionChangedEmitter.fire(version ?? this.defaultVersion);
+            this.versionChangedEmitter.fire(version ?? this.defaultToolchain);
         }
     }
 
@@ -161,14 +148,14 @@ export class LeanpkgService implements Disposable {
                         if (err) {
                             reject(err);
                         } else {
-                            let version = this.defaultVersion;
+                            let version = this.defaultToolchain;
                             const match = /lean_version\s*=\s*"([^"]*)"/.exec(data.toString());
                             if (match) version = match[1];
                             resolve(version);
                         }
                     });
                 } else {
-                    resolve(this.defaultVersion);
+                    resolve(this.defaultToolchain);
                 }
             });
         } else {
@@ -180,12 +167,12 @@ export class LeanpkgService implements Disposable {
                         if (err) {
                             reject(err);
                         } else {
-                            const version = data.trim() ?? this.defaultVersion;
+                            const version = data.trim() ?? this.defaultToolchain;
                             resolve(version);
                         }
                     });
                 } else {
-                    resolve(this.defaultVersion);
+                    resolve(this.defaultToolchain);
                 }
             });
         }

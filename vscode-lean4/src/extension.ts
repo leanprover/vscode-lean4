@@ -8,25 +8,33 @@ import { LocalStorageService} from './utils/localStorage'
 import { LeanInstaller } from './utils/leanInstaller'
 import { LeanpkgService } from './utils/leanpkg';
 import { addDefaultElanPath } from './config';
-import { AbbreviationProvider } from './abbreviation/AbbreviationProvider'
 
 export async function activate(context: ExtensionContext): Promise<any> {
 
     addDefaultElanPath();
 
+    const defaultToolchain = 'leanprover/lean4:nightly';
     const outputChannel = window.createOutputChannel('Lean: Editor');
     const storageManager = new LocalStorageService(context.workspaceState);
-    const pkgService = new LeanpkgService(storageManager)
+    const pkgService = new LeanpkgService(storageManager, defaultToolchain)
     context.subscriptions.push(pkgService);
     let leanVersion = await pkgService.findLeanPkgVersionInfo();
 
-    const installer = new LeanInstaller(outputChannel, storageManager, pkgService)
+    const installer = new LeanInstaller(outputChannel, storageManager, pkgService, defaultToolchain)
     context.subscriptions.push(installer);
     if (!leanVersion) {
         leanVersion = storageManager.getLeanVersion();
     }
+
     if (!leanVersion){
-        void installer.showToolchainOptions();
+        const hasElan = await installer.hasElan();
+        if (!hasElan) {
+            // Ah, then we need to install elan and since we have no leanVersion
+            // we might as well install the default toolchain as well.
+            void installer.showInstallOptions(defaultToolchain);
+        } else {
+            void installer.showToolchainOptions();
+        }
     }
     else {
         const result = await installer.testLeanVersion(leanVersion);
@@ -70,7 +78,7 @@ export async function activate(context: ExtensionContext): Promise<any> {
     });
 
     pkgService.versionChanged((v) => installer.handleVersionChanged(v));
-    client.serverFailed((err) => installer.showInstallOptions());
+    client.serverFailed((err) => window.showErrorMessage(err));
 
     if (leanVersion) {
         void client.start();
