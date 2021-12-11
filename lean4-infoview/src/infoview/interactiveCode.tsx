@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { Instance as TippyInstance, Props as TippyRawProps } from 'tippy.js'
+import { Instance as TippyInstance, Props as TippyRawProps, Placement } from 'tippy.js'
 import 'tippy.js/dist/tippy.css'
 import 'tippy.js/themes/light-border.css'
 import { default as Tippy, TippyProps } from '@tippyjs/react'
@@ -61,6 +61,8 @@ const LazyTippy = React.forwardRef<HTMLElement, TippyProps>((props, ref) => {
   return <Tippy {...computedProps} ref={ref} />
 })
 
+let globalPlacement : Placement = 'top';
+
 /** Shows `explicitValue : itsType` and a docstring if there is one. */
 function TypePopupContents({pos, info, redrawTooltip}: {pos: DocumentPosition, info: InfoWithCtx, redrawTooltip: () => void}) {
   const rs = React.useContext(RpcContext)
@@ -115,7 +117,8 @@ const HoverableTypePopupSpan =
   const timeout = React.useRef<number>()
   const [stick, setStick] = React.useState<boolean>(false)
   const [isInside, setIsInside] = React.useState<boolean>(false)
-  const delay = 500
+  const showDelay = 250
+  const hideDelay = 500
   tippyInstance.current?.popperInstance?.update()
 
   const onPointerOver = (e: React.PointerEvent<HTMLSpanElement>) => {
@@ -123,9 +126,11 @@ const HoverableTypePopupSpan =
     setIsInside(true)
     if (timeout.current) window.clearTimeout(timeout.current)
     timeout.current = window.setTimeout(() => {
-      if (tippyInstance.current)
+      if (tippyInstance.current) {
+        tippyInstance.current.setProps({placement: globalPlacement});
         tippyInstance.current.show()
-    }, delay)
+      }
+    }, showDelay)
   }
   const onPointerOut = (e: React.PointerEvent<HTMLSpanElement>) => {
     e.stopPropagation()
@@ -133,9 +138,10 @@ const HoverableTypePopupSpan =
     if (stick) return
     if (timeout.current) window.clearTimeout(timeout.current)
     timeout.current = window.setTimeout(() => {
-      if (tippyInstance.current)
+      if (tippyInstance.current) {
         tippyInstance.current.hideWithInteractivity(e.nativeEvent)
-    }, delay)
+      }
+    }, hideDelay)
   }
 
   const onClick = (e: React.MouseEvent<HTMLSpanElement>) => {
@@ -143,6 +149,15 @@ const HoverableTypePopupSpan =
     setStick(true)
     if (tippyInstance.current)
       tippyInstance.current.show()
+  }
+
+  const insideTip = (e : Event) => {
+    // Don't hide the tips if the mouse click is inside another tip!
+    var span : any = e.target;
+    if (span._tippy) {
+      return true;
+    }
+    return false;
   }
 
   return (
@@ -158,6 +173,17 @@ const HoverableTypePopupSpan =
       // to the end of the document body where that can do no harm.
       appendTo= {() => document.body}
       onCreate={inst => tippyInstance.current = inst}
+      onShown={inst => {
+        if (inst.popperInstance) {
+          // remember the global trend in placement so it can bounce of the top and continue
+          // downwards or vice versa.
+          globalPlacement = inst.popperInstance.state.placement;
+        }
+      }}
+      onDestroy={inst => {
+        // this stops a bunch of errors from happening warning we are working on a disposed instance.
+        tippyInstance.current = undefined;
+      }}
       content={
         <TypePopupContents
           redrawTooltip={() => {
@@ -166,8 +192,8 @@ const HoverableTypePopupSpan =
           {...props}
         />}
 
-      onClickOutside={() => {
-        if (tippyInstance.current && !isInside) {
+      onClickOutside={(instance, e) => {
+        if (tippyInstance.current && !isInside && !insideTip(e)) {
           tippyInstance.current.hide()
           setStick(false)
         }
