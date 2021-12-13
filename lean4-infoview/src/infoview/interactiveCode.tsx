@@ -162,7 +162,7 @@ const HoverableTypePopupSpan =
   return (
     <LazyTippy
       ref={ref}
-      // To avoid weird layout bugs where Chrome does not like a <div> popping up
+      // To avoid weird layout issues where the browser does not like a <div> popping up
       // in the middle of a string of spans, even though the div is position:absolute, it is
       // causing newlines to appear (bug https://github.com/leanprover/vscode-lean4/issues/51).
       // Even though the default is appendTo='parent' that is not enough because
