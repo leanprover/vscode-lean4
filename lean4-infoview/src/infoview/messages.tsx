@@ -2,7 +2,7 @@ import * as React from 'react';
 import fastIsEqual from 'react-fast-compare';
 import { Location, DocumentUri, Diagnostic, DiagnosticSeverity, PublishDiagnosticsParams } from 'vscode-languageserver-protocol';
 
-import { basename, escapeHtml, RangeHelpers, usePausableState, useEvent, addUniqueKeys, DocumentPosition, useServerNotificationState, PlacementStrategy } from './util';
+import { basename, escapeHtml, RangeHelpers, usePausableState, useEvent, addUniqueKeys, DocumentPosition, useServerNotificationState, TipChainState } from './util';
 import { ConfigContext, EditorContext, LspDiagnosticsContext, RpcContext, VersionContext } from './contexts';
 import { Details } from './collapsing';
 import { InteractiveMessage } from './traceExplorer';
@@ -44,7 +44,7 @@ const MessageView = React.memo(({uri, diag}: MessageViewProps) => {
         </summary>
         <div className="ml1">
             <pre className="font-code" style={{whiteSpace: 'pre-wrap'}}>
-                <InteractiveMessage pos={{uri: loc.uri, line: loc.range.start.line, character: loc.range.start.character}} fmt={diag.message} placement={new PlacementStrategy()}/>
+                <InteractiveMessage pos={{uri: loc.uri, line: loc.range.start.line, character: loc.range.start.character}} fmt={diag.message} state={new TipChainState()}/>
             </pre>
         </div>
     </details>

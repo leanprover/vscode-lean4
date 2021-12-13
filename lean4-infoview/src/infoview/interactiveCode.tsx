@@ -5,13 +5,13 @@ import 'tippy.js/themes/light-border.css'
 import { default as Tippy, TippyProps } from '@tippyjs/react'
 
 import { RpcContext } from "./contexts"
-import { DocumentPosition, PlacementStrategy } from './util'
+import { DocumentPosition, TipChainState } from './util'
 import { CodeToken, CodeWithInfos, InfoPopup, InfoWithCtx, InteractiveDiagnostics_infoToInteractive, TaggedText } from './rpcInterface'
 
 export interface InteractiveTextComponentProps<T> {
   pos: DocumentPosition
   fmt: TaggedText<T>
-  placement: PlacementStrategy
+  state: TipChainState
 }
 
 export interface InteractiveTagProps<T> extends InteractiveTextComponentProps<T> {
@@ -26,12 +26,12 @@ export interface InteractiveTaggedTextProps<T> extends InteractiveTextComponentP
  * Core loop to display `TaggedText` objects. Invokes `InnerTagUi` on `tag` nodes in order to support
  * various embedded information such as `InfoTree`s and `Expr`s.
  * */
-export function InteractiveTaggedText<T>({pos, fmt, placement, InnerTagUi}: InteractiveTaggedTextProps<T>) {
+export function InteractiveTaggedText<T>({pos, fmt, state, InnerTagUi}: InteractiveTaggedTextProps<T>) {
   if ('text' in fmt) return <>{fmt.text}</>
   else if ('append' in fmt) return <>
-    {fmt.append.map((a, i) => <InteractiveTaggedText key={i} pos={pos} fmt={a} placement={placement} InnerTagUi={InnerTagUi} />)}
+    {fmt.append.map((a, i) => <InteractiveTaggedText key={i} pos={pos} fmt={a} state={state} InnerTagUi={InnerTagUi} />)}
   </>
-  else if ('tag' in fmt) return <InnerTagUi pos={pos} fmt={fmt.tag[1]} tag={fmt.tag[0]} placement={placement} />
+  else if ('tag' in fmt) return <InnerTagUi pos={pos} fmt={fmt.tag[1]} tag={fmt.tag[0]} state={state} />
   else throw `malformed 'TaggedText': '${fmt}'`
 }
 
@@ -63,7 +63,7 @@ const LazyTippy = React.forwardRef<HTMLElement, TippyProps>((props, ref) => {
 })
 
 /** Shows `explicitValue : itsType` and a docstring if there is one. */
-function TypePopupContents({pos, info, placement, redrawTooltip}: {pos: DocumentPosition, info: InfoWithCtx, placement: PlacementStrategy, redrawTooltip: () => void}) {
+function TypePopupContents({pos, info, state, redrawTooltip}: {pos: DocumentPosition, info: InfoWithCtx, state: TipChainState, redrawTooltip: () => void}) {
   const rs = React.useContext(RpcContext)
   // When `err` is defined we show the error,
   // otherwise if `ip` is defined we show its contents,
@@ -93,7 +93,7 @@ function TypePopupContents({pos, info, placement, redrawTooltip}: {pos: Document
 
   if (ip) {
     return <>
-      {ip.exprExplicit && <InteractiveCode pos={pos} fmt={ip.exprExplicit} placement={placement}/>} : {ip.type && <InteractiveCode pos={pos} fmt={ip.type} placement={placement}/>}
+      {ip.exprExplicit && <InteractiveCode pos={pos} fmt={ip.exprExplicit} state={state}/>} : {ip.type && <InteractiveCode pos={pos} fmt={ip.type} state={state}/>}
       {ip.doc && <hr />}
       {ip.doc && ip.doc} {/* TODO markdown */}
     </>
@@ -110,44 +110,36 @@ function TypePopupContents({pos, info, placement, redrawTooltip}: {pos: Document
  */
 const HoverableTypePopupSpan =
   React.forwardRef<HTMLSpanElement, React.HTMLProps<HTMLSpanElement>
-                                    & {pos: DocumentPosition, placement: PlacementStrategy, info: InfoWithCtx}>((props, ref) => {
+                                    & {pos: DocumentPosition, state: TipChainState, info: InfoWithCtx}>((props, ref) => {
   // HACK: We store the raw Tippy.js instance in order to be able to call `hideWithInteractivity`
   const tippyInstance = React.useRef<TippyInstance<TippyRawProps>>()
-  const timeout = React.useRef<number>()
   const [stick, setStick] = React.useState<boolean>(false)
   const [isInside, setIsInside] = React.useState<boolean>(false)
-  const showDelay = 250
+  const showDelay = 500
   const hideDelay = 500
   tippyInstance.current?.popperInstance?.update()
 
   const onPointerOver = (e: React.PointerEvent<HTMLSpanElement>) => {
     e.stopPropagation()
     setIsInside(true)
-    if (timeout.current) window.clearTimeout(timeout.current)
-    timeout.current = window.setTimeout(() => {
-      if (tippyInstance.current) {
-        tippyInstance.current.setProps({placement: props.placement.placement as Placement});
-        tippyInstance.current.show()
-      }
+    tippyInstance.current?.setProps({placement: props.state.placement as Placement});
+    props.state.setTimeout(() => {
+      tippyInstance.current?.show()
     }, showDelay)
   }
   const onPointerOut = (e: React.PointerEvent<HTMLSpanElement>) => {
     e.stopPropagation()
     setIsInside(false)
     if (stick) return
-    if (timeout.current) window.clearTimeout(timeout.current)
-    timeout.current = window.setTimeout(() => {
-      if (tippyInstance.current) {
-        tippyInstance.current.hideWithInteractivity(e.nativeEvent)
-      }
+    props.state.setTimeout(() => {
+      tippyInstance.current?.hideWithInteractivity(e.nativeEvent)
     }, hideDelay)
   }
 
   const onClick = (e: React.MouseEvent<HTMLSpanElement>) => {
     e.stopPropagation()
     setStick(true)
-    if (tippyInstance.current)
-      tippyInstance.current.show()
+    tippyInstance.current?.show()
   }
 
   const insideTip = (e : Event) => {
@@ -174,9 +166,9 @@ const HoverableTypePopupSpan =
       onCreate={inst => tippyInstance.current = inst}
       onShown={inst => {
         if (inst.popperInstance) {
-          // remember the global trend in placement so it can bounce of the top and continue
+          // remember the global trend in placement so it can bounce off the top and continue
           // downwards or vice versa.
-          props.placement.placement = inst.popperInstance.state.placement;
+          props.state.placement = inst.popperInstance.state.placement;
         }
       }}
       onDestroy={inst => {
@@ -193,7 +185,7 @@ const HoverableTypePopupSpan =
 
       onClickOutside={(instance, e) => {
         if (tippyInstance.current && !isInside && !insideTip(e)) {
-          tippyInstance.current.hide()
+          tippyInstance.current?.hide()
           setStick(false)
         }
       }}
@@ -215,13 +207,13 @@ const HoverableTypePopupSpan =
 })
 
 /** Tags in code represent values which can be hovered over to display extra info. */
-function InteractiveCodeTag({pos, tag: ct, placement, fmt}: InteractiveTagProps<CodeToken>) {
+function InteractiveCodeTag({pos, tag: ct, state, fmt}: InteractiveTagProps<CodeToken>) {
   return (
-    <HoverableTypePopupSpan pos={pos} info={ct.info} placement={placement}>
-      <InteractiveCode pos={pos} fmt={fmt} placement={placement}/>
+    <HoverableTypePopupSpan pos={pos} info={ct.info} state={state}>
+      <InteractiveCode pos={pos} fmt={fmt} state={state}/>
     </HoverableTypePopupSpan>)
 }
 
-export function InteractiveCode({pos, fmt, placement}: {pos: DocumentPosition, fmt: CodeWithInfos, placement: PlacementStrategy}) {
-  return InteractiveTaggedText({pos, fmt, placement, InnerTagUi: InteractiveCodeTag})
+export function InteractiveCode({pos, fmt, state}: {pos: DocumentPosition, fmt: CodeWithInfos, state: TipChainState}) {
+  return InteractiveTaggedText({pos, fmt, state, InnerTagUi: InteractiveCodeTag})
 }
