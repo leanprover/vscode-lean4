@@ -11,6 +11,7 @@ export class LeanpkgService implements Disposable {
     private defaultVersion = 'leanprover/lean4:nightly';
     private localStorage : LocalStorageService;
     private versionChangedEmitter = new EventEmitter<string>();
+    private currentVersion : string = null;
     versionChanged = this.versionChangedEmitter.event
 
     constructor(localStorage : LocalStorageService) {
@@ -123,9 +124,12 @@ export class LeanpkgService implements Disposable {
         }
         if (uri.toString() === this.leanVersionFile.toString()) {
             const version = await this.readLeanVersion();
-            this.localStorage.setLeanVersion('');
-            // raise an event so the extension triggers handleVersionChanged.
-            this.versionChangedEmitter.fire(version);
+            if (version !== this.currentVersion){
+                this.currentVersion = version;
+                this.localStorage.setLeanVersion('');
+                // raise an event so the extension triggers handleVersionChanged.
+                this.versionChangedEmitter.fire(version);
+            }
         }
     }
 

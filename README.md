@@ -6,8 +6,21 @@ implemented in Lean.
 
 ## Installing the extension and Lean 4
 1. Install the extension from the [marketplace](https://marketplace.visualstudio.com/items?itemName=leanprover.lean4).
-1. Open a folder containing Lean code (files with the `.lean` extension) using VS Code.  It is recommended that you open a folder that is configured using [Lake](https://github.com/leanprover/lake) which is a Lean package configuration tool.
-1. Open a Lean source file and type in `#eval 1`. The extension should display a blue underline below `#eval`. Upon hovering over it, a hover panel reporting the result of the evaluation should pop up. When hovering over the `1`, a hover panel displaying the type of `1` should pop up saying `1 : Nat` meaning 1 is a Natural number.
+1. Create a new folder called `foo` and add a file named `hello.lean`
+containing the following:
+
+    ```lean
+    import Lake
+    #eval Lake.leanVersionString
+    ```
+
+    and a file named `lean-toolchain` containing just this:
+
+    ```
+    leanprover/lean4:nightly
+    ```
+1. Open this folder in VS Code using `File/Open Folder`.
+1. Open your file `hello.lean`.
 1. If `Lean` is not yet installed on your system you will see a prompt like this:
 
     ![prompt](vscode-lean4/media/install-elan.png)
@@ -24,7 +37,23 @@ and you should see something like this in the `Lean: Editor` output panel:
 1. This version of the VS Code extension only works on Lean 4 source files and not
 Lean 3.  There is a separate VS Code extension for Lean 3.  You can have both extensions installed at the same time, they can live side by side.
 
-Note that once `elan` is installed you can also create a Lean 4 project using [leanpkg](https://leanprover.github.io/lean4/doc/setup.html#leanpkg) or [Lake](https://github.com/leanprover/lake/blob/master/README.md).  The VS code extension will honor the Lean version specified in your `leanpkg.toml` or `lean-toolchain` files.
+## Lake integration
+
+Note that once the Lean toolchain is installed you can also turn your folder into a [Lake](https://github.com/leanprover/lake/blob/master/README.md) project.  Lake is a build system
+for Lean projects.  The VS code extension will honor the Lean version specified in your `lean-toolchain` file.
+
+Open a VS Code Terminal window in your `foo` folder
+and type the following:
+
+```
+lake init foo
+lake build
+```
+This will add some package definition files to your project along with a `Main.lean` entry point and build an executable
+program.  You can run the program `./build/bin/foo` and you will see the expected output:
+```
+Hello, world!
+```
 
 ## Features
 

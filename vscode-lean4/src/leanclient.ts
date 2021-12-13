@@ -125,6 +125,7 @@ export class LeanClient implements Disposable {
             }
         }
         const clientOptions: LanguageClientOptions = {
+            outputChannel: this.outputChannel,
             documentSelector: [documentSelector],
             initializationOptions: {
                 editDelay: getElaborationDelay(),
