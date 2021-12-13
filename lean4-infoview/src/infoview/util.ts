@@ -210,13 +210,11 @@ export class TipChainState {
   }
 
   public clearTimeout() : void {
-    console.log("clearTimeout")
     if (this._timeout) window.clearTimeout(this._timeout)
     this._timeout = 0;
   }
 
   public setTimeout(handler: Function, delay: number) : void {
-    console.log("setTimeout")
     this.clearTimeout();
     this._handlers.push(handler);
     var realThis = this;
@@ -224,7 +222,6 @@ export class TipChainState {
   }
 
   private fireHandlers() {
-    console.log("fireHandlers")
     this._handlers.forEach(h => h());
     this._handlers = [];
   }
