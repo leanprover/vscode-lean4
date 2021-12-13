@@ -12,7 +12,7 @@ import { RpcContext } from './contexts'
 import { Goal } from './goals'
 import { InteractiveCode, InteractiveTaggedText, InteractiveTagProps, InteractiveTextComponentProps } from './interactiveCode'
 import { InteractiveDiagnostics_msgToInteractive, MessageData, MsgEmbed, TaggedText } from './rpcInterface'
-import { DocumentPosition, PlacementStrategy } from './util'
+import { DocumentPosition, TipChainState } from './util'
 
 function CollapsibleTrace({pos, col, cls, msg}: {pos: DocumentPosition, col: number, cls: string, msg: MessageData}) {
     const rs = React.useContext(RpcContext)
@@ -26,7 +26,7 @@ function CollapsibleTrace({pos, col, cls, msg}: {pos: DocumentPosition, col: num
                     setTt(undefined)
                     ev.stopPropagation()
                 }}>[{cls.slice(1)}] ∨</span>
-            <InteractiveMessage pos={pos} fmt={tt} placement={new PlacementStrategy()}/>
+            <InteractiveMessage pos={pos} fmt={tt} state={new TipChainState()}/>
         </>
     } else {
         inner =
@@ -39,9 +39,9 @@ function CollapsibleTrace({pos, col, cls, msg}: {pos: DocumentPosition, col: num
     return inner
 }
 
-function InteractiveMessageTag({pos, tag: embed, placement, fmt}: InteractiveTagProps<MsgEmbed>): JSX.Element {
+function InteractiveMessageTag({pos, tag: embed, state, fmt}: InteractiveTagProps<MsgEmbed>): JSX.Element {
     if ('expr' in embed)
-        return <InteractiveCode pos={pos} fmt={embed.expr} placement={placement}/>
+        return <InteractiveCode pos={pos} fmt={embed.expr} state={state}/>
     else if ('goal' in embed)
         return <Goal pos={pos} goal={embed.goal} />
     else if ('lazyTrace' in embed)
@@ -50,6 +50,6 @@ function InteractiveMessageTag({pos, tag: embed, placement, fmt}: InteractiveTag
         throw new Error(`malformed 'MsgEmbed': '${embed}'`)
 }
 
-export function InteractiveMessage({pos, fmt, placement}: InteractiveTextComponentProps<MsgEmbed>) {
-    return InteractiveTaggedText({pos, fmt, placement, InnerTagUi: InteractiveMessageTag})
+export function InteractiveMessage({pos, fmt, state}: InteractiveTextComponentProps<MsgEmbed>) {
+    return InteractiveTaggedText({pos, fmt, state, InnerTagUi: InteractiveMessageTag})
 }

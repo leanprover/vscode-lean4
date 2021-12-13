@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { DocumentPosition, PlacementStrategy } from './util'
+import { DocumentPosition, TipChainState } from './util'
 import { ConfigContext } from './contexts'
 import { InteractiveCode } from './interactiveCode'
 import { InteractiveGoal, InteractiveGoals, TaggedText, TaggedText_stripTags } from './rpcInterface'
@@ -40,11 +40,11 @@ export function Goal({pos, goal}: {pos: DocumentPosition, goal: InteractiveGoal}
             {goal.hyps.map ((h, i) => {
                 const names = h.names.reduce((acc, n) => acc + ' ' + n, '').slice(1)
                 return <li key={`hyp-${i}`}>
-                    <strong className="goal-hyp">{names}</strong> : <InteractiveCode pos={pos} fmt={h.type} placement={new PlacementStrategy()}/>{h.val && <> := <InteractiveCode pos={pos} fmt={h.val} placement={new PlacementStrategy()}/></>}
+                    <strong className="goal-hyp">{names}</strong> : <InteractiveCode pos={pos} fmt={h.type} state={new TipChainState()}/>{h.val && <> := <InteractiveCode pos={pos} fmt={h.val} state={new TipChainState()}/></>}
                 </li>
             })}
             <li key={'goal'}>
-                <strong className="goal-vdash">⊢ </strong><InteractiveCode pos={pos} fmt={goal.type} placement={new PlacementStrategy()} />
+                <strong className="goal-vdash">⊢ </strong><InteractiveCode pos={pos} fmt={goal.type} state={new TipChainState()} />
             </li>
         </ul>
     </div>

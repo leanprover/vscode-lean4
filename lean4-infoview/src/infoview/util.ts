@@ -191,11 +191,13 @@ export function addUniqueKeys<T>(elems: T[], getId: (el: T) => string): Keyed<T>
 }
 
 
-export class PlacementStrategy {
+export class TipChainState {
   private _placement: string;
+  private _timeout: number;
 
   public constructor() {
     this._placement = 'top';
+    this._timeout = 0;
   }
 
   public get placement() {
@@ -204,5 +206,15 @@ export class PlacementStrategy {
 
   public set placement(placement: string) {
     this._placement = placement;
+  }
+
+  public clearTimeout() : void {
+    if (this._timeout) window.clearTimeout(this._timeout)
+    this._timeout = 0;
+  }
+
+  public setTimeout(handler: TimerHandler, delay: number) : void {
+    this.clearTimeout();
+    this._timeout = window.setTimeout(handler, delay);
   }
 }
