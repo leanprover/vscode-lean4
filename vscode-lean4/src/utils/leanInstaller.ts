@@ -1,4 +1,4 @@
-import { window, workspace, TerminalOptions, OutputChannel, commands, Disposable, EventEmitter } from 'vscode'
+import { window, TerminalOptions, OutputChannel, commands, Disposable, EventEmitter, ProgressLocation } from 'vscode'
 import { executablePath, addServerEnvPaths } from '../config'
 import { batchExecute } from './batch'
 import { LocalStorageService} from './localStorage'
@@ -131,8 +131,36 @@ export class LeanInstaller implements Disposable {
             // Specifically, if the extension was not opened inside of a folder, it
             // looks for a global (default) installation of Lean. This way, we can support
             // single file editing.
-            this.outputChannel.show(true);
-            const stdout = await batchExecute(cmd, options, folderPath, this.outputChannel)
+            let stdout = '';
+            let inc = 0;
+            await window.withProgress({
+                location: ProgressLocation.Notification,
+                title: '',
+                cancellable: false
+            }, (progress) => {
+                const progressChannel : OutputChannel = {
+                    name : 'ProgressChannel',
+                    append(value: string)
+                    {
+                        stdout += value;
+                        console.log(inc + ': ' + value);
+                        if (inc < 100) {
+                            inc += 10;
+                        }
+                        progress.report({ increment: inc, message: value });
+                    },
+                    appendLine(value: string) {
+                        this.append(value + '\n');
+                    },
+                    clear() { /* empty */ },
+                    show() { /* empty */ },
+                    hide() { /* empty */ },
+                    dispose() { /* empty */ }
+                }
+                progress.report({increment:0, message: 'Checking Lean setup...'});
+                return batchExecute(cmd, options, folderPath, progressChannel);
+            });
+
             const filterVersion = /version (\d+)\.\d+\..+/
             const match = filterVersion.exec(stdout)
             if (!match) {
@@ -181,11 +209,9 @@ export class LeanInstaller implements Disposable {
     }
 
     async installElan() : Promise<boolean> {
-
         if (executablePath() !== 'lean') {
-            this.outputChannel.show(true);
-            this.outputChannel.appendLine('It looks like you\'ve modified the `lean.executablePath` user setting.');
-            this.outputChannel.appendLine('Please change it back to \'lean\' before installing elan.');
+            void window.showErrorMessage('It looks like you\'ve modified the `lean.executablePath` user setting.' +
+                                         'Please change it back to \'lean\' before installing elan.');
             return false;
         } else {
             const terminalName = 'Lean installation via elan';
@@ -193,9 +219,8 @@ export class LeanInstaller implements Disposable {
             let elanInstalled = false;
             // See if we have elan already.
             try {
-                this.outputChannel.show(true);
                 const options = ['--version']
-                const stdout = await batchExecute('elan', options, undefined, this.outputChannel);
+                const stdout = await batchExecute('elan', options, undefined, null);
                 const filterVersion = /elan (\d+)\.\d+\..+/
                 const match = filterVersion.exec(stdout)
                 if (match) {
