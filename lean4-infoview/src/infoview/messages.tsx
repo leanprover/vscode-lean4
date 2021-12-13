@@ -4,7 +4,7 @@ import { Location, DocumentUri, Diagnostic, DiagnosticSeverity, PublishDiagnosti
 
 import { LeanDiagnostic } from '@lean4/infoview-api';
 
-import { basename, escapeHtml, RangeHelpers, usePausableState, useEvent, addUniqueKeys, DocumentPosition, useServerNotificationState } from './util';
+import { basename, escapeHtml, RangeHelpers, usePausableState, useEvent, addUniqueKeys, DocumentPosition, useServerNotificationState, PlacementStrategy } from './util';
 import { ConfigContext, EditorContext, LspDiagnosticsContext, RpcContext, VersionContext } from './contexts';
 import { Details } from './collapsing';
 import { InteractiveMessage } from './traceExplorer';
@@ -45,7 +45,7 @@ const MessageView = React.memo(({uri, diag}: MessageViewProps) => {
         </summary>
         <div className="ml1">
             <pre className="font-code" style={{whiteSpace: 'pre-wrap'}}>
-                <InteractiveMessage pos={{uri: loc.uri, line: loc.range.start.line, character: loc.range.start.character}} fmt={diag.message} />
+                <InteractiveMessage pos={{uri: loc.uri, line: loc.range.start.line, character: loc.range.start.character}} fmt={diag.message} placement={new PlacementStrategy()}/>
             </pre>
         </div>
     </details>

@@ -187,3 +187,20 @@ export function addUniqueKeys<T>(elems: T[], getId: (el: T) => string): Keyed<T>
         return { key: `${id}:${keys[id]}`, ...el }
     });
 }
+
+
+export class PlacementStrategy {
+  private _placement: string;
+
+	public constructor() {
+		this._placement = 'top';
+	}
+
+	public get placement() {
+		return this._placement;
+	}
+
+  public set placement(placement: string) {
+    this._placement = placement;
+  }
+}
