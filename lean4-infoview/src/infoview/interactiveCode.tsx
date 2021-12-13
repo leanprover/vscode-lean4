@@ -113,6 +113,7 @@ const HoverableTypePopupSpan =
                                     & {pos: DocumentPosition, state: TipChainState, info: InfoWithCtx}>((props, ref) => {
   // HACK: We store the raw Tippy.js instance in order to be able to call `hideWithInteractivity`
   const tippyInstance = React.useRef<TippyInstance<TippyRawProps>>()
+  const timeout = React.useRef<number>()  // for delaying this popup
   const [stick, setStick] = React.useState<boolean>(false)
   const [isInside, setIsInside] = React.useState<boolean>(false)
   const showDelay = 500
@@ -123,7 +124,9 @@ const HoverableTypePopupSpan =
     e.stopPropagation()
     setIsInside(true)
     tippyInstance.current?.setProps({placement: props.state.placement as Placement});
-    props.state.setTimeout(() => {
+    props.state.clearTimeout();  // cancel hiding of the chain of related popups
+    // and delay the opening of this popup.
+    timeout.current = window.setTimeout(() => {
       tippyInstance.current?.show()
     }, showDelay)
   }
@@ -131,8 +134,14 @@ const HoverableTypePopupSpan =
     e.stopPropagation()
     setIsInside(false)
     if (stick) return
+    if (timeout.current) {
+      // cancel this popup then since user is no longer interested.
+      window.clearTimeout(timeout.current)
+      timeout.current = 0
+    }
+    // and hide all the other popups in this chain.
     props.state.setTimeout(() => {
-      tippyInstance.current?.hideWithInteractivity(e.nativeEvent)
+      tippyInstance.current?.hide()
     }, hideDelay)
   }
 

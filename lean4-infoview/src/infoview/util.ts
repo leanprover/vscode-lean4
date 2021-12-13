@@ -194,6 +194,7 @@ export function addUniqueKeys<T>(elems: T[], getId: (el: T) => string): Keyed<T>
 export class TipChainState {
   private _placement: string;
   private _timeout: number;
+  private _handlers: Function[] = [];
 
   public constructor() {
     this._placement = 'top';
@@ -209,12 +210,22 @@ export class TipChainState {
   }
 
   public clearTimeout() : void {
+    console.log("clearTimeout")
     if (this._timeout) window.clearTimeout(this._timeout)
     this._timeout = 0;
   }
 
-  public setTimeout(handler: TimerHandler, delay: number) : void {
+  public setTimeout(handler: Function, delay: number) : void {
+    console.log("setTimeout")
     this.clearTimeout();
-    this._timeout = window.setTimeout(handler, delay);
+    this._handlers.push(handler);
+    var realThis = this;
+    this._timeout = window.setTimeout(() => realThis.fireHandlers(), delay);
+  }
+
+  private fireHandlers() {
+    console.log("fireHandlers")
+    this._handlers.forEach(h => h());
+    this._handlers = [];
   }
 }
