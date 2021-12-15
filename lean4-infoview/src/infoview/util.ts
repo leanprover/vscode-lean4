@@ -190,16 +190,38 @@ export function addUniqueKeys<T>(elems: T[], getId: (el: T) => string): Keyed<T>
   });
 }
 
+class TipChainItem {
+  public id: number;
+  public handler: Function | undefined;
+
+  public constructor(id: number, handler:Function) {
+    this.id = id;
+    this.handler = handler;
+  }
+
+  public hide(){
+    if (this.handler){
+      this.handler();
+      this.handler = undefined;
+    }
+  }
+}
+
+let nextId = 0;
 
 export class TipChainState {
   private _placement: string;
   private _timeout: number;
-  private _handlers: Function[] = [];
+  private _handlers: TipChainItem[] = [];
+  private _chainId: number;
 
   public constructor() {
     this._placement = 'top';
     this._timeout = 0;
+    this._chainId = nextId++;
   }
+
+  public get chainId() { return this._chainId;}
 
   public get placement() {
     return this._placement;
@@ -209,20 +231,80 @@ export class TipChainState {
     this._placement = placement;
   }
 
+  public getParentId() : number | undefined {
+    if (this._handlers.length > 0){
+      return this._handlers[this._handlers.length - 1].id;
+    }
+    return undefined;
+  }
+
   public clearTimeout() : void {
     if (this._timeout) window.clearTimeout(this._timeout)
     this._timeout = 0;
   }
 
-  public setTimeout(handler: Function, delay: number) : void {
+  public show(parentId: number | undefined, id: number, showHandler: Function, hideHandler: Function, delay: number){
     this.clearTimeout();
-    this._handlers.push(handler);
     var realThis = this;
-    this._timeout = window.setTimeout(() => realThis.fireHandlers(), delay);
+    this._timeout = window.setTimeout(() => {
+      realThis.pushTail(parentId, id, showHandler, hideHandler);
+    }, delay);
   }
 
-  private fireHandlers() {
-    this._handlers.forEach(h => h());
+  private pushTail(parentId: number | undefined, id: number, showHandler: Function, hideHandler: Function){
+    showHandler();
+    if (parentId) this.hideChildren(parentId, false);
+    this._handlers.push(new TipChainItem(id, hideHandler));
+    this.printNames('pushed new item ' + id + ' with parent ' + parentId + '.  Chain: ', this._handlers)
+  }
+
+  private printNames(prompt: string, chain: TipChainItem[]){
+    let names : number[] = []
+    chain.forEach(i => names.push(i.id))
+    console.log(prompt + names)
+  }
+
+  private hideChildren(id: number, included: boolean){
+    let found : number = -1;
+    let remainder : number[] = [];
+    for (let i = 0; i < this._handlers.length; i++){
+      const item = this._handlers[i];
+      remainder.push(item.id);
+      if (item.id === id) {
+        found = i;
+        if (!included){
+          found++;
+        }
+        break;
+      }
+    }
+    console.log('hideChildren under ' + id + ' leaves chain: ' + remainder);
+    if (found > 0) {
+      const tail = this._handlers.splice(found, this._handlers.length - found);
+      this.hideChain(tail);
+    }
+  }
+
+  private hideChain(chain: TipChainItem[]){
+    this.printNames('hiding children: ', chain);
+    chain.forEach(i => {if (i.handler) i.handler()})
+  }
+
+  public hideChild(id: number, delay: number) : void {
+    this.clearTimeout();
+    var realThis = this;
+    this._timeout = window.setTimeout(() => realThis.hideChildren(id, true), delay);
+  }
+
+  public hideAll(id: number, delay: number) : void {
+    this.clearTimeout();
+    var realThis = this;
+    this._timeout = window.setTimeout(() => realThis.clear(), delay);
+  }
+
+  private clear() {
+    console.log("hiding entire chain " + this._chainId)
+    this.hideChain(this._handlers)
     this._handlers = [];
   }
 }
