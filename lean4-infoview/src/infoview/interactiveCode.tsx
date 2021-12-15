@@ -111,38 +111,43 @@ function TypePopupContents({pos, info, state, redrawTooltip}: {pos: DocumentPosi
 const HoverableTypePopupSpan =
   React.forwardRef<HTMLSpanElement, React.HTMLProps<HTMLSpanElement>
                                     & {pos: DocumentPosition, state: TipChainState, info: InfoWithCtx}>((props, ref) => {
-  // HACK: We store the raw Tippy.js instance in order to be able to call `hideWithInteractivity`
+  // HACK: We store the raw Tippy.js instance in order to be able to call `hide`
   const tippyInstance = React.useRef<TippyInstance<TippyRawProps>>()
-  const timeout = React.useRef<number>()  // for delaying this popup
   const [stick, setStick] = React.useState<boolean>(false)
   const [isInside, setIsInside] = React.useState<boolean>(false)
   const showDelay = 500
   const hideDelay = 500
   tippyInstance.current?.popperInstance?.update()
+  const parent = React.useRef(props.state.getParentId())
+  const parentId = parent.current
 
   const onPointerOver = (e: React.PointerEvent<HTMLSpanElement>) => {
+    const id : number = tippyInstance.current?.id!
+    console.log('onPointerOver ' + id + ' with parent ' + parentId + ' on chain ' + props.state.chainId)
     e.stopPropagation()
     setIsInside(true)
     tippyInstance.current?.setProps({placement: props.state.placement as Placement});
-    props.state.clearTimeout();  // cancel hiding of the chain of related popups
     // and delay the opening of this popup.
-    timeout.current = window.setTimeout(() => {
+    props.state.show(parentId, id, () => {
+      console.log('show tip ' + id + ' with parent ' + parentId + ' on chain ' + props.state.chainId)
       tippyInstance.current?.show()
+    }, () => {
+      console.log('hide tip ' + id + ' with parent ' + parentId + ' on chain ' + props.state.chainId)
+      tippyInstance.current?.hide()
     }, showDelay)
   }
   const onPointerOut = (e: React.PointerEvent<HTMLSpanElement>) => {
+    const id : number = tippyInstance.current?.id!
+    console.log('onPointerOut ' + id + ' with parent ' + parentId + ' on chain ' + props.state.chainId)
     e.stopPropagation()
     setIsInside(false)
     if (stick) return
-    if (timeout.current) {
-      // cancel this popup then since user is no longer interested.
-      window.clearTimeout(timeout.current)
-      timeout.current = 0
+    if (id != 8 && id != 4 && id != 7){
+      console.log("debug me")
     }
-    // and hide all the other popups in this chain.
-    props.state.setTimeout(() => {
-      tippyInstance.current?.hide()
-    }, hideDelay)
+    // Assume pointer is outside all tips, so hide everything.
+    // This can be cancelled by the next onPointerOver event.
+    props.state.hideAll(id, hideDelay)
   }
 
   const onClick = (e: React.MouseEvent<HTMLSpanElement>) => {
@@ -194,8 +199,10 @@ const HoverableTypePopupSpan =
 
       onClickOutside={(instance, e) => {
         if (tippyInstance.current && !isInside && !insideTip(e)) {
-          tippyInstance.current?.hide()
+          tippyInstance.current.hide()
           setStick(false)
+          // hide all the popups in this chain.
+          props.state.hideAll(tippyInstance.current.id, hideDelay)
         }
       }}
       hideOnClick={false}
