@@ -251,6 +251,13 @@ export class TipChainState {
     }, delay);
   }
 
+  public pop(id: number) {
+    // this method is called when pointer moves out of a leaf tip into the container of that tip
+    // which means here we need to prune to the given id.
+    this.clearTimeout();
+    this.hideChildren(id, false);
+  }
+
   private pushTail(parentId: number | undefined, id: number, showHandler: Function, hideHandler: Function){
     showHandler();
     if (parentId) this.hideChildren(parentId, false);

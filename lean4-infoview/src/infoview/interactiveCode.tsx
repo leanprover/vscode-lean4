@@ -121,30 +121,43 @@ const HoverableTypePopupSpan =
   const parent = React.useRef(props.state.getParentId())
   const parentId = parent.current
 
+  const onPointerOverContent = (e: React.PointerEvent<HTMLSpanElement>) => {
+    const id : number = tippyInstance.current?.id!
+    const target : any = e.target;
+    const text = target?.innerText;
+    // There is a race condition between this method and onPointerOver which is solved
+    // with a window timeout because we want to ensure onPointerOverContent happens last.
+    window.setTimeout(() => {
+      console.log('onPointerOverContent ' + id + ' with parent ' + parentId + ': ' + text)
+      props.state.pop(id);
+    }, 10);
+  }
+
   const onPointerOver = (e: React.PointerEvent<HTMLSpanElement>) => {
     const id : number = tippyInstance.current?.id!
-    console.log('onPointerOver ' + id + ' with parent ' + parentId + ' on chain ' + props.state.chainId)
+    const target : any = e.target;
+    const text = target?.innerText;
+    console.log('onPointerOver ' + id + ' with parent ' + parentId + ': ' + text)
     e.stopPropagation()
     setIsInside(true)
     tippyInstance.current?.setProps({placement: props.state.placement as Placement});
     // and delay the opening of this popup.
     props.state.show(parentId, id, () => {
-      console.log('show tip ' + id + ' with parent ' + parentId + ' on chain ' + props.state.chainId)
+      console.log('show tip ' + id + ' with parent ' + parentId + ': ' + text)
       tippyInstance.current?.show()
     }, () => {
-      console.log('hide tip ' + id + ' with parent ' + parentId + ' on chain ' + props.state.chainId)
+      console.log('hide tip ' + id + ' with parent ' + parentId + ': ' + text)
       tippyInstance.current?.hide()
     }, showDelay)
   }
   const onPointerOut = (e: React.PointerEvent<HTMLSpanElement>) => {
     const id : number = tippyInstance.current?.id!
-    console.log('onPointerOut ' + id + ' with parent ' + parentId + ' on chain ' + props.state.chainId)
+    const target : any = e.target;
+    const text = target?.innerText;
+    console.log('onPointerOut ' + id + ' with parent ' + parentId + ': ' +  text)
     e.stopPropagation()
     setIsInside(false)
     if (stick) return
-    if (id != 8 && id != 4 && id != 7){
-      console.log("debug me")
-    }
     // Assume pointer is outside all tips, so hide everything.
     // This can be cancelled by the next onPointerOver event.
     props.state.hideAll(id, hideDelay)
@@ -190,10 +203,13 @@ const HoverableTypePopupSpan =
         tippyInstance.current = undefined;
       }}
       content={
+        <div
+          onPointerOver={onPointerOverContent}
+          onPointerOut={onPointerOut}>
         <TypePopupContents
           redrawTooltip={() => void tippyInstance.current?.popperInstance?.update()}
           {...props}
-        />}
+        /></div>}
 
       onClickOutside={(instance, e) => {
         if (tippyInstance.current && !isInside && !insideTip(e)) {
@@ -208,8 +224,8 @@ const HoverableTypePopupSpan =
       trigger='manual'
     >
       <span
-        onPointerOver={onPointerOver}
         className={isInside ? 'highlight' : ''}
+        onPointerOver={onPointerOver}
         onPointerOut={onPointerOut}
         onClick={onClick}
         {...props}
