@@ -33,7 +33,12 @@ export async function activate(context: ExtensionContext): Promise<any> {
             // we might as well install the default toolchain as well.
             void installer.showInstallOptions(defaultToolchain);
         } else {
-            void installer.showToolchainOptions();
+            const defaultVersion = await installer.getDefaultToolchain();
+            if (!defaultVersion) {
+                void installer.showToolchainOptions();
+            } else {
+                leanVersion = defaultVersion;
+            }
         }
     }
     else {

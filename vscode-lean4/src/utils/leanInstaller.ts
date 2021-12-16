@@ -108,9 +108,16 @@ export class LeanInstaller implements Disposable {
         } else if (selectedVersion) {
             // write this to the leanpkg.toml file and have the new version get
             // picked up from there.
+
+            const suffix = ' (default)';
+            let s = selectedVersion;
+            if (s.endsWith(suffix)){
+                s = s.substr(0, s.length - suffix.length);
+            }
+
             this.localStorage.setLeanPath('lean'); // make sure any local full path override is cleared.
-            this.localStorage.setLeanVersion(selectedVersion);
-            this.installChangedEmitter.fire(selectedVersion);
+            this.localStorage.setLeanVersion(s);
+            this.installChangedEmitter.fire(s);
         }
     }
 
@@ -203,6 +210,18 @@ export class LeanInstaller implements Disposable {
         }
     }
 
+    async getDefaultToolchain(): Promise<string> {
+        const toolChains = await this.elanListToolChains();
+        let result :string = ''
+        const suffix = ' (default)';
+        toolChains.forEach((s) => {
+            if (s.endsWith(suffix)){
+                result = s.substr(0, s.length - suffix.length);
+            }
+        });
+        return result;
+    }
+
     async elanListToolChains() : Promise<string[]> {
 
         const folderUri = this.pkgService.getWorkspaceLeanFolderUri();
@@ -221,10 +240,6 @@ export class LeanInstaller implements Disposable {
             const result : string[] = [];
             stdout.split(/\r?\n/).forEach((s) =>{
                 s = s.trim()
-                const suffix = ' (default)';
-                if (s.endsWith(suffix)){
-                    s = s.substr(0, s.length - suffix.length);
-                }
                 if (s !== '') {
                     result.push(s)
                 }
