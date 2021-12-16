@@ -158,35 +158,7 @@ export class LeanInstaller implements Disposable {
             // Specifically, if the extension was not opened inside of a folder, it
             // looks for a global (default) installation of Lean. This way, we can support
             // single file editing.
-            let stdout = '';
-            let inc = 0;
-            await window.withProgress({
-                location: ProgressLocation.Notification,
-                title: '',
-                cancellable: false
-            }, (progress) => {
-                const progressChannel : OutputChannel = {
-                    name : 'ProgressChannel',
-                    append(value: string)
-                    {
-                        stdout += value;
-                        console.log(inc + ': ' + value);
-                        if (inc < 100) {
-                            inc += 10;
-                        }
-                        progress.report({ increment: inc, message: value });
-                    },
-                    appendLine(value: string) {
-                        this.append(value + '\n');
-                    },
-                    clear() { /* empty */ },
-                    show() { /* empty */ },
-                    hide() { /* empty */ },
-                    dispose() { /* empty */ }
-                }
-                progress.report({increment:0, message: 'Checking Lean setup...'});
-                return batchExecute(cmd, options, folderPath, progressChannel);
-            });
+            const stdout = await this.executeWithProgress('Checking Lean setup...', cmd, options,folderPath)
             if (!stdout) {
                 throw new Error('lean not found');
             }
@@ -208,6 +180,39 @@ export class LeanInstaller implements Disposable {
             if (this.outputChannel) this.outputChannel.appendLine(err);
             return { version: '', error: err };
         }
+    }
+
+    async executeWithProgress(prompt: string, cmd: string, options: string[], workingDirectory: string): Promise<string>{
+        let inc = 0;
+        let stdout = ''
+        await window.withProgress({
+            location: ProgressLocation.Notification,
+            title: '',
+            cancellable: false
+        }, (progress) => {
+            const progressChannel : OutputChannel = {
+                name : 'ProgressChannel',
+                append(value: string)
+                {
+                    stdout += value;
+                    console.log(inc + ': ' + value);
+                    if (inc < 100) {
+                        inc += 10;
+                    }
+                    progress.report({ increment: inc, message: value });
+                },
+                appendLine(value: string) {
+                    this.append(value + '\n');
+                },
+                clear() { /* empty */ },
+                show() { /* empty */ },
+                hide() { /* empty */ },
+                dispose() { /* empty */ }
+            }
+            progress.report({increment:0, message: prompt});
+            return batchExecute(cmd, options, workingDirectory, progressChannel);
+        });
+        return stdout;
     }
 
     async getDefaultToolchain(): Promise<string> {
@@ -254,9 +259,8 @@ export class LeanInstaller implements Disposable {
         let elanInstalled = false;
         // See if we have elan already.
         try {
-            this.outputChannel.show(true);
             const options = ['--version']
-            const stdout = await batchExecute('elan', options, undefined, this.outputChannel);
+            const stdout = await this.executeWithProgress('Checking Elan setup...', 'elan', options, undefined)
             const filterVersion = /elan (\d+)\.\d+\..+/
             const match = filterVersion.exec(stdout)
             if (match) {
