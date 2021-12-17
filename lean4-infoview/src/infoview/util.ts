@@ -315,5 +315,7 @@ export class TipChainState {
     console.log("hiding entire chain " + this._chainId)
     this.hideChain(this._handlers)
     this._handlers = [];
+    // reset default direction to upwards.
+    this._placement = 'top';
   }
 }
