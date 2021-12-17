@@ -7,6 +7,7 @@ import { default as Tippy, TippyProps } from '@tippyjs/react'
 import { RpcContext } from './contexts'
 import { DocumentPosition, TipChainState } from './util'
 import { CodeToken, CodeWithInfos, InfoPopup, InfoWithCtx, InteractiveDiagnostics_infoToInteractive, TaggedText } from './rpcInterface'
+import { StaticRegistrationOptions } from 'vscode-languageserver-protocol'
 
 export interface InteractiveTextComponentProps<T> {
   pos: DocumentPosition
@@ -116,7 +117,7 @@ const HoverableTypePopupSpan =
   const [stick, setStick] = React.useState<boolean>(false)
   const [isInside, setIsInside] = React.useState<boolean>(false)
   const showDelay = 500
-  const hideDelay = 500
+  const hideDelay = 1000
   void tippyInstance.current?.popperInstance?.update()
   const parent = React.useRef(props.state.getParentId())
   const parentId = parent.current
@@ -126,12 +127,11 @@ const HoverableTypePopupSpan =
     const id : any = getTipId(e.target);
     const target : any = e.target;
     const text = target?.innerText;
-
-    // There is a race condition between this method and onPointerOver which is solved
-    // with a window timeout because we want to ensure onPointerOverContent happens last.
+    console.log('onPointerOverContent ' + id + ': ' + text)
     window.setTimeout(() => {
-      console.log('onPointerOverContent ' + id + ': ' + text)
-      props.state.pop(id);
+      // There is a race condition between this method and onPointerOver which is solved
+      // with a window timeout because we want to ensure onPointerOverContent happens last.
+      props.state.enterParent(id, hideDelay);
     }, 10);
   }
 
@@ -142,6 +142,7 @@ const HoverableTypePopupSpan =
     console.log('onPointerOver ' + id + ' with parent ' + parentId + ': ' + text)
     e.stopPropagation()
     setIsInside(true)
+
     // dynamically set the placement so that the tip follows the same placement the
     // parent tip was given.
     tippyInstance.current?.setProps({placement: props.state.placement as Placement});
@@ -222,6 +223,7 @@ const HoverableTypePopupSpan =
       }}
       content={
         <div
+          className="font-code tl tip"
           onPointerOver={onPointerOverContent}
           onPointerOut={onPointerOut}>
         <TypePopupContents
