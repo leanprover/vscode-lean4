@@ -22,6 +22,10 @@ html,body {
     background-color: #96ccff;
 }
 
+.tip {
+    white-space: 'pre-wrap';
+}
+
 .vscode-dark .highlight {
     background-color: #569cd6;
 }
