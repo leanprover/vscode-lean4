@@ -207,21 +207,15 @@ class TipChainItem {
   }
 }
 
-let nextId = 0;
-
 export class TipChainState {
   private _placement: string;
   private _timeout: number;
   private _handlers: TipChainItem[] = [];
-  private _chainId: number;
 
   public constructor() {
     this._placement = 'top';
     this._timeout = 0;
-    this._chainId = nextId++;
   }
-
-  public get chainId() { return this._chainId;}
 
   public get placement() {
     return this._placement;
@@ -263,6 +257,7 @@ export class TipChainState {
   private pushTail(parentId: number | undefined, id: number, showHandler: Function, hideHandler: Function){
     showHandler();
     if (parentId) this.hideChildren(parentId, false);
+    else this.clear(); // if parent is undefined it is a top level tip, so hide everything else!
     this._handlers.push(new TipChainItem(id, hideHandler));
     this.printNames('pushed new item ' + id + ' with parent ' + parentId + '.  Chain: ', this._handlers)
   }
@@ -312,7 +307,7 @@ export class TipChainState {
   }
 
   private clear() {
-    console.log("hiding entire chain " + this._chainId)
+    console.log("hiding entire chain")
     this.hideChain(this._handlers)
     this._handlers = [];
     // reset default direction to upwards.
