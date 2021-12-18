@@ -15,10 +15,8 @@ export namespace DocumentPosition {
   }
 
   export function toTdpp(p: DocumentPosition): TextDocumentPositionParams {
-    return {
-      textDocument: { uri: p.uri },
-      position: { line: p.line, character: p.character }
-    }
+    return { textDocument: { uri: p.uri },
+             position: { line: p.line, character: p.character } }
   }
 
   export function toString(p: DocumentPosition) {

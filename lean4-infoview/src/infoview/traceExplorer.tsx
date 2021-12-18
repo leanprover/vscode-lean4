@@ -26,7 +26,7 @@ function CollapsibleTrace({pos, col, cls, msg}: {pos: DocumentPosition, col: num
                     setTt(undefined)
                     ev.stopPropagation()
                 }}>[{cls.slice(1)}] ∨</span>
-            <InteractiveMessage pos={pos} fmt={tt}/>
+            <InteractiveMessage pos={pos} fmt={tt} />
         </>
     } else {
         inner =

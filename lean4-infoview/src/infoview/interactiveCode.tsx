@@ -92,7 +92,7 @@ function TypePopupContents({pos, info, redrawTooltip}: {pos: DocumentPosition, i
 
   if (ip) {
     return <>
-      {ip.exprExplicit && <InteractiveCode pos={pos} fmt={ip.exprExplicit} />} : {ip.type && <InteractiveCode pos={pos} fmt={ip.type}/>}
+      {ip.exprExplicit && <InteractiveCode pos={pos} fmt={ip.exprExplicit} />} : {ip.type && <InteractiveCode pos={pos} fmt={ip.type} />}
       {ip.doc && <hr />}
       {ip.doc && ip.doc} {/* TODO markdown */}
     </>
@@ -260,7 +260,7 @@ const HoverableTypePopupSpan =
 /** Tags in code represent values which can be hovered over to display extra info. */
 function InteractiveCodeTag({pos, tag: ct, fmt}: InteractiveTagProps<CodeToken>) {
   return (
-    <HoverableTypePopupSpan pos={pos} info={ct.info} >
+    <HoverableTypePopupSpan pos={pos} info={ct.info}>
       <InteractiveCode pos={pos} fmt={fmt} />
     </HoverableTypePopupSpan>)
 }
