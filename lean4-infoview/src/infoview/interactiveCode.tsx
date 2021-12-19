@@ -120,14 +120,18 @@ const HoverableTypePopupSpan =
   const tipState = React.useContext(TipContext);
   const parent = React.useRef(tipState.getParentId())
   const parentId = parent.current
+  const debugTips = false;
 
   const onPointerOverContent = (e: React.PointerEvent<HTMLSpanElement>) => {
-    // const id : number = tippyInstance.current?.id! // this isn't working?
-    const id : any = getTipId(e.target);
-    const target : any = e.target;
-    const text = target?.innerText;
     e.stopPropagation();
-    console.log('onPointerOverContent ' + id + ': ' + text)
+    // Note that tippyInstance.current?.id does not give us the right id, we
+    // need to find it using getTipId instead.
+    const id : any = getTipId(e.target);
+    if (debugTips) {
+      const target : any = e.target;
+      const text = target?.innerText;
+      console.log('onPointerOverContent ' + id + ': ' + text)
+    }
     window.setTimeout(() => {
       // There is a race condition between this method and onPointerOver which is solved
       // with a window timeout because we want to ensure onPointerOverContent happens last.
@@ -137,33 +141,39 @@ const HoverableTypePopupSpan =
 
   const onPointerOver = (e: React.PointerEvent<HTMLSpanElement>) => {
     const id : number = tippyInstance.current?.id!
-    const target : any = e.target;
-    const text = target?.innerText;
-    console.log('onPointerOver ' + id + ' with parent ' + parentId + ': ' + text)
+    let text = "";
+    if (debugTips) {
+      const target : any = e.target;
+      text = target?.innerText;
+      console.log('onPointerOver ' + id + ' with parent ' + parentId + ': ' + text)
+    }
     e.stopPropagation()
     setIsInside(true)
 
     // dynamically set the placement so that the tip follows the same placement the
     // parent tip was given.
     tippyInstance.current?.setProps({placement: tipState.placement as Placement});
+
     // and delay the opening of this popup.
     tipState.show(parentId, id,
       () => {
         // show handler
-        console.log('show tip ' + id + ' with parent ' + parentId + ': ' + text)
+        if (debugTips) console.log('show tip ' + id + ' with parent ' + parentId + ': ' + text)
         tippyInstance.current?.show()
       }, () => {
         // hide handler
-        console.log('hide tip ' + id + ' with parent ' + parentId + ': ' + text)
+        if (debugTips) console.log('hide tip ' + id + ' with parent ' + parentId + ': ' + text)
         tippyInstance.current?.hide()
        }, showDelay)
   }
+
   const onPointerOut = (e: React.PointerEvent<HTMLSpanElement>) => {
     const id : number = tippyInstance.current?.id!
-    const target : any = e.target;
-    const text = target?.innerText;
-
-    console.log('onPointerOut ' + id + ' with parent ' + parentId + ': ' +  text)
+    if (debugTips){
+      const target : any = e.target;
+      const text = target?.innerText;
+      console.log('onPointerOut ' + id + ' with parent ' + parentId + ': ' +  text)
+    }
     // e.stopPropagation() actually, no, this is tricky the parent span also needs to get this.
     setIsInside(false)
     if (stick) return
