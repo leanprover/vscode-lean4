@@ -205,6 +205,9 @@ class TipChainItem {
   }
 }
 
+// This class manages the state of all the tools tips that are open in the
+// InfoView ensuring only one branch of tips is open at any given time using
+// hideChildren to prune branches as the mouse moves around.
 export class TipChainState {
   private _placement: string;
   private _timeout: number;
@@ -257,13 +260,6 @@ export class TipChainState {
     if (parentId) this.hideChildren(parentId, false);
     else this.clear(); // if parent is undefined it is a top level tip, so hide everything else!
     this._handlers.push(new TipChainItem(id, hideHandler));
-    this.printNames('pushed new item ' + id + ' with parent ' + parentId + '.  Chain: ', this._handlers)
-  }
-
-  private printNames(prompt: string, chain: TipChainItem[]){
-    let names : number[] = []
-    chain.forEach(i => names.push(i.id))
-    console.log(prompt + names)
   }
 
   private hideChildren(id: number, included: boolean){
@@ -280,7 +276,7 @@ export class TipChainState {
         break;
       }
     }
-    console.log('hideChildren under ' + id + ' leaves chain: ' + remainder);
+
     if (found > 0) {
       const tail = this._handlers.splice(found, this._handlers.length - found);
       this.hideChain(tail);
@@ -288,7 +284,6 @@ export class TipChainState {
   }
 
   private hideChain(chain: TipChainItem[]){
-    this.printNames('hiding children: ', chain);
     chain.forEach(i => {if (i.handler) i.handler()})
   }
 
@@ -305,7 +300,6 @@ export class TipChainState {
   }
 
   private clear() {
-    console.log("hiding entire chain")
     this.hideChain(this._handlers)
     this._handlers = [];
     // reset default direction to upwards.
