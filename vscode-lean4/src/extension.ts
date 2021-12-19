@@ -62,8 +62,8 @@ export async function activate(context: ExtensionContext): Promise<any> {
         busy = true; // avoid re-entrancy since testLeanVersion can take a while.
         try {
             // have to check again here in case elan install had --default-toolchain none.
-            const versionInfo = await installer.testLeanVersion();
-            if (versionInfo.version === '4') {
+            const version = await installer.testLeanVersion();
+            if (version.version === '4') {
                 void client.restart()
             }
         } catch {

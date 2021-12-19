@@ -119,7 +119,7 @@ export class LeanInstaller implements Disposable {
             for (let i = 0; i < installedToolChains.length; i++)
             {
                 const v = this.removeSuffix(installedToolChains[i]);
-                if (v == versionOverride){
+                if (v === versionOverride){
                     installedToolChains[i] = v + ' ' + this.workspaceSuffix;
                     found = true;
                 }
@@ -155,7 +155,7 @@ export class LeanInstaller implements Disposable {
             this.localStorage.setLeanVersion(''); // clear the requested version as we have a full path.
             this.installChangedEmitter.fire(undefined);
         } else if (selectedVersion) {
-            let s = this.removeSuffix(selectedVersion);
+            const s = this.removeSuffix(selectedVersion);
             this.localStorage.setLeanPath('lean'); // make sure any local full path override is cleared.
             this.localStorage.setLeanVersion(s);
             this.installChangedEmitter.fire(s);
@@ -237,6 +237,7 @@ export class LeanInstaller implements Disposable {
     async executeWithProgress(prompt: string, cmd: string, options: string[], workingDirectory: string): Promise<string>{
         let inc = 0;
         let stdout = ''
+        /* eslint-disable  @typescript-eslint/no-this-alias */
         const realThis = this;
         await window.withProgress({
             location: ProgressLocation.Notification,
