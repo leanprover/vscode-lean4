@@ -17,9 +17,16 @@ export interface PlainTermGoal {
     range: Range;
 }
 
+export enum LeanFileProgressKind {
+    Processing = 1,
+    FatalError = 2
+}
+
 export interface LeanFileProgressProcessingInfo {
-    /** Range which is still being processed */
+    /** Range for which the processing info was reported. */
     range: Range;
+    /** Kind of progress that was reported. */
+    kind?: LeanFileProgressKind;
 }
 
 export interface LeanFileProgressParams {
