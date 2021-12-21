@@ -72,8 +72,8 @@ export class LeanpkgService implements Disposable {
 
     async findLeanPkgVersionInfo() : Promise<string> {
         const path = this.getWorkspaceLeanFolderUri()
-        if (!path) {
-            // what kind of vs folder is this?
+        if (!path || path.fsPath === '.') {
+            // this is a "new file" that has not been saved yet.
         }
         else {
             let uri = path;
