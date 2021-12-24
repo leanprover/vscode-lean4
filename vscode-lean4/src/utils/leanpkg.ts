@@ -106,6 +106,7 @@ export class LeanpkgService implements Disposable {
         if (this.leanVersionFile || this.leanVersionFile) {
             try {
                 version = await this.readLeanVersion();
+                this.currentVersion = version;
             } catch (err) {
                 console.log(err);
             }
@@ -124,7 +125,7 @@ export class LeanpkgService implements Disposable {
         }
         if (uri.toString() === this.leanVersionFile.toString()) {
             const version = await this.readLeanVersion();
-            if (version !== this.currentVersion){
+            if (version && version !== this.currentVersion){
                 this.currentVersion = version;
                 this.localStorage.setLeanVersion('');
                 // raise an event so the extension triggers handleVersionChanged.
