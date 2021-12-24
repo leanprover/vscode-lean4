@@ -206,3 +206,55 @@ export function forwardAndUseRef<T, P = {}>(render: (props: React.PropsWithChild
     return render(props, thisRef)
   })
 }
+
+export interface LogicalDomNode {
+  contains(el: Node): boolean
+  registerDescendant(el: Node): void
+  ref: (el: HTMLElement | null) => void
+}
+
+export const LogicalDomContext = React.createContext<LogicalDomNode | undefined>(undefined)
+
+/** Suppose the component B appears as a React child of the component B. For layout reasons,
+ * we sometimes don't want B to appear as an actual child of A in the DOM. We may still however
+ * want to carry out `contains` checks as if B were there, i.e. according to the React tree
+ * structure rather than the DOM structure. Logical DOM nodes make this work.
+ *
+ * For checks to work, each component introducing a *logical* (React-but-not-DOM) child must
+ * `useLogicalDomNode` to:
+ * - pass the resulting `ref` to the logical child; and
+ * - set up a new `LogicalDomContext` around the logical child.
+ */
+export function useLogicalDomNode(): LogicalDomNode {
+  const parentDom = React.useContext(LogicalDomContext)
+  const descendants = React.useRef<Set<Node>>(new Set())
+  const ref = React.useCallback((node: HTMLElement | null) => {
+    if (!node) return
+    // TODO cleanup
+    parentDom?.registerDescendant(node)
+    descendants.current.add(node)
+  }, [])
+
+  const contains = (el: Node) => {
+    for (const d of descendants.current) {
+      // console.log('checking if ', d, 'contains', el, '?', d.contains(el))
+      if (d.contains(el)) return true
+    }
+    return false
+  }
+
+  if (parentDom) {
+    return {
+      contains, ref,
+      registerDescendant: el => {
+        parentDom.registerDescendant(el)
+        descendants.current.add(el)
+      }
+    }
+  } else {
+    return {
+      contains, ref,
+      registerDescendant: el => descendants.current.add(el)
+    }
+  }
+}
