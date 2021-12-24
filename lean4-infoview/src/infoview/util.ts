@@ -188,121 +188,21 @@ export function addUniqueKeys<T>(elems: T[], getId: (el: T) => string): Keyed<T>
   });
 }
 
-class TipChainItem {
-  public id: number;
-  public handler: Function | undefined;
+/** Like `React.forwardRef`, but also allows using the ref inside the forwarding component.
+ * Adapted from https://itnext.io/reusing-the-ref-from-forwardref-with-react-hooks-4ce9df693dd */
+export function forwardAndUseRef<T, P = {}>(render: (props: React.PropsWithChildren<P>, ref: React.RefObject<T>)
+    => React.ReactElement | null): React.ForwardRefExoticComponent<React.PropsWithoutRef<P> & React.RefAttributes<T>> {
+  return React.forwardRef<T, P>((props, ref) => {
+    const thisRef = React.useRef<T>(null)
+    React.useEffect(() => {
+      if (!ref) return
 
-  public constructor(id: number, handler:Function) {
-    this.id = id;
-    this.handler = handler;
-  }
-
-  public hide(){
-    if (this.handler){
-      this.handler();
-      this.handler = undefined;
-    }
-  }
-}
-
-// This class manages the state of all the tools tips that are open in the
-// InfoView ensuring only one branch of tips is open at any given time using
-// hideChildren to prune branches as the mouse moves around.
-export class TipChainState {
-  private _placement: string;
-  private _timeout: number;
-  private _handlers: TipChainItem[] = [];
-
-  public constructor() {
-    this._placement = 'top';
-    this._timeout = 0;
-  }
-
-  public get placement() {
-    return this._placement;
-  }
-
-  public set placement(placement: string) {
-    this._placement = placement;
-  }
-
-  public getParentId() : number | undefined {
-    if (this._handlers.length > 0){
-      return this._handlers[this._handlers.length - 1].id;
-    }
-    return undefined;
-  }
-
-  public clearTimeout() : void {
-    if (this._timeout) window.clearTimeout(this._timeout)
-    this._timeout = 0;
-  }
-
-  public show(parentId: number | undefined, id: number, showHandler: Function, hideHandler: Function, delay: number){
-    this.clearTimeout();
-    var realThis = this;
-    this._timeout = window.setTimeout(() => {
-      realThis.pushTail(parentId, id, showHandler, hideHandler);
-    }, delay);
-  }
-
-  public enterParent(id: number, hideDelay: number) {
-    // this method is called when pointer moves out of a leaf tip into the container of that tip
-    // which means here we need to prune to the given id.
-    this.clearTimeout();
-    this._timeout = window.setTimeout(() => {
-      this.hideChildren(id, false);
-    }, hideDelay);
-  }
-
-  private pushTail(parentId: number | undefined, id: number, showHandler: Function, hideHandler: Function){
-    showHandler();
-    if (parentId) this.hideChildren(parentId, false);
-    else this.clear(); // if parent is undefined it is a top level tip, so hide everything else!
-    this._handlers.push(new TipChainItem(id, hideHandler));
-  }
-
-  private hideChildren(id: number, included: boolean){
-    let found : number = -1;
-    let remainder : number[] = [];
-    for (let i = 0; i < this._handlers.length; i++){
-      const item = this._handlers[i];
-      remainder.push(item.id);
-      if (item.id === id) {
-        found = i;
-        if (!included){
-          found++;
-        }
-        break;
+      if (typeof ref === 'function') {
+        ref(thisRef.current)
+      } else {
+        ref.current = thisRef.current
       }
-    }
-
-    if (found > 0) {
-      const tail = this._handlers.splice(found, this._handlers.length - found);
-      this.hideChain(tail);
-    }
-  }
-
-  private hideChain(chain: TipChainItem[]){
-    chain.forEach(i => {if (i.handler) i.handler()})
-  }
-
-  public hideChild(id: number, delay: number) : void {
-    this.clearTimeout();
-    var realThis = this;
-    this._timeout = window.setTimeout(() => realThis.hideChildren(id, true), delay);
-  }
-
-  public hideAll(id: number, delay: number) : void {
-    this.clearTimeout();
-    var realThis = this;
-    this._timeout = window.setTimeout(() => realThis.clear(), delay);
-  }
-
-  private clear() {
-    this.hideChain(this._handlers)
-    this._handlers = [];
-    // reset default direction to upwards.
-    this._placement = 'top';
-  }
+    }, [ref])
+    return render(props, thisRef)
+  })
 }
