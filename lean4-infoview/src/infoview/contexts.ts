@@ -6,7 +6,6 @@ import { LeanFileProgressProcessingInfo, InfoviewConfig, defaultInfoviewConfig }
 import { EditorConnection } from './editorConnection';
 import { RpcSessions } from './rpcSessions';
 import { ServerVersion } from './serverVersion';
-import { TipChainState } from './util';
 
 // Type-unsafe initializers for contexts which we immediately set up at the top-level.
 // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
@@ -18,5 +17,3 @@ export const VersionContext = React.createContext<ServerVersion | undefined>(und
 export const ConfigContext = React.createContext<InfoviewConfig>(defaultInfoviewConfig);
 export const LspDiagnosticsContext = React.createContext<Map<DocumentUri, Diagnostic[]>>(new Map());
 export const ProgressContext = React.createContext<Map<DocumentUri, LeanFileProgressProcessingInfo[]>>(new Map());
-
-export const TipContext = React.createContext<TipChainState>(new TipChainState());
