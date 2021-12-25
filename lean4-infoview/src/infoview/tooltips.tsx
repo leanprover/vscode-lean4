@@ -69,7 +69,9 @@ const TipChainContext = React.createContext<TipChainContext | undefined>(undefin
 export type TooltipContent = (redrawTooltip: () => void) => React.ReactNode
 
 /** Shows a tooltip when the children are hovered over or clicked. */
-export function WithTooltipOnHover(props_: React.HTMLProps<HTMLSpanElement> & {tooltipContent: TooltipContent}): JSX.Element {
+export const WithTooltipOnHover =
+  forwardAndUseRef<HTMLSpanElement,
+    React.HTMLProps<HTMLSpanElement> & {tooltipContent: TooltipContent}>((props_, spanRef) => {
   const {tooltipContent, ...props} = props_
 
   // We are pinned when clicked, shown when hovered over, and otherwise hidden.
@@ -82,7 +84,6 @@ export function WithTooltipOnHover(props_: React.HTMLProps<HTMLSpanElement> & {t
     else tippyInstance.current?.show()
   }, [state])
 
-  const spanRef = React.useRef<HTMLSpanElement>(null)
   // The tooltip which gets attached to `document.body` is a logical child of this component.
   const tippyNode = useLogicalDomNode()
 
@@ -103,7 +104,7 @@ export function WithTooltipOnHover(props_: React.HTMLProps<HTMLSpanElement> & {t
     }
   }
 
-  const onClickOutsideTip = (inst: TippyInstance<RawTippyProps>, e: Event) => {
+  const onClickOutsideTip = (_: TippyInstance<RawTippyProps>, e: Event) => {
     // Check if click is outside any of our descendants.
     if (!spanRef.current?.contains(e.target as Node) && !tippyNode.contains(e.target as Node))
       setState('hide')
@@ -140,10 +141,15 @@ export function WithTooltipOnHover(props_: React.HTMLProps<HTMLSpanElement> & {t
           {...props}
           ref={spanRef}
           onClick={onClick}
+          onPointerOver={onPointerOver}
+          onPointerOut={onPointerOut}
+          {...props}
         >
           {props.children}
         </span>
       </LazyTippy>
     </LogicalDomContext.Provider>
   </TipChainContext.Provider>
+})
+
 }
