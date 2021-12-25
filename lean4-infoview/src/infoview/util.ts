@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-namespace */
 import * as React from 'react';
-import { DocumentUri, Position, Range, TextDocumentPositionParams } from 'vscode-languageserver-protocol';
+import { DocumentUri, Position, Range, SemanticTokensRegistrationType, TextDocumentPositionParams } from 'vscode-languageserver-protocol';
 
 import { Event } from './event';
 import { EditorContext } from './contexts';
@@ -190,10 +190,10 @@ export function addUniqueKeys<T>(elems: T[], getId: (el: T) => string): Keyed<T>
 
 /** Like `React.forwardRef`, but also allows using the ref inside the forwarding component.
  * Adapted from https://itnext.io/reusing-the-ref-from-forwardref-with-react-hooks-4ce9df693dd */
-export function forwardAndUseRef<T, P = {}>(render: (props: React.PropsWithChildren<P>, ref: React.RefObject<T>)
+export function forwardAndUseRef<T, P = {}>(render: (props: React.PropsWithChildren<P>, ref: React.MutableRefObject<T | null>)
     => React.ReactElement | null): React.ForwardRefExoticComponent<React.PropsWithoutRef<P> & React.RefAttributes<T>> {
   return React.forwardRef<T, P>((props, ref) => {
-    const thisRef = React.useRef<T>(null)
+    const thisRef = React.useRef<T | null>(null)
     React.useEffect(() => {
       if (!ref) return
 
@@ -202,59 +202,52 @@ export function forwardAndUseRef<T, P = {}>(render: (props: React.PropsWithChild
       } else {
         ref.current = thisRef.current
       }
-    }, [ref])
+    }, [ref, thisRef.current])
     return render(props, thisRef)
   })
 }
 
-export interface LogicalDomNode {
+export interface LogicalDomTraverser {
   contains(el: Node): boolean
-  registerDescendant(el: Node): void
-  ref: (el: HTMLElement | null) => void
 }
 
-export const LogicalDomContext = React.createContext<LogicalDomNode | undefined>(undefined)
+export interface LogicalDomStorage {
+  registerDescendant(el: HTMLElement | null): void
+}
 
-/** Suppose the component B appears as a React child of the component B. For layout reasons,
+export const LogicalDomContext = React.createContext<LogicalDomStorage>({registerDescendant: () => {}})
+
+/** Suppose a component B appears as a React child of the component A. For layout reasons,
  * we sometimes don't want B to appear as an actual child of A in the DOM. We may still however
  * want to carry out `contains` checks as if B were there, i.e. according to the React tree
- * structure rather than the DOM structure. Logical DOM nodes make this work.
+ * structure rather than the DOM structure. Logical DOM nodes make this work. Note this is not
+ * shadow DOM, although it is similar.
  *
- * For checks to work, each component introducing a *logical* (React-but-not-DOM) child must
- * `useLogicalDomNode` to:
- * - pass the resulting `ref` to the logical child; and
- * - set up a new `LogicalDomContext` around the logical child.
- */
-export function useLogicalDomNode(): LogicalDomNode {
-  const parentDom = React.useContext(LogicalDomContext)
+ * For the method to work, each component introducing a *logical* (React-but-not-DOM) child must
+ * register it in the `LogicalDomContext`.
+ *
+ * To carry out checks, `useLogicalDom` with a ref to the logical DOM root and wrap the root
+ * in a `LogicalDomContext` using the resulting `LogicalDomStorage`. */
+export function useLogicalDom(ref: React.RefObject<HTMLElement>): [LogicalDomTraverser, LogicalDomStorage] {
+  const parentCtx = React.useContext(LogicalDomContext)
+  React.useEffect(() => {
+    if (ref.current)
+      parentCtx.registerDescendant(ref.current)
+  }, [ref])
   const descendants = React.useRef<Set<Node>>(new Set())
-  const ref = React.useCallback((node: HTMLElement | null) => {
-    if (!node) return
-    // TODO cleanup
-    parentDom?.registerDescendant(node)
-    descendants.current.add(node)
-  }, [])
 
   const contains = (el: Node) => {
+    if (ref.current && ref.current.contains(el)) return true
     for (const d of descendants.current) {
-      // console.log('checking if ', d, 'contains', el, '?', d.contains(el))
       if (d.contains(el)) return true
     }
     return false
   }
 
-  if (parentDom) {
-    return {
-      contains, ref,
-      registerDescendant: el => {
-        parentDom.registerDescendant(el)
-        descendants.current.add(el)
-      }
-    }
-  } else {
-    return {
-      contains, ref,
-      registerDescendant: el => descendants.current.add(el)
-    }
+  const registerDescendant = (el: HTMLElement | null) => {
+    parentCtx.registerDescendant(el)
+    if (el) descendants.current.add(el)
   }
+
+  return [{contains}, {registerDescendant}]
 }
