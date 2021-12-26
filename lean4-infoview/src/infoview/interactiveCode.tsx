@@ -45,17 +45,16 @@ function TypePopupContents({pos, info, redrawTooltip}: {pos: DocumentPosition, i
       if (val) {
         setErr(undefined)
         setIp(val)
-        // We let Tippy.js know that the tooltip should be re-rendered,
-        // since it has new contents.
-        redrawTooltip()
       }
     }).catch(ex => {
       if ('message' in ex) setErr('' + ex.message)
       else if ('code' in ex) setErr(`RPC error (${ex.code})`)
       else setErr(JSON.stringify(ex))
-      redrawTooltip()
     })
-  }, [])
+  }, [rs, pos.uri, pos.line, pos.character, info])
+
+  // We let the tooltip know to redo its layout whenever our contents change.
+  React.useEffect(() => redrawTooltip(), [ip, err, redrawTooltip])
 
   if (err)
     return <>Error: {err}</>
@@ -71,15 +70,13 @@ function TypePopupContents({pos, info, redrawTooltip}: {pos: DocumentPosition, i
 
 /** Tags in code represent values which can be hovered over to display extra info. */
 function InteractiveCodeTag({pos, tag: ct, fmt}: InteractiveTagProps<CodeToken>) {
+  const mkTooltip = React.useCallback((redrawTooltip: () => void) =>
+    <div className="font-code tl tip">
+      <TypePopupContents pos={pos} info={ct.info}
+        redrawTooltip={redrawTooltip} />
+    </div>, [pos.uri, pos.line, pos.character, ct.info])
   return (
-    <WithTooltipOnHover
-      tooltipContent={redrawTooltip =>
-        <div className="font-code tl tip">
-          <TypePopupContents pos={pos} info={ct.info}
-            redrawTooltip={redrawTooltip} />
-        </div>
-      }
-    >
+    <WithTooltipOnHover tooltipContent={mkTooltip}>
       <HighlightOnHoverSpan>
         <InteractiveCode pos={pos} fmt={fmt} />
       </HighlightOnHoverSpan>

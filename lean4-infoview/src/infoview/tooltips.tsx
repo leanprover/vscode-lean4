@@ -6,15 +6,19 @@ import { usePopper } from 'react-popper'
 
 import { forwardAndUseRef, LogicalDomContext, useLogicalDom } from './util'
 
+/** Tooltip contents should call `redrawTooltip` whenever their layout changes. */
+export type TooltipContent = (redrawTooltip: () => void) => React.ReactNode
+
 const TooltipPlacementContext = React.createContext<Popper.Placement>('top')
 
 export const Tooltip = forwardAndUseRef<HTMLDivElement,
   React.HTMLProps<HTMLDivElement> &
     { reference: HTMLElement | null,
+      tooltipContent: TooltipContent,
       placement?: Popper.Placement,
       onFirstUpdate?: (_: Partial<Popper.State>) => void
-    }>((props_, ref) => {
-  const {reference, placement: preferPlacement, onFirstUpdate, ...props} = props_
+    }>((props_, divRef, setDivRef) => {
+  const {reference, tooltipContent, placement: preferPlacement, onFirstUpdate, ...props} = props_
 
   // We remember the global trend in placement (as `globalPlacement`) so tooltip chains can bounce
   // off the top and continue downwards or vice versa and initialize to that, but then update
@@ -24,13 +28,13 @@ export const Tooltip = forwardAndUseRef<HTMLDivElement,
   const [ourPlacement, setOurPlacement] = React.useState<Popper.Placement>(placement)
 
   // https://popper.js.org/react-popper/v2/faq/#why-i-get-render-loop-whenever-i-put-a-function-inside-the-popper-configuration
-  const onFirstUpdate_ = React.useMemo(() => (state: Partial<Popper.State>) => {
+  const onFirstUpdate_ = React.useCallback((state: Partial<Popper.State>) => {
     if (state.placement) setOurPlacement(state.placement)
     if (onFirstUpdate) onFirstUpdate(state)
   }, [onFirstUpdate])
 
   const [arrowElement, setArrowElement] = React.useState<HTMLDivElement | null>(null)
-  const { styles, attributes } = usePopper(reference, ref.current, {
+  const { styles, attributes, update } = usePopper(reference, divRef.current, {
     modifiers: [
       { name: 'arrow', options: { element: arrowElement } },
       { name: 'offset', options: { offset: [0, 8] } },
@@ -38,23 +42,27 @@ export const Tooltip = forwardAndUseRef<HTMLDivElement,
     placement,
     onFirstUpdate: onFirstUpdate_
   })
+  const update_ = React.useCallback(() => update?.(), [update])
 
   const logicalDom = React.useContext(LogicalDomContext)
 
   const popper = <div
       ref={node => {
+        setDivRef(node)
         logicalDom.registerDescendant(node)
-        ref.current = node
       }}
       style={styles.popper}
-      className="white bg-dark-gray br2 ph2 pv1"
+      className='tooltip'
       {...props}
       {...attributes.popper}
     >
       <TooltipPlacementContext.Provider value={ourPlacement}>
-        {props.children}
+        {tooltipContent(update_)}
       </TooltipPlacementContext.Provider>
-      <div ref={setArrowElement} style={styles.arrow} />
+      <div ref={setArrowElement}
+        style={styles.arrow}
+        className='tooltip-arrow'
+      />
     </div>
 
   // Append the tooltip to the end of document body to avoid layout issues.
@@ -65,7 +73,7 @@ export const Tooltip = forwardAndUseRef<HTMLDivElement,
 /** A `<span>` element which gets highlighted when hovered over. It is implemented with JS rather
  * than CSS in order to allow nesting of these elements. When nested, only the smallest nested
  * element is highlighted. */
-export const HighlightOnHoverSpan = forwardAndUseRef<HTMLSpanElement, React.HTMLProps<HTMLSpanElement>>((props, ref) => {
+export const HighlightOnHoverSpan = forwardAndUseRef<HTMLSpanElement, React.HTMLProps<HTMLSpanElement>>((props, ref, setRef) => {
   const [isPointerOver, setIsPointerOver] = React.useState<boolean>(false)
   const onPointerOver = (e: React.PointerEvent<HTMLSpanElement>) => {
     if (ref.current && e.target == ref.current)
@@ -78,7 +86,7 @@ export const HighlightOnHoverSpan = forwardAndUseRef<HTMLSpanElement, React.HTML
   }
 
   return <span
-      ref={ref}
+      ref={setRef}
       className={isPointerOver ? 'highlight' : ''}
       onPointerOver={onPointerOver}
       onPointerOut={onPointerOut}
@@ -94,19 +102,21 @@ interface TipChainContext {
 
 const TipChainContext = React.createContext<TipChainContext>({pinParent: () => {}})
 
-/** Tooltip contents should call `redrawTooltip` whenever their layout changes. */
-export type TooltipContent = (redrawTooltip: () => void) => React.ReactNode
-
 /** Shows a tooltip when the children are hovered over or clicked. */
 export const WithTooltipOnHover =
   forwardAndUseRef<HTMLSpanElement,
-    React.HTMLProps<HTMLSpanElement> & {tooltipContent: TooltipContent}>((props_, ref) => {
+    React.HTMLProps<HTMLSpanElement> & {tooltipContent: TooltipContent}>((props_, ref, setRef) => {
   const {tooltipContent, ...props} = props_
 
   // We are pinned when clicked, shown when hovered over, and otherwise hidden.
   type TooltipState = 'pin' | 'show' | 'hide'
   const [state, setState] = React.useState<TooltipState>('hide')
   const shouldShow = state !== 'hide'
+
+  const tipChainCtx = React.useContext(TipChainContext)
+  React.useEffect(() => {
+    if (state === 'pin') tipChainCtx.pinParent()
+  }, [state])
 
   // Note: because tooltips are attached to `document.body`, they are not descendants of the
   // hoverable area in the DOM tree, and the `contains` check fails for elements within tooltip
@@ -125,19 +135,11 @@ export const WithTooltipOnHover =
   const showDelay = 500
   const hideDelay = 300
 
-  const tipChainCtx = React.useContext(TipChainContext)
-
   const onClick = (e: React.PointerEvent<HTMLSpanElement>) => {
     if (!isWithinHoverable(e.target)) return
     e.stopPropagation()
     clearTimeout()
-    setState(state => {
-      if (state !== 'pin') {
-        tipChainCtx.pinParent()
-        return 'pin'
-      }
-      return 'hide'
-    })
+    setState(state => state === 'pin' ? 'hide' : 'pin')
   }
 
   React.useEffect(() => {
@@ -180,25 +182,25 @@ export const WithTooltipOnHover =
   }
 
   const onPointerOver = (e: React.PointerEvent<HTMLSpanElement>) => {
-    if (!isWithinHoverable(e.target)) return
     // It's more composable to let pointer events bubble up rather than to `stopPropagating`,
     // but we only want to handle hovers in the innermost component. So we record that the
     // event was handled with a property.
     if ('_WithTooltipOnHoverSeen' in e) return
+    if (!isWithinHoverable(e.target)) return
     (e as any)['_WithTooltipOnHoverSeen'] = {}
     startShowTimeout()
   }
 
   const onPointerOut = (e: React.PointerEvent<HTMLSpanElement>) => {
-    if (!isWithinHoverable(e.target)) return
     if ('_WithTooltipOnHoverSeen' in e) return
+    if (!isWithinHoverable(e.target)) return
     (e as any)['_WithTooltipOnHoverSeen'] = {}
     startHideTimeout()
   }
 
   return <LogicalDomContext.Provider value={logicalDomStorage}>
     <span
-      ref={ref}
+      ref={setRef}
       onClick={onClick}
       onPointerOver={onPointerOver}
       onPointerOut={onPointerOut}
@@ -210,9 +212,8 @@ export const WithTooltipOnHover =
             reference={ref.current}
             onPointerEnter={onPointerEnter}
             onPointerLeave={onPointerLeave}
-          >
-            {tooltipContent(() => {})}
-          </Tooltip>
+            tooltipContent={tooltipContent}
+          />
         </TipChainContext.Provider>}
       {props.children}
     </span>

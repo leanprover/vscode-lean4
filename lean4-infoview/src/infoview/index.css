@@ -22,10 +22,6 @@ html,body {
     background-color: #96ccff;
 }
 
-.tip {
-    white-space: 'pre-wrap';
-}
-
 .vscode-dark .highlight {
     background-color: #569cd6;
 }
@@ -113,32 +109,32 @@ select {
     box-shadow: 1px 1px 5px black;
 }
 
-.arrow,
-.arrow::before {
+.tooltip-arrow,
+.tooltip-arrow::before {
     position: absolute;
     width: 8px;
     height: 8px;
     z-index: -1;
 }
 
-.arrow::before {
+.tooltip-arrow::before {
     content: '';
     transform: rotate(45deg);
     background: #333;
 }
 
-.tooltip[data-popper-placement^='top'] > .arrow {
+.tooltip[data-popper-placement^='top'] > .tooltip-arrow {
     bottom: -4px;
 }
 
-.tooltip[data-popper-placement^='bottom'] > .arrow {
+.tooltip[data-popper-placement^='bottom'] > .tooltip-arrow {
     top: -4px;
 }
 
-.tooltip[data-popper-placement^='left'] > .arrow {
+.tooltip[data-popper-placement^='left'] > .tooltip-arrow {
     right: -4px;
 }
 
-.tooltip[data-popper-placement^='right'] > .arrow {
+.tooltip[data-popper-placement^='right'] > .tooltip-arrow {
     left: -4px;
 }

@@ -25,7 +25,6 @@
   },
   "dependencies": {
     "@lean4/infoview-api": "^0.1.0",
-    "@tippyjs/react": "^4.2.6",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
     "react-fast-compare": "^3.2.0",
