@@ -71,7 +71,7 @@ function TypePopupContents({pos, info, redrawTooltip}: {pos: DocumentPosition, i
 /** Tags in code represent values which can be hovered over to display extra info. */
 function InteractiveCodeTag({pos, tag: ct, fmt}: InteractiveTagProps<CodeToken>) {
   const mkTooltip = React.useCallback((redrawTooltip: () => void) =>
-    <div className="font-code tl tip">
+    <div className="font-code tl pre-wrap">
       <TypePopupContents pos={pos} info={ct.info}
         redrawTooltip={redrawTooltip} />
     </div>, [pos.uri, pos.line, pos.character, ct.info])
