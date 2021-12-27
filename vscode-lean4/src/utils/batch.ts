@@ -20,13 +20,13 @@ export async function batchExecute(
         }
 
         exe.stdout.on('data', (line) => {
-            const s = line.toString();
+            const s: string = line.toString();
             if (channel) channel.appendLine(s);
             output += s + '\n';
         });
 
         exe.stderr.on('data', (line) => {
-            const s = line.toString();
+            const s: string = line.toString();
             if (channel) channel.appendLine(s);
             output += s + '\n';
         });
