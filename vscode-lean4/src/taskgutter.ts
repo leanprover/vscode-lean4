@@ -1,10 +1,6 @@
 import { Disposable, ExtensionContext, OverviewRulerLane, Range, TextEditorDecorationType, window } from 'vscode';
+import { LeanFileProgressKind, LeanFileProgressProcessingInfo } from '@lean4/infoview-api';
 import { LeanClient } from './leanclient';
-import { LeanFileProgressKind, LeanFileProgressProcessingInfo } from '@lean4/infoview';
-
-// Workaround, since LeanFileProgressKind.* gives a 'self is not defined' error
-const ProgressKind_Processing = 1
-const ProgressKind_FatalError = 2
 
 class LeanFileTaskGutter {
     private timeout?: NodeJS.Timeout
@@ -46,7 +42,7 @@ class LeanFileTaskGutter {
                     editor.setDecorations(
                         decoration,
                         this.processed
-                            .filter(info => (info.kind === undefined ? ProgressKind_Processing : info.kind) === kind)
+                            .filter(info => (info.kind === undefined ? LeanFileProgressKind.Processing : info.kind) === kind)
                             .map(info => ({
                                 range: new Range(info.range.start.line, 0, info.range.end.line, 0),
                                 hoverMessage: message
@@ -69,7 +65,7 @@ export class LeanTaskGutter implements Disposable {
     private subscriptions: Disposable[] = [];
 
     constructor(client: LeanClient, context: ExtensionContext) {
-        this.decorations.set(ProgressKind_Processing, [
+        this.decorations.set(LeanFileProgressKind.Processing, [
             window.createTextEditorDecorationType({
                 overviewRulerLane: OverviewRulerLane.Left,
                 overviewRulerColor: 'rgba(255, 165, 0, 0.5)',
@@ -83,7 +79,7 @@ export class LeanTaskGutter implements Disposable {
             }),
             'busily processing...'
         ])
-        this.decorations.set(ProgressKind_FatalError, [
+        this.decorations.set(LeanFileProgressKind.FatalError, [
             window.createTextEditorDecorationType({
                 overviewRulerLane: OverviewRulerLane.Left,
                 overviewRulerColor: 'rgba(255, 0, 0, 0.5)',

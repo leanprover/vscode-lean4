@@ -6,14 +6,14 @@ import 'tachyons/css/tachyons.css';
 import 'vscode-codicons/dist/codicon.css';
 import './index.css';
 
+import { LeanFileProgressParams, LeanFileProgressProcessingInfo, defaultInfoviewConfig, EditorApi, InfoviewApi } from '@lean4/infoview-api';
+
 import { Infos } from './infos';
 import { AllMessages, WithLspDiagnosticsContext } from './messages';
-import { useClientNotificationEffect, useEvent, useEventResult, useServerNotificationState } from './util';
-import { LeanFileProgressParams, LeanFileProgressProcessingInfo } from '../lspTypes';
+import { useClientNotificationEffect, useEventResult, useServerNotificationState } from './util';
 import { EditorContext, ConfigContext, ProgressContext, VersionContext } from './contexts';
 import { WithRpcSessions } from './rpcSessions';
 import { EditorConnection, EditorEvents } from './editorConnection';
-import { defaultInfoviewConfig, EditorApi, InfoviewApi } from '../infoviewApi';
 import { Event } from './event';
 import { ServerVersion } from './serverVersion';
 

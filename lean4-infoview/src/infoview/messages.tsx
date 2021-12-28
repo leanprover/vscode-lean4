@@ -2,12 +2,13 @@ import * as React from 'react';
 import fastIsEqual from 'react-fast-compare';
 import { Location, DocumentUri, Diagnostic, DiagnosticSeverity, PublishDiagnosticsParams } from 'vscode-languageserver-protocol';
 
+import { LeanDiagnostic } from '@lean4/infoview-api';
+
 import { basename, escapeHtml, RangeHelpers, usePausableState, useEvent, addUniqueKeys, DocumentPosition, useServerNotificationState } from './util';
 import { ConfigContext, EditorContext, LspDiagnosticsContext, RpcContext, VersionContext } from './contexts';
 import { Details } from './collapsing';
 import { InteractiveMessage } from './traceExplorer';
 import { getInteractiveDiagnostics, InteractiveDiagnostic, TaggedText_stripTags } from './rpcInterface';
-import { LeanDiagnostic } from '../lspTypes';
 
 interface MessageViewProps {
     uri: DocumentUri;
