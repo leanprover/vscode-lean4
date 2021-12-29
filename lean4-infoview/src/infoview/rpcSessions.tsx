@@ -4,7 +4,7 @@
  */
 import React from "react"
 import { DidCloseTextDocumentParams, Disposable, DocumentUri, TextDocumentPositionParams } from "vscode-languageserver-protocol"
-import { RpcPtr, RpcCallParams, RpcNeedsReconnect, RpcReleaseParams } from "../lspTypes"
+import { RpcPtr, RpcCallParams, RpcNeedsReconnect, RpcReleaseParams } from "@lean4/infoview-api"
 import { EditorContext, RpcContext } from "./contexts"
 import { EditorConnection } from "./editorConnection"
 import { DocumentPosition, useClientNotificationEffect, useEvent } from "./util"

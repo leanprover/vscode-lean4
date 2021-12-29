@@ -1,4 +1,4 @@
-import { PlainGoal, PlainTermGoal } from '../lspTypes';
+import { PlainGoal, PlainTermGoal } from '@lean4/infoview-api';
 import { InteractiveGoal, InteractiveGoals, InteractiveHypothesis } from './rpcInterface';
 
 function getGoals(plainGoals: PlainGoal): string[] {

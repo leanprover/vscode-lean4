@@ -19,7 +19,7 @@ import {
 import * as ls from 'vscode-languageserver-protocol'
 import { executablePath, addServerEnvPaths, serverArgs, serverLoggingEnabled, serverLoggingPath, getElaborationDelay } from './config'
 import { assert } from './utils/assert'
-import { LeanFileProgressParams, LeanFileProgressProcessingInfo } from '@lean4/infoview';
+import { LeanFileProgressParams, LeanFileProgressProcessingInfo } from '@lean4/infoview-api';
 import { LocalStorageService} from './utils/localStorage'
 
 const documentSelector: DocumentFilter = {

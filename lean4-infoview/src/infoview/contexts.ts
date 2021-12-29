@@ -1,9 +1,9 @@
 import React from "react";
 import { DocumentUri, Diagnostic } from "vscode-languageserver-protocol";
 
-import { LeanFileProgressProcessingInfo } from "../lspTypes";
+import { LeanFileProgressProcessingInfo, InfoviewConfig, defaultInfoviewConfig } from "@lean4/infoview-api";
+
 import { EditorConnection } from "./editorConnection";
-import { InfoviewConfig, defaultInfoviewConfig } from "../infoviewApi";
 import { RpcSessions } from "./rpcSessions";
 import { ServerVersion } from "./serverVersion";
 

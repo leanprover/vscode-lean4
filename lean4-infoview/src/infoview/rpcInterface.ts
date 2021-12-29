@@ -5,9 +5,10 @@
  * @module
  */
 
+import { RpcPtr, LeanDiagnostic } from '@lean4/infoview-api'
+
 import { DocumentPosition } from './util'
 import { RpcSessions } from './rpcSessions'
-import { RpcPtr, LeanDiagnostic } from '../lspTypes'
 
 export type TaggedText<T> =
     { text: string } |

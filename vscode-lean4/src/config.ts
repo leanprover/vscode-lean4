@@ -1,5 +1,5 @@
-import { workspace, Uri } from 'vscode'
-import { InfoviewTacticStateFilter } from '@lean4/infoview';
+import { workspace } from 'vscode'
+import { InfoviewTacticStateFilter } from '@lean4/infoview-api';
 import * as path from 'path';
 
 // TODO: does currently not contain config options for `./abbreviation`
