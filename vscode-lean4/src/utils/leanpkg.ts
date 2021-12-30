@@ -17,17 +17,15 @@ export class LeanpkgService implements Disposable {
     constructor(localStorage : LocalStorageService, defaultToolchain : string) {
         this.localStorage = localStorage;
         this.defaultToolchain = defaultToolchain;
-        // track changes in the version of lean specified in the .toml file...
-        const watcher = workspace.createFileSystemWatcher('**/leanpkg.toml');
-        watcher.onDidChange((u) => this.handleFileChanged(u));
-        watcher.onDidCreate((u) => this.handleFileChanged(u));
-        watcher.onDidDelete((u) => this.handleFileDeleted(u));
-        this.subscriptions.push(watcher);
-
-        const watcher2 = workspace.createFileSystemWatcher('**/lean-toolchain');
-        watcher2.onDidChange((u) => this.handleFileChanged(u));
-        watcher2.onDidCreate((u) => this.handleFileChanged(u));
-        watcher2.onDidDelete((u) => this.handleFileDeleted(u));
+        // track changes in the version of lean specified in the lean-toolchain file
+        // or the leanpkg.toml.
+        ['**/lean-toolchain', '**/leanpkg.toml'].forEach(pattern => {
+            const watcher = workspace.createFileSystemWatcher(pattern);
+            watcher.onDidChange((u) => this.handleFileChanged(u));
+            watcher.onDidCreate((u) => this.handleFileChanged(u));
+            watcher.onDidDelete((u) => this.handleFileChanged(u));
+            this.subscriptions.push(watcher);
+        });
     }
 
     private isLean(languageId : string) : boolean {
@@ -35,11 +33,11 @@ export class LeanpkgService implements Disposable {
     }
 
     getWorkspaceLeanFolderUri() : Uri {
-        let rootPath : Uri = null;
+        let documentUri : Uri = null;
 
         if (window.activeTextEditor && this.isLean(window.activeTextEditor.document.languageId))
         {
-            rootPath = window.activeTextEditor.document.uri;
+            documentUri = window.activeTextEditor.document.uri
         }
         else {
             // This happens if vscode starts with a lean file open
@@ -47,23 +45,38 @@ export class LeanpkgService implements Disposable {
             for (const editor of window.visibleTextEditors) {
                 const lang = editor.document.languageId;
                 if (this.isLean(lang)) {
-                    rootPath = editor.document.uri;
+                    documentUri = editor.document.uri;
                     break;
                 }
             }
         }
 
-        if (rootPath) {
-            return Uri.joinPath(rootPath, '..');
+        let rootPath : Uri = null;
+        if (documentUri) {
+            const folder = workspace.getWorkspaceFolder(documentUri);
+            if (folder){
+                rootPath = folder.uri;
+            }
+            if (!rootPath) {
+                rootPath = window.activeTextEditor.document.uri;
+                if (rootPath) {
+                    // remove leaf filename part.
+                    rootPath = Uri.joinPath(rootPath, '..');
+                }
+            }
         }
 
-        // this code path should never happen because lean extension is only
-        // activated when a lean file is opened, so it should have been in the
-        // list of window.visibleTextEditors.
-        const workspaceFolders = workspace.workspaceFolders;
-        if (workspaceFolders && workspaceFolders.length > 0) {
-            rootPath = workspaceFolders[0].uri;
+        if (!rootPath) {
+            // this code path should never happen because lean extension is only
+            // activated when a lean file is opened, so it should have been in the
+            // list of window.visibleTextEditors.  So this is a fallback just in
+            // case some weird timing thing happened and file is now closed.
+            const workspaceFolders = workspace.workspaceFolders;
+            if (workspaceFolders && workspaceFolders.length > 0) {
+                rootPath = workspaceFolders[0].uri;
+            }
         }
+
         if (!rootPath) {
             return null;
         }
@@ -120,26 +133,18 @@ export class LeanpkgService implements Disposable {
     }
 
     private async handleFileChanged(uri: Uri) {
-        if (!this.leanVersionFile){
-            this.leanVersionFile = uri;
+        if (this.localStorage.getLeanVersion()){
+            // user has a local workspace override in effect, so leave it that way.
+            return;
         }
-        if (uri.toString() === this.leanVersionFile.toString()) {
-            const version = await this.readLeanVersion();
-            if (version && version !== this.currentVersion){
-                this.currentVersion = version;
-                this.localStorage.setLeanVersion('');
-                // raise an event so the extension triggers handleVersionChanged.
-                this.versionChangedEmitter.fire(version);
-            }
-        }
-    }
-
-    private async handleFileDeleted(uri: Uri) {
-        if (this.leanVersionFile && uri.toString() === this.leanVersionFile.toString()){
-            this.leanVersionFile = null;
-            // user might be switching from leanpkg to lake...
-            const version = await this.findLeanPkgVersionInfo();
-            this.versionChangedEmitter.fire(version ?? this.defaultToolchain);
+        // note: apply the same rules here with findLeanPkgVersionInfo no matter
+        // if a file is added or removed so we always match the elan behavior.
+        const current = this.currentVersion;
+        // findLeanPkgVersionInfo changes this.currentVersion
+        const version = await this.findLeanPkgVersionInfo();
+        if (version && version !== current) {
+            // raise an event so the extension triggers handleVersionChanged.
+            this.versionChangedEmitter.fire(this.currentVersion);
         }
     }
 
