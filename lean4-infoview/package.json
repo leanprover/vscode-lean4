@@ -18,7 +18,7 @@
     "@testing-library/react": "^12.1.2",
     "@testing-library/user-event": "^13.5.0",
     "@testing-library/dom": "^8.11.1",
-    "@types/jest": "^27.0.3",
+    "@types/jest": "^27.4.0",
     "@types/react": "^17.0.38",
     "@types/react-dom": "^17.0.11",
     "css-loader": "^6.5.1",
@@ -31,7 +31,7 @@
   },
   "dependencies": {
     "@lean4/infoview-api": "^0.1.0",
-    "@tippyjs/react": "^4.2.5",
+    "@tippyjs/react": "^4.2.6",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
     "react-fast-compare": "^3.2.0",
