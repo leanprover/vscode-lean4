@@ -4,8 +4,7 @@
   "description": "An interactive display for the Lean 4 theorem prover",
   "scripts": {
     "watch": "webpack --env development --watch",
-    "build": "webpack",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "webpack"
   },
   "browser": "dist/index",
   "types": "dist/index",
@@ -38,11 +37,5 @@
     "react-popper": "^2.2.5",
     "tachyons": "^4.12.0",
     "vscode-codicons": "0.0.17"
-  },
-  "eslintConfig": {
-    "extends": [
-      "react-app",
-      "react-app/jest"
-    ]
   }
 }

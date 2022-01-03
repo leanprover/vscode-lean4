@@ -22,7 +22,12 @@ module.exports = {
     ],
     "parser": "@typescript-eslint/parser",
     "parserOptions": {
-        "project": ["./tsconfig.json", "./webview/tsconfig.json"],
+        "project": [
+            "./lean4-infoview-api/tsconfig.json",
+            "./lean4-infoview/tsconfig.json",
+            "./vscode-lean4/tsconfig.json",
+            "./vscode-lean4/webview/tsconfig.json",
+        ],
         "sourceType": "module"
     },
     "plugins": [

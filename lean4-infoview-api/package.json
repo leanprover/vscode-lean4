@@ -4,8 +4,7 @@
   "description": "Types and API for @lean4/infoview.",
   "scripts": {
     "watch": "tsc --watch",
-    "build": "tsc",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "tsc"
   },
   "main": "dist/index",
   "types": "dist/index",
