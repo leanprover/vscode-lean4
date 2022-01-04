@@ -255,7 +255,8 @@ The rest of this page is for the developers of the Lean 4 VS Code Extension.
 
 The repository contains NPM packages implementing editor integration for the Lean 4 programming language. The VS Code
 extension proper is in [`vscode-lean4`](vscode-lean4/), while [`lean4-infoview`](lean4-infoview/) implements the
-information display. We build the packages in tandem using Lerna.
+information display. The API glue code between them is in [`lean4-infoview-api`](lean4-infoview-api/). We build
+the packages in tandem using Lerna.
 
 ### Building
 - Make sure you have an up to date installation of `npm` and `node.js`.  For example `npm` version 8.1.3 and `node.js` version v16.13.0.

@@ -2,12 +2,12 @@
  * Provides classes to manage an RPC connection to the Lean server.
  * @module
  */
-import React from "react"
-import { DidCloseTextDocumentParams, Disposable, DocumentUri, TextDocumentPositionParams } from "vscode-languageserver-protocol"
-import { RpcPtr, RpcCallParams, RpcNeedsReconnect, RpcReleaseParams } from "../lspTypes"
-import { EditorContext, RpcContext } from "./contexts"
-import { EditorConnection } from "./editorConnection"
-import { DocumentPosition, useClientNotificationEffect, useEvent } from "./util"
+import React from 'react'
+import { DidCloseTextDocumentParams, Disposable, DocumentUri, TextDocumentPositionParams } from 'vscode-languageserver-protocol'
+import { RpcPtr, RpcCallParams, RpcNeedsReconnect, RpcReleaseParams } from '@lean4/infoview-api'
+import { EditorContext, RpcContext } from './contexts'
+import { EditorConnection } from './editorConnection'
+import { DocumentPosition, useClientNotificationEffect, useEvent } from './util'
 
 class RpcSession implements Disposable {
     #ec: EditorConnection
@@ -59,8 +59,8 @@ class RpcSession implements Disposable {
         const rpcParams: RpcCallParams = {
             ...DocumentPosition.toTdpp(pos),
             sessionId: this.sessionId,
-            method: method,
-            params: params,
+            method,
+            params,
         }
         const val = await this.#ec.api.sendClientRequest('$/lean/rpc/call', rpcParams)
         // const s = JSON.stringify(val)
@@ -74,7 +74,7 @@ class RpcSession implements Disposable {
 
     dispose() {
         this.#closed = true;
-        this.#ec.api.closeRpcSession(this.sessionId)
+        void this.#ec.api.closeRpcSession(this.sessionId)
     }
 }
 
@@ -85,7 +85,7 @@ export class RpcSessions implements Disposable {
     /** Like `#connected`, but for sessions which are currently connecting. */
     #connecting: Map<DocumentUri, Promise<RpcSession | undefined>>
     #ec: EditorConnection
-    setSelf: (_: (_: RpcSessions) => RpcSessions) => void
+    setSelf: (_: (_sess: RpcSessions) => RpcSessions) => void
 
     constructor(ec: EditorConnection) {
         this.#connected = new Map()
@@ -95,8 +95,8 @@ export class RpcSessions implements Disposable {
     }
 
     private async sessionAt(uri: DocumentUri): Promise<RpcSession | undefined> {
-        if (this.#connected.has(uri)) return this.#connected.get(uri)!
-        else if (this.#connecting.has(uri)) return this.#connecting.get(uri)!
+        if (this.#connected.has(uri)) return this.#connected.get(uri)
+        else if (this.#connecting.has(uri)) return this.#connecting.get(uri)
         else return undefined
     }
 
@@ -186,15 +186,14 @@ export class RpcSessions implements Disposable {
      * outdated references.
      */
     sessionIdAt(uri: DocumentUri): string {
-        if (this.#connected.has(uri)) return this.#connected.get(uri)!.sessionId
-        return ''
+        return this.#connected.get(uri)?.sessionId ?? ''
     }
 
     /** Closes the RPC session at `uri` if there is one connected or connecting. */
     ensureSessionClosed(uri: DocumentUri) {
         this.#connected.get(uri)?.dispose()
         this.#connected.delete(uri)
-        this.#connecting.get(uri)?.then(sesh => {
+        void this.#connecting.get(uri)?.then(sesh => {
             sesh?.dispose()
             // NOTE(WN): we defensively guard against the (unlikely) case of multiple connection
             // attempts being made in rapid succession. This can only happen, if ever, when

@@ -9,6 +9,11 @@ if [ -z "$OVSX_PAT" ]; then
   export OVSX_PAT
 fi
 
+if [ -z "$VSCE_PAT" ]; then
+  VSCE_PAT="$(pass pat/vsce)" || exit 1
+  export VSCE_PAT
+fi
+
 set -ex
 
 npm install

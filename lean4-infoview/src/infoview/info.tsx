@@ -57,10 +57,10 @@ export function InfoStatusBar(props: InfoStatusBarProps) {
                 <a className="link pointer mh2 dim codicon codicon-go-to-file"
                    onClick={e => { e.preventDefault(); void ec.revealPosition(pos); }}
                    title="reveal file location" />}
-            <a className={"link pointer mh2 dim codicon " + (isPinned ? "codicon-pinned" : "codicon-pin")}
+            <a className={'link pointer mh2 dim codicon ' + (isPinned ? 'codicon-pinned' : 'codicon-pin')}
                 onClick={e => { e.preventDefault(); onPin(pos); }}
                 title={isPinned ? 'unpin' : 'pin'} />
-            <a className={"link pointer mh2 dim codicon " + (isPaused ? "codicon-debug-continue" : "codicon-debug-pause")}
+            <a className={'link pointer mh2 dim codicon ' + (isPaused ? 'codicon-debug-continue' : 'codicon-debug-pause')}
                onClick={e => { e.preventDefault(); setPaused(!isPaused); }}
                title={isPaused ? 'continue updating' : 'pause updating'} />
             <a className="link pointer mh2 dim codicon codicon-refresh"
@@ -98,8 +98,8 @@ export function InfoDisplay(props0: InfoDisplayProps) {
     const {kind, pos, status, messages, goals, termGoal, error} = props;
 
     const ec = React.useContext(EditorContext);
-    let copyGoalToComment: (() => void) | undefined = undefined;
-    if (goals) copyGoalToComment = () => { ec.copyToComment(goalsToString(goals)); }
+    let copyGoalToComment: (() => void) | undefined
+    if (goals) copyGoalToComment = () => void ec.copyToComment(goalsToString(goals));
 
     // If we are the cursor infoview, then we should subscribe to
     // some commands from the editor extension
@@ -107,7 +107,7 @@ export function InfoDisplay(props0: InfoDisplayProps) {
     useEvent(ec.events.requestedAction, act => {
         if (!isCursor) return;
         if (act.kind !== 'copyToComment') return;
-        copyGoalToComment && copyGoalToComment();
+        if (copyGoalToComment) copyGoalToComment();
     }, [goals]);
     useEvent(ec.events.requestedAction, act => {
         if (!isCursor) return;
@@ -129,7 +129,7 @@ export function InfoDisplay(props0: InfoDisplayProps) {
             {hasError &&
                 <div className="error">
                     Error updating: {error}.
-                    <a className="link pointer dim" onClick={e => { e.preventDefault(); triggerDisplayUpdate(); }}>Try again.</a>
+                    <a className="link pointer dim" onClick={e => { e.preventDefault(); void triggerDisplayUpdate(); }}>Try again.</a>
                 </div>}
             <div style={{display: hasGoals ? 'block' : 'none'}}>
                 <Details initiallyOpen>
@@ -137,7 +137,7 @@ export function InfoDisplay(props0: InfoDisplayProps) {
                         Tactic state
                     </summary>
                     <div className='ml1'>
-                        {hasGoals && <GoalsUi pos={pos} goals={goals!} />}
+                        {hasGoals && <GoalsUi pos={pos} goals={goals} />}
                     </div>
                 </Details>
             </div>
@@ -147,7 +147,7 @@ export function InfoDisplay(props0: InfoDisplayProps) {
                         Expected type
                     </summary>
                     <div className='ml1'>
-                        {hasTermGoal && <GoalUi pos={pos} goal={termGoal!} />}
+                        {hasTermGoal && <GoalUi pos={pos} goal={termGoal} />}
                     </div>
                 </Details>
             </div>
@@ -163,7 +163,11 @@ export function InfoDisplay(props0: InfoDisplayProps) {
             </div>
             {nothingToShow && (
                 isPaused ?
-                    <span>Updating is paused. <a className="link pointer dim" onClick={e => { e.preventDefault(); triggerDisplayUpdate(); }}>Refresh</a> or <a className="link pointer dim" onClick={e => { e.preventDefault(); setPaused(false); }}>resume updating</a> to see information.</span> :
+                    <span>Updating is paused.
+                        <a className="link pointer dim" onClick={e => { e.preventDefault(); void triggerDisplayUpdate(); }}>Refresh</a>
+                        or <a className="link pointer dim" onClick={e => { e.preventDefault(); setPaused(false); }}>resume updating</a>
+                        to see information.
+                    </span> :
                     'No info found.')}
         </div>
     </Details>
@@ -189,10 +193,10 @@ function useDelayedThrottled(ms: number, cb: () => Promise<void>): () => Promise
     return async () => {
         if (!waiting.current) {
             waiting.current = true;
-            let promise = new Promise((resolved, rejected) => {
+            const promise = new Promise((resolved, rejected) => {
                 setTimeout(() => {
                     waiting.current = false;
-                    callbackRef.current!().then(resolved, rejected);
+                    if (callbackRef.current) callbackRef.current().then(resolved, rejected);
                 }, ms);
             });
             await promise;
@@ -215,11 +219,12 @@ export function Info(props: InfoProps) {
     // otherwise the hooks will differ.
     const pos = props.kind === 'cursor' ?
         (() => {
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
             const [curLoc, setCurLoc] = React.useState<Location>(ec.events.changedCursorLocation.current!);
             useEvent(ec.events.changedCursorLocation, loc => loc && setCurLoc(loc), []);
             return { uri: curLoc.uri, ...curLoc.range.start };
         })()
-        : props.pos!;
+        : props.pos;
 
     return (
         <InfoAux {...props} pos={pos} />
@@ -231,6 +236,7 @@ function InfoAux(props: InfoProps) {
     const sv = React.useContext(VersionContext)
     const rs = React.useContext(RpcContext);
 
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const pos = props.pos!;
 
     const [status, setStatus] = React.useState<InfoStatus>('loading');
@@ -244,7 +250,7 @@ function InfoAux(props: InfoProps) {
     const triggerUpdate = useDelayedThrottled(serverIsProcessing ? 500 : 50, async () => {
         setStatus('updating');
 
-        let allReq = undefined
+        let allReq
         if (sv?.hasWidgetsV1()) {
             // Start both goal requests before awaiting them.
             const goalsReq = getInteractiveGoals(rs, pos);
@@ -277,7 +283,7 @@ function InfoAux(props: InfoProps) {
         } catch (err: any) {
             if (err?.code === -32801) {
                 // Document has been changed since we made the request, try again
-                triggerUpdate();
+                void triggerUpdate();
                 return;
             } else { onError(err); }
         }

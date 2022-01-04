@@ -12,6 +12,8 @@ export class Rpc {
                 sendMessage({kind: 'initialize'})
             }, 50)
             this.resolveInit = () => {
+                // @types/node bug: https://github.com/DefinitelyTyped/DefinitelyTyped/issues/43236
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
                 clearInterval(interval as any)
                 resolve()
             }
@@ -32,13 +34,14 @@ export class Rpc {
             }
             return
         }
-        const {seqNum, name, args, result, exception} = msg
+        const {seqNum, name, args, result, exception}: any = msg
         if (seqNum === undefined) return
         if (name !== undefined) {
             return void (async () => {
                 try {
+                    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
                     this.sendMessage({ seqNum, result: await this.methods[name](...args) })
-                } catch (ex) {
+                } catch (ex: any) {
                     if (ex === undefined) {
                         this.sendMessage({ seqNum, exception: 'error' })
                         return
@@ -53,7 +56,7 @@ export class Rpc {
             })()
         }
         if (exception !== undefined) {
-            this.pending[seqNum].reject(exception)
+            this.pending[seqNum].reject(exception as string)
         } else {
             this.pending[seqNum].resolve(result)
         }
@@ -72,7 +75,7 @@ export class Rpc {
 
     getApi<T>(): T {
         return new Proxy({}, {
-            get: (_, prop) => (...args: any) =>
+            get: (_, prop) => (...args: any[]) =>
                 this.invoke(prop as string, args)
         }) as any
     }

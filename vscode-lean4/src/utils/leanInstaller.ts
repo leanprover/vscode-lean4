@@ -94,7 +94,7 @@ export class LeanInstaller implements Disposable {
                 const result = await this.installElan(this.defaultToolchain);
                 this.installChangedEmitter.fire(undefined);
             } catch (err) {
-                this.outputChannel.appendLine(err);
+                this.outputChannel.appendLine('' + err);
             }
         } else if (item === selectItem){
             void this.selectToolchain();

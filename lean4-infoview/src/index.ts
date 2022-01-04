@@ -3,6 +3,5 @@
  * within a webpage and connected to an editor through the main entrypoint, `renderInfoview`.
  * On being given this, the loader fetches its components and renders the infoview.
  */
-export * from "./lspTypes";
-export * from "./infoviewApi";
-export { renderInfoview } from "./infoview/main";
+export * from '@lean4/infoview-api';
+export { renderInfoview } from './infoview/main';

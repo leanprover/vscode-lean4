@@ -50,11 +50,11 @@ export class DocViewProvider implements Disposable {
     private abbreviations: SymbolsByAbbreviation = null;
     constructor() {
         this.subscriptions.push(
-            commands.registerCommand('lean4.docView.open', (url) => this.open(url)),
+            commands.registerCommand('lean4.docView.open', (url: string) => this.open(url)),
             commands.registerCommand('lean4.docView.back', () => this.back()),
             commands.registerCommand('lean4.docView.forward', () => this.forward()),
-            commands.registerCommand('lean4.openTryIt', (code) => this.tryIt(code)),
-            commands.registerCommand('lean4.openExample', (file) => this.example(file)),
+            commands.registerCommand('lean4.openTryIt', (code: string) => this.tryIt(code)),
+            commands.registerCommand('lean4.openExample', (file: string) => this.example(file)),
             commands.registerCommand('lean4.docView.showAllAbbreviations', () => this.showAbbreviations()),
         );
     }
@@ -171,7 +171,7 @@ export class DocViewProvider implements Disposable {
             // 'Mathematics in Lean': 'https://github.com/leanprover-community/mathlib4/',
 
             for (const book of Object.getOwnPropertyNames(books)) {
-                body.append($('<p>').append($('<a>').attr('href', books[book]).text(book)));
+                body.append($('<p>').append($('<a>').attr('href', books[book] as string).text(book)));
             }
 
             this.currentURL = createLocalFileUrl(this.getTempFolder().createFile('index.html', $.html()));
@@ -206,15 +206,15 @@ export class DocViewProvider implements Disposable {
                 $ = cheerio.load(await this.fetch(url));
             } catch (e) {
                 $ = cheerio.load('<pre>');
-                $('pre').text(e.toString());
+                $('pre').text('' + e);
             }
         }
 
         for (const style of $('link[rel=stylesheet]').get()) {
-            style.attribs.href = this.mkRelativeUrl(style.attribs.href, url);
+            style.attribs.href = this.mkRelativeUrl(style.attribs.href as string, url);
         }
         for (const script of $('script[src]').get()) {
-            script.attribs.src = this.mkRelativeUrl(script.attribs.src, url);
+            script.attribs.src = this.mkRelativeUrl(script.attribs.src as string, url);
         }
         for (const link of $('a[href]').get()) {
             const tryItMatch = link.attribs.href.match(/\/(?:live|lean-web-editor)\/.*#code=(.*)/);
@@ -224,13 +224,13 @@ export class DocViewProvider implements Disposable {
                 // keep links with alwaysExternal attribute
             } else if (link.attribs.tryitfile) {
                 link.attribs.title = link.attribs.title || 'Open code block (in existing file)';
-                link.attribs.href = mkCommandUri('lean4.openExample', new URL(link.attribs.tryitfile, url).toString());
+                link.attribs.href = mkCommandUri('lean4.openExample', new URL(link.attribs.tryitfile as string, url).toString());
             } else if (tryItMatch) {
-                const code = decodeURIComponent(tryItMatch[1]);
+                const code = decodeURIComponent(tryItMatch[1] as string);
                 link.attribs.title = link.attribs.title || 'Open code block in new editor';
                 link.attribs.href = mkCommandUri('lean4.openTryIt', code);
             } else if (!link.attribs.href.startsWith('command:')) {
-                const hrefUrl = new URL(link.attribs.href, url);
+                const hrefUrl = new URL(link.attribs.href as string, url);
                 const isExternal = !url || new URL(url).origin !== hrefUrl.origin;
                 if (!isExternal || hrefUrl.protocol === 'file:') {
                     link.attribs.title = link.attribs.title || link.attribs.href;

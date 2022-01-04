@@ -2,7 +2,7 @@
 	"name": "lean4",
 	"displayName": "lean4",
 	"description": "An extension for VS Code which provides support for the Lean 4 language.",
-	"version": "0.0.50",
+	"version": "0.0.53",
 	"publisher": "leanprover",
 	"engines": {
 		"vscode": "^1.57.0"
@@ -398,10 +398,10 @@
 		"vscode:prepublish": "webpack --env production",
 		"build": "webpack --env production",
 		"watch": "webpack --env development --watch",
-		"lint": "eslint -c ./.eslintrc.js ./src/**/*.ts",
 		"package": "vsce package"
 	},
 	"dependencies": {
+		"@lean4/infoview-api": "^0.1.0",
 		"@lean4/infoview": "^0.1.0",
 		"axios": "^0.24.0",
 		"cheerio": "^1.0.0-rc.10",
@@ -409,20 +409,16 @@
 		"vscode-languageclient": "=7.0.0"
 	},
 	"devDependencies": {
-		"@types/node": "^14.17.4",
+		"@types/node": "^17.0.7",
 		"@types/vscode": "^1.57.0",
-		"@types/cheerio": "^0.22.29",
+		"@types/cheerio": "^0.22.30",
 		"@types/vscode-webview": "^1.57.0",
-		"@typescript-eslint/eslint-plugin": "^4.28.0",
-		"@typescript-eslint/parser": "^4.28.0",
-		"eslint": "^7.29.0",
 		"ovsx": "^0.2.1",
-		"ts-loader": "^8.3.0",
-		"typescript": "^4.3.4",
-		"utf-8-validate": "^5.0.5",
-		"vsce": "~1.95.0",
-		"webpack": "^5.40.0",
-		"webpack-cli": "^4.7.2"
+		"ts-loader": "^9.2.6",
+		"typescript": "^4.5.4",
+		"vsce": "~2.6.2",
+		"webpack": "^5.65.0",
+		"webpack-cli": "^4.9.1"
 	},
 	"icon": "images/lean_logo.png",
 	"license": "Apache-2.0"
