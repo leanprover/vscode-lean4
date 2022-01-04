@@ -19,7 +19,7 @@ import {
 import * as ls from 'vscode-languageserver-protocol'
 import { executablePath, addServerEnvPaths, serverArgs, serverLoggingEnabled, serverLoggingPath, getElaborationDelay } from './config'
 import { assert } from './utils/assert'
-import { LeanFileProgressParams, LeanFileProgressProcessingInfo } from '@lean4/infoview';
+import { LeanFileProgressParams, LeanFileProgressProcessingInfo } from '@lean4/infoview-api';
 import { LocalStorageService} from './utils/localStorage'
 
 const documentSelector: DocumentFilter = {
@@ -114,6 +114,10 @@ export class LeanClient implements Disposable {
         if (version) {
             // user is requesting an explicit version for this workspace.
             options = ['+' + version, '--server']
+        }
+        if (workspace.workspaceFolders && workspace.workspaceFolders[0]) {
+            // Add workspace folder name to command-line so that it shows up in `ps aux`.
+            options.push('' + workspace.workspaceFolders[0].uri.toString())
         }
 
         const serverOptions: ServerOptions = {
@@ -219,14 +223,15 @@ export class LeanClient implements Disposable {
             // if we got this far then the client is happy so we are running!
             this.running = true;
         } catch (error) {
-            this.outputChannel.appendLine(error);
-            this.serverFailedEmitter.fire(error);
+            this.outputChannel.appendLine('' + error);
+            this.serverFailedEmitter.fire('' + error);
             return;
         }
 
         // HACK(WN): Register a default notification handler to fire on custom notifications.
         // There is an API for this in vscode-jsonrpc but not in vscode-languageclient, so we
         // hack around its implementation.
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
         this.client.onNotification({
             method: (method: string, params_: any) => {
                 if (method === '$/lean/fileProgress') {

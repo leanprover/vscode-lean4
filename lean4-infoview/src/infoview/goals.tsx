@@ -34,7 +34,7 @@ export function Goal({pos, goal}: {pos: DocumentPosition, goal: InteractiveGoal}
         <ul className="list pl0">
             {goal.userName && <li key={'case'}><strong className="goal-case">case </strong>{goal.userName}</li>}
             {goal.hyps.map ((h, i) => {
-                const names = h.names.reduce((acc, n) => acc + " " + n, "").slice(1)
+                const names = h.names.reduce((acc, n) => acc + ' ' + n, '').slice(1)
                 return <li key={`hyp-${i}`}>
                     <strong className="goal-hyp">{names}</strong> : <InteractiveCode pos={pos} fmt={h.type} />{h.val && <> := <InteractiveCode pos={pos} fmt={h.val}/></>}
                 </li>

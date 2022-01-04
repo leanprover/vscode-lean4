@@ -31,7 +31,7 @@ export function InteractiveTaggedText<T>({pos, fmt, InnerTagUi}: InteractiveTagg
     {fmt.append.map((a, i) => <InteractiveTaggedText key={i} pos={pos} fmt={a} InnerTagUi={InnerTagUi} />)}
   </>
   else if ('tag' in fmt) return <InnerTagUi pos={pos} fmt={fmt.tag[1]} tag={fmt.tag[0]} />
-  else throw `malformed 'TaggedText': '${fmt}'`
+  else throw new Error(`malformed 'TaggedText': '${fmt}'`)
 }
 
 /**
@@ -80,7 +80,7 @@ function TypePopupContents({pos, info, redrawTooltip}: {pos: DocumentPosition, i
         redrawTooltip()
       }
     }).catch(ex => {
-      if ('message' in ex) setErr(ex.message)
+      if ('message' in ex) setErr('' + ex.message)
       else if ('code' in ex) setErr(`RPC error (${ex.code})`)
       else setErr(JSON.stringify(ex))
       redrawTooltip()
@@ -238,9 +238,7 @@ const HoverableTypePopupSpan =
           onPointerOver={onPointerOverContent}
           onPointerOut={onPointerOut}>
         <TypePopupContents
-          redrawTooltip={() => {
-            tippyInstance.current?.popperInstance?.update()
-          }}
+          redrawTooltip={() => void tippyInstance.current?.popperInstance?.update()}
           {...props}
         /></div>}
 

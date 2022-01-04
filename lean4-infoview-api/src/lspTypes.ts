@@ -17,9 +17,18 @@ export interface PlainTermGoal {
     range: Range;
 }
 
+// Seems to be an eslint bug:
+// eslint-disable-next-line no-shadow
+export enum LeanFileProgressKind {
+    Processing = 1,
+    FatalError = 2
+}
+
 export interface LeanFileProgressProcessingInfo {
-    /** Range which is still being processed */
+    /** Range for which the processing info was reported. */
     range: Range;
+    /** Kind of progress that was reported. */
+    kind?: LeanFileProgressKind;
 }
 
 export interface LeanFileProgressParams {
@@ -37,6 +46,7 @@ export interface LeanFileProgressParams {
 declare const tag: unique symbol;
 export type RpcPtr<T> = { readonly [tag]: T, p: string }
 
+// eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace RpcPtr {
 
 export function copy<T>(p: RpcPtr<T>): RpcPtr<T> {

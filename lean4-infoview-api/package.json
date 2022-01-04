@@ -1,0 +1,19 @@
+{
+  "name": "@lean4/infoview-api",
+  "version": "0.1.0",
+  "description": "Types and API for @lean4/infoview.",
+  "scripts": {
+    "watch": "tsc --watch",
+    "build": "tsc"
+  },
+  "main": "dist/index",
+  "types": "dist/index",
+  "files": [
+    "dist/*"
+  ],
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "typescript": "^4.5.4",
+    "vscode-languageserver-protocol": "^3.17.0-next"
+  }
+}

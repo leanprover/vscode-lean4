@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-namespace */
 import * as React from 'react';
 import { DocumentUri, Position, Range, TextDocumentPositionParams } from 'vscode-languageserver-protocol';
 
@@ -25,7 +26,7 @@ export namespace DocumentPosition {
 
 export namespace PositionHelpers {
   export function isAfterOrEqual(p1: Position, p2: Position): boolean {
-    return p1.line > p2.line || (p1.line == p2.line && p1.character >= p2.character);
+    return p1.line > p2.line || (p1.line === p2.line && p1.character >= p2.character);
   }
 }
 
@@ -75,7 +76,7 @@ export function useEvent<T>(ev: Event<T>, f: (_: T) => void, dependencies?: Reac
 
 export function useEventResult<T>(ev: Event<T>): T | undefined;
 export function useEventResult<T, S>(ev: Event<S>, map: (_: S | undefined) => T | undefined): T | undefined;
-export function useEventResult(ev: any, map?: any): any {
+export function useEventResult(ev: Event<unknown>, map?: any): any {
   const [t, setT] = React.useState(() => map ? map(ev.current) : ev.current);
   useEvent(ev, newT => setT(map ? map(newT) : newT));
   return t;
@@ -105,9 +106,7 @@ export function useServerNotificationEffect<T>(method: string, f: (params: T) =>
 export function useServerNotificationState<S, T>(method: string, initial: S, f: (params: T) => Promise<(state: S) => S>, deps?: React.DependencyList): [S, React.Dispatch<React.SetStateAction<S>>] {
   const [s, setS] = React.useState<S>(initial);
 
-  useServerNotificationEffect(method, (params: T) => {
-    f(params).then(g => setS(g))
-  }, deps);
+  useServerNotificationEffect(method, (params: T) => void f(params).then(g => setS(g)), deps);
 
   return [s, setS];
 }
@@ -165,9 +164,10 @@ export function useLogState(): [string, (...msg: any[]) => void] {
   const [log, setLog] = React.useState('');
 
   function outputLog(...msg: any[]) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
     console.log(...msg);
     const fmt = msg.reduce((acc, val) => acc + ' ' + val.toString(), '');
-    setLog(log => log + fmt + '\n');
+    setLog(oldLog => oldLog + fmt + '\n');
   }
 
   return [log, outputLog];

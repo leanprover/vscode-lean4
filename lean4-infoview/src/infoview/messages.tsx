@@ -2,12 +2,13 @@ import * as React from 'react';
 import fastIsEqual from 'react-fast-compare';
 import { Location, DocumentUri, Diagnostic, DiagnosticSeverity, PublishDiagnosticsParams } from 'vscode-languageserver-protocol';
 
+import { LeanDiagnostic } from '@lean4/infoview-api';
+
 import { basename, escapeHtml, RangeHelpers, usePausableState, useEvent, addUniqueKeys, DocumentPosition, useServerNotificationState } from './util';
 import { ConfigContext, EditorContext, LspDiagnosticsContext, RpcContext, VersionContext } from './contexts';
 import { Details } from './collapsing';
 import { InteractiveMessage } from './traceExplorer';
 import { getInteractiveDiagnostics, InteractiveDiagnostic, TaggedText_stripTags } from './rpcInterface';
-import { LeanDiagnostic } from '../lspTypes';
 
 interface MessageViewProps {
     uri: DocumentUri;
@@ -32,10 +33,10 @@ const MessageView = React.memo(({uri, diag}: MessageViewProps) => {
         <summary className={severityClass + ' mv2 pointer'}>{title}
             <span className="fr">
                 <a className="link pointer mh2 dim codicon codicon-go-to-file"
-                   onClick={e => { e.preventDefault(); ec.revealLocation(loc); }}
+                   onClick={e => { e.preventDefault(); void ec.revealLocation(loc); }}
                    title="reveal file location"></a>
                 <a className="link pointer mh2 dim codicon codicon-quote"
-                   onClick={e => {e.preventDefault(); ec.copyToComment(text)}}
+                   onClick={e => {e.preventDefault(); void ec.copyToComment(text)}}
                    title="copy message to comment"></a>
                 <a className="link pointer mh2 dim codicon codicon-clippy"
                    onClick={e => {e.preventDefault(); void ec.api.copyToClipboard(text)}}
@@ -93,7 +94,7 @@ export function AllMessages({uri: uri0}: { uri: DocumentUri }) {
     const config = React.useContext(ConfigContext);
     const diags0 = dc.get(uri0) || [];
 
-    let iDiags0 = React.useMemo(() => lazy(async () => {
+    const iDiags0 = React.useMemo(() => lazy(async () => {
         if (sv?.hasWidgetsV1()) {
             try {
                 return await getInteractiveDiagnostics(rs, { uri: uri0, line: 0, character: 0 }) || [];
@@ -108,7 +109,7 @@ export function AllMessages({uri: uri0}: { uri: DocumentUri }) {
 
     // Fetch interactive diagnostics when we're entering the paused state
     // (if they haven't already been fetched before)
-    React.useEffect(() => { isPaused && iDiags() }, [iDiags, isPaused]);
+    React.useEffect(() => void (isPaused && iDiags()), [iDiags, isPaused]);
 
     const setOpenRef = React.useRef<React.Dispatch<React.SetStateAction<boolean>>>();
     useEvent(ec.events.requestedAction, act => {
@@ -122,8 +123,8 @@ export function AllMessages({uri: uri0}: { uri: DocumentUri }) {
         <summary className="mv2 pointer">
             All Messages ({diags.length})
             <span className="fr">
-                <a className={"link pointer mh2 dim codicon " + (isPaused ? "codicon-debug-continue" : "codicon-debug-pause")}
-                   onClick={e => { e.preventDefault(); setPaused(isPaused => !isPaused); }}
+                <a className={'link pointer mh2 dim codicon ' + (isPaused ? 'codicon-debug-continue' : 'codicon-debug-pause')}
+                   onClick={e => { e.preventDefault(); setPaused(p => !p); }}
                    title={isPaused ? 'continue updating' : 'pause updating'}>
                 </a>
             </span>
@@ -147,8 +148,8 @@ export function WithLspDiagnosticsContext({children}: React.PropsWithChildren<{}
     const [allDiags, _0] = useServerNotificationState(
         'textDocument/publishDiagnostics',
         new Map<DocumentUri, Diagnostic[]>(),
-        async (params: PublishDiagnosticsParams) => allDiags =>
-            new Map(allDiags).set(params.uri, params.diagnostics),
+        async (params: PublishDiagnosticsParams) => diags =>
+            new Map(diags).set(params.uri, params.diagnostics),
         []
     )
 

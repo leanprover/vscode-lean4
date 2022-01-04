@@ -1,9 +1,9 @@
-import * as React from "react";
-import { DidChangeTextDocumentParams, DidCloseTextDocumentParams, Location, TextDocumentContentChangeEvent } from "vscode-languageserver-protocol";
+import * as React from 'react';
+import { DidChangeTextDocumentParams, DidCloseTextDocumentParams, Location, TextDocumentContentChangeEvent } from 'vscode-languageserver-protocol';
 
-import { EditorContext } from "./contexts";
-import { DocumentPosition, Keyed, PositionHelpers, useClientNotificationEffect, useClientNotificationState, useEvent } from "./util";
-import { Info, InfoProps } from "./info";
+import { EditorContext } from './contexts';
+import { DocumentPosition, Keyed, PositionHelpers, useClientNotificationEffect, useClientNotificationState, useEvent } from './util';
+import { Info, InfoProps } from './info';
 
 /** Manages and displays pinned infos, as well as info for the current location. */
 export function Infos() {
@@ -23,7 +23,7 @@ export function Infos() {
                 // NOTE(WN): It's important to make a clone here, otherwise this
                 // actually mutates the pin. React state updates must be pure.
                 // See https://github.com/facebook/react/issues/12856
-                let newPin: Keyed<DocumentPosition> = { ...pin };
+                const newPin: Keyed<DocumentPosition> = { ...pin };
                 for (const chg of params.contentChanges) {
                     if (!TextDocumentContentChangeEvent.isIncremental(chg)) {
                         changed = true;
@@ -64,6 +64,7 @@ export function Infos() {
         []
     );
 
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const [curLoc, setCurLoc] = React.useState<Location>(ec.events.changedCursorLocation.current!);
     useEvent(ec.events.changedCursorLocation, loc => loc && setCurLoc(loc), []);
 
@@ -101,7 +102,7 @@ export function Infos() {
         });
     }, [curPos.uri, curPos.line, curPos.character]);
 
-    let infoProps: Keyed<InfoProps>[] = pinnedPoss.map(pos => { return { kind: 'pin', onPin: unpin, pos, key: pos.key }; });
+    const infoProps: Keyed<InfoProps>[] = pinnedPoss.map(pos => ({ kind: 'pin', onPin: unpin, pos, key: pos.key }));
     infoProps.push({ kind: 'cursor', onPin: pin, key: 'cursor' });
 
     return <div> {infoProps.map (ps => <Info {...ps} />)} </div>;

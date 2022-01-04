@@ -65,7 +65,7 @@ export class LeanInstaller implements Disposable {
                 const result = await this.installElan();
                 this.installChangedEmitter.fire(undefined);
             } catch (err) {
-                this.outputChannel.appendLine(err);
+                this.outputChannel.appendLine('' + err);
             }
         } else if (item === selectItem){
             void this.selectToolchain();
@@ -174,7 +174,7 @@ export class LeanInstaller implements Disposable {
             return { version: major, error: null }
         } catch (err) {
             void window.showErrorMessage(`lean4: Could not find Lean version by running '${cmd} ${options}'.`)
-            if (this.outputChannel) this.outputChannel.appendLine(err);
+            if (this.outputChannel) this.outputChannel.appendLine('' + err);
             return { version: '', error: err };
         }
     }
