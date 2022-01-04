@@ -91,7 +91,7 @@ export class LeanInstaller implements Disposable {
         const item = await window.showErrorMessage(`Failed to start '${executable}' language server`, installItem, selectItem)
         if (item === installItem) {
             try {
-                const result = await this.installElan(this.defaultToolchain);
+                const result = await this.installElan();
                 this.installChangedEmitter.fire(undefined);
             } catch (err) {
                 this.outputChannel.appendLine('' + err);
@@ -234,7 +234,7 @@ export class LeanInstaller implements Disposable {
         }
     }
 
-    async executeWithProgress(prompt: string, cmd: string, options: string[], workingDirectory: string): Promise<string>{
+    private async executeWithProgress(prompt: string, cmd: string, options: string[], workingDirectory: string): Promise<string>{
         let inc = 0;
         let stdout = ''
         /* eslint-disable  @typescript-eslint/no-this-alias */
@@ -328,7 +328,7 @@ export class LeanInstaller implements Disposable {
         return elanInstalled;
     }
 
-    async installElan(defaultToolchain: string = 'none') : Promise<boolean> {
+    private async installElan() : Promise<boolean> {
 
         if (executablePath() !== 'lean') {
             void window.showErrorMessage('It looks like you\'ve modified the `lean.executablePath` user setting.' +
@@ -358,7 +358,7 @@ export class LeanInstaller implements Disposable {
                 promptAndExit = 'Read-Host -Prompt "Press ENTER key to start Lean" ; exit\n'
             }
 
-            const toolchain = `-y --default-toolchain ${defaultToolchain}`;
+            const toolchain = `-y --default-toolchain ${this.defaultToolchain}`;
 
             // Now show the terminal and run elan.
             if (await this.hasElan()) {
