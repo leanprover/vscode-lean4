@@ -28,7 +28,10 @@ and you should see something like this in the `Lean: Editor` output panel:
     Lean (version 4.0.0-nightly-2021-10-18, commit e843fb7ca5b5, Release)
     ```
 
-1. This version of the VS Code extension only works on Lean 4 source files and not
+See [Complete Setup](#complete_setup) for more information
+on how the lean version is determined for your VS Code workspace.
+
+This version of the VS Code extension only works on Lean 4 source files and not
 Lean 3.  There is a separate VS Code extension for Lean 3.  You can have both extensions installed at the same time, they can live side by side.
 
 ## Lake integration
@@ -248,6 +251,38 @@ imports. This command has a default keyboard binding of <kbd>Ctrl</kbd>+<kbd>Shi
 * `lean4.docView.open` (Lean 4: Open Documentation View): Open documentation found in local 'html' folder in a separate web view panel.
 
 * `lean4.docView.showAllAbbreviations` (Lean 4: Show all abbreviations): Show help page containing all abbreviations and the Unicode characters they map to.  This makes it easy to then search for the abbreviation for a given symbol you have in mind using <kbd>Ctrl</kbd>+<kbd>F</kbd>.
+
+## Complete Setup
+
+The complete flow chart for determining how elan and lean are installed is shown below:
+
+![flow](vscode-lean4/media/setup.png)
+
+The `start` state is when you have opened a folder in VS Code and opened a .lean file to activate this extension.
+
+If the extension finds that elan is not in your path and is not installed in the default location then it will prompt
+you to install lean via elan.  If the folder contains a `lean-toolchain` version it will install that version
+otherwise it will install `leanprover/lean4:nightly`.
+
+If elan is installed and there is a workspace override in place
+created by the `Select Toolchain` command then this version
+takes precedence until you removes that override.
+
+Otherwise, if there is a `lean-toolchain` (or `leanpkg.toml`) then
+it will use the version specified in this file.
+
+Otherwise if `elan toolchain list` shows there is a `(default)`
+toolchain it will use that version.
+
+Otherwise it will prompt you to select a toolchain using the `Select Toolchain` command.  If the elan toolchain list is
+empty it will add `leanprover/lean4:nightly` to the list so that there is always something to select.
+
+Then with the selected version it runs `lean --version` to check if that version is installed yet.  If this
+version is not yet installed `lean --version` will install it.
+
+In the case of a workspace override the `+version` command line
+option is used on `lean --version` and `lean --server` to ensure
+that the overridden version is used.
 
 ## For VS Code Extension developers
 
