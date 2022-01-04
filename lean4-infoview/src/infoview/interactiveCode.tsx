@@ -4,7 +4,7 @@ import 'tippy.js/dist/tippy.css'
 import 'tippy.js/themes/light-border.css'
 import { default as Tippy, TippyProps } from '@tippyjs/react'
 
-import { RpcContext } from "./contexts"
+import { RpcContext } from './contexts'
 import { DocumentPosition } from './util'
 import { CodeToken, CodeWithInfos, InfoPopup, InfoWithCtx, InteractiveDiagnostics_infoToInteractive, TaggedText } from './rpcInterface'
 
@@ -31,7 +31,7 @@ export function InteractiveTaggedText<T>({pos, fmt, InnerTagUi}: InteractiveTagg
     {fmt.append.map((a, i) => <InteractiveTaggedText key={i} pos={pos} fmt={a} InnerTagUi={InnerTagUi} />)}
   </>
   else if ('tag' in fmt) return <InnerTagUi pos={pos} fmt={fmt.tag[1]} tag={fmt.tag[0]} />
-  else throw `malformed 'TaggedText': '${fmt}'`
+  else throw new Error(`malformed 'TaggedText': '${fmt}'`)
 }
 
 /**
@@ -80,7 +80,7 @@ function TypePopupContents({pos, info, redrawTooltip}: {pos: DocumentPosition, i
         redrawTooltip()
       }
     }).catch(ex => {
-      if ('message' in ex) setErr(ex.message)
+      if ('message' in ex) setErr('' + ex.message)
       else if ('code' in ex) setErr(`RPC error (${ex.code})`)
       else setErr(JSON.stringify(ex))
       redrawTooltip()
@@ -116,7 +116,7 @@ const HoverableTypePopupSpan =
   const [stick, setStick] = React.useState<boolean>(false)
   const [isInside, setIsInside] = React.useState<boolean>(false)
   const delay = 500
-  tippyInstance.current?.popperInstance?.update()
+  void tippyInstance.current?.popperInstance?.update()
 
   const onPointerOver = (e: React.PointerEvent<HTMLSpanElement>) => {
     e.stopPropagation()
@@ -151,9 +151,7 @@ const HoverableTypePopupSpan =
       onCreate={inst => tippyInstance.current = inst}
       content={
         <TypePopupContents
-          redrawTooltip={() => {
-            tippyInstance.current?.popperInstance?.update()
-          }}
+          redrawTooltip={() => void tippyInstance.current?.popperInstance?.update()}
           {...props}
         />}
 

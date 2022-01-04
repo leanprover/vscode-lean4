@@ -1,9 +1,9 @@
-import { Location, ShowDocumentParams } from "vscode-languageserver-protocol";
+import { Location, ShowDocumentParams } from 'vscode-languageserver-protocol';
 
-import { EditorApi, InfoviewApi, PlainGoal, PlainTermGoal } from "@lean4/infoview-api";
+import { EditorApi, InfoviewApi, PlainGoal, PlainTermGoal } from '@lean4/infoview-api';
 
-import { Eventify } from "./event";
-import { DocumentPosition } from "./util";
+import { Eventify } from './event';
+import { DocumentPosition } from './util';
 
 export type EditorEvents = Eventify<InfoviewApi>;
 
@@ -11,15 +11,15 @@ export class EditorConnection {
   constructor(readonly api: EditorApi, readonly events: EditorEvents) {}
 
   /** Highlights the given range in a document in the editor. */
-  revealLocation(loc: Location): void {
+  async revealLocation(loc: Location) {
     const show: ShowDocumentParams = {
       uri: loc.uri,
       selection: loc.range,
     };
-    this.api.showDocument(show);
+    await this.api.showDocument(show);
   }
 
-  revealPosition(pos: DocumentPosition) {
+  async revealPosition(pos: DocumentPosition) {
     const loc: Location = {
       uri: pos.uri,
       range: {
@@ -27,12 +27,12 @@ export class EditorConnection {
         end: pos,
       },
     };
-    this.revealLocation(loc);
+    await this.revealLocation(loc);
   }
 
   /** Copies the text to a comment at the cursor position. */
-  copyToComment(text: string): void {
-    this.api.insertText(`/-\n${text}\n-/`, 'above');
+  async copyToComment(text: string) {
+    await this.api.insertText(`/-\n${text}\n-/`, 'above');
   }
 
   requestPlainGoal(pos: DocumentPosition): Promise<PlainGoal | undefined> {

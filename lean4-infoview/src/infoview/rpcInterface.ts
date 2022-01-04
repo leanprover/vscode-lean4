@@ -16,22 +16,22 @@ export type TaggedText<T> =
     { tag: [T, TaggedText<T>] }
 
 function TaggedText_mapRefs<T>(tt: TaggedText<T>, f: (_: T) => void): void {
-    const go = (tt: TaggedText<T>) => TaggedText_mapRefs(tt, f)
+    const go = (t: TaggedText<T>) => TaggedText_mapRefs(t, f)
     if ('append' in tt) { for (const a of tt.append) go(a) }
     else if ('tag' in tt) { f(tt.tag[0]); go(tt.tag[1]) }
 }
 
-export function TaggedText_stripTags<T>(t: TaggedText<T>): string {
+export function TaggedText_stripTags<T>(tt: TaggedText<T>): string {
     const go = (t: TaggedText<T>): string => {
         if ('append' in t)
-            return t.append.reduce<string>((acc, t) => acc + go(t), "")
+            return t.append.reduce<string>((acc, t_) => acc + go(t_), '')
         else if ('tag' in t)
             return go(t.tag[1])
         else if ('text' in t)
             return t.text
         return ''
     }
-    return go(t)
+    return go(tt)
 }
 
 export type InfoWithCtx = RpcPtr<'InfoWithCtx'>
@@ -116,12 +116,12 @@ function MsgEmbed_registerRefs(rs: RpcSessions, pos: DocumentPosition, e: MsgEmb
     else if ('lazyTrace' in e) rs.registerRef(pos, e.lazyTrace[2])
 }
 
-function TaggedMsg_registerRefs(rs: RpcSessions, pos: DocumentPosition, t: TaggedText<MsgEmbed>): void {
+function TaggedMsg_registerRefs(rs: RpcSessions, pos: DocumentPosition, tt: TaggedText<MsgEmbed>): void {
     const go = (t: TaggedText<MsgEmbed>) => {
         if ('append' in t) { for (const a of t.append) go(a) }
         else if ('tag' in t) { MsgEmbed_registerRefs(rs, pos, t.tag[0]); go(t.tag[1]) }
     }
-    go(t)
+    go(tt)
 }
 
 export type InteractiveDiagnostic = Omit<LeanDiagnostic, 'message'> & { message: TaggedText<MsgEmbed> }

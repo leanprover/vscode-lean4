@@ -7,18 +7,18 @@
  * @module
  */
 
-import * as React from "react"
-import { RpcContext } from "./contexts"
-import { Goal } from "./goals"
-import { InteractiveCode, InteractiveTaggedText, InteractiveTagProps, InteractiveTextComponentProps } from "./interactiveCode"
-import { InteractiveDiagnostics_msgToInteractive, MessageData, MsgEmbed, TaggedText } from "./rpcInterface"
-import { DocumentPosition } from "./util"
+import * as React from 'react'
+import { RpcContext } from './contexts'
+import { Goal } from './goals'
+import { InteractiveCode, InteractiveTaggedText, InteractiveTagProps, InteractiveTextComponentProps } from './interactiveCode'
+import { InteractiveDiagnostics_msgToInteractive, MessageData, MsgEmbed, TaggedText } from './rpcInterface'
+import { DocumentPosition } from './util'
 
 function CollapsibleTrace({pos, col, cls, msg}: {pos: DocumentPosition, col: number, cls: string, msg: MessageData}) {
     const rs = React.useContext(RpcContext)
     const [tt, setTt] = React.useState<TaggedText<MsgEmbed> | undefined>(undefined)
 
-    let inner = undefined
+    let inner
     if (tt) {
         inner = <>
             <span className="underline-hover pointer"
@@ -32,9 +32,7 @@ function CollapsibleTrace({pos, col, cls, msg}: {pos: DocumentPosition, col: num
         inner =
             <span className="underline-hover pointer"
                 onClick={ev => {
-                    InteractiveDiagnostics_msgToInteractive(rs, pos, { msg, indent: col }).then(tt => {
-                        if (tt) setTt(tt)
-                    })
+                    void InteractiveDiagnostics_msgToInteractive(rs, pos, { msg, indent: col }).then(t => t && setTt(t))
                     ev.stopPropagation()
                 }}>[{cls.slice(1)}] &gt;</span>
     }
@@ -49,7 +47,7 @@ function InteractiveMessageTag({pos, tag: embed, fmt}: InteractiveTagProps<MsgEm
     else if ('lazyTrace' in embed)
         return <CollapsibleTrace pos={pos} col={embed.lazyTrace[0]} cls={embed.lazyTrace[1]} msg={embed.lazyTrace[2]} />
     else
-        throw `malformed 'MsgEmbed': '${embed}'`
+        throw new Error(`malformed 'MsgEmbed': '${embed}'`)
 }
 
 export function InteractiveMessage({pos, fmt}: InteractiveTextComponentProps<MsgEmbed>) {

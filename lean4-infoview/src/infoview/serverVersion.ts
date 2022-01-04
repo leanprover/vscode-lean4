@@ -14,7 +14,7 @@ export class ServerVersion {
             this.major = parseInt(vs[0])
             this.minor = parseInt(vs[1])
             this.patch = 0
-        } else if (vs.length == 3) {
+        } else if (vs.length === 3) {
             this.major = parseInt(vs[0])
             this.minor = parseInt(vs[1])
             this.patch = parseInt(vs[2])

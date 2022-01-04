@@ -39,7 +39,7 @@ function Main(props: {}) {
         'textDocument/didClose',
         (params: DidCloseTextDocumentParams) => {
             if (ec.events.changedCursorLocation.current &&
-                ec.events.changedCursorLocation.current.uri == params.textDocument.uri) {
+                ec.events.changedCursorLocation.current.uri === params.textDocument.uri) {
                 ec.events.changedCursorLocation.fire(undefined)
             }
         },
@@ -47,7 +47,7 @@ function Main(props: {}) {
     );
 
     const serverInitializeResult = useEventResult(ec.events.serverRestarted);
-    const sv = serverInitializeResult ? new ServerVersion(serverInitializeResult.serverInfo!.version!) : undefined;
+    const sv = serverInitializeResult ? new ServerVersion(serverInitializeResult.serverInfo?.version ?? '') : undefined;
 
     // NB: the cursor may temporarily become `undefined` when a file is closed. In this case
     // it's important not to reconstruct the `WithBlah` wrappers below since they contain state
@@ -88,7 +88,7 @@ function Main(props: {}) {
  * @param uiElement the HTML element (e.g. a `<div>`) to render into
  */
 export function renderInfoview(editorApi: EditorApi, uiElement: HTMLElement): InfoviewApi {
-    let editorEvents: EditorEvents = {
+    const editorEvents: EditorEvents = {
         initialize: new Event(),
         gotServerNotification: new Event(),
         sentClientNotification: new Event(),

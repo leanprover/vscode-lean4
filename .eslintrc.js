@@ -138,5 +138,7 @@ module.exports = {
         "spaced-comment": "off",
         "use-isnan": "error",
         "valid-typeof": "off",
+        "radix": "off",
+        "no-shadow": "off",
     }
 };
