@@ -115,6 +115,10 @@ export class LeanClient implements Disposable {
             // user is requesting an explicit version for this workspace.
             options = ['+' + version, '--server']
         }
+        if (workspace.workspaceFolders && workspace.workspaceFolders[0]) {
+            // Add workspace folder name to command-line so that it shows up in `ps aux`.
+            options.push('' + workspace.workspaceFolders[0].uri.toString())
+        }
 
         const serverOptions: ServerOptions = {
             command: this.executable,
