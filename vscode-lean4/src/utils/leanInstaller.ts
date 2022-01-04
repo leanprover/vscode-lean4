@@ -55,6 +55,11 @@ export class LeanInstaller implements Disposable {
 
         const found = await this.checkLeanVersion(leanVersion);
         if (found.error) {
+            if (leanVersion){
+                // if we have a lean-toolchain version or a workspace override then
+                // use that version during the installElan process.
+                this.defaultToolchain = leanVersion;
+            }
             if (found.error === 'no default toolchain') {
                 await this.showToolchainOptions()
             } else {
