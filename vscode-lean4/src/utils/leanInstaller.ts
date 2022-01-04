@@ -234,7 +234,7 @@ export class LeanInstaller implements Disposable {
             const major = match[1]
             return { version: major, error: null }
         } catch (err) {
-            if (this.outputChannel) this.outputChannel.appendLine(err);
+            if (this.outputChannel) this.outputChannel.appendLine('' + err);
             return { version: '', error: err };
         }
     }
