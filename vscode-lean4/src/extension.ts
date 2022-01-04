@@ -74,7 +74,7 @@ export async function activate(context: ExtensionContext): Promise<any> {
     pkgService.versionChanged((v) => installer.handleVersionChanged(v));
     client.serverFailed((err) => window.showErrorMessage(err));
 
-    if (versionInfo.version === '4') {
+    if (versionInfo.version === '4' && !versionInfo.error) {
         void client.start();
     }
     return  { isLean4Project: true };

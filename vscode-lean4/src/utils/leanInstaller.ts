@@ -43,6 +43,7 @@ export class LeanInstaller implements Disposable {
                 // Ah, then we need to install elan and since we have no leanVersion
                 // we might as well install the default toolchain as well.
                 void this.showInstallOptions();
+                return { version: '4', error: 'no elan installed' }
             } else {
                 const defaultVersion = await this.getDefaultToolchain();
                 if (!defaultVersion) {
