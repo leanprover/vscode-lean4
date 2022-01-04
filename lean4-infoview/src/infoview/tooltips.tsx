@@ -76,12 +76,12 @@ export const Tooltip = forwardAndUseRef<HTMLDivElement,
 export const HighlightOnHoverSpan = forwardAndUseRef<HTMLSpanElement, React.HTMLProps<HTMLSpanElement>>((props, ref, setRef) => {
   const [isPointerOver, setIsPointerOver] = React.useState<boolean>(false)
   const onPointerOver = (e: React.PointerEvent<HTMLSpanElement>) => {
-    if (ref.current && e.target == ref.current)
+    if (ref.current && e.target === ref.current)
       setIsPointerOver(true)
   }
 
   const onPointerOut = (e: React.PointerEvent<HTMLSpanElement>) => {
-    if (ref.current && e.target == ref.current)
+    if (ref.current && e.target === ref.current)
       setIsPointerOver(false)
   }
 
@@ -187,14 +187,14 @@ export const WithTooltipOnHover =
     // event was handled with a property.
     if ('_WithTooltipOnHoverSeen' in e) return
     if (!isWithinHoverable(e.target)) return
-    (e as any)['_WithTooltipOnHoverSeen'] = {}
+    (e as any)._WithTooltipOnHoverSeen = {}
     startShowTimeout()
   }
 
   const onPointerOut = (e: React.PointerEvent<HTMLSpanElement>) => {
     if ('_WithTooltipOnHoverSeen' in e) return
     if (!isWithinHoverable(e.target)) return
-    (e as any)['_WithTooltipOnHoverSeen'] = {}
+    (e as any)._WithTooltipOnHoverSeen = {}
     startHideTimeout()
   }
 
