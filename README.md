@@ -264,25 +264,23 @@ If the extension finds that elan is not in your path and is not installed in the
 you to install lean via elan.  If the folder contains a `lean-toolchain` version it will install that version
 otherwise it will install `leanprover/lean4:nightly`.
 
-If elan is installed and there is a workspace override in place
-created by the `Select Toolchain` command then this version
-takes precedence until you removes that override.
+If elan is installed and there is a workspace override in place created by the `Select Toolchain`
+command then this version takes precedence until you remove that override.
 
-Otherwise, if there is a `lean-toolchain` (or `leanpkg.toml`) then
-it will use the version specified in this file.
+Otherwise, if there is a `lean-toolchain` (or `leanpkg.toml`) in the workspace folder or in a parent
+folder then it will use the version specified in the specified version.
 
-Otherwise if `elan toolchain list` shows there is a `(default)`
-toolchain it will use that version.
+Otherwise, if `elan toolchain list` shows there is a `(default)` toolchain it will use that version.
 
-Otherwise it will prompt you to select a toolchain using the `Select Toolchain` command.  If the elan toolchain list is
-empty it will add `leanprover/lean4:nightly` to the list so that there is always something to select.
+Otherwise, it will prompt you to select a toolchain using the `Select Toolchain` command.  If the
+elan toolchain list is empty it will add `leanprover/lean4:nightly` to the list so that there is
+always something to select.
 
-Then with the selected version it runs `lean --version` to check if that version is installed yet.  If this
-version is not yet installed `lean --version` will install it.
+Then with the selected version it runs `lean --version` to check if that version is installed yet.
+If this version is not yet installed `lean --version` will install it.
 
-In the case of a workspace override the `+version` command line
-option is used on `lean --version` and `lean --server` to ensure
-that the overridden version is used.
+In the case of a workspace override the `+version` command line option is used on `lean --version`
+and `lean --server` to ensure that the overridden version is used.
 
 ## For VS Code Extension developers
 
