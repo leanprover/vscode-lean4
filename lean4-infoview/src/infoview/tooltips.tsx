@@ -121,7 +121,7 @@ export const WithTooltipOnHover =
   // Note: because tooltips are attached to `document.body`, they are not descendants of the
   // hoverable area in the DOM tree, and the `contains` check fails for elements within tooltip
   // contents. We can use this to distinguish these elements.
-  const isWithinHoverable = (el: EventTarget) => ref.current && ref.current.contains(el as Node)
+  const isWithinHoverable = (el: EventTarget) => ref.current && el instanceof Node && ref.current.contains(el)
   const [logicalDom, logicalDomStorage] = useLogicalDom(ref)
 
   // We use timeouts for debouncing hover events.
@@ -144,7 +144,7 @@ export const WithTooltipOnHover =
 
   React.useEffect(() => {
     const onClickAnywhere = (e: Event) => {
-      if (!logicalDom.contains(e.target as Node)) {
+      if (e.target instanceof Node && !logicalDom.contains(e.target)) {
         clearTimeout()
         setState('hide')
       }
