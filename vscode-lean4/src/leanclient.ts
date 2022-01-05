@@ -23,7 +23,6 @@ import { LeanFileProgressParams, LeanFileProgressProcessingInfo } from '@lean4/i
 import { LocalStorageService} from './utils/localStorage'
 
 const documentSelector: DocumentFilter = {
-    scheme: 'file',
     language: 'lean4',
 }
 
