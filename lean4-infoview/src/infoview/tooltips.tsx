@@ -120,7 +120,13 @@ export const WithTooltipOnHover =
   const tipChainCtx = React.useContext(TipChainContext)
   React.useEffect(() => {
     if (state === 'pin') tipChainCtx.pinParent()
-  }, [state])
+  }, [state, tipChainCtx])
+  const newTipChainCtx = React.useMemo(() => ({
+    pinParent: () => {
+      setState('pin');
+      tipChainCtx.pinParent()
+    }
+  }), [tipChainCtx])
 
   // Note: because tooltips are attached to `document.body`, they are not descendants of the
   // hoverable area in the DOM tree, and the `contains` check fails for elements within tooltip
@@ -189,6 +195,7 @@ export const WithTooltipOnHover =
     if ('_WithTooltipOnHoverSeen' in e) return
     if (!isWithinHoverable(e.target)) return
     (e as any)._WithTooltipOnHoverSeen = {}
+    act()
   }
 
   return <LogicalDomContext.Provider value={logicalDomStorage}>
@@ -200,7 +207,7 @@ export const WithTooltipOnHover =
       {...props}
     >
       {shouldShow &&
-        <TipChainContext.Provider value={{pinParent: () => {setState('pin'); tipChainCtx.pinParent()}}}>
+        <TipChainContext.Provider value={newTipChainCtx}>
           <Tooltip
             reference={ref.current}
             onPointerEnter={onPointerEnter}

@@ -211,10 +211,11 @@ export interface LogicalDomTraverser {
 }
 
 export interface LogicalDomStorage {
-  registerDescendant(el: HTMLElement | null): void
+  // Returns a function which disposes of the registration.
+  registerDescendant(el: HTMLElement | null): () => void
 }
 
-export const LogicalDomContext = React.createContext<LogicalDomStorage>({registerDescendant: () => {}})
+export const LogicalDomContext = React.createContext<LogicalDomStorage>({registerDescendant: () => () => {}})
 
 /** Suppose a component B appears as a React child of the component A. For layout reasons,
  * we sometimes don't want B to appear as an actual child of A in the DOM. We may still however
@@ -225,14 +226,17 @@ export const LogicalDomContext = React.createContext<LogicalDomStorage>({registe
  * For the method to work, each component introducing a *logical* (React-but-not-DOM) child must
  * register it in the `LogicalDomContext`.
  *
- * To carry out checks, `useLogicalDom` with a ref to the logical DOM root and wrap the root
- * in a `LogicalDomContext` using the resulting `LogicalDomStorage`. */
+ * To carry out checks, call `useLogicalDom` with a ref to the node for which you want to carry
+ * out `contains` checks and wrap that node in a `LogicalDomContext` using the resulting
+ * `LogicalDomStorage`. */
 export function useLogicalDom(ref: React.RefObject<HTMLElement>): [LogicalDomTraverser, LogicalDomStorage] {
   const parentCtx = React.useContext(LogicalDomContext)
   React.useEffect(() => {
-    if (ref.current)
-      parentCtx.registerDescendant(ref.current)
-  }, [ref])
+    if (ref.current) {
+      const h = parentCtx.registerDescendant(ref.current)
+      return () => h()
+    }
+  }, [ref, parentCtx])
   const descendants = React.useRef<Set<Node>>(new Set())
 
   const contains = (el: Node) => {
@@ -244,9 +248,16 @@ export function useLogicalDom(ref: React.RefObject<HTMLElement>): [LogicalDomTra
   }
 
   const registerDescendant = (el: HTMLElement | null) => {
-    parentCtx.registerDescendant(el)
+    const h = parentCtx.registerDescendant(el)
     if (el) descendants.current.add(el)
+    return () => {
+      if (el) descendants.current.delete(el)
+      h()
+    }
   }
 
-  return [{contains}, {registerDescendant}]
+  return [
+    React.useMemo(() => ({contains}), [ref]),
+    React.useMemo(() => ({registerDescendant}), [parentCtx])
+  ]
 }
