@@ -35,11 +35,11 @@ export class LeanpkgService implements Disposable {
     }
 
     getWorkspaceLeanFolderUri() : Uri {
-        let rootPath : Uri = null;
+        let documentUri : Uri = null;
 
         if (window.activeTextEditor && this.isLean(window.activeTextEditor.document.languageId))
         {
-            rootPath = window.activeTextEditor.document.uri;
+            documentUri = window.activeTextEditor.document.uri
         }
         else {
             // This happens if vscode starts with a lean file open
@@ -47,23 +47,38 @@ export class LeanpkgService implements Disposable {
             for (const editor of window.visibleTextEditors) {
                 const lang = editor.document.languageId;
                 if (this.isLean(lang)) {
-                    rootPath = editor.document.uri;
+                    documentUri = editor.document.uri;
                     break;
                 }
             }
         }
 
-        if (rootPath) {
-            return Uri.joinPath(rootPath, '..');
+        let rootPath : Uri = null;
+        if (documentUri) {
+            const folder = workspace.getWorkspaceFolder(documentUri);
+            if (folder){
+                rootPath = folder.uri;
+            }
+            if (!rootPath) {
+                rootPath = window.activeTextEditor.document.uri;
+                if (rootPath) {
+                    // remove leaf filename part.
+                    rootPath = Uri.joinPath(rootPath, '..');
+                }
+            }
         }
 
-        // this code path should never happen because lean extension is only
-        // activated when a lean file is opened, so it should have been in the
-        // list of window.visibleTextEditors.
-        const workspaceFolders = workspace.workspaceFolders;
-        if (workspaceFolders && workspaceFolders.length > 0) {
-            rootPath = workspaceFolders[0].uri;
+        if (!rootPath) {
+            // this code path should never happen because lean extension is only
+            // activated when a lean file is opened, so it should have been in the
+            // list of window.visibleTextEditors.  So this is a fallback just in
+            // case some weird timing thing happened and file is now closed.
+            const workspaceFolders = workspace.workspaceFolders;
+            if (workspaceFolders && workspaceFolders.length > 0) {
+                rootPath = workspaceFolders[0].uri;
+            }
         }
+
         if (!rootPath) {
             return null;
         }
@@ -72,7 +87,7 @@ export class LeanpkgService implements Disposable {
 
     async findLeanPkgVersionInfo() : Promise<string> {
         const path = this.getWorkspaceLeanFolderUri()
-        if (!path) {
+        if (!path || path.fsPath === '.') {
             // what kind of vs folder is this?
         }
         else {

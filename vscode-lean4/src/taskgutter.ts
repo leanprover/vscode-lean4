@@ -14,6 +14,7 @@ class LeanFileTaskGutter {
         const oldProcessed = this.processed;
         this.processed = processed;
         if (processed === undefined) {
+            this.processed = []
             this.clearTimeout();
             this.updateDecos();
         } else if (this.timeout === undefined) {
