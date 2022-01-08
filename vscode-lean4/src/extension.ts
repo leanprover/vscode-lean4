@@ -8,7 +8,7 @@ import { LocalStorageService} from './utils/localStorage'
 import { LeanInstaller } from './utils/leanInstaller'
 import { LeanpkgService } from './utils/leanpkg';
 import { addDefaultElanPath } from './config';
-import { AbbreviationProvider } from './abbreviation/AbbreviationProvider'
+import { dirname, basename } from 'path';
 
 export async function activate(context: ExtensionContext): Promise<any> {
 
@@ -16,6 +16,16 @@ export async function activate(context: ExtensionContext): Promise<any> {
 
     const outputChannel = window.createOutputChannel('Lean: Editor');
     const storageManager = new LocalStorageService(context.workspaceState);
+    // migrate to new setting where it is now a directory location, not the
+    // actual full file name of the lean program.
+    const path = storageManager.getLeanPath();
+    if (path) {
+        const filename = basename(path);
+        if (filename === 'lean' || filename === 'lean.exe') {
+            const newPath = dirname(path);
+            storageManager.setLeanPath(newPath == '.' ? '' : newPath);
+        }
+    }
     const pkgService = new LeanpkgService(storageManager)
     context.subscriptions.push(pkgService);
     const leanVersion = await pkgService.findLeanPkgVersionInfo();

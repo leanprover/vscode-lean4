@@ -17,10 +17,17 @@ import {
     State
 } from 'vscode-languageclient/node'
 import * as ls from 'vscode-languageserver-protocol'
-import { executablePath, addServerEnvPaths, serverArgs, serverLoggingEnabled, serverLoggingPath, getElaborationDelay } from './config'
+import { toolchainPath, addServerEnvPaths, serverArgs, serverLoggingEnabled, serverLoggingPath, getElaborationDelay } from './config'
 import { assert } from './utils/assert'
 import { LeanFileProgressParams, LeanFileProgressProcessingInfo } from '@lean4/infoview-api';
 import { LocalStorageService} from './utils/localStorage'
+import { batchExecute, testExecute } from './utils/batch'
+import { cwd } from 'process'
+import * as fs from 'fs';
+import { URL } from 'url';
+import { join } from 'path';
+import { timeStamp } from 'console'
+import { runInThisContext } from 'vm'
 
 const documentSelector: DocumentFilter = {
     language: 'lean4',
@@ -41,9 +48,10 @@ export function getFullRange(diag: Diagnostic): Range {
 export class LeanClient implements Disposable {
     running: boolean
 	private client: LanguageClient | undefined
-    private executable: string
+    private toolchainPath: string
     private outputChannel: OutputChannel;
     private storageManager : LocalStorageService;
+    private useLake = true;
 
     private subscriptions: Disposable[] = []
 
@@ -94,6 +102,30 @@ export class LeanClient implements Disposable {
         if (this.isStarted()) void this.stop()
     }
 
+    getWorkspaceUri() : Uri {
+        let documentUri : Uri = null;
+        let rootPath : Uri = null;
+        if (window.activeTextEditor)
+        {
+            documentUri = window.activeTextEditor.document.uri
+            const folder = workspace.getWorkspaceFolder(documentUri)
+            if (folder) {
+                rootPath = folder.uri;
+            }
+        }
+        if (!rootPath) {
+            const workspaceFolders = workspace.workspaceFolders;
+            if (workspaceFolders && workspaceFolders.length > 0) {
+                rootPath = workspaceFolders[0].uri;
+            }
+        }
+        if (!rootPath) {
+            return Uri.parse('file:///' + cwd());
+        }
+
+        return rootPath;
+    }
+
     async restart(): Promise<void> {
         this.restartingEmitter.fire(undefined)
 
@@ -101,26 +133,56 @@ export class LeanClient implements Disposable {
             await this.stop()
         }
 
-        this.executable = this.storageManager.getLeanPath();
-        if (!this.executable) this.executable = executablePath();
+        this.toolchainPath = this.storageManager.getLeanPath();
+        if (!this.toolchainPath) this.toolchainPath = toolchainPath();
+
         const version = this.storageManager.getLeanVersion();
         const env = addServerEnvPaths(process.env);
         if (serverLoggingEnabled()) {
             env.LEAN_SERVER_LOG_DIR = serverLoggingPath()
         }
 
-        let options = ['--server']
-        if (version) {
-            // user is requesting an explicit version for this workspace.
-            options = ['+' + version, '--server']
+        let cmd = (this.toolchainPath) ? join(this.toolchainPath, 'lake') : 'lake';
+
+        const folder = this.getWorkspaceUri();
+        // check if the lake process will start.
+        if (this.useLake) {
+            const lakefile = Uri.joinPath(folder, 'lakefile.lean').toString()
+            if (!fs.existsSync(new URL(lakefile))) {
+                this.useLake = false;
+            }
         }
+
+        // optional: this is a faster way of finding out lake doesn't work in the
+        // current workspace.  The LanguageClient is much slower because it does
+        // 5 retries and everything... but this testExecute implementation is
+        // not perfect either... would be nice to have a "canExecute" command line
+        // option or something...
+        // if (this.useLake){
+        //     const rc = await testExecute(cmd, ['serve'], folder.fsPath);
+        //     if (rc !== 0) {
+        //         this.useLake = false;
+        //     }
+        // }
+
+        if (!this.useLake) {
+            cmd = (this.toolchainPath) ? join(this.toolchainPath, 'lean') : 'lean';
+        }
+
+        let options = version ? ['+' + version] :[]
+        if (this.useLake) {
+            options = options.concat(['env', 'lean', '--server'])
+        } else{
+            options = options.concat(['--server'])
+        }
+
         if (workspace.workspaceFolders && workspace.workspaceFolders[0]) {
             // Add workspace folder name to command-line so that it shows up in `ps aux`.
             options.push('' + workspace.workspaceFolders[0].uri.toString())
         }
 
         const serverOptions: ServerOptions = {
-            command: this.executable,
+            command: cmd,
             args: options.concat(serverArgs()),
             options: {
                 shell: true,
@@ -203,6 +265,7 @@ export class LeanClient implements Disposable {
             serverOptions,
             clientOptions
         )
+        let retryLean = false;
         this.patchConverters(this.client.protocol2CodeConverter, this.client.code2ProtocolConverter)
         try {
             this.client.onDidChangeState((s) =>{
@@ -213,6 +276,11 @@ export class LeanClient implements Disposable {
                     console.log('client running');
                 } else if (s.newState === State.Stopped) {
                     console.log('client has stopped or it failed to start');
+                    if (this.useLake){
+                        // next time try lean instead
+                        this.useLake = false;
+                        retryLean = true;
+                    }
                     this.running = false;
                 }
             })
@@ -222,8 +290,13 @@ export class LeanClient implements Disposable {
             // if we got this far then the client is happy so we are running!
             this.running = true;
         } catch (error) {
-            this.outputChannel.appendLine('' + error);
-            this.serverFailedEmitter.fire('' + error);
+            if (retryLean){
+                this.restart();
+            }
+            else{
+                this.outputChannel.appendLine('' + error);
+                this.serverFailedEmitter.fire('' + error);
+            }
             return;
         }
 
@@ -322,7 +395,7 @@ export class LeanClient implements Disposable {
     }
 
     configChanged(e : ConfigurationChangeEvent): void {
-        if (this.executable !== executablePath()){
+        if (this.toolchainPath !== toolchainPath()){
             void this.restart();
         }
     }

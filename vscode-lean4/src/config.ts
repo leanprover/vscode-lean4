@@ -45,8 +45,8 @@ export function addDefaultElanPath() : void {
     }
 }
 
-export function executablePath(): string {
-    return workspace.getConfiguration('lean4').get('executablePath', 'lean')
+export function toolchainPath(): string {
+    return workspace.getConfiguration('lean4').get('toolchainPath', 'lean')
 }
 
 export function serverEnv(): object {

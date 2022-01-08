@@ -1,8 +1,9 @@
 import { window, TerminalOptions, OutputChannel, commands, Disposable, EventEmitter, ProgressLocation } from 'vscode'
-import { executablePath, addServerEnvPaths } from '../config'
+import { toolchainPath, addServerEnvPaths } from '../config'
 import { batchExecute } from './batch'
 import { LocalStorageService} from './localStorage'
 import { LeanpkgService } from './leanpkg';
+import { join } from 'path';
 
 export class LeanInstaller implements Disposable {
 
@@ -53,13 +54,17 @@ export class LeanInstaller implements Disposable {
     }
 
     async showInstallOptions() : Promise<void> {
-        let executable = this.localStorage.getLeanPath();
-        if (!executable) executable = executablePath();
+        let path = this.localStorage.getLeanPath();
+        if (!path) path = toolchainPath();
         // note; we keep the LeanClient alive so that it can be restarted if the
         // user changes the Lean: Executable Path.
         const installItem = 'Install Lean using Elan';
         const selectItem = 'Select Lean Toolchain';
-        const item = await window.showErrorMessage(`Failed to start '${executable}' language server`, installItem, selectItem)
+        let prompt = `Failed to start 'lean' language server`
+        if (path){
+            prompt += `from ${path}`
+        }
+        const item = await window.showErrorMessage(prompt, installItem, selectItem)
         if (item === installItem) {
             try {
                 const result = await this.installElan();
@@ -87,20 +92,20 @@ export class LeanInstaller implements Disposable {
                 }
         );
         if (selectedVersion === otherPrompt) {
-            const selectedProgram = await window.showInputBox({
-                title: 'Enter path',
+            const selectedPath = await window.showInputBox({
+                title: 'Enter custom toolchain path',
                 value: defaultPath,
-                prompt: 'Enter full path to lean toolchain'
+                prompt: 'Enter full path to the lean toolchain you want to use'
             });
-            if (selectedProgram) {
-                this.localStorage.setLeanPath(selectedProgram);
+            if (selectedPath) {
+                this.localStorage.setLeanPath(selectedPath);
                 this.localStorage.setLeanVersion(''); // clear the requested version as we have a full path.
-                this.installChangedEmitter.fire(selectedProgram);
+                this.installChangedEmitter.fire(selectedPath);
             }
         } else if (selectedVersion) {
             // write this to the leanpkg.toml file and have the new version get
             // picked up from there.
-            this.localStorage.setLeanPath('lean'); // make sure any local full path override is cleared.
+            this.localStorage.setLeanPath(''); // make sure any local full path override is cleared.
             this.localStorage.setLeanVersion(selectedVersion);
             this.installChangedEmitter.fire(selectedVersion);
         }
@@ -109,7 +114,12 @@ export class LeanInstaller implements Disposable {
     async checkLeanVersion(requestedVersion : string): Promise<{version: string, error: string}> {
 
         let cmd = this.localStorage.getLeanPath();
-        if (!cmd) cmd = executablePath();
+        if (!cmd) cmd = toolchainPath();
+        if (!cmd) {
+            cmd = 'lean'
+        } else {
+            cmd = join(cmd, 'lean')
+        }
         // if this workspace has a local override use it, otherwise fall back on the requested version.
         const version = this.localStorage.getLeanVersion() ?? requestedVersion;
 
@@ -209,9 +219,9 @@ export class LeanInstaller implements Disposable {
     }
 
     async installElan() : Promise<boolean> {
-        if (executablePath() !== 'lean') {
-            void window.showErrorMessage('It looks like you\'ve modified the `lean.executablePath` user setting.' +
-                                         'Please change it back to \'lean\' before installing elan.');
+        if (toolchainPath()) {
+            void window.showErrorMessage('It looks like you\'ve modified the `lean.toolchainPath` user setting.' +
+                                         'Please clear this setting before installing elan.');
             return false;
         } else {
             const terminalName = 'Lean installation via elan';
