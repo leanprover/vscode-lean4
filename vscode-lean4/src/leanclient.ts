@@ -153,17 +153,17 @@ export class LeanClient implements Disposable {
             }
         }
 
-        // optional: this is a faster way of finding out lake doesn't work in the
+        // This is a faster way of finding out lake doesn't work in the
         // current workspace.  The LanguageClient is much slower because it does
         // 5 retries and everything... but this testExecute implementation is
         // not perfect either... would be nice to have a "canExecute" command line
         // option or something...
-        // if (this.useLake){
-        //     const rc = await testExecute(cmd, ['serve'], folder.fsPath);
-        //     if (rc !== 0) {
-        //         this.useLake = false;
-        //     }
-        // }
+        if (this.useLake) {
+            const rc = await testExecute(cmd, ['serve'], folder.fsPath);
+            if (rc !== 0) {
+                this.useLake = false;
+            }
+        }
 
         if (!this.useLake) {
             cmd = (this.toolchainPath) ? join(this.toolchainPath, 'lean') : 'lean';
@@ -176,10 +176,8 @@ export class LeanClient implements Disposable {
             options = options.concat(['--server'])
         }
 
-        if (workspace.workspaceFolders && workspace.workspaceFolders[0]) {
-            // Add workspace folder name to command-line so that it shows up in `ps aux`.
-            options.push('' + workspace.workspaceFolders[0].uri.toString())
-        }
+        // Add workspace folder name to command-line so that it shows up in `ps aux`.
+        options.push('' + folder.toString())
 
         const serverOptions: ServerOptions = {
             command: cmd,
@@ -395,7 +393,9 @@ export class LeanClient implements Disposable {
     }
 
     configChanged(e : ConfigurationChangeEvent): void {
-        if (this.toolchainPath !== toolchainPath()){
+        let newToolchainPath = this.storageManager.getLeanPath();
+        if (!newToolchainPath) newToolchainPath = toolchainPath();
+        if (this.toolchainPath !== newToolchainPath){
             void this.restart();
         }
     }

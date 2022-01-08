@@ -26,6 +26,7 @@ export async function activate(context: ExtensionContext): Promise<any> {
             storageManager.setLeanPath(newPath == '.' ? '' : newPath);
         }
     }
+
     const pkgService = new LeanpkgService(storageManager)
     context.subscriptions.push(pkgService);
     const leanVersion = await pkgService.findLeanPkgVersionInfo();

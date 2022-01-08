@@ -22,7 +22,7 @@
 				"lean4.toolchainPath": {
 					"type": "string",
 					"default": "",
-					"markdownDescription": "Path to your Lean toolchain. Leave this blank to get the default location from your PATH environment."
+					"markdownDescription": "Path to your Lean toolchain. Leave this blank to get the default location from your PATH environment or from the default elan install location."
 				},
 				"lean4.input.enabled": {
 					"type": "boolean",

@@ -37,7 +37,7 @@ export class LeanpkgService implements Disposable {
     getWorkspaceLeanFolderUri() : Uri {
         let documentUri : Uri = null;
 
-        if (window.activeTextEditor && this.isLean(window.activeTextEditor.document.languageId))
+        if (window.activeTextEditor)
         {
             documentUri = window.activeTextEditor.document.uri
         }

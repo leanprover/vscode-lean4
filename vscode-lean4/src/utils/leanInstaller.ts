@@ -79,9 +79,6 @@ export class LeanInstaller implements Disposable {
 
     async selectToolchain() : Promise<void> {
         let defaultPath = this.localStorage.getLeanPath();
-        if (!defaultPath) {
-            defaultPath = 'lean';
-        }
         const installedToolChains = await this.elanListToolChains();
         const otherPrompt = 'Other...';
         installedToolChains.push(otherPrompt);
@@ -95,13 +92,11 @@ export class LeanInstaller implements Disposable {
             const selectedPath = await window.showInputBox({
                 title: 'Enter custom toolchain path',
                 value: defaultPath,
-                prompt: 'Enter full path to the lean toolchain you want to use'
+                prompt: 'Enter full path to the lean toolchain you want to use or leave blank to use the default path',
             });
-            if (selectedPath) {
-                this.localStorage.setLeanPath(selectedPath);
-                this.localStorage.setLeanVersion(''); // clear the requested version as we have a full path.
-                this.installChangedEmitter.fire(selectedPath);
-            }
+            this.localStorage.setLeanPath(selectedPath);
+            this.localStorage.setLeanVersion(''); // clear the requested version as we have a full path.
+            this.installChangedEmitter.fire(selectedPath);
         } else if (selectedVersion) {
             // write this to the leanpkg.toml file and have the new version get
             // picked up from there.

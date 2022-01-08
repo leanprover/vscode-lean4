@@ -1,5 +1,5 @@
 import { OutputChannel } from 'vscode'
-import { spawn, kill } from 'child_process';
+import { spawn } from 'child_process';
 
 export async function batchExecute(
     toolchainPath: string,
