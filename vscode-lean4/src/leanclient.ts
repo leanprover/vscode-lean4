@@ -171,7 +171,7 @@ export class LeanClient implements Disposable {
 
         let options = version ? ['+' + version] :[]
         if (this.useLake) {
-            options = options.concat(['env', 'lean', '--server'])
+            options = options.concat(['serve', '--'])
         } else{
             options = options.concat(['--server'])
         }
