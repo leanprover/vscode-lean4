@@ -47,7 +47,6 @@ export async function testExecute(
     delay: number = 1000): Promise<number> {
 
     return new Promise(function(resolve, reject){
-        let output : string = '';
         let options = {}
         if (workingDirectory !== undefined) {
             options = { cwd: workingDirectory };

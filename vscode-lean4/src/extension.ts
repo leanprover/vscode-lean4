@@ -23,7 +23,7 @@ export async function activate(context: ExtensionContext): Promise<any> {
         const filename = basename(path);
         if (filename === 'lean' || filename === 'lean.exe') {
             const newPath = dirname(path);
-            storageManager.setLeanPath(newPath == '.' ? '' : newPath);
+            storageManager.setLeanPath(newPath === '.' ? '' : newPath);
         }
     }
 

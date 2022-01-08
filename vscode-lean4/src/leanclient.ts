@@ -289,7 +289,7 @@ export class LeanClient implements Disposable {
             this.running = true;
         } catch (error) {
             if (retryLean){
-                this.restart();
+                void this.restart();
             }
             else{
                 this.outputChannel.appendLine('' + error);

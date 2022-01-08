@@ -60,7 +60,7 @@ export class LeanInstaller implements Disposable {
         // user changes the Lean: Executable Path.
         const installItem = 'Install Lean using Elan';
         const selectItem = 'Select Lean Toolchain';
-        let prompt = `Failed to start 'lean' language server`
+        let prompt = 'Failed to start \'lean\' language server'
         if (path){
             prompt += `from ${path}`
         }
@@ -78,7 +78,6 @@ export class LeanInstaller implements Disposable {
     }
 
     async selectToolchain() : Promise<void> {
-        let defaultPath = this.localStorage.getLeanPath();
         const installedToolChains = await this.elanListToolChains();
         const otherPrompt = 'Other...';
         installedToolChains.push(otherPrompt);
@@ -91,7 +90,7 @@ export class LeanInstaller implements Disposable {
         if (selectedVersion === otherPrompt) {
             const selectedPath = await window.showInputBox({
                 title: 'Enter custom toolchain path',
-                value: defaultPath,
+                value: this.localStorage.getLeanPath(),
                 prompt: 'Enter full path to the lean toolchain you want to use or leave blank to use the default path',
             });
             this.localStorage.setLeanPath(selectedPath);
