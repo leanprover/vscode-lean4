@@ -13,26 +13,61 @@ export class LeanInstaller implements Disposable {
     private subscriptions: Disposable[] = [];
     private prompting : boolean = false;
     private pkgService : LeanpkgService;
+    private defaultToolchain : string;
+    private workspaceSuffix : string = '(workspace override)';
+    private defaultSuffix : string = '(default)'
 
     private installChangedEmitter = new EventEmitter<string>();
     installChanged = this.installChangedEmitter.event
 
-    constructor(outputChannel: OutputChannel, localStorage : LocalStorageService, pkgService : LeanpkgService){
+    constructor(outputChannel: OutputChannel, localStorage : LocalStorageService, pkgService : LeanpkgService, defaultToolchain : string) {
         this.outputChannel = outputChannel;
+        this.defaultToolchain = defaultToolchain;
         this.localStorage = localStorage;
         this.pkgService = pkgService;
         this.subscriptions.push(commands.registerCommand('lean4.selectToolchain', () => this.selectToolchain()));
     }
 
-    async testLeanVersion(requestedVersion : string) : Promise<string> {
-        const found = await this.checkLeanVersion(requestedVersion);
-        if (found.error) {
-            void window.showErrorMessage(found.error);
-            // then try something else...
-            void this.showInstallOptions();
-            return '4'; // we don't know the version, so assume we can make version 4 work.
+    async testLeanVersion() : Promise<{version: string, error: string}> {
+
+        // see if there is a lean-toolchain file and use that version.
+        let leanVersion = await this.pkgService.findLeanPkgVersionInfo();
+        if (!leanVersion) {
+            // see if there's a workspace override then.
+            leanVersion = this.localStorage.getLeanVersion();
         }
-        return found.version;
+
+        if (!leanVersion){
+            const hasElan = await this.hasElan();
+            if (!hasElan) {
+                // Ah, then we need to install elan and since we have no leanVersion
+                // we might as well install the default toolchain as well.
+                void this.showInstallOptions();
+                return { version: '4', error: 'no elan installed' }
+            } else {
+                const defaultVersion = await this.getDefaultToolchain();
+                if (!defaultVersion) {
+                    void this.showToolchainOptions();
+                } else {
+                    leanVersion = defaultVersion;
+                }
+            }
+        }
+
+        const found = await this.checkLeanVersion(leanVersion);
+        if (found.error) {
+            if (leanVersion){
+                // if we have a lean-toolchain version or a workspace override then
+                // use that version during the installElan process.
+                this.defaultToolchain = leanVersion;
+            }
+            if (found.error === 'no default toolchain') {
+                await this.showToolchainOptions()
+            } else {
+                void this.showInstallOptions();
+            }
+        }
+        return found;
     }
 
     async handleVersionChanged(version : string) :  Promise<void> {
@@ -43,8 +78,8 @@ export class LeanInstaller implements Disposable {
         const restartItem = 'Restart Lean';
         const item = await window.showErrorMessage(`Lean version changed: '${version}'`, restartItem);
         if (item === restartItem) {
-            const rc = await this.testLeanVersion(version);
-            if (rc === '4'){
+            const rc = await this.testLeanVersion();
+            if (rc.version === '4'){
                 // it works, so restart the client!
                 this.installChangedEmitter.fire(undefined);
             }
@@ -78,6 +113,30 @@ export class LeanInstaller implements Disposable {
             defaultPath = 'lean';
         }
         const installedToolChains = await this.elanListToolChains();
+        if (installedToolChains.length === 1 && installedToolChains[0] === 'no installed toolchains') {
+            installedToolChains[0] = this.defaultToolchain
+        }
+
+        // give an indication of any workspace override.
+        const resetPrompt = 'Reset workspace override...';
+        const versionOverride = this.localStorage.getLeanVersion();
+        if (versionOverride){
+            let found = false;
+            for (let i = 0; i < installedToolChains.length; i++)
+            {
+                const v = this.removeSuffix(installedToolChains[i]);
+                if (v === versionOverride){
+                    installedToolChains[i] = v + ' ' + this.workspaceSuffix;
+                    found = true;
+                }
+            }
+
+            if (!found) {
+                installedToolChains.push(versionOverride + ' ' + this.workspaceSuffix);
+            }
+            installedToolChains.push('Reset workspace override...');
+        }
+
         const otherPrompt = 'Other...';
         installedToolChains.push(otherPrompt);
         const selectedVersion = await window.showQuickPick(
@@ -86,6 +145,7 @@ export class LeanInstaller implements Disposable {
                     canPickMany: false,
                 }
         );
+
         if (selectedVersion === otherPrompt) {
             const selectedProgram = await window.showInputBox({
                 title: 'Enter path',
@@ -97,12 +157,37 @@ export class LeanInstaller implements Disposable {
                 this.localStorage.setLeanVersion(''); // clear the requested version as we have a full path.
                 this.installChangedEmitter.fire(selectedProgram);
             }
+        }  else if (selectedVersion === resetPrompt){
+            this.localStorage.setLeanVersion(''); // clear the requested version as we have a full path.
+            this.installChangedEmitter.fire(undefined);
         } else if (selectedVersion) {
-            // write this to the leanpkg.toml file and have the new version get
-            // picked up from there.
+            const s = this.removeSuffix(selectedVersion);
             this.localStorage.setLeanPath('lean'); // make sure any local full path override is cleared.
-            this.localStorage.setLeanVersion(selectedVersion);
-            this.installChangedEmitter.fire(selectedVersion);
+            this.localStorage.setLeanVersion(s);
+            this.installChangedEmitter.fire(s);
+        }
+    }
+
+    private removeSuffix(version: string): string{
+        let s = version;
+        const suffixes = [this.defaultSuffix, this.workspaceSuffix];
+        suffixes.forEach((suffix) => {
+            if (s.endsWith(suffix)){
+                s = s.substr(0, s.length - suffix.length);
+            }
+        });
+        return s.trim();
+    }
+
+    async showToolchainOptions() : Promise<void> {
+        let executable = this.localStorage.getLeanPath();
+        if (!executable) executable = executablePath();
+        // note; we keep the LeanClient alive so that it can be restarted if the
+        // user changes the Lean: Executable Path.
+        const selectToolchain = 'Select lean toolchain';
+        const item = await window.showErrorMessage('You have no default "lean-toolchain" in this folder or any parent folder.', selectToolchain)
+        if (item === selectToolchain) {
+            await this.selectToolchain();
         }
     }
 
@@ -131,36 +216,13 @@ export class LeanInstaller implements Disposable {
             // Specifically, if the extension was not opened inside of a folder, it
             // looks for a global (default) installation of Lean. This way, we can support
             // single file editing.
-            let stdout = '';
-            let inc = 0;
-            await window.withProgress({
-                location: ProgressLocation.Notification,
-                title: '',
-                cancellable: false
-            }, (progress) => {
-                const progressChannel : OutputChannel = {
-                    name : 'ProgressChannel',
-                    append(value: string)
-                    {
-                        stdout += value;
-                        console.log(inc + ': ' + value);
-                        if (inc < 100) {
-                            inc += 10;
-                        }
-                        progress.report({ increment: inc, message: value });
-                    },
-                    appendLine(value: string) {
-                        this.append(value + '\n');
-                    },
-                    clear() { /* empty */ },
-                    show() { /* empty */ },
-                    hide() { /* empty */ },
-                    dispose() { /* empty */ }
-                }
-                progress.report({increment:0, message: 'Checking Lean setup...'});
-                return batchExecute(cmd, options, folderPath, progressChannel);
-            });
-
+            const stdout = await this.executeWithProgress('Checking Lean setup...', cmd, options,folderPath)
+            if (!stdout) {
+                return { version: '', error: 'lean not found' };
+            }
+            if (stdout.indexOf('no default toolchain') > 0) {
+                return { version: '', error: 'no default toolchain' };
+            }
             const filterVersion = /version (\d+)\.\d+\..+/
             const match = filterVersion.exec(stdout)
             if (!match) {
@@ -173,10 +235,58 @@ export class LeanInstaller implements Disposable {
             const major = match[1]
             return { version: major, error: null }
         } catch (err) {
-            void window.showErrorMessage(`lean4: Could not find Lean version by running '${cmd} ${options}'.`)
             if (this.outputChannel) this.outputChannel.appendLine('' + err);
             return { version: '', error: err };
         }
+    }
+
+    private async executeWithProgress(prompt: string, cmd: string, options: string[], workingDirectory: string): Promise<string>{
+        let inc = 0;
+        let stdout = ''
+        /* eslint-disable  @typescript-eslint/no-this-alias */
+        const realThis = this;
+        await window.withProgress({
+            location: ProgressLocation.Notification,
+            title: '',
+            cancellable: false
+        }, (progress) => {
+            const progressChannel : OutputChannel = {
+                name : 'ProgressChannel',
+                append(value: string)
+                {
+                    stdout += value;
+                    if (realThis.outputChannel){
+                        // add the output here in case user wants to go look for it.
+                        realThis.outputChannel.appendLine(value.trim());
+                    }
+                    if (inc < 100) {
+                        inc += 10;
+                    }
+                    progress.report({ increment: inc, message: value });
+                },
+                appendLine(value: string) {
+                    this.append(value + '\n');
+                },
+                clear() { /* empty */ },
+                show() { /* empty */ },
+                hide() { /* empty */ },
+                dispose() { /* empty */ }
+            }
+            progress.report({increment:0, message: prompt});
+            return batchExecute(cmd, options, workingDirectory, progressChannel);
+        });
+        return stdout;
+    }
+
+    async getDefaultToolchain(): Promise<string> {
+        const toolChains = await this.elanListToolChains();
+        let result :string = ''
+        toolChains.forEach((s) => {
+            if (s.endsWith(this.defaultSuffix)){
+                result = this.removeSuffix(s);
+            }
+        });
+        return result;
     }
 
     async elanListToolChains() : Promise<string[]> {
@@ -191,44 +301,47 @@ export class LeanInstaller implements Disposable {
             const cmd = 'elan';
             const options = ['toolchain', 'list'];
             const stdout = await batchExecute(cmd, options, folderPath, null);
+            if (!stdout){
+                throw new Error('elan toolchain list returned no output.');
+            }
             const result : string[] = [];
             stdout.split(/\r?\n/).forEach((s) =>{
                 s = s.trim()
-                const suffix = ' (default)';
-                if (s.endsWith(suffix)){
-                    s = s.substr(0, s.length - suffix.length);
-                }
                 if (s !== '') {
                     result.push(s)
                 }
             });
             return result;
         } catch (err) {
-            return []
+            return ['error']
         }
     }
 
-    async installElan() : Promise<boolean> {
+    async hasElan() : Promise<boolean> {
+        let elanInstalled = false;
+        // See if we have elan already.
+        try {
+            const options = ['--version']
+            const stdout = await this.executeWithProgress('Checking Elan setup...', 'elan', options, undefined)
+            const filterVersion = /elan (\d+)\.\d+\..+/
+            const match = filterVersion.exec(stdout)
+            if (match) {
+                elanInstalled = true;
+            }
+        } catch (err) {
+            elanInstalled = false;
+        }
+        return elanInstalled;
+    }
+
+    private async installElan() : Promise<boolean> {
+
         if (executablePath() !== 'lean') {
             void window.showErrorMessage('It looks like you\'ve modified the `lean.executablePath` user setting.' +
-                                         'Please change it back to \'lean\' before installing elan.');
+                'Please change it back to \'lean\' before installing elan.');
             return false;
         } else {
             const terminalName = 'Lean installation via elan';
-
-            let elanInstalled = false;
-            // See if we have elan already.
-            try {
-                const options = ['--version']
-                const stdout = await batchExecute('elan', options, undefined, null);
-                const filterVersion = /elan (\d+)\.\d+\..+/
-                const match = filterVersion.exec(stdout)
-                if (match) {
-                    elanInstalled = true;
-                }
-            } catch (err) {
-                elanInstalled = false;
-            }
 
             let terminalOptions: TerminalOptions = { name: terminalName };
             if (process.platform === 'win32') {
@@ -251,12 +364,10 @@ export class LeanInstaller implements Disposable {
                 promptAndExit = 'Read-Host -Prompt "Press ENTER key to start Lean" ; exit\n'
             }
 
-            // we try not to mess with the --default-toolchain and only install the minimum
-            // # of toolchains to get this user up and running on the workspace they are opening.
-            const toolchain = '-y --default-toolchain none';
+            const toolchain = `-y --default-toolchain ${this.defaultToolchain}`;
 
             // Now show the terminal and run elan.
-            if (elanInstalled) {
+            if (await this.hasElan()) {
                 // ok, interesting, why did checkLean4 fail then, perhaps elan just needs to be updated?
                 terminal.sendText(`elan self update ; ${promptAndExit}\n`);
             }

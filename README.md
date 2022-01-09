@@ -13,19 +13,13 @@ containing the following:
     import Lake
     #eval Lake.leanVersionString
     ```
-
-    and a file named `lean-toolchain` containing just this:
-
-    ```
-    leanprover/lean4:nightly
-    ```
 1. Open this folder in VS Code using `File/Open Folder`.
 1. Open your file `hello.lean`.
 1. If `Lean` is not yet installed on your system you will see a prompt like this:
 
     ![prompt](vscode-lean4/media/install-elan.png)
 
-1. Click the "Install Lean using Elan" option and enter any default options that appear in the terminal window.
+1. Click the `Install Lean using Elan` option and enter any default options that appear in the terminal window.
 1. After this succeeds the correct version of Lean will be installed by `elan`
 and you should see something like this in the `Lean: Editor` output panel:
     ```
@@ -34,7 +28,10 @@ and you should see something like this in the `Lean: Editor` output panel:
     Lean (version 4.0.0-nightly-2021-10-18, commit e843fb7ca5b5, Release)
     ```
 
-1. This version of the VS Code extension only works on Lean 4 source files and not
+See [Complete Setup](#complete_setup) for more information
+on how the lean version is determined for your VS Code workspace.
+
+This version of the VS Code extension only works on Lean 4 source files and not
 Lean 3.  There is a separate VS Code extension for Lean 3.  You can have both extensions installed at the same time, they can live side by side.
 
 ## Lake integration
@@ -42,8 +39,7 @@ Lean 3.  There is a separate VS Code extension for Lean 3.  You can have both ex
 Note that once the Lean toolchain is installed you can also turn your folder into a [Lake](https://github.com/leanprover/lake/blob/master/README.md) project.  Lake is a build system
 for Lean projects.  The VS code extension will honor the Lean version specified in your `lean-toolchain` file.
 
-Open a VS Code Terminal window in your `foo` folder
-and type the following:
+Open a VS Code Terminal window in your `foo` folder and type the following:
 
 ```
 lake init foo
@@ -219,7 +215,7 @@ The format below is: "`lean4.commandName` (command name): description", where `l
 Lean 4 file, the language server needs to be manually informed that it should re-elaborate the full file, including the
 imports. This command has a default keyboard binding of <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>X</kbd>.
 
-* `lean4.selectToolchain` (Lean 4: Select Lean Toolchain) Select version of the Lean toolchain to use for the current workspace.  This shows the list of available toolchains returned from `elan toolchain list` and allows you to easily switch. The Lean 4 language server will automatically be restarted using the selected toolchain.  This command also provides a choice labelled `Other...` where you can enter the full path to a Lean 4 executable to use instead.  This choice is remembered in your [Workspace Settings](https://code.visualstudio.com/docs/getstarted/settings) and you can reset any custom path by setting `Custom` back to the string `lean`.
+* `lean4.selectToolchain` (Lean 4: Select Lean Toolchain) Select version of the Lean toolchain to use for the current workspace.  This shows the list of available toolchains returned from `elan toolchain list` and allows you to easily switch. The Lean 4 language server will automatically be restarted using the selected toolchain.  This command also provides a choice labelled `Other...` where you can enter the full path to a Lean 4 executable to use instead.  This choice is remembered in your [Workspace Settings](https://code.visualstudio.com/docs/getstarted/settings) and you can reset any custom choice by selecting `Reset workspace override...` from the list (if it is shown).
 
     ![select-toolchain](vscode-lean4/media/select-toolchain.png)
 
@@ -255,6 +251,36 @@ imports. This command has a default keyboard binding of <kbd>Ctrl</kbd>+<kbd>Shi
 * `lean4.docView.open` (Lean 4: Open Documentation View): Open documentation found in local 'html' folder in a separate web view panel.
 
 * `lean4.docView.showAllAbbreviations` (Lean 4: Show all abbreviations): Show help page containing all abbreviations and the Unicode characters they map to.  This makes it easy to then search for the abbreviation for a given symbol you have in mind using <kbd>Ctrl</kbd>+<kbd>F</kbd>.
+
+## Complete Setup
+
+The complete flow chart for determining how elan and lean are installed is shown below:
+
+![flow](vscode-lean4/media/setup.png)
+
+The `start` state is when you have opened a folder in VS Code and opened a .lean file to activate this extension.
+
+If the extension finds that elan is not in your path and is not installed in the default location then it will prompt
+you to install lean via elan.  If the folder contains a `lean-toolchain` version it will install that version
+otherwise it will install `leanprover/lean4:nightly`.
+
+If elan is installed and there is a workspace override in place created by the `Select Toolchain`
+command then this version takes precedence until you remove that override.
+
+Otherwise, if there is a `lean-toolchain` (or `leanpkg.toml`) in the workspace folder or in a parent
+folder then it will use the version specified in the specified version.
+
+Otherwise, if `elan toolchain list` shows there is a `(default)` toolchain it will use that version.
+
+Otherwise, it will prompt you to select a toolchain using the `Select Toolchain` command.  If the
+elan toolchain list is empty it will add `leanprover/lean4:nightly` to the list so that there is
+always something to select.
+
+Then with the selected version it runs `lean --version` to check if that version is installed yet.
+If this version is not yet installed `lean --version` will install it.
+
+In the case of a workspace override the `+version` command line option is used on `lean --version`
+and `lean --server` to ensure that the overridden version is used.
 
 ## For VS Code Extension developers
 

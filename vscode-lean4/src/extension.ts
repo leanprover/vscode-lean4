@@ -8,24 +8,24 @@ import { LocalStorageService} from './utils/localStorage'
 import { LeanInstaller } from './utils/leanInstaller'
 import { LeanpkgService } from './utils/leanpkg';
 import { addDefaultElanPath } from './config';
-import { AbbreviationProvider } from './abbreviation/AbbreviationProvider'
 
 export async function activate(context: ExtensionContext): Promise<any> {
 
     addDefaultElanPath();
 
+    const defaultToolchain = 'leanprover/lean4:nightly';
     const outputChannel = window.createOutputChannel('Lean: Editor');
     const storageManager = new LocalStorageService(context.workspaceState);
-    const pkgService = new LeanpkgService(storageManager)
+    const pkgService = new LeanpkgService(storageManager, defaultToolchain)
     context.subscriptions.push(pkgService);
-    const leanVersion = await pkgService.findLeanPkgVersionInfo();
 
-    const installer = new LeanInstaller(outputChannel, storageManager, pkgService)
+    const installer = new LeanInstaller(outputChannel, storageManager, pkgService, defaultToolchain)
     context.subscriptions.push(installer);
 
-    const result = await installer.testLeanVersion(leanVersion);
-    if (result !== '4') {
+    const versionInfo = await installer.testLeanVersion();
+    if (versionInfo.version && versionInfo.version !== '4') {
         // ah, then don't activate this extension!
+        // this gives us side by side compatibility with the Lean 3 extension.
         return { isLean4Project: false };
     }
 
@@ -56,14 +56,26 @@ export async function activate(context: ExtensionContext): Promise<any> {
     }))
     context.subscriptions.push(commands.registerCommand('lean4.restartServer', () => client.restart()));
 
-    installer.installChanged(async (v) => {
-        // have to check again here in case elan install had --default-toolchain none.
-        await installer.testLeanVersion(leanVersion);
-        void client.restart()
+    let busy = false
+    installer.installChanged(async () => {
+        if (busy) return;
+        busy = true; // avoid re-entrancy since testLeanVersion can take a while.
+        try {
+            // have to check again here in case elan install had --default-toolchain none.
+            const version = await installer.testLeanVersion();
+            if (version.version === '4') {
+                void client.restart()
+            }
+        } catch {
+        }
+        busy = false;
     });
-    pkgService.versionChanged((v) => installer.handleVersionChanged(v));
-    client.serverFailed((err) => installer.showInstallOptions());
 
-    void client.start()
+    pkgService.versionChanged((v) => installer.handleVersionChanged(v));
+    client.serverFailed((err) => window.showErrorMessage(err));
+
+    if (versionInfo.version === '4' && !versionInfo.error) {
+        void client.start();
+    }
     return  { isLean4Project: true };
 }

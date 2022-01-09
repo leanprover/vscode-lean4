@@ -8,26 +8,24 @@ export class LeanpkgService implements Disposable {
     private leanVersionFile : Uri = null;
     private toolchainFileName : string = 'lean-toolchain'
     private tomlFileName : string = 'leanpkg.toml'
-    private defaultVersion = 'leanprover/lean4:nightly';
+    private defaultToolchain : string;
     private localStorage : LocalStorageService;
     private versionChangedEmitter = new EventEmitter<string>();
     private currentVersion : string = null;
     versionChanged = this.versionChangedEmitter.event
 
-    constructor(localStorage : LocalStorageService) {
+    constructor(localStorage : LocalStorageService, defaultToolchain : string) {
         this.localStorage = localStorage;
-
-        // track changes in the version of lean specified in the .toml file...
-        const watcher = workspace.createFileSystemWatcher('**/leanpkg.toml');
-        watcher.onDidChange((u) => this.handleFileChanged(u));
-        watcher.onDidCreate((u) => this.handleFileChanged(u));
-        watcher.onDidDelete((u) => this.handleFileDeleted(u));
-        this.subscriptions.push(watcher);
-
-        const watcher2 = workspace.createFileSystemWatcher('**/lean-toolchain');
-        watcher2.onDidChange((u) => this.handleFileChanged(u));
-        watcher2.onDidCreate((u) => this.handleFileChanged(u));
-        watcher2.onDidDelete((u) => this.handleFileDeleted(u));
+        this.defaultToolchain = defaultToolchain;
+        // track changes in the version of lean specified in the lean-toolchain file
+        // or the leanpkg.toml.
+        ['**/lean-toolchain', '**/leanpkg.toml'].forEach(pattern => {
+            const watcher = workspace.createFileSystemWatcher(pattern);
+            watcher.onDidChange((u) => this.handleFileChanged(u));
+            watcher.onDidCreate((u) => this.handleFileChanged(u));
+            watcher.onDidDelete((u) => this.handleFileChanged(u));
+            this.subscriptions.push(watcher);
+        });
     }
 
     private isLean(languageId : string) : boolean {
@@ -88,7 +86,7 @@ export class LeanpkgService implements Disposable {
     async findLeanPkgVersionInfo() : Promise<string> {
         const path = this.getWorkspaceLeanFolderUri()
         if (!path || path.fsPath === '.') {
-            // what kind of vs folder is this?
+            // this is a "new file" that has not been saved yet.
         }
         else {
             let uri = path;
@@ -117,10 +115,11 @@ export class LeanpkgService implements Disposable {
             }
         }
 
-        let version = this.defaultVersion;
+        let version = null;
         if (this.leanVersionFile || this.leanVersionFile) {
             try {
                 version = await this.readLeanVersion();
+                this.currentVersion = version;
             } catch (err) {
                 console.log(err);
             }
@@ -134,26 +133,18 @@ export class LeanpkgService implements Disposable {
     }
 
     private async handleFileChanged(uri: Uri) {
-        if (!this.leanVersionFile){
-            this.leanVersionFile = uri;
+        if (this.localStorage.getLeanVersion()){
+            // user has a local workspace override in effect, so leave it that way.
+            return;
         }
-        if (uri.toString() === this.leanVersionFile.toString()) {
-            const version = await this.readLeanVersion();
-            if (version !== this.currentVersion){
-                this.currentVersion = version;
-                this.localStorage.setLeanVersion('');
-                // raise an event so the extension triggers handleVersionChanged.
-                this.versionChangedEmitter.fire(version);
-            }
-        }
-    }
-
-    private async handleFileDeleted(uri: Uri) {
-        if (this.leanVersionFile && uri.toString() === this.leanVersionFile.toString()){
-            this.leanVersionFile = null;
-            // user might be switching from leanpkg to lake...
-            const version = await this.findLeanPkgVersionInfo();
-            this.versionChangedEmitter.fire(version ?? this.defaultVersion);
+        // note: apply the same rules here with findLeanPkgVersionInfo no matter
+        // if a file is added or removed so we always match the elan behavior.
+        const current = this.currentVersion;
+        // findLeanPkgVersionInfo changes this.currentVersion
+        const version = await this.findLeanPkgVersionInfo();
+        if (version && version !== current) {
+            // raise an event so the extension triggers handleVersionChanged.
+            this.versionChangedEmitter.fire(this.currentVersion);
         }
     }
 
@@ -167,14 +158,14 @@ export class LeanpkgService implements Disposable {
                         if (err) {
                             reject(err);
                         } else {
-                            let version = this.defaultVersion;
+                            let version = this.defaultToolchain;
                             const match = /lean_version\s*=\s*"([^"]*)"/.exec(data.toString());
                             if (match) version = match[1];
                             resolve(version);
                         }
                     });
                 } else {
-                    resolve(this.defaultVersion);
+                    resolve(this.defaultToolchain);
                 }
             });
         } else {
@@ -186,12 +177,12 @@ export class LeanpkgService implements Disposable {
                         if (err) {
                             reject(err);
                         } else {
-                            const version = data.trim() ?? this.defaultVersion;
+                            const version = data.trim() ?? this.defaultToolchain;
                             resolve(version);
                         }
                     });
                 } else {
-                    resolve(this.defaultVersion);
+                    resolve(this.defaultToolchain);
                 }
             });
         }
