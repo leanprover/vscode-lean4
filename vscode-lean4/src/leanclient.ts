@@ -263,7 +263,7 @@ export class LeanClient implements Disposable {
             serverOptions,
             clientOptions
         )
-        let retryLean = false;
+
         this.patchConverters(this.client.protocol2CodeConverter, this.client.code2ProtocolConverter)
         try {
             this.client.onDidChangeState((s) =>{
@@ -274,11 +274,6 @@ export class LeanClient implements Disposable {
                     console.log('client running');
                 } else if (s.newState === State.Stopped) {
                     console.log('client has stopped or it failed to start');
-                    if (this.useLake){
-                        // next time try lean instead
-                        this.useLake = false;
-                        retryLean = true;
-                    }
                     this.running = false;
                 }
             })
@@ -288,13 +283,8 @@ export class LeanClient implements Disposable {
             // if we got this far then the client is happy so we are running!
             this.running = true;
         } catch (error) {
-            if (retryLean){
-                void this.restart();
-            }
-            else{
-                this.outputChannel.appendLine('' + error);
-                this.serverFailedEmitter.fire('' + error);
-            }
+            this.outputChannel.appendLine('' + error);
+            this.serverFailedEmitter.fire('' + error);
             return;
         }
 
