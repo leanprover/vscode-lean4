@@ -14,7 +14,7 @@ export class LeanpkgService implements Disposable {
     private versionChangedEmitter = new EventEmitter<string>();
     private lakeFileChangedEmitter = new EventEmitter();
     private currentVersion : string = null;
-    private currentLakeFileContents : string = null;
+    private normalizedLakeFileContents : string = null;
 
     versionChanged = this.versionChangedEmitter.event
     lakeFileChanged = this.lakeFileChangedEmitter.event
@@ -153,8 +153,8 @@ export class LeanpkgService implements Disposable {
             }
         }
 
-        if (this.currentLakeFileContents === null){
-            this.currentLakeFileContents = await this.readLakeFile();
+        if (this.normalizedLakeFileContents === null){
+            this.normalizedLakeFileContents = await this.readLakeFile();
         }
 
         return version;
@@ -166,10 +166,11 @@ export class LeanpkgService implements Disposable {
 
     private async handleLakeFileChanged(uri : Uri) {
         // Note: just opening the file fires this event sometimes which is annoying, so
-        // we compare the contents just to be sure.
+        // we compare the contents just to be sure and normalize whitespace so that
+        // just adding a new line doesn't trigger the prompt.
         const contents = await this.readLakeFile();
-        if (contents !== this.currentLakeFileContents) {
-            this.currentLakeFileContents = contents;
+        if (contents !== this.normalizedLakeFileContents) {
+            this.normalizedLakeFileContents = contents;
             console.log("Lake file changed...")
             this.lakeFileChangedEmitter.fire(undefined);
         }
