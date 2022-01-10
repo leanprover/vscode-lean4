@@ -98,12 +98,12 @@ export class LeanpkgService implements Disposable {
         const uri = this.getWorkspaceLeanFolderUri()
         if (!uri || uri.fsPath === '.') {
             // this is a "new file" that has not been saved yet.
-            return "";
+            return '';
         }
         const localFile = Uri.joinPath(uri, this.lakeFileName);
         const url = new URL(localFile.toString())
         if (fs.existsSync(url)) {
-            let contents = fs.readFileSync(url).toString();
+            const contents = fs.readFileSync(url).toString();
             // ignore whitespace changes by normalizing whitespace.
             const re = /[ \t\r\n]+/g
             const result = contents.replace(re, ' ');
@@ -171,7 +171,7 @@ export class LeanpkgService implements Disposable {
         const contents = await this.readLakeFile();
         if (contents !== this.normalizedLakeFileContents) {
             this.normalizedLakeFileContents = contents;
-            console.log("Lake file changed...")
+            console.log('Lake file changed...')
             this.lakeFileChangedEmitter.fire(undefined);
         }
     }

@@ -158,7 +158,7 @@ export class LeanClient implements Disposable {
             const timeout = 5000; // should not take more than 5 seconds.
             const rc = await testExecute(cmd, ['env', 'lean', '--version'], folder.fsPath, this.outputChannel, timeout);
             if (rc !== 0) {
-                const failover = "Lake failed, using lean instead."
+                const failover = 'Lake failed, using lean instead.'
                 console.log(failover);
                 if (this.outputChannel) this.outputChannel.appendLine(failover);
                 useLake = false;

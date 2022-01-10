@@ -52,7 +52,7 @@ export async function testExecute(
         if (workingDirectory !== undefined) {
             options = { cwd: workingDirectory };
         }
-        const msg = `Testing '${toolchainPath} ${args.join(" ")}'`
+        const msg = `Testing '${toolchainPath} ${args.join(' ')}'`
         if (channel) channel.appendLine(msg);
         console.log(msg)
 
