@@ -121,6 +121,7 @@ export class LeanInstaller implements Disposable {
         // give an indication of any workspace override.
         const resetPrompt = 'Reset workspace override...';
         const versionOverride = this.localStorage.getLeanVersion();
+        const toolchainOverride = this.localStorage.getLeanPath();
         if (versionOverride){
             let found = false;
             for (let i = 0; i < installedToolChains.length; i++)
@@ -137,7 +138,7 @@ export class LeanInstaller implements Disposable {
             }
             installedToolChains.push(resetPrompt);
         }
-        else if (this.localStorage.getLeanPath()){
+        else if (toolchainOverride){
             installedToolChains.push(resetPrompt);
         }
 
@@ -183,10 +184,6 @@ export class LeanInstaller implements Disposable {
     }
 
     async showToolchainOptions() : Promise<void> {
-        let executable = this.localStorage.getLeanPath();
-        if (!executable) executable = executablePath();
-        // note; we keep the LeanClient alive so that it can be restarted if the
-        // user changes the Lean: Executable Path.
         const selectToolchain = 'Select lean toolchain';
         const item = await window.showErrorMessage('You have no default "lean-toolchain" in this folder or any parent folder.', selectToolchain)
         if (item === selectToolchain) {
