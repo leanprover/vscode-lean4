@@ -84,6 +84,7 @@ export async function activate(context: ExtensionContext): Promise<any> {
     });
 
     pkgService.versionChanged((v) => installer.handleVersionChanged(v));
+    pkgService.lakeFileChanged(() => installer.handleLakeFileChanged());
     client.serverFailed((err) => window.showErrorMessage(err));
 
     if (versionInfo.version === '4' && !versionInfo.error) {

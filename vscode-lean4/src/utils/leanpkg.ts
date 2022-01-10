@@ -8,11 +8,16 @@ export class LeanpkgService implements Disposable {
     private leanVersionFile : Uri = null;
     private toolchainFileName : string = 'lean-toolchain'
     private tomlFileName : string = 'leanpkg.toml'
+    private lakeFileName : string = 'lakefile.lean'
     private defaultToolchain : string;
     private localStorage : LocalStorageService;
     private versionChangedEmitter = new EventEmitter<string>();
+    private lakeFileChangedEmitter = new EventEmitter();
     private currentVersion : string = null;
+    private currentLakeFileContents : string = null;
+
     versionChanged = this.versionChangedEmitter.event
+    lakeFileChanged = this.lakeFileChangedEmitter.event
 
     constructor(localStorage : LocalStorageService, defaultToolchain : string) {
         this.localStorage = localStorage;
@@ -26,6 +31,12 @@ export class LeanpkgService implements Disposable {
             watcher.onDidDelete((u) => this.handleFileChanged(u));
             this.subscriptions.push(watcher);
         });
+
+        const watcher2 = workspace.createFileSystemWatcher(`**/${this.lakeFileName}`);
+        watcher2.onDidChange((u) => this.handleLakeFileChanged(u));
+        watcher2.onDidCreate((u) => this.handleLakeFileChanged(u));
+        watcher2.onDidDelete((u) => this.handleLakeFileChanged(u));
+        this.subscriptions.push(watcher2);
     }
 
     private isLean(languageId : string) : boolean {
@@ -83,6 +94,23 @@ export class LeanpkgService implements Disposable {
         return rootPath;
     }
 
+    async readLakeFile() : Promise<string> {
+        const uri = this.getWorkspaceLeanFolderUri()
+        if (!uri || uri.fsPath === '.') {
+            // this is a "new file" that has not been saved yet.
+            return "";
+        }
+        const localFile = Uri.joinPath(uri, this.lakeFileName);
+        const url = new URL(localFile.toString())
+        if (fs.existsSync(url)) {
+            let contents = fs.readFileSync(url).toString();
+            // ignore whitespace changes by normalizing whitespace.
+            const re = /[ \t\r\n]+/g
+            const result = contents.replace(re, ' ');
+            return result.trim();
+        }
+    }
+
     async findLeanPkgVersionInfo() : Promise<string> {
         const path = this.getWorkspaceLeanFolderUri()
         if (!path || path.fsPath === '.') {
@@ -125,11 +153,26 @@ export class LeanpkgService implements Disposable {
             }
         }
 
+        if (this.currentLakeFileContents === null){
+            this.currentLakeFileContents = await this.readLakeFile();
+        }
+
         return version;
     }
 
     dispose(): void {
         for (const s of this.subscriptions) { s.dispose(); }
+    }
+
+    private async handleLakeFileChanged(uri : Uri) {
+        // Note: just opening the file fires this event sometimes which is annoying, so
+        // we compare the contents just to be sure.
+        const contents = await this.readLakeFile();
+        if (contents !== this.currentLakeFileContents) {
+            this.currentLakeFileContents = contents;
+            console.log("Lake file changed...")
+            this.lakeFileChangedEmitter.fire(undefined);
+        }
     }
 
     private async handleFileChanged(uri: Uri) {

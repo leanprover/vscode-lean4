@@ -79,11 +79,20 @@ export class LeanInstaller implements Disposable {
         const restartItem = 'Restart Lean';
         const item = await window.showErrorMessage(`Lean version changed: '${version}'`, restartItem);
         if (item === restartItem) {
-            const rc = await this.testLeanVersion();
-            if (rc.version === '4'){
-                // it works, so restart the client!
-                this.installChangedEmitter.fire(undefined);
-            }
+            this.installChangedEmitter.fire(undefined);
+        }
+        this.prompting = false;
+    }
+
+    async handleLakeFileChanged() :  Promise<void> {
+        if (this.prompting) {
+            return;
+        }
+        this.prompting = true;
+        const restartItem = 'Restart Lean';
+        const item = await window.showErrorMessage('Lake file configuration changed', restartItem);
+        if (item === restartItem) {
+            this.installChangedEmitter.fire(undefined);
         }
         this.prompting = false;
     }
