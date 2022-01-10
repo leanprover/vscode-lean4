@@ -44,6 +44,7 @@ export async function testExecute(
     toolchainPath: string,
     args: any[],
     workingDirectory: string,
+    channel: OutputChannel,
     delay: number = 1000): Promise<number> {
 
     return new Promise(function(resolve, reject){
@@ -51,6 +52,10 @@ export async function testExecute(
         if (workingDirectory !== undefined) {
             options = { cwd: workingDirectory };
         }
+        const msg = `Testing '${toolchainPath} ${args.join(" ")}'`
+        if (channel) channel.appendLine(msg);
+        console.log(msg)
+
         const exe = spawn(toolchainPath, args, options);
 
         if (exe.pid === undefined) {
@@ -64,6 +69,7 @@ export async function testExecute(
 
         exe.stderr.on('data', (line) => {
             const s: string = line.toString();
+            if (channel) channel.appendLine(s);
             console.log(s);
         });
 

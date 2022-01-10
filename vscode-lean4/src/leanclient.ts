@@ -21,13 +21,11 @@ import { toolchainPath, addServerEnvPaths, serverArgs, serverLoggingEnabled, ser
 import { assert } from './utils/assert'
 import { LeanFileProgressParams, LeanFileProgressProcessingInfo } from '@lean4/infoview-api';
 import { LocalStorageService} from './utils/localStorage'
-import { batchExecute, testExecute } from './utils/batch'
+import { testExecute } from './utils/batch'
 import { cwd } from 'process'
 import * as fs from 'fs';
 import { URL } from 'url';
 import { join } from 'path';
-import { timeStamp } from 'console'
-import { runInThisContext } from 'vm'
 
 const documentSelector: DocumentFilter = {
     language: 'lean4',
@@ -51,7 +49,6 @@ export class LeanClient implements Disposable {
     private toolchainPath: string
     private outputChannel: OutputChannel;
     private storageManager : LocalStorageService;
-    private useLake = true;
 
     private subscriptions: Disposable[] = []
 
@@ -146,11 +143,10 @@ export class LeanClient implements Disposable {
 
         const folder = this.getWorkspaceUri();
         // check if the lake process will start.
-        if (this.useLake) {
-            const lakefile = Uri.joinPath(folder, 'lakefile.lean').toString()
-            if (!fs.existsSync(new URL(lakefile))) {
-                this.useLake = false;
-            }
+        let useLake = true;
+        const lakefile = Uri.joinPath(folder, 'lakefile.lean').toString()
+        if (!fs.existsSync(new URL(lakefile))) {
+            useLake = false;
         }
 
         // This is a faster way of finding out lake doesn't work in the
@@ -158,19 +154,23 @@ export class LeanClient implements Disposable {
         // 5 retries and everything... but this testExecute implementation is
         // not perfect either... would be nice to have a "canExecute" command line
         // option or something...
-        if (this.useLake) {
-            const rc = await testExecute(cmd, ['serve'], folder.fsPath);
+        if (useLake) {
+            const timeout = 5000; // should not take more than 5 seconds.
+            const rc = await testExecute(cmd, ['env', 'lean', '--version'], folder.fsPath, this.outputChannel, timeout);
             if (rc !== 0) {
-                this.useLake = false;
+                const failover = "Lake failed, using lean instead."
+                console.log(failover);
+                if (this.outputChannel) this.outputChannel.appendLine(failover);
+                useLake = false;
             }
         }
 
-        if (!this.useLake) {
+        if (!useLake) {
             cmd = (this.toolchainPath) ? join(this.toolchainPath, 'lean') : 'lean';
         }
 
         let options = version ? ['+' + version] :[]
-        if (this.useLake) {
+        if (useLake) {
             options = options.concat(['serve', '--'])
         } else{
             options = options.concat(['--server'])
