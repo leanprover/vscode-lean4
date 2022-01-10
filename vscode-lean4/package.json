@@ -2,7 +2,7 @@
 	"name": "lean4",
 	"displayName": "lean4",
 	"description": "An extension for VS Code which provides support for the Lean 4 language.",
-	"version": "0.0.53",
+	"version": "0.0.54",
 	"publisher": "leanprover",
 	"engines": {
 		"vscode": "^1.57.0"
@@ -379,7 +379,7 @@
 		],
 		"configurationDefaults": {
 			"[lean4]": {
-                                "editor.unicodeHighlight.ambiguousCharacters": false,
+				"editor.unicodeHighlight.ambiguousCharacters": false,
 				"editor.tabSize": 2
 			}
 		}
