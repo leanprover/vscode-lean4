@@ -135,7 +135,10 @@ export class LeanInstaller implements Disposable {
             if (!found) {
                 installedToolChains.push(versionOverride + ' ' + this.workspaceSuffix);
             }
-            installedToolChains.push('Reset workspace override...');
+            installedToolChains.push(resetPrompt);
+        }
+        else if (this.localStorage.getLeanPath()){
+            installedToolChains.push(resetPrompt);
         }
 
         const otherPrompt = 'Other...';
@@ -157,6 +160,7 @@ export class LeanInstaller implements Disposable {
             this.localStorage.setLeanVersion(''); // clear the requested version as we have a full path.
             this.installChangedEmitter.fire(selectedPath);
         } else if (selectedVersion === resetPrompt){
+            this.localStorage.setLeanPath('') // clear any toolchain path override.
             this.localStorage.setLeanVersion(''); // clear the requested version as we have a full path.
             this.installChangedEmitter.fire(undefined);
         } else if (selectedVersion) {
