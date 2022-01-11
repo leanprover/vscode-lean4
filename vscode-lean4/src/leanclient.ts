@@ -155,8 +155,8 @@ export class LeanClient implements Disposable {
         // not perfect either... would be nice to have a "canExecute" command line
         // option or something...
         if (useLake) {
-            const timeout = 5000; // should not take more than 5 seconds.
-            const rc = await testExecute(cmd, ['env', 'lean', '--version'], folder.fsPath, this.outputChannel, timeout);
+            const expectedError = 'Watchdog error: Cannot read LSP request: Stream was closed\n';
+            const rc = await testExecute(cmd, ['serve'], folder.fsPath, this.outputChannel, true, expectedError);
             if (rc !== 0) {
                 const failover = 'Lake failed, using lean instead.'
                 console.log(failover);

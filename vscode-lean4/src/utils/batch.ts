@@ -45,7 +45,9 @@ export async function testExecute(
     args: any[],
     workingDirectory: string,
     channel: OutputChannel,
-    delay: number = 1000): Promise<number> {
+    closeStdInput: boolean,
+    expectedError: string,
+    timeout = 10000): Promise<number> {
 
     return new Promise(function(resolve, reject){
         let options = {}
@@ -56,6 +58,7 @@ export async function testExecute(
         if (channel) channel.appendLine(msg);
         console.log(msg)
 
+        let foundExpectedError = false;
         const exe = spawn(toolchainPath, args, options);
 
         if (exe.pid === undefined) {
@@ -69,14 +72,27 @@ export async function testExecute(
 
         exe.stderr.on('data', (line) => {
             const s: string = line.toString();
-            if (channel) channel.appendLine(s);
-            console.log(s);
+            // no need to print the stream closed error.
+            if (expectedError === s) {
+                foundExpectedError = true;
+            }
+            else {
+                if (channel) channel.appendLine(s);
+                console.log(s);
+            }
         });
+
+        if (closeStdInput){
+            exe.stdin.end();
+        }
 
         let resolved = false
         exe.on('close', (code) => {
             if (!resolved) {
                 resolved = true
+                if (foundExpectedError) {
+                    code = 0;
+                }
                 resolve(code)
             }
         });
@@ -84,15 +100,20 @@ export async function testExecute(
         setTimeout(() => {
             if (!resolved) {
                 resolved = true;
-                if (exe.exitCode !== null) {
-                    resolve(exe.exitCode)
-                } else {
+                let code = exe.exitCode;
+                if (code !== null){
+                    if (foundExpectedError) {
+                        code = 0;
+                    }
+                    resolve(code)
+                }
+                else {
                     // it is running!
                     exe.kill()
                     resolve(0)
                 }
             }
-        }, delay);
+        }, timeout);
 
     });
 
