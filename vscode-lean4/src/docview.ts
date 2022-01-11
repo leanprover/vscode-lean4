@@ -3,9 +3,9 @@ import axios from 'axios';
 import cheerio = require('cheerio');
 import { URL } from 'url';
 import { commands, Disposable, Uri, ViewColumn, WebviewPanel, window,
-     workspace, WebviewOptions, WebviewPanelOptions } from 'vscode';
+     workspace, WebviewOptions, WebviewPanelOptions, TextDocument, languages } from 'vscode';
 import * as fs from 'fs';
-import { join, sep } from 'path';
+import { join } from 'path';
 import { TempFolder } from './utils/tempFolder'
 import { SymbolsByAbbreviation, AbbreviationConfig } from './abbreviation/config'
 
@@ -59,6 +59,19 @@ export class DocViewProvider implements Disposable {
         );
     }
 
+    private async downloadExample(uri: Uri) : Promise<string> {
+        return new Promise<string>(resolve => {
+            void axios.get(uri.toString(), { responseType: 'arraybuffer' }).then(
+                response => {
+                    if (response.status == 200){
+                        resolve(response.data);
+                    } else {
+                        resolve(`Error fetching ${uri.toString()}, code ${response.status}`);
+                    }
+                })
+            });
+    }
+
     private getTempFolder() : TempFolder {
         if (!this.tempFolder){
             this.tempFolder = new TempFolder('lean4');
@@ -78,13 +91,21 @@ export class DocViewProvider implements Disposable {
     }
 
     private async tryIt(code: string) {
-        const doc = await workspace.openTextDocument({language: 'lean', content: code});
+        const doc = await workspace.openTextDocument({language: 'lean4', content: code});
         const editor = await window.showTextDocument(doc, ViewColumn.One);
     }
 
     private async example(file: string) {
-        const doc = await workspace.openTextDocument(Uri.parse(file));
-        await window.showTextDocument(doc, ViewColumn.One);
+        const uri = Uri.parse(file)
+        let doc : TextDocument = null
+        if (uri.scheme === 'http' || uri.scheme === 'https') {
+            const data = await this.downloadExample(uri);
+            this.tryIt(data);
+        }else{
+            const doc = await workspace.openTextDocument(Uri.parse(file));
+            languages.setTextDocumentLanguage(doc, 'lean4')
+            await window.showTextDocument(doc, ViewColumn.One);
+        }
     }
 
     private webview?: WebviewPanel;
@@ -96,7 +117,7 @@ export class DocViewProvider implements Disposable {
                 enableCommandUris: true,
                 retainContextWhenHidden: true,
             };
-            this.webview = window.createWebviewPanel('lean', 'Lean Documentation',
+            this.webview = window.createWebviewPanel('lean4doc', 'Lean Documentation',
                 { viewColumn: 3, preserveFocus: true }, options);
             this.webview.onDidDispose(() => this.webview = null);
 
@@ -165,7 +186,8 @@ export class DocViewProvider implements Disposable {
             const books = {
                 'Theorem Proving in Lean': 'https://leanprover.github.io/theorem_proving_in_lean4/',
                 'Reference Manual': 'https://leanprover.github.io/lean4/doc/',
-                'Abbreviations cheat sheet': mkCommandUri('lean4.docView.showAllAbbreviations')
+                'Abbreviations cheat sheet': mkCommandUri('lean4.docView.showAllAbbreviations'),
+                'Example': mkCommandUri('lean4.openExample', 'https://raw.githubusercontent.com/leanprover/lean4/master/doc/examples/compiler/test.lean')
             };
             // TODO: add mathlib4 when we have a book about it
             // 'Mathematics in Lean': 'https://github.com/leanprover-community/mathlib4/',
