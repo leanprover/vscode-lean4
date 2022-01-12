@@ -57,7 +57,7 @@ function setupCodeSnippets() {
 
 function setupSyntaxHighlighting() {
 
-    if (typeof hljs === undefined) return;
+    if (typeof hljs === 'undefined') return;
 
     // Syntax highlighting Configuration
     hljs.configure({
@@ -130,6 +130,8 @@ function set_theme(theme) {
         highlight: document.querySelector("[href$='highlight.css']"),
     };
 
+    var themeColorMetaTag = document.querySelector('meta[name="theme-color"]');
+
     if (stylesheets.ayuHighlight === null){
         return; // not a themed page then.
     }
@@ -149,9 +151,14 @@ function set_theme(theme) {
         stylesheets.tomorrowNight.disabled = true;
         stylesheets.highlight.disabled = false;
     }
+    if (themeColorMetaTag) {
+        setTimeout(function () {
+            themeColorMetaTag.content = getComputedStyle(document.body).backgroundColor;
+        }, 1);
+    }
 }
 
-function setupTryitButtons() {
+function setupTryItButtons() {
     var clipButtons = document.querySelectorAll('.clip-button');
 
     function hideTooltip(elem) {
@@ -174,14 +181,17 @@ function setupTryitButtons() {
 
 };
 
-var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+var default_theme = null;
+var loaded = false;
 
 window.addEventListener('load', () => {
-    console.log('initializing theme: ' + default_theme)
     setupCodeSnippets();
     setupSyntaxHighlighting();
-    setupTryitButtons();
-    set_theme(default_theme);
+    setupTryItButtons();
+    if (default_theme) {
+        set_theme(default_theme);
+    }
+    loaded = true;
 });
 
 function receiveMessage(e){
@@ -190,6 +200,9 @@ function receiveMessage(e){
         var theme = message.theme;
         console.log("received theme: " + theme);
         default_theme = theme === 'dark' ? 'coal' : 'light';
+        if (loaded) {
+            set_theme(default_theme);
+        }
     }
 }
 
