@@ -266,7 +266,7 @@ export class InfoProvider implements Disposable {
         if (this.webviewPanel) {
             this.webviewPanel.reveal(column, true);
         } else {
-            const webviewPanel = window.createWebviewPanel('lean4info', 'Lean Infoview',
+            const webviewPanel = window.createWebviewPanel('lean4', 'Lean Infoview',
                 { viewColumn: column, preserveFocus: true },
                 {
                     enableFindWidget: true,

@@ -2,7 +2,7 @@
 import axios from 'axios';
 import cheerio = require('cheerio');
 import { URL } from 'url';
-import { commands, Disposable, Uri, ViewColumn, WebviewPanel, window,
+import { commands, Disposable, Uri, ViewColumn, WebviewPanel, window, ColorThemeKind,
      workspace, WebviewOptions, WebviewPanelOptions, TextDocument, languages } from 'vscode';
 import * as fs from 'fs';
 import { join } from 'path';
@@ -48,14 +48,17 @@ export class DocViewProvider implements Disposable {
     private forwardStack: string[] = [];
     private tempFolder : TempFolder = null;
     private abbreviations: SymbolsByAbbreviation = null;
-    constructor() {
+    private extensionUri: Uri;
+
+    constructor(extensionUri: Uri) {
+        this.extensionUri = extensionUri;
         this.subscriptions.push(
             commands.registerCommand('lean4.docView.open', (url: string) => this.open(url)),
             commands.registerCommand('lean4.docView.back', () => this.back()),
             commands.registerCommand('lean4.docView.forward', () => this.forward()),
             commands.registerCommand('lean4.openTryIt', (code: string) => this.tryIt(code)),
             commands.registerCommand('lean4.openExample', (file: string) => this.example(file)),
-            commands.registerCommand('lean4.docView.showAllAbbreviations', () => this.showAbbreviations()),
+            commands.registerCommand('lean4.docView.showAllAbbreviations', () => this.showAbbreviations())
         );
     }
 
@@ -63,8 +66,8 @@ export class DocViewProvider implements Disposable {
         return new Promise<string>(resolve => {
             void axios.get(uri.toString(), { responseType: 'arraybuffer' }).then(
                 response => {
-                    if (response.status == 200){
-                        resolve(response.data);
+                    if (response.status === 200){
+                        resolve(response.data as string);
                     } else {
                         resolve(`Error fetching ${uri.toString()}, code ${response.status}`);
                     }
@@ -97,15 +100,31 @@ export class DocViewProvider implements Disposable {
 
     private async example(file: string) {
         const uri = Uri.parse(file)
-        let doc : TextDocument = null
         if (uri.scheme === 'http' || uri.scheme === 'https') {
             const data = await this.downloadExample(uri);
-            this.tryIt(data);
+            void this.tryIt('// example \n' + data);
         }else{
             const doc = await workspace.openTextDocument(Uri.parse(file));
-            languages.setTextDocumentLanguage(doc, 'lean4')
+            void languages.setTextDocumentLanguage(doc, 'lean4')
             await window.showTextDocument(doc, ViewColumn.One);
         }
+    }
+
+    private async receiveMessage(message: any) {
+        if (message.name === 'tryit'){
+            const code = message.contents as string;
+            if (code) {
+                // hooray, we have some code to try!
+                // this initial comment makes the untitled editor tab have a more reasonable caption.
+                void this.tryIt('-- try it \n' + code);
+            }
+        }
+    }
+
+    private sendTheme() {
+        // todo: listen to vscode theme changes
+        const theme = window.activeColorTheme.kind === ColorThemeKind.Dark ? 'dark' : 'light';
+        void this.webview.webview.postMessage({theme});
     }
 
     private webview?: WebviewPanel;
@@ -117,9 +136,12 @@ export class DocViewProvider implements Disposable {
                 enableCommandUris: true,
                 retainContextWhenHidden: true,
             };
-            this.webview = window.createWebviewPanel('lean4doc', 'Lean Documentation',
-                { viewColumn: 3, preserveFocus: true }, options);
+
+            this.webview = window.createWebviewPanel('lean4', 'Lean Documentation',
+                { viewColumn: 3, preserveFocus: true }, options)
             this.webview.onDidDispose(() => this.webview = null);
+            this.webview.webview.onDidReceiveMessage(m => this.receiveMessage(m));
+            this.sendTheme();
 
             let first = true;
             this.webview.onDidChangeViewState(async () => {
@@ -154,6 +176,11 @@ export class DocViewProvider implements Disposable {
         }
     }
 
+    loadScript(localUri: Uri) : string {
+        const path = localUri.fsPath;
+        return '<script>\n<!-- ' + path + '-->\n' + fs.readFileSync(path).toString() + '\n</script>';
+    }
+
     async fetch(url?: string): Promise<string> {
         if (url) {
             const uri = Uri.parse(url);
@@ -184,7 +211,7 @@ export class DocViewProvider implements Disposable {
             }
 
             const books = {
-                'Theorem Proving in Lean': 'https://leanprover.github.io/theorem_proving_in_lean4/',
+                'Theorem Proving in Lean': mkCommandUri('lean4.docView.open', 'https://leanprover.github.io/theorem_proving_in_lean4/introduction.html'),
                 'Reference Manual': 'https://leanprover.github.io/lean4/doc/',
                 'Abbreviations cheat sheet': mkCommandUri('lean4.docView.showAllAbbreviations'),
                 'Example': mkCommandUri('lean4.openExample', 'https://raw.githubusercontent.com/leanprover/lean4/master/doc/examples/compiler/test.lean')
@@ -232,12 +259,24 @@ export class DocViewProvider implements Disposable {
             }
         }
 
+        // unfortunately, an HTTP based page cannot access a local file, so we have to
+        // load it manually and insert it into the DOM.
+        const localUri = Uri.joinPath(this.extensionUri, 'media', 'book.js')
+        $('body').append(this.loadScript(localUri))
+
         for (const style of $('link[rel=stylesheet]').get()) {
             style.attribs.href = this.mkRelativeUrl(style.attribs.href as string, url);
         }
+
         for (const script of $('script[src]').get()) {
-            script.attribs.src = this.mkRelativeUrl(script.attribs.src as string, url);
+            if (script.attribs.src === 'book.js'){
+                // we have already inserted our version of book.js into the page.
+                script.attribs.src = '';
+            } else {
+                script.attribs.src = this.mkRelativeUrl(script.attribs.src as string, url);
+            }
         }
+
         for (const link of $('a[href]').get()) {
             const tryItMatch = link.attribs.href.match(/\/(?:live|lean-web-editor)\/.*#code=(.*)/);
             if (link.attribs.href.startsWith('#')) {
@@ -293,6 +332,7 @@ export class DocViewProvider implements Disposable {
         $('nav+*').css('margin-top','3em');
 
         webview.html = $.html();
+        this.sendTheme();
     }
 
     async openHtml(html : string): Promise<void> {
