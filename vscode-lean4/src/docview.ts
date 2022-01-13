@@ -63,7 +63,7 @@ export class DocViewProvider implements Disposable {
             commands.registerCommand('lean4.docView.showAllAbbreviations', () => this.showAbbreviations())
         );
         this.subscriptions.push(workspace.onDidCloseTextDocument(doc => {
-            if (doc == this.tryItDoc){
+            if (doc === this.tryItDoc){
                 this.tryItDoc = null;
             }
         }));
@@ -97,7 +97,7 @@ export class DocViewProvider implements Disposable {
         }
         const editor = await window.showTextDocument(this.tryItDoc, ViewColumn.One);
         if (replace && editor) {
-            editor.edit(edit => {
+            await editor.edit(edit => {
                 // append the new code to the end of the document.
                 const end = new Position(editor.document.lineCount, 0)
                 edit.replace(new Range(end, end), code);
