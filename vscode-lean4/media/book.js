@@ -1,4 +1,3 @@
-
 var docView = acquireVsCodeApi();
 
 function setupCodeSnippets() {
@@ -174,7 +173,9 @@ function setupTryItButtons() {
             console.log('clicked tryit button')
             e.preventDefault();
             const name = 'tryit';
-            const contents = clipButton.parentElement.nextElementSibling.innerText;
+            const playground = clipButton.parentElement.parentElement;
+            const code_block = playground.querySelector('code');
+            const contents = code_block?.textContent;
             docView.postMessage({name, contents});
         })
     });
@@ -185,8 +186,8 @@ var default_theme = null;
 var loaded = false;
 
 window.addEventListener('load', () => {
-    setupCodeSnippets();
     setupSyntaxHighlighting();
+    setupCodeSnippets();
     setupTryItButtons();
     if (default_theme) {
         set_theme(default_theme);

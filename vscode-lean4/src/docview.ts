@@ -3,9 +3,10 @@ import axios from 'axios';
 import cheerio = require('cheerio');
 import { URL } from 'url';
 import { commands, Disposable, Uri, ViewColumn, WebviewPanel, window, ColorThemeKind,
-     workspace, WebviewOptions, WebviewPanelOptions, TextDocument, languages } from 'vscode';
+     workspace, WebviewOptions, WebviewPanelOptions, TextDocument, languages,
+     Range, Position } from 'vscode';
 import * as fs from 'fs';
-import { join } from 'path';
+import { join, extname } from 'path';
 import { TempFolder } from './utils/tempFolder'
 import { SymbolsByAbbreviation, AbbreviationConfig } from './abbreviation/config'
 
@@ -49,6 +50,7 @@ export class DocViewProvider implements Disposable {
     private tempFolder : TempFolder = null;
     private abbreviations: SymbolsByAbbreviation = null;
     private extensionUri: Uri;
+    private tryItDoc: TextDocument | null = null;
 
     constructor(extensionUri: Uri) {
         this.extensionUri = extensionUri;
@@ -60,19 +62,11 @@ export class DocViewProvider implements Disposable {
             commands.registerCommand('lean4.openExample', (file: string) => this.example(file)),
             commands.registerCommand('lean4.docView.showAllAbbreviations', () => this.showAbbreviations())
         );
-    }
-
-    private async downloadExample(uri: Uri) : Promise<string> {
-        return new Promise<string>(resolve => {
-            void axios.get(uri.toString(), { responseType: 'arraybuffer' }).then(
-                response => {
-                    if (response.status === 200){
-                        resolve(response.data as string);
-                    } else {
-                        resolve(`Error fetching ${uri.toString()}, code ${response.status}`);
-                    }
-                })
-            });
+        this.subscriptions.push(workspace.onDidCloseTextDocument(doc => {
+            if (doc == this.tryItDoc){
+                this.tryItDoc = null;
+            }
+        }));
     }
 
     private getTempFolder() : TempFolder {
@@ -94,16 +88,29 @@ export class DocViewProvider implements Disposable {
     }
 
     private async tryIt(code: string) {
-        const doc = await workspace.openTextDocument({language: 'lean4', content: code});
-        const editor = await window.showTextDocument(doc, ViewColumn.One);
+        let replace = false
+        if (this.tryItDoc == null) {
+            this.tryItDoc = await workspace.openTextDocument({language: 'lean4', content: code});
+        } else  {
+            // reuse the editor that is already open so we don't end up with a million tabs.
+            replace = true;
+        }
+        const editor = await window.showTextDocument(this.tryItDoc, ViewColumn.One);
+        if (replace && editor) {
+            editor.edit(edit => {
+                // append the new code to the end of the document.
+                const end = new Position(editor.document.lineCount, 0)
+                edit.replace(new Range(end, end), code);
+            });
+        }
     }
 
     private async example(file: string) {
         const uri = Uri.parse(file)
         if (uri.scheme === 'http' || uri.scheme === 'https') {
-            const data = await this.downloadExample(uri);
+            const data = await this.httpGet(uri);
             void this.tryIt('// example \n' + data);
-        }else{
+        } else {
             const doc = await workspace.openTextDocument(Uri.parse(file));
             void languages.setTextDocumentLanguage(doc, 'lean4')
             await window.showTextDocument(doc, ViewColumn.One);
@@ -181,24 +188,40 @@ export class DocViewProvider implements Disposable {
         return '<script>\n<!-- ' + path + '-->\n' + fs.readFileSync(path).toString() + '\n</script>';
     }
 
+    private async httpGet(uri: Uri) : Promise<string> {
+        return new Promise<string>(resolve => {
+            void axios.get(uri.toString(), { responseType: 'arraybuffer' }).then(
+                response => {
+                    if (response.status === 200){
+                        resolve(response.data as string);
+                    } else {
+                        resolve(`Error fetching ${uri.toString()}, code ${response.status}`);
+                    }
+                })
+            });
+    }
+
     async fetch(url?: string): Promise<string> {
         if (url) {
             const uri = Uri.parse(url);
+            let fileType = '';
             if (uri.scheme === 'file') {
-                if (uri.fsPath.endsWith('.html') || uri.fsPath.endsWith('.htm')) {
+                fileType = extname(uri.fsPath);
+                if (fileType === '.html' || fileType === '.htm') {
                     return fs.readFileSync(uri.fsPath).toString();
                 }
             } else {
                 const {data, headers} = await axios.get<string>(url);
-                if (('' + headers['content-type']).startsWith('text/html')) {
+                fileType = '' + headers['content-type']
+                if (fileType.startsWith('text/html')) {
                     return data;
                 }
             }
 
             const $ = cheerio.load('<p>');
-            $('p').text('Unsupported file. ')
+            $('p').text(`Unsupported file type '${fileType}', please `)
                 .append($('<a>').attr('href', url).attr('alwaysExternal', 'true')
-                    .text('Open in browser instead.'));
+                    .text('open in browser instead.'));
             return $.html();
         } else {
             const $ = cheerio.load('<body>');
@@ -214,8 +237,12 @@ export class DocViewProvider implements Disposable {
                 'Theorem Proving in Lean': mkCommandUri('lean4.docView.open', 'https://leanprover.github.io/theorem_proving_in_lean4/introduction.html'),
                 'Reference Manual': 'https://leanprover.github.io/lean4/doc/',
                 'Abbreviations cheat sheet': mkCommandUri('lean4.docView.showAllAbbreviations'),
-                'Example': mkCommandUri('lean4.openExample', 'https://raw.githubusercontent.com/leanprover/lean4/master/doc/examples/compiler/test.lean')
+                'Example': mkCommandUri('lean4.openExample', 'https://raw.githubusercontent.com/leanprover/lean4/master/doc/examples/compiler/test.lean'),
+                // These are handy for testing that the bad file logic is working.
+                // 'Test bad file': mkCommandUri('lean4.docView.open', Uri.joinPath(this.extensionUri, 'media', 'book.js')),
+                // 'Test bad Uri': mkCommandUri('lean4.docView.open', 'https://leanprover.github.io/lean4/doc/images/code-success.png'),
             };
+
             // TODO: add mathlib4 when we have a book about it
             // 'Mathematics in Lean': 'https://github.com/leanprover-community/mathlib4/',
 
@@ -281,8 +308,10 @@ export class DocViewProvider implements Disposable {
             const tryItMatch = link.attribs.href.match(/\/(?:live|lean-web-editor)\/.*#code=(.*)/);
             if (link.attribs.href.startsWith('#')) {
                 // keep relative links
-            } else if (link.attribs.alwaysExternal) {
-                // keep links with alwaysExternal attribute
+            } else if (link.attribs.alwaysexternal) {
+                // keep links with alwaysexternal attribute
+                // note: cheerio .attr('alwaysExternal', 'true') results in a lower case 'alwaysexternal'
+                // here when the html is round tripped through the cheerio parser.
             } else if (link.attribs.tryitfile) {
                 link.attribs.title = link.attribs.title || 'Open code block (in existing file)';
                 link.attribs.href = mkCommandUri('lean4.openExample', new URL(link.attribs.tryitfile as string, url).toString());
