@@ -380,7 +380,8 @@
 		"configurationDefaults": {
 			"[lean4]": {
 				"editor.unicodeHighlight.ambiguousCharacters": false,
-				"editor.tabSize": 2
+				"editor.tabSize": 2,
+				"editor.wordSeparators": "`~@$%^&*()-=+[{]}⟨⟩⦃⦄⟦⟧⟮⟯‹›\\|;:\",.<>/"
 			}
 		}
 	},
