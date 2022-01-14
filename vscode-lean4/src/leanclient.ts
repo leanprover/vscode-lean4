@@ -94,6 +94,18 @@ export class LeanClient implements Disposable {
         if (this.isStarted()) void this.stop()
     }
 
+    /**
+     * Return the start position of the word at the given position, if
+     * applicable. Return the given position otherwise.
+     */
+    private getWordPosition(pos: Position, doc: TextDocument): Position {
+        const wordRange = doc.getWordRangeAtPosition(pos)
+        if (wordRange) {
+            return wordRange.start
+        }
+        return pos
+    }
+
     async restart(): Promise<void> {
         this.restartingEmitter.fire(undefined)
 
@@ -194,6 +206,26 @@ export class LeanClient implements Disposable {
                     }
 
                     return highlights;
+                },
+
+                provideDefinition: async (doc, pos, ctok, next) => {
+                    pos = this.getWordPosition(pos, doc)
+                    return next(doc, pos, ctok);
+                },
+
+                provideDeclaration: async (doc, pos, ctok, next) => {
+                    pos = this.getWordPosition(pos, doc)
+                    return next(doc, pos, ctok);
+                },
+
+                provideReferences: async (doc, pos, opts, ctok, next) => {
+                    pos = this.getWordPosition(pos, doc)
+                    return next(doc, pos, opts, ctok);
+                },
+
+                provideTypeDefinition: async (doc, pos, ctok, next) => {
+                    pos = this.getWordPosition(pos, doc)
+                    return next(doc, pos, ctok);
                 }
             },
         }
