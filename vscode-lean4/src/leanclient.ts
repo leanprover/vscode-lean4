@@ -195,7 +195,7 @@ export class LeanClient implements Disposable {
 
                     const highlights: DocumentHighlight[] = [];
                     const text = doc.getText();
-                    const nonWordPattern = '[`~@$%^&*()-=+\\[{\\]}⟨⟩⦃⦄⟦⟧⟮⟯‹›\\\\|;:\",./\\s]|^|$'
+                    const nonWordPattern = '[`~@$%^&*()-=+\\[{\\]}⟨⟩⦃⦄⟦⟧⟮⟯‹›\\\\|;:\",.<>/\\s]|^|$'
                     const regexp = new RegExp(`(?<=${nonWordPattern})${escapeRegExp(word)}(?=${nonWordPattern})`, 'g')
                     for (const match of text.matchAll(regexp)) {
                         const start = doc.positionAt(match.index)
