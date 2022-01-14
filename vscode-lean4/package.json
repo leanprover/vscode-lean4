@@ -10,6 +10,9 @@
 	"categories": [
 		"Programming Languages"
 	],
+	"keywords": [
+		"multi-root ready"
+	],
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/leanprover-community/vscode-lean4.git"

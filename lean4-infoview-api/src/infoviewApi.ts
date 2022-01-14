@@ -11,7 +11,7 @@ export interface EditorFsApi {
  */
 export type TextInsertKind = 'here' | 'above';
 
-/** Functionality which the hosting editor must provide to the infoview. */
+/** Interview that the InfoView WebView uses to talk to the hosting editor. */
 export interface EditorApi {
   // NOTE: not needed as of now.
   //fs : EditorFsApi;
@@ -92,7 +92,7 @@ export type InfoviewAction =
   { kind: 'togglePin'} |
   { kind: 'copyToComment'}
 
-/** Calls which the hosting editor must make when the corresponding events occur. */
+/** Interface the hosting editor uses to talk to the InfoView WebView. */
 export interface InfoviewApi {
   /** Must be called exactly once on initialization with the current cursor position. */
   initialize(loc: Location): Promise<void>;
