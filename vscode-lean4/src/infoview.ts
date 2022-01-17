@@ -259,6 +259,12 @@ export class InfoProvider implements Disposable {
         if (this.client.initializeResult) {
             await this.webviewPanel?.api.serverRestarted(this.client.initializeResult);
         }
+
+        // force infoview to fully update state from newly activated LeanClient.
+        await this.sendPosition();
+        await this.sendConfig();
+        await this.sendDiagnostics();
+        await this.sendProgress();
     }
 
     dispose(): void {

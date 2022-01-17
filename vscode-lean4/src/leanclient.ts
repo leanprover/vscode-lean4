@@ -1,7 +1,7 @@
 import { TextDocument, EventEmitter, Diagnostic,
     languages, DocumentHighlight, Range, DocumentHighlightKind, window, workspace,
     Disposable, Uri, ConfigurationChangeEvent, OutputChannel, DiagnosticCollection,
-    Position } from 'vscode'
+    Position, RelativePattern } from 'vscode'
 import {
     Code2ProtocolConverter,
     DidChangeTextDocumentParams,
@@ -127,7 +127,8 @@ export class LeanClient implements Disposable {
 
         const documentSelector: DocumentFilter = {
             language: 'lean4',
-            pattern: `${this.workspaceFolder.fsPath}/**/*`
+            // Hmmm, this is supposed to be allowed, but doesn't compile, do we need to upgrade vscode api version?
+            // pattern: new RelativePattern(this.workspaceFolder, '/**/*')
         }
 
         const clientOptions: LanguageClientOptions = {
