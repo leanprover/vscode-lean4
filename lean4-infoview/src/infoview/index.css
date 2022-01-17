@@ -21,7 +21,7 @@ html,body {
 /* Used to denote text highlighted by the pretty-print expression widget. */
 .highlightable {
     border-radius: 2pt;
-    transition: background-color 50ms ease-in;
+    transition: background-color 100ms ease-in-out;
 }
 .highlight {
     background-color: #96ccff;
@@ -71,34 +71,6 @@ html,body {
 }
 
 /* Headers for infoview */
-
-h1 {
-    display: block;
-    margin-bottom: 1ex;
-    margin-top: 1ex;
-    border-bottom: 1px solid;
-    padding: 0px;
-    font-weight: normal;
-    font-size: 100%;
-}
-
-.collapsible-header {
-    border-bottom-color: black;
-}
-.vscode-dark .collapsible-header {
-    border-bottom-color: lightgray;
-}
-.vscode-high-contrast .collapsible-header {
-    border-bottom-color: white;
-}
-
-@keyframes spinner {
-    to {transform: rotate(360deg);}
-}
-
-.spin {
-    animation: spinner .6s linear infinite;
-}
 
 select {
     background-color: var(--vscode-dropdown-background);
