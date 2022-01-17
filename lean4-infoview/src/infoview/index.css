@@ -35,11 +35,11 @@ html,body {
 }
 
 .error {
-    color: darkred;
+    color: #e51400;
 }
 
 .warning {
-    color: darkorange;
+    color: #bf8803;
 }
 
 .information {
@@ -47,15 +47,15 @@ html,body {
 }
 
 .vscode-dark .error {
-    color: red;
+    color: #f14c4c;
 }
 
 .vscode-dark .warning {
-    color: orange;
+    color: #cca700;
 }
 
 .vscode-dark .information {
-    color: lightgreen;
+    color: #89d185;
 }
 
 .vscode-high-contrast .error {
