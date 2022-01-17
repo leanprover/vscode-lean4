@@ -18,16 +18,20 @@ html,body {
 .vscode-light .goal-hyp { color: #cc7a00; }
 .vscode-light .goal-inaccessible { color: #777; }
 
-.highlight { /* Used to denote text highlighted by the pretty-print expression widget. */
+/* Used to denote text highlighted by the pretty-print expression widget. */
+.highlightable {
+    border-radius: 2pt;
+    transition: background-color 50ms ease-in;
+}
+.highlight {
     background-color: #96ccff;
+}
+.vscode-dark .highlight {
+    background-color: #3c6c92;
 }
 
 .pre-wrap {
     white-space: 'pre-wrap';
-}
-
-.vscode-dark .highlight {
-    background-color: #569cd6;
 }
 
 .error {
