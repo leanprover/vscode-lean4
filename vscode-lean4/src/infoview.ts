@@ -10,7 +10,9 @@ import { LeanClient } from './leanclient';
 import { getInfoViewAllErrorsOnLine, getInfoViewAutoOpen, getInfoViewAutoOpenShowGoal,
     getInfoViewFilterIndex, getInfoViewStyle, getInfoViewTacticStateFilters } from './config';
 import { Rpc } from './rpc';
+import { LeanClientProvider } from './utils/clientProvider'
 import * as ls from 'vscode-languageserver-protocol'
+import { resetGlobalState } from 'mobx/lib/internal';
 
 const keepAlivePeriodMs = 10000
 
@@ -45,9 +47,11 @@ export class InfoProvider implements Disposable {
     /** Instance of the panel, if it is open. Otherwise `undefined`. */
     private webviewPanel?: WebviewPanel & {rpc: Rpc, api: InfoviewApi};
     private subscriptions: Disposable[] = [];
+    private clientSubscriptions: Disposable[] = [];
 
     private stylesheet: string = '';
     private autoOpened: boolean = false;
+    private client: LeanClient | null = null; // the active client
 
     // Subscriptions are counted and only disposed of when count becomes 0.
     private serverNotifSubscriptions: Map<string, [number, Disposable]> = new Map();
@@ -57,18 +61,26 @@ export class InfoProvider implements Disposable {
 
     private editorApi : EditorApi = {
         sendClientRequest: async (method: string, params: any): Promise<any> => {
-            return this.client.sendRequest(method, params);
+            if (this.client) {
+                return this.client.sendRequest(method, params);
+            }
+            return undefined;
         },
         sendClientNotification: async (method: string, params: any): Promise<void> => {
-           return this.client.sendNotification(method, params);
+            if (this.client) {
+                this.client.sendNotification(method, params);
+            }
         },
         subscribeServerNotifications: async (method) => {
+            if (!this.client) return;
+
             const el = this.serverNotifSubscriptions.get(method);
             if (el) {
                 const [count, h] = el;
                 this.serverNotifSubscriptions.set(method, [count + 1, h]);
                 return;
             }
+
 
             // NOTE(WN): For non-custom notifications we cannot call LanguageClient.onNotification
             // here because that *overwrites* the notification handler rather than registers an extra one.
@@ -100,6 +112,8 @@ export class InfoProvider implements Disposable {
             }
         },
         subscribeClientNotifications: async (method) => {
+            if (!this.client) return;
+
             const el = this.clientNotifSubscriptions.get(method);
             if (el) {
                 const [count, d] = el;
@@ -137,7 +151,7 @@ export class InfoProvider implements Disposable {
             await window.showInformationMessage(`Copied to clipboard: ${text}`);
         },
         insertText: async (text, kind, tdpp) => {
-            if (!this.client.running) return;
+            if (!this.client?.running) return;
             let uri: Uri | undefined
             let pos: Position | undefined
             if (tdpp) {
@@ -147,7 +161,7 @@ export class InfoProvider implements Disposable {
             await this.handleInsertText(text, kind, uri, pos);
         },
         showDocument: async (show) => {
-            if (!this.client.running) return;
+            if (!this.client?.running) return;
             void this.revealEditorSelection(
                 Uri.parse(show.uri),
                 this.client.convertRange(show.selection)
@@ -155,6 +169,7 @@ export class InfoProvider implements Disposable {
         },
 
         createRpcSession: async uri => {
+            if (!this.client) return '';
             const sessionId = await rpcConnect(this.client, uri);
             const session = new RpcSession(this.client, sessionId, uri);
             if (!this.webviewPanel) {
@@ -174,25 +189,16 @@ export class InfoProvider implements Disposable {
         },
     };
 
-    constructor(private client: LeanClient, private readonly leanDocs: DocumentSelector, private context: ExtensionContext) {
+    constructor(private provider: LeanClientProvider, private readonly leanDocs: DocumentSelector, private context: ExtensionContext) {
         this.updateStylesheet();
+
+        provider.activeClientChanged((client) => {
+            void this.onActiveClientChanged(client);
+        });
+
         this.subscriptions.push(
-            this.client.restarted(async () => {
-                // This event is triggered both the first time the server starts
-                // as well as when the server restarts.
-
-                this.clearRpcSessions();
-
-                // The info view should auto-open the first time the server starts:
-                await this.autoOpen()
-
-                // Inform the infoview about the restart
-                // (this is redundant if the infoview was auto-opened but it doesn't hurt)
-                await this.webviewPanel?.api?.serverRestarted(this.client?.initializeResult);
-            }),
             window.onDidChangeActiveTextEditor(() => this.sendPosition()),
             window.onDidChangeTextEditorSelection(() => this.sendPosition()),
-            client.didSetLanguage(() => this.onLanguageChanged()),
             workspace.onDidChangeConfiguration(async (_e) => {
                 // regression; changing the style needs a reload. :/
                 this.updateStylesheet();
@@ -213,15 +219,58 @@ export class InfoProvider implements Disposable {
             commands.registerTextEditorCommand('lean4.infoView.toggleStickyPosition',
                 () => this.webviewPanel?.api.requestedAction({kind: 'togglePin'})),
         );
+    }
+
+    private async onActiveClientChanged(client: LeanClient) {
+        if (this.client === client) {
+            return;
+        }
+
+        this.reset();
+        this.client = client;
+        if (!client){
+            return;
+        }
+        console.log(`Switching client: ${client.getWorkspaceFolder()}`);
+
+        this.clientSubscriptions.push(
+            this.client.restarted(async () => {
+                // This event is triggered both the first time the server starts
+                // as well as when the server restarts.
+
+                this.clearRpcSessions();
+
+                // The info view should auto-open the first time the server starts:
+                await this.autoOpen()
+
+                // Inform the infoview about the restart
+                // (this is redundant if the infoview was auto-opened but it doesn't hurt)
+                await this.webviewPanel?.api?.serverRestarted(this.client?.initializeResult);
+            }),
+            client.didSetLanguage(() => this.onLanguageChanged()),
+        );
+
         if (this.client.isStarted()) {
             void this.autoOpen();
+        }
+
+        // Inform the infoview about the restart
+        // (this is redundant if the infoview was auto-opened but it doesn't hurt)
+        if (this.client.initializeResult) {
+            await this.webviewPanel?.api.serverRestarted(this.client.initializeResult);
         }
     }
 
     dispose(): void {
+        this.reset();
+        for (const s of this.subscriptions) { s.dispose(); }
+    }
+
+    private reset() {
+        // active client is changing.
         this.clearNotificationHandlers();
         this.clearRpcSessions();
-        for (const s of this.subscriptions) { s.dispose(); }
+        for (const s of this.clientSubscriptions) { s.dispose(); }
     }
 
     private updateStylesheet() {
@@ -299,8 +348,8 @@ export class InfoProvider implements Disposable {
             // The infoview gets information about file progress, diagnostics, etc.
             // by listening to notifications.  Send these notifications when the infoview starts
             // so that it has up-to-date information.
-            if (this.client.initializeResult) {
-                await this.webviewPanel.api.serverRestarted(this.client.initializeResult);
+            if (this.client?.initializeResult) {
+                await this.webviewPanel.api.serverRestarted(this.client?.initializeResult);
             }
             await this.sendPosition();
             await this.sendConfig();
@@ -319,7 +368,7 @@ export class InfoProvider implements Disposable {
     }
 
     private async sendDiagnostics() {
-        if (!this.webviewPanel) return;
+        if (!this.webviewPanel || !this.client) return;
         this.client.getDiagnostics()?.forEach(async (uri, diags) => {
             const params = this.client.getDiagnosticParams(uri, diags)
             await this.webviewPanel.api.gotServerNotification('textDocument/publishDiagnostics', params);
@@ -327,7 +376,7 @@ export class InfoProvider implements Disposable {
     }
 
     private async sendProgress() {
-        if (!this.webviewPanel) return;
+        if (!this.webviewPanel || !this.client) return;
         for (const [uri, processing] of this.client.progress) {
             const params: LeanFileProgressParams = {
                 textDocument: {

@@ -17,9 +17,9 @@ export interface EditorApi {
   //fs : EditorFsApi;
 
   /** Make a request to the LSP server. */
-  sendClientRequest(method: string, params: any): Promise<any>;
+  sendClientRequest(uri: string, method: string, params: any): Promise<any>;
   /** Send a notification to the LSP server. */
-  sendClientNotification(method: string, params: any): Promise<void>;
+  sendClientNotification(uri: string, method: string, params: any): Promise<void>;
 
   /**
    * Subscribe to notifications from the LSP server with the specified `method`.

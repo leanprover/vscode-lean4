@@ -1,8 +1,8 @@
 import { Disposable, OutputChannel, workspace, TextDocument, commands, window, EventEmitter, Uri, languages } from 'vscode';
 import { LocalStorageService} from './localStorage'
 import { LeanInstaller } from './leanInstaller'
-import { LeanClient } from '../leanClient'
-import { LeanFileProgressProcessingInfo } from '@lean4/infoview-api';
+import { LeanClient } from '../leanclient'
+import { LeanFileProgressProcessingInfo, RpcConnectParams, RpcKeepAliveParams } from '@lean4/infoview-api';
 
 // This class ensures we have one LeanClient per workspace folder.
 export class LeanClientProvider implements Disposable {
@@ -12,10 +12,15 @@ export class LeanClientProvider implements Disposable {
     private installer : LeanInstaller;
     private versions: Map<string, string> = new Map();
     private clients: Map<string, LeanClient> = new Map();
+    private pending: Map<string, bool> = new Map();
     private testing: Map<string, boolean> = new Map();
+    private activeClient: LeanClient = null;
 
     private progressChangedEmitter = new EventEmitter<[string, LeanFileProgressProcessingInfo[]]>()
     progressChanged = this.progressChangedEmitter.event
+
+    private activeClientChangedEmitter = new EventEmitter<LeanClient>()
+    activeClientChanged = this.activeClientChangedEmitter.event
 
     constructor(localStorage : LocalStorageService, installer : LeanInstaller, outputChannel : OutputChannel) {
         this.localStorage = localStorage;
@@ -25,6 +30,11 @@ export class LeanClientProvider implements Disposable {
         workspace.onDidOpenTextDocument((d) => this.didOpenTextDocument(d));
         // this is resulting in duplicate calls.
         // workspace.textDocuments.forEach((d) => this.didOpenTextDocument(d));
+
+        this.subscriptions.push(
+            commands.registerCommand('lean4.refreshFileDependencies', () => this.refreshFileDependencies()),
+            commands.registerCommand('lean4.restartServer', () => this.restartActiveClient())
+        );
 
         workspace.onDidChangeWorkspaceFolders((event) => {
             for (const folder of event.removed) {
@@ -56,6 +66,14 @@ export class LeanClientProvider implements Disposable {
 
     }
 
+    private refreshFileDependencies() {
+        this.activeClient.refreshFileDependencies(window.activeTextEditor.document);
+    }
+
+    private restartActiveClient() {
+        void this.activeClient?.restart();
+    }
+
     didOpenTextDocument(document: TextDocument) {
         if (document.languageId === 'lean') {
             void languages.setTextDocumentLanguage(document, 'lean4');
@@ -64,8 +82,15 @@ export class LeanClientProvider implements Disposable {
         void this.ensureClient(document);
     }
 
+    getClient(uri: Uri){
+        return this.clients.get(uri.toString());
+    }
+
+    getClients() : LeanClient[]{
+        return Array.from(this.clients.values());
+    }
+
     async ensureClient(doc: TextDocument) {
-        console.log('ensuring we have a client for ' + doc.uri.toString());
         let folder = workspace.getWorkspaceFolder(doc.uri);
         if (!folder && doc.uri.fsPath) {
             // hmmm, why is vscode not giving us a workspace folder when new workspace is just opened???
@@ -75,28 +100,34 @@ export class LeanClientProvider implements Disposable {
                 }
             });
         }
-        const folderUri = folder ? folder.uri : null;
-        const path = folderUri ? folderUri.toString() : null;
-        if (this.versions.has(path)) {
+        if (!folder) {
+            // If we can't find a folder then we can't start a LeanClient for it.
+            return;
+        }
+
+        const folderUri = folder?.uri;
+        const path = folderUri?.toString();
+        let  client: LeanClient = null;
+        if (this.clients.has(path)) {
             // we're good then
-        } else {
+            client = this.clients.get(path);
+        } else if (!this.versions.has(path) && !this.pending.has(path)) {
+            this.pending.set(path, true);
+            console.log('Creating LeanClient for ' + path);
             // TODO: what is the uri for untitled documents?  Hopefully they get their own special
             // LeanClient with some default version...
             const versionInfo = await this.installer.testLeanVersion(folderUri);
             this.versions.set(path, versionInfo.version);
             if (versionInfo.version && versionInfo.version !== '4') {
                 // ignore workspaces that belong to a different version of Lean.
+                this.pending.delete(path);
                 return;
             }
 
-            const client: LeanClient = new LeanClient(folderUri, this.localStorage, this.outputChannel);
+            client = new LeanClient(folderUri, this.localStorage, this.outputChannel);
             this.subscriptions.push(client);
             this.clients.set(path, client);
             client.serverFailed((err) => window.showErrorMessage(err));
-            this.subscriptions.push(commands.registerCommand('lean4.refreshFileDependencies', () => {
-                client.refreshFileDependencies(doc)
-            }))
-            this.subscriptions.push(commands.registerCommand('lean4.restartServer', () => client.restart()));
 
             // aggregate progress changed events.
             client.progressChanged(arg => {
@@ -109,7 +140,12 @@ export class LeanClientProvider implements Disposable {
                 void client.start();
             }
 
+            this.pending.delete(path);
         }
+
+        // tell the InfoView about this activated client.
+        this.activeClient = client;
+        this.activeClientChangedEmitter.fire(client);
     }
 
     dispose(): void {

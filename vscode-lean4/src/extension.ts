@@ -70,9 +70,8 @@ export async function activate(context: ExtensionContext): Promise<any> {
     const clientProvider = new LeanClientProvider(storageManager, installer, outputChannel);
     context.subscriptions.push(clientProvider)
 
-    // Register support for unicode input
-    // const info = new InfoProvider(client, {language: 'lean4'}, context);
-    // context.subscriptions.push(info)
+    const info = new InfoProvider(clientProvider, {language: 'lean4'}, context);
+    context.subscriptions.push(info)
 
     const abbrev = new AbbreviationFeature();
     context.subscriptions.push(abbrev);

@@ -307,6 +307,10 @@ export class LeanClient implements Disposable {
         });
     }
 
+    getWorkspaceFolder() : string {
+        return this.workspaceFolder.toString();
+    }
+
     start(): Promise<void> {
         return this.restart()
     }
