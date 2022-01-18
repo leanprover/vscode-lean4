@@ -12,7 +12,7 @@ export class LeanClientProvider implements Disposable {
     private installer : LeanInstaller;
     private versions: Map<string, string> = new Map();
     private clients: Map<string, LeanClient> = new Map();
-    private pending: Map<string, bool> = new Map();
+    private pending: Map<string, boolean> = new Map();
     private testing: Map<string, boolean> = new Map();
     private activeClient: LeanClient = null;
 
