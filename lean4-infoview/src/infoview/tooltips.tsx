@@ -91,7 +91,7 @@ export const HighlightOnHoverSpan = forwardAndUseRef<HTMLSpanElement, React.HTML
 
   return <span
       ref={setRef}
-      className={isPointerOver ? 'highlight' : ''}
+      className={'highlightable ' + (isPointerOver ? 'highlight' : '')}
       onPointerOver={onPointerEvent(true)}
       onPointerOut={onPointerEvent(false)}
       {...props}
