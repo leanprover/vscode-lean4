@@ -18,20 +18,28 @@ html,body {
 .vscode-light .goal-hyp { color: #cc7a00; }
 .vscode-light .goal-inaccessible { color: #777; }
 
-.highlight { /* Used to denote text highlighted by the pretty-print expression widget. */
+/* Used to denote text highlighted by the pretty-print expression widget. */
+.highlightable {
+    border-radius: 2pt;
+    transition: background-color 100ms ease-in-out;
+}
+.highlight {
     background-color: #96ccff;
 }
-
 .vscode-dark .highlight {
-    background-color: #569cd6;
+    background-color: #3c6c92;
+}
+
+.pre-wrap {
+    white-space: 'pre-wrap';
 }
 
 .error {
-    color: darkred;
+    color: #e51400;
 }
 
 .warning {
-    color: darkorange;
+    color: #bf8803;
 }
 
 .information {
@@ -39,15 +47,15 @@ html,body {
 }
 
 .vscode-dark .error {
-    color: red;
+    color: #f14c4c;
 }
 
 .vscode-dark .warning {
-    color: orange;
+    color: #cca700;
 }
 
 .vscode-dark .information {
-    color: lightgreen;
+    color: #89d185;
 }
 
 .vscode-high-contrast .error {
@@ -63,34 +71,6 @@ html,body {
 }
 
 /* Headers for infoview */
-
-h1 {
-    display: block;
-    margin-bottom: 1ex;
-    margin-top: 1ex;
-    border-bottom: 1px solid;
-    padding: 0px;
-    font-weight: normal;
-    font-size: 100%;
-}
-
-.collapsible-header {
-    border-bottom-color: black;
-}
-.vscode-dark .collapsible-header {
-    border-bottom-color: lightgray;
-}
-.vscode-high-contrast .collapsible-header {
-    border-bottom-color: white;
-}
-
-@keyframes spinner {
-    to {transform: rotate(360deg);}
-}
-
-.spin {
-    animation: spinner .6s linear infinite;
-}
 
 select {
     background-color: var(--vscode-dropdown-background);
@@ -109,32 +89,32 @@ select {
     box-shadow: 1px 1px 5px black;
 }
 
-.arrow,
-.arrow::before {
+.tooltip-arrow,
+.tooltip-arrow::before {
     position: absolute;
     width: 8px;
     height: 8px;
     z-index: -1;
 }
 
-.arrow::before {
+.tooltip-arrow::before {
     content: '';
     transform: rotate(45deg);
     background: #333;
 }
 
-.tooltip[data-popper-placement^='top'] > .arrow {
+.tooltip[data-popper-placement^='top'] > .tooltip-arrow {
     bottom: -4px;
 }
 
-.tooltip[data-popper-placement^='bottom'] > .arrow {
+.tooltip[data-popper-placement^='bottom'] > .tooltip-arrow {
     top: -4px;
 }
 
-.tooltip[data-popper-placement^='left'] > .arrow {
+.tooltip[data-popper-placement^='left'] > .tooltip-arrow {
     right: -4px;
 }
 
-.tooltip[data-popper-placement^='right'] > .arrow {
+.tooltip[data-popper-placement^='right'] > .tooltip-arrow {
     left: -4px;
 }

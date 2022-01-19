@@ -389,10 +389,15 @@ export class InfoProvider implements Disposable {
         } else {
             editor = window.activeTextEditor;
             if (!editor) { // sometimes activeTextEditor is null.
-                editor = window.visibleTextEditors[0];
+                editor = window.visibleTextEditors.find(e => e.document.languageId === 'lean4');
             }
         }
-        if (!editor) return;
+        if (!editor) {
+            // user must have switch away from any lean source file in which case we don't know
+            // what to do here.  TODO: show a popup error?  Or should we use the last uri used in
+            // sendPosition and automatically activate that editor?
+            return;
+        }
         pos = pos ? pos : editor.selection.active;
         if (kind === 'above') {
             // in this case, assume that we actually want to insert at the same
