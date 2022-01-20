@@ -75,7 +75,7 @@ export async function activate(context: ExtensionContext): Promise<any> {
         // Note: just the fact that the console.log commands are here makes this work.
         // Remove them and mysteriously sometimes the client.restart() doesn't happen or doesn't work.
         if (busy) {
-            console.log("Guarding against multiple installChanged calls");
+            console.log('Guarding against multiple installChanged calls');
             return;
         }
         busy = true; // avoid re-entrancy since testLeanVersion can take a while.
@@ -83,13 +83,13 @@ export async function activate(context: ExtensionContext): Promise<any> {
             // have to check again here in case elan install had --default-toolchain none.
             const version = await installer.testLeanVersion();
             if (version.version === '4') {
-                console.log("Auto restarting Lean");
+                console.log('Auto restarting Lean');
                 void client.restart()
-            } else {
-                console.log("Lean version not ok: " + version.error);
+            } else if (version.error) {
+                console.log(`Lean version not ok: ${version.error}`);
             }
         } catch (e) {
-            console.log("Exception checking lean version: " + e);
+            console.log(`Exception checking lean version: ${e}`);
         }
         busy = false;
     });
