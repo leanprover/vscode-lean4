@@ -61,7 +61,7 @@ export class LeanClientProvider implements Disposable {
                         const client = this.clients.get(path)
                         void client.restart()
                     } else {
-                        this.ensureClient(this.getDocument(path), version);
+                        void this.ensureClient(this.getDocument(path), version);
                     }
                 }
             } catch {
@@ -72,7 +72,6 @@ export class LeanClientProvider implements Disposable {
     }
 
     private getDocument(path: string) : TextDocument | null {
-        let document : TextDocument = null;
         if (window.activeTextEditor && window.activeTextEditor.document.uri.toString() === path)
         {
             return window.activeTextEditor.document
@@ -86,7 +85,7 @@ export class LeanClientProvider implements Disposable {
                 }
             }
         }
-        return document;
+        return null;
     }
 
     private refreshFileDependencies() {
