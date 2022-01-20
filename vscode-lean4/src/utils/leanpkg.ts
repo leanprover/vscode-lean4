@@ -28,7 +28,7 @@ export class LeanpkgService implements Disposable {
         });
     }
 
-    getWorkspaceLeanFolderUri(documentUri: Uri) : Uri {
+    getWorkspaceLeanFolderUri(documentUri: Uri | undefined) : Uri {
         let rootPath : Uri = null;
         if (documentUri) {
             // TODO: do we need to deal with nested workspace folders?

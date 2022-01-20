@@ -1,4 +1,4 @@
-import { window, Uri, workspace, ExtensionContext } from 'vscode'
+import { window, Uri, workspace, ExtensionContext, TextDocument } from 'vscode'
 import { AbbreviationFeature } from './abbreviation'
 import { InfoProvider } from './infoview'
 import { DocViewProvider } from './docview';
@@ -13,11 +13,12 @@ function isLean(languageId : string) : boolean {
     return languageId === 'lean' || languageId === 'lean4';
 }
 
-function getLeanDocumentUri(){
-    let documentUri : Uri = null;
+
+function getLeanDocument() : TextDocument | null {
+    let document : TextDocument = null;
     if (window.activeTextEditor && isLean(window.activeTextEditor.document.languageId))
     {
-        documentUri = window.activeTextEditor.document.uri
+        document = window.activeTextEditor.document
     }
     else {
         // This happens if vscode starts with a lean file open
@@ -25,23 +26,30 @@ function getLeanDocumentUri(){
         for (const editor of window.visibleTextEditors) {
             const lang = editor.document.languageId;
             if (isLean(lang)) {
-                documentUri = editor.document.uri;
+                document = editor.document;
                 break;
             }
         }
+    }
+    return document;
+}
 
-        if (!documentUri) {
-            // this code path should never happen because lean extension is only
-            // activated when a lean file is opened, so it should have been in the
-            // list of window.visibleTextEditors.  So this is a fallback just in
-            // case some weird timing thing happened and file is now closed.
-            const workspaceFolders = workspace.workspaceFolders;
-            if (workspaceFolders && workspaceFolders.length > 0) {
-                documentUri = workspaceFolders[0].uri;
-            }
+
+function getLeanDocumentUri(doc: TextDocument) : Uri | null {
+    if (doc) {
+        return doc.uri;
+    }
+    else {
+        // this code path should never happen because lean extension is only
+        // activated when a lean file is opened, so it should have been in the
+        // list of window.visibleTextEditors.  So this is a fallback just in
+        // case some weird timing thing happened and file is now closed.
+        const workspaceFolders = workspace.workspaceFolders;
+        if (workspaceFolders && workspaceFolders.length > 0) {
+            return workspaceFolders[0].uri;
         }
     }
-    return documentUri;
+    return null;
 }
 
 export async function activate(context: ExtensionContext): Promise<any> {
@@ -59,7 +67,8 @@ export async function activate(context: ExtensionContext): Promise<any> {
 
     // test lean version in the workspace associated with the active text editor since
     // that editor is probably the one that activated our extension here.
-    const uri = getLeanDocumentUri();
+    const doc = getLeanDocument();
+    const uri = getLeanDocumentUri(doc);
     const versionInfo = await installer.testLeanVersion(uri);
     if (versionInfo.version && versionInfo.version !== '4') {
         // ah, then don't activate this extension!
@@ -85,6 +94,10 @@ export async function activate(context: ExtensionContext): Promise<any> {
     context.subscriptions.push(new LeanTaskGutter(clientProvider, context))
 
     pkgService.versionChanged((uri) => installer.handleVersionChanged(uri));
+
+    if (doc && versionInfo.version === '4' && !versionInfo.error) {
+        void clientProvider.ensureClient(doc, versionInfo);
+    }
 
     return  { isLean4Project: true };
 }

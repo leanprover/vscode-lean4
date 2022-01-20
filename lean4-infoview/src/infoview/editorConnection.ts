@@ -37,11 +37,11 @@ export class EditorConnection {
 
   requestPlainGoal(pos: DocumentPosition): Promise<PlainGoal | undefined> {
     const params = DocumentPosition.toTdpp(pos);
-    return this.api.sendClientRequest(pos.uri, '$/lean/plainGoal', params);
+    return this.api.sendClientRequest('$/lean/plainGoal', params);
   }
 
   requestPlainTermGoal(pos: DocumentPosition): Promise<PlainTermGoal | undefined> {
     const params = DocumentPosition.toTdpp(pos);
-    return this.api.sendClientRequest(pos.uri, '$/lean/plainTermGoal', params);
+    return this.api.sendClientRequest('$/lean/plainTermGoal', params);
   }
 }

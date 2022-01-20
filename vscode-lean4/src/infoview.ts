@@ -231,7 +231,7 @@ export class InfoProvider implements Disposable {
         if (!client){
             return;
         }
-        console.log(`Switching client: ${client.getWorkspaceFolder()}`);
+        console.log(`Switching client for workspace: ${client.getWorkspaceFolder()}`);
 
         this.clientSubscriptions.push(
             this.client.restarted(async () => {

@@ -1,7 +1,7 @@
 import { TextDocument, EventEmitter, Diagnostic,
     languages, DocumentHighlight, Range, DocumentHighlightKind, window, workspace,
     Disposable, Uri, ConfigurationChangeEvent, OutputChannel, DiagnosticCollection,
-    Position, RelativePattern } from 'vscode'
+    Position, WorkspaceFolder } from 'vscode'
 import {
     Code2ProtocolConverter,
     DidChangeTextDocumentParams,
@@ -40,7 +40,7 @@ export class LeanClient implements Disposable {
     private executable: string
     private outputChannel: OutputChannel;
     private storageManager : LocalStorageService;
-    private workspaceFolder: Uri;
+    private workspaceFolder: WorkspaceFolder;
 
     private subscriptions: Disposable[] = []
 
@@ -78,7 +78,7 @@ export class LeanClient implements Disposable {
     /** Files which are open. */
     private isOpen: Set<string> = new Set()
 
-    constructor(workspaceFolder: Uri, storageManager : LocalStorageService, outputChannel : OutputChannel) {
+    constructor(workspaceFolder: WorkspaceFolder, storageManager : LocalStorageService, outputChannel : OutputChannel) {
         this.storageManager = storageManager;
         this.outputChannel = outputChannel;
         this.workspaceFolder = workspaceFolder;
@@ -114,7 +114,9 @@ export class LeanClient implements Disposable {
             // user is requesting an explicit version for this workspace.
             options = ['+' + version, '--server']
         }
-        options.push('' + this.workspaceFolder.fsPath)
+        if (this.workspaceFolder) {
+            options.push('' + this.workspaceFolder.uri.fsPath)
+        }
 
         const serverOptions: ServerOptions = {
             command: this.executable,
@@ -126,14 +128,17 @@ export class LeanClient implements Disposable {
         }
 
         const documentSelector: DocumentFilter = {
-            language: 'lean4',
-            // Hmmm, this is supposed to be allowed, but doesn't compile, do we need to upgrade vscode api version?
-            // pattern: new RelativePattern(this.workspaceFolder, '/**/*')
+            language: 'lean4'
+        }
+
+        if (this.workspaceFolder){
+            documentSelector.pattern = `${this.workspaceFolder.uri.fsPath}/**/*`
         }
 
         const clientOptions: LanguageClientOptions = {
             outputChannel: this.outputChannel,
             documentSelector: [documentSelector],
+            workspaceFolder: this.workspaceFolder,
             initializationOptions: {
                 editDelay: getElaborationDelay(),
             },
@@ -309,7 +314,7 @@ export class LeanClient implements Disposable {
     }
 
     getWorkspaceFolder() : string {
-        return this.workspaceFolder.toString();
+        return this.workspaceFolder?.uri.toString();
     }
 
     start(): Promise<void> {

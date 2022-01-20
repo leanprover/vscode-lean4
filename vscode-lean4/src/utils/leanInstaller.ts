@@ -4,6 +4,11 @@ import { batchExecute } from './batch'
 import { LocalStorageService} from './localStorage'
 import { LeanpkgService } from './leanpkg';
 
+export class LeanVersion {
+    version: string;
+    error: string;
+}
+
 export class LeanInstaller implements Disposable {
 
     private leanInstallerLinux = 'https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh'
@@ -30,8 +35,7 @@ export class LeanInstaller implements Disposable {
         this.subscriptions.push(commands.registerCommand('lean4.selectToolchain', () => this.selectToolchainForActiveEditor()));
     }
 
-    async testLeanVersion(uri: Uri) : Promise<{version: string, error: string}> {
-
+    async testLeanVersion(uri: Uri | undefined) : Promise<LeanVersion> {
         // see if there is a lean-toolchain file and use that version.
         let leanVersion = await this.pkgService.findLeanPkgVersionInfo(uri);
         if (!leanVersion) {
@@ -200,7 +204,7 @@ export class LeanInstaller implements Disposable {
         }
     }
 
-    async checkLeanVersion(uri: Uri, requestedVersion : string): Promise<{version: string, error: string}> {
+    async checkLeanVersion(uri: Uri, requestedVersion : string): Promise<LeanVersion> {
 
         let cmd = this.localStorage.getLeanPath();
         if (!cmd) cmd = executablePath();
@@ -225,7 +229,7 @@ export class LeanInstaller implements Disposable {
             // Specifically, if the extension was not opened inside of a folder, it
             // looks for a global (default) installation of Lean. This way, we can support
             // single file editing.
-            const stdout = await this.executeWithProgress('Checking Lean setup...', cmd, options,folderPath)
+            const stdout = await this.executeWithProgress('Checking Lean setup...', cmd, options, folderPath)
             if (!stdout) {
                 return { version: '', error: 'lean not found' };
             }

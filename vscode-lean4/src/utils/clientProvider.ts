@@ -1,6 +1,6 @@
 import { Disposable, OutputChannel, workspace, TextDocument, commands, window, EventEmitter, Uri, languages } from 'vscode';
 import { LocalStorageService} from './localStorage'
-import { LeanInstaller } from './leanInstaller'
+import { LeanInstaller, LeanVersion } from './leanInstaller'
 import { LeanClient } from '../leanclient'
 import { LeanFileProgressProcessingInfo, RpcConnectParams, RpcKeepAliveParams } from '@lean4/infoview-api';
 
@@ -47,8 +47,8 @@ export class LeanClientProvider implements Disposable {
             }
         });
 
-        installer.installChanged(async (uri: Uri) => {
-            const path = uri.toString()
+        installer.installChanged(async (uri: Uri | undefined) => {
+            const path = uri?.toString()
             if (path in this.testing) return;
             // avoid re-entrancy since testLeanVersion can take a while.
             this.testing[path] = true;
@@ -79,7 +79,7 @@ export class LeanClientProvider implements Disposable {
             void languages.setTextDocumentLanguage(document, 'lean4');
         }
 
-        void this.ensureClient(document);
+        void this.ensureClient(document, null);
     }
 
     getClient(uri: Uri){
@@ -90,7 +90,7 @@ export class LeanClientProvider implements Disposable {
         return Array.from(this.clients.values());
     }
 
-    async ensureClient(doc: TextDocument) {
+    async ensureClient(doc: TextDocument, versionInfo: LeanVersion | null) {
         let folder = workspace.getWorkspaceFolder(doc.uri);
         if (!folder && doc.uri.fsPath) {
             // hmmm, why is vscode not giving us a workspace folder when new workspace is just opened???
@@ -114,17 +114,20 @@ export class LeanClientProvider implements Disposable {
         } else if (!this.versions.has(path) && !this.pending.has(path)) {
             this.pending.set(path, true);
             console.log('Creating LeanClient for ' + path);
-            // TODO: what is the uri for untitled documents?  Hopefully they get their own special
-            // LeanClient with some default version...
-            const versionInfo = await this.installer.testLeanVersion(folderUri);
+            if (!versionInfo) {
+                // TODO: what is the uri for untitled documents?  Hopefully they get their own special
+                // LeanClient with some default version...
+                versionInfo = await this.installer.testLeanVersion(folderUri);
+            }
             this.versions.set(path, versionInfo.version);
             if (versionInfo.version && versionInfo.version !== '4') {
                 // ignore workspaces that belong to a different version of Lean.
+                console.log(`Lean4 extension ignoring workspace '${folderUri}' because it is not a Lean 4 workspace.`);
                 this.pending.delete(path);
                 return;
             }
 
-            client = new LeanClient(folderUri, this.localStorage, this.outputChannel);
+            client = new LeanClient(folder, this.localStorage, this.outputChannel);
             this.subscriptions.push(client);
             this.clients.set(path, client);
             client.serverFailed((err) => window.showErrorMessage(err));
