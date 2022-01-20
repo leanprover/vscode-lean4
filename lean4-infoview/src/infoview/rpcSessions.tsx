@@ -37,7 +37,7 @@ class RpcSession implements Disposable {
                     sessionId: this.sessionId,
                     refs: this.#refsToRelease,
                 }
-                void this.#ec.api.sendClientNotification(this.#uri, '$/lean/rpc/release', params)
+                void this.#ec.api.sendClientNotification('$/lean/rpc/release', params)
                 this.#releaseTimeout = undefined
                 this.#refsToRelease = []
             }
