@@ -37,7 +37,6 @@ export class LeanClientProvider implements Disposable {
         );
 
         workspace.onDidChangeWorkspaceFolders((event) => {
-
             for (const folder of event.removed) {
                 const path = folder.uri.toString();
                 const client = this.clients.get(path);
@@ -57,15 +56,37 @@ export class LeanClientProvider implements Disposable {
             try {
                 // have to check again here in case elan install had --default-toolchain none.
                 const version = await installer.testLeanVersion(uri);
-                if (version.version === '4' && this.clients.has(path)) {
-                    const client = this.clients.get(path)
-                    void client.restart()
+                if (version.version === '4') {
+                    if (this.clients.has(path)) {
+                        const client = this.clients.get(path)
+                        void client.restart()
+                    } else {
+                        this.ensureClient(this.getDocument(path), version);
+                    }
                 }
             } catch {
             }
             this.testing.delete(path);
         });
 
+    }
+
+    private getDocument(path: string) : TextDocument | null {
+        let document : TextDocument = null;
+        if (window.activeTextEditor && window.activeTextEditor.document.uri.toString() === path)
+        {
+            return window.activeTextEditor.document
+        }
+        else {
+            // This happens if vscode starts with a lean file open
+            // but the "Getting Started" page is active.
+            for (const editor of window.visibleTextEditors) {
+                if (editor.document.uri.toString() === path){
+                    return editor.document;
+                }
+            }
+        }
+        return document;
     }
 
     private refreshFileDependencies() {
@@ -80,8 +101,9 @@ export class LeanClientProvider implements Disposable {
         if (document.languageId === 'lean') {
             void languages.setTextDocumentLanguage(document, 'lean4');
         }
-
-        void this.ensureClient(document, null);
+        if (document.languageId === 'lean4') {
+            void this.ensureClient(document, null);
+        }
     }
 
     getClient(uri: Uri){
@@ -94,20 +116,16 @@ export class LeanClientProvider implements Disposable {
 
     async ensureClient(doc: TextDocument, versionInfo: LeanVersion | null) {
         let folder = workspace.getWorkspaceFolder(doc.uri);
-        if (!folder && doc.uri.fsPath) {
-            // hmmm, why is vscode not giving us a workspace folder when new workspace is just opened???
+        if (!folder && workspace.workspaceFolders) {
+            // Could be that doc.uri.scheme === 'untitled'.
             workspace.workspaceFolders.forEach((f) => {
                 if (f.uri.fsPath && doc.uri.fsPath.startsWith(f.uri.fsPath)) {
                     folder = f;
                 }
             });
         }
-        if (!folder) {
-            // If we can't find a folder then we can't start a LeanClient for it.
-            return;
-        }
 
-        const folderUri = folder?.uri;
+        const folderUri = folder ? folder.uri : doc.uri;
         const path = folderUri?.toString();
         let  client: LeanClient = null;
         if (this.clients.has(path)) {
