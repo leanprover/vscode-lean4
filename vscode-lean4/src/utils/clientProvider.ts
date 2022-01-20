@@ -37,11 +37,13 @@ export class LeanClientProvider implements Disposable {
         );
 
         workspace.onDidChangeWorkspaceFolders((event) => {
+
             for (const folder of event.removed) {
                 const path = folder.uri.toString();
                 const client = this.clients.get(path);
                 if (client) {
                     this.clients.delete(path);
+                    this.versions.delete(path);
                     void client.stop();
                 }
             }
