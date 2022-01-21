@@ -158,7 +158,7 @@ export class LeanClient implements Disposable {
         if (useLake) {
             // First check we have a version of lake that supports "lake serve"
             const lakeVersion = await batchExecute(cmd, ['--version'], folder.fsPath, null);
-            const v4 = new Version('4.0.0')
+            const v4 = new Version('3.0.0')
             const actual = new Version(this.removePrefix(lakeVersion, 'Lake version '))
             if (actual.compare(v4) >= 0) {
                 const expectedError = 'Watchdog error: Cannot read LSP request: Stream was closed\n';
