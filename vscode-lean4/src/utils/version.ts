@@ -10,7 +10,7 @@ export class Version {
         let pos = version.indexOf('(');
         if (pos >= 0) version = version.substring(0, pos).trim();
         pos = version.indexOf('-');
-        const versionNumber = pos > 0 ? version.substring(0, pos) : version;
+        const versionNumber = pos > 0 ? version.substring(0, pos).trim() : version;
         this.label = pos > 0 ? version.substring(pos + 1).trim() : null;
         const parts = versionNumber.split('.');
         this.major = this.tryParseInt(parts[0], 0);
