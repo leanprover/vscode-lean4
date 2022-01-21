@@ -21,11 +21,12 @@ import { toolchainPath, addServerEnvPaths, serverArgs, serverLoggingEnabled, ser
 import { assert } from './utils/assert'
 import { LeanFileProgressParams, LeanFileProgressProcessingInfo } from '@lean4/infoview-api';
 import { LocalStorageService} from './utils/localStorage'
-import { testExecute } from './utils/batch'
+import { batchExecute, testExecute } from './utils/batch'
 import { cwd } from 'process'
 import * as fs from 'fs';
 import { URL } from 'url';
 import { join } from 'path';
+import { Version } from './utils/version';
 
 const documentSelector: DocumentFilter = {
     language: 'lean4',
@@ -155,12 +156,20 @@ export class LeanClient implements Disposable {
         // not perfect either... would be nice to have a "canExecute" command line
         // option or something...
         if (useLake) {
-            const expectedError = 'Watchdog error: Cannot read LSP request: Stream was closed\n';
-            const rc = await testExecute(cmd, ['serve'], folder.fsPath, this.outputChannel, true, expectedError);
-            if (rc !== 0) {
-                const failover = 'Lake failed, using lean instead.'
-                console.log(failover);
-                if (this.outputChannel) this.outputChannel.appendLine(failover);
+            // First check we have a version of lake that supports "lake serve"
+            const lakeVersion = await batchExecute(cmd, ['--version'], folder.fsPath, null);
+            const v4 = new Version('4.0.0')
+            const actual = new Version(this.removePrefix(lakeVersion, 'Lake version '))
+            if (actual.compare(v4) >= 0) {
+                const expectedError = 'Watchdog error: Cannot read LSP request: Stream was closed\n';
+                const rc = await testExecute(cmd, ['serve'], folder.fsPath, this.outputChannel, true, expectedError);
+                if (rc !== 0) {
+                    const failover = 'Lake failed, using lean instead.'
+                    console.log(failover);
+                    if (this.outputChannel) this.outputChannel.appendLine(failover);
+                    useLake = false;
+                }
+            } else {
                 useLake = false;
             }
         }
@@ -462,5 +471,10 @@ export class LeanClient implements Disposable {
 
     get initializeResult() : InitializeResult | undefined {
         return this.running ? this.client.initializeResult : undefined
+    }
+
+    private removePrefix(v: string, prefix: string){
+        if (v.startsWith(prefix)) return v.slice(prefix.length).trim()
+        return v
     }
 }
