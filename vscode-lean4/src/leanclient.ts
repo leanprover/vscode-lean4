@@ -26,7 +26,7 @@ import { cwd } from 'process'
 import * as fs from 'fs';
 import { URL } from 'url';
 import { join } from 'path';
-import { Version } from './utils/version';
+import { SemVer } from 'semver';
 
 const documentSelector: DocumentFilter = {
     language: 'lean4',
@@ -158,8 +158,8 @@ export class LeanClient implements Disposable {
         if (useLake) {
             // First check we have a version of lake that supports "lake serve"
             const lakeVersion = await batchExecute(cmd, ['--version'], folder.fsPath, null);
-            const actual = this.removePrefix(lakeVersion, 'Lake version ')
-            if (semver.gte(actual, '3.0.0')) {
+            const actual = this.extractVersion(lakeVersion)
+            if (actual.compare('3.0.0') >= 0) {
                 const expectedError = 'Watchdog error: Cannot read LSP request: Stream was closed\n';
                 const rc = await testExecute(cmd, ['serve'], folder.fsPath, this.outputChannel, true, expectedError);
                 if (rc !== 0) {
@@ -472,8 +472,11 @@ export class LeanClient implements Disposable {
         return this.running ? this.client.initializeResult : undefined
     }
 
-    private removePrefix(v: string, prefix: string){
-        if (v.startsWith(prefix)) return v.slice(prefix.length).trim()
-        return v
+    private extractVersion(v: string) : SemVer {
+        const prefix = 'Lake version'
+        if (v.startsWith(prefix)) v = v.slice(prefix.length).trim()
+        const pos = v.indexOf('(')
+        if (pos > 0) v = v.slice(0, pos).trim()
+        return new SemVer(v)
     }
 }
