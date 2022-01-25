@@ -123,13 +123,13 @@ export class InfoProvider implements Disposable {
             // here because that *overwrites* the notification handler rather than registers an extra one.
             // So we have to add a bunch of event emitters to `LeanClient.`
             if (method === 'textDocument/publishDiagnostics') {
-                const subscriptions = [];
+                const subscriptions : Disposable[] = [];
                 for (const client of this.clients) {
                     subscriptions.push(this.subscribeDiagnosticsNotification(client, method));
                 }
                 this.serverNotifSubscriptions.set(method, [1, subscriptions]);
             } else if (method.startsWith('$')) {
-                const subscriptions = [];
+                const subscriptions : Disposable[] = [];
                 for (const client of this.clients) {
                     subscriptions.push(this.subscribeCustomNotification(client, method));
                 }
@@ -161,13 +161,13 @@ export class InfoProvider implements Disposable {
             }
 
             if (method === 'textDocument/didChange') {
-                const subscriptions = [];
+                const subscriptions : Disposable[] = [];
                 for (const client of this.clients) {
                     subscriptions.push(this.subscribeDidChangeNotification(client, method));
                 }
                 this.clientNotifSubscriptions.set(method, [1, subscriptions]);
             } else if (method === 'textDocument/didClose') {
-                const subscriptions = [];
+                const subscriptions : Disposable[] = [];
                 for (const client of this.clients) {
                     subscriptions.push(this.subscribeDidCloseNotification(client, method))
                 }
