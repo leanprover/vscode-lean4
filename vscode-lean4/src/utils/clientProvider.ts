@@ -19,8 +19,11 @@ export class LeanClientProvider implements Disposable {
     private progressChangedEmitter = new EventEmitter<[string, LeanFileProgressProcessingInfo[]]>()
     progressChanged = this.progressChangedEmitter.event
 
-    private activeClientChangedEmitter = new EventEmitter<LeanClient>()
-    activeClientChanged = this.activeClientChangedEmitter.event
+    private clientAddedEmitter = new EventEmitter<LeanClient>()
+    clientAdded = this.clientAddedEmitter.event
+
+    private clientRemovedEmitter = new EventEmitter<LeanClient>()
+    clientRemoved = this.clientRemovedEmitter.event
 
     constructor(localStorage : LocalStorageService, installer : LeanInstaller, outputChannel : OutputChannel) {
         this.localStorage = localStorage;
@@ -44,6 +47,7 @@ export class LeanClientProvider implements Disposable {
                     this.clients.delete(path);
                     this.versions.delete(path);
                     void client.stop();
+                    this.clientRemovedEmitter.fire(client);
                 }
             }
         });
@@ -163,11 +167,11 @@ export class LeanClientProvider implements Disposable {
             }
 
             this.pending.delete(path);
+            this.clientAddedEmitter.fire(client);
         }
 
         // tell the InfoView about this activated client.
         this.activeClient = client;
-        this.activeClientChangedEmitter.fire(client);
     }
 
     dispose(): void {
