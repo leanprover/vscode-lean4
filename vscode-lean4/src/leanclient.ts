@@ -116,6 +116,8 @@ export class LeanClient implements Disposable {
         }
         if (this.workspaceFolder) {
             options.push('' + this.workspaceFolder.uri.fsPath)
+        } else {
+            options.push('untitled')
         }
 
         const serverOptions: ServerOptions = {
@@ -132,7 +134,10 @@ export class LeanClient implements Disposable {
         }
 
         if (this.workspaceFolder){
-            documentSelector.pattern = `${this.workspaceFolder.uri.fsPath}/**/*`
+            documentSelector.scheme = 'file'
+            documentSelector.pattern = `${this.workspaceFolder.uri.toString()}/**/*`
+        } else {
+            documentSelector.scheme = 'untitled'
         }
 
         const clientOptions: LanguageClientOptions = {
@@ -301,6 +306,12 @@ export class LeanClient implements Disposable {
             return
         }
         if (!this.running) return; // there was a problem starting lean server.
+
+        if (!this.isSameWorkspace(doc.uri)){
+            // skip it, this file belongs to a different workspace...
+            return;
+        }
+
         if (this.isOpen.has(doc.uri.toString())) return;
         this.isOpen.add(doc.uri.toString())
         void this.client.sendNotification(DidOpenTextDocumentNotification.type, {
@@ -311,6 +322,19 @@ export class LeanClient implements Disposable {
                 text: doc.getText(),
             },
         });
+    }
+
+    isSameWorkspace(uri: Uri){
+        if (this.workspaceFolder) {
+            if (uri.toString().startsWith(this.workspaceFolder.uri.toString())) {
+                // skip it, this file belongs to a different workspace...
+                return true;
+            }
+        }
+        else {
+            return uri.scheme === 'untitled'
+        }
+        return false;
     }
 
     getWorkspaceFolder() : string {
@@ -345,6 +369,11 @@ export class LeanClient implements Disposable {
     refreshFileDependencies(doc: TextDocument): void {
         if (!this.running) return; // there was a problem starting lean server.
         assert(() => this.isStarted())
+
+        if (!this.isSameWorkspace(doc.uri)){
+            // skip it, this file belongs to a different workspace...
+            return;
+        }
         const uri = doc.uri.toString()
         // This causes a text document version number discontinuity. In
         // (didChange (oldVersion) => refreshFileDependencies => didChange (newVersion))
