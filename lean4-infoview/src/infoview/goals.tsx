@@ -30,11 +30,7 @@ export function goalsToString(goals: InteractiveGoals): string {
 }
 
 export function Goal({pos, goal}: {pos: DocumentPosition, goal: InteractiveGoal}) {
-    const divStyle: React.CSSProperties = {
-        whiteSpace: 'pre-wrap',
-    }
-
-    return <div className="font-code tl" style={divStyle}>
+    return <div className="font-code tl pre-wrap">
         <ul className="list pl0">
             {goal.userName && <li key={'case'}><strong className="goal-case">case </strong>{goal.userName}</li>}
             {goal.hyps.map ((h, i) => {
