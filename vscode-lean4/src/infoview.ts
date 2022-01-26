@@ -380,7 +380,7 @@ export class InfoProvider implements Disposable {
             editor.revealRange(selection, TextEditorRevealType.InCenterIfOutsideViewport);
             editor.selection = new Selection(selection.start, selection.end);
             // ensure the text document has the keyboard focus.
-            window.showTextDocument(editor.document, { viewColumn: editor.viewColumn, preserveFocus: false });
+            void window.showTextDocument(editor.document, { viewColumn: editor.viewColumn, preserveFocus: false });
         }
     }
 
