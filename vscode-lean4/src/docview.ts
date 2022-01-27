@@ -129,8 +129,7 @@ export class DocViewProvider implements Disposable {
     }
 
     private getBookTheme() : string {
-        const theme = window.activeColorTheme.kind === ColorThemeKind.Dark ? 'dark' : 'light';
-        return theme === 'dark' ? 'coal' : 'light';
+        return window.activeColorTheme.kind === ColorThemeKind.Dark ? 'coal' : 'light';
     }
 
     private sendTheme() {
@@ -240,12 +239,12 @@ export class DocViewProvider implements Disposable {
 
             const books = {
                 'Theorem Proving in Lean': mkCommandUri('lean4.docView.open', 'https://leanprover.github.io/theorem_proving_in_lean4/introduction.html'),
-                'Reference Manual': 'https://leanprover.github.io/lean4/doc/',
+                'Reference Manual': mkCommandUri('lean4.docView.open', 'https://leanprover.github.io/lean4/doc/'),
                 'Abbreviations cheat sheet': mkCommandUri('lean4.docView.showAllAbbreviations'),
                 'Example': mkCommandUri('lean4.openExample', 'https://raw.githubusercontent.com/leanprover/lean4/master/doc/examples/compiler/test.lean'),
 
                 // These are handy for testing that the bad file logic is working.
-                //'Local Theorem Proving in Lean': mkCommandUri('lean4.docView.open', 'http://localhost:8000/introduction.html'),
+                'Local Theorem Proving in Lean': mkCommandUri('lean4.docView.open', 'http://localhost:8000/introduction.html'),
                 //'Test bad file': mkCommandUri('lean4.docView.open', Uri.joinPath(this.extensionUri, 'media', 'webview.js')),
                 //'Test bad Uri': mkCommandUri('lean4.docView.open', 'https://leanprover.github.io/lean4/doc/images/code-success.png'),
             };
@@ -294,14 +293,18 @@ export class DocViewProvider implements Disposable {
         }
 
         const theme = this.getBookTheme();
-        const setupScript = $(`<script>window.clip_buttons = false; window.tryit_buttons = true; window.default_theme = '${theme}'; window.side_bar = false;</script>`);
-        $('body').append(setupScript);
+        let setupScript = this.loadScript(Uri.joinPath(this.extensionUri, 'media', 'themes.js'));
+        setupScript = setupScript.replace('${theme}', theme);
 
         for (const style of $('link[rel=stylesheet]').get()) {
             style.attribs.href = this.mkRelativeUrl(style.attribs.href as string, url);
         }
 
         for (const script of $('script[src]').get()) {
+            if (script.attribs.src == 'book.js') {
+                // configure the book.js script for use in vscode.
+                script.parentNode.insertBefore(script, `<script type='text/javascript'>${setupScript}</script>`);
+            }
             script.attribs.src = this.mkRelativeUrl(script.attribs.src as string, url);
         }
 
