@@ -51,6 +51,7 @@ export class DocViewProvider implements Disposable {
     private abbreviations: SymbolsByAbbreviation = null;
     private extensionUri: Uri;
     private tryItDoc: TextDocument | null = null;
+    private scripts: Map<string, string> = new Map<string, string>();
 
     constructor(extensionUri: Uri) {
         this.extensionUri = extensionUri;
@@ -189,7 +190,12 @@ export class DocViewProvider implements Disposable {
 
     loadScript(localUri: Uri) : string {
         const path = localUri.fsPath;
-        return '<script>\n<!-- ' + path + '-->\n' + fs.readFileSync(path).toString() + '\n</script>';
+        if (this.scripts.has(path)){
+            return this.scripts.get(path);
+        }
+        const script = '<script type=\'text/javascript\'>\n' + fs.readFileSync(path).toString() + '\n</script>';
+        this.scripts.set(path, script);
+        return script;
     }
 
     private async httpGet(uri: Uri) : Promise<string> {
@@ -281,6 +287,7 @@ export class DocViewProvider implements Disposable {
         const url = this.currentURL;
         let $: cheerio.Root;
         if (html){
+            // See https://cheerio.js.org/ for cheerio API.
             $ = cheerio.load(html);
         }
         else{
@@ -292,19 +299,20 @@ export class DocViewProvider implements Disposable {
             }
         }
 
-        const theme = this.getBookTheme();
-        let setupScript = this.loadScript(Uri.joinPath(this.extensionUri, 'media', 'themes.js'));
-        setupScript = setupScript.replace('${theme}', theme);
+        const book = 'book.js';
+        const bookScript = $(`script[src='${book}']`);
+        if (bookScript.length) {
+            const theme = this.getBookTheme();
+            let setupScript = this.loadScript(Uri.joinPath(this.extensionUri, 'media', 'themes.js'));
+            setupScript = setupScript.replace('${theme}', theme);
+            $(setupScript).insertBefore(bookScript);
+        }
 
         for (const style of $('link[rel=stylesheet]').get()) {
             style.attribs.href = this.mkRelativeUrl(style.attribs.href as string, url);
         }
 
         for (const script of $('script[src]').get()) {
-            if (script.attribs.src == 'book.js') {
-                // configure the book.js script for use in vscode.
-                script.parentNode.insertBefore(script, `<script type='text/javascript'>${setupScript}</script>`);
-            }
             script.attribs.src = this.mkRelativeUrl(script.attribs.src as string, url);
         }
 
