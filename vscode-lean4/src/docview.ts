@@ -128,9 +128,14 @@ export class DocViewProvider implements Disposable {
         }
     }
 
+    private getBookTheme() : string {
+        const theme = window.activeColorTheme.kind === ColorThemeKind.Dark ? 'dark' : 'light';
+        return theme === 'dark' ? 'coal' : 'light';
+    }
+
     private sendTheme() {
         // todo: listen to vscode theme changes
-        const theme = window.activeColorTheme.kind === ColorThemeKind.Dark ? 'dark' : 'light';
+        const theme = this.getBookTheme();
         void this.webview.webview.postMessage({theme});
     }
 
@@ -238,9 +243,11 @@ export class DocViewProvider implements Disposable {
                 'Reference Manual': 'https://leanprover.github.io/lean4/doc/',
                 'Abbreviations cheat sheet': mkCommandUri('lean4.docView.showAllAbbreviations'),
                 'Example': mkCommandUri('lean4.openExample', 'https://raw.githubusercontent.com/leanprover/lean4/master/doc/examples/compiler/test.lean'),
+
                 // These are handy for testing that the bad file logic is working.
-                // 'Test bad file': mkCommandUri('lean4.docView.open', Uri.joinPath(this.extensionUri, 'media', 'book.js')),
-                // 'Test bad Uri': mkCommandUri('lean4.docView.open', 'https://leanprover.github.io/lean4/doc/images/code-success.png'),
+                //'Local Theorem Proving in Lean': mkCommandUri('lean4.docView.open', 'http://localhost:8000/introduction.html'),
+                //'Test bad file': mkCommandUri('lean4.docView.open', Uri.joinPath(this.extensionUri, 'media', 'webview.js')),
+                //'Test bad Uri': mkCommandUri('lean4.docView.open', 'https://leanprover.github.io/lean4/doc/images/code-success.png'),
             };
 
             // TODO: add mathlib4 when we have a book about it
@@ -286,30 +293,24 @@ export class DocViewProvider implements Disposable {
             }
         }
 
-        // unfortunately, an HTTP based page cannot access a local file, so we have to
-        // load it manually and insert it into the DOM.
-        const localUri = Uri.joinPath(this.extensionUri, 'media', 'book.js')
-        $('body').append(this.loadScript(localUri))
+        const theme = this.getBookTheme();
+        const setupScript = $(`<script>window.clip_buttons = false; window.tryit_buttons = true; window.default_theme = '${theme}'; window.side_bar = false;</script>`);
+        $('body').append(setupScript);
 
         for (const style of $('link[rel=stylesheet]').get()) {
             style.attribs.href = this.mkRelativeUrl(style.attribs.href as string, url);
         }
 
         for (const script of $('script[src]').get()) {
-            if (script.attribs.src === 'book.js'){
-                // we have already inserted our version of book.js into the page.
-                script.attribs.src = '';
-            } else {
-                script.attribs.src = this.mkRelativeUrl(script.attribs.src as string, url);
-            }
+            script.attribs.src = this.mkRelativeUrl(script.attribs.src as string, url);
         }
 
         for (const link of $('a[href]').get()) {
             const tryItMatch = link.attribs.href.match(/\/(?:live|lean-web-editor)\/.*#code=(.*)/);
             if (link.attribs.href.startsWith('#')) {
-                // keep relative links
+                // keep in page fragment links
             } else if (link.attribs.alwaysexternal) {
-                // keep links with alwaysexternal attribute
+                // keep links with always external attribute
                 // note: cheerio .attr('alwaysExternal', 'true') results in a lower case 'alwaysexternal'
                 // here when the html is round tripped through the cheerio parser.
             } else if (link.attribs.tryitfile) {
