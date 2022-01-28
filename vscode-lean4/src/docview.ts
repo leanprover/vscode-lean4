@@ -244,13 +244,12 @@ export class DocViewProvider implements Disposable {
             }
 
             const books = {
-                'Theorem Proving in Lean': mkCommandUri('lean4.docView.open', 'https://leanprover.github.io/theorem_proving_in_lean4/introduction.html'),
+                'Theorem Proving in Lean': mkCommandUri('lean4.docView.open', 'http://lovettsoftware.com/theorem_proving_in_lean4/introduction.html'),
                 'Reference Manual': mkCommandUri('lean4.docView.open', 'https://leanprover.github.io/lean4/doc/'),
                 'Abbreviations cheat sheet': mkCommandUri('lean4.docView.showAllAbbreviations'),
                 'Example': mkCommandUri('lean4.openExample', 'https://raw.githubusercontent.com/leanprover/lean4/master/doc/examples/compiler/test.lean'),
 
                 // These are handy for testing that the bad file logic is working.
-                'Local Theorem Proving in Lean': mkCommandUri('lean4.docView.open', 'http://localhost:8000/introduction.html'),
                 //'Test bad file': mkCommandUri('lean4.docView.open', Uri.joinPath(this.extensionUri, 'media', 'webview.js')),
                 //'Test bad Uri': mkCommandUri('lean4.docView.open', 'https://leanprover.github.io/lean4/doc/images/code-success.png'),
             };
