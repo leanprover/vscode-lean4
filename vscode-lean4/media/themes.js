@@ -1,4 +1,4 @@
-function initTheme(theme) {
+function postFixup(theme) {
     try {
         var html = document.querySelector('html');
         html.classList.remove('no-js')
@@ -30,12 +30,12 @@ function applyTheme(newTheme) {
         currentTheme = newTheme;
         console.log('Applying book theme: ' + newTheme);
         set_theme(newTheme);    // call into book.js.
+        postFixup(newTheme);
     }
 }
 
-function onLoad() {
+function vsCodeThemeWatcher() {
     applyTheme(document.body.className);
-    initTheme(currentTheme);
 
     var observer = new MutationObserver(function(mutations) {
         mutations.forEach(function(mutationRecord) {
@@ -48,4 +48,4 @@ function onLoad() {
     observer.observe(target, { attributes : true, attributeFilter : ['class'] });
 }
 
-window.addEventListener('load', e => onLoad());
+window.addEventListener('load', vsCodeThemeWatcher);

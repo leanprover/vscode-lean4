@@ -129,10 +129,6 @@ export class DocViewProvider implements Disposable {
         }
     }
 
-    private getBookTheme() : string {
-        return window.activeColorTheme.kind === ColorThemeKind.Dark ? 'coal' : 'light';
-    }
-
     private webview?: WebviewPanel;
     private getWebview(): WebviewPanel {
         if (!this.webview) {
@@ -294,9 +290,8 @@ export class DocViewProvider implements Disposable {
         const book = 'book.js';
         const bookScript = $(`script[src='${book}']`);
         if (bookScript.length) {
-            const theme = this.getBookTheme();
             const themes_uri = Uri.joinPath(this.extensionUri, 'media', 'themes.js');
-            const config = `<script type='text/javascript'>var theme = '${theme}';default_theme = theme;window.clip_buttons = false;window.tryit_buttons = true;window.default_theme = theme;window.side_bar = false;</script>`;
+            const config = `<script type='text/javascript'>var clip_buttons = false;var tryit_buttons = true;var default_theme = theme;var side_bar = false;</script>`;
             const script_url = this.webview.webview.asWebviewUri(themes_uri);
             const node = $(`<script type='text/javascript' src='${script_url}'></script>`).insertBefore(bookScript);
             $(config).insertBefore(node);
