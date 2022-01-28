@@ -133,12 +133,6 @@ export class DocViewProvider implements Disposable {
         return window.activeColorTheme.kind === ColorThemeKind.Dark ? 'coal' : 'light';
     }
 
-    private sendTheme() {
-        // todo: listen to vscode theme changes
-        const theme = this.getBookTheme();
-        void this.webview.webview.postMessage({theme});
-    }
-
     private webview?: WebviewPanel;
     private getWebview(): WebviewPanel {
         if (!this.webview) {
@@ -153,7 +147,6 @@ export class DocViewProvider implements Disposable {
                 { viewColumn: 3, preserveFocus: true }, options)
             this.webview.onDidDispose(() => this.webview = null);
             this.webview.webview.onDidReceiveMessage(m => this.receiveMessage(m));
-            this.sendTheme();
 
             let first = true;
             this.webview.onDidChangeViewState(async () => {
@@ -302,9 +295,11 @@ export class DocViewProvider implements Disposable {
         const bookScript = $(`script[src='${book}']`);
         if (bookScript.length) {
             const theme = this.getBookTheme();
-            let setupScript = this.loadScript(Uri.joinPath(this.extensionUri, 'media', 'themes.js'));
-            setupScript = setupScript.replace('${theme}', theme);
-            $(setupScript).insertBefore(bookScript);
+            const themes_uri = Uri.joinPath(this.extensionUri, 'media', 'themes.js');
+            const config = `<script type='text/javascript'>var theme = '${theme}';default_theme = theme;window.clip_buttons = false;window.tryit_buttons = true;window.default_theme = theme;window.side_bar = false;</script>`;
+            const script_url = this.webview.webview.asWebviewUri(themes_uri);
+            const node = $(`<script type='text/javascript' src='${script_url}'></script>`).insertBefore(bookScript);
+            $(config).insertBefore(node);
         }
 
         for (const style of $('link[rel=stylesheet]').get()) {
@@ -372,7 +367,6 @@ export class DocViewProvider implements Disposable {
         $('nav+*').css('margin-top','3em');
 
         webview.html = $.html();
-        this.sendTheme();
     }
 
     async openHtml(html : string): Promise<void> {

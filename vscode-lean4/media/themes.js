@@ -1,31 +1,51 @@
-var theme = '${theme}';
-default_theme = theme;
-window.clip_buttons = false;
-window.tryit_buttons = true;
-window.default_theme = theme;
-window.side_bar = false;
-
-function setTheme(theme) {
+function initTheme(theme) {
     try {
         var html = document.querySelector('html');
         html.classList.remove('no-js')
         html.classList.remove('light')
         html.classList.add(theme);
         html.classList.add('js');
-        localStorage.setItem('mdbook-theme', theme);
     }
     catch (e) {
     }
 }
 
-window.matchMedia("(prefers-color-scheme: dark)").addListener(
-    e => {
-        var theme = e.matches ? 'coal' : 'light';
-        console.log('prefers-color-scheme changed to ' + theme);
-        setTheme(theme);
+var currentTheme = '';
+
+function applyTheme(newTheme) {
+    var prefix = 'vscode-';
+    if (newTheme.startsWith(prefix)) {
+        // strip prefix
+        newTheme = newTheme.substr(prefix.length);
     }
-);
 
-setTheme(theme)
+    if (newTheme === 'high-contrast' || // our books don't support high contrast yet.
+        newTheme === 'dark') {
+        newTheme = 'coal';
+    } else {
+        newTheme = 'light';
+    }
 
-console.log("Setting theme: " + theme);
+    if (newTheme !== currentTheme) {
+        currentTheme = newTheme;
+        console.log('Applying book theme: ' + newTheme);
+        set_theme(newTheme);    // call into book.js.
+    }
+}
+
+function onLoad() {
+    applyTheme(document.body.className);
+    initTheme(currentTheme);
+
+    var observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutationRecord) {
+            console.log('Detected vscode theme change: ' + mutationRecord.target.className);
+            applyTheme(mutationRecord.target.className);
+        });
+    });
+
+    var target = document.body;
+    observer.observe(target, { attributes : true, attributeFilter : ['class'] });
+}
+
+window.addEventListener('load', e => onLoad());
