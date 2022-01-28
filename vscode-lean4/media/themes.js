@@ -46,6 +46,9 @@ function vsCodeThemeWatcher() {
 
     var target = document.body;
     observer.observe(target, { attributes : true, attributeFilter : ['class'] });
+
+    // since page was reloaded, scroll back to the top of the document.
+    window.scrollTo(0, 0);
 }
 
 window.addEventListener('load', vsCodeThemeWatcher);
