@@ -291,7 +291,11 @@ export class DocViewProvider implements Disposable {
         const bookScript = $(`script[src='${book}']`);
         if (bookScript.length) {
             const themes_uri = Uri.joinPath(this.extensionUri, 'media', 'themes.js');
-            const config = `<script type='text/javascript'>var clip_buttons = false;var tryit_buttons = true;var default_theme = theme;var side_bar = false;</script>`;
+            const config = `<script type='text/javascript'>
+var clip_buttons = false; // do not show copy to clipboard buttons
+var tryit_buttons = true; // instead show a TryIt button
+var side_bar = false; // collapse the side bar menu by default.
+            </script>`;
             const script_url = this.webview.webview.asWebviewUri(themes_uri);
             const node = $(`<script type='text/javascript' src='${script_url}'></script>`).insertBefore(bookScript);
             $(config).insertBefore(node);
