@@ -132,6 +132,7 @@ export class LeanClient implements Disposable {
             documentSelector: [documentSelector],
             initializationOptions: {
                 editDelay: getElaborationDelay(),
+		hasWidgets: true,
             },
             middleware: {
                 handleDiagnostics: (uri, diagnostics, next) => {
