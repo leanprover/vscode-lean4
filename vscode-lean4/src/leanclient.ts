@@ -135,7 +135,7 @@ export class LeanClient implements Disposable {
 
         if (this.workspaceFolder){
             documentSelector.scheme = 'file'
-            documentSelector.pattern = `${this.workspaceFolder.uri.toString()}/**/*`
+            documentSelector.pattern = `${this.workspaceFolder.uri.fsPath}/**/*`
         } else {
             documentSelector.scheme = 'untitled'
         }
