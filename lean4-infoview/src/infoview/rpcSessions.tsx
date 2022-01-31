@@ -37,7 +37,7 @@ class RpcSession implements Disposable {
                     sessionId: this.sessionId,
                     refs: this.#refsToRelease,
                 }
-                void this.#ec.api.sendClientNotification('$/lean/rpc/release', params)
+                void this.#ec.api.sendClientNotification(this.#uri, '$/lean/rpc/release', params)
                 this.#releaseTimeout = undefined
                 this.#refsToRelease = []
             }
@@ -62,7 +62,7 @@ class RpcSession implements Disposable {
             method,
             params,
         }
-        const val = await this.#ec.api.sendClientRequest('$/lean/rpc/call', rpcParams)
+        const val = await this.#ec.api.sendClientRequest(pos.uri, '$/lean/rpc/call', rpcParams)
         // const s = JSON.stringify(val)
         // console.log(`'${method}(${JSON.stringify(params)})' at '${pos.line}:${pos.character}' -> '${s.length < 200 ? s : '(..)'}'`)
         return val;
