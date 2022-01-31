@@ -11,7 +11,7 @@ export interface EditorFsApi {
  */
 export type TextInsertKind = 'here' | 'above';
 
-/** Interview that the InfoView WebView uses to talk to the hosting editor. */
+/** Interface that the InfoView WebView uses to talk to the hosting editor. */
 export interface EditorApi {
   // NOTE: not needed as of now.
   //fs : EditorFsApi;
