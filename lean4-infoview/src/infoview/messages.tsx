@@ -101,7 +101,6 @@ export function AllMessages({uri: uri0}: { uri: DocumentUri }) {
             } catch (err: any) {
                 if (err?.code === -32801) {
                     // Document has been changed since we made the request, try again later?
-                    return;
                 } else {
                     console.log('getInteractiveDiagnostics error ', err)
                 }
