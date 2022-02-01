@@ -100,7 +100,8 @@ export function AllMessages({uri: uri0}: { uri: DocumentUri }) {
                 return await getInteractiveDiagnostics(rs, { uri: uri0, line: 0, character: 0 }) || [];
             } catch (err: any) {
                 if (err?.code === -32801) {
-                    // Document has been changed since we made the request, try again later?
+                    // Document has been changed since we made the request.
+                    // This can happen while typing quickly, so server will catch up on next edit.
                 } else {
                     console.log('getInteractiveDiagnostics error ', err)
                 }
@@ -176,8 +177,8 @@ export function useMessagesForFile(uri: DocumentUri, line?: number): Interactive
                 }
             } catch (err: any) {
                 if (err?.code === -32801) {
-                    // Document has been changed since we made the request, try again later?
-                    return;
+                    // Document has been changed since we made the request.
+                    // This can happen while typing quickly, so server will catch up on next edit.
                 } else {
                     console.log('getInteractiveDiagnostics error ', err)
                 }
