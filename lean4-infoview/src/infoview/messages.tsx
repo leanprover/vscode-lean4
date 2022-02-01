@@ -99,7 +99,12 @@ export function AllMessages({uri: uri0}: { uri: DocumentUri }) {
             try {
                 return await getInteractiveDiagnostics(rs, { uri: uri0, line: 0, character: 0 }) || [];
             } catch (err: any) {
-                console.log('getInteractiveDiagnostics error ', err)
+                if (err?.code === -32801) {
+                    // Document has been changed since we made the request, try again later?
+                    return;
+                } else {
+                    console.log('getInteractiveDiagnostics error ', err)
+                }
             }
         }
         return diags0.map(d => ({ ...(d as LeanDiagnostic), message: { text: d.message } }));
@@ -171,7 +176,12 @@ export function useMessagesForFile(uri: DocumentUri, line?: number): Interactive
                     setDiags(diags)
                 }
             } catch (err: any) {
-                console.log('getInteractiveDiagnostics error ', err)
+                if (err?.code === -32801) {
+                    // Document has been changed since we made the request, try again later?
+                    return;
+                } else {
+                    console.log('getInteractiveDiagnostics error ', err)
+                }
             }
         }
     }
