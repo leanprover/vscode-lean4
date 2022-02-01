@@ -55,21 +55,19 @@ export class LeanClientProvider implements Disposable {
 
         installer.installChanged(async (uri: Uri) => {
             const path = uri.toString()
-            if (path in this.testing) {
+            if (this.testing.has(path)) {
                 console.log(`Blocking re-entryancy on ${path}`);
                 return;
             }
             // avoid re-entrancy since testLeanVersion can take a while.
-            this.testing[path] = true;
+            this.testing.set(path, true);
             try {
                 // have to check again here in case elan install had --default-toolchain none.
                 const version = await installer.testLeanVersion(uri);
                 if (version.version === '4') {
-                    if (this.clients.has(path)) {
-                        const client = this.clients.get(path)
-                        await client.restart()
-                    } else {
-                        await this.ensureClient(uri, version);
+                    const [cachedClient, client] = await this.ensureClient(uri, version);
+                    if (cachedClient && client) {
+                        await client.restart();
                     }
                 } else if (version.error) {
                     console.log(`Lean version not ok: ${version.error}`);
@@ -107,7 +105,7 @@ export class LeanClientProvider implements Disposable {
         return Array.from(this.clients.values());
     }
 
-    async ensureClient(uri : Uri, versionInfo: LeanVersion | null) {
+    async ensureClient(uri : Uri, versionInfo: LeanVersion | null) : Promise<[boolean,LeanClient]> {
         let folder = workspace.getWorkspaceFolder(uri);
         if (!folder && workspace.workspaceFolders) {
             // Could be that uri.scheme === 'untitled'.
@@ -121,7 +119,8 @@ export class LeanClientProvider implements Disposable {
         const folderUri = folder ? folder.uri : uri;
         const path = folderUri?.toString();
         let  client: LeanClient = null;
-        if (this.clients.has(path)) {
+        const cachedClient = this.clients.has(path);
+        if (cachedClient) {
             // we're good then
             client = this.clients.get(path);
         } else if (!this.versions.has(path) && !this.pending.has(path)) {
@@ -162,6 +161,8 @@ export class LeanClientProvider implements Disposable {
 
         // tell the InfoView about this activated client.
         this.activeClient = client;
+
+        return [cachedClient, client];
     }
 
     dispose(): void {

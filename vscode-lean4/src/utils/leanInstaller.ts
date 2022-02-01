@@ -185,6 +185,7 @@ export class LeanInstaller implements Disposable {
                 this.installChangedEmitter.fire(uri);
             }
         }  else if (selectedVersion === resetPrompt){
+            this.localStorage.setLeanPath('');
             this.localStorage.setLeanVersion(''); // clear the requested version as we have a full path.
             this.installChangedEmitter.fire(uri);
         } else if (selectedVersion) {
