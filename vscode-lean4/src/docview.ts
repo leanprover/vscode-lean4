@@ -343,12 +343,11 @@ var side_bar = false; // collapse the side bar menu by default.
         nav.css('top', '0');
         nav.css('right', '0');
         nav.css('text-align', 'right');
-        nav.css('z-index', '100');
+        nav.css('z-index', '1000'); // ensures it sits on top of any mdbook menu bar.
         nav.prependTo($('body'));
         const navDiv = $('<span>');
         navDiv.css('padding', '4px');
         navDiv.css('padding-right', '20px');
-        navDiv.css('z-index', '100');
         navDiv.css('background-color', 'var(--vscode-tab-activeBackground)');
         nav.append(navDiv);
         const fontSize = workspace.getConfiguration('editor').get('fontSize') + 'px';
