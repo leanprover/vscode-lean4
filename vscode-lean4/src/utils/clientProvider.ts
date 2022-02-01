@@ -108,10 +108,6 @@ export class LeanClientProvider implements Disposable {
     }
 
     async ensureClient(uri : Uri, versionInfo: LeanVersion | null) {
-        if (uri === null) {
-            console.log("bugbug: null uri?")
-            return;
-        }
         let folder = workspace.getWorkspaceFolder(uri);
         if (!folder && workspace.workspaceFolders) {
             // Could be that uri.scheme === 'untitled'.
