@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import { URL } from 'url';
-import { EventEmitter, Disposable, Uri, workspace, window } from 'vscode';
+import { EventEmitter, Disposable, Uri, workspace, window, WorkspaceFolder } from 'vscode';
 import { LocalStorageService} from './localStorage'
 
 export class LeanpkgService implements Disposable {
@@ -11,8 +11,8 @@ export class LeanpkgService implements Disposable {
     private lakeFileName : string = 'lakefile.lean'
     private defaultToolchain : string;
     private localStorage : LocalStorageService;
-    private versionChangedEmitter = new EventEmitter<string>();
-    private lakeFileChangedEmitter = new EventEmitter();
+    private lakeFileChangedEmitter = new EventEmitter<Uri>();
+    private versionChangedEmitter = new EventEmitter<Uri>();
     private currentVersion : string = null;
     private normalizedLakeFileContents : string = null;
 
@@ -39,31 +39,12 @@ export class LeanpkgService implements Disposable {
         this.subscriptions.push(watcher2);
     }
 
-    private isLean(languageId : string) : boolean {
-        return languageId === 'lean' || languageId === 'lean4';
-    }
-
-    getWorkspaceLeanFolderUri() : Uri {
-        let documentUri : Uri = null;
-
-        if (window.activeTextEditor)
-        {
-            documentUri = window.activeTextEditor.document.uri
-        }
-        else {
-            // This happens if vscode starts with a lean file open
-            // but the "Getting Started" page is active.
-            for (const editor of window.visibleTextEditors) {
-                const lang = editor.document.languageId;
-                if (this.isLean(lang)) {
-                    documentUri = editor.document.uri;
-                    break;
-                }
-            }
-        }
-
+    getWorkspaceLeanFolderUri(documentUri: Uri | undefined) : Uri {
         let rootPath : Uri = null;
         if (documentUri) {
+            // TODO: do we need to deal with nested workspace folders?
+            // According to this sample nested workspaces is a thing...
+            // https://github.com/microsoft/vscode-extension-samples
             const folder = workspace.getWorkspaceFolder(documentUri);
             if (folder){
                 rootPath = folder.uri;
@@ -78,24 +59,13 @@ export class LeanpkgService implements Disposable {
         }
 
         if (!rootPath) {
-            // this code path should never happen because lean extension is only
-            // activated when a lean file is opened, so it should have been in the
-            // list of window.visibleTextEditors.  So this is a fallback just in
-            // case some weird timing thing happened and file is now closed.
-            const workspaceFolders = workspace.workspaceFolders;
-            if (workspaceFolders && workspaceFolders.length > 0) {
-                rootPath = workspaceFolders[0].uri;
-            }
-        }
-
-        if (!rootPath) {
             return null;
         }
         return rootPath;
     }
 
-    async readLakeFile() : Promise<string> {
-        const uri = this.getWorkspaceLeanFolderUri()
+    async readLakeFile(documentUri: Uri) : Promise<string> {
+        const uri = this.getWorkspaceLeanFolderUri(documentUri)
         if (!uri || uri.fsPath === '.') {
             // this is a "new file" that has not been saved yet.
             return '';
@@ -111,8 +81,8 @@ export class LeanpkgService implements Disposable {
         }
     }
 
-    async findLeanPkgVersionInfo() : Promise<string> {
-        const path = this.getWorkspaceLeanFolderUri()
+    async findLeanPkgVersionInfo(uri: Uri) : Promise<string> {
+        const path = this.getWorkspaceLeanFolderUri(uri)
         if (!path || path.fsPath === '.') {
             // this is a "new file" that has not been saved yet.
         }
@@ -154,7 +124,7 @@ export class LeanpkgService implements Disposable {
         }
 
         if (this.normalizedLakeFileContents === null){
-            this.normalizedLakeFileContents = await this.readLakeFile();
+            this.normalizedLakeFileContents = await this.readLakeFile(uri);
         }
 
         return version;
@@ -168,11 +138,11 @@ export class LeanpkgService implements Disposable {
         // Note: just opening the file fires this event sometimes which is annoying, so
         // we compare the contents just to be sure and normalize whitespace so that
         // just adding a new line doesn't trigger the prompt.
-        const contents = await this.readLakeFile();
+        const contents = await this.readLakeFile(uri);
         if (contents !== this.normalizedLakeFileContents) {
             this.normalizedLakeFileContents = contents;
             console.log('Lake file changed...')
-            this.lakeFileChangedEmitter.fire(undefined);
+            this.lakeFileChangedEmitter.fire(uri);
         }
     }
 
@@ -185,10 +155,10 @@ export class LeanpkgService implements Disposable {
         // if a file is added or removed so we always match the elan behavior.
         const current = this.currentVersion;
         // findLeanPkgVersionInfo changes this.currentVersion
-        const version = await this.findLeanPkgVersionInfo();
+        const version = await this.findLeanPkgVersionInfo(uri);
         if (version && version !== current) {
             // raise an event so the extension triggers handleVersionChanged.
-            this.versionChangedEmitter.fire(this.currentVersion);
+            this.versionChangedEmitter.fire(uri);
         }
     }
 

@@ -1,7 +1,7 @@
-import { TextDocument, TextEditor, EventEmitter, Diagnostic,
+import { TextDocument, EventEmitter, Diagnostic,
     languages, DocumentHighlight, Range, DocumentHighlightKind, window, workspace,
     Disposable, Uri, ConfigurationChangeEvent, OutputChannel, DiagnosticCollection,
-    Position } from 'vscode'
+    Position, WorkspaceFolder } from 'vscode'
 import {
     Code2ProtocolConverter,
     DidChangeTextDocumentParams,
@@ -28,10 +28,6 @@ import { URL } from 'url';
 import { join } from 'path';
 import { SemVer } from 'semver';
 
-const documentSelector: DocumentFilter = {
-    language: 'lean4',
-}
-
 const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 interface Lean4Diagnostic extends ls.Diagnostic {
@@ -50,6 +46,7 @@ export class LeanClient implements Disposable {
     private toolchainPath: string
     private outputChannel: OutputChannel;
     private storageManager : LocalStorageService;
+    private workspaceFolder: WorkspaceFolder;
 
     private subscriptions: Disposable[] = []
 
@@ -69,8 +66,10 @@ export class LeanClient implements Disposable {
     /** Fires whenever a custom notification (i.e. one not defined in LSP) is received. */
     customNotification = this.customNotificationEmitter.event;
 
+    /** saved progress info in case infoview is opened, it needs to get all of it. */
     progress: ServerProgress = new Map()
-    private progressChangedEmitter = new EventEmitter<ServerProgress>()
+
+    private progressChangedEmitter = new EventEmitter<[string, LeanFileProgressProcessingInfo[]]>()
     progressChanged = this.progressChangedEmitter.event
 
     private restartedEmitter = new EventEmitter()
@@ -85,9 +84,10 @@ export class LeanClient implements Disposable {
     /** Files which are open. */
     private isOpen: Set<string> = new Set()
 
-    constructor(storageManager : LocalStorageService, outputChannel : OutputChannel) {
+    constructor(workspaceFolder: WorkspaceFolder, storageManager : LocalStorageService, outputChannel : OutputChannel) {
         this.storageManager = storageManager;
         this.outputChannel = outputChannel;
+        this.workspaceFolder = workspaceFolder;
 
         this.subscriptions.push(window.onDidChangeVisibleTextEditors((es) =>
             es.forEach((e) => this.open(e.document))));
@@ -185,7 +185,11 @@ export class LeanClient implements Disposable {
         }
 
         // Add workspace folder name to command-line so that it shows up in `ps aux`.
-        options.push('' + folder.toString())
+        if (this.workspaceFolder) {
+            options.push('' + this.workspaceFolder.uri.fsPath)
+        } else {
+            options.push('untitled')
+        }
 
         const serverOptions: ServerOptions = {
             command: cmd,
@@ -195,11 +199,25 @@ export class LeanClient implements Disposable {
                 env
             }
         }
+
+        const documentSelector: DocumentFilter = {
+            language: 'lean4'
+        }
+
+        if (this.workspaceFolder){
+            documentSelector.scheme = 'file'
+            documentSelector.pattern = `${this.workspaceFolder.uri.fsPath}/**/*`
+        } else {
+            documentSelector.scheme = 'untitled'
+        }
+
         const clientOptions: LanguageClientOptions = {
             outputChannel: this.outputChannel,
             documentSelector: [documentSelector],
+            workspaceFolder: this.workspaceFolder,
             initializationOptions: {
                 editDelay: getElaborationDelay(),
+		hasWidgets: true,
             },
             middleware: {
                 handleDiagnostics: (uri, diagnostics, next) => {
@@ -305,8 +323,9 @@ export class LeanClient implements Disposable {
                 if (method === '$/lean/fileProgress') {
                     const params = params_ as LeanFileProgressParams;
                     const uri = this.client.protocol2CodeConverter.asUri(params.textDocument.uri)
-                    const newProgress = new Map(this.progress);
-                    this.setProgress(newProgress.set(uri, params.processing));
+                    this.progressChangedEmitter.fire([uri.toString(), params.processing]);
+                    // save the latest progress on this Uri in case infoview needs it later.
+                    this.progress.set(uri, params.processing);
                 }
 
                 this.customNotificationEmitter.fire({method, params: params_});
@@ -360,6 +379,12 @@ export class LeanClient implements Disposable {
             return
         }
         if (!this.running) return; // there was a problem starting lean server.
+
+        if (!this.isSameWorkspace(doc.uri)){
+            // skip it, this file belongs to a different workspace...
+            return;
+        }
+
         if (this.isOpen.has(doc.uri.toString())) return;
         this.isOpen.add(doc.uri.toString())
         void this.client.sendNotification(DidOpenTextDocumentNotification.type, {
@@ -370,6 +395,23 @@ export class LeanClient implements Disposable {
                 text: doc.getText(),
             },
         });
+    }
+
+    isSameWorkspace(uri: Uri){
+        if (this.workspaceFolder) {
+            if (uri.toString().startsWith(this.workspaceFolder.uri.toString())) {
+                // skip it, this file belongs to a different workspace...
+                return true;
+            }
+        }
+        else {
+            return uri.scheme === 'untitled'
+        }
+        return false;
+    }
+
+    getWorkspaceFolder() : string {
+        return this.workspaceFolder?.uri.toString();
     }
 
     start(): Promise<void> {
@@ -385,7 +427,8 @@ export class LeanClient implements Disposable {
         if (this.client && this.running) {
             await this.client.stop()
         }
-        this.setProgress(new Map())
+
+        this.progress = new Map()
         this.client = undefined
         this.running = false
     }
@@ -398,10 +441,14 @@ export class LeanClient implements Disposable {
         }
     }
 
-    refreshFileDependencies(editor: TextEditor): void {
+    refreshFileDependencies(doc: TextDocument): void {
         if (!this.running) return; // there was a problem starting lean server.
         assert(() => this.isStarted())
-        const doc = editor.document
+
+        if (!this.isSameWorkspace(doc.uri)){
+            // skip it, this file belongs to a different workspace...
+            return;
+        }
         const uri = doc.uri.toString()
         // This causes a text document version number discontinuity. In
         // (didChange (oldVersion) => refreshFileDependencies => didChange (newVersion))
@@ -422,11 +469,6 @@ export class LeanClient implements Disposable {
                 'text': doc.getText()
             }
         })
-    }
-
-    private setProgress(newProgress: ServerProgress) {
-        this.progress = newProgress
-        this.progressChangedEmitter.fire(newProgress)
     }
 
     // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
@@ -477,6 +519,10 @@ export class LeanClient implements Disposable {
         if (v.startsWith(prefix)) v = v.slice(prefix.length).trim()
         const pos = v.indexOf('(')
         if (pos > 0) v = v.slice(0, pos).trim()
-        return new SemVer(v)
+        try {
+            return new SemVer(v)
+        } catch {
+            return new SemVer('0.0.0');
+        }
     }
 }

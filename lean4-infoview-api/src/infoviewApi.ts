@@ -11,15 +11,15 @@ export interface EditorFsApi {
  */
 export type TextInsertKind = 'here' | 'above';
 
-/** Functionality which the hosting editor must provide to the infoview. */
+/** Interface that the InfoView WebView uses to talk to the hosting editor. */
 export interface EditorApi {
   // NOTE: not needed as of now.
   //fs : EditorFsApi;
 
   /** Make a request to the LSP server. */
-  sendClientRequest(method: string, params: any): Promise<any>;
+  sendClientRequest(uri:string, method: string, params: any): Promise<any>;
   /** Send a notification to the LSP server. */
-  sendClientNotification(method: string, params: any): Promise<void>;
+  sendClientNotification(uri:string, method: string, params: any): Promise<void>;
 
   /**
    * Subscribe to notifications from the LSP server with the specified `method`.
@@ -92,7 +92,7 @@ export type InfoviewAction =
   { kind: 'togglePin'} |
   { kind: 'copyToComment'}
 
-/** Calls which the hosting editor must make when the corresponding events occur. */
+/** Interface the hosting editor uses to talk to the InfoView WebView. */
 export interface InfoviewApi {
   /** Must be called exactly once on initialization with the current cursor position. */
   initialize(loc: Location): Promise<void>;
