@@ -1,6 +1,6 @@
 import { Disposable, ExtensionContext, OverviewRulerLane, Range, TextEditorDecorationType, window } from 'vscode';
 import { LeanFileProgressKind, LeanFileProgressProcessingInfo } from '@lean4/infoview-api';
-import { LeanClient } from './leanclient';
+import { LeanClientProvider } from './utils/clientProvider';
 
 class LeanFileTaskGutter {
     private timeout?: NodeJS.Timeout
@@ -65,7 +65,7 @@ export class LeanTaskGutter implements Disposable {
     private gutters: { [uri: string]: LeanFileTaskGutter | undefined } = {};
     private subscriptions: Disposable[] = [];
 
-    constructor(client: LeanClient, context: ExtensionContext) {
+    constructor(client: LeanClientProvider, context: ExtensionContext) {
         this.decorations.set(LeanFileProgressKind.Processing, [
             window.createTextEditorDecorationType({
                 overviewRulerLane: OverviewRulerLane.Left,
@@ -97,10 +97,8 @@ export class LeanTaskGutter implements Disposable {
 
         this.subscriptions.push(
             window.onDidChangeVisibleTextEditors(() => this.updateDecos()),
-            client.progressChanged((progress) => {
-                for (const [uri, processed] of progress) {
-                    this.status[uri.toString()] = processed
-                }
+            client.progressChanged(([uri, processing]) => {
+                this.status[uri.toString()] = processing
                 this.updateDecos()
             }));
     }
@@ -122,6 +120,7 @@ export class LeanTaskGutter implements Disposable {
             if (!uris[uri]) {
                 this.gutters[uri]?.dispose();
                 this.gutters[uri] = undefined;
+                // TODO: also clear this.status for this uri ?
             }
         }
     }

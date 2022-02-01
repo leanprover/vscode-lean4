@@ -2,13 +2,16 @@
 	"name": "lean4",
 	"displayName": "lean4",
 	"description": "Lean 4 language support for VS Code",
-	"version": "0.0.57",
+	"version": "0.0.61",
 	"publisher": "leanprover",
 	"engines": {
 		"vscode": "^1.57.0"
 	},
 	"categories": [
 		"Programming Languages"
+	],
+	"keywords": [
+		"multi-root ready"
 	],
 	"repository": {
 		"type": "git",

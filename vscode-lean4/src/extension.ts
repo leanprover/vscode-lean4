@@ -1,13 +1,56 @@
-import { workspace, commands, window, languages, ExtensionContext, TextEditor, Range } from 'vscode'
+import { window, Uri, workspace, ExtensionContext, TextDocument } from 'vscode'
 import { AbbreviationFeature } from './abbreviation'
-import { LeanClient } from './leanclient'
 import { InfoProvider } from './infoview'
 import { DocViewProvider } from './docview';
 import { LeanTaskGutter } from './taskgutter'
 import { LocalStorageService} from './utils/localStorage'
 import { LeanInstaller } from './utils/leanInstaller'
 import { LeanpkgService } from './utils/leanpkg';
+import { LeanClientProvider } from './utils/clientProvider';
 import { addDefaultElanPath } from './config';
+
+function isLean(languageId : string) : boolean {
+    return languageId === 'lean' || languageId === 'lean4';
+}
+
+
+function getLeanDocument() : TextDocument | null {
+    let document : TextDocument = null;
+    if (window.activeTextEditor && isLean(window.activeTextEditor.document.languageId))
+    {
+        document = window.activeTextEditor.document
+    }
+    else {
+        // This happens if vscode starts with a lean file open
+        // but the "Getting Started" page is active.
+        for (const editor of window.visibleTextEditors) {
+            const lang = editor.document.languageId;
+            if (isLean(lang)) {
+                document = editor.document;
+                break;
+            }
+        }
+    }
+    return document;
+}
+
+
+function getLeanDocumentUri(doc: TextDocument) : Uri | null {
+    if (doc) {
+        return doc.uri;
+    }
+    else {
+        // this code path should never happen because lean extension is only
+        // activated when a lean file is opened, so it should have been in the
+        // list of window.visibleTextEditors.  So this is a fallback just in
+        // case some weird timing thing happened and file is now closed.
+        const workspaceFolders = workspace.workspaceFolders;
+        if (workspaceFolders && workspaceFolders.length > 0) {
+            return workspaceFolders[0].uri;
+        }
+    }
+    return null;
+}
 
 export async function activate(context: ExtensionContext): Promise<any> {
 
@@ -22,21 +65,21 @@ export async function activate(context: ExtensionContext): Promise<any> {
     const installer = new LeanInstaller(outputChannel, storageManager, pkgService, defaultToolchain)
     context.subscriptions.push(installer);
 
-    const versionInfo = await installer.testLeanVersion();
+    // test lean version in the workspace associated with the active text editor since
+    // that editor is probably the one that activated our extension here.
+    const doc = getLeanDocument();
+    const uri = getLeanDocumentUri(doc);
+    const versionInfo = await installer.testLeanVersion(uri);
     if (versionInfo.version && versionInfo.version !== '4') {
         // ah, then don't activate this extension!
         // this gives us side by side compatibility with the Lean 3 extension.
         return { isLean4Project: false };
     }
 
-    await Promise.all(workspace.textDocuments.map(async (doc) =>
-        doc.languageId === 'lean' && languages.setTextDocumentLanguage(doc, 'lean4')))
+    const clientProvider = new LeanClientProvider(storageManager, installer, outputChannel);
+    context.subscriptions.push(clientProvider)
 
-    const client: LeanClient = new LeanClient(storageManager, outputChannel)
-    context.subscriptions.push(client)
-
-    // Register support for unicode input
-    const info = new InfoProvider(client, {language: 'lean4'}, context);
+    const info = new InfoProvider(clientProvider, {language: 'lean4'}, context);
     context.subscriptions.push(info)
 
     const abbrev = new AbbreviationFeature();
@@ -48,34 +91,13 @@ export async function activate(context: ExtensionContext): Promise<any> {
     // pass the abbreviations through to the docview so it can show them on demand.
     docview.setAbbreviations(abbrev.abbreviations.symbolsByAbbreviation);
 
-    context.subscriptions.push(new LeanTaskGutter(client, context))
+    context.subscriptions.push(new LeanTaskGutter(clientProvider, context))
 
-    context.subscriptions.push(commands.registerCommand('lean4.refreshFileDependencies', () => {
-        if (!window.activeTextEditor) { return }
-        client.refreshFileDependencies(window.activeTextEditor)
-    }))
-    context.subscriptions.push(commands.registerCommand('lean4.restartServer', () => client.restart()));
+    pkgService.versionChanged((uri) => installer.handleVersionChanged(uri));
 
-    let busy = false
-    installer.installChanged(async () => {
-        if (busy) return;
-        busy = true; // avoid re-entrancy since testLeanVersion can take a while.
-        try {
-            // have to check again here in case elan install had --default-toolchain none.
-            const version = await installer.testLeanVersion();
-            if (version.version === '4') {
-                void client.restart()
-            }
-        } catch {
-        }
-        busy = false;
-    });
-
-    pkgService.versionChanged((v) => installer.handleVersionChanged(v));
-    client.serverFailed((err) => window.showErrorMessage(err));
-
-    if (versionInfo.version === '4' && !versionInfo.error) {
-        void client.start();
+    if (doc && versionInfo.version === '4' && !versionInfo.error) {
+        void clientProvider.ensureClient(doc, versionInfo);
     }
+
     return  { isLean4Project: true };
 }
