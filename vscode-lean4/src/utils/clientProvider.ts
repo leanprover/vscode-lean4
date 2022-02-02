@@ -30,9 +30,11 @@ export class LeanClientProvider implements Disposable {
         this.outputChannel = outputChannel;
         this.installer = installer;
 
-        workspace.onDidOpenTextDocument((d) => this.didOpenTextDocument(d));
-        // this is resulting in duplicate calls.
-        // workspace.textDocuments.forEach((d) => this.didOpenTextDocument(d));
+        // Only change the document language for *visible* documents,
+        // because this closes and then reopens the document.
+        window.visibleTextEditors.forEach((e) => this.didOpenEditor(e.document));
+        this.subscriptions.push(window.onDidChangeVisibleTextEditors((es) =>
+            es.forEach((e) => this.didOpenEditor(e.document))));
 
         this.subscriptions.push(
             commands.registerCommand('lean4.refreshFileDependencies', () => this.refreshFileDependencies()),
@@ -65,7 +67,7 @@ export class LeanClientProvider implements Disposable {
                         const client = this.clients.get(path)
                         void client.restart()
                     } else {
-                        void this.ensureClient(this.getDocument(path), version);
+                        void this.ensureClient(this.getDocument(path).uri, version);
                     }
                 }
             } catch {
@@ -100,13 +102,20 @@ export class LeanClientProvider implements Disposable {
         void this.activeClient?.restart();
     }
 
-    didOpenTextDocument(document: TextDocument) {
+    async didOpenEditor(document: TextDocument) {
+        // All open .lean files are assumed to be Lean 4 files.
+        // We need to do this because by default, .lean is associated with language id `lean`,
+        // i.e. Lean 3. vscode-lean is expected to yield when isLean4Project is true.
         if (document.languageId === 'lean') {
-            void languages.setTextDocumentLanguage(document, 'lean4');
+            // Only change the document language for *visible* documents,
+            // because this closes and then reopens the document.
+            await languages.setTextDocumentLanguage(document, 'lean4');
+        } else if (document.languageId !== 'lean4') {
+            return;
         }
-        if (document.languageId === 'lean4') {
-            void this.ensureClient(document, null);
-        }
+
+        const client = await this.ensureClient(document.uri, null);
+        await client.openLean4Document(document)
     }
 
     getClient(uri: Uri){
@@ -117,18 +126,18 @@ export class LeanClientProvider implements Disposable {
         return Array.from(this.clients.values());
     }
 
-    async ensureClient(doc: TextDocument, versionInfo: LeanVersion | null) {
-        let folder = workspace.getWorkspaceFolder(doc.uri);
+    async ensureClient(uri: Uri, versionInfo: LeanVersion | null): Promise<LeanClient> {
+        let folder = workspace.getWorkspaceFolder(uri);
         if (!folder && workspace.workspaceFolders) {
             // Could be that doc.uri.scheme === 'untitled'.
             workspace.workspaceFolders.forEach((f) => {
-                if (f.uri.fsPath && doc.uri.fsPath.startsWith(f.uri.fsPath)) {
+                if (f.uri.fsPath && uri.fsPath.startsWith(f.uri.fsPath)) {
                     folder = f;
                 }
             });
         }
 
-        const folderUri = folder ? folder.uri : doc.uri;
+        const folderUri = folder ? folder.uri : uri;
         const path = folderUri?.toString();
         let  client: LeanClient = null;
         if (this.clients.has(path)) {
@@ -160,18 +169,20 @@ export class LeanClientProvider implements Disposable {
                 this.progressChangedEmitter.fire(arg);
             });
 
+            this.pending.delete(path);
+            this.clientAddedEmitter.fire(client);
+
             if (!versionInfo.error) {
                 // we are ready to start, otherwise some sort of install might be happening
                 // as a result of UI options shown by testLeanVersion.
-                void client.start();
+                await client.start();
             }
-
-            this.pending.delete(path);
-            this.clientAddedEmitter.fire(client);
         }
 
         // tell the InfoView about this activated client.
         this.activeClient = client;
+
+        return client;
     }
 
     dispose(): void {
