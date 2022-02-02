@@ -99,7 +99,14 @@ export function AllMessages({uri: uri0}: { uri: DocumentUri }) {
             try {
                 return await getInteractiveDiagnostics(rs, { uri: uri0, line: 0, character: 0 }) || [];
             } catch (err: any) {
-                console.log('getInteractiveDiagnostics error ', err)
+                if (err?.code === -32801) {
+                    // Document has been changed since we made the request. This can happen
+                    // while typing quickly. When the server catches up on next edit, it will
+                    // send new diagnostics to which the infoview responds by calling
+                    // `getInteractiveDiagnostics` again.
+                } else {
+                    console.log('getInteractiveDiagnostics error ', err)
+                }
             }
         }
         return diags0.map(d => ({ ...(d as LeanDiagnostic), message: { text: d.message } }));
@@ -171,7 +178,12 @@ export function useMessagesForFile(uri: DocumentUri, line?: number): Interactive
                     setDiags(diags)
                 }
             } catch (err: any) {
-                console.log('getInteractiveDiagnostics error ', err)
+                if (err?.code === -32801) {
+                    // Document has been changed since we made the request.
+                    // This can happen while typing quickly, so server will catch up on next edit.
+                } else {
+                    console.log('getInteractiveDiagnostics error ', err)
+                }
             }
         }
     }
