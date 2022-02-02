@@ -67,8 +67,8 @@ export class LeanClientProvider implements Disposable {
                 // have to check again here in case elan install had --default-toolchain none.
                 const version = await installer.testLeanVersion(uri);
                 if (version.version === '4') {
-                    const [cachedClient, client] = await this.ensureClient(uri, version);
-                    if (cachedClient && client) {
+                    const [cached, client] = await this.ensureClient(uri, version);
+                    if (cached && client) {
                         await client.restart();
                     }
                 } else if (version.error) {
@@ -102,8 +102,10 @@ export class LeanClientProvider implements Disposable {
             return;
         }
 
-        const client = await this.ensureClient(document.uri, null);
-        await client.openLean4Document(document)
+        const [cached, client] = await this.ensureClient(document.uri, null);
+        if (client) {
+            await client.openLean4Document(document);
+        }
     }
 
     getClient(uri: Uri){
@@ -114,6 +116,9 @@ export class LeanClientProvider implements Disposable {
         return Array.from(this.clients.values());
     }
 
+    // Starts a LeanClient if the given file is in a new workspace we haven't seen before.
+    // Returns a boolean "true" if the LeanClient was already created.
+    // Returns a null client if it turns out the new workspace is a lean3 workspace.
     async ensureClient(uri : Uri, versionInfo: LeanVersion | null) : Promise<[boolean,LeanClient]> {
         let folder = workspace.getWorkspaceFolder(uri);
         if (!folder && workspace.workspaceFolders) {
