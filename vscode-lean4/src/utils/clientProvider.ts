@@ -30,9 +30,11 @@ export class LeanClientProvider implements Disposable {
         this.outputChannel = outputChannel;
         this.installer = installer;
 
-        workspace.onDidOpenTextDocument((d) => this.didOpenTextDocument(d));
-        // this is resulting in duplicate calls.
-        // workspace.textDocuments.forEach((d) => this.didOpenTextDocument(d));
+        // Only change the document language for *visible* documents,
+        // because this closes and then reopens the document.
+        window.visibleTextEditors.forEach((e) => this.didOpenEditor(e.document));
+        this.subscriptions.push(window.onDidChangeVisibleTextEditors((es) =>
+            es.forEach((e) => this.didOpenEditor(e.document))));
 
         this.subscriptions.push(
             commands.registerCommand('lean4.refreshFileDependencies', () => this.refreshFileDependencies()),
@@ -100,11 +102,15 @@ export class LeanClientProvider implements Disposable {
         void this.activeClient?.restart();
     }
 
-    didOpenTextDocument(document: TextDocument) {
+    didOpenEditor(document: TextDocument) {
+        // All open .lean files are assumed to be Lean 4 files.
+        // We need to do this because by default, .lean is associated with language id `lean`,
+        // i.e. Lean 3. vscode-lean is expected to yield when isLean4Project is true.
         if (document.languageId === 'lean') {
+            // Only change the document language for *visible* documents,
+            // because this closes and then reopens the document.
             void languages.setTextDocumentLanguage(document, 'lean4');
-        }
-        if (document.languageId === 'lean4') {
+        } else if (document.languageId === 'lean4') {
             void this.ensureClient(document, null);
         }
     }

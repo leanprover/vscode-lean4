@@ -295,15 +295,7 @@ export class LeanClient implements Disposable {
     }
 
     private async open(doc: TextDocument) {
-        // All open .lean files of this workspace are assumed to be Lean 4 files.
-        // We need to do this because by default, .lean is associated with language id `lean`,
-        // i.e. Lean 3. vscode-lean is expected to yield when isLean4Project is true.
-        if (doc.languageId === 'lean') {
-            // Only change the id for *visible* documents,
-            // because this closes and then reopens the document.
-            await languages.setTextDocumentLanguage(doc, 'lean4');
-            this.didSetLanguageEmitter.fire('lean4');
-        } else if (doc.languageId !== 'lean4') {
+        if (doc.languageId !== 'lean4') {
             return
         }
         if (!this.running) return; // there was a problem starting lean server.
