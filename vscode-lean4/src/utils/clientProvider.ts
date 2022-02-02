@@ -31,9 +31,11 @@ export class LeanClientProvider implements Disposable {
         this.outputChannel = outputChannel;
         this.installer = installer;
 
-        workspace.onDidOpenTextDocument((d) => this.didOpenTextDocument(d));
-        // this is resulting in duplicate calls.
-        // workspace.textDocuments.forEach((d) => this.didOpenTextDocument(d));
+        // Only change the document language for *visible* documents,
+        // because this closes and then reopens the document.
+        window.visibleTextEditors.forEach((e) => this.didOpenEditor(e.document));
+        this.subscriptions.push(window.onDidChangeVisibleTextEditors((es) =>
+            es.forEach((e) => this.didOpenEditor(e.document))));
 
         this.subscriptions.push(
             commands.registerCommand('lean4.refreshFileDependencies', () => this.refreshFileDependencies()),
@@ -88,13 +90,20 @@ export class LeanClientProvider implements Disposable {
         void this.activeClient?.restart();
     }
 
-    didOpenTextDocument(document: TextDocument) {
+    async didOpenEditor(document: TextDocument) {
+        // All open .lean files are assumed to be Lean 4 files.
+        // We need to do this because by default, .lean is associated with language id `lean`,
+        // i.e. Lean 3. vscode-lean is expected to yield when isLean4Project is true.
         if (document.languageId === 'lean') {
-            void languages.setTextDocumentLanguage(document, 'lean4');
+            // Only change the document language for *visible* documents,
+            // because this closes and then reopens the document.
+            await languages.setTextDocumentLanguage(document, 'lean4');
+        } else if (document.languageId !== 'lean4') {
+            return;
         }
-        if (document.languageId === 'lean4') {
-            void this.ensureClient(document.uri, null);
-        }
+
+        const client = await this.ensureClient(document.uri, null);
+        await client.openLean4Document(document)
     }
 
     getClient(uri: Uri){
@@ -136,7 +145,7 @@ export class LeanClientProvider implements Disposable {
                 // ignore workspaces that belong to a different version of Lean.
                 console.log(`Lean4 extension ignoring workspace '${folderUri}' because it is not a Lean 4 workspace.`);
                 this.pending.delete(path);
-                return;
+                return [false, null];
             }
 
             client = new LeanClient(folder, this.localStorage, this.outputChannel);
@@ -149,14 +158,14 @@ export class LeanClientProvider implements Disposable {
                 this.progressChangedEmitter.fire(arg);
             });
 
+            this.pending.delete(path);
+            this.clientAddedEmitter.fire(client);
+
             if (!versionInfo.error) {
                 // we are ready to start, otherwise some sort of install might be happening
                 // as a result of UI options shown by testLeanVersion.
-                void client.start();
+                await client.start();
             }
-
-            this.pending.delete(path);
-            this.clientAddedEmitter.fire(client);
         }
 
         // tell the InfoView about this activated client.

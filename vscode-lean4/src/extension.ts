@@ -108,9 +108,5 @@ export async function activate(context: ExtensionContext): Promise<any> {
     pkgService.versionChanged((uri) => installer.handleVersionChanged(uri));
     pkgService.lakeFileChanged((uri) => installer.handleLakeFileChanged(uri));
 
-    if (doc && versionInfo.version === '4' && !versionInfo.error) {
-        void clientProvider.ensureClient(doc.uri, versionInfo);
-    }
-
     return  { isLean4Project: true };
 }
