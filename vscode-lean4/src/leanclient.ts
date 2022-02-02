@@ -83,9 +83,6 @@ export class LeanClient implements Disposable {
         this.outputChannel = outputChannel;
         this.workspaceFolder = workspaceFolder;
 
-        this.subscriptions.push(window.onDidChangeVisibleTextEditors((es) =>
-            es.forEach((e) => this.open(e.document))));
-
         this.subscriptions.push(workspace.onDidChangeConfiguration((e) => this.configChanged(e)));
     }
 
@@ -266,7 +263,6 @@ export class LeanClient implements Disposable {
             this.client.outputChannel.show(true);
         });
 
-        window.visibleTextEditors.forEach((e) => this.open(e.document));
         this.restartedEmitter.fire(undefined)
     }
 
@@ -294,10 +290,7 @@ export class LeanClient implements Disposable {
         c2p.asDiagnostics = (diags) => diags.map(d => c2p.asDiagnostic(d))
     }
 
-    private async open(doc: TextDocument) {
-        if (doc.languageId !== 'lean4') {
-            return
-        }
+    async openLean4Document(doc: TextDocument) {
         if (!this.running) return; // there was a problem starting lean server.
 
         if (!this.isSameWorkspace(doc.uri)){
