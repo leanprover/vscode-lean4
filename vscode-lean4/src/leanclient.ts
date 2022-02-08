@@ -115,7 +115,7 @@ export class LeanClient implements Disposable {
             }
         }
         if (!rootPath) {
-            return Uri.parse('file:///' + cwd());
+            return Uri.file(cwd());
         }
 
         return rootPath;
