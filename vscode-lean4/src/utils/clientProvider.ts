@@ -116,27 +116,40 @@ export class LeanClientProvider implements Disposable {
     }
 
     async didOpenEditor(document: TextDocument) {
+        // bail as quickly as possible on non-lean files.
+        if (document.languageId !== 'lean' && document.languageId !== 'lean4') {
+            return;
+        }
+
         if (!this.getVisibleEditor(document.uri)) {
             // Sometimes VS code opens a document that has no editor yet.
-            // For example, this happens when the vs code opens files to get git information
-            // like this:
+            // For example, this happens when the vs code opens files to get git
+            // information using a "git:" Uri scheme:
             //  git:/d%3A/Temp/lean_examples/Foo/Foo/Hello.lean.git?%7B%22path%22%3A%22d%3A%5C%5CTemp%5C%5Clean_examples%5C%5CFoo%5C%5CFoo%5C%5CHello.lean%22%2C%22ref%22%3A%22%22%7D
             return;
         }
 
-        // All open .lean files are assumed to be Lean 4 files.
-        // We need to do this because by default, .lean is associated with language id `lean`,
-        // i.e. Lean 3. vscode-lean is expected to yield when isLean4Project is true.
-        if (document.languageId === 'lean') {
-            // Only change the document language for *visible* documents,
-            // because this closes and then reopens the document.
-            await languages.setTextDocumentLanguage(document, 'lean4');
-        } else if (document.languageId !== 'lean4') {
-            return;
-        }
+        try {
+            // All open .lean files are assumed to be Lean 4 files.
+            // We need to do this because by default, .lean is associated with language id `lean`,
+            // i.e. Lean 3. vscode-lean is expected to yield when isLean4Project is true.
+            if (document.languageId === 'lean') {
+                // Only change the document language for *visible* documents,
+                // because this closes and then reopens the document.
+                await languages.setTextDocumentLanguage(document, 'lean4');
 
-        const client = await this.ensureClient(document.uri, null);
-        await client.openLean4Document(document)
+                // setTextDocumentLanguage triggers another didOpenEditor event,
+                // and we want that event callback to be the one that calls
+                // ensureClient, so we bail here so we don't try and do it twice
+                // on the same document.
+                return;
+            }
+
+            const client = await this.ensureClient(document.uri, null);
+            await client.openLean4Document(document)
+        } catch (e) {
+            console.log(`### error opening document: ${e}`);
+        }
     }
 
     // Find the client for a given document.

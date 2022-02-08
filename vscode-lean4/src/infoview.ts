@@ -462,6 +462,7 @@ export class InfoProvider implements Disposable {
 
     private onLanguageChanged() {
         void this.autoOpen();
+        void this.sendPosition();
     }
 
     private getLocation(editor : TextEditor) : ls.Location | undefined {
@@ -478,9 +479,15 @@ export class InfoProvider implements Disposable {
     }
 
     private async sendPosition() {
-        if (!window.activeTextEditor || languages.match(this.leanDocs, window.activeTextEditor.document) === 0) return
-        await this.autoOpen();
+        if (!window.activeTextEditor) return
         const loc = this.getLocation(window.activeTextEditor);
+        if (languages.match(this.leanDocs, window.activeTextEditor.document) === 0){
+            // language is not yet 'lean4', but the LeanClient will fire the didSetLanguage event
+            // in openLean4Document and that's when we can send the position to update the
+            // InfoView for the newly opened document.
+            return;
+        }
+        await this.autoOpen();
         await this.webviewPanel?.api.changedCursorLocation(loc);
     }
 

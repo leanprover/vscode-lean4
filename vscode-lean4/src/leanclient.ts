@@ -301,6 +301,10 @@ export class LeanClient implements Disposable {
             return;
         }
 
+        // didOpenEditor may have also changed the language, so we fire the
+        // event here because the InfoView should be wired up to receive it now.
+        this.didSetLanguageEmitter.fire(doc.languageId)
+
         void this.client.sendNotification(DidOpenTextDocumentNotification.type, {
             textDocument: {
                 uri: doc.uri.toString(),
