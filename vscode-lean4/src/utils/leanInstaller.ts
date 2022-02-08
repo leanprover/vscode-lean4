@@ -207,7 +207,7 @@ export class LeanInstaller implements Disposable {
             path = dirname(path);
         }
 
-        let binFolder = join(path, 'bin');
+        const binFolder = join(path, 'bin');
         if (fs.existsSync(binFolder)) {
             // ensure the lean program exists inside.
             leanProgram = join(binFolder, getLeanExecutableName());
