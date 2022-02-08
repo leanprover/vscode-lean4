@@ -86,6 +86,11 @@ export class LeanpkgService implements Disposable {
         }
         else {
             let uri = path;
+            // reset in case the files were deleted!
+            this.leanVersionFile = null;
+            this.lakeFile = null;
+            this.leanVersionFile = null;
+
             // search parent folders for a leanpkg.toml file, or a Lake lean-toolchain file.
             while (true) {
                 const leanToolchain = Uri.joinPath(uri, this.toolchainFileName);
@@ -124,6 +129,8 @@ export class LeanpkgService implements Disposable {
             } catch (err) {
                 console.log(`error reading lake file: ${this.leanVersionFile??this.leanVersionFile}`);
             }
+        } else {
+            this.currentVersion = null;
         }
 
         if (this.lakeFile) {
@@ -132,6 +139,8 @@ export class LeanpkgService implements Disposable {
             } catch (err) {
                 console.log(`error reading lake file: ${err}`);
             }
+        } else {
+            this.normalizedLakeFileContents = null;
         }
 
         return version;
@@ -158,6 +167,7 @@ export class LeanpkgService implements Disposable {
             // user has a local workspace override in effect, so leave it that way.
             return;
         }
+
         // note: apply the same rules here with findLeanPkgVersionInfo no matter
         // if a file is added or removed so we always match the elan behavior.
         const current = this.currentVersion;
