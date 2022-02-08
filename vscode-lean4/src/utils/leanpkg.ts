@@ -39,7 +39,7 @@ export class LeanpkgService implements Disposable {
                 rootPath = folder.uri;
             }
             if (!rootPath) {
-                rootPath = window.activeTextEditor.document.uri;
+                rootPath = window.activeTextEditor?.document.uri;
                 if (rootPath) {
                     // remove leaf filename part.
                     rootPath = Uri.joinPath(rootPath, '..');

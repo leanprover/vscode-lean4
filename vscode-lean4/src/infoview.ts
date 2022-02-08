@@ -52,21 +52,13 @@ export class InfoProvider implements Disposable {
 
     private stylesheet: string = '';
     private autoOpened: boolean = false;
-    private clients: LeanClient[] = [];
+    private clientProvider: LeanClientProvider;
 
     // Subscriptions are counted and only disposed of when count becomes 0.
     private serverNotifSubscriptions: Map<string, [number, Disposable[]]> = new Map();
     private clientNotifSubscriptions: Map<string, [number, Disposable[]]> = new Map();
 
     private rpcSessions: Map<string, RpcSession> = new Map();
-
-    private findClient(uri:string) : LeanClient{
-        for (const client of this.clients) {
-            if (uri.startsWith(client.getWorkspaceFolder()))
-                return client
-        }
-        return null
-    }
 
     private subscribeDidChangeNotification(client: LeanClient, method: string){
         const h = client.didChange((params) => {
@@ -99,14 +91,14 @@ export class InfoProvider implements Disposable {
 
     private editorApi : EditorApi = {
         sendClientRequest: async (uri: string, method: string, params: any): Promise<any> => {
-            const client = this.findClient(uri);
+            const client = this.clientProvider.findClient(uri);
             if (client) {
                 return client.sendRequest(method, params);
             }
             return undefined;
         },
         sendClientNotification: async (uri: string, method: string, params: any): Promise<void> => {
-            const client = this.findClient(uri);
+            const client = this.clientProvider.findClient(uri);
             if (client) {
                 client.sendNotification(method, params);
             }
@@ -124,13 +116,13 @@ export class InfoProvider implements Disposable {
             // So we have to add a bunch of event emitters to `LeanClient.`
             if (method === 'textDocument/publishDiagnostics') {
                 const subscriptions : Disposable[] = [];
-                for (const client of this.clients) {
+                for (const client of this.clientProvider.getClients()) {
                     subscriptions.push(this.subscribeDiagnosticsNotification(client, method));
                 }
                 this.serverNotifSubscriptions.set(method, [1, subscriptions]);
             } else if (method.startsWith('$')) {
                 const subscriptions : Disposable[] = [];
-                for (const client of this.clients) {
+                for (const client of this.clientProvider.getClients()) {
                     subscriptions.push(this.subscribeCustomNotification(client, method));
                 }
                 this.serverNotifSubscriptions.set(method, [1, subscriptions]);
@@ -162,13 +154,13 @@ export class InfoProvider implements Disposable {
 
             if (method === 'textDocument/didChange') {
                 const subscriptions : Disposable[] = [];
-                for (const client of this.clients) {
+                for (const client of this.clientProvider.getClients()) {
                     subscriptions.push(this.subscribeDidChangeNotification(client, method));
                 }
                 this.clientNotifSubscriptions.set(method, [1, subscriptions]);
             } else if (method === 'textDocument/didClose') {
                 const subscriptions : Disposable[] = [];
-                for (const client of this.clients) {
+                for (const client of this.clientProvider.getClients()) {
                     subscriptions.push(this.subscribeDidCloseNotification(client, method))
                 }
                 this.clientNotifSubscriptions.set(method, [1,subscriptions]);
@@ -195,7 +187,7 @@ export class InfoProvider implements Disposable {
             await window.showInformationMessage(`Copied to clipboard: ${text}`);
         },
         insertText: async (text, kind, tdpp) => {
-            const client = this.findClient(tdpp.textDocument.uri);
+            const client = this.clientProvider.findClient(tdpp.textDocument.uri);
             if (!client?.running) return;
             let uri: Uri | undefined
             let pos: Position | undefined
@@ -206,7 +198,7 @@ export class InfoProvider implements Disposable {
             await this.handleInsertText(text, kind, uri, pos);
         },
         showDocument: async (show) => {
-            const client = this.findClient(show.uri);
+            const client = this.clientProvider.findClient(show.uri);
             if (!client?.running) return;
             void this.revealEditorSelection(
                 Uri.parse(show.uri),
@@ -215,7 +207,7 @@ export class InfoProvider implements Disposable {
         },
 
         createRpcSession: async uri => {
-            const client = this.findClient(uri);
+            const client = this.clientProvider.findClient(uri);
             if (!client) return '';
             const sessionId = await rpcConnect(client, uri);
             const session = new RpcSession(client, sessionId, uri);
@@ -237,6 +229,7 @@ export class InfoProvider implements Disposable {
     };
 
     constructor(private provider: LeanClientProvider, private readonly leanDocs: DocumentSelector, private context: ExtensionContext) {
+        this.clientProvider = provider;
         this.updateStylesheet();
 
         provider.clientAdded((client) => {
@@ -274,7 +267,6 @@ export class InfoProvider implements Disposable {
 
     private async onClientAdded(client: LeanClient) {
 
-        this.clients.push(client);
         console.log(`Adding client for workspace: ${client.getWorkspaceFolder()}`);
 
         this.clientSubscriptions.push(
@@ -425,12 +417,9 @@ export class InfoProvider implements Disposable {
             // The infoview gets information about file progress, diagnostics, etc.
             // by listening to notifications.  Send these notifications when the infoview starts
             // so that it has up-to-date information.
-            // Hmmm: TODO: does this make any sense now with multiple clients?
-            for(const client of this.clients) {
-                if (client?.initializeResult) {
-                    await this.webviewPanel.api.serverRestarted(client?.initializeResult);
-                    break;
-                }
+            var client = this.clientProvider.findClient(editor.document?.uri?.toString());
+            if (client?.initializeResult) {
+                await this.webviewPanel.api.serverRestarted(client?.initializeResult);
             }
 
             // await this.sendPosition();

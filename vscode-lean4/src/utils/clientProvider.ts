@@ -1,8 +1,10 @@
-import { Disposable, OutputChannel, workspace, TextDocument, commands, window, EventEmitter, Uri, languages } from 'vscode';
+import { Disposable, OutputChannel, workspace, TextDocument, commands, window, EventEmitter, Uri, languages, TextEditor } from 'vscode';
 import { LocalStorageService} from './localStorage'
 import { LeanInstaller, LeanVersion } from './leanInstaller'
 import { LeanClient } from '../leanclient'
 import { LeanFileProgressProcessingInfo, RpcConnectParams, RpcKeepAliveParams } from '@lean4/infoview-api';
+import * as path from 'path';
+import { urlToHttpOptions } from 'url';
 
 // This class ensures we have one LeanClient per workspace folder.
 export class LeanClientProvider implements Disposable {
@@ -40,6 +42,8 @@ export class LeanClientProvider implements Disposable {
             commands.registerCommand('lean4.refreshFileDependencies', () => this.refreshFileDependencies()),
             commands.registerCommand('lean4.restartServer', () => this.restartActiveClient())
         );
+
+        workspace.onDidOpenTextDocument((document) => this.didOpenEditor(document));
 
         workspace.onDidChangeWorkspaceFolders((event) => {
             for (const folder of event.removed) {
@@ -94,6 +98,15 @@ export class LeanClientProvider implements Disposable {
         return null;
     }
 
+    private getVisibleEditor(uri: Uri) : TextEditor | null {
+        var path = uri.toString();
+        for (const editor of window.visibleTextEditors) {
+            if (editor.document.uri.toString() === path){
+                return editor;
+            }
+        }
+    }
+
     private refreshFileDependencies() {
         this.activeClient.refreshFileDependencies(window.activeTextEditor.document);
     }
@@ -103,6 +116,14 @@ export class LeanClientProvider implements Disposable {
     }
 
     async didOpenEditor(document: TextDocument) {
+        if (!this.getVisibleEditor(document.uri)) {
+            // Sometimes VS code opens a document that has no editor yet.
+            // For example, this happens when the vs code opens files to get git information
+            // like this:
+            //  git:/d%3A/Temp/lean_examples/Foo/Foo/Hello.lean.git?%7B%22path%22%3A%22d%3A%5C%5CTemp%5C%5Clean_examples%5C%5CFoo%5C%5CFoo%5C%5CHello.lean%22%2C%22ref%22%3A%22%22%7D
+            return;
+        }
+
         // All open .lean files are assumed to be Lean 4 files.
         // We need to do this because by default, .lean is associated with language id `lean`,
         // i.e. Lean 3. vscode-lean is expected to yield when isLean4Project is true.
@@ -114,16 +135,34 @@ export class LeanClientProvider implements Disposable {
             return;
         }
 
-        const client = await this.ensureClient(document.uri, null);
+        let client = await this.ensureClient(document.uri, null);
         await client.openLean4Document(document)
     }
 
-    getClient(uri: Uri){
-        return this.clients.get(uri.toString());
+    // Find the client for a given document.
+    findClient(path: string){
+        if (path) {
+            for (const client of this.getClients()) {
+                if (path.startsWith(client.getWorkspaceFolder()))
+                    return client
+            }
+        }
+        return null
     }
 
     getClients() : LeanClient[]{
         return Array.from(this.clients.values());
+    }
+
+    getFolderFromUri(uri: Uri) : Uri {
+        if (uri){
+            if (uri.scheme === 'untitled'){
+                // this lean client can handle all untitled documents.
+                return Uri.from({scheme: 'untitled'});
+            }
+            return uri.with({ path: path.posix.dirname(uri.path) });
+        }
+        return null;
     }
 
     async ensureClient(uri: Uri, versionInfo: LeanVersion | null): Promise<LeanClient> {
@@ -137,7 +176,7 @@ export class LeanClientProvider implements Disposable {
             });
         }
 
-        const folderUri = folder ? folder.uri : uri;
+        const folderUri = folder ? folder.uri : this.getFolderFromUri(uri);
         const path = folderUri?.toString();
         let  client: LeanClient = null;
         if (this.clients.has(path)) {
@@ -146,6 +185,17 @@ export class LeanClientProvider implements Disposable {
         } else if (!this.versions.has(path) && !this.pending.has(path)) {
             this.pending.set(path, true);
             console.log('Creating LeanClient for ' + path);
+
+            // We must create a Client before doing the long running testLeanVersion
+            // so that ensureClient callers have an "optimistic" client to work with.
+            // This is needed in our constructor where it is calling ensureClient for
+            // every open file.  A workspace could have multiple files open and we want
+            // to remember all those open files are associated with this client before
+            // testLeanVersion has completed.
+            client = new LeanClient(folder, folderUri, this.localStorage, this.outputChannel);
+            this.subscriptions.push(client);
+            this.clients.set(path, client);
+
             if (!versionInfo) {
                 // TODO: what is the uri for untitled documents?  Hopefully they get their own special
                 // LeanClient with some default version...
@@ -156,12 +206,10 @@ export class LeanClientProvider implements Disposable {
                 // ignore workspaces that belong to a different version of Lean.
                 console.log(`Lean4 extension ignoring workspace '${folderUri}' because it is not a Lean 4 workspace.`);
                 this.pending.delete(path);
+                this.clients.delete(path);
                 return;
             }
 
-            client = new LeanClient(folder, this.localStorage, this.outputChannel);
-            this.subscriptions.push(client);
-            this.clients.set(path, client);
             client.serverFailed((err) => window.showErrorMessage(err));
 
             // aggregate progress changed events.

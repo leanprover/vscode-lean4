@@ -7,6 +7,7 @@ class LeanFileTaskGutter {
 
     constructor(private uri: string, private decorations: Map<LeanFileProgressKind, [TextEditorDecorationType, string]>, private processed: LeanFileProgressProcessingInfo[]) {
         this.schedule(100)
+        this.processed = []
     }
 
     setProcessed(processed: LeanFileProgressProcessingInfo[]) {
