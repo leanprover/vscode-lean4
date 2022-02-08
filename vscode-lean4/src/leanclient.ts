@@ -17,7 +17,7 @@ import {
     State
 } from 'vscode-languageclient/node'
 import * as ls from 'vscode-languageserver-protocol'
-import { toolchainPath, addServerEnvPaths, serverArgs, serverLoggingEnabled, serverLoggingPath, getElaborationDelay } from './config'
+import { toolchainPath, addServerEnvPaths, serverArgs, serverLoggingEnabled, serverLoggingPath, getElaborationDelay, lakeEnabled } from './config'
 import { assert } from './utils/assert'
 import { LeanFileProgressParams, LeanFileProgressProcessingInfo } from '@lean4/infoview-api';
 import { LocalStorageService} from './utils/localStorage'
@@ -97,30 +97,6 @@ export class LeanClient implements Disposable {
         if (this.isStarted()) void this.stop()
     }
 
-    getWorkspaceUri() : Uri {
-        let documentUri : Uri = null;
-        let rootPath : Uri = null;
-        if (window.activeTextEditor)
-        {
-            documentUri = window.activeTextEditor.document.uri
-            const folder = workspace.getWorkspaceFolder(documentUri)
-            if (folder) {
-                rootPath = folder.uri;
-            }
-        }
-        if (!rootPath) {
-            const workspaceFolders = workspace.workspaceFolders;
-            if (workspaceFolders && workspaceFolders.length > 0) {
-                rootPath = workspaceFolders[0].uri;
-            }
-        }
-        if (!rootPath) {
-            return Uri.file(cwd());
-        }
-
-        return rootPath;
-    }
-
     async restart(): Promise<void> {
         this.restartingEmitter.fire(undefined)
 
@@ -137,14 +113,15 @@ export class LeanClient implements Disposable {
             env.LEAN_SERVER_LOG_DIR = serverLoggingPath()
         }
 
-        let cmd = (this.toolchainPath) ? join(this.toolchainPath, 'bin', 'lake') : 'lake';
+        let executable = (this.toolchainPath) ? join(this.toolchainPath, 'bin', 'lake') : 'lake';
 
-        const folder = this.getWorkspaceUri();
         // check if the lake process will start.
-        let useLake = true;
-        const lakefile = Uri.joinPath(folder, 'lakefile.lean').toString()
-        if (!fs.existsSync(new URL(lakefile))) {
-            useLake = false;
+        let useLake = lakeEnabled();
+        if (useLake && this.workspaceFolder) {
+            const lakefile = Uri.joinPath(this.workspaceFolder.uri, 'lakefile.lean').toString()
+            if (!fs.existsSync(new URL(lakefile))) {
+                useLake = false;
+            }
         }
 
         // This is a faster way of finding out lake doesn't work in the
@@ -154,11 +131,11 @@ export class LeanClient implements Disposable {
         // option or something...
         if (useLake) {
             // First check we have a version of lake that supports "lake serve"
-            const lakeVersion = await batchExecute(cmd, ['--version'], folder.fsPath, null);
+            const lakeVersion = await batchExecute(executable, ['--version'], this.workspaceFolder.uri.fsPath, null);
             const actual = this.extractVersion(lakeVersion)
             if (actual.compare('3.0.0') >= 0) {
                 const expectedError = 'Watchdog error: Cannot read LSP request: Stream was closed\n';
-                const rc = await testExecute(cmd, ['serve'], folder.fsPath, this.outputChannel, true, expectedError);
+                const rc = await testExecute(executable, ['serve'], this.workspaceFolder.uri.fsPath, this.outputChannel, true, expectedError);
                 if (rc !== 0) {
                     const failover = 'Lake failed, using lean instead.'
                     console.log(failover);
@@ -171,7 +148,7 @@ export class LeanClient implements Disposable {
         }
 
         if (!useLake) {
-            cmd = (this.toolchainPath) ? join(this.toolchainPath, 'bin', 'lean') : 'lean';
+            executable = (this.toolchainPath) ? join(this.toolchainPath, 'bin', 'lean') : 'lean';
         }
 
         let options = version ? ['+' + version] :[]
@@ -189,7 +166,7 @@ export class LeanClient implements Disposable {
         }
 
         const serverOptions: ServerOptions = {
-            command: cmd,
+            command: executable,
             args: options.concat(serverArgs()),
             options: {
                 shell: true,

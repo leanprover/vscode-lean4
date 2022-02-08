@@ -81,6 +81,13 @@
 						"description": "a path to add to the environment"
 					}
 				},
+
+				"lean4.enableLake": {
+					"type": "boolean",
+					"default": true,
+					"markdownDescription": "Enable Lake server when possible."
+				},
+
 				"lean4.serverArgs": {
 					"type": "array",
 					"default": [],

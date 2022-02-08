@@ -49,6 +49,10 @@ export function toolchainPath(): string {
     return workspace.getConfiguration('lean4').get('toolchainPath', 'lean')
 }
 
+export function lakeEnabled(): boolean {
+    return workspace.getConfiguration('lean4').get('enableLake', false)
+}
+
 export function serverEnv(): object {
     return workspace.getConfiguration('lean4').get('serverEnv', {})
 }

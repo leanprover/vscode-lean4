@@ -2,7 +2,7 @@ import { OutputChannel } from 'vscode'
 import { spawn } from 'child_process';
 
 export async function batchExecute(
-    toolchainPath: string,
+    executablePath: string,
     args: any[],
     workingDirectory: string,
     channel: OutputChannel): Promise<string> {
@@ -13,7 +13,7 @@ export async function batchExecute(
         if (workingDirectory !== undefined) {
             options = { cwd: workingDirectory };
         }
-        const exe = spawn(toolchainPath, args, options);
+        const exe = spawn(executablePath, args, options);
 
         if (exe.pid === undefined) {
             resolve(undefined);
@@ -41,7 +41,7 @@ export async function batchExecute(
 }
 
 export async function testExecute(
-    toolchainPath: string,
+    executablePath: string,
     args: any[],
     workingDirectory: string,
     channel: OutputChannel,
@@ -54,12 +54,12 @@ export async function testExecute(
         if (workingDirectory !== undefined) {
             options = { cwd: workingDirectory };
         }
-        const msg = `Testing '${toolchainPath} ${args.join(' ')}'`
+        const msg = `Testing '${executablePath} ${args.join(' ')}'`
         if (channel) channel.appendLine(msg);
         console.log(msg)
 
         let foundExpectedError = false;
-        const exe = spawn(toolchainPath, args, options);
+        const exe = spawn(executablePath, args, options);
 
         if (exe.pid === undefined) {
             resolve(-1);
