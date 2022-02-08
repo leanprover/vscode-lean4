@@ -6,6 +6,7 @@ import { LocalStorageService} from './localStorage'
 export class LeanpkgService implements Disposable {
     private subscriptions: Disposable[] = [];
     private leanVersionFile : Uri = null;
+    private lakeFile : Uri = null;
     private toolchainFileName : string = 'lean-toolchain'
     private tomlFileName : string = 'leanpkg.toml'
     private lakeFileName : string = 'lakefile.lean'
@@ -64,21 +65,18 @@ export class LeanpkgService implements Disposable {
         return rootPath;
     }
 
-    async readLakeFile(documentUri: Uri) : Promise<string> {
-        const uri = this.getWorkspaceLeanFolderUri(documentUri)
-        if (!uri || uri.fsPath === '.') {
-            // this is a "new file" that has not been saved yet.
-            return '';
+    async readLakeFile() : Promise<string> {
+        if (this.lakeFile) {
+            const url = new URL(this.lakeFile.toString())
+            if (fs.existsSync(url)) {
+                const contents = fs.readFileSync(url).toString();
+                // ignore whitespace changes by normalizing whitespace.
+                const re = /[ \t\r\n]+/g
+                const result = contents.replace(re, ' ');
+                return result.trim();
+            }
         }
-        const localFile = Uri.joinPath(uri, this.lakeFileName);
-        const url = new URL(localFile.toString())
-        if (fs.existsSync(url)) {
-            const contents = fs.readFileSync(url).toString();
-            // ignore whitespace changes by normalizing whitespace.
-            const re = /[ \t\r\n]+/g
-            const result = contents.replace(re, ' ');
-            return result.trim();
-        }
+        return '';
     }
 
     async findLeanPkgVersionInfo(uri: Uri) : Promise<string> {
@@ -93,6 +91,11 @@ export class LeanpkgService implements Disposable {
                 const leanToolchain = Uri.joinPath(uri, this.toolchainFileName);
                 if (fs.existsSync(new URL(leanToolchain.toString()))) {
                     this.leanVersionFile = leanToolchain;
+
+                    const lakeFilePath = Uri.joinPath(uri, this.lakeFileName);
+                    if (fs.existsSync(new URL(lakeFilePath.toString()))){
+                        this.lakeFile = lakeFilePath;
+                    }
                     break;
                 }
                 else {
@@ -119,12 +122,16 @@ export class LeanpkgService implements Disposable {
                 version = await this.readLeanVersion();
                 this.currentVersion = version;
             } catch (err) {
-                console.log(err);
+                console.log(`error reading lake file: ${this.leanVersionFile??this.leanVersionFile}`);
             }
         }
 
-        if (this.normalizedLakeFileContents === null){
-            this.normalizedLakeFileContents = await this.readLakeFile(uri);
+        if (this.lakeFile) {
+            try {
+                this.normalizedLakeFileContents = await this.readLakeFile();
+            } catch (err) {
+                console.log(`error reading lake file: ${err}`);
+            }
         }
 
         return version;
@@ -138,9 +145,9 @@ export class LeanpkgService implements Disposable {
         // Note: just opening the file fires this event sometimes which is annoying, so
         // we compare the contents just to be sure and normalize whitespace so that
         // just adding a new line doesn't trigger the prompt.
-        const contents = await this.readLakeFile(uri);
+        const contents = this.normalizedLakeFileContents;
+        await this.findLeanPkgVersionInfo(uri);
         if (contents !== this.normalizedLakeFileContents) {
-            this.normalizedLakeFileContents = contents;
             console.log('Lake file changed...')
             this.lakeFileChangedEmitter.fire(uri);
         }
