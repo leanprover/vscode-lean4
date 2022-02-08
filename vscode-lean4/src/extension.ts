@@ -66,7 +66,7 @@ export async function activate(context: ExtensionContext): Promise<any> {
     if (path) {
         const filename = basename(path);
         if (filename === 'lean' || filename === 'lean.exe') {
-            const newPath = dirname(path);
+            const newPath = dirname(dirname(path)); // above the 'bin' folder.
             storageManager.setLeanPath(newPath === '.' ? '' : newPath);
         }
     }

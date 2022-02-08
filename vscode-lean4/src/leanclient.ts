@@ -137,7 +137,7 @@ export class LeanClient implements Disposable {
             env.LEAN_SERVER_LOG_DIR = serverLoggingPath()
         }
 
-        let cmd = (this.toolchainPath) ? join(this.toolchainPath, 'lake') : 'lake';
+        let cmd = (this.toolchainPath) ? join(this.toolchainPath, 'bin', 'lake') : 'lake';
 
         const folder = this.getWorkspaceUri();
         // check if the lake process will start.
@@ -171,7 +171,7 @@ export class LeanClient implements Disposable {
         }
 
         if (!useLake) {
-            cmd = (this.toolchainPath) ? join(this.toolchainPath, 'lean') : 'lean';
+            cmd = (this.toolchainPath) ? join(this.toolchainPath, 'bin', 'lean') : 'lean';
         }
 
         let options = version ? ['+' + version] :[]

@@ -96,3 +96,10 @@ export function getInfoViewFilterIndex(): number {
 export function getElaborationDelay(): number {
     return workspace.getConfiguration('lean4').get('elaborationDelay', 200);
 }
+
+export function getLeanExecutableName(): string {
+    if (process.platform === 'win32') {
+        return 'lean.exe'
+    }
+    return 'lean'
+}

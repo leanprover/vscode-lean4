@@ -1,9 +1,10 @@
 import { window, TerminalOptions, OutputChannel, commands, Disposable, EventEmitter, ProgressLocation, Uri } from 'vscode'
-import { toolchainPath, addServerEnvPaths } from '../config'
+import { toolchainPath, addServerEnvPaths, getLeanExecutableName } from '../config'
 import { batchExecute } from './batch'
 import { LocalStorageService} from './localStorage'
 import { LeanpkgService } from './leanpkg';
-import { join } from 'path';
+import { join, dirname } from 'path';
+import * as fs from 'fs';
 
 export class LeanVersion {
     version: string;
@@ -180,9 +181,12 @@ export class LeanInstaller implements Disposable {
                 prompt: 'Enter full path to the lean toolchain you want to use or leave blank to use the default path',
             });
             if (selectedPath) {
-                this.localStorage.setLeanPath(selectedPath);
-                this.localStorage.setLeanVersion(''); // clear the requested version as we have a full path.
-                this.installChangedEmitter.fire(uri);
+                const toolchainPath = this.checkToolchainPath(selectedPath);
+                if (toolchainPath) {
+                    this.localStorage.setLeanPath(toolchainPath);
+                    this.localStorage.setLeanVersion(''); // clear the requested version as we have a full path.
+                    this.installChangedEmitter.fire(uri);
+                }
             }
         }  else if (selectedVersion === resetPrompt){
             this.localStorage.setLeanPath('');
@@ -194,6 +198,28 @@ export class LeanInstaller implements Disposable {
             this.localStorage.setLeanVersion(s);
             this.installChangedEmitter.fire(uri);
         }
+    }
+
+    private checkToolchainPath(path: string) : string | null {
+        let leanProgram = join(path, getLeanExecutableName());
+        if (fs.existsSync(leanProgram)) {
+            // then we want the parent folder.
+            path = dirname(path);
+        }
+
+        let binFolder = join(path, 'bin');
+        if (fs.existsSync(binFolder)) {
+            // ensure the lean program exists inside.
+            leanProgram = join(binFolder, getLeanExecutableName());
+            if (fs.existsSync(leanProgram)) {
+                return path;
+            }
+            void window.showErrorMessage(`Lean program not found in ${binFolder}`);
+        }
+        else {
+            void window.showErrorMessage('Lean toolchain should contain a \'bin\' folder');
+        }
+        return null;
     }
 
     private removeSuffix(version: string): string{
@@ -224,7 +250,7 @@ export class LeanInstaller implements Disposable {
         if (!cmd) {
             cmd = 'lean'
         } else {
-            cmd = join(cmd, 'lean')
+            cmd = join(cmd, 'bin', 'lean')
         }
         // if this workspace has a local override use it, otherwise fall back on the requested version.
         const version = this.localStorage.getLeanVersion() ?? requestedVersion;
