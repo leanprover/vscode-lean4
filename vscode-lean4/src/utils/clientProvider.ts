@@ -99,7 +99,7 @@ export class LeanClientProvider implements Disposable {
     }
 
     private getVisibleEditor(uri: Uri) : TextEditor | null {
-        var path = uri.toString();
+        const path = uri.toString();
         for (const editor of window.visibleTextEditors) {
             if (editor.document.uri.toString() === path){
                 return editor;
@@ -135,7 +135,7 @@ export class LeanClientProvider implements Disposable {
             return;
         }
 
-        let client = await this.ensureClient(document.uri, null);
+        const client = await this.ensureClient(document.uri, null);
         await client.openLean4Document(document)
     }
 
