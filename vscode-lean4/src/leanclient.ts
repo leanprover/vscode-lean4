@@ -124,11 +124,8 @@ export class LeanClient implements Disposable {
             }
         }
 
-        // This is a faster way of finding out lake doesn't work in the
-        // current workspace.  The LanguageClient is much slower because it does
-        // 5 retries and everything... but this testExecute implementation is
-        // not perfect either... would be nice to have a "canExecute" command line
-        // option or something...
+        // This is a faster way of finding out lake doesn't work in the current workspace.
+        // The LanguageClient is much slower because it does 10 retries and everything.
         if (useLake) {
             // First check we have a version of lake that supports "lake serve"
             const lakeVersion = await batchExecute(executable, ['--version'], this.workspaceFolder.uri.fsPath, null);
