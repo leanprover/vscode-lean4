@@ -9,7 +9,7 @@ export function findLeanPackageRoot(uri: Uri) : [WorkspaceFolder, Uri,Uri] {
 
     const toolchainFileName = 'lean-toolchain';
     const tomlFileName = 'leanpkg.toml';
-    if (uri.scheme == 'untitled'){
+    if (uri.scheme === 'untitled'){
         // then return a Uri representing all untitled files.
         return [null, Uri.from({scheme: 'untitled'}), null];
     }
@@ -17,7 +17,7 @@ export function findLeanPackageRoot(uri: Uri) : [WorkspaceFolder, Uri,Uri] {
     let wsFolder = workspace.getWorkspaceFolder(uri);
     if (!wsFolder && workspace.workspaceFolders) {
         workspace.workspaceFolders.forEach((f) => {
-            if (f.uri?.scheme == 'file' && f.uri.fsPath && uri.fsPath.startsWith(f.uri.fsPath)) {
+            if (f.uri?.scheme === 'file' && f.uri.fsPath && uri.fsPath.startsWith(f.uri.fsPath)) {
                 wsFolder = f;
             }
         });
@@ -26,7 +26,7 @@ export function findLeanPackageRoot(uri: Uri) : [WorkspaceFolder, Uri,Uri] {
     if (wsFolder){
         // jump to the real workspace folder if we have a Workspace for this file.
         path = wsFolder.uri;
-    } else if (path.scheme == 'file') {
+    } else if (path.scheme === 'file') {
         // then start searching from the directory containing this document.
         // The given uri may already be a folder Uri in some cases.
         if (fs.lstatSync(path.fsPath).isFile()) {
@@ -34,7 +34,7 @@ export function findLeanPackageRoot(uri: Uri) : [WorkspaceFolder, Uri,Uri] {
         }
         searchUpwards = true;
     }
-    if (path.scheme == 'file') {
+    if (path.scheme === 'file') {
         // search parent folders for a leanpkg.toml file, or a Lake lean-toolchain file.
         while (true) {
             // give preference to 'lean-toolchain' files if any.
@@ -73,7 +73,7 @@ export function findLeanPackageRoot(uri: Uri) : [WorkspaceFolder, Uri,Uri] {
 export async function findLeanPackageVersionInfo(uri: Uri) : Promise<[Uri,string]> {
 
     const [_, packageUri, packageFileUri] =findLeanPackageRoot(uri);
-    if (!packageUri || packageUri.scheme == 'untitled') return null;
+    if (!packageUri || packageUri.scheme === 'untitled') return null;
 
     let version = null;
     if (packageFileUri) {
@@ -105,7 +105,7 @@ export async function readLeanVersion(packageUri: Uri){
     return null;
 }
 
-async function readLeanVersionFile(packageFileUri) : Promise<string> {
+async function readLeanVersionFile(packageFileUri : Uri) : Promise<string> {
     const url = new URL(packageFileUri.toString());
     const tomlFileName = 'leanpkg.toml';
     if (packageFileUri.path.endsWith(tomlFileName))
@@ -116,7 +116,6 @@ async function readLeanVersionFile(packageFileUri) : Promise<string> {
                     if (err) {
                         reject(err);
                     } else {
-                        let version = null;
                         const match = /lean_version\s*=\s*"([^"]*)"/.exec(data.toString());
                         if (match) resolve(match[1]);
                         reject(null);

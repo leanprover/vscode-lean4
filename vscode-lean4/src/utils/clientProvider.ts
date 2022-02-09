@@ -167,13 +167,13 @@ export class LeanClientProvider implements Disposable {
     }
 
     async getLeanVersion(uri: Uri) : Promise<LeanVersion> {
-        let [workspaceFolder, folderUri, packageFileUri] = findLeanPackageRoot(uri);
+        const [workspaceFolder, folderUri, packageFileUri] = findLeanPackageRoot(uri);
         const path = folderUri?.toString();
         if (this.versions.has(path)){
             return this.versions.get(path);
         }
         let versionInfo : LeanVersion = null;
-        if (uri.scheme == 'untitled'){
+        if (uri.scheme === 'untitled'){
             versionInfo = { version: '4', error: null };
         } else {
             versionInfo = await this.installer.testLeanVersion(folderUri);
@@ -183,7 +183,7 @@ export class LeanClientProvider implements Disposable {
     }
 
     async ensureClient(uri: Uri, versionInfo: LeanVersion | null): Promise<LeanClient> {
-        let [workspaceFolder, folderUri, packageFileUri] = findLeanPackageRoot(uri);
+        const [workspaceFolder, folderUri, packageFileUri] = findLeanPackageRoot(uri);
 
         const path = folderUri?.toString();
         let  client: LeanClient = null;

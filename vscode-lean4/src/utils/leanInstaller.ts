@@ -214,7 +214,7 @@ export class LeanInstaller implements Disposable {
             // assume untitled files are version 4?  Actually no...
             return { version: '4', error: null };
         }
-        if (packageUri?.scheme == 'file') {
+        if (packageUri?.scheme === 'file') {
             folderPath = packageUri.fsPath
         }
 
