@@ -52,7 +52,7 @@ export class LeanClientProvider implements Disposable {
                 if (client) {
                     this.clients.delete(path);
                     this.versions.delete(path);
-                    void client.stop();
+                    client.dispose();
                     this.clientRemovedEmitter.fire(client);
                 }
             }
@@ -212,6 +212,7 @@ export class LeanClientProvider implements Disposable {
                 console.log(`Lean4 extension ignoring workspace '${folderUri}' because it is not a Lean 4 workspace.`);
                 this.pending.delete(path);
                 this.clients.delete(path);
+                client.dispose();
                 return;
             }
 
