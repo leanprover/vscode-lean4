@@ -312,7 +312,7 @@ export class LeanClient implements Disposable {
         this.notifyDidOpen(doc);
     }
 
-    async notifyDidOpen(doc: TextDocument) {
+    notifyDidOpen(doc: TextDocument) {
         void this.client.sendNotification(DidOpenTextDocumentNotification.type, {
             textDocument: {
                 uri: doc.uri.toString(),

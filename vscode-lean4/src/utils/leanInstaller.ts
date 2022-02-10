@@ -119,7 +119,7 @@ export class LeanInstaller implements Disposable {
     }
 
     async selectToolchain(uri: Uri) : Promise<void> {
-        let defaultPath = this.localStorage.getLeanPath();
+        const defaultPath = this.localStorage.getLeanPath();
         const [workspaceFolder, folderUri, packageFileUri] = findLeanPackageRoot(uri);
         const installedToolChains = await this.elanListToolChains(folderUri);
         if (installedToolChains.length === 1 && installedToolChains[0] === 'no installed toolchains') {
