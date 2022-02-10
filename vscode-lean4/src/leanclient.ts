@@ -41,7 +41,7 @@ export class LeanClient implements Disposable {
     private outputChannel: OutputChannel;
     private storageManager : LocalStorageService;
     private workspaceFolder: WorkspaceFolder;
-
+    private folderUri: Uri;
     private subscriptions: Disposable[] = []
 
     private didChangeEmitter = new EventEmitter<DidChangeTextDocumentParams>()
@@ -78,11 +78,11 @@ export class LeanClient implements Disposable {
     /** Files which are open. */
     private isOpen: Set<string> = new Set()
 
-    constructor(workspaceFolder: WorkspaceFolder, storageManager : LocalStorageService, outputChannel : OutputChannel) {
+    constructor(workspaceFolder: WorkspaceFolder, folderUri: Uri, storageManager : LocalStorageService, outputChannel : OutputChannel) {
         this.storageManager = storageManager;
         this.outputChannel = outputChannel;
-        this.workspaceFolder = workspaceFolder;
-
+        this.workspaceFolder = workspaceFolder; // can be null when opening adhoc files.
+        this.folderUri = folderUri;
         this.subscriptions.push(workspace.onDidChangeConfiguration((e) => this.configChanged(e)));
     }
 
@@ -111,8 +111,8 @@ export class LeanClient implements Disposable {
             // user is requesting an explicit version for this workspace.
             options = ['+' + version, '--server']
         }
-        if (this.workspaceFolder) {
-            options.push('' + this.workspaceFolder.uri.fsPath)
+        if (this.folderUri) {
+            options.push('' + this.folderUri.fsPath)
         } else {
             options.push('untitled')
         }
@@ -130,11 +130,11 @@ export class LeanClient implements Disposable {
             language: 'lean4'
         }
 
-        if (this.workspaceFolder){
-            documentSelector.scheme = 'file'
-            documentSelector.pattern = `${this.workspaceFolder.uri.fsPath}/**/*`
-        } else {
-            documentSelector.scheme = 'untitled'
+        if (this.folderUri){
+            documentSelector.scheme = this.folderUri.scheme
+            if (this.folderUri.scheme !== 'untitled') {
+                documentSelector.pattern = `${this.folderUri.fsPath}/**/*`
+            }
         }
 
         const clientOptions: LanguageClientOptions = {
@@ -142,8 +142,7 @@ export class LeanClient implements Disposable {
             documentSelector: [documentSelector],
             workspaceFolder: this.workspaceFolder,
             initializationOptions: {
-                editDelay: getElaborationDelay(),
-		hasWidgets: true,
+                editDelay: getElaborationDelay(), hasWidgets: true,
             },
             middleware: {
                 handleDiagnostics: (uri, diagnostics, next) => {
@@ -223,6 +222,7 @@ export class LeanClient implements Disposable {
                     console.log('client starting');
                 } else if (s.newState === State.Running) {
                     console.log('client running');
+                    this.running = true; // may have been auto restarted after it failed.
                 } else if (s.newState === State.Stopped) {
                     console.log('client has stopped or it failed to start');
                     this.running = false;
@@ -291,6 +291,9 @@ export class LeanClient implements Disposable {
     }
 
     async openLean4Document(doc: TextDocument) {
+        if (this.isOpen.has(doc.uri.toString())) return;
+        this.isOpen.add(doc.uri.toString())
+
         if (!this.running) return; // there was a problem starting lean server.
 
         if (!this.isSameWorkspace(doc.uri)){
@@ -298,8 +301,10 @@ export class LeanClient implements Disposable {
             return;
         }
 
-        if (this.isOpen.has(doc.uri.toString())) return;
-        this.isOpen.add(doc.uri.toString())
+        // didOpenEditor may have also changed the language, so we fire the
+        // event here because the InfoView should be wired up to receive it now.
+        this.didSetLanguageEmitter.fire(doc.languageId)
+
         void this.client.sendNotification(DidOpenTextDocumentNotification.type, {
             textDocument: {
                 uri: doc.uri.toString(),
@@ -311,8 +316,8 @@ export class LeanClient implements Disposable {
     }
 
     isSameWorkspace(uri: Uri){
-        if (this.workspaceFolder) {
-            if (uri.toString().startsWith(this.workspaceFolder.uri.toString())) {
+        if (this.folderUri) {
+            if (uri.toString().startsWith(this.folderUri.toString())) {
                 // skip it, this file belongs to a different workspace...
                 return true;
             }
@@ -324,7 +329,7 @@ export class LeanClient implements Disposable {
     }
 
     getWorkspaceFolder() : string {
-        return this.workspaceFolder?.uri.toString();
+        return this.folderUri?.toString();
     }
 
     start(): Promise<void> {

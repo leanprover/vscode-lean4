@@ -34,24 +34,6 @@ function getLeanDocument() : TextDocument | null {
     return document;
 }
 
-
-function getLeanDocumentUri(doc: TextDocument) : Uri | null {
-    if (doc) {
-        return doc.uri;
-    }
-    else {
-        // this code path should never happen because lean extension is only
-        // activated when a lean file is opened, so it should have been in the
-        // list of window.visibleTextEditors.  So this is a fallback just in
-        // case some weird timing thing happened and file is now closed.
-        const workspaceFolders = workspace.workspaceFolders;
-        if (workspaceFolders && workspaceFolders.length > 0) {
-            return workspaceFolders[0].uri;
-        }
-    }
-    return null;
-}
-
 export async function activate(context: ExtensionContext): Promise<any> {
 
     addDefaultElanPath();
@@ -62,22 +44,21 @@ export async function activate(context: ExtensionContext): Promise<any> {
     const pkgService = new LeanpkgService(storageManager, defaultToolchain)
     context.subscriptions.push(pkgService);
 
-    const installer = new LeanInstaller(outputChannel, storageManager, pkgService, defaultToolchain)
+    const installer = new LeanInstaller(outputChannel, storageManager, defaultToolchain)
     context.subscriptions.push(installer);
+
+    const clientProvider = new LeanClientProvider(storageManager, installer, outputChannel);
+    context.subscriptions.push(clientProvider)
 
     // test lean version in the workspace associated with the active text editor since
     // that editor is probably the one that activated our extension here.
     const doc = getLeanDocument();
-    const uri = getLeanDocumentUri(doc);
-    const versionInfo = await installer.testLeanVersion(uri);
+    const versionInfo = await clientProvider.getLeanVersion(doc?.uri);
     if (versionInfo.version && versionInfo.version !== '4') {
         // ah, then don't activate this extension!
         // this gives us side by side compatibility with the Lean 3 extension.
         return { isLean4Project: false };
     }
-
-    const clientProvider = new LeanClientProvider(storageManager, installer, outputChannel);
-    context.subscriptions.push(clientProvider)
 
     const info = new InfoProvider(clientProvider, {language: 'lean4'}, context);
     context.subscriptions.push(info)
