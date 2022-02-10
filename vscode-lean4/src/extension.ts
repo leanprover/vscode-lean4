@@ -8,6 +8,7 @@ import { LeanInstaller } from './utils/leanInstaller'
 import { LeanpkgService } from './utils/leanpkg';
 import { LeanClientProvider } from './utils/clientProvider';
 import { addDefaultElanPath } from './config';
+import { findLeanPackageRoot, readLeanVersion } from './utils/projectInfo';
 
 function isLean(languageId : string) : boolean {
     return languageId === 'lean' || languageId === 'lean4';
@@ -41,24 +42,23 @@ export async function activate(context: ExtensionContext): Promise<any> {
     const defaultToolchain = 'leanprover/lean4:nightly';
     const outputChannel = window.createOutputChannel('Lean: Editor');
     const storageManager = new LocalStorageService(context.workspaceState);
-    const pkgService = new LeanpkgService(storageManager, defaultToolchain)
-    context.subscriptions.push(pkgService);
 
     const installer = new LeanInstaller(outputChannel, storageManager, defaultToolchain)
     context.subscriptions.push(installer);
 
-    const clientProvider = new LeanClientProvider(storageManager, installer, outputChannel);
-    context.subscriptions.push(clientProvider)
-
-    // test lean version in the workspace associated with the active text editor since
-    // that editor is probably the one that activated our extension here.
-    const doc = getLeanDocument();
-    const versionInfo = await clientProvider.getLeanVersion(doc?.uri);
-    if (versionInfo.version && versionInfo.version !== '4') {
-        // ah, then don't activate this extension!
-        // this gives us side by side compatibility with the Lean 3 extension.
+    // Check whether rootPath is a Lean 3 project (the Lean 3 extension also uses the deprecated rootPath)
+    if ((await installer.testLeanVersion(Uri.file(workspace.rootPath))).version === '3') {
+        context.subscriptions.pop().dispose(); // stop installer
+        // We need to terminate before registering the LeanClientProvider,
+        // because that class changes the document id to `lean4`.
         return { isLean4Project: false };
     }
+
+    const pkgService = new LeanpkgService(storageManager, defaultToolchain)
+    context.subscriptions.push(pkgService);
+
+    const clientProvider = new LeanClientProvider(storageManager, installer, outputChannel);
+    context.subscriptions.push(clientProvider)
 
     const info = new InfoProvider(clientProvider, {language: 'lean4'}, context);
     context.subscriptions.push(info)
