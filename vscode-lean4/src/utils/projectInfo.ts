@@ -72,7 +72,7 @@ export function findLeanPackageRoot(uri: Uri) : [WorkspaceFolder | null, Uri | n
 // in any 'lean-toolchain' or 'leanpkg.toml' file found there.
 export async function findLeanPackageVersionInfo(uri: Uri) : Promise<[Uri,string]> {
 
-    const [_, packageUri, packageFileUri] =findLeanPackageRoot(uri);
+    const [_, packageUri, packageFileUri] = findLeanPackageRoot(uri);
     if (!packageUri || packageUri.scheme === 'untitled') return null;
 
     let version = null;
