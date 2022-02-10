@@ -2,7 +2,7 @@ import { window, TerminalOptions, OutputChannel, commands, Disposable, EventEmit
 import { toolchainPath, addServerEnvPaths, getLeanExecutableName  } from '../config'
 import { batchExecute } from './batch'
 import { LocalStorageService} from './localStorage'
-import { readLeanVersion } from './projectInfo';
+import { readLeanVersion, findLeanPackageRoot } from './projectInfo';
 import { join, dirname } from 'path';
 import * as fs from 'fs';
 
@@ -145,10 +145,8 @@ export class LeanInstaller implements Disposable {
 
     async selectToolchain(uri: Uri) : Promise<void> {
         let defaultPath = this.localStorage.getLeanPath();
-        if (!defaultPath) {
-            defaultPath = 'lean';
-        }
-        const installedToolChains = await this.elanListToolChains(uri);
+        const [workspaceFolder, folderUri, packageFileUri] = findLeanPackageRoot(uri);
+        const installedToolChains = await this.elanListToolChains(folderUri);
         if (installedToolChains.length === 1 && installedToolChains[0] === 'no installed toolchains') {
             installedToolChains[0] = this.defaultToolchain
         }
@@ -386,7 +384,7 @@ export class LeanInstaller implements Disposable {
             });
             return result;
         } catch (err) {
-            return ['error']
+            return [`${err}`];
         }
     }
 

@@ -127,11 +127,13 @@ export class LeanClient implements Disposable {
         // The LanguageClient is much slower because it does 10 retries and everything.
         if (useLake) {
             // First check we have a version of lake that supports "lake serve"
-            const lakeVersion = await batchExecute(executable, ['--version'], this.folderUri?.fsPath, null);
+            let versionOptions = version ? ['+' + version, '--version'] : ['--version']
+            const lakeVersion = await batchExecute(executable, versionOptions, this.folderUri?.fsPath, null);
             const actual = this.extractVersion(lakeVersion)
             if (actual.compare('3.0.0') >= 0) {
                 const expectedError = 'Watchdog error: Cannot read LSP request: Stream was closed\n';
-                const rc = await testExecute(executable, ['serve'], this.folderUri?.fsPath, this.outputChannel, true, expectedError);
+                const serveOptions =  version ? ['+' + version, 'serve'] : ['serve'];
+                const rc = await testExecute(executable, serveOptions, this.folderUri?.fsPath, this.outputChannel, true, expectedError);
                 if (rc !== 0) {
                     const failover = 'Lake failed, using lean instead.'
                     console.log(failover);
