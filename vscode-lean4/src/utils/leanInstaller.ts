@@ -264,7 +264,10 @@ export class LeanInstaller implements Disposable {
             cmd = join(cmd, 'bin', 'lean')
         }
         // if this workspace has a local override use it, otherwise fall back on the requested version.
-        const version = this.localStorage.getLeanVersion() ?? requestedVersion;
+        let version = this.localStorage.getLeanVersion();
+        if (!version || version === '') {
+            version = requestedVersion;
+        }
 
         let folderPath: string = '';
         if (packageUri.scheme === 'scheme') {
