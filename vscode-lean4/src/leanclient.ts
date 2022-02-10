@@ -82,7 +82,7 @@ export class LeanClient implements Disposable {
     serverFailed = this.serverFailedEmitter.event
 
     /** Files which are open. */
-    private isOpen: Set<string> = new Set()
+    private isOpen: Map<string, TextDocument> = new Map()
 
     constructor(workspaceFolder: WorkspaceFolder, folderUri: Uri, storageManager : LocalStorageService, outputChannel : OutputChannel) {
         this.storageManager = storageManager;
@@ -127,7 +127,7 @@ export class LeanClient implements Disposable {
         // The LanguageClient is much slower because it does 10 retries and everything.
         if (useLake) {
             // First check we have a version of lake that supports "lake serve"
-            let versionOptions = version ? ['+' + version, '--version'] : ['--version']
+            const versionOptions = version ? ['+' + version, '--version'] : ['--version']
             const lakeVersion = await batchExecute(executable, versionOptions, this.folderUri?.fsPath, null);
             const actual = this.extractVersion(lakeVersion)
             if (actual.compare('3.0.0') >= 0) {
@@ -276,7 +276,9 @@ export class LeanClient implements Disposable {
                 }
             })
             this.client.start()
-            this.isOpen = new Set()
+            for (const key of this.isOpen.keys()) {
+                this.notifyOpenDocument(this.isOpen.get(key));
+            }
             await this.client.onReady();
             // if we got this far then the client is happy so we are running!
             this.running = true;
@@ -339,19 +341,19 @@ export class LeanClient implements Disposable {
 
     async openLean4Document(doc: TextDocument) {
         if (this.isOpen.has(doc.uri.toString())) return;
-        this.isOpen.add(doc.uri.toString())
-
-        if (!this.running) return; // there was a problem starting lean server.
-
         if (!this.isSameWorkspace(doc.uri)){
             // skip it, this file belongs to a different workspace...
             return;
         }
-
+        this.isOpen.set(doc.uri.toString(), doc);
+        if (!this.running) return; // there was a problem starting lean server.
         // didOpenEditor may have also changed the language, so we fire the
         // event here because the InfoView should be wired up to receive it now.
-        this.didSetLanguageEmitter.fire(doc.languageId)
+        this.didSetLanguageEmitter.fire(doc.languageId);
+        this.notifyOpenDocument(doc);
+    }
 
+    notifyOpenDocument(doc: TextDocument){
         void this.client.sendNotification(DidOpenTextDocumentNotification.type, {
             textDocument: {
                 uri: doc.uri.toString(),
