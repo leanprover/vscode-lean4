@@ -76,7 +76,7 @@ export class LeanClient implements Disposable {
     serverFailed = this.serverFailedEmitter.event
 
     /** Files which are open. */
-    private isOpen: Set<string> = new Set()
+    private isOpen: Map<string, TextDocument> = new Map()
 
     constructor(workspaceFolder: WorkspaceFolder, folderUri: Uri, storageManager : LocalStorageService, outputChannel : OutputChannel) {
         this.storageManager = storageManager;
@@ -229,8 +229,12 @@ export class LeanClient implements Disposable {
                 }
             })
             this.client.start()
-            this.isOpen = new Set()
             await this.client.onReady();
+
+            // tell the new client about the documents that are already open!
+            for(const doc of this.isOpen.values()){
+                this.notifyDidOpen(doc);
+            }
             // if we got this far then the client is happy so we are running!
             this.running = true;
         } catch (error) {
@@ -292,19 +296,23 @@ export class LeanClient implements Disposable {
 
     async openLean4Document(doc: TextDocument) {
         if (this.isOpen.has(doc.uri.toString())) return;
-        this.isOpen.add(doc.uri.toString())
-
-        if (!this.running) return; // there was a problem starting lean server.
-
         if (!this.isSameWorkspace(doc.uri)){
             // skip it, this file belongs to a different workspace...
             return;
         }
 
+        this.isOpen.set(doc.uri.toString(), doc)
+
+        if (!this.running) return; // there was a problem starting lean server.
+
         // didOpenEditor may have also changed the language, so we fire the
         // event here because the InfoView should be wired up to receive it now.
-        this.didSetLanguageEmitter.fire(doc.languageId)
+        this.didSetLanguageEmitter.fire(doc.languageId);
 
+        this.notifyDidOpen(doc);
+    }
+
+    async notifyDidOpen(doc: TextDocument) {
         void this.client.sendNotification(DidOpenTextDocumentNotification.type, {
             textDocument: {
                 uri: doc.uri.toString(),

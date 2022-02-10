@@ -64,16 +64,17 @@ export class LeanClientProvider implements Disposable {
             // or it could be a document Uri in the case of a command from
             // selectToolchainForActiveEditor.
             const path = uri?.toString()
-            if (path in this.testing) return;
+            if (this.testing.has(path)) return;
             // avoid re-entrancy since testLeanVersion can take a while.
-            this.testing[path] = true;
+            this.testing.set(path, true);
             try {
                 // have to check again here in case elan install had --default-toolchain none.
                 const [workspaceFolder, packageUri, packageFileUri] = findLeanPackageRoot(uri);
                 const version = await installer.testLeanVersion(packageUri);
-                if (version.version === '4') {
-                    if (this.clients.has(path)) {
-                        const client = this.clients.get(path)
+                const packagePath = packageUri?.toString();
+                if (version.version === '4' && packagePath) {
+                    if (this.clients.has(packagePath)) {
+                        const client = this.clients.get(packagePath)
                         void client.restart()
                     } else {
                         void this.ensureClient(packageUri, version);
