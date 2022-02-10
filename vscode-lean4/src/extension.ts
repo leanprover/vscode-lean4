@@ -54,7 +54,7 @@ export async function activate(context: ExtensionContext): Promise<any> {
         }
     }
 
-    const pkgService = new LeanpkgService(storageManager)
+    const pkgService = new LeanpkgService()
     context.subscriptions.push(pkgService);
 
     const installer = new LeanInstaller(outputChannel, storageManager, defaultToolchain)

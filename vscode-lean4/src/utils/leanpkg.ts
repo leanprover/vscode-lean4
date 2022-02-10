@@ -4,11 +4,14 @@ import { findLeanPackageRoot, findLeanPackageVersionInfo } from './projectInfo';
 import * as fs from 'fs';
 import * as path from 'path';
 
+// This service monitors the Lean package root folders for changes to any
+// lean-toolchain, leanpkg.toml or lakefile.lean files found there.
 export class LeanpkgService implements Disposable {
     private subscriptions: Disposable[] = [];
-    private localStorage : LocalStorageService;
-    private currentVersion : Map<string,string> = new Map();
     private lakeFileName : string = 'lakefile.lean'
+    // We track the current version info for each workspace open in VS code.
+    // The key to these maps is the Lean package root Uri.
+    private currentVersion : Map<string,string> = new Map();
     private normalizedLakeFileContents : Map<string,string> = new Map();
 
     // This event is raised when the version in the package root changes.
@@ -21,8 +24,7 @@ export class LeanpkgService implements Disposable {
     private lakeFileChangedEmitter = new EventEmitter<Uri>();
     lakeFileChanged = this.lakeFileChangedEmitter.event
 
-    constructor(localStorage : LocalStorageService) {
-        this.localStorage = localStorage;
+    constructor() {
 
         // track changes in the version of lean specified in the lean-toolchain file
         // or the leanpkg.toml.  While this is looking for all files with these names
@@ -46,6 +48,8 @@ export class LeanpkgService implements Disposable {
         for (const s of this.subscriptions) { s.dispose(); }
     }
 
+    // Must be called when every file is opened so it can track the current contents
+    // of the files we care about.
     didOpen(uri: Uri){
         const fileName = path.basename(uri.fsPath);
         if (fileName === this.lakeFileName){
@@ -87,7 +91,6 @@ export class LeanpkgService implements Disposable {
     private async handleFileChanged(uri: Uri, raiseEvent : boolean) {
         // note: apply the same rules here with findLeanPkgVersionInfo no matter
         // if a file is added or removed so we always match the elan behavior.
-        // findLeanPkgVersionInfo changes this.currentVersion
         const [packageUri, version] = await findLeanPackageVersionInfo(uri);
         if (packageUri && version) {
             let existing = '';
