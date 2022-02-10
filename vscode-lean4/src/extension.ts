@@ -8,6 +8,7 @@ import { LeanInstaller } from './utils/leanInstaller'
 import { LeanpkgService } from './utils/leanpkg';
 import { LeanClientProvider } from './utils/clientProvider';
 import { addDefaultElanPath } from './config';
+import { dirname, basename } from 'path';
 
 function isLean(languageId : string) : boolean {
     return languageId === 'lean' || languageId === 'lean4';
@@ -41,13 +42,25 @@ export async function activate(context: ExtensionContext): Promise<any> {
     const defaultToolchain = 'leanprover/lean4:nightly';
     const outputChannel = window.createOutputChannel('Lean: Editor');
     const storageManager = new LocalStorageService(context.workspaceState);
-    const pkgService = new LeanpkgService(storageManager, defaultToolchain)
+
+    // migrate to new setting where it is now a directory location, not the
+    // actual full file name of the lean program.
+    const path = storageManager.getLeanPath();
+    if (path) {
+        const filename = basename(path);
+        if (filename === 'lean' || filename === 'lean.exe') {
+            const newPath = dirname(dirname(path)); // above the 'bin' folder.
+            storageManager.setLeanPath(newPath === '.' ? '' : newPath);
+        }
+    }
+
+    const pkgService = new LeanpkgService(storageManager)
     context.subscriptions.push(pkgService);
 
     const installer = new LeanInstaller(outputChannel, storageManager, defaultToolchain)
     context.subscriptions.push(installer);
 
-    const clientProvider = new LeanClientProvider(storageManager, installer, outputChannel);
+    const clientProvider = new LeanClientProvider(storageManager, installer, pkgService, outputChannel);
     context.subscriptions.push(clientProvider)
 
     // test lean version in the workspace associated with the active text editor since
@@ -75,6 +88,7 @@ export async function activate(context: ExtensionContext): Promise<any> {
     context.subscriptions.push(new LeanTaskGutter(clientProvider, context))
 
     pkgService.versionChanged((uri) => installer.handleVersionChanged(uri));
+    pkgService.lakeFileChanged((uri) => installer.handleLakeFileChanged(uri));
 
     return  { isLean4Project: true };
 }

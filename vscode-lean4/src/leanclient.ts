@@ -17,10 +17,16 @@ import {
     State
 } from 'vscode-languageclient/node'
 import * as ls from 'vscode-languageserver-protocol'
-import { executablePath, addServerEnvPaths, serverArgs, serverLoggingEnabled, serverLoggingPath, getElaborationDelay } from './config'
+import { toolchainPath, addServerEnvPaths, serverArgs, serverLoggingEnabled, serverLoggingPath, getElaborationDelay, lakeEnabled } from './config'
 import { assert } from './utils/assert'
 import { LeanFileProgressParams, LeanFileProgressProcessingInfo } from '@lean4/infoview-api';
 import { LocalStorageService} from './utils/localStorage'
+import { batchExecute, testExecute } from './utils/batch'
+import { cwd } from 'process'
+import * as fs from 'fs';
+import { URL } from 'url';
+import { join } from 'path';
+import { SemVer } from 'semver';
 
 const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
@@ -37,7 +43,7 @@ export function getFullRange(diag: Diagnostic): Range {
 export class LeanClient implements Disposable {
     running: boolean
 	private client: LanguageClient | undefined
-    private executable: string
+    private toolchainPath: string
     private outputChannel: OutputChannel;
     private storageManager : LocalStorageService;
     private workspaceFolder: WorkspaceFolder;
@@ -98,19 +104,57 @@ export class LeanClient implements Disposable {
             await this.stop()
         }
 
-        this.executable = this.storageManager.getLeanPath();
-        if (!this.executable) this.executable = executablePath();
+        this.toolchainPath = this.storageManager.getLeanPath();
+        if (!this.toolchainPath) this.toolchainPath = toolchainPath();
         const version = this.storageManager.getLeanVersion();
         const env = addServerEnvPaths(process.env);
         if (serverLoggingEnabled()) {
             env.LEAN_SERVER_LOG_DIR = serverLoggingPath()
         }
 
-        let options = ['--server']
-        if (version) {
-            // user is requesting an explicit version for this workspace.
-            options = ['+' + version, '--server']
+        let executable = (this.toolchainPath) ? join(this.toolchainPath, 'bin', 'lake') : 'lake';
+
+        // check if the lake process will start.
+        let useLake = lakeEnabled();
+        if (useLake && this.workspaceFolder) {
+            const lakefile = Uri.joinPath(this.folderUri, 'lakefile.lean').toString()
+            if (!fs.existsSync(new URL(lakefile))) {
+                useLake = false;
+            }
         }
+
+        // This is a faster way of finding out lake doesn't work in the current workspace.
+        // The LanguageClient is much slower because it does 10 retries and everything.
+        if (useLake) {
+            // First check we have a version of lake that supports "lake serve"
+            const lakeVersion = await batchExecute(executable, ['--version'], this.folderUri?.fsPath, null);
+            const actual = this.extractVersion(lakeVersion)
+            if (actual.compare('3.0.0') >= 0) {
+                const expectedError = 'Watchdog error: Cannot read LSP request: Stream was closed\n';
+                const rc = await testExecute(executable, ['serve'], this.folderUri?.fsPath, this.outputChannel, true, expectedError);
+                if (rc !== 0) {
+                    const failover = 'Lake failed, using lean instead.'
+                    console.log(failover);
+                    if (this.outputChannel) this.outputChannel.appendLine(failover);
+                    useLake = false;
+                }
+            } else {
+                useLake = false;
+            }
+        }
+
+        if (!useLake) {
+            executable = (this.toolchainPath) ? join(this.toolchainPath, 'bin', 'lean') : 'lean';
+        }
+
+        let options = version ? ['+' + version] :[]
+        if (useLake) {
+            options = options.concat(['serve', '--'])
+        } else{
+            options = options.concat(['--server'])
+        }
+
+        // Add folder name to command-line so that it shows up in `ps aux`.
         if (this.folderUri) {
             options.push('' + this.folderUri.fsPath)
         } else {
@@ -118,7 +162,7 @@ export class LeanClient implements Disposable {
         }
 
         const serverOptions: ServerOptions = {
-            command: this.executable,
+            command: executable,
             args: options.concat(serverArgs()),
             options: {
                 shell: true,
@@ -352,7 +396,9 @@ export class LeanClient implements Disposable {
     }
 
     configChanged(e : ConfigurationChangeEvent): void {
-        if (this.executable !== executablePath()){
+        let newToolchainPath = this.storageManager.getLeanPath();
+        if (!newToolchainPath) newToolchainPath = toolchainPath();
+        if (this.toolchainPath !== newToolchainPath){
             void this.restart();
         }
     }
@@ -428,5 +474,17 @@ export class LeanClient implements Disposable {
 
     get initializeResult() : InitializeResult | undefined {
         return this.running ? this.client.initializeResult : undefined
+    }
+
+    private extractVersion(v: string) : SemVer {
+        const prefix = 'Lake version'
+        if (v.startsWith(prefix)) v = v.slice(prefix.length).trim()
+        const pos = v.indexOf('(')
+        if (pos > 0) v = v.slice(0, pos).trim()
+        try {
+            return new SemVer(v)
+        } catch {
+            return new SemVer('0.0.0');
+        }
     }
 }

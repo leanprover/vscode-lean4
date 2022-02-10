@@ -4,7 +4,7 @@ import { Uri, workspace, WorkspaceFolder } from 'vscode';
 
 // Find the root of a Lean project and return the Uri for the package root and the Uri
 // for the 'leanpkg.toml' or 'lean-toolchain' file found there.
-export function findLeanPackageRoot(uri: Uri) : [WorkspaceFolder, Uri,Uri] {
+export function findLeanPackageRoot(uri: Uri) : [WorkspaceFolder | null, Uri | null, Uri | null] {
     if (!uri) return [null, null, null];
 
     const toolchainFileName = 'lean-toolchain';
@@ -72,7 +72,7 @@ export function findLeanPackageRoot(uri: Uri) : [WorkspaceFolder, Uri,Uri] {
 // in any 'lean-toolchain' or 'leanpkg.toml' file found there.
 export async function findLeanPackageVersionInfo(uri: Uri) : Promise<[Uri,string]> {
 
-    const [_, packageUri, packageFileUri] =findLeanPackageRoot(uri);
+    const [_, packageUri, packageFileUri] = findLeanPackageRoot(uri);
     if (!packageUri || packageUri.scheme === 'untitled') return null;
 
     let version = null;
