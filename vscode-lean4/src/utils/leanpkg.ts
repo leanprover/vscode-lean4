@@ -63,11 +63,11 @@ export class LeanpkgService implements Disposable {
         // Note: just opening the file fires this event sometimes which is annoying, so
         // we compare the contents just to be sure and normalize whitespace so that
         // just adding a new line doesn't trigger the prompt.
-        const [workspaceFolder, packageUri, packageFileUri] = await findLeanPackageRoot(uri);
+        const [workspaceFolder, packageUri, packageFileUri] = findLeanPackageRoot(uri);
         if (packageUri) {
-            var fileUri = this.findLakeFile(packageUri);
+            const fileUri = this.findLakeFile(packageUri);
             if (fileUri) {
-                const contents = await this.readWhitespaceNormalized(fileUri);
+                const contents = this.readWhitespaceNormalized(fileUri);
                 let existing = ''
                 const key = packageUri.toString();
                 if (this.normalizedLakeFileContents.get(key)){
