@@ -2,7 +2,7 @@ import { window, TerminalOptions, OutputChannel, commands, Disposable, EventEmit
 import { executablePath, addServerEnvPaths } from '../config'
 import { batchExecute } from './batch'
 import { LocalStorageService} from './localStorage'
-import { readLeanVersion } from './projectInfo';
+import { readLeanVersion, findLeanPackageRoot  } from './projectInfo';
 
 export class LeanVersion {
     version: string;
@@ -119,11 +119,9 @@ export class LeanInstaller implements Disposable {
     }
 
     async selectToolchain(uri: Uri) : Promise<void> {
-        let defaultPath = this.localStorage.getLeanPath();
-        if (!defaultPath) {
-            defaultPath = 'lean';
-        }
-        const installedToolChains = await this.elanListToolChains(uri);
+        const defaultPath = this.localStorage.getLeanPath();
+        const [workspaceFolder, folderUri, packageFileUri] = findLeanPackageRoot(uri);
+        const installedToolChains = await this.elanListToolChains(folderUri);
         if (installedToolChains.length === 1 && installedToolChains[0] === 'no installed toolchains') {
             installedToolChains[0] = this.defaultToolchain
         }
@@ -170,7 +168,7 @@ export class LeanInstaller implements Disposable {
             }
         }  else if (selectedVersion === resetPrompt){
             this.localStorage.setLeanVersion(''); // clear the requested version as we have a full path.
-            this.installChangedEmitter.fire(undefined);
+            this.installChangedEmitter.fire(uri);
         } else if (selectedVersion) {
             const s = this.removeSuffix(selectedVersion);
             this.localStorage.setLeanPath('lean'); // make sure any local full path override is cleared.
