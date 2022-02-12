@@ -276,10 +276,11 @@ export class LeanClient implements Disposable {
                 }
             })
             this.client.start()
-            for (const key of this.isOpen.keys()) {
-                this.notifyOpenDocument(this.isOpen.get(key));
-            }
             await this.client.onReady();
+            // tell the new client about the documents that are already open!
+            for (const key of this.isOpen.keys()) {
+                this.notifyDidOpen(this.isOpen.get(key));
+            }
             // if we got this far then the client is happy so we are running!
             this.running = true;
         } catch (error) {
@@ -345,15 +346,19 @@ export class LeanClient implements Disposable {
             // skip it, this file belongs to a different workspace...
             return;
         }
-        this.isOpen.set(doc.uri.toString(), doc);
+
+        this.isOpen.set(doc.uri.toString(), doc)
+
         if (!this.running) return; // there was a problem starting lean server.
+
         // didOpenEditor may have also changed the language, so we fire the
         // event here because the InfoView should be wired up to receive it now.
         this.didSetLanguageEmitter.fire(doc.languageId);
-        this.notifyOpenDocument(doc);
+
+        this.notifyDidOpen(doc);
     }
 
-    notifyOpenDocument(doc: TextDocument){
+    notifyDidOpen(doc: TextDocument) {
         void this.client.sendNotification(DidOpenTextDocumentNotification.type, {
             textDocument: {
                 uri: doc.uri.toString(),
