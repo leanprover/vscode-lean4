@@ -8,3 +8,10 @@ node_modules/
 **/media/webview.*
 *.tsbuildinfo
 *.vsix
+/build
+/lean_packages
+
+## Local files
+package-lock.json
+package.json
+vscode-lean4/package-lock.json
