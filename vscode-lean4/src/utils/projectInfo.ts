@@ -41,7 +41,7 @@ export function findLeanPackageRoot(uri: Uri) : [WorkspaceFolder | null, Uri | n
         searchUpwards = true;
     }
 
-    let startFolder = path;
+    const startFolder = path;
     if (path.scheme === 'file') {
         // search parent folders for a leanpkg.toml file, or a Lake lean-toolchain file.
         while (true) {

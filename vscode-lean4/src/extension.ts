@@ -71,7 +71,7 @@ export async function activate(context: ExtensionContext): Promise<any> {
     const pkgService = new LeanpkgService()
     context.subscriptions.push(pkgService);
 
-    const versionInfo = await installer.checkLeanVersion(packageUri, toolchainVersion)
+    const versionInfo = await installer.checkLeanVersion(packageUri, toolchainVersion??defaultToolchain)
     // Check whether rootPath is a Lean 3 project (the Lean 3 extension also uses the deprecated rootPath)
     if (versionInfo.version === '3') {
         context.subscriptions.pop().dispose(); // stop installer
