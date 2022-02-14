@@ -1,8 +1,10 @@
 import { window, TerminalOptions, OutputChannel, commands, Disposable, EventEmitter, ProgressLocation, Uri } from 'vscode'
-import { executablePath, addServerEnvPaths } from '../config'
+import { toolchainPath, addServerEnvPaths, getLeanExecutableName  } from '../config'
 import { batchExecute } from './batch'
 import { LocalStorageService} from './localStorage'
-import { readLeanVersion, findLeanPackageRoot  } from './projectInfo';
+import { readLeanVersion, findLeanPackageRoot } from './projectInfo';
+import { join, dirname } from 'path';
+import * as fs from 'fs';
 
 export class LeanVersion {
     version: string;
@@ -75,6 +77,12 @@ export class LeanInstaller implements Disposable {
     }
 
     async handleVersionChanged(packageUri : Uri) :  Promise<void> {
+        if (this.localStorage.getLeanVersion()){
+            // user has a local workspace override in effect, we don't care
+            // if the lean-toolchain is modified.
+            return;
+        }
+
         if (this.prompting) {
             return;
         }
@@ -91,14 +99,31 @@ export class LeanInstaller implements Disposable {
         this.prompting = false;
     }
 
+    async handleLakeFileChanged(uri: Uri) :  Promise<void> {
+        if (this.prompting) {
+            return;
+        }
+        this.prompting = true;
+        const restartItem = 'Restart Lean';
+        const item = await window.showErrorMessage('Lake file configuration changed', restartItem);
+        if (item === restartItem) {
+            this.installChangedEmitter.fire(uri);
+        }
+        this.prompting = false;
+    }
+
     async showInstallOptions(uri: Uri) : Promise<void> {
-        let executable = this.localStorage.getLeanPath();
-        if (!executable) executable = executablePath();
+        let path  = this.localStorage.getLeanPath();
+        if (!path ) path  = toolchainPath();
         // note; we keep the LeanClient alive so that it can be restarted if the
         // user changes the Lean: Executable Path.
         const installItem = 'Install Lean using Elan';
         const selectItem = 'Select Lean Toolchain';
-        const item = await window.showErrorMessage(`Failed to start '${executable}' language server`, installItem, selectItem)
+        let prompt = 'Failed to start \'lean\' language server'
+        if (path){
+            prompt += ` from ${path}`
+        }
+        const item = await window.showErrorMessage(prompt, installItem, selectItem)
         if (item === installItem) {
             try {
                 const result = await this.installElan();
@@ -119,7 +144,6 @@ export class LeanInstaller implements Disposable {
     }
 
     async selectToolchain(uri: Uri) : Promise<void> {
-        const defaultPath = this.localStorage.getLeanPath();
         const [workspaceFolder, folderUri, packageFileUri] = findLeanPackageRoot(uri);
         const installedToolChains = await this.elanListToolChains(folderUri);
         if (installedToolChains.length === 1 && installedToolChains[0] === 'no installed toolchains') {
@@ -129,6 +153,7 @@ export class LeanInstaller implements Disposable {
         // give an indication of any workspace override.
         const resetPrompt = 'Reset workspace override...';
         const versionOverride = this.localStorage.getLeanVersion();
+        const toolchainOverride = this.localStorage.getLeanPath();
         if (versionOverride){
             let found = false;
             for (let i = 0; i < installedToolChains.length; i++)
@@ -143,7 +168,10 @@ export class LeanInstaller implements Disposable {
             if (!found) {
                 installedToolChains.push(versionOverride + ' ' + this.workspaceSuffix);
             }
-            installedToolChains.push('Reset workspace override...');
+            installedToolChains.push(resetPrompt);
+        }
+        else if (toolchainOverride){
+            installedToolChains.push(resetPrompt);
         }
 
         const otherPrompt = 'Other...';
@@ -156,25 +184,50 @@ export class LeanInstaller implements Disposable {
         );
 
         if (selectedVersion === otherPrompt) {
-            const selectedProgram = await window.showInputBox({
-                title: 'Enter path',
-                value: defaultPath,
-                prompt: 'Enter full path to lean toolchain'
+            const selectedPath  = await window.showInputBox({
+                title: 'Enter custom toolchain path',
+                value: this.localStorage.getLeanPath(),
+                prompt: 'Enter full path to the lean toolchain you want to use or leave blank to use the default path'
             });
-            if (selectedProgram) {
-                this.localStorage.setLeanPath(selectedProgram);
-                this.localStorage.setLeanVersion(''); // clear the requested version as we have a full path.
-                this.installChangedEmitter.fire(uri);
+            if (selectedPath) {
+                const toolchainPath = this.checkToolchainPath(selectedPath);
+                if (toolchainPath) {
+                    this.localStorage.setLeanPath(toolchainPath);
+                    this.localStorage.setLeanVersion(''); // clear the requested version as we have a full path.
+                    this.installChangedEmitter.fire(uri);
+                }
             }
         }  else if (selectedVersion === resetPrompt){
             this.localStorage.setLeanVersion(''); // clear the requested version as we have a full path.
             this.installChangedEmitter.fire(uri);
         } else if (selectedVersion) {
             const s = this.removeSuffix(selectedVersion);
-            this.localStorage.setLeanPath('lean'); // make sure any local full path override is cleared.
+            this.localStorage.setLeanPath(''); // make sure any local full path override is cleared.
             this.localStorage.setLeanVersion(s);
             this.installChangedEmitter.fire(uri);
         }
+    }
+
+    private checkToolchainPath(path: string) : string | null {
+        let leanProgram = join(path, getLeanExecutableName());
+        if (fs.existsSync(leanProgram)) {
+            // then we want the parent folder.
+            path = dirname(path);
+        }
+
+        const binFolder = join(path, 'bin');
+        if (fs.existsSync(binFolder)) {
+            // ensure the lean program exists inside.
+            leanProgram = join(binFolder, getLeanExecutableName());
+            if (fs.existsSync(leanProgram)) {
+                return path;
+            }
+            void window.showErrorMessage(`Lean program not found in ${binFolder}`);
+        }
+        else {
+            void window.showErrorMessage('Lean toolchain should contain a \'bin\' folder');
+        }
+        return null;
     }
 
     private removeSuffix(version: string): string{
@@ -189,8 +242,6 @@ export class LeanInstaller implements Disposable {
     }
 
     async showToolchainOptions(uri: Uri) : Promise<void> {
-        let executable = this.localStorage.getLeanPath();
-        if (!executable) executable = executablePath();
         // note; we keep the LeanClient alive so that it can be restarted if the
         // user changes the Lean: Executable Path.
         const selectToolchain = 'Select lean toolchain';
@@ -203,9 +254,17 @@ export class LeanInstaller implements Disposable {
     async checkLeanVersion(packageUri: Uri, requestedVersion : string): Promise<LeanVersion> {
 
         let cmd = this.localStorage.getLeanPath();
-        if (!cmd) cmd = executablePath();
+        if (!cmd) cmd = toolchainPath();
+        if (!cmd) {
+            cmd = 'lean'
+        } else {
+            cmd = join(cmd, 'bin', 'lean')
+        }
         // if this workspace has a local override use it, otherwise fall back on the requested version.
-        const version = this.localStorage.getLeanVersion() ?? requestedVersion;
+        let version = this.localStorage.getLeanVersion();
+        if (!version || version === '') {
+            version = requestedVersion;
+        }
 
         let folderPath: string = '';
         if (packageUri.scheme === 'scheme') {
@@ -324,7 +383,7 @@ export class LeanInstaller implements Disposable {
             });
             return result;
         } catch (err) {
-            return ['error']
+            return [`${err}`];
         }
     }
 
@@ -347,9 +406,9 @@ export class LeanInstaller implements Disposable {
 
     private async installElan() : Promise<boolean> {
 
-        if (executablePath() !== 'lean') {
-            void window.showErrorMessage('It looks like you\'ve modified the `lean.executablePath` user setting.' +
-                'Please change it back to \'lean\' before installing elan.');
+        if (toolchainPath()) {
+            void window.showErrorMessage('It looks like you\'ve modified the `lean.toolchainPath` user setting.' +
+            'Please clear this setting before installing elan.');
             return false;
         } else {
             const terminalName = 'Lean installation via elan';

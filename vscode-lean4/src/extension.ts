@@ -8,7 +8,8 @@ import { LeanInstaller } from './utils/leanInstaller'
 import { LeanpkgService } from './utils/leanpkg';
 import { LeanClientProvider } from './utils/clientProvider';
 import { addDefaultElanPath } from './config';
-import { findLeanPackageRoot, readLeanVersion } from './utils/projectInfo';
+import { dirname, basename } from 'path';
+import { findLeanPackageVersionInfo } from './utils/projectInfo';
 
 function isLean(languageId : string) : boolean {
     return languageId === 'lean' || languageId === 'lean4';
@@ -43,21 +44,43 @@ export async function activate(context: ExtensionContext): Promise<any> {
     const outputChannel = window.createOutputChannel('Lean: Editor');
     const storageManager = new LocalStorageService(context.workspaceState);
 
+    // migrate to new setting where it is now a directory location, not the
+    // actual full file name of the lean program.
+    const path = storageManager.getLeanPath();
+    if (path) {
+        const filename = basename(path);
+        if (filename === 'lean' || filename === 'lean.exe') {
+            const newPath = dirname(dirname(path)); // above the 'bin' folder.
+            storageManager.setLeanPath(newPath === '.' ? '' : newPath);
+        }
+    }
+
+    // note: workspace.rootPath can be undefined in the untitled or adhoc case
+    // where the user ran "code lean_filename".
+    const doc = getLeanDocument();
+
+    const [packageUri, toolchainVersion] = await findLeanPackageVersionInfo(doc.uri);
+    if (toolchainVersion && toolchainVersion.indexOf('lean:3') > 0) {
+        // then this file belongs to a lean 3 project!
+        return { isLean4Project: false };
+    }
+
     const installer = new LeanInstaller(outputChannel, storageManager, defaultToolchain)
     context.subscriptions.push(installer);
 
+    const pkgService = new LeanpkgService()
+    context.subscriptions.push(pkgService);
+
+    const versionInfo = await installer.checkLeanVersion(packageUri, toolchainVersion)
     // Check whether rootPath is a Lean 3 project (the Lean 3 extension also uses the deprecated rootPath)
-    if ((await installer.testLeanVersion(Uri.file(workspace.rootPath))).version === '3') {
+    if (versionInfo.version === '3') {
         context.subscriptions.pop().dispose(); // stop installer
         // We need to terminate before registering the LeanClientProvider,
         // because that class changes the document id to `lean4`.
         return { isLean4Project: false };
     }
 
-    const pkgService = new LeanpkgService(storageManager, defaultToolchain)
-    context.subscriptions.push(pkgService);
-
-    const clientProvider = new LeanClientProvider(storageManager, installer, outputChannel);
+    const clientProvider = new LeanClientProvider(storageManager, installer, pkgService, outputChannel);
     context.subscriptions.push(clientProvider)
 
     const info = new InfoProvider(clientProvider, {language: 'lean4'}, context);
@@ -75,6 +98,7 @@ export async function activate(context: ExtensionContext): Promise<any> {
     context.subscriptions.push(new LeanTaskGutter(clientProvider, context))
 
     pkgService.versionChanged((uri) => installer.handleVersionChanged(uri));
+    pkgService.lakeFileChanged((uri) => installer.handleLakeFileChanged(uri));
 
     return  { isLean4Project: true };
 }

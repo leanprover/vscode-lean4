@@ -45,8 +45,12 @@ export function addDefaultElanPath() : void {
     }
 }
 
-export function executablePath(): string {
-    return workspace.getConfiguration('lean4').get('executablePath', 'lean')
+export function toolchainPath(): string {
+    return workspace.getConfiguration('lean4').get('toolchainPath', 'lean')
+}
+
+export function lakeEnabled(): boolean {
+    return workspace.getConfiguration('lean4').get('enableLake', false)
 }
 
 export function serverEnv(): object {
@@ -95,4 +99,11 @@ export function getInfoViewFilterIndex(): number {
 
 export function getElaborationDelay(): number {
     return workspace.getConfiguration('lean4').get('elaborationDelay', 200);
+}
+
+export function getLeanExecutableName(): string {
+    if (process.platform === 'win32') {
+        return 'lean.exe'
+    }
+    return 'lean'
 }

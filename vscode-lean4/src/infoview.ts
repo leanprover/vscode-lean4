@@ -265,26 +265,7 @@ export class InfoProvider implements Disposable {
         );
     }
 
-    private async onClientAdded(client: LeanClient) {
-
-        console.log(`Adding client for workspace: ${client.getWorkspaceFolder()}`);
-
-        this.clientSubscriptions.push(
-            client.restarted(async () => {
-                // This event is triggered both the first time the server starts
-                // as well as when the server restarts.
-
-                this.clearRpcSessions(client);
-
-                // The info view should auto-open the first time the server starts:
-                await this.autoOpen()
-
-                // Inform the infoview about the restart
-                // (this is redundant if the infoview was auto-opened but it doesn't hurt)
-                await this.webviewPanel?.api?.serverRestarted(client?.initializeResult);
-            }),
-            client.didSetLanguage(() => this.onLanguageChanged()),
-        );
+    private async onClientRestarted(client: LeanClient){
 
         if (client.isStarted()) {
             void this.autoOpen();
@@ -319,6 +300,29 @@ export class InfoProvider implements Disposable {
         await this.sendConfig();
         await this.sendDiagnostics(client);
         await this.sendProgress(client);
+    }
+
+    private async onClientAdded(client: LeanClient) {
+
+        console.log(`Adding client for workspace: ${client.getWorkspaceFolder()}`);
+
+        this.clientSubscriptions.push(
+            client.restarted(async () => {
+                // This event is triggered both the first time the server starts
+                // as well as when the server restarts.
+
+                this.clearRpcSessions(client);
+
+                // Need to fully re-initialize this newly restarted client with all the
+                // existing subscriptions and resend position info and so on so the
+                // infoview updates properly.
+                await this.onClientRestarted(client);
+            }),
+            client.didSetLanguage(() => this.onLanguageChanged()),
+        );
+
+        // Note that when new client is first created it still fires client.restarted
+        // event, so all onClientRestarted can happen there so we don't do it twice.
     }
 
     onClientRemoved(client: LeanClient) {

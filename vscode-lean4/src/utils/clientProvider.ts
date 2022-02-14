@@ -1,6 +1,7 @@
 import { Disposable, OutputChannel, workspace, TextDocument, commands, window, EventEmitter, Uri, languages, TextEditor } from 'vscode';
 import { LocalStorageService} from './localStorage'
 import { LeanInstaller, LeanVersion } from './leanInstaller'
+import { LeanpkgService } from './leanpkg';
 import { LeanClient } from '../leanclient'
 import { LeanFileProgressProcessingInfo, RpcConnectParams, RpcKeepAliveParams } from '@lean4/infoview-api';
 import * as path from 'path';
@@ -12,6 +13,7 @@ export class LeanClientProvider implements Disposable {
     private localStorage: LocalStorageService;
     private outputChannel: OutputChannel;
     private installer : LeanInstaller;
+    private pkgService : LeanpkgService;
     private versions: Map<string, LeanVersion> = new Map();
     private clients: Map<string, LeanClient> = new Map();
     private pending: Map<string, boolean> = new Map();
@@ -27,10 +29,11 @@ export class LeanClientProvider implements Disposable {
     private clientRemovedEmitter = new EventEmitter<LeanClient>()
     clientRemoved = this.clientRemovedEmitter.event
 
-    constructor(localStorage : LocalStorageService, installer : LeanInstaller, outputChannel : OutputChannel) {
+    constructor(localStorage : LocalStorageService, installer : LeanInstaller, pkgService : LeanpkgService, outputChannel : OutputChannel) {
         this.localStorage = localStorage;
         this.outputChannel = outputChannel;
         this.installer = installer;
+        this.pkgService = pkgService;
 
         // Only change the document language for *visible* documents,
         // because this closes and then reopens the document.
@@ -64,23 +67,26 @@ export class LeanClientProvider implements Disposable {
             // or it could be a document Uri in the case of a command from
             // selectToolchainForActiveEditor.
             const path = uri?.toString()
-            if (this.testing.has(path)) return;
+            if (this.testing.has(path)) {
+                console.log(`Blocking re-entrancy on ${path}`);
+                return;
+            }
             // avoid re-entrancy since testLeanVersion can take a while.
             this.testing.set(path, true);
             try {
                 // have to check again here in case elan install had --default-toolchain none.
                 const [workspaceFolder, packageUri, packageFileUri] = findLeanPackageRoot(uri);
                 const version = await installer.testLeanVersion(packageUri);
-                const packagePath = packageUri?.toString();
-                if (version.version === '4' && packagePath) {
-                    if (this.clients.has(packagePath)) {
-                        const client = this.clients.get(packagePath)
-                        void client.restart()
-                    } else {
-                        void this.ensureClient(packageUri, version);
+                if (version.version === '4') {
+                    const [cached, client] = await this.ensureClient(uri, version);
+                    if (cached && client) {
+                        await client.restart();
                     }
+                } else if (version.error) {
+                    console.log(`Lean version not ok: ${version.error}`);
                 }
-            } catch {
+            } catch (e) {
+                console.log(`Exception checking lean version: ${e}`);
             }
             this.testing.delete(path);
         });
@@ -97,7 +103,7 @@ export class LeanClientProvider implements Disposable {
     }
 
     private refreshFileDependencies() {
-        this.activeClient.refreshFileDependencies(window.activeTextEditor.document);
+        this.activeClient?.refreshFileDependencies(window.activeTextEditor.document);
     }
 
     private restartActiveClient() {
@@ -105,6 +111,8 @@ export class LeanClientProvider implements Disposable {
     }
 
     async didOpenEditor(document: TextDocument) {
+        this.pkgService.didOpen(document.uri);
+
         // bail as quickly as possible on non-lean files.
         if (document.languageId !== 'lean' && document.languageId !== 'lean4') {
             return;
@@ -134,8 +142,10 @@ export class LeanClientProvider implements Disposable {
         }
 
         try {
-            const client = await this.ensureClient(document.uri, null);
-            await client.openLean4Document(document)
+            const [cached, client] = await this.ensureClient(document.uri, null);
+            if (client) {
+                await client.openLean4Document(document)
+            }
         } catch (e) {
             console.log(`### error opening document: ${e}`);
         }
@@ -183,12 +193,16 @@ export class LeanClientProvider implements Disposable {
         return versionInfo;
     }
 
-    async ensureClient(uri: Uri, versionInfo: LeanVersion | null): Promise<LeanClient> {
+    // Starts a LeanClient if the given file is in a new workspace we haven't seen before.
+    // Returns a boolean "true" if the LeanClient was already created.
+    // Returns a null client if it turns out the new workspace is a lean3 workspace.
+    async ensureClient(uri : Uri, versionInfo: LeanVersion | null) : Promise<[boolean,LeanClient]> {
         const [workspaceFolder, folderUri, packageFileUri] = findLeanPackageRoot(uri);
 
         const path = folderUri?.toString();
         let  client: LeanClient = null;
-        if (this.clients.has(path)) {
+        const cachedClient = this.clients.has(path);
+        if (cachedClient) {
             // we're good then
             client = this.clients.get(path);
         } else if (!this.clients.has(path) && !this.pending.has(path)) {
@@ -214,7 +228,7 @@ export class LeanClientProvider implements Disposable {
                 this.pending.delete(path);
                 this.clients.delete(path);
                 client.dispose();
-                return;
+                return [false, null];
             }
 
             client.serverFailed((err) => window.showErrorMessage(err));
@@ -237,7 +251,7 @@ export class LeanClientProvider implements Disposable {
         // tell the InfoView about this activated client.
         this.activeClient = client;
 
-        return client;
+        return [cachedClient, client];
     }
 
     dispose(): void {
