@@ -1,14 +1,15 @@
 import * as fs from 'fs';
 import { URL } from 'url';
 import { Uri, workspace, WorkspaceFolder } from 'vscode';
+import { addDefaultElanPath } from '../config';
 
 // Detect lean4 root directory (works for both lean4 repo and nightly distribution)
 export function isCoreLean4Directory(path: Uri): boolean {
     return fs.existsSync(Uri.joinPath(path, 'LICENSE').fsPath) && fs.existsSync(Uri.joinPath(path, 'LICENSES').fsPath);
 }
 
-// Find the root of a Lean project and return the Uri for the package root and the Uri
-// for the 'leanpkg.toml' or 'lean-toolchain' file found there.
+// Find the root of a Lean project and return an optional WorkspaceFolder for it,
+// the Uri for the package root and the Uri for the 'leanpkg.toml' or 'lean-toolchain' file found there.
 export function findLeanPackageRoot(uri: Uri) : [WorkspaceFolder | null, Uri | null, Uri | null] {
     if (!uri) return [null, null, null];
 
@@ -39,6 +40,8 @@ export function findLeanPackageRoot(uri: Uri) : [WorkspaceFolder | null, Uri | n
         }
         searchUpwards = true;
     }
+
+    let startFolder = path;
     if (path.scheme === 'file') {
         // search parent folders for a leanpkg.toml file, or a Lake lean-toolchain file.
         while (true) {
@@ -69,10 +72,9 @@ export function findLeanPackageRoot(uri: Uri) : [WorkspaceFolder | null, Uri | n
                 }
             }
         }
-    } else {
-        // TODO: do we care about HTTP schemes?
-        return [null, null, null];
     }
+
+    return [wsFolder, startFolder, null];
 }
 
 // Find the lean project root for the given document and return the
@@ -81,7 +83,7 @@ export function findLeanPackageRoot(uri: Uri) : [WorkspaceFolder | null, Uri | n
 export async function findLeanPackageVersionInfo(uri: Uri) : Promise<[Uri,string | null]> {
 
     const [_, packageUri, packageFileUri] = findLeanPackageRoot(uri);
-    if (!packageUri || packageUri.scheme === 'untitled') return null;
+    if (!packageUri || packageUri.scheme === 'untitled') return [null, null];
 
     let version = null;
     if (packageFileUri) {

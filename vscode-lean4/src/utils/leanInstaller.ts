@@ -37,7 +37,10 @@ export class LeanInstaller implements Disposable {
 
     async testLeanVersion(packageUri: Uri | undefined) : Promise<LeanVersion> {
         // see if there is a lean-toolchain file and use that version info.
-        let  leanVersion = await readLeanVersion(packageUri);
+        let leanVersion = '';
+        if (packageUri) {
+            leanVersion = await readLeanVersion(packageUri);
+        }
         if (!leanVersion) {
             // see if there's a workspace override then.
             leanVersion = this.localStorage.getLeanVersion();
@@ -267,11 +270,12 @@ export class LeanInstaller implements Disposable {
         }
 
         let folderPath: string = '';
-        if (packageUri.scheme === 'scheme') {
+        const scheme = packageUri?.scheme
+        if (scheme === 'scheme') {
             // assume untitled files are version 4?  Actually no...
             return { version: '4', error: null };
         }
-        if (packageUri?.scheme === 'file') {
+        if (scheme === 'file') {
             folderPath = packageUri.fsPath
         }
 
