@@ -2,7 +2,7 @@ import { window, TerminalOptions, OutputChannel, commands, Disposable, EventEmit
 import { toolchainPath, addServerEnvPaths, getLeanExecutableName  } from '../config'
 import { batchExecute } from './batch'
 import { LocalStorageService} from './localStorage'
-import { readLeanVersion, findLeanPackageRoot } from './projectInfo';
+import { readLeanVersion, findLeanPackageRoot, isCoreLean4Directory } from './projectInfo';
 import { join, dirname } from 'path';
 import * as fs from 'fs';
 
@@ -50,7 +50,7 @@ export class LeanInstaller implements Disposable {
                 // we might as well install the default toolchain as well.
                 void this.showInstallOptions(packageUri);
                 return { version: '4', error: 'no elan installed' }
-            } else {
+            } else if (!isCoreLean4Directory(packageUri)) {
                 const defaultVersion = await this.getDefaultToolchain(packageUri);
                 if (!defaultVersion) {
                     void this.showToolchainOptions(packageUri);

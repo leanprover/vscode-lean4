@@ -2,6 +2,11 @@ import * as fs from 'fs';
 import { URL } from 'url';
 import { Uri, workspace, WorkspaceFolder } from 'vscode';
 
+// Detect lean4 root directory (works for both lean4 repo and nightly distribution)
+export function isCoreLean4Directory(path: Uri): boolean {
+    return fs.existsSync(Uri.joinPath(path, 'LICENSE').fsPath) && fs.existsSync(Uri.joinPath(path, 'LICENSES').fsPath);
+}
+
 // Find the root of a Lean project and return the Uri for the package root and the Uri
 // for the 'leanpkg.toml' or 'lean-toolchain' file found there.
 export function findLeanPackageRoot(uri: Uri) : [WorkspaceFolder | null, Uri | null, Uri | null] {
@@ -47,6 +52,9 @@ export function findLeanPackageRoot(uri: Uri) : [WorkspaceFolder | null, Uri | n
                 if (fs.existsSync(leanPkg.fsPath)) {
                     return [wsFolder, path, leanPkg];
                 }
+                else if (isCoreLean4Directory(path)) {
+                    return [wsFolder, path, null];
+                }
                 else if (searchUpwards) {
                     const parent = Uri.joinPath(path, '..');
                     if (parent === path) {
@@ -70,7 +78,7 @@ export function findLeanPackageRoot(uri: Uri) : [WorkspaceFolder | null, Uri | n
 // Find the lean project root for the given document and return the
 // Uri for the project root and the "version" information contained
 // in any 'lean-toolchain' or 'leanpkg.toml' file found there.
-export async function findLeanPackageVersionInfo(uri: Uri) : Promise<[Uri,string]> {
+export async function findLeanPackageVersionInfo(uri: Uri) : Promise<[Uri,string | null]> {
 
     const [_, packageUri, packageFileUri] = findLeanPackageRoot(uri);
     if (!packageUri || packageUri.scheme === 'untitled') return null;
