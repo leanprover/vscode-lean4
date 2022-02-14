@@ -201,12 +201,13 @@ export class LeanInstaller implements Disposable {
                 }
             }
         }  else if (selectedVersion === resetPrompt){
-            this.localStorage.setLeanVersion(''); // clear the requested version as we have a full path.
+            this.localStorage.setLeanPath(''); // make sure any local full path override is cleared.
+            this.localStorage.setLeanVersion(''); // clear any custom version.
             this.installChangedEmitter.fire(uri);
         } else if (selectedVersion) {
             const s = this.removeSuffix(selectedVersion);
             this.localStorage.setLeanPath(''); // make sure any local full path override is cleared.
-            this.localStorage.setLeanVersion(s);
+            this.localStorage.setLeanVersion(s); // request the specified version.
             this.installChangedEmitter.fire(uri);
         }
     }
