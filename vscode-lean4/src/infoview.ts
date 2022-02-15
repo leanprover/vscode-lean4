@@ -548,9 +548,9 @@ export class InfoProvider implements Disposable {
                 builder.insert(prev_line.range.end, new_command);
             });
             editor.selection = new Selection(pos.line, spaces, pos.line, spaces);
-        } else if (pos) {
+        } else {
             await editor.edit((builder) => {
-                builder.insert(pos, text);
+                if (pos) builder.insert(pos, text);
             });
             editor.selection = new Selection(pos, pos)
         }
