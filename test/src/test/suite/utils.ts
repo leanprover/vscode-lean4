@@ -53,28 +53,37 @@ export async function waitForInfoViewOpen(leanApi, retries=10, delay=1000) : Pro
             const panel = info.getWebView();
             if (panel) {
                 return info;
+            } else {
+                console.log('leanApi.infoProvider.getWebView() returned null');
             }
+        } if (!info){
+            console.log('leanApi.infoProvider is missing?');
+            console.log(JSON.stringify(leanApi));
+        } else if (!info.isOpen()){
+            console.log('leanApi.infoProvider isOpen returned false');
         }
         await sleep(delay);
         count += 1;
     }
-    return leanApi.infoProvider;
+    return null;
 }
 
-export async function waitForHtmlString(webView : any, toFind : string, retries=10, delay=1000): Promise<boolean> {
+export async function waitForHtmlString(webView : any, toFind : string, retries=10, delay=1000): Promise<string> {
     let count = 0;
     while (count < retries){
         webView.api.requestedAction({kind: 'copyHtmlToClipboard'});
         await sleep(500);
         const html = await vscode.env.clipboard.readText();
         if (html.indexOf(toFind) > 0){
-            return true;
+            return html;
         }
-
+        if (html.indexOf('<details>')) {
+            await webView.api.requestedAction({kind: 'toggleAllMessages'});
+        }
         await sleep(delay);
         count += 1;
     }
 
-    return false;
+    return '';
 }
 

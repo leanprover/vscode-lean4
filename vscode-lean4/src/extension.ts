@@ -83,29 +83,29 @@ export async function activate(context: ExtensionContext): Promise<any> {
         return { isLean4Project: false };
     }
 
-    const clientProvider = new LeanClientProvider(storageManager, installer, pkgService, outputChannel);
-    context.subscriptions.push(clientProvider)
+    const leanClientProvider = new LeanClientProvider(storageManager, installer, pkgService, outputChannel);
+    context.subscriptions.push(leanClientProvider)
 
-    const infoProvider = new InfoProvider(clientProvider, {language: 'lean4'}, context);
-    context.subscriptions.push(infoProvider)
+    const info = new InfoProvider(leanClientProvider, {language: 'lean4'}, context);
+    context.subscriptions.push(info)
 
-    const abbrevProvider = new AbbreviationFeature();
-    context.subscriptions.push(abbrevProvider);
+    const abbrev = new AbbreviationFeature();
+    context.subscriptions.push(abbrev);
 
-    const docViewProvider = new DocViewProvider();
-    context.subscriptions.push(docViewProvider);
+    const docView = new DocViewProvider();
+    context.subscriptions.push(docView);
 
-    // pass the abbreviations through to the docViewProvider so it can show them on demand.
-    docViewProvider.setAbbreviations(abbrevProvider.abbreviations.symbolsByAbbreviation);
+    // pass the abbreviations through to the docView so it can show them on demand.
+    docView.setAbbreviations(abbrev.abbreviations.symbolsByAbbreviation);
 
-    context.subscriptions.push(new LeanTaskGutter(clientProvider, context))
+    context.subscriptions.push(new LeanTaskGutter(leanClientProvider, context))
 
     pkgService.versionChanged((uri) => installer.handleVersionChanged(uri));
     pkgService.lakeFileChanged((uri) => installer.handleLakeFileChanged(uri));
 
     return  { isLean4Project: true,
-        clientProvider,
-        infoProvider,
-        abbrevProvider,
-        docViewProvider };
+        clientProvider: leanClientProvider,
+        infoProvider: info,
+        abbrevProvider: abbrev,
+        docViewProvider: docView };
 }

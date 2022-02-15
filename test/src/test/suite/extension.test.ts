@@ -20,18 +20,20 @@ suite('Extension Test Suite', () => {
 		assert(lean.exports.isLean4Project);
 		assert(lean.isActive);
 
+        console.log(`Found lean package version: ${lean.packageJSON.version}`);
+
 		const editor = await waitForActiveEditor();
 		assert(editor, 'Missing active text editor');
 		console.log(`loaded document ${editor.document.uri}`);
 
 		assert(editor.document.uri.fsPath.endsWith('Main.lean'));
 
-        const info = await waitForInfoViewOpen(lean.exports);
-        assert(info.isOpen());
+        const info = await waitForInfoViewOpen(lean.exports, 20);
+        assert(info?.isOpen(), 'InfoView is not opening?');
 
-        await info.getWebView().api.requestedAction({kind: 'toggleAllMessages'});
-        assert(await waitForHtmlString(info.getWebView(), '4.0.0-nightly-2022-02-06'));
+        const html = await waitForHtmlString(info.getWebView(), '4.0.0-nightly-2022-02-06');
+        assert(html, 'Version "4.0.0-nightly-2022-02-06" not found in infoview')
 
-        console.log(info.getWebView().webview.html);
+        console.log(html);
 	});
-}).timeout(10000);
+}).timeout(60000);
