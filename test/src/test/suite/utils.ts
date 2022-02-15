@@ -23,13 +23,13 @@ export async function waitForLeanExtension(retries=10, delay=1000) : Promise<vsc
             if (count >= retries){
                 return null;
             }
-            console.log("waiting for lean extension to be loaded...");
+            console.log('waiting for lean extension to be loaded...');
             await sleep(delay);
         }
     }
 
     while (!lean.isActive){
-        console.log("Waiting for Lean extension activation...");
+        console.log('Waiting for Lean extension activation...');
         await sleep(delay);
     }
 

@@ -124,7 +124,7 @@ export function AllMessages({uri: uri0}: { uri: DocumentUri }) {
             setOpenRef.current(t => !t);
         }
         else if (act.kind === 'copyHtmlToClipboard'){
-            ec.api.copyToClipboard(document.body.innerHTML);
+            void ec.api.copyToClipboard(document.body.innerHTML);
         }
     });
 

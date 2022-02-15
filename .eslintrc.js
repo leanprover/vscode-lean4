@@ -27,6 +27,7 @@ module.exports = {
             "./lean4-infoview/tsconfig.json",
             "./vscode-lean4/tsconfig.json",
             "./vscode-lean4/webview/tsconfig.json",
+            "./test/tsconfig.json",
         ],
         "sourceType": "module"
     },
