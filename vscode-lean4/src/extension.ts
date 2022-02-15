@@ -17,7 +17,7 @@ function isLean(languageId : string) : boolean {
 
 
 function getLeanDocument() : TextDocument | undefined {
-    let document : TextDocument | undefined = undefined;
+    let document : TextDocument | undefined;
     if (window.activeTextEditor && isLean(window.activeTextEditor.document.languageId))
     {
         document = window.activeTextEditor.document

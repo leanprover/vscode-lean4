@@ -190,8 +190,8 @@ export class InfoProvider implements Disposable {
             if (tdpp) {
                 const client = this.clientProvider.findClient(tdpp.textDocument.uri);
                 if (!client?.running) return;
-                let uri = client.convertUriFromString(tdpp.textDocument.uri);
-                let pos = client.convertPosition(tdpp.position);
+                const uri = client.convertUriFromString(tdpp.textDocument.uri);
+                const pos = client.convertPosition(tdpp.position);
                 await this.handleInsertText(text, kind, uri, pos);
             }
         },
@@ -336,8 +336,7 @@ export class InfoProvider implements Disposable {
     }
 
     private updateStylesheet() {
-        const fontFamily =
-            workspace.getConfiguration('editor').get<string>('fontFamily')!.replace(/['"]/g, '');
+        const fontFamily = workspace.getConfiguration('editor').get<string>('fontFamily')?.replace(/['"]/g, '');
         const fontCodeCSS = `
             .font-code {
                 font-family: ${fontFamily};
@@ -444,11 +443,13 @@ export class InfoProvider implements Disposable {
     }
 
     private async sendDiagnostics(client: LeanClient) {
-        if (!this.webviewPanel) return;
-        client.getDiagnostics()?.forEach(async (uri, diags) => {
-            const params = client.getDiagnosticParams(uri, diags)
-            await this.webviewPanel!.api.gotServerNotification('textDocument/publishDiagnostics', params);
-        });
+        const panel = this.webviewPanel;
+        if (panel) {
+            client.getDiagnostics()?.forEach(async (uri, diags) => {
+                const params = client.getDiagnosticParams(uri, diags)
+                await panel.api.gotServerNotification('textDocument/publishDiagnostics', params);
+            });
+        }
     }
 
     private async sendProgress(client: LeanClient) {
@@ -497,7 +498,7 @@ export class InfoProvider implements Disposable {
     }
 
     private async revealEditorSelection(uri: Uri, selection?: Range) {
-        let editor: TextEditor | undefined = undefined;
+        let editor: TextEditor | undefined;
         for (const e of window.visibleTextEditors) {
             if (e.document.uri.toString() === uri.toString()) {
                 editor = e;
@@ -547,9 +548,9 @@ export class InfoProvider implements Disposable {
                 builder.insert(prev_line.range.end, new_command);
             });
             editor.selection = new Selection(pos.line, spaces, pos.line, spaces);
-        } else {
+        } else if (pos) {
             await editor.edit((builder) => {
-                builder.insert(pos!, text);
+                builder.insert(pos, text);
             });
             editor.selection = new Selection(pos, pos)
         }

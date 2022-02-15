@@ -75,8 +75,8 @@ export class LeanClientProvider implements Disposable {
             this.testing.set(path, true);
             try {
                 // have to check again here in case elan install had --default-toolchain none.
-                let [workspaceFolder, packageUri, packageFileUri] = findLeanPackageRoot(uri);
-                if (!packageUri) packageUri = Uri.from({ scheme: 'untitled'});
+                const [workspaceFolder, folder, packageFileUri] = findLeanPackageRoot(uri);
+                const packageUri = folder ? folder : Uri.from({scheme: 'untitled'});
                 const version = await installer.testLeanVersion(packageUri);
                 if (version.version === '4') {
                     const [cached, client] = await this.ensureClient(uri, version);
@@ -182,8 +182,8 @@ export class LeanClientProvider implements Disposable {
     }
 
     async getLeanVersion(uri: Uri) : Promise<LeanVersion | undefined> {
-        let [workspaceFolder, folderUri, packageFileUri] = findLeanPackageRoot(uri);
-        if (!folderUri) folderUri = Uri.from({scheme: 'untitled'});
+        const [workspaceFolder, folder, packageFileUri] = findLeanPackageRoot(uri);
+        const folderUri = folder ? folder : Uri.from({scheme: 'untitled'});
         const path = folderUri.toString()
         if (this.versions.has(path)){
             return this.versions.get(path);
@@ -202,15 +202,16 @@ export class LeanClientProvider implements Disposable {
     // Returns a boolean "true" if the LeanClient was already created.
     // Returns a null client if it turns out the new workspace is a lean3 workspace.
     async ensureClient(uri : Uri, versionInfo: LeanVersion | undefined) : Promise<[boolean,LeanClient | undefined]> {
-        let [workspaceFolder, folderUri, packageFileUri] = findLeanPackageRoot(uri);
-        if (!folderUri) folderUri = Uri.from({scheme: 'untitled'});
+        const [workspaceFolder, folder, packageFileUri] = findLeanPackageRoot(uri);
+        const folderUri = folder ? folder : Uri.from({scheme: 'untitled'});
         const path = folderUri.toString();
-        let  client: LeanClient | undefined = undefined;
+        let  client: LeanClient | undefined;
         const cachedClient = this.clients.has(path);
         if (cachedClient) {
             // we're good then
-            client = this.clients.get(path)!;
-        } else if (!this.clients.has(path) && !this.pending.has(path)) {
+            client = this.clients.get(path);
+        }
+        if (!client && !this.pending.has(path)) {
             this.pending.set(path, true);
             console.log('Creating LeanClient for ' + path);
 

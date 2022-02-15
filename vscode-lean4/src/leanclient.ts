@@ -246,7 +246,7 @@ export class LeanClient implements Disposable {
                     const nonWordPattern = '[`~@$%^&*()-=+\\[{\\]}⟨⟩⦃⦄⟦⟧⟮⟯‹›\\\\|;:\",./\\s]|^|$'
                     const regexp = new RegExp(`(?<=${nonWordPattern})${escapeRegExp(word)}(?=${nonWordPattern})`, 'g')
                     for (const match of text.matchAll(regexp)) {
-                        const start = doc.positionAt(match.index!)
+                        const start = doc.positionAt(match.index ?? 0)
                         highlights.push({
                             range: new Range(start, start.translate(0, match[0].length)),
                             kind: DocumentHighlightKind.Text,
@@ -281,7 +281,8 @@ export class LeanClient implements Disposable {
             await this.client.onReady();
             // tell the new client about the documents that are already open!
             for (const key of this.isOpen.keys()) {
-                this.notifyDidOpen(this.isOpen.get(key)!);
+                const doc = this.isOpen.get(key);
+                if (doc) this.notifyDidOpen(doc);
             }
             // if we got this far then the client is happy so we are running!
             this.running = true;

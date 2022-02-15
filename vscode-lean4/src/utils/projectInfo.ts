@@ -102,7 +102,7 @@ export async function findLeanPackageVersionInfo(uri: Uri) : Promise<[Uri | null
 export async function readLeanVersion(packageUri: Uri) : Promise<string | null> {
     const toolchainFileName = 'lean-toolchain';
     const tomlFileName = 'leanpkg.toml';
-    if (packageUri.scheme == 'file') {
+    if (packageUri.scheme === 'file') {
         const leanToolchain = Uri.joinPath(packageUri, toolchainFileName);
         if (fs.existsSync(new URL(leanToolchain.toString()))) {
             return await readLeanVersionFile(leanToolchain);
@@ -120,7 +120,7 @@ export async function readLeanVersion(packageUri: Uri) : Promise<string | null> 
 async function readLeanVersionFile(packageFileUri : Uri) : Promise<string | null> {
     const url = new URL(packageFileUri.toString());
     const tomlFileName = 'leanpkg.toml';
-    if (packageFileUri.scheme != 'file'){
+    if (packageFileUri.scheme !== 'file'){
         return null;
     }
     if (packageFileUri.path.endsWith(tomlFileName))

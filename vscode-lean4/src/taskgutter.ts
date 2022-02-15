@@ -112,7 +112,8 @@ export class LeanTaskGutter implements Disposable {
             uris[uri] = true
             const processed = uri in this.status ? this.status[uri] : []
             if (this.gutters[uri]) {
-                this.gutters[uri]!.setProcessed(processed)
+                const gutter = this.gutters[uri];
+                if (gutter) gutter.setProcessed(processed)
             } else {
                 this.gutters[uri] = new LeanFileTaskGutter(uri, this.decorations, processed)
             }
