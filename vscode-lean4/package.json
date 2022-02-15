@@ -407,7 +407,10 @@
 		"vscode:prepublish": "webpack --env production",
 		"build": "webpack --env production",
 		"watch": "webpack --env development --watch",
-		"package": "vsce package"
+		"lint": "eslint . --ext .ts,.tsx",
+		"package": "vsce package",
+		"pretest": "npm run compile",
+		"test": "node ./out/test/runTest.js"
 	},
 	"dependencies": {
 		"@lean4/infoview-api": "^0.1.0",
@@ -419,17 +422,21 @@
 		"semver": "=7.3.5"
 	},
 	"devDependencies": {
+		"@types/mocha": "^5.2.6",
 		"@types/node": "^17.0.7",
 		"@types/vscode": "^1.57.0",
 		"@types/cheerio": "^0.22.30",
+		"@types/semver": "^5.3.30",
 		"@types/vscode-webview": "^1.57.0",
+		"@vscode/test-electron": "^1.6.1",
+		"glob": "^7.1.4",
+		"mocha": "^6.1.4",
 		"ovsx": "^0.2.1",
 		"ts-loader": "^9.2.6",
 		"typescript": "^4.5.4",
 		"vsce": "~2.6.2",
 		"webpack": "^5.65.0",
-		"webpack-cli": "^4.9.1",
-		"@types/semver": "^5.3.30"
+		"webpack-cli": "^4.9.1"
 	},
 	"icon": "images/lean_logo.png",
 	"license": "Apache-2.0"

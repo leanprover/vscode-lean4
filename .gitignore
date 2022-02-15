@@ -2,6 +2,8 @@
 out/
 dist/
 .vs/
+.vscode-test/
+build/
 
 ## Output
 node_modules/
