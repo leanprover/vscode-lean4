@@ -72,7 +72,7 @@ export class LeanpkgService implements Disposable {
             const fileUri = this.findLakeFile(packageUri);
             if (fileUri) {
                 const contents = this.readWhitespaceNormalized(fileUri);
-                let existing = ''
+                let existing : string | undefined;
                 const key = packageUri.toString();
                 if (this.normalizedLakeFileContents.get(key)){
                     existing = this.normalizedLakeFileContents.get(key);
@@ -93,7 +93,7 @@ export class LeanpkgService implements Disposable {
         // if a file is added or removed so we always match the elan behavior.
         const [packageUri, version] = await findLeanPackageVersionInfo(uri);
         if (packageUri && version) {
-            let existing = '';
+            let existing : string | undefined;
             const key = packageUri.toString();
             if (this.currentVersion.has(key)){
                 existing = this.currentVersion.get(key);

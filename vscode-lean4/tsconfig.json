@@ -12,6 +12,8 @@
         "sourceMap": true,
         "alwaysStrict": true,
         "rootDir": "./src",
+        "noImplicitAny": true,
+        "strictNullChecks": true
     },
     "include": [
         "src/**/*"
