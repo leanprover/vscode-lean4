@@ -8,7 +8,7 @@ import * as fs from 'fs';
 
 export class LeanVersion {
     version: string;
-    error: string;
+    error: string | undefined;
 }
 
 export class LeanInstaller implements Disposable {
@@ -35,12 +35,9 @@ export class LeanInstaller implements Disposable {
         this.subscriptions.push(commands.registerCommand('lean4.selectToolchain', () => this.selectToolchainForActiveEditor()));
     }
 
-    async testLeanVersion(packageUri: Uri | undefined) : Promise<LeanVersion> {
+    async testLeanVersion(packageUri: Uri) : Promise<LeanVersion> {
         // see if there is a lean-toolchain file and use that version info.
-        let leanVersion = '';
-        if (packageUri) {
-            leanVersion = await readLeanVersion(packageUri);
-        }
+        let leanVersion : string | null = await readLeanVersion(packageUri);
         if (!leanVersion) {
             // see if there's a workspace override then.
             leanVersion = this.localStorage.getLeanVersion();
@@ -255,7 +252,7 @@ export class LeanInstaller implements Disposable {
         }
     }
 
-    async checkLeanVersion(packageUri: Uri, requestedVersion : string): Promise<LeanVersion> {
+    async checkLeanVersion(packageUri: Uri | null, requestedVersion : string): Promise<LeanVersion> {
 
         let cmd = this.localStorage.getLeanPath();
         if (!cmd) cmd = toolchainPath();
@@ -274,9 +271,9 @@ export class LeanInstaller implements Disposable {
         const scheme = packageUri?.scheme
         if (scheme === 'scheme') {
             // assume untitled files are version 4?  Actually no...
-            return { version: '4', error: null };
+            return { version: '4', error: undefined };
         }
-        if (scheme === 'file') {
+        if (scheme === 'file' && packageUri) {
             folderPath = packageUri.fsPath
         }
 
@@ -309,14 +306,14 @@ export class LeanInstaller implements Disposable {
                 }
             }
             const major = match[1]
-            return { version: major, error: null }
+            return { version: major, error: undefined }
         } catch (err) {
             if (this.outputChannel) this.outputChannel.appendLine('' + err);
             return { version: '', error: err };
         }
     }
 
-    private async executeWithProgress(prompt: string, cmd: string, options: string[], workingDirectory: string): Promise<string>{
+    private async executeWithProgress(prompt: string, cmd: string, options: string[], workingDirectory: string | null): Promise<string>{
         let inc = 0;
         let stdout = ''
         /* eslint-disable  @typescript-eslint/no-this-alias */
@@ -365,9 +362,9 @@ export class LeanInstaller implements Disposable {
         return result;
     }
 
-    async elanListToolChains(packageUri: Uri) : Promise<string[]> {
+    async elanListToolChains(packageUri: Uri | null) : Promise<string[]> {
 
-        let folderPath: string
+        let folderPath: string = ''
         if (packageUri) {
             folderPath = packageUri.fsPath
         }
@@ -375,7 +372,7 @@ export class LeanInstaller implements Disposable {
         try {
             const cmd = 'elan';
             const options = ['toolchain', 'list'];
-            const stdout = await batchExecute(cmd, options, folderPath, null);
+            const stdout = await batchExecute(cmd, options, folderPath, undefined);
             if (!stdout){
                 throw new Error('elan toolchain list returned no output.');
             }
@@ -397,7 +394,7 @@ export class LeanInstaller implements Disposable {
         // See if we have elan already.
         try {
             const options = ['--version']
-            const stdout = await this.executeWithProgress('Checking Elan setup...', 'elan', options, undefined)
+            const stdout = await this.executeWithProgress('Checking Elan setup...', 'elan', options, null)
             const filterVersion = /elan (\d+)\.\d+\..+/
             const match = filterVersion.exec(stdout)
             if (match) {

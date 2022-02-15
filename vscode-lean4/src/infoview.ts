@@ -33,13 +33,13 @@ class RpcSession implements Disposable {
                 client.sendNotification('$/lean/rpc/keepAlive', params)
             } catch (e) {
                 console.log(`failed to send keepalive for ${uri}`, e)
-                clearInterval(this.keepAliveInterval)
+                if (this.keepAliveInterval) clearInterval(this.keepAliveInterval)
             }
         }, keepAlivePeriodMs)
     }
 
     dispose() {
-        clearInterval(this.keepAliveInterval)
+        if (this.keepAliveInterval) clearInterval(this.keepAliveInterval)
         // TODO: at this point we could close the session
     }
 }
@@ -187,15 +187,13 @@ export class InfoProvider implements Disposable {
             await window.showInformationMessage(`Copied to clipboard: ${text}`);
         },
         insertText: async (text, kind, tdpp) => {
-            const client = this.clientProvider.findClient(tdpp.textDocument.uri);
-            if (!client?.running) return;
-            let uri: Uri | undefined
-            let pos: Position | undefined
             if (tdpp) {
-                uri = client.convertUriFromString(tdpp.textDocument.uri);
-                pos = client.convertPosition(tdpp.position);
+                const client = this.clientProvider.findClient(tdpp.textDocument.uri);
+                if (!client?.running) return;
+                let uri = client.convertUriFromString(tdpp.textDocument.uri);
+                let pos = client.convertPosition(tdpp.position);
+                await this.handleInsertText(text, kind, uri, pos);
             }
-            await this.handleInsertText(text, kind, uri, pos);
         },
         showDocument: async (show) => {
             const client = this.clientProvider.findClient(show.uri);
@@ -339,7 +337,7 @@ export class InfoProvider implements Disposable {
 
     private updateStylesheet() {
         const fontFamily =
-            workspace.getConfiguration('editor').get<string>('fontFamily').replace(/['"]/g, '');
+            workspace.getConfiguration('editor').get<string>('fontFamily')!.replace(/['"]/g, '');
         const fontCodeCSS = `
             .font-code {
                 font-family: ${fontFamily};
@@ -370,7 +368,7 @@ export class InfoProvider implements Disposable {
         this.serverNotifSubscriptions.clear();
     }
 
-    private clearRpcSessions(client: LeanClient) {
+    private clearRpcSessions(client: LeanClient | null) {
         const remaining = new Map()
         for (const [sessionId, sess] of this.rpcSessions) {
             if (client === null || sess.client === client) {
@@ -383,7 +381,7 @@ export class InfoProvider implements Disposable {
     }
 
     private async openPreview(editor: TextEditor) {
-        let column = editor ? editor.viewColumn + 1 : ViewColumn.Two;
+        let column = editor && editor.viewColumn ? editor.viewColumn + 1 : ViewColumn.Two;
         if (column === 4) { column = ViewColumn.Three; }
         if (this.webviewPanel) {
             this.webviewPanel.reveal(column, true);
@@ -416,7 +414,10 @@ export class InfoProvider implements Disposable {
             this.webviewPanel = webviewPanel;
             webviewPanel.webview.html = this.initialHtml();
 
-            await webviewPanel.api.initialize(this.getLocation(editor))
+            const loc = this.getLocation(editor);
+            if (loc) {
+                await webviewPanel.api.initialize(loc);
+            }
 
             // The infoview gets information about file progress, diagnostics, etc.
             // by listening to notifications.  Send these notifications when the infoview starts
@@ -446,7 +447,7 @@ export class InfoProvider implements Disposable {
         if (!this.webviewPanel) return;
         client.getDiagnostics()?.forEach(async (uri, diags) => {
             const params = client.getDiagnosticParams(uri, diags)
-            await this.webviewPanel.api.gotServerNotification('textDocument/publishDiagnostics', params);
+            await this.webviewPanel!.api.gotServerNotification('textDocument/publishDiagnostics', params);
         });
     }
 
@@ -471,8 +472,8 @@ export class InfoProvider implements Disposable {
 
     private getLocation(editor : TextEditor) : ls.Location | undefined {
         if (!editor) return undefined;
-        const uri = window.activeTextEditor.document.uri;
-        const selection = window.activeTextEditor.selection;
+        const uri = editor.document.uri;
+        const selection = editor.selection;
         return {
             uri: uri.toString(),
             range: {
@@ -496,7 +497,7 @@ export class InfoProvider implements Disposable {
     }
 
     private async revealEditorSelection(uri: Uri, selection?: Range) {
-        let editor: TextEditor = null;
+        let editor: TextEditor | undefined = undefined;
         for (const e of window.visibleTextEditors) {
             if (e.document.uri.toString() === uri.toString()) {
                 editor = e;
@@ -548,15 +549,18 @@ export class InfoProvider implements Disposable {
             editor.selection = new Selection(pos.line, spaces, pos.line, spaces);
         } else {
             await editor.edit((builder) => {
-                builder.insert(pos, text);
+                builder.insert(pos!, text);
             });
             editor.selection = new Selection(pos, pos)
         }
     }
 
-    private getMediaPath(mediaFile: string): string {
-        return this.webviewPanel?.webview.asWebviewUri(
-            Uri.file(join(this.context.extensionPath, 'media', mediaFile))).toString();
+    private getMediaPath(mediaFile: string): string | undefined {
+        if (this.webviewPanel) {
+            return this.webviewPanel.webview.asWebviewUri(
+                Uri.file(join(this.context.extensionPath, 'media', mediaFile))).toString();
+        }
+        return undefined;
     }
 
     private initialHtml() {

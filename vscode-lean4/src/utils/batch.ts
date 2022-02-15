@@ -4,8 +4,8 @@ import { spawn } from 'child_process';
 export async function batchExecute(
     executablePath: string,
     args: any[],
-    workingDirectory: string,
-    channel: OutputChannel): Promise<string> {
+    workingDirectory: string | null,
+    channel: OutputChannel | undefined): Promise<string | undefined> {
 
     return new Promise(function(resolve, reject){
         let output : string = '';
@@ -94,7 +94,7 @@ export async function testExecute(
                 if (foundExpectedError) {
                     code = 0;
                 }
-                resolve(code)
+                resolve(code ?? 0)
             }
         });
 

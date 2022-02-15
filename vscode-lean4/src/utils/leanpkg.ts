@@ -75,7 +75,7 @@ export class LeanpkgService implements Disposable {
                 let existing = ''
                 const key = packageUri.toString();
                 if (this.normalizedLakeFileContents.get(key)){
-                    existing = this.normalizedLakeFileContents.get(key);
+                    existing = this.normalizedLakeFileContents.get(key)!;
                 }
                 if (contents !== existing) {
                     this.normalizedLakeFileContents.set(key, contents);
@@ -96,7 +96,7 @@ export class LeanpkgService implements Disposable {
             let existing = '';
             const key = packageUri.toString();
             if (this.currentVersion.has(key)){
-                existing = this.currentVersion.get(key);
+                existing = this.currentVersion.get(key)!;
             }
             if (existing !== version){
                 this.currentVersion.set(key, version);

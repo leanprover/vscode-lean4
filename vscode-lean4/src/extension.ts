@@ -16,8 +16,8 @@ function isLean(languageId : string) : boolean {
 }
 
 
-function getLeanDocument() : TextDocument | null {
-    let document : TextDocument = null;
+function getLeanDocument() : TextDocument | undefined {
+    let document : TextDocument | undefined = undefined;
     if (window.activeTextEditor && isLean(window.activeTextEditor.document.languageId))
     {
         document = window.activeTextEditor.document
@@ -58,11 +58,14 @@ export async function activate(context: ExtensionContext): Promise<any> {
     // note: workspace.rootPath can be undefined in the untitled or adhoc case
     // where the user ran "code lean_filename".
     const doc = getLeanDocument();
-
-    const [packageUri, toolchainVersion] = await findLeanPackageVersionInfo(doc.uri);
-    if (toolchainVersion && toolchainVersion.indexOf('lean:3') > 0) {
-        // then this file belongs to a lean 3 project!
-        return { isLean4Project: false };
+    let packageUri = null;
+    let toolchainVersion = null;
+    if (doc) {
+        [packageUri, toolchainVersion] = await findLeanPackageVersionInfo(doc.uri);
+        if (toolchainVersion && toolchainVersion.indexOf('lean:3') > 0) {
+            // then this file belongs to a lean 3 project!
+            return { isLean4Project: false };
+        }
     }
 
     const installer = new LeanInstaller(outputChannel, storageManager, defaultToolchain)
@@ -74,7 +77,7 @@ export async function activate(context: ExtensionContext): Promise<any> {
     const versionInfo = await installer.checkLeanVersion(packageUri, toolchainVersion??defaultToolchain)
     // Check whether rootPath is a Lean 3 project (the Lean 3 extension also uses the deprecated rootPath)
     if (versionInfo.version === '3') {
-        context.subscriptions.pop().dispose(); // stop installer
+        context.subscriptions.pop()?.dispose(); // stop installer
         // We need to terminate before registering the LeanClientProvider,
         // because that class changes the document id to `lean4`.
         return { isLean4Project: false };

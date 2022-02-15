@@ -110,9 +110,9 @@ export class LeanTaskGutter implements Disposable {
             if (editor.document.languageId !== 'lean4' && editor.document.languageId !== 'lean') continue;
             const uri = editor.document.uri.toString();
             uris[uri] = true
-            const processed = uri in this.status ? this.status[uri] : undefined
+            const processed = uri in this.status ? this.status[uri] : []
             if (this.gutters[uri]) {
-                this.gutters[uri].setProcessed(processed)
+                this.gutters[uri]!.setProcessed(processed)
             } else {
                 this.gutters[uri] = new LeanFileTaskGutter(uri, this.decorations, processed)
             }

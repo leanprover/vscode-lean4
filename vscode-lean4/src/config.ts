@@ -7,9 +7,9 @@ import * as path from 'path';
 
 export function getEnvPath() : string {
     if (process.platform === 'win32') {
-        return process.env.Path
+        return process.env.Path ?? ''
     } else {
-        return process.env.PATH
+        return process.env.PATH ?? ''
     }
 }
 
@@ -46,7 +46,7 @@ export function addDefaultElanPath() : void {
 }
 
 export function toolchainPath(): string {
-    return workspace.getConfiguration('lean4').get('toolchainPath', 'lean')
+    return workspace.getConfiguration('lean4').get('toolchainPath', '')
 }
 
 export function lakeEnabled(): boolean {
@@ -74,11 +74,11 @@ export function serverLoggingPath(): string {
 }
 
 export function getInfoViewStyle(): string {
-    return workspace.getConfiguration('lean4').get('infoViewStyle');
+    return workspace.getConfiguration('lean4').get('infoViewStyle', '');
 }
 
 export function getInfoViewAutoOpen(): boolean {
-    return workspace.getConfiguration('lean4').get('infoViewAutoOpen');
+    return workspace.getConfiguration('lean4').get('infoViewAutoOpen', true);
 }
 
 export function getInfoViewAutoOpenShowGoal(): boolean {

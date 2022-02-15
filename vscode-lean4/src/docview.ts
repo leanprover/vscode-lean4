@@ -13,12 +13,12 @@ export function mkCommandUri(commandName: string, ...args: any[]): string {
     return `command:${commandName}?${encodeURIComponent(JSON.stringify(args))}`;
 }
 
-function findActiveEditorRootPath(): string {
+function findActiveEditorRootPath(): string | undefined {
     const doc = window.activeTextEditor?.document?.uri;
     if (doc) {
-        return workspace.getWorkspaceFolder(doc).uri.fsPath;
+        return workspace.getWorkspaceFolder(doc)?.uri?.fsPath;
     }
-    return null;
+    return undefined;
 }
 
 function findProjectDocumentation(): string | null {
@@ -46,8 +46,8 @@ export class DocViewProvider implements Disposable {
     private currentURL: string | undefined = undefined;
     private backStack: string[] = [];
     private forwardStack: string[] = [];
-    private tempFolder : TempFolder = null;
-    private abbreviations: SymbolsByAbbreviation = null;
+    private tempFolder : TempFolder;
+    private abbreviations: SymbolsByAbbreviation;
     constructor() {
         this.subscriptions.push(
             commands.registerCommand('lean4.docView.open', (url: string) => this.open(url)),
@@ -98,7 +98,7 @@ export class DocViewProvider implements Disposable {
             };
             this.webview = window.createWebviewPanel('lean', 'Lean Documentation',
                 { viewColumn: 3, preserveFocus: true }, options);
-            this.webview.onDidDispose(() => this.webview = null);
+            this.webview.onDidDispose(() => this.webview = undefined);
 
             let first = true;
             this.webview.onDidChangeViewState(async () => {
@@ -162,7 +162,7 @@ export class DocViewProvider implements Disposable {
                     .text('Open documentation of current project')));
             }
 
-            const books = {
+            const books : any = {
                 'Theorem Proving in Lean': 'https://leanprover.github.io/theorem_proving_in_lean4/',
                 'Reference Manual': 'https://leanprover.github.io/lean4/doc/',
                 'Abbreviations cheat sheet': mkCommandUri('lean4.docView.showAllAbbreviations')
@@ -187,7 +187,10 @@ export class DocViewProvider implements Disposable {
                 return '';
             }
             const path = Uri.parse(uri.toString()).fsPath;
-            return this.webview.webview.asWebviewUri(Uri.parse(uri.toString())).toString();
+            if (this.webview) {
+                return this.webview.webview.asWebviewUri(Uri.parse(uri.toString())).toString();
+            }
+            return '';
         } else {
             return uri.toString();
         }
@@ -209,12 +212,13 @@ export class DocViewProvider implements Disposable {
                 $('pre').text('' + e);
             }
         }
-
-        for (const style of $('link[rel=stylesheet]').get()) {
-            style.attribs.href = this.mkRelativeUrl(style.attribs.href as string, url);
-        }
-        for (const script of $('script[src]').get()) {
-            script.attribs.src = this.mkRelativeUrl(script.attribs.src as string, url);
+        if (url) {
+            for (const style of $('link[rel=stylesheet]').get()) {
+                style.attribs.href = this.mkRelativeUrl(style.attribs.href as string, url);
+            }
+            for (const script of $('script[src]').get()) {
+                script.attribs.src = this.mkRelativeUrl(script.attribs.src as string, url);
+            }
         }
         for (const link of $('a[href]').get()) {
             const tryItMatch = link.attribs.href.match(/\/(?:live|lean-web-editor)\/.*#code=(.*)/);
@@ -290,14 +294,14 @@ export class DocViewProvider implements Disposable {
 
     async back(): Promise<void> {
         if (this.backStack.length === 0) {return;}
-        this.forwardStack.push(this.currentURL);
+        if (this.currentURL) this.forwardStack.push(this.currentURL);
         this.currentURL = this.backStack.pop();
         await this.setHtml();
     }
 
     async forward(): Promise<void> {
         if (this.forwardStack.length === 0) {return;}
-        this.backStack.push(this.currentURL);
+        if (this.currentURL) this.backStack.push(this.currentURL);
         this.currentURL = this.forwardStack.pop();
         await this.setHtml();
     }
