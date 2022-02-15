@@ -8,7 +8,7 @@ export function closeAllEditors(): Thenable<any> {
 	return vscode.commands.executeCommand('workbench.action.closeAllEditors');
 }
 
-export async function waitForLeanExtension(retries=10, delay=500) : Promise<vscode.Extension<any> | null> {
+export async function waitForLeanExtension(retries=10, delay=1000) : Promise<vscode.Extension<any> | null> {
 
     let lean : vscode.Extension<any> | undefined;
     let count = 0;
@@ -30,17 +30,51 @@ export async function waitForLeanExtension(retries=10, delay=500) : Promise<vsco
 
     while (!lean.isActive){
         console.log("Waiting for Lean extension activation...");
-        await sleep(500);
+        await sleep(delay);
     }
 
     return lean;
 }
 
-export async function waitForActiveEditor(retries=10, delay=500) : Promise<vscode.TextEditor | null> {
+export async function waitForActiveEditor(retries=10, delay=1000) : Promise<vscode.TextEditor | null> {
     let count = 0;
     while (!vscode.window.activeTextEditor && count < retries){
-        await sleep(500);
+        await sleep(delay);
         count += 1;
     }
     return vscode.window.activeTextEditor;
 }
+
+export async function waitForInfoViewOpen(leanApi, retries=10, delay=1000) : Promise<any> {
+    let count = 0;
+    while (count < retries){
+        const info = leanApi.infoProvider;
+        if (info && info.isOpen()) {
+            const panel = info.getWebView();
+            if (panel) {
+                return info;
+            }
+        }
+        await sleep(delay);
+        count += 1;
+    }
+    return leanApi.infoProvider;
+}
+
+export async function waitForHtmlString(webView : any, toFind : string, retries=10, delay=1000): Promise<boolean> {
+    let count = 0;
+    while (count < retries){
+        webView.api.requestedAction({kind: 'copyHtmlToClipboard'});
+        await sleep(500);
+        const html = await vscode.env.clipboard.readText();
+        if (html.indexOf(toFind) > 0){
+            return true;
+        }
+
+        await sleep(delay);
+        count += 1;
+    }
+
+    return false;
+}
+

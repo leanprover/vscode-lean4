@@ -90,7 +90,8 @@ export type InfoviewAction =
   { kind: 'toggleAllMessages'} |
   { kind: 'togglePaused' } |
   { kind: 'togglePin'} |
-  { kind: 'copyToComment'}
+  { kind: 'copyToComment'} |
+  { kind: 'copyHtmlToClipboard'}
 
 /** Interface the hosting editor uses to talk to the InfoView WebView. */
 export interface InfoviewApi {

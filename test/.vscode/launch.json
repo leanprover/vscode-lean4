@@ -1,7 +1,6 @@
-// A launch configuration that compiles the extension and then opens it inside a new window
-// Use IntelliSense to learn about possible attributes.
-// Hover to view descriptions of existing attributes.
-// For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+// A launch configuration that compiles the extension and then opens it inside a new window.
+// It also has a configuration called "Debug Extension Tests" which can be used to debug
+// the tests in the src/test/suite folder.
 {
 	"version": "0.2.0",
 	"configurations": [
@@ -15,13 +14,14 @@
 			"preLaunchTask": "npm: watch"
 		},
 		{
-			"name": "Run Extension Tests",
+			"name": "Debug Extension Tests",
 			"type": "extensionHost",
 			"request": "launch",
 			"runtimeExecutable": "${execPath}",
 			"args": [
 				"--extensionDevelopmentPath=${workspaceFolder}/../vscode-lean4",
-				"--extensionTestsPath=${workspaceFolder}/out/test/suite/index"
+				"--extensionTestsPath=${workspaceFolder}/out/test/suite/index",
+                "--new-window"
 			],
 			"outFiles": ["${workspaceFolder}/out/test/**/*.js"],
 			"preLaunchTask": "npm: watch",

@@ -103,5 +103,5 @@ export async function activate(context: ExtensionContext): Promise<any> {
     pkgService.versionChanged((uri) => installer.handleVersionChanged(uri));
     pkgService.lakeFileChanged((uri) => installer.handleLakeFileChanged(uri));
 
-    return  { isLean4Project: true };
+    return  { isLean4Project: true, clientProvider: clientProvider, infoProvider: info, abbreviationProvider: abbrev, docViewProvider: docview };
 }

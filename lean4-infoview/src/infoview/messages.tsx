@@ -123,6 +123,9 @@ export function AllMessages({uri: uri0}: { uri: DocumentUri }) {
         if (act.kind === 'toggleAllMessages' && setOpenRef.current !== undefined) {
             setOpenRef.current(t => !t);
         }
+        else if (act.kind === 'copyHtmlToClipboard'){
+            ec.api.copyToClipboard(document.body.innerHTML);
+        }
     });
 
     return (

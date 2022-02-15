@@ -2,7 +2,7 @@ import * as assert from 'assert';
 import { suite } from 'mocha';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { sleep, waitForLeanExtension, waitForActiveEditor } from './utils';
+import { sleep, waitForLeanExtension, waitForActiveEditor, waitForInfoViewOpen, waitForHtmlString } from './utils';
 
 suite('Extension Test Suite', () => {
 
@@ -26,7 +26,12 @@ suite('Extension Test Suite', () => {
 
 		assert(editor.document.uri.fsPath.endsWith('Main.lean'));
 
-		await sleep(10000);
+        const info = await waitForInfoViewOpen(lean.exports);
+        assert(info.isOpen());
 
+        await info.getWebView().api.requestedAction({kind: 'toggleAllMessages'});
+        assert(await waitForHtmlString(info.getWebView(), "4.0.0-nightly-2022-02-06"));
+
+        console.log(info.getWebView().webview.html);
 	});
 }).timeout(10000);

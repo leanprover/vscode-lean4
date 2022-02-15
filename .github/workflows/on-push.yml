@@ -3,20 +3,31 @@ name: vscode-lean4 build
 on: [push, pull_request]
 
 jobs:
-  build_job:
+  Build:
     runs-on: ubuntu-latest
     name: Build
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-node@v2
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Setup Node.js
+        uses: actions/setup-node@v2
         with:
           node-version: '16'
-      - run: npm ci
-      - run: npx lerna bootstrap --ci
-      - run: npm run build
-      - run: npx lerna run --scope=lean4 package
-      - uses: actions/upload-artifact@v2
+      - name: Build
+        run: |
+          npm ci
+          npx lerna bootstrap --ci
+          npm run build
+          npx lerna run --scope=lean4 package
+      - name: Upload artifact
+        uses: actions/upload-artifact@v2
         with:
           name: vscode-lean4
           path: 'vscode-lean4/lean4-*.vsix'
-      - run: npm run lint
+      - name: Lint
+        run: npm run lint
+      - name: Test
+        run: |
+          cd test
+          npm install
+          npm run test
