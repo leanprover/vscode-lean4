@@ -5,6 +5,7 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 import { TestApi } from '@lean4/infoview-api';
 import { waitForLeanExtension, waitForActiveEditor, waitForInfoViewOpen, waitForHtmlString } from './utils';
+import { privateEncrypt } from 'crypto';
 
 suite('Extension Test Suite', () => {
 
@@ -39,7 +40,10 @@ suite('Extension Test Suite', () => {
 		const expectedVersion = '4.0.0-' + toolchainVersion.split(':')[1]; // '4.0.0-nightly-2022-02-08'
 
         const html = await waitForHtmlString(testApi, expectedVersion);
+		console.log(`>>> Found "${expectedVersion}" not found in infoview`)
         assert(html, `Version "${expectedVersion}" not found in infoview`)
+		console.log('>>> infoview contents:')
+		console.log(html);
 
 		// make sure test is always run in predictable state, which is no file or folder open
 		await vscode.commands.executeCommand('workbench.action.closeAllEditors');

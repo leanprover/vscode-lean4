@@ -53,7 +53,7 @@ export async function waitForInfoViewOpen(leanApi: TestApi, retries=10, delay=10
         if (isOpen) {
             return true;
         } else {
-            console.log('leanApi.infoProvider isOpen returned false');
+            console.log('leanApi.isInfoViewOpen returned false');
         }
         await sleep(delay);
         count += 1;
