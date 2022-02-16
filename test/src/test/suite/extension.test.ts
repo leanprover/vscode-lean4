@@ -34,7 +34,7 @@ suite('Extension Test Suite', () => {
 
 		const leanToolchain = path.join(testsRoot, 'lean-toolchain');
 		const toolchainVersion = readFileSync(leanToolchain).toString().trim(); // leanprover/lean4:nightly-2022-02-08
-		const expectedVersion = "4.0.0-" + toolchainVersion.split(':')[1]; // '4.0.0-nightly-2022-02-08'
+		const expectedVersion = '4.0.0-' + toolchainVersion.split(':')[1]; // '4.0.0-nightly-2022-02-08'
 
         const html = await waitForHtmlString(lean.exports.testApi, expectedVersion);
         assert(html, `Version "${expectedVersion}" not found in infoview`)

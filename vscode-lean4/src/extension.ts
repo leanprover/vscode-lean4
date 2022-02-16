@@ -106,7 +106,9 @@ export async function activate(context: ExtensionContext): Promise<any> {
 
     const testApiImpl : TestApi = {
         async isInfoViewOpen() : Promise<boolean> {
-            return info.isOpen();
+            return new Promise<boolean>((resolve) => {
+                resolve(info.isOpen());
+            });
         },
         async copyHtmlToClipboard(): Promise<boolean> {
             return await info.copyHtmlToClipboard();
