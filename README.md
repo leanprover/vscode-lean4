@@ -313,16 +313,10 @@ adding a newline seems to work, then press F5.
 
 To publish the extension on the VS Code marketplace you
 should follow [these instructions](https://code.visualstudio.com/api/working-with-extensions/publishing-extension).
-But for a quick summary you need to install this tool
-
+But for a quick summary, run this command:
 ```
-npm install -g vsce
-```
-
-Then run this command
-```
-cd <vscode-lean4-repo>\vscode-lean4
-vsce package
+cd <vscode-lean4-repo>/vscode-lean4
+npx vsce package
 ```
 
 This gives you a .vsix which you can install using the VS Code
