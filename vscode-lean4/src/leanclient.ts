@@ -120,17 +120,15 @@ export class LeanClient implements Disposable {
         let useLake = lakeEnabled();
         if (useLake && this.folderUri) {
             if (this.folderUri.scheme === 'file') {
-                const lakefile = Uri.joinPath(this.folderUri, 'lakefile.lean').toString()
-                if (!fs.existsSync(new URL(lakefile))) {
-                    useLake = false;
-                } else {
-                    const toolchainVersion = await readLeanVersion(this.folderUri);
-                    if (toolchainVersion) {
-                        const date = this.extractToolchainDate(toolchainVersion);
-                        if (date < new Date(2022, 1, 1)){
-                            useLake = false; // Feb 1 2022 is when the 3.0.0.pre switched to 3.0.0
-                        }
-                    }
+                let knownDate = false;
+                const date = await this.checkToolchainVersion(this.folderUri);
+                if (date){
+                    // Feb 16 2022 is when the 3.1.0.pre was released.
+                    useLake = date >= new Date(2022, 1, 16);
+                    knownDate = true;
+                }
+                if (useLake && !knownDate){
+                    useLake = await this.checkLakeVersion(executable, version);
                 }
             } else {
                 // probably 'untitled'
@@ -481,6 +479,54 @@ export class LeanClient implements Disposable {
         return this.running ? this.client?.initializeResult : undefined
     }
 
+    private async checkToolchainVersion(folderUri: Uri) : Promise<Date | undefined> {
+        const lakefile = Uri.joinPath(folderUri, 'lakefile.lean').toString()
+        if (!fs.existsSync(new URL(lakefile))) {
+            return undefined;
+        }
+
+        // see if we have a well known toolchain label that corresponds
+        // to a known date like 'leanprover/lean4:nightly-2022-02-01'
+        const toolchainVersion = await readLeanVersion(folderUri);
+        if (toolchainVersion) {
+            const parts = toolchainVersion.split('/')
+            if (parts[0] === 'leanprover' && parts.length > 1){
+                const leanVersion = parts[1].split(':');
+                if (leanVersion[0] === 'lean4' && leanVersion.length > 1){
+                    const version = leanVersion[1];
+                    if (version === 'stable'){
+                        return new Date(2022, 2, 1);
+                    }
+                    // nightly-2022-02-01
+                    const dateParts = version.split('-');
+                    if (dateParts[0] === 'nightly' && dateParts.length === 4){
+                        try {
+                            return new Date(parseInt(dateParts[1]),
+                                            parseInt(dateParts[2]) - 1,
+                                            parseInt(dateParts[3]));
+
+                        } catch {}
+                    }
+                }
+            }
+        }
+        return undefined;
+    }
+
+    async checkLakeVersion(executable: string, version: string) : Promise<boolean> {
+        // Check that the Lake version is high enough to support "lake serve" option.
+        const versionOptions = version ? ['+' + version, '--version'] : ['--version']
+        const start = Date.now()
+        const lakeVersion = await batchExecute(executable, versionOptions, this.folderUri?.fsPath, undefined);
+        const end = Date.now()
+        console.log("Ran '" + executable + " " + versionOptions.join(' ') + "' in " + (end - start) + "ms");
+        const actual = this.extractVersion(lakeVersion)
+        if (actual.compare('3.0.0') > 0) {
+            return true;
+        }
+        return false;
+    }
+
     private extractVersion(v: string | undefined) : SemVer {
         if (!v) return new SemVer('0.0.0');
         const prefix = 'Lake version'
@@ -492,30 +538,5 @@ export class LeanClient implements Disposable {
         } catch {
             return new SemVer('0.0.0');
         }
-    }
-
-    private extractToolchainDate(v: string) : Date {
-        // leanprover/lean4:nightly-2022-02-01
-        const parts = v.split('/')
-        if (parts[0] === 'leanprover' && parts.length > 1){
-            const leanVersion = parts[1].split(':');
-            if (leanVersion[0] === 'lean4' && leanVersion.length > 1){
-                const version = leanVersion[1];
-                if (version === 'stable'){
-                    return new Date(2022, 2, 1);
-                }
-                // nightly-2022-02-01
-                const dateParts = version.split('-');
-                if (dateParts[0] === 'nightly' && dateParts.length === 4){
-                    try {
-                        return new Date(parseInt(dateParts[1]),
-                                        parseInt(dateParts[2]) - 1,
-                                        parseInt(dateParts[3]));
-
-                    } catch {}
-                }
-            }
-        }
-        return new Date(1995, 1, 1); // unknown, so probably an old build.
     }
 }

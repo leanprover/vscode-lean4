@@ -287,7 +287,7 @@ export class LeanInstaller implements Disposable {
             if (this.versionCache.has(folderPath)) {
                 const version = this.versionCache.get(folderPath);
                 if (version){
-                    return { version: version, error: undefined }
+                    return { version, error: undefined }
                 }
             }
         }
