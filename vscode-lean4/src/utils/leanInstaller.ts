@@ -2,6 +2,7 @@ import { window, TerminalOptions, OutputChannel, commands, Disposable, EventEmit
 import { toolchainPath, addServerEnvPaths, getLeanExecutableName  } from '../config'
 import { batchExecute } from './batch'
 import { LocalStorageService} from './localStorage'
+import { LeanpkgService } from './leanpkg'
 import { readLeanVersion, findLeanPackageRoot, isCoreLean4Directory } from './projectInfo';
 import { join, dirname } from 'path';
 import * as fs from 'fs';
@@ -22,6 +23,7 @@ export class LeanInstaller implements Disposable {
     private defaultToolchain : string;
     private workspaceSuffix : string = '(workspace override)';
     private defaultSuffix : string = '(default)'
+    private versionCache: Map<string,string> = new Map();
 
     // This event is raised whenever a version change happens.
     // The event provides the workspace Uri where the change happened.
@@ -77,6 +79,13 @@ export class LeanInstaller implements Disposable {
     }
 
     async handleVersionChanged(packageUri : Uri) :  Promise<void> {
+        if (packageUri && packageUri.scheme === 'file'){
+            const key = packageUri.fsPath;
+            if (this.versionCache.has(key)) {
+                this.versionCache.delete(key);
+            }
+        }
+
         if (this.localStorage.getLeanVersion()){
             // user has a local workspace override in effect, we don't care
             // if the lean-toolchain is modified.
@@ -274,7 +283,13 @@ export class LeanInstaller implements Disposable {
             return { version: '4', error: undefined };
         }
         if (scheme === 'file' && packageUri) {
-            folderPath = packageUri.fsPath
+            folderPath = packageUri.fsPath;
+            if (this.versionCache.has(folderPath)) {
+                const version = this.versionCache.get(folderPath);
+                if (version){
+                    return { version: version, error: undefined }
+                }
+            }
         }
 
         const env = addServerEnvPaths(process.env);
@@ -305,7 +320,8 @@ export class LeanInstaller implements Disposable {
                     return { version: '', error: `lean4: '${cmd} ${options}' returned incorrect version string '${stdout}'.` }
                 }
             }
-            const major = match[1]
+            const major = match[1];
+            this.versionCache.set(folderPath, major);
             return { version: major, error: undefined }
         } catch (err) {
             if (this.outputChannel) this.outputChannel.appendLine('' + err);
