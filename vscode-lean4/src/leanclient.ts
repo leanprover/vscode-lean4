@@ -101,6 +101,7 @@ export class LeanClient implements Disposable {
 
     async restart(): Promise<void> {
         this.restartingEmitter.fire(undefined)
+        const startTime = Date.now()
 
         if (this.isStarted()) {
             await this.stop()
@@ -260,7 +261,8 @@ export class LeanClient implements Disposable {
                 if (s.newState === State.Starting) {
                     console.log('client starting');
                 } else if (s.newState === State.Running) {
-                    console.log('client running');
+                    const end = Date.now()
+                    console.log('client running, started in ', end - startTime, 'ms');
                     this.running = true; // may have been auto restarted after it failed.
                 } else if (s.newState === State.Stopped) {
                     console.log('client has stopped or it failed to start');
@@ -518,8 +520,7 @@ export class LeanClient implements Disposable {
         const versionOptions = version ? ['+' + version, '--version'] : ['--version']
         const start = Date.now()
         const lakeVersion = await batchExecute(executable, versionOptions, this.folderUri?.fsPath, undefined);
-        const end = Date.now()
-        console.log("Ran '" + executable + " " + versionOptions.join(' ') + "' in " + (end - start) + "ms");
+        console.log(`Ran '${executable} ${versionOptions.join(' ')}' in ${Date.now() - start} ms`);
         const actual = this.extractVersion(lakeVersion)
         if (actual.compare('3.0.0') > 0) {
             return true;
