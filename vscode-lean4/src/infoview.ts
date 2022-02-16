@@ -335,6 +335,14 @@ export class InfoProvider implements Disposable {
         for (const s of this.subscriptions) { s.dispose(); }
     }
 
+    isOpen() : boolean {
+        return this.autoOpened;
+    }
+
+    getWebView() : WebviewPanel {
+        return this.webviewPanel as WebviewPanel;
+    }
+
     private updateStylesheet() {
         const fontFamily = workspace.getConfiguration('editor').get<string>('fontFamily')?.replace(/['"]/g, '');
         const fontCodeCSS = `

@@ -83,25 +83,29 @@ export async function activate(context: ExtensionContext): Promise<any> {
         return { isLean4Project: false };
     }
 
-    const clientProvider = new LeanClientProvider(storageManager, installer, pkgService, outputChannel);
-    context.subscriptions.push(clientProvider)
+    const leanClientProvider = new LeanClientProvider(storageManager, installer, pkgService, outputChannel);
+    context.subscriptions.push(leanClientProvider)
 
-    const info = new InfoProvider(clientProvider, {language: 'lean4'}, context);
+    const info = new InfoProvider(leanClientProvider, {language: 'lean4'}, context);
     context.subscriptions.push(info)
 
     const abbrev = new AbbreviationFeature();
     context.subscriptions.push(abbrev);
 
-    const docview = new DocViewProvider();
-    context.subscriptions.push(docview);
+    const docView = new DocViewProvider();
+    context.subscriptions.push(docView);
 
-    // pass the abbreviations through to the docview so it can show them on demand.
-    docview.setAbbreviations(abbrev.abbreviations.symbolsByAbbreviation);
+    // pass the abbreviations through to the docView so it can show them on demand.
+    docView.setAbbreviations(abbrev.abbreviations.symbolsByAbbreviation);
 
-    context.subscriptions.push(new LeanTaskGutter(clientProvider, context))
+    context.subscriptions.push(new LeanTaskGutter(leanClientProvider, context))
 
     pkgService.versionChanged((uri) => installer.handleVersionChanged(uri));
     pkgService.lakeFileChanged((uri) => installer.handleLakeFileChanged(uri));
 
-    return  { isLean4Project: true };
+    return  { isLean4Project: true,
+        clientProvider: leanClientProvider,
+        infoProvider: info,
+        abbrevProvider: abbrev,
+        docViewProvider: docView };
 }
