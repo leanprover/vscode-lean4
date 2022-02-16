@@ -39,8 +39,8 @@ jobs:
           echo Checking location "$HOME/.elan/bin"...
           ls -al "$HOME/.elan/bin"
           elan --version
-      - name: Test
+      - name: Run tests
         uses: GabrielBB/xvfb-action@v1.0
-          with:
-            run: cd test & npm run test
+        with:
+          run: cd test & npm run test
         if: runner.os == 'Linux'
