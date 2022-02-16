@@ -132,5 +132,6 @@ export interface InfoviewApi {
 
 export interface TestApi {
   isInfoViewOpen() : Promise<boolean>;
-  copyHtmlToClipboard(): Promise<void>;
+  copyHtmlToClipboard(): Promise<boolean>;
+  toggleAllMessages(): Promise<void>;
 }
