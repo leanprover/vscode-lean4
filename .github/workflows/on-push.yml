@@ -32,6 +32,17 @@ jobs:
           path: 'vscode-lean4/lean4-*.vsix'
       - name: Lint
         run: npm run lint
+      - name: Set path to elan
+        run: |
+          echo "$HOME/.elan/bin" >> $GITHUB_PATH
+      - name: Setup elan toolchain so lean can install new versions
+        run: |
+          curl -O --location https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh
+          chmod u+x elan-init.sh
+          ./elan-init.sh -y --default-toolchain none
+          echo Checking location "$HOME/.elan/bin"...
+          ls -al "$HOME/.elan/bin"
+          elan --version
       - name: Test
         run: |
           cd test
