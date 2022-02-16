@@ -3,6 +3,7 @@ import { fstat, readFileSync } from 'fs';
 import { suite } from 'mocha';
 import * as path from 'path';
 import * as vscode from 'vscode';
+import { TestApi } from '@lean4/infoview-api';
 import { waitForLeanExtension, waitForActiveEditor, waitForInfoViewOpen, waitForHtmlString } from './utils';
 
 suite('Extension Test Suite', () => {
@@ -29,14 +30,15 @@ suite('Extension Test Suite', () => {
 
 		assert(editor.document.uri.fsPath.endsWith('Main.lean'));
 
-        assert(await waitForInfoViewOpen(lean.exports.testApi, 20),
+		const testApi : TestApi = lean.exports.testApi as TestApi;
+        assert(await waitForInfoViewOpen(testApi, 20),
 			'Info view did not open after 20 seconds');
 
 		const leanToolchain = path.join(testsRoot, 'lean-toolchain');
 		const toolchainVersion = readFileSync(leanToolchain).toString().trim(); // leanprover/lean4:nightly-2022-02-08
 		const expectedVersion = '4.0.0-' + toolchainVersion.split(':')[1]; // '4.0.0-nightly-2022-02-08'
 
-        const html = await waitForHtmlString(lean.exports.testApi, expectedVersion);
+        const html = await waitForHtmlString(testApi, expectedVersion);
         assert(html, `Version "${expectedVersion}" not found in infoview`)
 
 		// make sure test is always run in predictable state, which is no file or folder open

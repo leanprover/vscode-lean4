@@ -1,6 +1,5 @@
 {
-	"name": "vscode-lean4-test",
-	"displayName": "vscode-lean4-test",
+	"name": "@lean4/test",
 	"description": "Lean4 test suite for VS Code",
 	"version": "0.0.1",
 	"publisher": "leanprover",
@@ -26,6 +25,9 @@
 		"pretest": "npm run compile",
 		"test": "node ./out/test/runTest.js"
 	},
+	"dependencies": {
+		"@lean4/infoview-api": "^0.1.0"
+	},
 	"devDependencies": {
 		"@types/glob": "^7.1.1",
 		"@types/mocha": "^5.2.6",
@@ -36,6 +38,7 @@
 		"glob": "^7.1.4",
 		"mocha": "^6.1.4",
 		"source-map-support": "^0.5.12",
-		"typescript": "^4.2.2"
+		"typescript": "^4.5.4",
+		"vscode-languageserver-protocol": "^3.17.0-next"
 	}
 }

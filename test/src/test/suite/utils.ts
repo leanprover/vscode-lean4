@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { TestApi } from '@lean4/infoview-api';
 
 export function sleep(ms : number) {
     return new Promise((resolve) => setTimeout(resolve, ms));
@@ -45,7 +46,7 @@ export async function waitForActiveEditor(retries=10, delay=1000) : Promise<vsco
     return vscode.window.activeTextEditor;
 }
 
-export async function waitForInfoViewOpen(leanApi, retries=10, delay=1000) : Promise<boolean> {
+export async function waitForInfoViewOpen(leanApi: TestApi, retries=10, delay=1000) : Promise<boolean> {
     let count = 0;
     while (count < retries){
         const isOpen = await leanApi.isInfoViewOpen();
@@ -60,7 +61,7 @@ export async function waitForInfoViewOpen(leanApi, retries=10, delay=1000) : Pro
     return false;
 }
 
-export async function waitForHtmlString(leanApi : any, toFind : string, retries=10, delay=1000): Promise<string> {
+export async function waitForHtmlString(leanApi: TestApi, toFind : string, retries=10, delay=1000): Promise<string> {
     let count = 0;
     while (count < retries){
         await leanApi.copyHtmlToClipboard();
