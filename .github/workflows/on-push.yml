@@ -5,7 +5,7 @@ on: [push, pull_request]
 jobs:
   Build:
     runs-on: ubuntu-latest
-    name: Build
+    name: Build & Test
     env:
       DISPLAY: ':99.0'
       DBUS_SESSION_BUS_ADDRESS: 'autolaunch:'
@@ -43,5 +43,7 @@ jobs:
       - name: Run tests
         uses: GabrielBB/xvfb-action@v1.0
         with:
-          run: cd test & npm run test
+          run: |
+            cd test
+            npm run test
         if: runner.os == 'Linux'
