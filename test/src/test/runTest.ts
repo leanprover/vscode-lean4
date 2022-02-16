@@ -5,7 +5,11 @@ async function main() {
 	try {
 		// The folder containing the Extension Manifest package.json
 		// Passed to `--extensionDevelopmentPath`
-		const extensionDevelopmentPath = path.resolve(__dirname, '../../../vscode-lean4');
+		let  extensionDevelopmentPath = path.resolve(__dirname, '../../../vscode-lean4');
+		if (extensionDevelopmentPath.indexOf('/vscode-lean4/vscode-lean4/vscode-lean4') >= 0) {
+			// not sure why but on the github CI the __dirname is in a different place...
+			extensionDevelopmentPath = path.resolve(__dirname, '../../..')
+		}
 
 		console.log(`##### extensionDevelopmentPath=${extensionDevelopmentPath}`);
 		// The path to the extension test script
