@@ -35,4 +35,6 @@ jobs:
       - name: Test
         run: |
           cd test
-          npm run test
+          echo =============== $PWD ===================
+          xvfb-run -a npm run test
+        if: runner.os == 'Linux'
