@@ -61,14 +61,15 @@ export async function waitForInfoViewOpen(leanApi: TestApi, retries=10, delay=10
     return false;
 }
 
-export async function waitForHtmlString(leanApi: TestApi, toFind : string, retries=10, delay=1000): Promise<string> {
+export async function waitForHtmlString(leanApi: TestApi, toFind : string, retries=10, delay=1000): Promise<[string,boolean]> {
     let count = 0;
+    let html = '';
     while (count < retries){
         await leanApi.copyHtmlToClipboard();
         await sleep(500);
-        const html = await vscode.env.clipboard.readText();
+        html = await vscode.env.clipboard.readText();
         if (html.indexOf(toFind) > 0){
-            return html;
+            return [html, true];
         }
         if (html.indexOf('<details>')) { // we want '<details open>' instead...
             await leanApi.toggleAllMessages();
@@ -77,5 +78,5 @@ export async function waitForHtmlString(leanApi: TestApi, toFind : string, retri
         count += 1;
     }
 
-    return '';
+    return [html, false];
 }
