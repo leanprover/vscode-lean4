@@ -8,6 +8,7 @@ jobs:
     name: Build
     env:
       DISPLAY: ':99.0'
+      DBUS_SESSION_BUS_ADDRESS: 'autolaunch:'
     steps:
       - name: Checkout
         uses: actions/checkout@v2
