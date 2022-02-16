@@ -39,7 +39,7 @@ jobs:
         run: |
           curl -O --location https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh
           chmod u+x elan-init.sh
-          ./elan-init.sh -y --default-toolchain none
+          ./elan-init.sh -y --default-toolchain leanprover/lean4:nightly
           echo Checking location "$HOME/.elan/bin"...
           ls -al "$HOME/.elan/bin"
           elan --version

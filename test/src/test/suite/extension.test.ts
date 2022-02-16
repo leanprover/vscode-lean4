@@ -15,6 +15,10 @@ suite('Extension Test Suite', () => {
 		const editor = await waitForActiveEditor();
 		assert(editor, 'Missing active text editor');
 
+		await editor.edit((builder) => {
+			builder.insert(new vscode.Position(0, 0), '#eval Lean.versionString');
+		});
+
 		// make it a lean4 document even though it is empty and untitled.
 		console.log('Setting lean4 language on untitled doc');
 		await vscode.languages.setTextDocumentLanguage(editor.document, 'lean4');
@@ -25,18 +29,25 @@ suite('Extension Test Suite', () => {
         console.log(`Found lean package version: ${lean.packageJSON.version}`);
 
 		const testApi : TestApi = lean.exports.testApi as TestApi;
-        assert(await waitForInfoViewOpen(testApi, 20),
-			'Info view did not open after 20 seconds');
+        assert(await waitForInfoViewOpen(testApi, 60),
+			'Info view did not open after 60 seconds');
 
-		const expectedString = 'All Messages';
-		const [html, found] = await waitForHtmlString(testApi, expectedString);
+		const expectedVersion = '4.0.0-nightly-';
+		const [html, found] = await waitForHtmlString(testApi, expectedVersion);
 		console.log('>>> infoview contents:')
 		console.log(html);
-		if (found) console.log(`>>> Found "${expectedString}" in infoview`)
-        assert(found, `Version "${expectedString}" not found in infoview`)
+		const pos = html.indexOf('4.0.0-nightly-');
+		if (pos >= 0) {
+			// 4.0.0-nightly-2022-02-16
+			const versionString = html.substring(pos, pos + 24)
+			console.log(`>>> Found "${versionString}" in infoview`)
+		}
+        assert(found, `Missing "${expectedVersion}" in infoview`)
 
 		// make sure test is always run in predictable state, which is no file or folder open
 		await vscode.commands.executeCommand('workbench.action.closeAllEditors');
+
+		await sleep(2000); // make sure it shuts down fully before next test.
 	}).timeout(60000);
 
 	test('Load Lean File from a package folder', async () => {
@@ -63,21 +74,25 @@ suite('Extension Test Suite', () => {
 		await vscode.commands.executeCommand('lean4.displayGoal');
 
 		const testApi : TestApi = lean.exports.testApi as TestApi;
-        assert(await waitForInfoViewOpen(testApi, 20),
+        assert(await waitForInfoViewOpen(testApi, 60),
 			'Info view did not open after 20 seconds');
 
-		const leanToolchain = path.join(testsRoot, 'lean-toolchain');
-		const toolchainVersion = readFileSync(leanToolchain).toString().trim(); // leanprover/lean4:nightly-2022-02-08
-		const expectedVersion = '4.0.0-' + toolchainVersion.split(':')[1]; // '4.0.0-nightly-2022-02-08'
-
-        const [html, found] = await waitForHtmlString(testApi, expectedVersion);
+		const expectedVersion = '4.0.0-nightly-';
+		const [html, found] = await waitForHtmlString(testApi, expectedVersion);
 		console.log('>>> infoview contents:')
 		console.log(html);
-		if (found) console.log(`>>> Found "${expectedVersion}" in infoview`)
-        assert(found, `Version "${expectedVersion}" not found in infoview`)
+		const pos = html.indexOf('4.0.0-nightly-');
+		if (pos >= 0) {
+			// 4.0.0-nightly-2022-02-16
+			const versionString = html.substring(pos, pos + 24)
+			console.log(`>>> Found "${versionString}" in infoview`)
+		}
+		assert(found, `Missing "${expectedVersion}" in infoview`)
 
 		// make sure test is always run in predictable state, which is no file or folder open
 		await vscode.commands.executeCommand('workbench.action.closeAllEditors');
+
+		await sleep(2000); // make sure it shuts down fully before next test.
 	}).timeout(60000);
 
 }).timeout(60000);
