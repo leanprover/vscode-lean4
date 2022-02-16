@@ -188,7 +188,7 @@ export class LeanClientProvider implements Disposable {
         if (this.versions.has(path)){
             return this.versions.get(path);
         }
-        let versionInfo = await this.installer.testLeanVersion(folderUri);
+        const versionInfo = await this.installer.testLeanVersion(folderUri);
         if (!versionInfo.error){
             this.versions.set(path, versionInfo);
         }
