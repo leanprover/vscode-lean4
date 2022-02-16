@@ -5,7 +5,7 @@ import { addDefaultElanPath } from '../config';
 
 // Detect lean4 root directory (works for both lean4 repo and nightly distribution)
 export function isCoreLean4Directory(path: Uri): boolean {
-    return fs.existsSync(Uri.joinPath(path, 'LICENSE').fsPath) && fs.existsSync(Uri.joinPath(path, 'LICENSES').fsPath);
+    return path.scheme === 'file' && fs.existsSync(Uri.joinPath(path, 'LICENSE').fsPath) && fs.existsSync(Uri.joinPath(path, 'LICENSES').fsPath);
 }
 
 // Find the root of a Lean project and return an optional WorkspaceFolder for it,
