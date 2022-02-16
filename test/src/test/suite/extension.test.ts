@@ -17,7 +17,7 @@ suite('Extension Test Suite', () => {
 
 		// make it a lean4 document even though it is empty and untitled.
 		console.log('Setting lean4 language on untitled doc');
-		vscode.languages.setTextDocumentLanguage(editor.document, 'lean4');
+		await vscode.languages.setTextDocumentLanguage(editor.document, 'lean4');
 
 		const lean = await waitForLeanExtension();
 		assert(lean, 'Lean extension not loaded');
@@ -79,4 +79,5 @@ suite('Extension Test Suite', () => {
 		// make sure test is always run in predictable state, which is no file or folder open
 		await vscode.commands.executeCommand('workbench.action.closeAllEditors');
 	});
+
 }).timeout(60000);
