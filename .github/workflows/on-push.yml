@@ -27,6 +27,7 @@ jobs:
       - name: Lint
         run: npm run lint
       - name: Test
+        uses: GabrielBB/xvfb-action@v1
         run: |
           cd test
           npm install

@@ -1,8 +1,9 @@
 import * as assert from 'assert';
+import { fstat, readFileSync } from 'fs';
 import { suite } from 'mocha';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { sleep, waitForLeanExtension, waitForActiveEditor, waitForInfoViewOpen, waitForHtmlString } from './utils';
+import { waitForLeanExtension, waitForActiveEditor, waitForInfoViewOpen, waitForHtmlString } from './utils';
 
 suite('Extension Test Suite', () => {
 
@@ -28,12 +29,17 @@ suite('Extension Test Suite', () => {
 
 		assert(editor.document.uri.fsPath.endsWith('Main.lean'));
 
-        const info = await waitForInfoViewOpen(lean.exports, 20);
-        assert(info?.isOpen(), 'InfoView is not opening?');
+        assert(await waitForInfoViewOpen(lean.exports.testApi, 20),
+			'Info view did not open after 20 seconds');
 
-        const html = await waitForHtmlString(info.getWebView(), '4.0.0-nightly-2022-02-06');
-        assert(html, 'Version "4.0.0-nightly-2022-02-06" not found in infoview')
+		const leanToolchain = path.join(testsRoot, 'lean-toolchain');
+		const toolchainVersion = readFileSync(leanToolchain).toString().trim(); // leanprover/lean4:nightly-2022-02-08
+		const expectedVersion = "4.0.0-" + toolchainVersion.split(':')[1]; // '4.0.0-nightly-2022-02-08'
 
-        console.log(html);
+        const html = await waitForHtmlString(lean.exports.testApi, expectedVersion);
+        assert(html, `Version "${expectedVersion}" not found in infoview`)
+
+		// make sure test is always run in predictable state, which is no file or folder open
+		await vscode.commands.executeCommand('workbench.action.closeAllEditors');
 	});
 }).timeout(60000);

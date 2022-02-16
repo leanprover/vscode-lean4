@@ -336,11 +336,20 @@ export class InfoProvider implements Disposable {
     }
 
     isOpen() : boolean {
-        return this.autoOpened;
+        return this.webviewPanel?.visible === true;
     }
 
-    getWebView() : WebviewPanel {
-        return this.webviewPanel as WebviewPanel;
+    async copyHtmlToClipboard() : Promise<boolean> {
+        if (this.webviewPanel){
+            await this.webviewPanel.api.requestedAction({kind: 'copyHtmlToClipboard'});
+        }
+        return false;
+    }
+
+    async toggleAllMessages() : Promise<void> {
+        if (this.webviewPanel){
+            await this.webviewPanel.api.requestedAction({kind: 'toggleAllMessages'});
+        }
     }
 
     private updateStylesheet() {

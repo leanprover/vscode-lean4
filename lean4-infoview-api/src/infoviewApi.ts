@@ -129,3 +129,8 @@ export interface InfoviewApi {
    */
   requestedAction(action: InfoviewAction): Promise<void>;
 }
+
+export interface TestApi {
+  isInfoViewOpen() : Promise<boolean>;
+  copyHtmlToClipboard(): Promise<void>;
+}

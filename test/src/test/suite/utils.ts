@@ -45,40 +45,32 @@ export async function waitForActiveEditor(retries=10, delay=1000) : Promise<vsco
     return vscode.window.activeTextEditor;
 }
 
-export async function waitForInfoViewOpen(leanApi, retries=10, delay=1000) : Promise<any> {
+export async function waitForInfoViewOpen(leanApi, retries=10, delay=1000) : Promise<boolean> {
     let count = 0;
     while (count < retries){
-        const info = leanApi.infoProvider;
-        if (info && info.isOpen()) {
-            const panel = info.getWebView();
-            if (panel) {
-                return info;
-            } else {
-                console.log('leanApi.infoProvider.getWebView() returned null');
-            }
-        } if (!info){
-            console.log('leanApi.infoProvider is missing?');
-            console.log(JSON.stringify(leanApi));
-        } else if (!info.isOpen()){
+        const isOpen = await leanApi.isInfoViewOpen();
+        if (isOpen) {
+            return true;
+        } else {
             console.log('leanApi.infoProvider isOpen returned false');
         }
         await sleep(delay);
         count += 1;
     }
-    return null;
+    return false;
 }
 
-export async function waitForHtmlString(webView : any, toFind : string, retries=10, delay=1000): Promise<string> {
+export async function waitForHtmlString(leanApi : any, toFind : string, retries=10, delay=1000): Promise<string> {
     let count = 0;
     while (count < retries){
-        webView.api.requestedAction({kind: 'copyHtmlToClipboard'});
+        await leanApi.copyHtmlToClipboard();
         await sleep(500);
         const html = await vscode.env.clipboard.readText();
         if (html.indexOf(toFind) > 0){
             return html;
         }
-        if (html.indexOf('<details>')) {
-            await webView.api.requestedAction({kind: 'toggleAllMessages'});
+        if (html.indexOf('<details>')) { // we want '<details open>' instead...
+            await leanApi.toggleAllMessages();
         }
         await sleep(delay);
         count += 1;
@@ -86,4 +78,3 @@ export async function waitForHtmlString(webView : any, toFind : string, retries=
 
     return '';
 }
-
