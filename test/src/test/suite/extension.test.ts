@@ -37,7 +37,7 @@ suite('Extension Test Suite', () => {
 
 		// make sure test is always run in predictable state, which is no file or folder open
 		await vscode.commands.executeCommand('workbench.action.closeAllEditors');
-	});
+	}).timeout(60000);
 
 	test('Load Lean File from a package folder', async () => {
 
@@ -78,6 +78,6 @@ suite('Extension Test Suite', () => {
 
 		// make sure test is always run in predictable state, which is no file or folder open
 		await vscode.commands.executeCommand('workbench.action.closeAllEditors');
-	});
+	}).timeout(60000);
 
 }).timeout(60000);
