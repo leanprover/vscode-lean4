@@ -5,7 +5,7 @@ async function main() {
 	try {
 		// The folder containing the Extension Manifest package.json
 		// Passed to `--extensionDevelopmentPath`
-		let  extensionDevelopmentPath = path.resolve(__dirname, '../../../vscode-lean4');
+		const extensionDevelopmentPath = path.resolve(__dirname, '../../../vscode-lean4');
 
 		console.log(`##### extensionDevelopmentPath=${extensionDevelopmentPath}`);
 
