@@ -132,7 +132,7 @@ async function readLeanVersionFile(packageFileUri : Uri) : Promise<string | null
                         reject(err);
                     } else {
                         const match = /lean_version\s*=\s*"([^"]*)"/.exec(data.toString());
-                        if (match) resolve(match[1]);
+                        if (match) resolve(match[1].trim());
                         resolve(null);
                     }
                 });

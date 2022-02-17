@@ -491,25 +491,12 @@ export class LeanClient implements Disposable {
         // to a known date like 'leanprover/lean4:nightly-2022-02-01'
         const toolchainVersion = await readLeanVersion(folderUri);
         if (toolchainVersion) {
-            const parts = toolchainVersion.split('/')
-            if (parts[0] === 'leanprover' && parts.length > 1){
-                const leanVersion = parts[1].split(':');
-                if (leanVersion[0] === 'lean4' && leanVersion.length > 1){
-                    const version = leanVersion[1];
-                    if (version === 'stable'){
-                        return new Date(2022, 2, 1);
-                    }
-                    // nightly-2022-02-01
-                    const dateParts = version.split('-');
-                    if (dateParts[0] === 'nightly' && dateParts.length === 4){
-                        try {
-                            return new Date(parseInt(dateParts[1]),
-                                            parseInt(dateParts[2]) - 1,
-                                            parseInt(dateParts[3]));
-
-                        } catch {}
-                    }
-                }
+            const match = /^leanprover\/lean4:nightly-(\d+)-(\d+)-(\d+)$/.exec(toolchainVersion);
+            if (match) {
+                return new Date(parseInt(match[1]), parseInt(match[2]) - 1, parseInt(match[3]));
+            }
+            if (toolchainVersion === 'leanprover/lean4:stable') {
+                return new Date(2022, 2, 1);
             }
         }
         return undefined;
