@@ -94,7 +94,7 @@ export async function activate(context: ExtensionContext): Promise<any> {
     const abbrev = new AbbreviationFeature();
     context.subscriptions.push(abbrev);
 
-    const docView = new DocViewProvider();
+    const docView = new DocViewProvider(context.extensionUri);
     context.subscriptions.push(docView);
 
     // pass the abbreviations through to the docView so it can show them on demand.
