@@ -10,6 +10,7 @@ suite('Extension Test Suite', () => {
 		void vscode.window.showInformationMessage('Running tests...');
 
 		const testsRoot = path.join(__dirname, '..', '..', '..', 'src', 'lean', 'lean3');
+
 		const doc = await vscode.workspace.openTextDocument(path.join(testsRoot, 'Main.lean'));
 		await vscode.window.showTextDocument(doc);
 

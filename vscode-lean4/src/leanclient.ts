@@ -115,9 +115,9 @@ export class LeanClient implements Disposable {
 
         let executable = (this.toolchainPath) ? join(this.toolchainPath, 'bin', 'lake') : 'lake';
 
-        // check if the lake process will start.
-        let useLake = lakeEnabled();
-        if (useLake && this.folderUri && this.folderUri.scheme === 'file') {
+        // check if the lake process will start, it does not work on scheme ==='untitled'.
+        let useLake = lakeEnabled() && this.folderUri && this.folderUri.scheme === 'file'
+        if (useLake) {
             const lakefile = Uri.joinPath(this.folderUri, 'lakefile.lean').toString()
             if (!fs.existsSync(new URL(lakefile))) {
                 useLake = false;

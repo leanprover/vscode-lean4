@@ -34,15 +34,17 @@ suite('Extension Test Suite', () => {
 
 		const expectedVersion = '4.0.0-nightly-';
 		const [html, found] = await waitForHtmlString(testApi, expectedVersion);
-		console.log('>>> infoview contents:')
-		console.log(html);
 		const pos = html.indexOf('4.0.0-nightly-');
 		if (pos >= 0) {
 			// 4.0.0-nightly-2022-02-16
 			const versionString = html.substring(pos, pos + 24)
 			console.log(`>>> Found "${versionString}" in infoview`)
 		}
-        assert(found, `Missing "${expectedVersion}" in infoview`)
+		if (!found) {
+			console.log('>>> infoview contents:')
+			console.log(html);
+        	assert(found, `Missing "${expectedVersion}" in infoview`)
+		}
 
 		// make sure test is always run in predictable state, which is no file or folder open
 		await vscode.commands.executeCommand('workbench.action.closeAllEditors');
@@ -55,7 +57,7 @@ suite('Extension Test Suite', () => {
 		void vscode.window.showInformationMessage('Running tests...');
 
 		const testsRoot = path.join(__dirname, '..', '..', '..', 'src', 'lean', 'test');
-		const doc = await vscode.workspace.openTextDocument(path.join(testsRoot, 'Main.lean'));
+		const doc = await vscode.workspace.openTextDocument(path.join(testsRoot, 'Test.lean'));
 		await vscode.window.showTextDocument(doc);
 
 		const lean = await waitForActiveExtension('leanprover.lean4');
@@ -68,7 +70,7 @@ suite('Extension Test Suite', () => {
 		assert(editor, 'Missing active text editor');
 		console.log(`loaded document ${editor.document.uri}`);
 
-		assert(editor.document.uri.fsPath.endsWith('Main.lean'));
+		assert(editor.document.uri.fsPath.endsWith('Test.lean'));
 
 		// since we closed the infoview in the first test we have to manually open it this time.
 		await vscode.commands.executeCommand('lean4.displayGoal');
@@ -77,17 +79,28 @@ suite('Extension Test Suite', () => {
         assert(await waitForInfoViewOpen(testApi, 60),
 			'Info view did not open after 20 seconds');
 
-		const expectedVersion = '4.0.0-nightly-';
+		const expectedVersion = 'Lean Version:';
 		const [html, found] = await waitForHtmlString(testApi, expectedVersion);
-		console.log('>>> infoview contents:')
-		console.log(html);
-		const pos = html.indexOf('4.0.0-nightly-');
+		let pos = html.indexOf('Lean Version:');
 		if (pos >= 0) {
-			// 4.0.0-nightly-2022-02-16
-			const versionString = html.substring(pos, pos + 24)
+			// Lean Version: 4.0.0-nightly-2022-02-17
+			const versionString = html.substring(pos, pos + 38)
 			console.log(`>>> Found "${versionString}" in infoview`)
 		}
-		assert(found, `Missing "${expectedVersion}" in infoview`)
+		pos = html.indexOf('Lake Version:');
+		if (pos >= 0) {
+			// Lake Version: 4.0.0-nightly-2022-02-17
+			const versionString = html.substring(pos, pos + 38)
+			console.log(`>>> Found "${versionString}" in infoview`)
+		} else {
+			assert(false, 'Lake Version: not found in infoview');
+		}
+
+		if (!found) {
+			console.log('>>> infoview contents:')
+			console.log(html);
+			assert(found, `Missing "${expectedVersion}" in infoview`)
+		}
 
 		// make sure test is always run in predictable state, which is no file or folder open
 		await vscode.commands.executeCommand('workbench.action.closeAllEditors');

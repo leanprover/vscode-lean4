@@ -33,7 +33,7 @@ async function main() {
 			vscodeExecutablePath,
 			extensionDevelopmentPath,
 			extensionTestsPath:path.resolve(__dirname, './suite'),
-			launchArgs: ['--new-window', '--disable-gpu', '--disable-extensions'] });
+			launchArgs: ['--new-window', '--disable-gpu'] });
 
 	} catch (err) {
 		console.error('Failed to run tests');
