@@ -22,7 +22,7 @@ suite('Extension Test Suite', () => {
 
 		const cmds = await vscode.commands.getCommands(true);
 		cmds.forEach(cmd => {
-			assert(cmd !== 'lean4.selectToolchain', "Lean4 extension should not have any registered commands");
+			assert(cmd !== 'lean4.selectToolchain', 'Lean4 extension should not have any registered commands');
 		});
 	});
 

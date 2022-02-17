@@ -19,6 +19,9 @@ export async function waitForLeanExtension(retries=10, delay=1000) : Promise<vsc
             if (e.id === 'leanprover.lean4'){
                 lean = e;
             }
+            else if (e.id === 'jroesch.lean'){
+                console.log('Found lean3 extension: jroesch.lean')
+            }
         });
         if (!lean){
             count += 1;
@@ -47,7 +50,7 @@ export async function waitForActiveEditor(retries=10, delay=1000) : Promise<vsco
         await sleep(delay);
         count += 1;
     }
-    const result = (vscode.window.activeTextEditor) ? "found" : "not found";
+    const result = (vscode.window.activeTextEditor) ? 'found' : 'not found';
     console.log(`Active editor ${result} found.`);
     return vscode.window.activeTextEditor;
 }
