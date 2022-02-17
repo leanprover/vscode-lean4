@@ -237,7 +237,13 @@ export class LeanClientProvider implements Disposable {
                 return [false, undefined];
             }
 
-            client.serverFailed((err) => window.showErrorMessage(err));
+            client.serverFailed((err) => {
+                // forget this client!
+                const cached = this.clients.get(path);
+                this.clients.delete(path);
+                cached?.dispose();
+                window.showErrorMessage(err);
+            });
 
             // aggregate progress changed events.
             client.progressChanged(arg => {
