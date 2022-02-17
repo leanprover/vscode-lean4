@@ -23,7 +23,7 @@ suite('Extension Test Suite', () => {
 		assert(lean, 'Lean extension not loaded');
 		assert(!lean.exports.isLean4Project, 'Lean4 extension should not be running!');
 
-		console.log("Checking vscode commands...");
+		console.log('Checking vscode commands...');
 		const cmds = await vscode.commands.getCommands(true);
 		cmds.forEach(cmd => {
 			assert(cmd !== 'lean4.selectToolchain', 'Lean4 extension should not have any registered commands');
