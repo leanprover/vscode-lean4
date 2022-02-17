@@ -11,6 +11,7 @@ export function closeAllEditors(): Thenable<any> {
 
 export async function waitForLeanExtension(retries=10, delay=1000) : Promise<vscode.Extension<any> | null> {
 
+    console.log('Waiting for lean extension to be loaded...');
     let lean : vscode.Extension<any> | undefined;
     let count = 0;
     while (!lean) {
@@ -24,40 +25,47 @@ export async function waitForLeanExtension(retries=10, delay=1000) : Promise<vsc
             if (count >= retries){
                 return null;
             }
-            console.log('waiting for lean extension to be loaded...');
             await sleep(delay);
         }
     }
 
-    while (!lean.isActive){
-        console.log('Waiting for Lean extension activation...');
+    console.log('Waiting for Lean extension activation...');
+    count = 0
+    while (!lean.isActive && count < retries){
         await sleep(delay);
+        count += 1;
     }
 
+    console.log(`Lean extension, isActive=${lean.isActive}`);
     return lean;
 }
 
 export async function waitForActiveEditor(retries=10, delay=1000) : Promise<vscode.TextEditor | null> {
     let count = 0;
+    console.log('Waiting for active editor...');
     while (!vscode.window.activeTextEditor && count < retries){
         await sleep(delay);
         count += 1;
     }
+    const result = (vscode.window.activeTextEditor) ? "found" : "not found";
+    console.log(`Active editor ${result} found.`);
     return vscode.window.activeTextEditor;
 }
 
 export async function waitForInfoViewOpen(leanApi: TestApi, retries=10, delay=1000) : Promise<boolean> {
     let count = 0;
+    console.log('Waiting for InfoView...');
     while (count < retries){
         const isOpen = await leanApi.isInfoViewOpen();
         if (isOpen) {
+            console.log('InfoView is open.');
             return true;
-        } else {
-            console.log('leanApi.isInfoViewOpen returned false');
         }
         await sleep(delay);
         count += 1;
     }
+
+    console.log('InfoView not found.');
     return false;
 }
 
