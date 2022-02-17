@@ -117,11 +117,16 @@ export class LeanClient implements Disposable {
 
         let executable = (this.toolchainPath) ? join(this.toolchainPath, 'bin', 'lake') : 'lake';
 
-        // check if the lake process will start.
-        let useLake = lakeEnabled();
-        if (useLake && this.folderUri) {
-            if (this.folderUri.scheme === 'file') {
-                let knownDate = false;
+        // check if the lake process will start (skip it on scheme: 'untitled' files)
+        let useLake = lakeEnabled() && this.folderUri && this.folderUri.scheme === 'file';
+        if (useLake) {
+            let knownDate = false;
+            const lakefile = Uri.joinPath(this.folderUri, 'lakefile.lean')
+            if (!fs.existsSync(new URL(lakefile.toString()))) {
+                useLake = false;
+            }
+            else {
+                // see if we can avoid the more expensive checkLakeVersion call.
                 const date = await this.checkToolchainVersion(this.folderUri);
                 if (date){
                     // Feb 16 2022 is when the 3.1.0.pre was released.
@@ -131,9 +136,6 @@ export class LeanClient implements Disposable {
                 if (useLake && !knownDate){
                     useLake = await this.checkLakeVersion(executable, version);
                 }
-            } else {
-                // probably 'untitled'
-                useLake = false;
             }
         }
 
@@ -482,10 +484,6 @@ export class LeanClient implements Disposable {
     }
 
     private async checkToolchainVersion(folderUri: Uri) : Promise<Date | undefined> {
-        const lakefile = Uri.joinPath(folderUri, 'lakefile.lean').toString()
-        if (!fs.existsSync(new URL(lakefile))) {
-            return undefined;
-        }
 
         // see if we have a well known toolchain label that corresponds
         // to a known date like 'leanprover/lean4:nightly-2022-02-01'
