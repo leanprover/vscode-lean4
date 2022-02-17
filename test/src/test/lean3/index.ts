@@ -7,7 +7,6 @@ export function run(testsRoot: string, cb: (error: any, failures?: number) => vo
 	const mocha = new Mocha({
 		ui: 'tdd'
 	});
-	mocha.useColors(true);
 
 	console.log('>>>>>>>>> testsRoot=' + testsRoot);
 
