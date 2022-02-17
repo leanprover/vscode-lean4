@@ -154,7 +154,7 @@ This extension contributes the following settings (for a complete list, open the
 
 ### Server settings
 
-* `lean4.executablePath`: specifies the name of the Lean executable to be used when starting the Lean language server. Most users (i.e. those using `elan`) should not ever need to change this. If you are bundling Lean and `vscode-lean` with [Portable mode VS Code](https://code.visualstudio.com/docs/editor/portable), you might find it useful to specify a relative path to Lean. This can be done by starting this setting string with `%extensionPath%`; the extension will replace this with the absolute path of the extension folder. For example, with the default directory setup in Portable mode, `%extensionPath%/../../../lean` will point to `lean` in the same folder as the VS Code executable / application.
+* `lean4.toolchainPath`: specifies the location  of the Lean toolchain to be used when starting the Lean language server. Most users (i.e. those using `elan`) should not ever need to change this. If you are bundling Lean and `vscode-lean` with [Portable mode VS Code](https://code.visualstudio.com/docs/editor/portable), you might find it useful to specify a relative path to Lean. This can be done by starting this setting string with `%extensionPath%`; the extension will replace this with the absolute path of the extension folder. For example, with the default directory setup in Portable mode, `%extensionPath%/../../../lean` will point to `lean` in the same folder as the VS Code executable / application.
 
 * `lean4.serverEnv`: specifies any Environment variables to add to the Lean 4 language server environment.  Note that when opening a [remote folder](https://code.visualstudio.com/docs/remote/ssh) using VS Code the Lean 4 language server will be running on that remote machine.
 
@@ -215,7 +215,7 @@ The format below is: "`lean4.commandName` (command name): description", where `l
 Lean 4 file, the language server needs to be manually informed that it should re-elaborate the full file, including the
 imports. This command has a default keyboard binding of <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>X</kbd>.
 
-* `lean4.selectToolchain` (Lean 4: Select Lean Toolchain) Select version of the Lean toolchain to use for the current workspace.  This shows the list of available toolchains returned from `elan toolchain list` and allows you to easily switch. The Lean 4 language server will automatically be restarted using the selected toolchain.  This command also provides a choice labelled `Other...` where you can enter the full path to a Lean 4 executable to use instead.  This choice is remembered in your [Workspace Settings](https://code.visualstudio.com/docs/getstarted/settings) and you can reset any custom choice by selecting `Reset workspace override...` from the list (if it is shown).
+* `lean4.selectToolchain` (Lean 4: Select Lean Toolchain) Select version of the Lean toolchain to use for the current workspace.  This shows the list of available toolchains returned from `elan toolchain list` and allows you to easily switch. The Lean 4 language server will automatically be restarted using the selected toolchain.  This command also provides a choice labelled `Other...` where you can enter the full path to a Lean 4 toolchain to use instead.  This choice is remembered in your [Workspace Settings](https://code.visualstudio.com/docs/getstarted/settings) and you can reset any custom choice by selecting `Reset workspace override...` from the list (if it is shown).
 
     ![select-toolchain](vscode-lean4/media/select-toolchain.png)
 
@@ -229,6 +229,10 @@ imports. This command has a default keyboard binding of <kbd>Ctrl</kbd>+<kbd>Shi
     server will be restarted automatically using the your brand new locally built version of Lean.
     This is useful if you are adding features to Lean 4 that you want to test in the VS Code
     extension before an official Lean4 nightly build is published.
+
+    Alternatively, you can use the `Other...` option and just provide the full path containing
+    your build output at `.../build/release/stage1/`.
+
 
 ### Editing commands
 

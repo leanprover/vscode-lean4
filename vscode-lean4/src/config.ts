@@ -7,9 +7,9 @@ import * as path from 'path';
 
 export function getEnvPath() : string {
     if (process.platform === 'win32') {
-        return process.env.Path
+        return process.env.Path ?? ''
     } else {
-        return process.env.PATH
+        return process.env.PATH ?? ''
     }
 }
 
@@ -45,8 +45,12 @@ export function addDefaultElanPath() : void {
     }
 }
 
-export function executablePath(): string {
-    return workspace.getConfiguration('lean4').get('executablePath', 'lean')
+export function toolchainPath(): string {
+    return workspace.getConfiguration('lean4').get('toolchainPath', '')
+}
+
+export function lakeEnabled(): boolean {
+    return workspace.getConfiguration('lean4').get('enableLake', false)
 }
 
 export function serverEnv(): object {
@@ -70,11 +74,11 @@ export function serverLoggingPath(): string {
 }
 
 export function getInfoViewStyle(): string {
-    return workspace.getConfiguration('lean4').get('infoViewStyle');
+    return workspace.getConfiguration('lean4').get('infoViewStyle', '');
 }
 
 export function getInfoViewAutoOpen(): boolean {
-    return workspace.getConfiguration('lean4').get('infoViewAutoOpen');
+    return workspace.getConfiguration('lean4').get('infoViewAutoOpen', true);
 }
 
 export function getInfoViewAutoOpenShowGoal(): boolean {
@@ -95,4 +99,11 @@ export function getInfoViewFilterIndex(): number {
 
 export function getElaborationDelay(): number {
     return workspace.getConfiguration('lean4').get('elaborationDelay', 200);
+}
+
+export function getLeanExecutableName(): string {
+    if (process.platform === 'win32') {
+        return 'lean.exe'
+    }
+    return 'lean'
 }

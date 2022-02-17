@@ -14,12 +14,12 @@ export function mkCommandUri(commandName: string, ...args: any[]): string {
     return `command:${commandName}?${encodeURIComponent(JSON.stringify(args))}`;
 }
 
-function findActiveEditorRootPath(): string {
+function findActiveEditorRootPath(): string | undefined {
     const doc = window.activeTextEditor?.document?.uri;
     if (doc) {
-        return workspace.getWorkspaceFolder(doc).uri.fsPath;
+        return workspace.getWorkspaceFolder(doc)?.uri?.fsPath;
     }
-    return null;
+    return undefined;
 }
 
 function findProjectDocumentation(): string | null {
@@ -47,8 +47,8 @@ export class DocViewProvider implements Disposable {
     private currentURL: string | undefined = undefined;
     private backStack: string[] = [];
     private forwardStack: string[] = [];
-    private tempFolder : TempFolder = null;
-    private abbreviations: SymbolsByAbbreviation = null;
+    private tempFolder : TempFolder;
+    private abbreviations: SymbolsByAbbreviation;
     private extensionUri: Uri;
     private tryItDoc: TextDocument | null = null;
     private scripts: Map<string, string> = new Map<string, string>();
@@ -110,7 +110,7 @@ export class DocViewProvider implements Disposable {
         const uri = Uri.parse(file)
         if (uri.scheme === 'http' || uri.scheme === 'https') {
             const data = await this.httpGet(uri);
-            void this.tryIt('// example \n' + data);
+            void this.tryIt('-- example \n' + data);
         } else {
             const doc = await workspace.openTextDocument(Uri.parse(file));
             void languages.setTextDocumentLanguage(doc, 'lean4')
@@ -141,7 +141,7 @@ export class DocViewProvider implements Disposable {
 
             this.webview = window.createWebviewPanel('lean4', 'Lean Documentation',
                 { viewColumn: 3, preserveFocus: true }, options)
-            this.webview.onDidDispose(() => this.webview = null);
+            this.webview.onDidDispose(() => this.webview = undefined);
             this.webview.webview.onDidReceiveMessage(m => this.receiveMessage(m));
 
             let first = true;
@@ -175,16 +175,6 @@ export class DocViewProvider implements Disposable {
             const uri = createLocalFileUrl(this.getTempFolder().createFile('help.html', help));
             return this.open(uri);
         }
-    }
-
-    loadScript(localUri: Uri) : string {
-        const path = localUri.fsPath;
-        if (this.scripts.has(path)){
-            return this.scripts.get(path);
-        }
-        const script = '<script type=\'text/javascript\'>\n' + fs.readFileSync(path).toString() + '\n</script>';
-        this.scripts.set(path, script);
-        return script;
     }
 
     private async httpGet(uri: Uri) : Promise<string> {
@@ -232,11 +222,11 @@ export class DocViewProvider implements Disposable {
                     .text('Open documentation of current project')));
             }
 
-            const books = {
-                'Theorem Proving in Lean': mkCommandUri('lean4.docView.open', 'http://lovettsoftware.com/theorem_proving_in_lean4/introduction.html'),
+            const books : any = {
+                'Theorem Proving in Lean': mkCommandUri('lean4.docView.open', 'https://leanprover.github.io/theorem_proving_in_lean4/'),
                 'Reference Manual': mkCommandUri('lean4.docView.open', 'https://leanprover.github.io/lean4/doc/'),
                 'Abbreviations cheat sheet': mkCommandUri('lean4.docView.showAllAbbreviations'),
-                'Example': mkCommandUri('lean4.openExample', 'https://raw.githubusercontent.com/leanprover/lean4/master/doc/examples/compiler/test.lean'),
+                'Example': mkCommandUri('lean4.openExample', 'https://github.com/leanprover/lean4-samples/raw/main/HelloWorld/Main.lean'),
 
                 // These are handy for testing that the bad file logic is working.
                 //'Test bad file': mkCommandUri('lean4.docView.open', Uri.joinPath(this.extensionUri, 'media', 'webview.js')),
@@ -263,7 +253,10 @@ export class DocViewProvider implements Disposable {
                 return '';
             }
             const path = Uri.parse(uri.toString()).fsPath;
-            return this.webview.webview.asWebviewUri(Uri.parse(uri.toString())).toString();
+            if (this.webview) {
+                return this.webview.webview.asWebviewUri(Uri.parse(uri.toString())).toString();
+            }
+            return '';
         } else {
             return uri.toString();
         }
@@ -296,17 +289,19 @@ var clip_buttons = false; // do not show copy to clipboard buttons
 var tryit_buttons = true; // instead show a TryIt button
 var side_bar = false; // collapse the side bar menu by default.
             </script>`;
-            const script_url = this.webview.webview.asWebviewUri(themes_uri);
+            const script_url = this.webview?.webview.asWebviewUri(themes_uri);
             const node = $(`<script type='text/javascript' src='${script_url}'></script>`).insertBefore(bookScript);
             $(config).insertBefore(node);
         }
 
-        for (const style of $('link[rel=stylesheet]').get()) {
-            style.attribs.href = this.mkRelativeUrl(style.attribs.href as string, url);
-        }
+        if (url) {
+            for (const style of $('link[rel=stylesheet]').get()) {
+                style.attribs.href = this.mkRelativeUrl(style.attribs.href as string, url);
+            }
 
-        for (const script of $('script[src]').get()) {
-            script.attribs.src = this.mkRelativeUrl(script.attribs.src as string, url);
+            for (const script of $('script[src]').get()) {
+                script.attribs.src = this.mkRelativeUrl(script.attribs.src as string, url);
+            }
         }
 
         for (const link of $('a[href]').get()) {
@@ -384,14 +379,14 @@ var side_bar = false; // collapse the side bar menu by default.
 
     async back(): Promise<void> {
         if (this.backStack.length === 0) {return;}
-        this.forwardStack.push(this.currentURL);
+        if (this.currentURL) this.forwardStack.push(this.currentURL);
         this.currentURL = this.backStack.pop();
         await this.setHtml();
     }
 
     async forward(): Promise<void> {
         if (this.forwardStack.length === 0) {return;}
-        this.backStack.push(this.currentURL);
+        if (this.currentURL) this.backStack.push(this.currentURL);
         this.currentURL = this.forwardStack.pop();
         await this.setHtml();
     }

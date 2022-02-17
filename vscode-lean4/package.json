@@ -2,7 +2,7 @@
 	"name": "lean4",
 	"displayName": "lean4",
 	"description": "Lean 4 language support for VS Code",
-	"version": "0.0.66",
+	"version": "0.0.68",
 	"publisher": "leanprover",
 	"engines": {
 		"vscode": "^1.57.0"
@@ -22,10 +22,10 @@
 			"type": "object",
 			"title": "Lean 4",
 			"properties": {
-				"lean4.executablePath": {
+				"lean4.toolchainPath": {
 					"type": "string",
-					"default": "lean",
-					"markdownDescription": "Path to the Lean executable to use. **DO NOT CHANGE** from the default `lean` unless you know what you're doing!"
+					"default": "",
+					"markdownDescription": "Path to your Lean toolchain. Leave this blank to get the default location from your PATH environment or from the default elan install location."
 				},
 				"lean4.input.enabled": {
 					"type": "boolean",
@@ -80,6 +80,11 @@
 						"type": "string",
 						"description": "a path to add to the environment"
 					}
+				},
+				"lean4.enableLake": {
+					"type": "boolean",
+					"default": true,
+					"markdownDescription": "Enable Lake server when possible."
 				},
 				"lean4.serverArgs": {
 					"type": "array",
@@ -410,7 +415,8 @@
 		"axios": "^0.24.0",
 		"cheerio": "^1.0.0-rc.10",
 		"mobx": "5.15.7",
-		"vscode-languageclient": "=7.0.0"
+		"vscode-languageclient": "=7.0.0",
+		"semver": "=7.3.5"
 	},
 	"devDependencies": {
 		"@types/node": "^17.0.7",
@@ -422,7 +428,8 @@
 		"typescript": "^4.5.4",
 		"vsce": "~2.6.2",
 		"webpack": "^5.65.0",
-		"webpack-cli": "^4.9.1"
+		"webpack-cli": "^4.9.1",
+		"@types/semver": "^5.3.30"
 	},
 	"icon": "images/lean_logo.png",
 	"license": "Apache-2.0"

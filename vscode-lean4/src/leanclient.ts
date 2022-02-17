@@ -17,10 +17,17 @@ import {
     State
 } from 'vscode-languageclient/node'
 import * as ls from 'vscode-languageserver-protocol'
-import { executablePath, addServerEnvPaths, serverArgs, serverLoggingEnabled, serverLoggingPath, getElaborationDelay } from './config'
+import { toolchainPath, addServerEnvPaths, serverArgs, serverLoggingEnabled, serverLoggingPath, getElaborationDelay, lakeEnabled } from './config'
 import { assert } from './utils/assert'
 import { LeanFileProgressParams, LeanFileProgressProcessingInfo } from '@lean4/infoview-api';
 import { LocalStorageService} from './utils/localStorage'
+import { batchExecute, testExecute } from './utils/batch'
+import { cwd } from 'process'
+import * as fs from 'fs';
+import { URL } from 'url';
+import { join } from 'path';
+ // @ts-ignore
+import { SemVer } from 'semver';
 
 const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
@@ -37,10 +44,10 @@ export function getFullRange(diag: Diagnostic): Range {
 export class LeanClient implements Disposable {
     running: boolean
 	private client: LanguageClient | undefined
-    private executable: string
+    private toolchainPath: string
     private outputChannel: OutputChannel;
     private storageManager : LocalStorageService;
-    private workspaceFolder: WorkspaceFolder;
+    private workspaceFolder: WorkspaceFolder | undefined;
     private folderUri: Uri;
     private subscriptions: Disposable[] = []
 
@@ -78,7 +85,7 @@ export class LeanClient implements Disposable {
     /** Files which are open. */
     private isOpen: Map<string, TextDocument> = new Map()
 
-    constructor(workspaceFolder: WorkspaceFolder, folderUri: Uri, storageManager : LocalStorageService, outputChannel : OutputChannel) {
+    constructor(workspaceFolder: WorkspaceFolder | undefined, folderUri: Uri, storageManager : LocalStorageService, outputChannel : OutputChannel) {
         this.storageManager = storageManager;
         this.outputChannel = outputChannel;
         this.workspaceFolder = workspaceFolder; // can be null when opening adhoc files.
@@ -98,19 +105,59 @@ export class LeanClient implements Disposable {
             await this.stop()
         }
 
-        this.executable = this.storageManager.getLeanPath();
-        if (!this.executable) this.executable = executablePath();
+        this.toolchainPath = this.storageManager.getLeanPath();
+        if (!this.toolchainPath) this.toolchainPath = toolchainPath();
         const version = this.storageManager.getLeanVersion();
         const env = addServerEnvPaths(process.env);
         if (serverLoggingEnabled()) {
             env.LEAN_SERVER_LOG_DIR = serverLoggingPath()
         }
 
-        let options = ['--server']
-        if (version) {
-            // user is requesting an explicit version for this workspace.
-            options = ['+' + version, '--server']
+        let executable = (this.toolchainPath) ? join(this.toolchainPath, 'bin', 'lake') : 'lake';
+
+        // check if the lake process will start.
+        let useLake = lakeEnabled();
+        if (useLake && this.folderUri && this.folderUri.scheme === 'file') {
+            const lakefile = Uri.joinPath(this.folderUri, 'lakefile.lean').toString()
+            if (!fs.existsSync(new URL(lakefile))) {
+                useLake = false;
+            }
         }
+
+        // This is a faster way of finding out lake doesn't work in the current workspace.
+        // The LanguageClient is much slower because it does 10 retries and everything.
+        if (useLake) {
+            // First check we have a version of lake that supports "lake serve"
+            const versionOptions = version ? ['+' + version, '--version'] : ['--version']
+            const lakeVersion = await batchExecute(executable, versionOptions, this.folderUri?.fsPath, undefined);
+            const actual = this.extractVersion(lakeVersion)
+            if (actual.compare('3.0.0') >= 0) {
+                const expectedError = 'Watchdog error: Cannot read LSP request: Stream was closed\n';
+                const serveOptions =  version ? ['+' + version, 'serve'] : ['serve'];
+                const rc = await testExecute(executable, serveOptions, this.folderUri?.fsPath, this.outputChannel, true, expectedError);
+                if (rc !== 0) {
+                    const failover = 'Lake failed, using lean instead.'
+                    console.log(failover);
+                    if (this.outputChannel) this.outputChannel.appendLine(failover);
+                    useLake = false;
+                }
+            } else {
+                useLake = false;
+            }
+        }
+
+        if (!useLake) {
+            executable = (this.toolchainPath) ? join(this.toolchainPath, 'bin', 'lean') : 'lean';
+        }
+
+        let options = version ? ['+' + version] :[]
+        if (useLake) {
+            options = options.concat(['serve', '--'])
+        } else{
+            options = options.concat(['--server'])
+        }
+
+        // Add folder name to command-line so that it shows up in `ps aux`.
         if (this.folderUri) {
             options.push('' + this.folderUri.fsPath)
         } else {
@@ -118,10 +165,11 @@ export class LeanClient implements Disposable {
         }
 
         const serverOptions: ServerOptions = {
-            command: this.executable,
+            command: executable,
             args: options.concat(serverArgs()),
             options: {
                 shell: true,
+                cwd: this.folderUri?.fsPath,
                 env
             }
         }
@@ -147,6 +195,7 @@ export class LeanClient implements Disposable {
             middleware: {
                 handleDiagnostics: (uri, diagnostics, next) => {
                     next(uri, diagnostics);
+                    if (!this.client) return;
                     const uri_ = this.client.code2ProtocolConverter.asUri(uri);
                     const diagnostics_ = [];
                     for (const d of diagnostics) {
@@ -166,7 +215,7 @@ export class LeanClient implements Disposable {
 
                 didChange: (data, next) => {
                     next(data);
-                    if (!this.running) return; // there was a problem starting lean server.
+                    if (!this.running || !this.client) return; // there was a problem starting lean server.
                     const params = this.client.code2ProtocolConverter.asChangeTextDocumentParams(data);
                     this.didChangeEmitter.fire(params);
                 },
@@ -174,7 +223,7 @@ export class LeanClient implements Disposable {
                 didClose: (doc, next) => {
                     if (!this.isOpen.delete(doc.uri.toString())) return;
                     next(doc);
-                    if (!this.running) return; // there was a problem starting lean server.
+                    if (!this.running || !this.client) return; // there was a problem starting lean server.
                     const params = this.client.code2ProtocolConverter.asTextDocumentIdentifier(doc);
                     this.didCloseEmitter.fire({textDocument: params});
                 },
@@ -197,7 +246,7 @@ export class LeanClient implements Disposable {
                     const nonWordPattern = '[`~@$%^&*()-=+\\[{\\]}⟨⟩⦃⦄⟦⟧⟮⟯‹›\\\\|;:\",./\\s]|^|$'
                     const regexp = new RegExp(`(?<=${nonWordPattern})${escapeRegExp(word)}(?=${nonWordPattern})`, 'g')
                     for (const match of text.matchAll(regexp)) {
-                        const start = doc.positionAt(match.index)
+                        const start = doc.positionAt(match.index ?? 0)
                         highlights.push({
                             range: new Range(start, start.translate(0, match[0].length)),
                             kind: DocumentHighlightKind.Text,
@@ -230,10 +279,10 @@ export class LeanClient implements Disposable {
             })
             this.client.start()
             await this.client.onReady();
-
             // tell the new client about the documents that are already open!
-            for(const doc of this.isOpen.values()){
-                this.notifyDidOpen(doc);
+            for (const key of this.isOpen.keys()) {
+                const doc = this.isOpen.get(key);
+                if (doc) this.notifyDidOpen(doc);
             }
             // if we got this far then the client is happy so we are running!
             this.running = true;
@@ -249,7 +298,7 @@ export class LeanClient implements Disposable {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
         this.client.onNotification({
             method: (method: string, params_: any) => {
-                if (method === '$/lean/fileProgress') {
+                if (method === '$/lean/fileProgress' && this.client) {
                     const params = params_ as LeanFileProgressParams;
                     const uri = this.client.protocol2CodeConverter.asUri(params.textDocument.uri)
                     this.progressChangedEmitter.fire([uri.toString(), params.processing]);
@@ -259,12 +308,12 @@ export class LeanClient implements Disposable {
 
                 this.customNotificationEmitter.fire({method, params: params_});
             }
-        } as any, null);
+        } as any, ()=>{});
 
         // Reveal the standard error output channel when the server prints something to stderr.
         // The vscode-languageclient library already takes care of writing it to the output channel.
         (this.client as any)._serverProcess.stderr.on('data', () => {
-            this.client.outputChannel.show(true);
+            this.client?.outputChannel.show(true);
         });
 
         this.restartedEmitter.fire(undefined)
@@ -313,7 +362,7 @@ export class LeanClient implements Disposable {
     }
 
     notifyDidOpen(doc: TextDocument) {
-        void this.client.sendNotification(DidOpenTextDocumentNotification.type, {
+        void this.client?.sendNotification(DidOpenTextDocumentNotification.type, {
             textDocument: {
                 uri: doc.uri.toString(),
                 languageId: doc.languageId,
@@ -360,7 +409,9 @@ export class LeanClient implements Disposable {
     }
 
     configChanged(e : ConfigurationChangeEvent): void {
-        if (this.executable !== executablePath()){
+        let newToolchainPath = this.storageManager.getLeanPath();
+        if (!newToolchainPath) newToolchainPath = toolchainPath();
+        if (this.toolchainPath !== newToolchainPath){
             void this.restart();
         }
     }
@@ -380,12 +431,12 @@ export class LeanClient implements Disposable {
         // didOpen packet emitted below initializes the version number to be 1.
         // This is not a problem though, since both client and server are fine
         // as long as the version numbers are monotonous.
-        void this.client.sendNotification('textDocument/didClose', {
+        void this.client?.sendNotification('textDocument/didClose', {
             'textDocument': {
                 uri
             }
         })
-        void this.client.sendNotification('textDocument/didOpen', {
+        void this.client?.sendNotification('textDocument/didOpen', {
             'textDocument': {
                 uri,
                 'languageId': 'lean4',
@@ -397,44 +448,57 @@ export class LeanClient implements Disposable {
 
     // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
     sendRequest(method: string, params: any) : Promise<any> {
-        return this.running ? this.client.sendRequest(method, params) : undefined;
+        return this.running && this.client ? this.client.sendRequest(method, params) : new Promise<any>(()=>{});
     }
 
     // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
     sendNotification(method: string, params: any): void {
-        return this.running ? this.client.sendNotification(method, params) : undefined;
+        return this.running  && this.client ? this.client.sendNotification(method, params) : undefined;
     }
 
     convertUri(uri: Uri): Uri {
-        return this.running ? Uri.parse(this.client.code2ProtocolConverter.asUri(uri)) : uri;
+        return this.running  && this.client ? Uri.parse(this.client.code2ProtocolConverter.asUri(uri)) : uri;
     }
 
     convertUriFromString(uri: string): Uri {
         const u = Uri.parse(uri);
-        return this.running ? Uri.parse(this.client.code2ProtocolConverter.asUri(u)) : u;
+        return this.running && this.client ? Uri.parse(this.client.code2ProtocolConverter.asUri(u)) : u;
     }
 
     convertPosition(pos: ls.Position) : Position | undefined {
-        return this.running ? this.client.protocol2CodeConverter.asPosition(pos) : undefined;
+        return this.running ? this.client?.protocol2CodeConverter.asPosition(pos) : undefined;
     }
 
-    convertRange(range: ls.Range): Range | undefined {
-        return this.running ? this.client.protocol2CodeConverter.asRange(range) : undefined;
+    convertRange(range: ls.Range | undefined): Range | undefined {
+        return this.running && range ? this.client?.protocol2CodeConverter.asRange(range) : undefined;
     }
 
     getDiagnosticParams(uri: Uri, diagnostics: readonly Diagnostic[]) : PublishDiagnosticsParams {
         const params: PublishDiagnosticsParams = {
             uri: this.convertUri(uri)?.toString(),
-            diagnostics: this.client.code2ProtocolConverter.asDiagnostics(diagnostics as Diagnostic[]),
+            diagnostics: this.client?.code2ProtocolConverter.asDiagnostics(diagnostics as Diagnostic[]) ?? []
         };
         return params;
     }
 
     getDiagnostics() : DiagnosticCollection | undefined {
-        return this.running ? this.client.diagnostics : undefined;
+        return this.running ? this.client?.diagnostics : undefined;
     }
 
     get initializeResult() : InitializeResult | undefined {
-        return this.running ? this.client.initializeResult : undefined
+        return this.running ? this.client?.initializeResult : undefined
+    }
+
+    private extractVersion(v: string | undefined) : SemVer {
+        if (!v) return new SemVer('0.0.0');
+        const prefix = 'Lake version'
+        if (v.startsWith(prefix)) v = v.slice(prefix.length).trim()
+        const pos = v.indexOf('(')
+        if (pos > 0) v = v.slice(0, pos).trim()
+        try {
+            return new SemVer(v)
+        } catch {
+            return new SemVer('0.0.0');
+        }
     }
 }

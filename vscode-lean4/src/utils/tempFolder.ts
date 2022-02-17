@@ -5,7 +5,7 @@ import * as os from 'os';
 import { join, sep } from 'path';
 
 export class TempFolder implements Disposable {
-    folder : string = null;
+    folder : string;
 
     constructor(prefix: string){
         this.folder = fs.mkdtempSync(join(os.tmpdir(), prefix))

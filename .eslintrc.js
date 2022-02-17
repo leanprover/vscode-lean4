@@ -42,6 +42,7 @@ module.exports = {
                 "default": "array"
             }
         ],
+        "@typescript-eslint/ban-ts-comment": "off",
         "@typescript-eslint/ban-types": "off",
         "@typescript-eslint/consistent-type-assertions": "error",
         "@typescript-eslint/explicit-member-accessibility": [

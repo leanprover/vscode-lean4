@@ -11,7 +11,7 @@ export class LocalStorageService {
 
     getLeanPath() : string
     {
-        return this.storage.get<string>('LeanPath', null);
+        return this.storage.get<string>('LeanPath', '');
     }
 
     setLeanPath(path : string) : void
@@ -21,7 +21,7 @@ export class LocalStorageService {
 
     getLeanVersion() : string
     {
-        return this.storage.get<string>('LeanVersion', null);
+        return this.storage.get<string>('LeanVersion', '');
     }
 
     setLeanVersion(path : string) : void
