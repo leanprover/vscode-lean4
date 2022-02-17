@@ -223,7 +223,7 @@ export class DocViewProvider implements Disposable {
             }
 
             const books : any = {
-                'Theorem Proving in Lean': mkCommandUri('lean4.docView.open', 'https://leanprover.github.io/theorem_proving_in_lean4/'),
+                'Theorem Proving in Lean': mkCommandUri('lean4.docView.open', 'https://leanprover.github.io/theorem_proving_in_lean4/introduction.html'),
                 'Reference Manual': mkCommandUri('lean4.docView.open', 'https://leanprover.github.io/lean4/doc/'),
                 'Abbreviations cheat sheet': mkCommandUri('lean4.docView.showAllAbbreviations'),
                 'Example': mkCommandUri('lean4.openExample', 'https://github.com/leanprover/lean4-samples/raw/main/HelloWorld/Main.lean'),
