@@ -2,7 +2,7 @@ import * as assert from 'assert';
 import { suite } from 'mocha';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { waitForLeanExtension, waitForActiveEditor } from '../suite/utils';
+import { sleep, waitForActiveExtension, waitForActiveEditor } from '../suite/utils';
 
 suite('Extension Test Suite', () => {
 
@@ -16,10 +16,14 @@ suite('Extension Test Suite', () => {
 		const editor = await waitForActiveEditor();
 		assert(editor, 'Missing active text editor');
 
-		const lean = await waitForLeanExtension();
+		const lean3 = await waitForActiveExtension('jroesch.lean');
+		assert(lean3, 'Lean3 extension not loaded');
+
+		const lean = await waitForActiveExtension('leanprover.lean4');
 		assert(lean, 'Lean extension not loaded');
 		assert(!lean.exports.isLean4Project, 'Lean4 extension should not be running!');
 
+		console.log("Checking vscode commands...");
 		const cmds = await vscode.commands.getCommands(true);
 		cmds.forEach(cmd => {
 			assert(cmd !== 'lean4.selectToolchain', 'Lean4 extension should not have any registered commands');

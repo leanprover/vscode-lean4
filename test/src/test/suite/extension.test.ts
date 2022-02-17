@@ -4,7 +4,7 @@ import { suite } from 'mocha';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { TestApi } from '@lean4/infoview-api';
-import { sleep, waitForLeanExtension, waitForActiveEditor, waitForInfoViewOpen, waitForHtmlString } from './utils';
+import { sleep, waitForActiveExtension, waitForActiveEditor, waitForInfoViewOpen, waitForHtmlString } from './utils';
 
 suite('Extension Test Suite', () => {
 
@@ -23,7 +23,7 @@ suite('Extension Test Suite', () => {
 		console.log('Setting lean4 language on untitled doc');
 		await vscode.languages.setTextDocumentLanguage(editor.document, 'lean4');
 
-		const lean = await waitForLeanExtension();
+		const lean = await waitForActiveExtension('leanprover.lean4');
 		assert(lean, 'Lean extension not loaded');
 
         console.log(`Found lean package version: ${lean.packageJSON.version}`);
@@ -58,7 +58,7 @@ suite('Extension Test Suite', () => {
 		const doc = await vscode.workspace.openTextDocument(path.join(testsRoot, 'Main.lean'));
 		await vscode.window.showTextDocument(doc);
 
-		const lean = await waitForLeanExtension();
+		const lean = await waitForActiveExtension('leanprover.lean4');
 		assert(lean, 'Lean extension not loaded');
 		assert(lean.exports.isLean4Project);
 		assert(lean.isActive);

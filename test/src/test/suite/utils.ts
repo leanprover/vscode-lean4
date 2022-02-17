@@ -9,18 +9,16 @@ export function closeAllEditors(): Thenable<any> {
 	return vscode.commands.executeCommand('workbench.action.closeAllEditors');
 }
 
-export async function waitForLeanExtension(retries=10, delay=1000) : Promise<vscode.Extension<any> | null> {
+export async function waitForActiveExtension(extensionId: string, retries=10, delay=1000) : Promise<vscode.Extension<any> | null> {
 
-    console.log('Waiting for lean extension to be loaded...');
+    console.log(`Waiting for extension ${extensionId} to be loaded...`);
     let lean : vscode.Extension<any> | undefined;
     let count = 0;
     while (!lean) {
         vscode.extensions.all.forEach((e) => {
-            if (e.id === 'leanprover.lean4'){
+            if (e.id === extensionId){
                 lean = e;
-            }
-            else if (e.id === 'jroesch.lean'){
-                console.log('Found lean3 extension: jroesch.lean')
+                console.log(`Found extension: ${extensionId}`);
             }
         });
         if (!lean){
@@ -32,14 +30,14 @@ export async function waitForLeanExtension(retries=10, delay=1000) : Promise<vsc
         }
     }
 
-    console.log('Waiting for Lean extension activation...');
+    console.log(`Waiting for extension ${extensionId} activation...`);
     count = 0
     while (!lean.isActive && count < retries){
         await sleep(delay);
         count += 1;
     }
 
-    console.log(`Lean extension, isActive=${lean.isActive}`);
+    console.log(`Extension ${extensionId} isActive=${lean.isActive}`);
     return lean;
 }
 

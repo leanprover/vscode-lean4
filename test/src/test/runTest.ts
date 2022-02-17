@@ -1,6 +1,6 @@
 import * as path from 'path';
 import * as cp from 'child_process';
-import { runTests, downloadAndUnzipVSCode, resolveCliPathFromVSCodeExecutablePath } from '@vscode/test-electron';
+import { runTests, downloadAndUnzipVSCode, resolveCliArgsFromVSCodeExecutablePath } from '@vscode/test-electron';
 
 async function main() {
 	try {
@@ -12,7 +12,7 @@ async function main() {
 		const vscodeExecutablePath = await downloadAndUnzipVSCode('1.64.2');
 
 		// Install the lean3 extension! [TODO: this doesn't seem to be working]
-		const [cli, ...args] = resolveCliPathFromVSCodeExecutablePath(vscodeExecutablePath);
+		const [cli, ...args] = resolveCliArgsFromVSCodeExecutablePath(vscodeExecutablePath);
 		cp.spawnSync(cli, [...args, '--install-extension', 'jroesch.lean'], {
 			encoding: 'utf-8',
 			stdio: 'inherit'
@@ -23,7 +23,7 @@ async function main() {
 			vscodeExecutablePath,
 			extensionDevelopmentPath,
 			extensionTestsPath: path.resolve(__dirname, './lean3'),
-			launchArgs: ['--new-window', '--disable-gpu', '--disable-extension', 'platformio.platformio-ide'] });
+			launchArgs: ['--new-window', '--disable-gpu'] });
 
 		// This will download VS Code, unzip it and run the integration test
 		// const version2 = await downloadAndUnzipVSCode('1.64.0');
@@ -33,7 +33,7 @@ async function main() {
 			vscodeExecutablePath,
 			extensionDevelopmentPath,
 			extensionTestsPath:path.resolve(__dirname, './suite'),
-			launchArgs: ['--new-window', '--disable-gpu', '--disable-extension', 'platformio.platformio-ide'] });
+			launchArgs: ['--new-window', '--disable-gpu', '--disable-extensions'] });
 
 	} catch (err) {
 		console.error('Failed to run tests');
