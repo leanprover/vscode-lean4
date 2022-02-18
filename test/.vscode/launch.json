@@ -11,7 +11,7 @@
 			"runtimeExecutable": "${execPath}",
 			"args": [
 				"--extensionDevelopmentPath=${workspaceFolder}/../vscode-lean4",
-				"--extensionTestsPath=${workspaceFolder}/out/test/lean3/index",
+				"--extensionTestsPath=${workspaceFolder}/out/test/lean3/",
                 "--new-window"
 			],
 			"outFiles": ["${workspaceFolder}/out/test/**/*.js"],

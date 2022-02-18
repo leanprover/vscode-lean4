@@ -4,7 +4,7 @@ import { suite } from 'mocha';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { TestApi } from '@lean4/infoview-api';
-import { sleep, waitForActiveExtension, waitForActiveEditor, waitForInfoViewOpen, waitForHtmlString } from './utils';
+import { sleep, waitForActiveExtension, waitForActiveEditor, waitForInfoViewOpen, waitForHtmlString, extractToTerminator } from './utils';
 
 suite('Extension Test Suite', () => {
 
@@ -84,13 +84,13 @@ suite('Extension Test Suite', () => {
 		let pos = html.indexOf('Lean Version:');
 		if (pos >= 0) {
 			// Lean Version: 4.0.0-nightly-2022-02-17
-			const versionString = html.substring(pos, pos + 38)
+			const versionString = extractToTerminator(html, pos, '"');
 			console.log(`>>> Found "${versionString}" in infoview`)
 		}
 		pos = html.indexOf('Lake Version:');
 		if (pos >= 0) {
 			// Lake Version: 4.0.0-nightly-2022-02-17
-			const versionString = html.substring(pos, pos + 38)
+			const versionString = extractToTerminator(html, pos, '"');
 			console.log(`>>> Found "${versionString}" in infoview`)
 		} else {
 			assert(false, 'Lake Version: not found in infoview');

@@ -89,3 +89,12 @@ export async function waitForHtmlString(leanApi: TestApi, toFind : string, retri
 
     return [html, false];
 }
+
+
+export function extractToTerminator(html: string, pos: number, terminator: string){
+	const endPos = html.indexOf(terminator, pos);
+	if (endPos < 0) {
+		return ''
+	}
+	return html.substring(pos, endPos);
+}
