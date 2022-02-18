@@ -16,10 +16,6 @@ jobs:
         uses: actions/setup-node@v2
         with:
           node-version: '16'
-      - name: Setup xvfb
-        run: |
-          sudo apt-get install -y xvfb
-          /usr/bin/Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 & echo ">>> Started xvfb"
       - name: Build
         run: |
           npm ci
@@ -45,8 +41,6 @@ jobs:
           ls -al "$HOME/.elan/bin"
           elan --version
       - name: Run tests
-        run: |
-          cd test
-          echo =============== $PWD ===================
-          xvfb-run -a npm run test
-        if: runner.os == 'Linux'
+        uses: GabrielBB/xvfb-action@v1.0
+        with:
+          run: npx lerna run --scope=@lean4/test test

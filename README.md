@@ -301,6 +301,10 @@ the packages in tandem using Lerna.
 - Run `npx lerna bootstrap`. This sets up the project's dependencies.
 - Run `npx lerna run build`. This compiles the extension (which is necessary for go-to-definition in VS Code).
 
+### Testing
+- Make sure you have don the above build steps
+- Run `npx lerna run --scope=@lean4/test test`
+
 ### Debugging
 - Open VS Code on this folder.
 - Press <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>B</kbd> to compile the extension. This step is needed for a working development setup.

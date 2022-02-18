@@ -487,7 +487,7 @@ export class LeanClient implements Disposable {
 
     get initializeResult() : InitializeResult | undefined {
         return this.running ? this.client?.initializeResult : undefined
-dir     }
+    }
 
     private extractVersion(v: string | undefined) : SemVer {
         if (!v) return new SemVer('0.0.0');
