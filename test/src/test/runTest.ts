@@ -21,7 +21,7 @@ async function main() {
 		clearUserWorkspaceData(vscodeTestPath);
 
 		// This will download VS Code, unzip it and run the integration test
-		const vscodeExecutablePath = await downloadAndUnzipVSCode('1.64.2');
+		const vscodeExecutablePath = await downloadAndUnzipVSCode();
 
 		// Install the lean3 extension!
 		const [cli, ...args] = resolveCliArgsFromVSCodeExecutablePath(vscodeExecutablePath);
