@@ -302,7 +302,7 @@ the packages in tandem using Lerna.
 - Run `npx lerna run build`. This compiles the extension (which is necessary for go-to-definition in VS Code).
 
 ### Testing
-- Make sure you have don the above build steps
+- Make sure you have executed the above build steps
 - Run `npx lerna run --scope=@lean4/test test`
 
 ### Debugging

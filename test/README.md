@@ -11,7 +11,7 @@ all VS code windows and run the following from a terminal window:
 - Run `npm run test` to run the tests
 
 The first time you run the test this way it will download a test version of vscode
-and place it in a temporary folder `.vscode-test/vscode-win32-archive-1.64.2`.
+and place it in a temporary folder `.vscode-test/`.
 
 ## Debugging the tests
 
