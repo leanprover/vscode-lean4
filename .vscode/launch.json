@@ -17,21 +17,18 @@
                 "webRoot": "${workspaceRoot}/vscode-lean4/media"
             },
         },
-        {
-            "name": "Debug Tests",
-            "type": "extensionHost",
-            "request": "launch",
-            "runtimeExecutable": "${execPath}",
-            "args": ["--extensionDevelopmentPath=${workspaceRoot}/vscode-lean4",
-                "--extensionTestsPath=${workspaceRoot}/vscode-lean4/out/test/suite/index" ],
-            "stopOnEntry": false,
-            "sourceMaps": true,
-            "outFiles": [ "${workspaceRoot}/vscode-lean4/out/test/**/*.js" ],
-            "preLaunchTask": "watch",
-            "debugWebviews": true,
-            "rendererDebugOptions": {
-                "webRoot": "${workspaceRoot}/vscode-lean4/media"
-            },
-        }
+		{
+			"name": "Debug Extension Tests",
+			"type": "extensionHost",
+			"request": "launch",
+			"runtimeExecutable": "${execPath}",
+			"args": [
+				"--extensionDevelopmentPath=${workspaceFolder}",
+				"--extensionTestsPath=${workspaceFolder}/test/out/test/lean3/",
+                "--new-window"
+			],
+			"outFiles": ["${workspaceFolder}/test/out/test/**/*.js"],
+            "preLaunchTask": "watch"
+		}
     ]
 }
