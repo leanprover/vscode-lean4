@@ -304,11 +304,14 @@ the packages in tandem using Lerna.
 ### Testing
 - Make sure you have executed the above build steps
 - Run `npx lerna run --scope=@lean4/test test`
+- See [test readme](test/readme.md) for more information.
 
 ### Debugging
 - Open VS Code on this folder.
 - Press <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>B</kbd> to compile the extension. This step is needed for a working development setup.
 - Press F5 to launch the extension in the VS Code debugger, (the correct launch.json configuration is already checked into this repo.)
+
+To debug the tests use the launch configuration named `Debug Extension Tests`.
 
 **Note:** if breakpoints are not working, try changing one line of code in `function activate` in `extension.ts`, even
 adding a newline seems to work, then press F5.

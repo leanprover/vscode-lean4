@@ -30,7 +30,8 @@ async function main() {
 			stdio: 'inherit'
 		});
 
-		// run the lean3 test in one vs code instance
+		// run the lean3 test in one vs code instance, using `open folder` since
+		// lean3 doesn't lile ad-hoc files.
 		const testFolder = path.join(__dirname, '..', '..', 'src', 'lean', 'lean3');
 
 		await runTests({

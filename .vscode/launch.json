@@ -24,9 +24,9 @@
 			"runtimeExecutable": "${execPath}",
 			"args": [
 				"--extensionDevelopmentPath=${workspaceFolder}",
-				"--extensionTestsPath=${workspaceFolder}/test/out/test/lean3/",
-                "--new-window"
+				"--extensionTestsPath=${workspaceFolder}/test/out/test/lean3/"
 			],
+            "cwd": "${workspaceFolder}/test",
 			"outFiles": ["${workspaceFolder}/test/out/test/**/*.js"],
             "preLaunchTask": "watch"
 		}
