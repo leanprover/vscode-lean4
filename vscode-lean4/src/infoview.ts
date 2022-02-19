@@ -398,7 +398,6 @@ export class InfoProvider implements Disposable {
 
     private async openPreview(editor: TextEditor) {
         let column = editor && editor.viewColumn ? editor.viewColumn + 1 : ViewColumn.Two;
-        let closed = false;
         if (column === 4) { column = ViewColumn.Three; }
         if (this.webviewPanel) {
             this.webviewPanel.reveal(column, true);
@@ -417,16 +416,15 @@ export class InfoProvider implements Disposable {
             // inside the webview through the standard message event.
             // The receiving of these messages is done inside webview\index.ts where it
             // calls window.addEventListener('message',...
-            webviewPanel.rpc = new Rpc(m => { if (!closed) void webviewPanel.webview.postMessage(m) });
+            webviewPanel.rpc = new Rpc(m => { if (this.webviewPanel) void webviewPanel.webview.postMessage(m) });
             webviewPanel.rpc.register(this.editorApi);
 
             // Similarly, we can received data from the webview by listening to onDidReceiveMessage.
-            webviewPanel.webview.onDidReceiveMessage(m => { if (!closed) webviewPanel.rpc.messageReceived(m) })
+            webviewPanel.webview.onDidReceiveMessage(m => { if (this.webviewPanel) webviewPanel.rpc.messageReceived(m) })
             webviewPanel.api = webviewPanel.rpc.getApi();
             webviewPanel.onDidDispose(() => {
-                closed = true;
-                this.clearNotificationHandlers();
                 this.webviewPanel = undefined;
+                this.clearNotificationHandlers();
                 this.clearRpcSessions(null); // should be after `webviewPanel = undefined`
             });
             this.webviewPanel = webviewPanel;
