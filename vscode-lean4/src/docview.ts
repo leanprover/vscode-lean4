@@ -25,11 +25,11 @@ function findProjectDocumentation(): string | null {
     const rootPath = findActiveEditorRootPath();
     if (rootPath) {
         let html = join(rootPath, 'html', 'index.html');
-        if (fs.existsSync(html)) {
+        if (fs.statSync(html)) {
             return html;
         }
         html = join(rootPath, 'html', 'index.htm');
-        if (fs.existsSync(html)) {
+        if (fs.statSync(html)) {
             return html;
         }
     }
@@ -135,6 +135,7 @@ export class DocViewProvider implements Disposable {
 
     async fetch(url?: string): Promise<string> {
         if (url) {
+            try{
             const uri = Uri.parse(url);
             if (uri.scheme === 'file') {
                 if (uri.fsPath.endsWith('.html') || uri.fsPath.endsWith('.htm')) {
@@ -146,12 +147,14 @@ export class DocViewProvider implements Disposable {
                     return data;
                 }
             }
-
-            const $ = cheerio.load('<p>');
-            $('p').text('Unsupported file. ')
-                .append($('<a>').attr('href', url).attr('alwaysExternal', 'true')
-                    .text('Open in browser instead.'));
-            return $.html();
+            }
+            catch (Exception){
+                const $ = cheerio.load('<p>');
+                $('p').text('Unsupported file. ')
+                    .append($('<a>').attr('href', url).attr('alwaysExternal', 'true')
+                        .text('Open in browser instead.'));
+                return $.html();
+            }
         } else {
             const $ = cheerio.load('<body>');
             const body = $('body');
