@@ -308,3 +308,16 @@ the packages in tandem using Lerna.
 
 **Note:** if breakpoints are not working, try changing one line of code in `function activate` in `extension.ts`, even
 adding a newline seems to work, then press F5.
+
+## Packaging
+
+To publish the extension on the VS Code marketplace you
+should follow [these instructions](https://code.visualstudio.com/api/working-with-extensions/publishing-extension).
+But for a quick summary, run this command:
+```
+cd <vscode-lean4-repo>/vscode-lean4
+npx vsce package
+```
+
+This gives you a .vsix which you can install using the VS Code
+command `Extensions: Install from VSIX...`.
