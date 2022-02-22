@@ -1,190 +1,129 @@
-import * as fs from 'fs';
-import { URL } from 'url';
-import { EventEmitter, Disposable, Uri, workspace, window } from 'vscode';
+import { EventEmitter, Disposable, Uri, workspace, window, WorkspaceFolder } from 'vscode';
 import { LocalStorageService} from './localStorage'
+import { findLeanPackageRoot, findLeanPackageVersionInfo } from './projectInfo';
+import * as fs from 'fs';
+import * as path from 'path';
 
+// This service monitors the Lean package root folders for changes to any
+// lean-toolchain, leanpkg.toml or lakefile.lean files found there.
 export class LeanpkgService implements Disposable {
     private subscriptions: Disposable[] = [];
-    private leanVersionFile : Uri = null;
-    private toolchainFileName : string = 'lean-toolchain'
-    private tomlFileName : string = 'leanpkg.toml'
-    private defaultToolchain : string;
-    private localStorage : LocalStorageService;
-    private versionChangedEmitter = new EventEmitter<string>();
-    private currentVersion : string = null;
+    private lakeFileName : string = 'lakefile.lean'
+    // We track the current version info for each workspace open in VS code.
+    // The key to these maps is the Lean package root Uri.
+    private currentVersion : Map<string,string> = new Map();
+    private normalizedLakeFileContents : Map<string,string> = new Map();
+
+    // This event is raised when the version in the package root changes.
+    // The event provides the lean package root Uri.
+    private versionChangedEmitter = new EventEmitter<Uri>();
     versionChanged = this.versionChangedEmitter.event
 
-    constructor(localStorage : LocalStorageService, defaultToolchain : string) {
-        this.localStorage = localStorage;
-        this.defaultToolchain = defaultToolchain;
+    // This event is raised if the 'lakefile.lean' file contents is changed.
+    // The event provides the lean package root Uri.
+    private lakeFileChangedEmitter = new EventEmitter<Uri>();
+    lakeFileChanged = this.lakeFileChangedEmitter.event
+
+    constructor() {
+
         // track changes in the version of lean specified in the lean-toolchain file
-        // or the leanpkg.toml.
+        // or the leanpkg.toml.  While this is looking for all files with these names
+        // it ignores files that are not in the package root.
         ['**/lean-toolchain', '**/leanpkg.toml'].forEach(pattern => {
             const watcher = workspace.createFileSystemWatcher(pattern);
-            watcher.onDidChange((u) => this.handleFileChanged(u));
-            watcher.onDidCreate((u) => this.handleFileChanged(u));
-            watcher.onDidDelete((u) => this.handleFileChanged(u));
+            watcher.onDidChange((u) => this.handleFileChanged(u, true));
+            watcher.onDidCreate((u) => this.handleFileChanged(u, true));
+            watcher.onDidDelete((u) => this.handleFileChanged(u, true));
+            this.subscriptions.push(watcher);
+
+            const watcher2 = workspace.createFileSystemWatcher(`**/${this.lakeFileName}`);
+            watcher2.onDidChange((u) => this.handleLakeFileChanged(u, true));
+            watcher2.onDidCreate((u) => this.handleLakeFileChanged(u, true));
+            watcher2.onDidDelete((u) => this.handleLakeFileChanged(u, true));
             this.subscriptions.push(watcher);
         });
-    }
-
-    private isLean(languageId : string) : boolean {
-        return languageId === 'lean' || languageId === 'lean4';
-    }
-
-    getWorkspaceLeanFolderUri() : Uri {
-        let documentUri : Uri = null;
-
-        if (window.activeTextEditor && this.isLean(window.activeTextEditor.document.languageId))
-        {
-            documentUri = window.activeTextEditor.document.uri
-        }
-        else {
-            // This happens if vscode starts with a lean file open
-            // but the "Getting Started" page is active.
-            for (const editor of window.visibleTextEditors) {
-                const lang = editor.document.languageId;
-                if (this.isLean(lang)) {
-                    documentUri = editor.document.uri;
-                    break;
-                }
-            }
-        }
-
-        let rootPath : Uri = null;
-        if (documentUri) {
-            const folder = workspace.getWorkspaceFolder(documentUri);
-            if (folder){
-                rootPath = folder.uri;
-            }
-            if (!rootPath) {
-                rootPath = window.activeTextEditor.document.uri;
-                if (rootPath) {
-                    // remove leaf filename part.
-                    rootPath = Uri.joinPath(rootPath, '..');
-                }
-            }
-        }
-
-        if (!rootPath) {
-            // this code path should never happen because lean extension is only
-            // activated when a lean file is opened, so it should have been in the
-            // list of window.visibleTextEditors.  So this is a fallback just in
-            // case some weird timing thing happened and file is now closed.
-            const workspaceFolders = workspace.workspaceFolders;
-            if (workspaceFolders && workspaceFolders.length > 0) {
-                rootPath = workspaceFolders[0].uri;
-            }
-        }
-
-        if (!rootPath) {
-            return null;
-        }
-        return rootPath;
-    }
-
-    async findLeanPkgVersionInfo() : Promise<string> {
-        const path = this.getWorkspaceLeanFolderUri()
-        if (!path || path.fsPath === '.') {
-            // this is a "new file" that has not been saved yet.
-        }
-        else {
-            let uri = path;
-            // search parent folders for a leanpkg.toml file, or a Lake lean-toolchain file.
-            while (true) {
-                const leanToolchain = Uri.joinPath(uri, this.toolchainFileName);
-                if (fs.existsSync(new URL(leanToolchain.toString()))) {
-                    this.leanVersionFile = leanToolchain;
-                    break;
-                }
-                else {
-                    const leanPkg = Uri.joinPath(uri, this.tomlFileName);
-                    if (fs.existsSync(new URL(leanPkg.toString()))) {
-                        this.leanVersionFile = leanPkg;
-                        break;
-                    }
-                    else {
-                        const parent = Uri.joinPath(uri, '..');
-                        if (parent === uri) {
-                            // no .toml file found.
-                            break;
-                        }
-                        uri = parent;
-                    }
-                }
-            }
-        }
-
-        let version = null;
-        if (this.leanVersionFile || this.leanVersionFile) {
-            try {
-                version = await this.readLeanVersion();
-                this.currentVersion = version;
-            } catch (err) {
-                console.log(err);
-            }
-        }
-
-        return version;
     }
 
     dispose(): void {
         for (const s of this.subscriptions) { s.dispose(); }
     }
 
-    private async handleFileChanged(uri: Uri) {
-        if (this.localStorage.getLeanVersion()){
-            // user has a local workspace override in effect, so leave it that way.
-            return;
+    // Must be called when every file is opened so it can track the current contents
+    // of the files we care about.
+    didOpen(uri: Uri){
+        const fileName = path.basename(uri.fsPath);
+        if (fileName === this.lakeFileName){
+            void this.handleLakeFileChanged(uri, false);
         }
-        // note: apply the same rules here with findLeanPkgVersionInfo no matter
-        // if a file is added or removed so we always match the elan behavior.
-        const current = this.currentVersion;
-        // findLeanPkgVersionInfo changes this.currentVersion
-        const version = await this.findLeanPkgVersionInfo();
-        if (version && version !== current) {
-            // raise an event so the extension triggers handleVersionChanged.
-            this.versionChangedEmitter.fire(this.currentVersion);
+        else if (fileName === 'lean-toolchain'){
+            void this.handleFileChanged(uri, false);
+        }
+        else if (fileName === 'leanpkg.toml'){
+            void  this.handleFileChanged(uri, false);
         }
     }
 
-    private async readLeanVersion() {
-        if (this.leanVersionFile.path.endsWith(this.tomlFileName))
-        {
-            const url = new URL(this.leanVersionFile.toString());
-            return new Promise<string>((resolve, reject) => {
-                if (fs.statSync(url)) {
-                    fs.readFile(url, { encoding: 'utf-8' }, (err, data) =>{
-                        if (err) {
-                            reject(err);
-                        } else {
-                            let version = this.defaultToolchain;
-                            const match = /lean_version\s*=\s*"([^"]*)"/.exec(data.toString());
-                            if (match) version = match[1];
-                            resolve(version);
-                        }
-                    });
-                } else {
-                    resolve(this.defaultToolchain);
+    private async handleLakeFileChanged(uri : Uri, raiseEvent : boolean)  {
+        // Note: just opening the file fires this event sometimes which is annoying, so
+        // we compare the contents just to be sure and normalize whitespace so that
+        // just adding a new line doesn't trigger the prompt.
+        const [workspaceFolder, packageUri, packageFileUri] = findLeanPackageRoot(uri);
+        if (packageUri) {
+            const fileUri = this.findLakeFile(packageUri);
+            if (fileUri) {
+                const contents = this.readWhitespaceNormalized(fileUri);
+                let existing : string | undefined;
+                const key = packageUri.toString();
+                if (this.normalizedLakeFileContents.get(key)){
+                    existing = this.normalizedLakeFileContents.get(key);
                 }
-            });
-        } else {
-            // must be a lean-toolchain file, these are much simpler they only contain a version.
-            const url = new URL(this.leanVersionFile.toString());
-            return new Promise<string>((resolve, reject) => {
-                if (fs.statSync(url)) {
-                    fs.readFile(url, { encoding: 'utf-8' }, (err, data) =>{
-                        if (err) {
-                            reject(err);
-                        } else {
-                            const version = data.trim() ?? this.defaultToolchain;
-                            resolve(version);
-                        }
-                    });
-                } else {
-                    resolve(this.defaultToolchain);
+                if (contents !== existing) {
+                    this.normalizedLakeFileContents.set(key, contents);
+                    if (raiseEvent) {
+                        // raise an event so the extension triggers handleLakeFileChanged.
+                        this.lakeFileChangedEmitter.fire(packageUri);
+                    }
                 }
-            });
+            }
         }
     }
+
+    private async handleFileChanged(uri: Uri, raiseEvent : boolean) {
+        // note: apply the same rules here with findLeanPkgVersionInfo no matter
+        // if a file is added or removed so we always match the elan behavior.
+        const [packageUri, version] = await findLeanPackageVersionInfo(uri);
+        if (packageUri && version) {
+            let existing : string | undefined;
+            const key = packageUri.toString();
+            if (this.currentVersion.has(key)){
+                existing = this.currentVersion.get(key);
+            }
+            if (existing !== version){
+                this.currentVersion.set(key, version);
+                if (raiseEvent) {
+                    // raise an event so the extension triggers handleVersionChanged.
+                    this.versionChangedEmitter.fire(packageUri);
+                }
+            }
+        }
+    }
+
+    private findLakeFile(packageUri: Uri) : Uri | null {
+        const fullPath = Uri.joinPath(packageUri, this.lakeFileName);
+        const url = fullPath.fsPath;
+        if (fs.existsSync(url)) {
+            return fullPath;
+        }
+        return null;
+    }
+
+    // Return file contents with whitespace normalized.
+    private readWhitespaceNormalized(fileUri: Uri) : string {
+        const contents = fs.readFileSync(fileUri.fsPath).toString();
+        // ignore whitespace changes by normalizing whitespace.
+        const re = /[ \t\r\n]+/g
+        const result = contents.replace(re, ' ');
+        return result.trim();
+    }
+
 }
