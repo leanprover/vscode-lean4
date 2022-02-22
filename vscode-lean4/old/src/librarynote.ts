@@ -29,9 +29,11 @@ export class LibraryNoteLinkProvider implements DocumentLinkProvider {
                     }
                 }
             }
-        }
-        catch (Exception){
             await window.showErrorMessage('Library note "${noteName}" not found.');
+        }
+        catch (ex){
+            // Throw an exception in case any other issue is encountered
+            window.showErrorMessage('Exception thrown: .' + ex);
         }
     }
 }

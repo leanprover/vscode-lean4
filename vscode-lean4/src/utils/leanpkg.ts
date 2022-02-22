@@ -93,13 +93,13 @@ export class LeanpkgService implements Disposable {
             // search parent folders for a leanpkg.toml file, or a Lake lean-toolchain file.
             while (true) {
                 const leanToolchain = Uri.joinPath(uri, this.toolchainFileName);
-                if (fs.statSync(new URL(leanToolchain.toString()))) {
+                if (fs.existsSync(new URL(leanToolchain.toString()))) {
                     this.leanVersionFile = leanToolchain;
                     break;
                 }
                 else {
                     const leanPkg = Uri.joinPath(uri, this.tomlFileName);
-                    if (fs.statSync(new URL(leanPkg.toString()))) {
+                    if (fs.existsSync(new URL(leanPkg.toString()))) {
                         this.leanVersionFile = leanPkg;
                         break;
                     }

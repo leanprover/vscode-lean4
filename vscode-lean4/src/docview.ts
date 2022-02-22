@@ -25,11 +25,11 @@ function findProjectDocumentation(): string | null {
     const rootPath = findActiveEditorRootPath();
     if (rootPath) {
         let html = join(rootPath, 'html', 'index.html');
-        if (fs.statSync(html)) {
+        if (fs.existsSync(html)) {
             return html;
         }
         html = join(rootPath, 'html', 'index.htm');
-        if (fs.statSync(html)) {
+        if (fs.existsSync(html)) {
             return html;
         }
     }
@@ -136,23 +136,26 @@ export class DocViewProvider implements Disposable {
     async fetch(url?: string): Promise<string> {
         if (url) {
             try{
-            const uri = Uri.parse(url);
-            if (uri.scheme === 'file') {
-                if (uri.fsPath.endsWith('.html') || uri.fsPath.endsWith('.htm')) {
-                    return fs.readFileSync(uri.fsPath).toString();
+                const uri = Uri.parse(url);
+                if (uri.scheme === 'file') {
+                    if (uri.fsPath.endsWith('.html') || uri.fsPath.endsWith('.htm')) {
+                        return fs.readFileSync(uri.fsPath).toString();
+                    }
+                } else {
+                    const {data, headers} = await axios.get<string>(url);
+                    if (('' + headers['content-type']).startsWith('text/html')) {
+                        return data;
+                    }
                 }
-            } else {
-                const {data, headers} = await axios.get<string>(url);
-                if (('' + headers['content-type']).startsWith('text/html')) {
-                    return data;
-                }
-            }
-            }
-            catch (Exception){
                 const $ = cheerio.load('<p>');
                 $('p').text('Unsupported file. ')
                     .append($('<a>').attr('href', url).attr('alwaysExternal', 'true')
                         .text('Open in browser instead.'));
+                return $.html();
+            }
+            catch (ex){
+                const $ = cheerio.load('<p>');
+                $('p').text('Error fetching file. ' + ex);
                 return $.html();
             }
         } else {
