@@ -53,6 +53,7 @@ export class InfoProvider implements Disposable {
     private stylesheet: string = '';
     private autoOpened: boolean = false;
     private clientProvider: LeanClientProvider;
+    private receivedHtml : string = '';
 
     // Subscriptions are counted and only disposed of when count becomes 0.
     private serverNotifSubscriptions: Map<string, [number, Disposable[]]> = new Map();
@@ -185,6 +186,9 @@ export class InfoProvider implements Disposable {
         copyToClipboard: async (text) => {
             await env.clipboard.writeText(text);
             await window.showInformationMessage(`Copied to clipboard: ${text}`);
+        },
+        sendHtml: async (text) => {
+            this.receivedHtml = text;
         },
         insertText: async (text, kind, tdpp) => {
             if (tdpp) {
@@ -339,11 +343,21 @@ export class InfoProvider implements Disposable {
         return this.webviewPanel?.visible === true;
     }
 
-    async copyHtmlToClipboard() : Promise<boolean> {
-        if (this.webviewPanel){
-            await this.webviewPanel.api.requestedAction({kind: 'copyHtmlToClipboard'});
+    async getHtmlContents() : Promise<string> {
+        let retries = 10;
+        this.receivedHtml = ''
+        if (this.webviewPanel) {
+            await this.webviewPanel.api.requestedAction({kind: 'getHtmlContents'});
+            while (!this.receivedHtml && retries > 0){
+                await this.sleep(50);
+                retries--;
+            }
         }
-        return false;
+        return this.receivedHtml;
+    }
+
+    sleep(ms : number) {
+        return new Promise((resolve) => setTimeout(resolve, ms));
     }
 
     async toggleAllMessages() : Promise<void> {

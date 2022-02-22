@@ -74,9 +74,7 @@ export async function waitForHtmlString(leanApi: TestApi, toFind : string, retri
     let count = 0;
     let html = '';
     while (count < retries){
-        await leanApi.copyHtmlToClipboard();
-        await sleep(500);
-        html = await vscode.env.clipboard.readText();
+        html = await leanApi.getHtmlContents();
         if (html.indexOf(toFind) > 0){
             return [html, true];
         }

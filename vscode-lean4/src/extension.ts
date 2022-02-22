@@ -111,8 +111,8 @@ export async function activate(context: ExtensionContext): Promise<any> {
                 resolve(info.isOpen());
             });
         },
-        async copyHtmlToClipboard(): Promise<boolean> {
-            return await info.copyHtmlToClipboard();
+        async getHtmlContents(): Promise<string> {
+            return await info.getHtmlContents();
         },
         async toggleAllMessages(): Promise<void> {
             await info.toggleAllMessages();
