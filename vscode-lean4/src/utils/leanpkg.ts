@@ -120,7 +120,7 @@ export class LeanpkgService implements Disposable {
 
     // Return file contents with whitespace normalized.
     private readWhitespaceNormalized(fileUri: Uri) : string {
-        if(fsExistHelper(fileUri.fsPath.toString())){
+        if(fsExistHelper(fileUri.fsPath)){
             const contents = fs.readFileSync(fileUri.fsPath).toString();
             // ignore whitespace changes by normalizing whitespace.
             const re = /[ \t\r\n]+/g
