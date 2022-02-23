@@ -26,7 +26,7 @@
 		"test": "node ./out/runTest.js"
 	},
 	"dependencies": {
-		"@lean4/infoview-api": "^0.1.0"
+		"lean4": "^0.0.68"
 	},
 	"devDependencies": {
 		"@types/glob": "^7.1.3",
@@ -38,7 +38,6 @@
 		"mocha": "^8.2.1",
 		"source-map-support": "^0.5.12",
 		"typescript": "^4.5.4",
-		"vscode-languageserver-protocol": "^3.17.0-next",
-		"lean4": "^0.0.68"
+		"vscode-languageserver-protocol": "^3.17.0-next"
 	}
 }
