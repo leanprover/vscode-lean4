@@ -9,5 +9,8 @@
     "strict": false,
 	},
 
-  "include": ["src/**/*"]
+  "include": ["src/**/*"],
+  "references": [
+	  { "path": "../vscode-lean4" }
+  ]
 }

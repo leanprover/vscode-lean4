@@ -14,10 +14,10 @@ async function main() {
 	try {
 		// The folder containing the Extension Manifest package.json
 		// Passed to `--extensionDevelopmentPath`
-		const extensionDevelopmentPath = path.resolve(__dirname, '..', '..', '..', 'vscode-lean4');
+		const extensionDevelopmentPath = path.resolve(__dirname, '..', '..', 'vscode-lean4');
 
 		// make sure we are in a clean state
-		const vscodeTestPath = path.resolve(__dirname, '../../.vscode-test');
+		const vscodeTestPath = path.resolve(__dirname, '../.vscode-test');
 		clearUserWorkspaceData(vscodeTestPath);
 
 		// This will download VS Code, unzip it and run the integration test
@@ -32,24 +32,39 @@ async function main() {
 
 		// run the lean3 test in one vs code instance, using `open folder` since
 		// lean3 doesn't lile ad-hoc files.
-		const testFolder = path.join(__dirname, '..', '..', 'src', 'lean', 'lean3');
+		const testFolder = path.join(__dirname, '..', 'suite', 'lean3');
 
 		await runTests({
 			vscodeExecutablePath,
 			extensionDevelopmentPath,
-			extensionTestsPath: path.resolve(__dirname, './lean3'),
+			extensionTestsPath: path.resolve(__dirname, 'lean3'),
 			launchArgs: ['--new-window', '--disable-gpu', testFolder] });
 
 		// The '--new-window' doesn't see to be working, so this hack
 		// ensures the following test does not re-open the lean3 folder
 		clearUserWorkspaceData(vscodeTestPath);
 
-		// run the lean4 tests in a separate vs code instance
+		// run the lean4 tests in adhoc file configuration (no folder open)
 		await runTests({
 			vscodeExecutablePath,
 			extensionDevelopmentPath,
-			extensionTestsPath:path.resolve(__dirname, './suite'),
+			extensionTestsPath:path.resolve(__dirname, 'simple'),
 			launchArgs: ['--new-window', '--disable-gpu'] });
+
+
+		const lean4TestFolder = path.join(__dirname, '..', 'suite', 'simple');
+
+		// The '--new-window' doesn't see to be working, so this hack
+		// ensures the following test does not re-open the lean3 folder
+		clearUserWorkspaceData(vscodeTestPath);
+
+		// run the lean4 simple tests again, this time with an "open folder" configuration
+		await runTests({
+			vscodeExecutablePath,
+			extensionDevelopmentPath,
+			extensionTestsPath:path.resolve(__dirname, './simple'),
+			launchArgs: ['--new-window', '--disable-gpu', lean4TestFolder] });
+
 
 	} catch (err) {
 		console.error('Failed to run tests');

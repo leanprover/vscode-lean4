@@ -10,7 +10,6 @@ import { LeanClientProvider } from './utils/clientProvider';
 import { addDefaultElanPath } from './config';
 import { dirname, basename } from 'path';
 import { findLeanPackageVersionInfo } from './utils/projectInfo';
-import { TestApi } from '@lean4/infoview-api';
 
 function isLean(languageId : string) : boolean {
     return languageId === 'lean' || languageId === 'lean4';
@@ -105,19 +104,5 @@ export async function activate(context: ExtensionContext): Promise<any> {
     pkgService.versionChanged((uri) => installer.handleVersionChanged(uri));
     pkgService.lakeFileChanged((uri) => installer.handleLakeFileChanged(uri));
 
-    const testApiImpl : TestApi = {
-        async isInfoViewOpen() : Promise<boolean> {
-            return new Promise<boolean>((resolve) => {
-                resolve(info.isOpen());
-            });
-        },
-        async getHtmlContents(): Promise<string> {
-            return await info.getHtmlContents();
-        },
-        async toggleAllMessages(): Promise<void> {
-            await info.toggleAllMessages();
-        }
-    };
-
-    return  { isLean4Project: true, testApi : testApiImpl};
+    return  { isLean4Project: true, infoview: info};
 }

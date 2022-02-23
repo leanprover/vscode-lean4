@@ -2,14 +2,14 @@ import * as assert from 'assert';
 import { suite } from 'mocha';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { waitForActiveExtension, waitForActiveEditor, sleep } from '../suite/utils';
+import { waitForActiveExtension, waitForActiveEditor, sleep } from '../utils/helpers';
 
 suite('Extension Test Suite', () => {
 
 	test('Lean3 project', async () => {
-		void vscode.window.showInformationMessage('Running tests...');
+		void vscode.window.showInformationMessage('Running tests: ' + __dirname);
 
-		const testsRoot = path.join(__dirname, '..', '..', '..', 'src', 'lean', 'lean3');
+		const testsRoot = path.join(__dirname, '..', '..', 'suite', 'lean3');
 
 		const doc = await vscode.workspace.openTextDocument(path.join(testsRoot, 'Main.lean'));
 		await vscode.window.showTextDocument(doc);
@@ -31,6 +31,7 @@ suite('Extension Test Suite', () => {
 		});
 
 		await vscode.commands.executeCommand('workbench.action.closeAllEditors');
+		await sleep(1000); // make sure it shuts down fully before next test.
 	});
 
 }).timeout(60000);

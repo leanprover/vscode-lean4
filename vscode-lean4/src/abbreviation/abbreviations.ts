@@ -1,4 +1,4 @@
-{
+export function getAbbreviations() { return {
     "{}": "{$CURSOR}",
     "{}_": "{$CURSOR}_",
     "{{}}": "⦃$CURSOR⦄",
@@ -1785,4 +1785,5 @@
     "Vdash": "⊩",
     "Vert": "‖",
     "Vvdash": "⊪"
+}
 }

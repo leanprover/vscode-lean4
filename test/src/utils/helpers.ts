@@ -1,5 +1,7 @@
+
+import * as assert from 'assert';
 import * as vscode from 'vscode';
-import { TestApi } from '@lean4/infoview-api';
+import { InfoProvider } from 'infoview';
 
 export function sleep(ms : number) {
     return new Promise((resolve) => setTimeout(resolve, ms));
@@ -53,11 +55,11 @@ export async function waitForActiveEditor(retries=10, delay=1000) : Promise<vsco
     return vscode.window.activeTextEditor;
 }
 
-export async function waitForInfoViewOpen(leanApi: TestApi, retries=10, delay=1000) : Promise<boolean> {
+export async function waitForInfoViewOpen(infoView: InfoProvider, retries=10, delay=1000) : Promise<boolean> {
     let count = 0;
     console.log('Waiting for InfoView...');
     while (count < retries){
-        const isOpen = await leanApi.isInfoViewOpen();
+        const isOpen = await infoView.isOpen();
         if (isOpen) {
             console.log('InfoView is open.');
             return true;
@@ -70,24 +72,28 @@ export async function waitForInfoViewOpen(leanApi: TestApi, retries=10, delay=10
     return false;
 }
 
-export async function waitForHtmlString(leanApi: TestApi, toFind : string, retries=10, delay=1000): Promise<[string,boolean]> {
+export async function waitForHtmlString(infoView: InfoProvider, toFind : string, retries=10, delay=1000): Promise<[string,boolean]> {
     let count = 0;
     let html = '';
     while (count < retries){
-        html = await leanApi.getHtmlContents();
+        html = await infoView.getHtmlContents();
         if (html.indexOf(toFind) > 0){
             return [html, true];
         }
         if (html.indexOf('<details>')) { // we want '<details open>' instead...
-            await leanApi.toggleAllMessages();
+            await infoView.toggleAllMessages();
         }
         await sleep(delay);
         count += 1;
     }
 
+    if (!html) {
+        console.log('>>> infoview contents:')
+        console.log(html);
+        assert(false, `Missing "${toFind}" in infoview`)
+    }
     return [html, false];
 }
-
 
 export function extractToTerminator(html: string, pos: number, terminator: string){
 	const endPos = html.indexOf(terminator, pos);
@@ -95,4 +101,13 @@ export function extractToTerminator(html: string, pos: number, terminator: strin
 		return ''
 	}
 	return html.substring(pos, endPos);
+}
+
+export function findWord(editor: vscode.TextEditor, word: string) : vscode.Range | undefined {
+    const text = editor.document.getText();
+    const pos = text.indexOf(word);
+    if (pos < 0) {
+        return undefined;
+    }
+    return new vscode.Range(editor.document.positionAt(pos), editor.document.positionAt(pos + word.length));
 }

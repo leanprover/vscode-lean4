@@ -23,10 +23,10 @@
 		"lint": "eslint . --ext .ts,.tsx",
 		"watch": "tsc -watch -p ./",
 		"pretest": "npm run compile",
-		"test": "node ./out/test/runTest.js"
+		"test": "node ./out/runTest.js"
 	},
 	"dependencies": {
-		"@lean4/infoview-api": "^0.1.0"
+		"@lean4/infoview-api": "^0.1.1"
 	},
 	"devDependencies": {
 		"@types/glob": "^7.1.3",

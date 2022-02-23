@@ -132,9 +132,3 @@ export interface InfoviewApi {
    */
   requestedAction(action: InfoviewAction): Promise<void>;
 }
-
-export interface TestApi {
-  isInfoViewOpen() : Promise<boolean>;
-  getHtmlContents(): Promise<string>;
-  toggleAllMessages(): Promise<void>;
-}

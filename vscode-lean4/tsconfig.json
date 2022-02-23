@@ -13,7 +13,8 @@
         "alwaysStrict": true,
         "rootDir": "./src",
         "noImplicitAny": true,
-        "strictNullChecks": true
+        "strictNullChecks": true,
+        "composite": true
     },
     "include": [
         "src/**/*"

@@ -1,7 +1,7 @@
 import { computed } from 'mobx';
 import { Disposable, EventEmitter, TextEditor  } from 'vscode';
 import { autorunDisposable } from '../utils/autorunDisposable';
-import * as abbreviations from './abbreviations.json';
+import { getAbbreviations } from './abbreviations';
 import { SymbolsByAbbreviation, AbbreviationConfig } from './config';
 
 /**
@@ -33,7 +33,7 @@ export class AbbreviationProvider implements Disposable {
 	get symbolsByAbbreviation(): SymbolsByAbbreviation {
 		// There are only like 1000 symbols. Building an index is not required yet.
 		return {
-			...abbreviations,
+			...getAbbreviations(),
 			...this.config.inputModeCustomTranslations.get(),
 		};
 	}

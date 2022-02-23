@@ -23,8 +23,9 @@
 			"request": "launch",
 			"runtimeExecutable": "${execPath}",
 			"args": [
-				"--extensionDevelopmentPath=${workspaceFolder}",
-				"--extensionTestsPath=${workspaceFolder}/test/out/test/lean3/"
+				"--extensionDevelopmentPath=${workspaceFolder}/vscode-lean4",
+				"--extensionTestsPath=${workspaceFolder}/test/out/simple/",
+                "${workspaceFolder}/test/suite/simple"
 			],
             "cwd": "${workspaceFolder}/test",
 			"outFiles": ["${workspaceFolder}/test/out/test/**/*.js"],
