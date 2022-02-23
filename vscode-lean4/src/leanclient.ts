@@ -22,6 +22,7 @@ import { assert } from './utils/assert'
 import { LeanFileProgressParams, LeanFileProgressProcessingInfo } from '@lean4/infoview-api';
 import { LocalStorageService} from './utils/localStorage'
 import { batchExecute, testExecute } from './utils/batch'
+import { readLeanVersion } from './utils/projectInfo';
 import { cwd } from 'process'
 import * as fs from 'fs';
 import { URL } from 'url';
@@ -100,6 +101,7 @@ export class LeanClient implements Disposable {
 
     async restart(): Promise<void> {
         this.restartingEmitter.fire(undefined)
+        const startTime = Date.now()
 
         if (this.isStarted()) {
             await this.stop()
@@ -115,34 +117,25 @@ export class LeanClient implements Disposable {
 
         let executable = (this.toolchainPath) ? join(this.toolchainPath, 'bin', 'lake') : 'lake';
 
-        // check if the lake process will start, it does not work on scheme ==='untitled'.
-        let useLake = lakeEnabled() && this.folderUri && this.folderUri.scheme === 'file'
+        // check if the lake process will start (skip it on scheme: 'untitled' files)
+        let useLake = lakeEnabled() && this.folderUri && this.folderUri.scheme === 'file';
         if (useLake) {
-            const lakefile = Uri.joinPath(this.folderUri, 'lakefile.lean').toString()
-            if (!fs.existsSync(new URL(lakefile))) {
+            let knownDate = false;
+            const lakefile = Uri.joinPath(this.folderUri, 'lakefile.lean')
+            if (!fs.existsSync(new URL(lakefile.toString()))) {
                 useLake = false;
             }
-        }
-
-        // This is a faster way of finding out lake doesn't work in the current workspace.
-        // The LanguageClient is much slower because it does 10 retries and everything.
-        if (useLake) {
-            // First check we have a version of lake that supports "lake serve"
-            const versionOptions = version ? ['+' + version, '--version'] : ['--version']
-            const lakeVersion = await batchExecute(executable, versionOptions, this.folderUri?.fsPath, undefined);
-            const actual = this.extractVersion(lakeVersion)
-            if (actual.compare('3.0.0') >= 0) {
-                const expectedError = 'Watchdog error: Cannot read LSP request: Stream was closed\n';
-                const serveOptions =  version ? ['+' + version, 'serve'] : ['serve'];
-                const rc = await testExecute(executable, serveOptions, this.folderUri?.fsPath, this.outputChannel, true, expectedError);
-                if (rc !== 0) {
-                    const failover = 'Lake failed, using lean instead.'
-                    console.log(failover);
-                    if (this.outputChannel) this.outputChannel.appendLine(failover);
-                    useLake = false;
+            else {
+                // see if we can avoid the more expensive checkLakeVersion call.
+                const date = await this.checkToolchainVersion(this.folderUri);
+                if (date){
+                    // Feb 16 2022 is when the 3.1.0.pre was released.
+                    useLake = date >= new Date(2022, 1, 16);
+                    knownDate = true;
                 }
-            } else {
-                useLake = false;
+                if (useLake && !knownDate){
+                    useLake = await this.checkLakeVersion(executable, version);
+                }
             }
         }
 
@@ -270,7 +263,8 @@ export class LeanClient implements Disposable {
                 if (s.newState === State.Starting) {
                     console.log('client starting');
                 } else if (s.newState === State.Running) {
-                    console.log('client running');
+                    const end = Date.now()
+                    console.log('client running, started in ', end - startTime, 'ms');
                     this.running = true; // may have been auto restarted after it failed.
                 } else if (s.newState === State.Stopped) {
                     console.log('client has stopped or it failed to start');
@@ -487,6 +481,36 @@ export class LeanClient implements Disposable {
 
     get initializeResult() : InitializeResult | undefined {
         return this.running ? this.client?.initializeResult : undefined
+    }
+
+    private async checkToolchainVersion(folderUri: Uri) : Promise<Date | undefined> {
+
+        // see if we have a well known toolchain label that corresponds
+        // to a known date like 'leanprover/lean4:nightly-2022-02-01'
+        const toolchainVersion = await readLeanVersion(folderUri);
+        if (toolchainVersion) {
+            const match = /^leanprover\/lean4:nightly-(\d+)-(\d+)-(\d+)$/.exec(toolchainVersion);
+            if (match) {
+                return new Date(parseInt(match[1]), parseInt(match[2]) - 1, parseInt(match[3]));
+            }
+            if (toolchainVersion === 'leanprover/lean4:stable') {
+                return new Date(2022, 2, 1);
+            }
+        }
+        return undefined;
+    }
+
+    async checkLakeVersion(executable: string, version: string) : Promise<boolean> {
+        // Check that the Lake version is high enough to support "lake serve" option.
+        const versionOptions = version ? ['+' + version, '--version'] : ['--version']
+        const start = Date.now()
+        const lakeVersion = await batchExecute(executable, versionOptions, this.folderUri?.fsPath, undefined);
+        console.log(`Ran '${executable} ${versionOptions.join(' ')}' in ${Date.now() - start} ms`);
+        const actual = this.extractVersion(lakeVersion)
+        if (actual.compare('3.0.0') > 0) {
+            return true;
+        }
+        return false;
     }
 
     private extractVersion(v: string | undefined) : SemVer {

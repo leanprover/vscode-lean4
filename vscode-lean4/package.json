@@ -25,7 +25,8 @@
 				"lean4.toolchainPath": {
 					"type": "string",
 					"default": "",
-					"markdownDescription": "Path to your Lean toolchain. Leave this blank to get the default location from your PATH environment or from the default elan install location."
+					"markdownDescription": "Path to your Lean toolchain. Leave this blank to get the default location from your PATH environment or from the default elan install location.",
+					"scope": "machine-overridable"
 				},
 				"lean4.input.enabled": {
 					"type": "boolean",
@@ -70,7 +71,8 @@
 					"additionalProperties": {
 						"type": "string",
 						"description": "environment variable to add"
-					}
+					},
+					"scope": "machine-overridable"
 				},
 				"lean4.serverEnvPaths": {
 					"type": "array",
@@ -79,7 +81,8 @@
 					"items": {
 						"type": "string",
 						"description": "a path to add to the environment"
-					}
+					},
+					"scope": "machine-overridable"
 				},
 				"lean4.enableLake": {
 					"type": "boolean",
@@ -103,7 +106,8 @@
 				"lean4.serverLogging.path": {
 					"type": "string",
 					"default": ".",
-					"description": "Path to the directory where Lean 4 server log files are stored."
+					"description": "Path to the directory where Lean 4 server log files are stored.",
+					"scope": "machine-overridable"
 				},
 				"lean4.infoViewAllErrorsOnLine": {
 					"type": "boolean",
