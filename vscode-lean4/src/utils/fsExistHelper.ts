@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
-import { open, close } from 'fs';
+import { open, close, PathLike } from 'fs';
 
 
-export function fsExistHelper(pathFile: any): boolean {
+export function fsExistHelper(pathFile: PathLike): boolean {
     /*
     Helper used to replace fs.existsSync (using existsSync to check for the existence
     of a file before calling fs.open(), fs.readFile() or fs.writeFile() is not recommended.

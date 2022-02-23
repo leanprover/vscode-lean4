@@ -128,7 +128,7 @@ export class LeanpkgService implements Disposable {
             return result.trim();
         }
         else {
-            return ""
+            return ''
         }
     }
 
