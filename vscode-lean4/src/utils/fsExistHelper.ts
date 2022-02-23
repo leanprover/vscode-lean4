@@ -10,6 +10,5 @@ export function fsExistHelper(pathFile: string): boolean {
     Instead, user code should open/read/write the file directly and handle the error raised if the file does not exist.)
     */
 
-    const fileExists = promises.access(pathFile).then(() => true).catch(() => false);
-    return fileExists
+    return promises.access(pathFile).then(() => true).catch(() => false);
 }
