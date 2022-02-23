@@ -17,17 +17,24 @@ export class LibraryNoteLinkProvider implements DocumentLinkProvider {
 
     async resolveDocumentLink(link: DocumentLink): Promise<DocumentLink> {
         const noteName = link.tooltip;
-        for (const leanFile of await workspace.findFiles('**/*.lean')) {
-            const content = (await workspace.fs.readFile(leanFile)).toString();
-            for (const m of content.matchAll(libraryNoteRegex)) {
-                console.log(m[1]);
-                if (m[1] === noteName) {
-                    const lineNo = content.substr(0, m.index).split(/\r\n|\r|\n/).length;
-                    link.target = leanFile.with({ fragment: `L${lineNo}` });
-                    return link;
+        // Adding try-catch statement for read file possible exceptions
+        try{
+            for (const leanFile of await workspace.findFiles('**/*.lean')) {
+                const content = (await workspace.fs.readFile(leanFile)).toString();
+                for (const m of content.matchAll(libraryNoteRegex)) {
+                    console.log(m[1]);
+                    if (m[1] === noteName) {
+                        const lineNo = content.substr(0, m.index).split(/\r\n|\r|\n/).length;
+                        link.target = leanFile.with({ fragment: `L${lineNo}` });
+                        return link;
+                    }
                 }
             }
+            await window.showErrorMessage(`Library note "${noteName}" not found.`);
         }
-        await window.showErrorMessage(`Library note "${noteName}" not found.`);
+        catch (ex){
+            // Throw an exception in case any other issue is encountered
+            window.showErrorMessage('Exception thrown: .' + ex);
+        }
     }
 }
