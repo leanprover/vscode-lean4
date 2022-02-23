@@ -417,7 +417,7 @@
 		"test": "node ./out/test/runTest.js"
 	},
 	"dependencies": {
-		"@lean4/infoview-api": "^0.1.1",
+		"@lean4/infoview-api": "0.1.0",
 		"@lean4/infoview": "^0.1.0",
 		"axios": "^0.24.0",
 		"cheerio": "^1.0.0-rc.10",

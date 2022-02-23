@@ -21,12 +21,12 @@
 		"vscode:prepublish": "npm run build",
 		"build": "tsc --build",
 		"lint": "eslint . --ext .ts,.tsx",
-		"watch": "tsc -watch -p ./",
+		"watch": "tsc --build --watch",
 		"pretest": "npm run build",
 		"test": "node ./out/runTest.js"
 	},
 	"dependencies": {
-		"@lean4/infoview-api": "^0.1.1"
+		"@lean4/infoview-api": "^0.1.0"
 	},
 	"devDependencies": {
 		"@types/glob": "^7.1.3",
