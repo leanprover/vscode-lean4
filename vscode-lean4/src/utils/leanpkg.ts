@@ -3,6 +3,7 @@ import { LocalStorageService} from './localStorage'
 import { findLeanPackageRoot, findLeanPackageVersionInfo } from './projectInfo';
 import * as fs from 'fs';
 import * as path from 'path';
+import { fsExistHelper } from './fsExistHelper';
 
 // This service monitors the Lean package root folders for changes to any
 // lean-toolchain, leanpkg.toml or lakefile.lean files found there.
@@ -119,11 +120,16 @@ export class LeanpkgService implements Disposable {
 
     // Return file contents with whitespace normalized.
     private readWhitespaceNormalized(fileUri: Uri) : string {
-        const contents = fs.readFileSync(fileUri.fsPath).toString();
-        // ignore whitespace changes by normalizing whitespace.
-        const re = /[ \t\r\n]+/g
-        const result = contents.replace(re, ' ');
-        return result.trim();
+        if(fsExistHelper(fileUri.fsPath.toString())){
+            const contents = fs.readFileSync(fileUri.fsPath).toString();
+            // ignore whitespace changes by normalizing whitespace.
+            const re = /[ \t\r\n]+/g
+            const result = contents.replace(re, ' ');
+            return result.trim();
+        }
+        else {
+            return ""
+        }
     }
 
 }

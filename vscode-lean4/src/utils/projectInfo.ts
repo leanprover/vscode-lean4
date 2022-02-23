@@ -2,6 +2,7 @@ import * as fs from 'fs';
 import { URL } from 'url';
 import { Uri, workspace, WorkspaceFolder } from 'vscode';
 import { addDefaultElanPath } from '../config';
+import { fsExistHelper } from './fsExistHelper';
 
 // Detect lean4 root directory (works for both lean4 repo and nightly distribution)
 export function isCoreLean4Directory(path: Uri): boolean {
@@ -126,7 +127,7 @@ async function readLeanVersionFile(packageFileUri : Uri) : Promise<string | null
     if (packageFileUri.path.endsWith(tomlFileName))
     {
         return await new Promise<string | null>((resolve, reject) => {
-            if (fs.existsSync(url)) {
+            if (fsExistHelper(url)) {
                 fs.readFile(url, { encoding: 'utf-8' }, (err, data) =>{
                     if (err) {
                         reject(err);
@@ -143,7 +144,7 @@ async function readLeanVersionFile(packageFileUri : Uri) : Promise<string | null
     } else {
         // must be a lean-toolchain file, these are much simpler they only contain a version.
         return await new Promise<string | null>((resolve, reject) => {
-            if (fs.existsSync(url)) {
+            if (fsExistHelper(url)) {
                 fs.readFile(url, { encoding: 'utf-8' }, (err, data) =>{
                     if (err) {
                         reject(err);

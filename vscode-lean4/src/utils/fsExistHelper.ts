@@ -2,7 +2,7 @@
 import { promises } from 'fs';
 
 
-export async function fsExistHelper(pathFile: string): Promise<boolean> {
+export function fsExistHelper(pathFile: string): boolean {
     /*
     Helper used to replace fs.existsSync (using existsSync to check for the existence
     of a file before calling fs.open(), fs.readFile() or fs.writeFile() is not recommended.
@@ -10,6 +10,6 @@ export async function fsExistHelper(pathFile: string): Promise<boolean> {
     Instead, user code should open/read/write the file directly and handle the error raised if the file does not exist.)
     */
 
-    const fileExists = await promises.access(pathFile).then(() => true).catch(() => false);
+    const fileExists = promises.access(pathFile).then(() => true).catch(() => false);
     return fileExists
 }
