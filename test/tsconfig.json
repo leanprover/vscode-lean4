@@ -1,16 +1,16 @@
 {
-	"compilerOptions": {
-		"module": "commonjs",
-    "target": "es2019",
-    "lib": ["ES2019"],
-		"sourceMap": true,
-		"rootDir": "./src",
-		"outDir": "out",
-    "strict": false,
-	},
+    "compilerOptions": {
+        "module": "commonjs",
+        "target": "es2019",
+        "lib": [ "ES2019" ],
+        "sourceMap": true,
+        "rootDir": "./src",
+        "outDir": "./out",
+        "strict": false,
+    },
 
-  "include": ["src/**/*"],
-  "references": [
-	  { "path": "../vscode-lean4" }
-  ]
+    "include": [ "src/**/*" ],
+    "references": [
+        { "path": "../vscode-lean4" }
+    ]
 }

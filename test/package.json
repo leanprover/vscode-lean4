@@ -18,11 +18,11 @@
 		]
 	},
 	"scripts": {
-		"vscode:prepublish": "npm run compile",
-		"compile": "tsc -p ./",
+		"vscode:prepublish": "npm run build",
+		"build": "tsc --build",
 		"lint": "eslint . --ext .ts,.tsx",
 		"watch": "tsc -watch -p ./",
-		"pretest": "npm run compile",
+		"pretest": "npm run build",
 		"test": "node ./out/runTest.js"
 	},
 	"dependencies": {
@@ -38,6 +38,7 @@
 		"mocha": "^8.2.1",
 		"source-map-support": "^0.5.12",
 		"typescript": "^4.5.4",
-		"vscode-languageserver-protocol": "^3.17.0-next"
+		"vscode-languageserver-protocol": "^3.17.0-next",
+		"lean4": "^0.0.68"
 	}
 }
