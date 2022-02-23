@@ -11,8 +11,5 @@ export async function fsExistHelper(pathFile: string): Promise<boolean> {
     */
 
     const fileExists = await promises.access(pathFile).then(() => true).catch(() => false);
-    if (!fileExists) {
-          return false
-    }
-    return true
+    return fileExists
 }

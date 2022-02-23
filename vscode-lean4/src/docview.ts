@@ -9,6 +9,7 @@ import * as fs from 'fs';
 import { join, extname } from 'path';
 import { TempFolder } from './utils/tempFolder'
 import { SymbolsByAbbreviation, AbbreviationConfig } from './abbreviation/config'
+import { fsExistHelper } from './utils/fsExistHelper';
 
 export function mkCommandUri(commandName: string, ...args: any[]): string {
     return `command:${commandName}?${encodeURIComponent(JSON.stringify(args))}`;
@@ -26,11 +27,11 @@ function findProjectDocumentation(): string | null {
     const rootPath = findActiveEditorRootPath();
     if (rootPath) {
         let html = join(rootPath, 'html', 'index.html');
-        if (fs.existsSync(html)) {
+        if (fsExistHelper(html)) {
             return html;
         }
         html = join(rootPath, 'html', 'index.htm');
-        if (fs.existsSync(html)) {
+        if (fsExistHelper(html)) {
             return html;
         }
     }
