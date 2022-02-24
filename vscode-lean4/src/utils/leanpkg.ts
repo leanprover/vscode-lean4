@@ -121,7 +121,7 @@ export class LeanpkgService implements Disposable {
     // Return file contents with whitespace normalized.
     private async readWhitespaceNormalized(fileUri: Uri) : Promise<string> {
         try{
-            const contents = await workspace.fs.readFile(fileUri).toString();
+            const contents = (await workspace.fs.readFile(fileUri)).toString();
             // ignore whitespace changes by normalizing whitespace.
             const re = /[ \t\r\n]+/g
             const result = contents.replace(re, ' ');

@@ -199,7 +199,7 @@ export class DocViewProvider implements Disposable {
                 if (uri.scheme === 'file') {
                     fileType = extname(uri.fsPath);
                     if (fileType === '.html' || fileType === '.htm') {
-                        return await workspace.fs.readFile(uri).toString();
+                        return (await workspace.fs.readFile(uri)).toString();
                     }
                 } else {
                     const {data, headers} = await axios.get<string>(url);

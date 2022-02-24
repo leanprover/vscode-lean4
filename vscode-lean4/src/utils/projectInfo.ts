@@ -139,7 +139,7 @@ async function readLeanVersionFile(packageFileUri : Uri) : Promise<string | null
                 });
             } catch (ex){
                 // Throw an exception in case any other issue is encountered
-                throw('Exception thrown: .' + ex);
+                throw ex;
             }
         });
     } else {
@@ -157,7 +157,7 @@ async function readLeanVersionFile(packageFileUri : Uri) : Promise<string | null
                 });
             } catch (ex){
                 // Throw an exception in case any other issue is encountered
-                throw('Exception thrown: .' + ex);
+                throw ex;
             }
         });
     }
