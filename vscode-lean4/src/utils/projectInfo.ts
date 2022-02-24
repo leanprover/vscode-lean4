@@ -2,7 +2,7 @@ import * as fs from 'fs';
 import { URL } from 'url';
 import { Uri, workspace, WorkspaceFolder } from 'vscode';
 import { addDefaultElanPath } from '../config';
-import { fsExistHelper } from './fsExistHelper';
+import { fsExistHelper, fsReadHelper } from './fsExistHelper';
 
 // Detect lean4 root directory (works for both lean4 repo and nightly distribution)
 export async function isCoreLean4Directory(path: Uri): Promise<boolean> {
@@ -126,9 +126,10 @@ async function readLeanVersionFile(packageFileUri : Uri) : Promise<string | null
     }
     if (packageFileUri.path.endsWith(tomlFileName))
     {
-        return await new Promise<string | null>((resolve, reject) => {
+        fsReadHelper(url, true);
+        /*return await new Promise<string | null>((resolve, reject) => {
             try {
-                // TODO - Check helper
+                // TODO - DELETE THIS PART AND CHECK WITH THE HELPER
                 fs.readFile(url, { encoding: 'utf-8' }, (err, data) =>{
                     if (err) {
                         reject(err);
@@ -143,8 +144,11 @@ async function readLeanVersionFile(packageFileUri : Uri) : Promise<string | null
                 throw ex;
             }
         });
+        */
     } else {
         // must be a lean-toolchain file, these are much simpler they only contain a version.
+        fsReadHelper(url, false);
+        /*
         return await new Promise<string | null>((resolve, reject) => {
             try {
                 fs.readFile(url, { encoding: 'utf-8' }, (err, data) =>{
@@ -161,5 +165,6 @@ async function readLeanVersionFile(packageFileUri : Uri) : Promise<string | null
                 throw ex;
             }
         });
+        */
     }
 }
