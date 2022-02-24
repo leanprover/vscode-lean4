@@ -16,7 +16,7 @@ export async function fsReadHelper(url: PathLike, endsWithTomlFileName: Boolean)
     /*
     Helper async used to read a certain file using fs.readFile() function
     param: url - A string representing a PathLike
-
+    param: endsWithTomlFileName - A boolean that indicates if the file is a toml extension
     returns Promise<string | null>((resolve, reject)
     */
     return await new Promise<string | null>((resolve, reject) => {
