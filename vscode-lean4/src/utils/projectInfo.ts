@@ -124,47 +124,20 @@ async function readLeanVersionFile(packageFileUri : Uri) : Promise<string | null
     if (packageFileUri.scheme !== 'file'){
         return null;
     }
+
     if (packageFileUri.path.endsWith(tomlFileName))
     {
-        return fsReadHelper(url, true);
-        /*return await new Promise<string | null>((resolve, reject) => {
-            try {
-                // TODO - DELETE THIS PART AND CHECK WITH THE HELPER
-                fs.readFile(url, { encoding: 'utf-8' }, (err, data) =>{
-                    if (err) {
-                        reject(err);
-                    } else {
-                        const match = /lean_version\s*=\s*"([^"]*)"/.exec(data.toString());
-                        if (match) resolve(match[1].trim());
-                        resolve(null);
-                    }
-                });
-            } catch (ex){
-                // Throw an exception in case any other issue is encountered
-                throw ex;
-            }
-        });
-        */
+        const data = await fsReadHelper(url);
+        if (data) {
+            const match = /lean_version\s*=\s*"([^"]*)"/.exec(data);
+            if (match) return match[1].trim();
+        }
+
     } else {
         // must be a lean-toolchain file, these are much simpler they only contain a version.
-        return fsReadHelper(url, false);
-        /*
-        return await new Promise<string | null>((resolve, reject) => {
-            try {
-                fs.readFile(url, { encoding: 'utf-8' }, (err, data) =>{
-                    if (err) {
-                        reject(err);
-                    } else if (data) {
-                        resolve(data.trim());
-                    } else {
-                        resolve(null);
-                    }
-                });
-            } catch (ex){
-                // Throw an exception in case any other issue is encountered
-                throw ex;
-            }
-        });
-        */
+        return await fsReadHelper(url);
+
     }
+    return null;
+
 }
