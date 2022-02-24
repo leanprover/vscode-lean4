@@ -39,9 +39,6 @@ export interface EditorApi {
   /** Put `text` in the user's clipboard. */
   copyToClipboard(text: string): Promise<void>;
 
-  /** Send requested `html` text to the editor */
-  sendHtml(text: string): Promise<void>;
-
   // NOTE: We could implement everything below in the infoview given `emulateServerNotification`.
   // But the API is small enough it may not be worth the hacks for now.
   /**
@@ -93,8 +90,7 @@ export type InfoviewAction =
   { kind: 'toggleAllMessages'} |
   { kind: 'togglePaused' } |
   { kind: 'togglePin'} |
-  { kind: 'copyToComment'} |
-  { kind: 'getHtmlContents'}
+  { kind: 'copyToComment'}
 
 /** Interface the hosting editor uses to talk to the InfoView WebView. */
 export interface InfoviewApi {
@@ -131,4 +127,10 @@ export interface InfoviewApi {
    * Must fire whenever the user requests that the infoview perform an action.
    */
   requestedAction(action: InfoviewAction): Promise<void>;
+
+  /**
+   * Return the current HTML contents of the infoview as a string. This is used for testing,
+   * in particular to inspect the page contents and check if the UI is in a correct state.
+   */
+  getInfoviewHtml(): Promise<string>;
 }

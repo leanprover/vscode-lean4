@@ -24,11 +24,14 @@ export class Event<E> {
     }
 }
 
+type ExcludeNonEvent<T, U> = T extends (...args: any) => Promise<void> ? U : never
+
 /**
- * Turns response-less async callback fields `f` into events which should fire on `f()` called.
- * Other fields stay as they were.
+ * Turn any response-less async callback field, that is a field `f` extending
+ * `(...args: As) => Promise<void>`, into an event field `f: Event<As>`.
+ * Other fields are removed.
  */
 export type Eventify<T> = {
-  [P in keyof T]: T[P] extends (arg: infer A) => Promise<void> ? Event<A> :
-                  (T[P] extends (...args: infer As) => Promise<void> ? Event<As> : T[P]);
+  [P in keyof T as ExcludeNonEvent<T[P], P>]: T[P] extends (arg: infer A) => Promise<void> ? Event<A> :
+                                              (T[P] extends (...args: infer As) => Promise<void> ? Event<As> : never);
 };
