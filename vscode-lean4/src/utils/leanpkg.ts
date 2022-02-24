@@ -128,7 +128,8 @@ export class LeanpkgService implements Disposable {
             return result.trim();
         }
         catch(ex) {
-            throw ('Exception thrown: ' + ex);
+            // In case there is an error in the read
+            throw ex;
         }
     }
 

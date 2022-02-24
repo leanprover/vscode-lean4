@@ -128,6 +128,7 @@ async function readLeanVersionFile(packageFileUri : Uri) : Promise<string | null
     {
         return await new Promise<string | null>((resolve, reject) => {
             try {
+                // TODO - Check helper
                 fs.readFile(url, { encoding: 'utf-8' }, (err, data) =>{
                     if (err) {
                         reject(err);
