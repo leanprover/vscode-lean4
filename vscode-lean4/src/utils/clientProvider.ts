@@ -75,7 +75,7 @@ export class LeanClientProvider implements Disposable {
             this.testing.set(path, true);
             try {
                 // have to check again here in case elan install had --default-toolchain none.
-                const [workspaceFolder, folder, packageFileUri] = findLeanPackageRoot(uri);
+                const [workspaceFolder, folder, packageFileUri] = await findLeanPackageRoot(uri);
                 const packageUri = folder ? folder : Uri.from({scheme: 'untitled'});
                 const version = await installer.testLeanVersion(packageUri);
                 if (version.version === '4') {
@@ -182,7 +182,7 @@ export class LeanClientProvider implements Disposable {
     }
 
     async getLeanVersion(uri: Uri) : Promise<LeanVersion | undefined> {
-        const [workspaceFolder, folder, packageFileUri] = findLeanPackageRoot(uri);
+        const [workspaceFolder, folder, packageFileUri] = await findLeanPackageRoot(uri);
         const folderUri = folder ? folder : Uri.from({scheme: 'untitled'});
         const path = folderUri.toString()
         if (this.versions.has(path)){
@@ -202,7 +202,7 @@ export class LeanClientProvider implements Disposable {
     // Returns a boolean "true" if the LeanClient was already created.
     // Returns a null client if it turns out the new workspace is a lean3 workspace.
     async ensureClient(uri : Uri, versionInfo: LeanVersion | undefined) : Promise<[boolean,LeanClient | undefined]> {
-        const [workspaceFolder, folder, packageFileUri] = findLeanPackageRoot(uri);
+        const [workspaceFolder, folder, packageFileUri] = await findLeanPackageRoot(uri);
         const folderUri = folder ? folder : Uri.from({scheme: 'untitled'});
         const path = folderUri.toString();
         let  client: LeanClient | undefined;

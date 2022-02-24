@@ -9,6 +9,7 @@ import * as fs from 'fs';
 import { join, extname } from 'path';
 import { TempFolder } from './utils/tempFolder'
 import { SymbolsByAbbreviation, AbbreviationConfig } from './abbreviation/config'
+import { fsExistHelper } from './utils/fsExistHelper';
 
 export function mkCommandUri(commandName: string, ...args: any[]): string {
     return `command:${commandName}?${encodeURIComponent(JSON.stringify(args))}`;
@@ -22,15 +23,15 @@ function findActiveEditorRootPath(): string | undefined {
     return undefined;
 }
 
-function findProjectDocumentation(): string | null {
+async function findProjectDocumentation(): Promise<string | null> {
     const rootPath = findActiveEditorRootPath();
     if (rootPath) {
         let html = join(rootPath, 'html', 'index.html');
-        if (fs.existsSync(html)) {
+        if(await fsExistHelper(html)) {
             return html;
         }
         html = join(rootPath, 'html', 'index.htm');
-        if (fs.existsSync(html)) {
+        if(await fsExistHelper(html)) {
             return html;
         }
     }
@@ -83,7 +84,7 @@ export class DocViewProvider implements Disposable {
     }
 
     private async offerToOpenProjectDocumentation() {
-        const projDoc = findProjectDocumentation();
+        const projDoc = await findProjectDocumentation();
         if (!projDoc) return;
         await this.open(Uri.file(projDoc).toString());
     }
@@ -198,7 +199,7 @@ export class DocViewProvider implements Disposable {
                 if (uri.scheme === 'file') {
                     fileType = extname(uri.fsPath);
                     if (fileType === '.html' || fileType === '.htm') {
-                        return fs.readFileSync(uri.fsPath).toString();
+                        return await workspace.fs.readFile(uri).toString();
                     }
                 } else {
                     const {data, headers} = await axios.get<string>(url);
@@ -223,7 +224,7 @@ export class DocViewProvider implements Disposable {
             const $ = cheerio.load('<body>');
             const body = $('body');
 
-            const html = findProjectDocumentation();
+            const html = await findProjectDocumentation();
             if (html) {
                 body.append($('<p>').append($('<a>').attr('href', Uri.file(html).toString())
                     .text('Open documentation of current project')));

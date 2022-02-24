@@ -68,11 +68,11 @@ export class LeanpkgService implements Disposable {
         // Note: just opening the file fires this event sometimes which is annoying, so
         // we compare the contents just to be sure and normalize whitespace so that
         // just adding a new line doesn't trigger the prompt.
-        const [workspaceFolder, packageUri, packageFileUri] = findLeanPackageRoot(uri);
+        const [workspaceFolder, packageUri, packageFileUri] = await findLeanPackageRoot(uri);
         if (packageUri) {
-            const fileUri = this.findLakeFile(packageUri);
+            const fileUri = await this.findLakeFile(packageUri);
             if (fileUri) {
-                const contents = this.readWhitespaceNormalized(fileUri);
+                const contents = await this.readWhitespaceNormalized(fileUri);
                 let existing : string | undefined;
                 const key = packageUri.toString();
                 if (this.normalizedLakeFileContents.get(key)){
@@ -109,26 +109,26 @@ export class LeanpkgService implements Disposable {
         }
     }
 
-    private findLakeFile(packageUri: Uri) : Uri | null {
+    private async findLakeFile(packageUri: Uri) : Promise<Uri | null> {
         const fullPath = Uri.joinPath(packageUri, this.lakeFileName);
         const url = fullPath.fsPath;
-        if (fs.existsSync(url)) {
+        if(await fsExistHelper(url)) {
             return fullPath;
         }
         return null;
     }
 
     // Return file contents with whitespace normalized.
-    private readWhitespaceNormalized(fileUri: Uri) : string {
-        if(fsExistHelper(fileUri.fsPath)){
-            const contents = fs.readFileSync(fileUri.fsPath).toString();
+    private async readWhitespaceNormalized(fileUri: Uri) : Promise<string> {
+        try{
+            const contents = await workspace.fs.readFile(fileUri).toString();
             // ignore whitespace changes by normalizing whitespace.
             const re = /[ \t\r\n]+/g
             const result = contents.replace(re, ' ');
             return result.trim();
         }
-        else {
-            return ''
+        catch(ex) {
+            throw ('Exception thrown: ' + ex);
         }
     }
 
