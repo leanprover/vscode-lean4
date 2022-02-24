@@ -170,6 +170,18 @@ export class LeanClientProvider implements Disposable {
         return Array.from(this.clients.values());
     }
 
+    getClientForFolder(folder: Uri) : LeanClient | undefined {
+        const folderUri = folder ? folder : Uri.from({scheme: 'untitled'});
+        const path = folderUri.toString();
+        let  client: LeanClient | undefined;
+        const cachedClient = this.clients.has(path);
+        if (cachedClient) {
+            // we're good then
+            client = this.clients.get(path);
+        }
+        return client;
+    }
+
     getFolderFromUri(uri: Uri) : Uri | null {
         if (uri){
             if (uri.scheme === 'untitled'){
@@ -202,12 +214,8 @@ export class LeanClientProvider implements Disposable {
         const [workspaceFolder, folder, packageFileUri] = findLeanPackageRoot(uri);
         const folderUri = folder ? folder : Uri.from({scheme: 'untitled'});
         const path = folderUri.toString();
-        let  client: LeanClient | undefined;
-        const cachedClient = this.clients.has(path);
-        if (cachedClient) {
-            // we're good then
-            client = this.clients.get(path);
-        }
+        let client = this.getClientForFolder(uri);
+        const cachedClient = (client !== undefined);
         if (!client && !this.pending.has(path)) {
             this.pending.set(path, true);
             console.log('Creating LeanClient for ' + path);
