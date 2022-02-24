@@ -1,6 +1,9 @@
 import * as path from 'path';
 import * as cp from 'child_process';
-import { runTests, downloadAndUnzipVSCode, resolveCliPathFromVSCodeExecutablePath } from '@vscode/test-electron';
+
+console.log(__dirname);
+
+import { runTests, downloadAndUnzipVSCode, resolveCliArgsFromVSCodeExecutablePath  } from '@vscode/test-electron';
 import * as fs from 'fs';
 
 function clearUserWorkspaceData(vscodeTest: string) {
@@ -14,17 +17,18 @@ async function main() {
 	try {
 		// The folder containing the Extension Manifest package.json
 		// Passed to `--extensionDevelopmentPath`
-		const extensionDevelopmentPath = path.resolve(__dirname, '..', '..', 'vscode-lean4');
+
+		const extensionDevelopmentPath = path.resolve(__dirname, '..', '..', '..');
 
 		// make sure we are in a clean state
-		const vscodeTestPath = path.resolve(__dirname, '../.vscode-test');
+		const vscodeTestPath = path.resolve(__dirname, '.vscode-test');
 		clearUserWorkspaceData(vscodeTestPath);
 
 		// This will download VS Code, unzip it and run the integration test
 		const vscodeExecutablePath = await downloadAndUnzipVSCode();
 
 		// Install the lean3 extension!
-		const [cli, ...args] = resolveCliPathFromVSCodeExecutablePath(vscodeExecutablePath);
+		const [cli, ...args] = resolveCliArgsFromVSCodeExecutablePath (vscodeExecutablePath);
 		cp.spawnSync(cli, [...args, '--install-extension', 'jroesch.lean'], {
 			encoding: 'utf-8',
 			stdio: 'inherit'
@@ -32,7 +36,7 @@ async function main() {
 
 		// run the lean3 test in one vs code instance, using `open folder` since
 		// lean3 doesn't lile ad-hoc files.
-		const testFolder = path.join(__dirname, '..', 'suite', 'lean3');
+		const testFolder = path.join(extensionDevelopmentPath, 'test', 'suite', 'lean3');
 
 		await runTests({
 			vscodeExecutablePath,
@@ -52,7 +56,7 @@ async function main() {
 			launchArgs: ['--new-window', '--disable-gpu'] });
 
 
-		const lean4TestFolder = path.join(__dirname, '..', 'suite', 'simple');
+		const lean4TestFolder = path.join(extensionDevelopmentPath, 'test', 'suite', 'simple');
 
 		// The '--new-window' doesn't see to be working, so this hack
 		// ensures the following test does not re-open the lean3 folder
@@ -62,7 +66,7 @@ async function main() {
 		await runTests({
 			vscodeExecutablePath,
 			extensionDevelopmentPath,
-			extensionTestsPath:path.resolve(__dirname, './simple'),
+			extensionTestsPath:path.resolve(__dirname, 'simple'),
 			launchArgs: ['--new-window', '--disable-gpu', lean4TestFolder] });
 
 

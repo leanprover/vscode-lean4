@@ -54,7 +54,7 @@ suite('Extension Test Suite', () => {
 		void vscode.window.showInformationMessage('Running tests: ' + __dirname);
 
 		// D:\git\leanprover\vscode-lean4\test\src\suite\simple\Main.lean
-		const testsRoot = path.join(__dirname, '..', '..', '..', '..', 'suite', 'simple');
+		const testsRoot = path.join(__dirname, '..', '..', '..', '..', 'test', 'suite', 'simple');
 		const doc = await vscode.workspace.openTextDocument(path.join(testsRoot, 'Main.lean'));
 		await vscode.window.showTextDocument(doc);
 

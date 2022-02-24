@@ -40,4 +40,4 @@ jobs:
       - name: Run tests
         uses: GabrielBB/xvfb-action@v1.0
         with:
-          run: npx lerna run --scope=@lean4/test test
+          run: npx lerna run --scope=lean4 test
