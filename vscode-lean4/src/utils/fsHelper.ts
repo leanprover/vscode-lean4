@@ -15,32 +15,25 @@ export async function fsExistHelper(pathFile: PathLike): Promise<boolean> {
     return await promises.access(pathFile).then(() => true, () => false);
 }
 
-export async function fsReadHelper(url: PathLike, endsWithTomlFileName: Boolean): Promise<string | null>{
+export async function fsReadHelper(url: PathLike): Promise<string | null>{
     /*
     Helper async used to read a certain file using fs.readFile() function
     param: url - A string representing a PathLike
-    param: endsWithTomlFileName - A boolean that indicates if the file is a toml extension
 
     returns Promise<string | null>((resolve, reject)
     */
+
     return await new Promise<string | null>((resolve, reject) => {
-        try {
-            readFile(url, { encoding: 'utf-8' }, (err, data) =>{
-                if (err) {
-                    reject(err);
+        readFile(url, { encoding: 'utf-8' }, (err, data) =>{
+            if (err) {
+                reject(err);
+            } else {
+                if (data) {
+                    resolve(data.trim());
                 } else {
-                    if(endsWithTomlFileName){
-                        const match = /lean_version\s*=\s*"([^"]*)"/.exec(data.toString());
-                        if (match) resolve(match[1].trim());
-                    } else if (data) {
-                        resolve(data.trim());
-                    }
                     resolve(null);
                 }
-            });
-        } catch (ex){
-            // Throw an exception in case any other issue is encountered
-            throw ex;
-        }
+            }
+        });
     });
 }
