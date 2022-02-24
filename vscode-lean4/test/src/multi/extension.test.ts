@@ -22,11 +22,7 @@ suite('Extension Test Suite', () => {
 		assert(lean.isActive);
         console.log(`Found lean package version: ${lean.packageJSON.version}`);
 
-		const editor = await waitForActiveEditor();
-		assert(editor, 'Missing active text editor');
-		console.log(`loaded document ${editor.document.uri}`);
-
-		assert(editor.document.uri.fsPath.endsWith('Main.lean'));
+		await waitForActiveEditor('Main.lean');
 
 		// since we closed the infoview in the first test we have to manually open it this time.
 		await vscode.commands.executeCommand('lean4.displayGoal');
@@ -41,11 +37,6 @@ suite('Extension Test Suite', () => {
 		// Now open a file from the other project
 		const doc2 = await vscode.workspace.openTextDocument(path.join(testsRoot, 'foo', 'Main.lean'));
 		await vscode.window.showTextDocument(doc2);
-
-		const editor2 = await waitForActiveEditor();
-		assert(editor2, 'Missing active text editor');
-		console.log(`loaded document ${editor2.document.uri}`);
-		assert(editor2.document.uri.fsPath.endsWith('Main.lean'));
 
 		let expected2 = 'Hello, foo!';
 		await waitForHtmlString(info, expected2);

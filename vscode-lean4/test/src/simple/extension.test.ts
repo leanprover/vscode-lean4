@@ -12,9 +12,7 @@ suite('Extension Test Suite', () => {
 		void vscode.window.showInformationMessage('Running tests: ' + __dirname);
 		await vscode.commands.executeCommand('workbench.action.files.newUntitledFile');
 
-		const editor = await waitForActiveEditor();
-		assert(editor, 'Missing active text editor');
-
+		let editor = await waitForActiveEditor();
 		await editor.edit((builder) => {
 			builder.insert(new vscode.Position(0, 0), '#eval Lean.versionString');
 		});
@@ -33,12 +31,45 @@ suite('Extension Test Suite', () => {
 			'Info view did not open after 60 seconds');
 
 		const expectedVersion = '4.0.0-nightly-';
-		const [html, found] = await waitForHtmlString(info, expectedVersion);
+		let [html, found] = await waitForHtmlString(info, expectedVersion);
 		const pos = html.indexOf('4.0.0-nightly-');
 		if (pos >= 0) {
 			// 4.0.0-nightly-2022-02-16
 			const versionString = html.substring(pos, pos + 24)
 			console.log(`>>> Found "${versionString}" in infoview`)
+		}
+
+		// test goto definition to lean toolchain works
+
+		const wordRange = findWord(editor, 'versionString');
+		assert(wordRange, 'Missing versionString in Main.lean');
+
+		// The -1 is to workaround a bug in goto definition.
+		// The cursor must be placed before the end of the identifier.
+		const secondLastChar = new vscode.Position(wordRange.end.line, wordRange.end.character - 1);
+		editor.selection = new vscode.Selection(wordRange.start, secondLastChar);
+
+		await vscode.commands.executeCommand('editor.action.revealDefinition');
+
+		// check infoview is working in this new editor, it should be showing the expected type
+		// for the versionString function we just jumped to.
+		[html, found] = await waitForHtmlString(info, 'Expected type');
+		// C:\users\clovett\.elan\toolchains\leanprover--lean4---nightly\src\lean\init\meta.lean
+		if (vscode.window.activeTextEditor) {
+			editor = vscode.window.activeTextEditor
+			const expected = path.join('.elan', 'toolchains', 'leanprover--lean4---nightly', 'src', 'lean');
+			assert(editor.document.uri.fsPath.indexOf(expected) > 0,
+				`Active text editor is not located in ${expected}`);
+
+			// make sure lean client is started in the right place.
+			const clients = lean.exports.clientProvider as LeanClientProvider;
+			clients.getClients().forEach((client) => {
+				const leanRoot = client.getWorkspaceFolder();
+				if (leanRoot.indexOf('leanprover--lean4---nightly') > 0){
+					assert(leanRoot.endsWith('leanprover--lean4---nightly'),
+						'Lean client is not rooted in the \'leanprover--lean4---nightly\' folder');
+				}
+			});
 		}
 
 		// make sure test is always run in predictable state, which is no file or folder open
@@ -66,11 +97,7 @@ suite('Extension Test Suite', () => {
 		assert(lean.isActive);
         console.log(`Found lean package version: ${lean.packageJSON.version}`);
 
-		const editor = await waitForActiveEditor();
-		assert(editor, 'Missing active text editor');
-		console.log(`loaded document ${editor.document.uri}`);
-
-		assert(editor.document.uri.fsPath.endsWith('Main.lean'));
+		const editor = await waitForActiveEditor('Main.lean');
 
 		// since we closed the infoview in the first test we have to manually open it this time.
 		await vscode.commands.executeCommand('lean4.displayGoal');
@@ -135,11 +162,7 @@ suite('Extension Test Suite', () => {
 			assert(lean.isActive);
 			console.log(`Found lean package version: ${lean.packageJSON.version}`);
 
-			const editor = await waitForActiveEditor();
-			assert(editor, 'Missing active text editor');
-			console.log(`loaded document ${editor.document.uri}`);
-
-			assert(editor.document.uri.fsPath.endsWith('Main.lean'));
+			const editor = await waitForActiveEditor('Main.lean');
 
 			// since we closed the infoview in the first test we have to manually open it this time.
 			await vscode.commands.executeCommand('lean4.displayGoal');

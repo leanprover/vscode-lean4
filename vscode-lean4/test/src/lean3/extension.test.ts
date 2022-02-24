@@ -14,8 +14,7 @@ suite('Extension Test Suite', () => {
 		const doc = await vscode.workspace.openTextDocument(path.join(testsRoot, 'Main.lean'));
 		await vscode.window.showTextDocument(doc);
 
-		const editor = await waitForActiveEditor();
-		assert(editor, 'Missing active text editor');
+		await waitForActiveEditor();
 
 		const lean3 = await waitForActiveExtension('jroesch.lean');
 		assert(lean3, 'Lean3 extension not loaded');

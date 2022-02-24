@@ -44,16 +44,27 @@ export async function waitForActiveExtension(extensionId: string, retries=10, de
     return lean;
 }
 
-export async function waitForActiveEditor(retries=10, delay=1000) : Promise<vscode.TextEditor | undefined> {
+export async function waitForActiveEditor(filename='', retries=10, delay=1000) : Promise<vscode.TextEditor> {
     let count = 0;
-    console.log('Waiting for active editor...');
     while (!vscode.window.activeTextEditor && count < retries){
         await sleep(delay);
         count += 1;
     }
-    const result = (vscode.window.activeTextEditor) ? 'found' : 'not found';
-    console.log(`Active editor ${result} found.`);
-    return vscode.window.activeTextEditor;
+    const editor = vscode.window.activeTextEditor
+    assert(editor, 'Missing active text editor');
+
+    console.log(`Loaded document ${editor.document.uri}`);
+
+    if (filename) {
+        count = 0;
+        while (!editor.document.uri.fsPath.endsWith(filename) && count < retries){
+            await sleep(delay);
+            count += 1;
+        }
+        assert(editor.document.uri.fsPath.endsWith(filename), `Active text editor does not match ${filename}`);
+    }
+
+    return editor;
 }
 
 export async function waitForInfoViewOpen(infoView: InfoProvider, retries=10, delay=1000) : Promise<boolean> {
