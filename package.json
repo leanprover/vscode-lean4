@@ -4,14 +4,14 @@
   "scripts": {
     "build": "lerna run build",
     "watch": "lerna run --parallel watch",
-		"lint": "eslint -c .eslintrc.js \"{lean4-infoview-api,lean4-infoview,vscode-lean4,test}/src/**/*.{ts,tsx}\""
+    "lint": "eslint -c .eslintrc.js \"{lean4-infoview-api,lean4-infoview,vscode-lean4}/src/**/*.{ts,tsx}\""
   },
   "devDependencies": {
     "lerna": "^4.0.0",
     "source-map-loader": "^3.0.1",
-		"@typescript-eslint/eslint-plugin": "^5.8.1",
-		"@typescript-eslint/parser": "^5.8.1",
-		"eslint": "^8.6.0",
+    "@typescript-eslint/eslint-plugin": "^5.8.1",
+    "@typescript-eslint/parser": "^5.8.1",
+    "eslint": "^8.6.0",
     "typescript": "^4.5.4"
   }
 }

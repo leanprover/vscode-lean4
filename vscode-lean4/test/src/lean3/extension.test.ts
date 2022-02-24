@@ -9,7 +9,7 @@ suite('Extension Test Suite', () => {
 	test('Lean3 project', async () => {
 		void vscode.window.showInformationMessage('Running tests: ' + __dirname);
 
-		const testsRoot = path.join(__dirname, '..', '..', 'suite', 'lean3');
+		const testsRoot = path.join(__dirname, '..', '..', '..', '..', 'test', 'suite', 'lean3');
 
 		const doc = await vscode.workspace.openTextDocument(path.join(testsRoot, 'Main.lean'));
 		await vscode.window.showTextDocument(doc);

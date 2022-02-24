@@ -1,6 +1,6 @@
 import * as path from 'path';
 import * as cp from 'child_process';
-import { runTests, downloadAndUnzipVSCode, resolveCliArgsFromVSCodeExecutablePath } from '@vscode/test-electron';
+import { runTests, downloadAndUnzipVSCode, resolveCliPathFromVSCodeExecutablePath } from '@vscode/test-electron';
 import * as fs from 'fs';
 
 function clearUserWorkspaceData(vscodeTest: string) {
@@ -24,7 +24,7 @@ async function main() {
 		const vscodeExecutablePath = await downloadAndUnzipVSCode();
 
 		// Install the lean3 extension!
-		const [cli, ...args] = resolveCliArgsFromVSCodeExecutablePath(vscodeExecutablePath);
+		const [cli, ...args] = resolveCliPathFromVSCodeExecutablePath(vscodeExecutablePath);
 		cp.spawnSync(cli, [...args, '--install-extension', 'jroesch.lean'], {
 			encoding: 'utf-8',
 			stdio: 'inherit'
@@ -71,6 +71,5 @@ async function main() {
 		process.exit(1);
 	}
 }
-
 
 void main();

@@ -1,7 +1,7 @@
 
 import * as assert from 'assert';
 import * as vscode from 'vscode';
-import { InfoProvider } from 'infoview';
+import { InfoProvider } from '../../../src/infoview';
 
 export function sleep(ms : number) {
     return new Promise((resolve) => setTimeout(resolve, ms));
@@ -43,7 +43,7 @@ export async function waitForActiveExtension(extensionId: string, retries=10, de
     return lean;
 }
 
-export async function waitForActiveEditor(retries=10, delay=1000) : Promise<vscode.TextEditor | null> {
+export async function waitForActiveEditor(retries=10, delay=1000) : Promise<vscode.TextEditor | undefined> {
     let count = 0;
     console.log('Waiting for active editor...');
     while (!vscode.window.activeTextEditor && count < retries){

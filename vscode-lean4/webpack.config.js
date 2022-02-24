@@ -65,7 +65,7 @@ function getExtensionConfig(env) {
 		devtool: !env.production ? 'source-map' : undefined,
 		output: {
 			filename: 'extension.js',
-			path: path.resolve(__dirname, 'out'),
+			path: path.resolve(__dirname, 'dist'),
 			library: {
 				type: 'commonjs',
 			},

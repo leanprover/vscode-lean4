@@ -406,18 +406,17 @@
 		"onLanguage:markdown",
 		"onCommand:lean4.restartServer"
 	],
-	"main": "./out/extension",
+	"main": "./dist/extension",
 	"scripts": {
 		"vscode:prepublish": "webpack --env production",
 		"build": "webpack --env production",
 		"watch": "webpack --env development --watch",
-		"lint": "eslint . --ext .ts,.tsx",
 		"package": "vsce package",
-		"pretest": "npm run compile",
-		"test": "node ./out/test/runTest.js"
+		"pretest": "tsc -p . --outDir out",
+		"test": "node ./out/test/src/runTest.js"
 	},
 	"dependencies": {
-		"@lean4/infoview-api": "0.1.0",
+		"@lean4/infoview-api": "^0.1.0",
 		"@lean4/infoview": "^0.1.0",
 		"axios": "^0.24.0",
 		"cheerio": "^1.0.0-rc.10",
