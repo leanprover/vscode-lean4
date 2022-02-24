@@ -6,7 +6,7 @@ import { LeanpkgService } from './leanpkg'
 import { readLeanVersion, findLeanPackageRoot, isCoreLean4Directory } from './projectInfo';
 import { join, dirname } from 'path';
 import * as fs from 'fs';
-import { fsExistHelper } from './fsExistHelper'
+import { fsExistHelper } from './fsHelper'
 
 export class LeanVersion {
     version: string;

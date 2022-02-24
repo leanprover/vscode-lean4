@@ -3,7 +3,7 @@ import { LocalStorageService} from './localStorage'
 import { findLeanPackageRoot, findLeanPackageVersionInfo } from './projectInfo';
 import * as fs from 'fs';
 import * as path from 'path';
-import { fsExistHelper } from './fsExistHelper';
+import { fsExistHelper } from './fsHelper';
 
 // This service monitors the Lean package root folders for changes to any
 // lean-toolchain, leanpkg.toml or lakefile.lean files found there.

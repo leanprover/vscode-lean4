@@ -29,7 +29,7 @@ import { URL } from 'url';
 import { join } from 'path';
  // @ts-ignore
 import { SemVer } from 'semver';
-import { fsExistHelper } from './utils/fsExistHelper';
+import { fsExistHelper } from './utils/fsHelper';
 
 const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 

@@ -9,7 +9,7 @@ import * as fs from 'fs';
 import { join, extname } from 'path';
 import { TempFolder } from './utils/tempFolder'
 import { SymbolsByAbbreviation, AbbreviationConfig } from './abbreviation/config'
-import { fsExistHelper } from './utils/fsExistHelper';
+import { fsExistHelper } from './utils/fsHelper';
 
 export function mkCommandUri(commandName: string, ...args: any[]): string {
     return `command:${commandName}?${encodeURIComponent(JSON.stringify(args))}`;

@@ -2,7 +2,7 @@ import * as fs from 'fs';
 import { URL } from 'url';
 import { Uri, workspace, WorkspaceFolder } from 'vscode';
 import { addDefaultElanPath } from '../config';
-import { fsExistHelper, fsReadHelper } from './fsExistHelper';
+import { fsExistHelper, fsReadHelper } from './fsHelper';
 
 // Detect lean4 root directory (works for both lean4 repo and nightly distribution)
 export async function isCoreLean4Directory(path: Uri): Promise<boolean> {
