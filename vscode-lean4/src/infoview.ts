@@ -343,7 +343,7 @@ export class InfoProvider implements Disposable {
         if (this.webviewPanel) {
             return this.webviewPanel.api.getInfoviewHtml();
         } else {
-            throw new Error("Cannot retrieve infoview HTML, infoview is closed.");
+            throw new Error('Cannot retrieve infoview HTML, infoview is closed.');
         }
     }
 
