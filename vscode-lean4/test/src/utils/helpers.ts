@@ -2,6 +2,7 @@
 import * as assert from 'assert';
 import * as vscode from 'vscode';
 import { InfoProvider } from '../../../src/infoview';
+import { LeanClient} from '../../../src/leanclient';
 
 export function sleep(ms : number) {
     return new Promise((resolve) => setTimeout(resolve, ms));
@@ -110,4 +111,30 @@ export function findWord(editor: vscode.TextEditor, word: string) : vscode.Range
         return undefined;
     }
     return new vscode.Range(editor.document.positionAt(pos), editor.document.positionAt(pos + word.length));
+}
+
+export async function restartLeanServer(client: LeanClient, retries=10, delay=1000) : Promise<boolean> {
+    let count = 0;
+    console.log('restarting lean client ...');
+
+    let stateChanges : string[] = []
+    client.stopped(() => { stateChanges.push('stopped'); });
+    client.restarted(() => { stateChanges.push('restarted'); });
+    client.serverFailed(() => { stateChanges.push('failed'); });
+
+    await vscode.commands.executeCommand('lean4.restartServer');
+
+    while (count < retries){
+        const index = stateChanges.indexOf('restarted');
+        if (index > 0) {
+            break;
+        }
+        await sleep(delay);
+        count += 1;
+    }
+
+    // check we have no errors.
+    const actual = stateChanges.toString();
+    assert(actual === 'stopped,restarted');
+    return false;
 }
