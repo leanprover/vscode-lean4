@@ -421,11 +421,23 @@ export class InfoProvider implements Disposable {
             // inside the webview through the standard message event.
             // The receiving of these messages is done inside webview\index.ts where it
             // calls window.addEventListener('message',...
-            webviewPanel.rpc = new Rpc(m => { if (this.webviewPanel) void webviewPanel.webview.postMessage(m) });
+            webviewPanel.rpc = new Rpc(m => {
+                try {
+                    void webviewPanel.webview.postMessage(m)
+                } catch (e) {
+                    // ignore any disposed object exceptions
+                }
+            });
             webviewPanel.rpc.register(this.editorApi);
 
             // Similarly, we can received data from the webview by listening to onDidReceiveMessage.
-            webviewPanel.webview.onDidReceiveMessage(m => { if (this.webviewPanel) webviewPanel.rpc.messageReceived(m) })
+            webviewPanel.webview.onDidReceiveMessage(m => {
+                try {
+                    webviewPanel.rpc.messageReceived(m)
+                } catch {
+                    // ignore any disposed object exceptions
+                }
+            });
             webviewPanel.api = webviewPanel.rpc.getApi();
             webviewPanel.onDidDispose(() => {
                 this.webviewPanel = undefined;
