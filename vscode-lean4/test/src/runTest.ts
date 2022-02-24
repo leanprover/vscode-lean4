@@ -69,6 +69,18 @@ async function main() {
 			extensionTestsPath:path.resolve(__dirname, 'simple'),
 			launchArgs: ['--new-window', '--disable-gpu', lean4TestFolder] });
 
+		// The '--new-window' doesn't see to be working, so this hack
+		// ensures the following test does not re-open the lean3 folder
+		clearUserWorkspaceData(vscodeTestPath);
+
+		const workspacePath = path.join(extensionDevelopmentPath, 'test', 'suite', 'multi', 'workspace.code-workspace');
+
+		// Test a multi-folder workspace.
+		await runTests({
+			vscodeExecutablePath,
+			extensionDevelopmentPath,
+			extensionTestsPath:path.resolve(__dirname, 'multi'),
+			launchArgs: ['--new-window', '--disable-gpu', workspacePath] });
 
 	} catch (err) {
 		console.error('Failed to run tests');

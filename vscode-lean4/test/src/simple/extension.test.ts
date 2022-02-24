@@ -26,7 +26,7 @@ suite('Extension Test Suite', () => {
 		assert(lean, 'Lean extension not loaded');
 
         console.log(`Found lean package version: ${lean.packageJSON.version}`);
-		const info = lean.exports.infoview as InfoProvider;
+		const info = lean.exports.infoProvider as InfoProvider;
 
         assert(await waitForInfoViewOpen(info, 60),
 			'Info view did not open after 60 seconds');
@@ -53,7 +53,6 @@ suite('Extension Test Suite', () => {
 		// running in the package root.
 		void vscode.window.showInformationMessage('Running tests: ' + __dirname);
 
-		// D:\git\leanprover\vscode-lean4\test\src\suite\simple\Main.lean
 		const testsRoot = path.join(__dirname, '..', '..', '..', '..', 'test', 'suite', 'simple');
 		const doc = await vscode.workspace.openTextDocument(path.join(testsRoot, 'Main.lean'));
 		await vscode.window.showTextDocument(doc);
@@ -73,7 +72,7 @@ suite('Extension Test Suite', () => {
 		// since we closed the infoview in the first test we have to manually open it this time.
 		await vscode.commands.executeCommand('lean4.displayGoal');
 
-		const info = lean.exports.infoview as InfoProvider;
+		const info = lean.exports.infoProvider as InfoProvider;
         assert(await waitForInfoViewOpen(info, 60),
 			'Info view did not open after 20 seconds');
 
