@@ -126,7 +126,7 @@ async function readLeanVersionFile(packageFileUri : Uri) : Promise<string | null
     }
     if (packageFileUri.path.endsWith(tomlFileName))
     {
-        fsReadHelper(url, true);
+        return fsReadHelper(url, true);
         /*return await new Promise<string | null>((resolve, reject) => {
             try {
                 // TODO - DELETE THIS PART AND CHECK WITH THE HELPER
@@ -147,7 +147,7 @@ async function readLeanVersionFile(packageFileUri : Uri) : Promise<string | null
         */
     } else {
         // must be a lean-toolchain file, these are much simpler they only contain a version.
-        fsReadHelper(url, false);
+        return fsReadHelper(url, false);
         /*
         return await new Promise<string | null>((resolve, reject) => {
             try {
