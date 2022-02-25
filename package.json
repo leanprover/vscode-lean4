@@ -4,6 +4,7 @@
   "scripts": {
     "build": "lerna run build",
     "watch": "lerna run --parallel watch",
+    "watchTest": "lerna run --parallel watchTest",
     "lint": "eslint -c .eslintrc.js \"{lean4-infoview-api,lean4-infoview,vscode-lean4}/src/**/*.{ts,tsx}\""
   },
   "devDependencies": {

@@ -411,8 +411,10 @@
 		"vscode:prepublish": "webpack --env production",
 		"build": "webpack --env production",
 		"watch": "webpack --env development --watch",
+		"watchTest": "webpack --env development --watch",
 		"package": "vsce package",
 		"pretest": "tsc -p . --outDir out",
+		"prewatchTest": "tsc -p . --outDir out",
 		"test": "node ./out/test/src/runTest.js"
 	},
 	"dependencies": {

@@ -4,6 +4,7 @@
   "description": "An interactive display for the Lean 4 theorem prover",
   "scripts": {
     "watch": "webpack --env development --watch",
+    "watchTest": "webpack --env development --watch",
     "build": "webpack"
   },
   "browser": "dist/index",
