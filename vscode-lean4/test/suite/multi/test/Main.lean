@@ -8,3 +8,5 @@ def main : IO Unit :=
 #eval Lean.versionString
 
 #eval main
+
+#eval IO.appPath

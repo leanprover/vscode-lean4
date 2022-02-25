@@ -3,7 +3,7 @@ import { suite } from 'mocha';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as vscode from 'vscode';
-import { sleep, waitForActiveExtension, waitForActiveEditor, waitForInfoViewOpen, waitForHtmlString, extractToTerminator, findWord } from '../utils/helpers';
+import { sleep, waitForActiveExtension, waitForActiveEditor, waitForInfoViewOpen, waitForHtmlString, extractPhrase, findWord } from '../utils/helpers';
 import { InfoProvider } from '../../../src/infoview';
 import { LeanClientProvider} from '../../../src/utils/clientProvider';
 import { LeanInstaller } from '../../../src/utils/leanInstaller';
@@ -12,6 +12,7 @@ suite('Extension Test Suite', () => {
 
 	test('Load Lean Files in a multi-project workspace', async () => {
 
+		console.log('=================== Load Lean Files in a multi-project workspace ===================');
 		void vscode.window.showInformationMessage('Running tests: ' + __dirname);
 
 		const testsRoot = path.join(__dirname, '..', '..', '..', '..', 'test', 'suite', 'multi');
@@ -33,7 +34,7 @@ suite('Extension Test Suite', () => {
         assert(await waitForInfoViewOpen(info, 60),
 			'Info view did not open after 20 seconds');
 
-		// verify we have a nightly build runnning in this folder.
+		// verify we have a nightly build running in this folder.
 		let expectedVersion = '4.0.0-nightly-';
 		await waitForHtmlString(info, expectedVersion);
 
@@ -54,6 +55,7 @@ suite('Extension Test Suite', () => {
 	}).timeout(60000);
 
 	test('Test select toolchain', async () => {
+		console.log('=================== Test select toolchain ===================');
 
 		void vscode.window.showInformationMessage('Running tests: ' + __dirname);
 
@@ -79,7 +81,7 @@ suite('Extension Test Suite', () => {
         assert(await waitForInfoViewOpen(info, 60),
 			'Info view did not open after 20 seconds');
 
-		// verify we have a nightly build runnning in this folder.
+		// verify we have a nightly build running in this folder.
 		let expectedVersion = '4.0.0-nightly-';
 		await waitForHtmlString(info, expectedVersion);
 
@@ -101,6 +103,8 @@ suite('Extension Test Suite', () => {
 	}).timeout(60000);
 
 	test('Test lean-toolchain edits', async () => {
+
+		console.log('=================== Test lean-toolchain edits ===================');
 
 		void vscode.window.showInformationMessage('Running tests: ' + __dirname);
 
@@ -138,6 +142,7 @@ suite('Extension Test Suite', () => {
 		const toolChains = await installer.elanListToolChains(null);
 		const masterToolChain = toolChains.find(tc => tc === 'master');
 		const selectedToolChain = masterToolChain ?? 'leanprover/lean4:stable';
+		const expectedToolChain = masterToolChain ? 'master' : 'stable';
 
 		// Now edit the lean-toolchain file.
 		const toolchainFile = path.join(testsRoot, 'test', 'lean-toolchain');
@@ -148,7 +153,12 @@ suite('Extension Test Suite', () => {
 
 		// verify that we switched to leanprover/lean4:stable
 		let expected2 = '4.0.0, commit';
-		await waitForHtmlString(info, expected2);
+		let html = await waitForHtmlString(info, expected2);
+
+		// check the path to lean.exe from the `eval IO.appPath`
+		const leanPath = extractPhrase(html, 'FilePath.mk', '<').trim();
+		console.log(`Found LeanPath: ${leanPath}`)
+		assert(leanPath.indexOf(expectedToolChain), `Lean Path does not contain ${expectedToolChain}`);
 
 		// Switch back to original version.
 		fs.writeFileSync(toolchainFile, originalContents);

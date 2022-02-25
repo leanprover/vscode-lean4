@@ -2,13 +2,16 @@ import * as assert from 'assert';
 import { suite } from 'mocha';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { sleep, waitForActiveExtension, waitForActiveEditor, waitForInfoViewOpen, waitForHtmlString, extractToTerminator, findWord, restartLeanServer } from '../utils/helpers';
+import { sleep, waitForActiveExtension, waitForActiveEditor, waitForInfoViewOpen, waitForHtmlString, extractPhrase, findWord, restartLeanServer } from '../utils/helpers';
 import { InfoProvider } from '../../../src/infoview';
 import { LeanClientProvider} from '../../../src/utils/clientProvider';
 
 suite('Extension Test Suite', () => {
 
 	test('Untitled Lean File', async () => {
+
+		console.log('=================== Untitled Lean File ===================');
+
 		void vscode.window.showInformationMessage('Running tests: ' + __dirname);
 		await vscode.commands.executeCommand('workbench.action.files.newUntitledFile');
 
@@ -31,7 +34,7 @@ suite('Extension Test Suite', () => {
 			'Info view did not open after 60 seconds');
 
 		const expectedVersion = '4.0.0-nightly-';
-		let [html, found] = await waitForHtmlString(info, expectedVersion);
+		let html = await waitForHtmlString(info, expectedVersion);
 		const pos = html.indexOf('4.0.0-nightly-');
 		if (pos >= 0) {
 			// 4.0.0-nightly-2022-02-16
@@ -53,7 +56,7 @@ suite('Extension Test Suite', () => {
 
 		// check infoview is working in this new editor, it should be showing the expected type
 		// for the versionString function we just jumped to.
-		[html, found] = await waitForHtmlString(info, 'Expected type');
+		html = await waitForHtmlString(info, 'Expected type');
 		// C:\users\clovett\.elan\toolchains\leanprover--lean4---nightly\src\lean\init\meta.lean
 		if (vscode.window.activeTextEditor) {
 			editor = vscode.window.activeTextEditor
@@ -77,6 +80,8 @@ suite('Extension Test Suite', () => {
 	}).timeout(60000);
 
 	test('Load Lean File goto definition in a package folder', async () => {
+		console.log('=================== Load Lean File goto definition in a package folder ===================');
+
 		// This test is run twice, once as an ad-hoc mode (no folder open)
 		// and again using "open folder" mode.
 
@@ -105,13 +110,9 @@ suite('Extension Test Suite', () => {
 			'Info view did not open after 20 seconds');
 
 		let expectedVersion = 'Hello:';
-		let [html, found] = await waitForHtmlString(info, expectedVersion);
-		let pos = html.indexOf('Hello:');
-		if (pos >= 0) {
-			// Hello: 4.0.0-nightly-2022-02-17
-			const versionString = extractToTerminator(html, pos, '<').trim();
-			console.log(`>>> Found "${versionString}" in infoview`)
-		}
+		let html = await waitForHtmlString(info, expectedVersion);
+		const versionString = extractPhrase(html, 'Hello:', '<').trim();
+		console.log(`>>> Found "${versionString}" in infoview`)
 
 		const wordRange = findWord(editor, 'getLeanVersion');
 		assert(wordRange, 'Missing getLeanVersion in Main.lean');
@@ -125,12 +126,11 @@ suite('Extension Test Suite', () => {
 
 		// if goto definition worked, then we are in Version.lean and we should see the Lake version string.
 		expectedVersion = 'Lake Version:';
-		[html, found] = await waitForHtmlString(info, expectedVersion);
-		pos = html.indexOf('Lake Version:');
-		if (pos >= 0) {
-			// Lake Version: 4.0.0-nightly-2022-02-17
-			const versionString = extractToTerminator(html, pos, '"');
-			console.log(`>>> Found "${versionString}" in infoview`)
+		html = await waitForHtmlString(info, expectedVersion);
+
+		const lakeVersionString = extractPhrase(html, 'Lake Version:', '<').trim();
+		if (lakeVersionString) {
+			console.log(`>>> Found "${lakeVersionString}" in infoview`)
 		} else {
 			assert(false, 'Lake Version: not found in infoview');
 		}
@@ -141,6 +141,8 @@ suite('Extension Test Suite', () => {
 
 
 	test('Test Restart Server', async () => {
+
+		console.log('=================== Test Restart Server ===================');
 
 		// Test we can restart the lean server
 		void vscode.window.showInformationMessage('Running tests: ' + __dirname);
@@ -168,13 +170,9 @@ suite('Extension Test Suite', () => {
 				'Info view did not open after 20 seconds');
 
 			let expectedVersion = 'Hello:';
-			let [html, found] = await waitForHtmlString(info, expectedVersion);
-			let pos = html.indexOf('Hello:');
-			if (pos >= 0) {
-				// Hello: 4.0.0-nightly-2022-02-17
-				const versionString = extractToTerminator(html, pos, '<').trim();
-				console.log(`>>> Found "${versionString}" in infoview`)
-			}
+			let html = await waitForHtmlString(info, expectedVersion);
+			const versionString = extractPhrase(html, 'Hello:', '<').trim();
+			console.log(`>>> Found "${versionString}" in infoview`);
 
 			// Now invoke the restart server command
 			const clients = lean.exports.clientProvider as LeanClientProvider;

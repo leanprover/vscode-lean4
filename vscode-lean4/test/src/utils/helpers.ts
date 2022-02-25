@@ -85,13 +85,13 @@ export async function waitForInfoViewOpen(infoView: InfoProvider, retries=10, de
     return false;
 }
 
-export async function waitForHtmlString(infoView: InfoProvider, toFind : string, retries=10, delay=1000): Promise<[string,boolean]> {
+export async function waitForHtmlString(infoView: InfoProvider, toFind : string, retries=10, delay=1000): Promise<string> {
     let count = 0;
     let html = '';
     while (count < retries){
         html = await infoView.getHtmlContents();
         if (html.indexOf(toFind) > 0){
-            return [html, true];
+            return html;
         }
         if (html.indexOf('<details>')) { // we want '<details open>' instead...
             await infoView.toggleAllMessages();
@@ -105,15 +105,20 @@ export async function waitForHtmlString(infoView: InfoProvider, toFind : string,
         console.log(html);
         assert(false, `Missing "${toFind}" in infoview`)
     }
-    return [html, false];
+    return html;
 }
 
-export function extractToTerminator(html: string, pos: number, terminator: string){
-	const endPos = html.indexOf(terminator, pos);
-	if (endPos < 0) {
-		return ''
-	}
-	return html.substring(pos, endPos);
+export function extractPhrase(html: string, word: string, terminator: string){
+    let pos = html.indexOf(word);
+    if (pos >= 0){
+        let endPos = html.indexOf(terminator, pos);
+        if (endPos < 0) {
+            endPos = html.indexOf('\n', pos);
+            return ''
+        }
+        return html.substring(pos, endPos);
+    }
+    return '';
 }
 
 export function findWord(editor: vscode.TextEditor, word: string) : vscode.Range | undefined {
