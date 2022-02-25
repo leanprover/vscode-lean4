@@ -411,10 +411,9 @@
 		"vscode:prepublish": "webpack --env production",
 		"build": "webpack --env production",
 		"watch": "webpack --env development --watch",
-		"watchTest": "webpack --env development --watch",
+		"watchTest": "concurrently \"tsc -p . -w --outDir out\" \"npm run watch\"",
 		"package": "vsce package",
 		"pretest": "tsc -p . --outDir out",
-		"prewatchTest": "tsc -p . --outDir out",
 		"test": "node ./out/test/src/runTest.js"
 	},
 	"dependencies": {
@@ -435,6 +434,7 @@
 		"@types/semver": "^5.3.30",
 		"@types/vscode-webview": "^1.57.0",
 		"@vscode/test-electron": "^2.1.2",
+		"concurrently": "^7.0.0",
 		"glob": "^7.1.6",
 		"mocha": "^8.2.1",
 		"ovsx": "^0.2.1",

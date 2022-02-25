@@ -25,8 +25,3 @@ a kind of [@vscode/test-electron](https://github.com/microsoft/vscode-test) boot
 While these tests can use most VS Code API's to send commands, find windows, edit text,
 the tests cannot "close a folder" or "the workspace" or do "developer: reload window" because
 those operations will cause an infinite loop as the test itself gets reloaded and runs again.
-
-Note that if you change the test code you have to kill the `watch` process running in the Terminal
-window before pressing F5 so that the `tsc -p . --outDir out` steps runs again as shown below:
-
-![cleanup](images/cleanup.png)
