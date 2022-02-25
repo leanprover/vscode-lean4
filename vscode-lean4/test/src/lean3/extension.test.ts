@@ -30,7 +30,6 @@ suite('Extension Test Suite', () => {
 		});
 
 		await vscode.commands.executeCommand('workbench.action.closeAllEditors');
-		await sleep(1000); // make sure it shuts down fully before next test.
 	});
 
 }).timeout(60000);

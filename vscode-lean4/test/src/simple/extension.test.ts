@@ -74,8 +74,6 @@ suite('Extension Test Suite', () => {
 
 		// make sure test is always run in predictable state, which is no file or folder open
 		await vscode.commands.executeCommand('workbench.action.closeAllEditors');
-
-		await sleep(1000); // make sure it shuts down fully before next test.
 	}).timeout(60000);
 
 	test('Load Lean File goto definition in a package folder', async () => {
@@ -139,8 +137,6 @@ suite('Extension Test Suite', () => {
 
 		// make sure test is always run in predictable state, which is no file or folder open
 		await vscode.commands.executeCommand('workbench.action.closeAllEditors');
-
-		await sleep(1000); // make sure it shuts down fully before next test.
 	}).timeout(60000);
 
 
@@ -193,7 +189,6 @@ suite('Extension Test Suite', () => {
 			await vscode.commands.executeCommand('workbench.action.closeAllEditors');
 		}
 
-		await sleep(1000); // make sure it shuts down fully before next test.
 	}).timeout(60000);
 
 }).timeout(60000);
