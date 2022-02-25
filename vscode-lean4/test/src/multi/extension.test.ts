@@ -100,7 +100,6 @@ suite('Extension Test Suite', () => {
 		await vscode.commands.executeCommand('workbench.action.closeAllEditors');
 	}).timeout(60000);
 
-
 	test('Test lean-toolchain edits', async () => {
 
 		void vscode.window.showInformationMessage('Running tests: ' + __dirname);
@@ -131,16 +130,21 @@ suite('Extension Test Suite', () => {
 		const installer = lean.exports.installer as LeanInstaller;
 		installer.setPromptUser(false);
 
-		// verify we have a nightly build runnning in this folder.
+		// verify we have a nightly build running in this folder.
 		let expectedVersion = '4.0.0-nightly-';
 		await waitForHtmlString(info, expectedVersion);
+
+		// Find out if we have a 'master' toolchain (setup in our workflow: on-push.yml)
+		const toolChains = await installer.elanListToolChains(null);
+		const masterToolChain = toolChains.find(tc => tc === 'master');
+		const selectedToolChain = masterToolChain ?? 'leanprover/lean4:stable';
 
 		// Now edit the lean-toolchain file.
 		const toolchainFile = path.join(testsRoot, 'test', 'lean-toolchain');
 		const originalContents = fs.readFileSync(toolchainFile, 'utf8').toString();
 		assert(originalContents.trim() === 'leanprover/lean4:nightly');
-		// Switch to stable version.
-		fs.writeFileSync(toolchainFile, 'leanprover/lean4:stable');
+		// Switch to a linked toolchain version (setup in our workflow: on-push.yml)
+		fs.writeFileSync(toolchainFile, selectedToolChain);
 
 		// verify that we switched to leanprover/lean4:stable
 		let expected2 = '4.0.0, commit';

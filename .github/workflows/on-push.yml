@@ -26,6 +26,29 @@ jobs:
           path: 'vscode-lean4/lean4-*.vsix'
       - name: Lint
         run: npm run lint
+
+      - name: Download Lean4 build artifact
+        uses: lovettchris/action-download-artifact@v2.15.11
+        with:
+          name: build-Linux release
+          path: .
+          github_token: ${{secrets.GITHUB_TOKEN}}
+          workflow: ci.yml
+          workflow_conclusion: success
+          branch: master
+          repo: leanprover/lean4
+          check_artifacts:  true
+      - name: Unpack Lean4 build
+        run: |
+          if [[ "$(ls *.zst)" != "lean-4.0.0-linux.tar.zst" ]]; then mv $(ls *.gz) lean-4.0.0-linux.tar.zst; fi
+          mkdir lean4
+          tar --use-compress-program=unzstd -xvf lean-4.0.0-linux.tar.zst -C lean4 --strip-components 1
+          ls -al lean4/bin
+          echo ================= ldd lean
+          ldd lean4/bin/lean
+          echo ================= ldd libleanshared.so
+          ldd lean4/lib/lean/libleanshared.so
+          chmod u+x lean4/bin/*
       - name: Set path to elan
         run: |
           echo "$HOME/.elan/bin" >> $GITHUB_PATH
@@ -37,6 +60,7 @@ jobs:
           echo Checking location "$HOME/.elan/bin"...
           ls -al "$HOME/.elan/bin"
           elan --version
+          elan toolchain link master "$(pwd)/lean4"
       - name: Install 'leanprover/lean4:stable' version
         run: elan toolchain install leanprover/lean4:stable
       - name: Run tests

@@ -1,9 +1,10 @@
 import Test
+import Lean
+import Lean.Expr
 
 def main : IO Unit :=
   IO.println s!"Hello, {hello}!"
 
-#eval main
-
-
 #eval Lean.versionString
+
+#eval main

@@ -1,5 +1,6 @@
 
 import * as assert from 'assert';
+import { privateEncrypt } from 'crypto';
 import * as vscode from 'vscode';
 import { InfoProvider } from '../../../src/infoview';
 import { LeanClient} from '../../../src/leanclient';
