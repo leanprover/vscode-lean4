@@ -10,7 +10,7 @@ import { LeanInstaller } from '../../../src/utils/leanInstaller';
 
 suite('Extension Test Suite', () => {
 
-	test('Load Lean Files in a multi-project workspace', async () => {
+	test('Load a multi-project workspace', async () => {
 
 		console.log('=================== Load Lean Files in a multi-project workspace ===================');
 		void vscode.window.showInformationMessage('Running tests: ' + __dirname);
@@ -26,9 +26,6 @@ suite('Extension Test Suite', () => {
         console.log(`Found lean package version: ${lean.packageJSON.version}`);
 
 		await waitForActiveEditor('Main.lean');
-
-		// since we closed the infoview in the first test we have to manually open it this time.
-		await vscode.commands.executeCommand('lean4.displayGoal');
 
 		const info = lean.exports.infoProvider as InfoProvider;
         assert(await waitForInfoViewOpen(info, 60),
@@ -54,7 +51,7 @@ suite('Extension Test Suite', () => {
 		await vscode.commands.executeCommand('workbench.action.closeAllEditors');
 	}).timeout(60000);
 
-	test('Test select toolchain', async () => {
+	test('Select toolchain', async () => {
 		console.log('=================== Test select toolchain ===================');
 
 		void vscode.window.showInformationMessage('Running tests: ' + __dirname);
@@ -73,9 +70,6 @@ suite('Extension Test Suite', () => {
 
 		// Now make sure the toolchain is reset (in case previous test failed).
 		await vscode.commands.executeCommand('lean4.selectToolchain', 'reset');
-
-		// since we closed the infoview in the first test we have to manually open it this time.
-		await vscode.commands.executeCommand('lean4.displayGoal');
 
 		const info = lean.exports.infoProvider as InfoProvider;
         assert(await waitForInfoViewOpen(info, 60),
@@ -102,7 +96,7 @@ suite('Extension Test Suite', () => {
 		await vscode.commands.executeCommand('workbench.action.closeAllEditors');
 	}).timeout(60000);
 
-	test('Test lean-toolchain edits', async () => {
+	test('Edit lean-toolchain version', async () => {
 
 		console.log('=================== Test lean-toolchain edits ===================');
 
@@ -123,9 +117,6 @@ suite('Extension Test Suite', () => {
 		// Now make sure the toolchain is reset (in case previous test failed).
 		await vscode.commands.executeCommand('lean4.selectToolchain', 'reset');
 
-		// since we closed the infoview in the first test we have to manually open it this time.
-		await vscode.commands.executeCommand('lean4.displayGoal');
-
 		const info = lean.exports.infoProvider as InfoProvider;
         assert(await waitForInfoViewOpen(info, 60),
 			'Info view did not open after 20 seconds');
@@ -139,6 +130,7 @@ suite('Extension Test Suite', () => {
 		await waitForHtmlString(info, expectedVersion);
 
 		// Find out if we have a 'master' toolchain (setup in our workflow: on-push.yml)
+		// and use it if it is there, otherwise use 'leanprover/lean4:stable'.
 		const toolChains = await installer.elanListToolChains(null);
 		const masterToolChain = toolChains.find(tc => tc === 'master');
 		const selectedToolChain = masterToolChain ?? 'leanprover/lean4:stable';

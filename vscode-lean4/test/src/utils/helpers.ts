@@ -70,12 +70,16 @@ export async function waitForActiveEditor(filename='', retries=10, delay=1000) :
 
 export async function waitForInfoViewOpen(infoView: InfoProvider, retries=10, delay=1000) : Promise<boolean> {
     let count = 0;
+    let opened = false;
     console.log('Waiting for InfoView...');
     while (count < retries){
         const isOpen = await infoView.isOpen();
         if (isOpen) {
             console.log('InfoView is open.');
             return true;
+        } else if (!opened) {
+            opened = true;
+            await vscode.commands.executeCommand('lean4.displayGoal');
         }
         await sleep(delay);
         count += 1;
@@ -100,11 +104,9 @@ export async function waitForHtmlString(infoView: InfoProvider, toFind : string,
         count += 1;
     }
 
-    if (!html) {
-        console.log('>>> infoview contents:')
-        console.log(html);
-        assert(false, `Missing "${toFind}" in infoview`)
-    }
+    console.log('>>> infoview contents:')
+    console.log(html);
+    assert(false, `Missing "${toFind}" in infoview`);
     return html;
 }
 
