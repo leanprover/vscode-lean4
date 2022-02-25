@@ -61,9 +61,10 @@ jobs:
           ls -al "$HOME/.elan/bin"
           elan --version
           elan toolchain link master "$(pwd)/lean4"
-          elan toolchain list
       - name: Install 'leanprover/lean4:stable' version
-        run: elan toolchain install leanprover/lean4:stable
+        run: |
+          elan toolchain install leanprover/lean4:stable
+          elan toolchain list
       - name: Run tests
         uses: GabrielBB/xvfb-action@v1.0
         with:
