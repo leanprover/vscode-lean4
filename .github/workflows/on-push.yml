@@ -37,6 +37,8 @@ jobs:
           echo Checking location "$HOME/.elan/bin"...
           ls -al "$HOME/.elan/bin"
           elan --version
+      - name: Install 'leanprover/lean4:stable' version
+        run: elan toolchain install leanprover/lean4:stable
       - name: Run tests
         uses: GabrielBB/xvfb-action@v1.0
         with:

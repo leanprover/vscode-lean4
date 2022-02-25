@@ -34,7 +34,7 @@ export class LeanInstaller implements Disposable {
         this.outputChannel = outputChannel;
         this.defaultToolchain = defaultToolchain;
         this.localStorage = localStorage;
-        this.subscriptions.push(commands.registerCommand('lean4.selectToolchain', () => this.selectToolchainForActiveEditor()));
+        this.subscriptions.push(commands.registerCommand('lean4.selectToolchain', (args) => this.selectToolchainForActiveEditor(args)));
     }
 
     async testLeanVersion(packageUri: Uri) : Promise<LeanVersion> {
@@ -145,10 +145,24 @@ export class LeanInstaller implements Disposable {
         }
     }
 
-    async selectToolchainForActiveEditor() : Promise<void> {
+    async selectToolchainForActiveEditor(args : any) : Promise<void> {
         if (window.activeTextEditor) {
             const uri = window.activeTextEditor.document.uri;
-            await this.selectToolchain(uri);
+            if (args) {
+                // this is a test codepath that short circuits the UI.
+                const selectedVersion = args as string;
+                let s = this.removeSuffix(selectedVersion);
+                console.log('selectToolchainForActiveEditor: ' + selectedVersion);
+                if (s == 'reset') {
+                    s = '';
+                }
+                this.localStorage.setLeanPath(''); // make sure any local full path override is cleared.
+                this.localStorage.setLeanVersion(s); // request the specified version.
+                this.installChangedEmitter.fire(uri);
+            }
+            else {
+                await this.selectToolchain(uri);
+            }
         }
     }
 

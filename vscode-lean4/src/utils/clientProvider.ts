@@ -214,7 +214,7 @@ export class LeanClientProvider implements Disposable {
         const [workspaceFolder, folder, packageFileUri] = findLeanPackageRoot(uri);
         const folderUri = folder ? folder : Uri.from({scheme: 'untitled'});
         const path = folderUri.toString();
-        let client = this.getClientForFolder(uri);
+        let client = this.getClientForFolder(folderUri);
         const cachedClient = (client !== undefined);
         if (!client && !this.pending.has(path)) {
             this.pending.set(path, true);
