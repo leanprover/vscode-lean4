@@ -457,13 +457,13 @@ export class InfoProvider implements Disposable {
             // so that it has up-to-date information.
             const client = this.clientProvider.findClient(editor.document?.uri?.toString());
             if (client?.initializeResult) {
-                await this.webviewPanel.api.serverRestarted(client?.initializeResult);
+                await this.webviewPanel.api.serverRestarted(client.initializeResult);
+                await this.sendDiagnostics(client);
+                await this.sendProgress(client);
             }
 
-            // await this.sendPosition();
-            // await this.sendConfig();
-            // await this.sendDiagnostics();
-            // await this.sendProgress();
+            await this.sendPosition();
+            await this.sendConfig();
         }
     }
 
