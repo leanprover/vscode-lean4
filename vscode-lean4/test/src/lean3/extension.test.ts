@@ -2,7 +2,7 @@ import * as assert from 'assert';
 import { suite } from 'mocha';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { waitForActiveExtension, waitForActiveEditor, assertLeanServers } from '../utils/helpers';
+import { waitForActiveExtension, waitForActiveEditor, assertLeanServers, sleep } from '../utils/helpers';
 
 suite('Extension Test Suite', () => {
 
@@ -29,9 +29,14 @@ suite('Extension Test Suite', () => {
 			assert(cmd !== 'lean4.selectToolchain', 'Lean4 extension should not have any registered commands');
 		});
 
-		assertLeanServers(0);
+		await sleep(1000);
 
 		await vscode.commands.executeCommand('workbench.action.closeAllEditors');
+
+		await sleep(1000);
+
+		await assertLeanServers(0, 0);
+
 	});
 
 }).timeout(60000);
