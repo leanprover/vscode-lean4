@@ -36,8 +36,9 @@ suite('Extension Test Suite', () => {
 
 		await sleep(1000);
 
-		// since this only loaded a lean3 project, we should have no new lean servers
-		await assertLeanServers(servers + 0, workers + 0);
+		// since this only loaded a lean3 project, we should have 1 new lean server
+		// for the lean3, but no lean4 server.
+		await assertLeanServers(servers + 1, workers + 0);
 
 	});
 
