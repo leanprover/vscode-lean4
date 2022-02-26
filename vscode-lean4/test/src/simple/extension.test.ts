@@ -80,49 +80,6 @@ suite('Extension Test Suite', () => {
 		await vscode.commands.executeCommand('workbench.action.closeAllEditors');
 	}).timeout(60000);
 
-	test('Orphaned Lean File', async () => {
-
-		console.log('=================== Orphaned Lean File ===================');
-
-		void vscode.window.showInformationMessage('Running tests: ' + __dirname);
-
-		const testsRoot = path.join(__dirname, '..', '..', '..', '..', 'test', 'suite', 'orphan');
-		const doc = await vscode.workspace.openTextDocument(path.join(testsRoot, 'factorial.lean'));
-		await vscode.window.showTextDocument(doc);
-
-		let editor = await waitForActiveEditor();
-
-		const lean = await waitForActiveExtension('leanprover.lean4');
-		assert(lean, 'Lean extension not loaded');
-
-        console.log(`Found lean package version: ${lean.packageJSON.version}`);
-		const info = lean.exports.infoProvider as InfoProvider;
-
-        assert(await waitForInfoViewOpen(info, 60),
-			'Info view did not open after 60 seconds');
-
-		const expectedVersion = '5040';  // the factorial function works.
-		let html = await waitForHtmlString(info, expectedVersion);
-		console.log(html);
-
-		const installer = lean.exports.installer as LeanInstaller;
-		const toolChains = await installer.elanListToolChains(null);
-		let defaultToolChain = toolChains.find(tc => tc.indexOf('default') > 0);
-		if (defaultToolChain) {
-			// the IO.appPath should output something like this:
-			// FilePath.mk "/home/.elan/toolchains/leanprover--lean4---nightly/bin/lean.exe"
-			// So let's try and find the 'leanprover--lean4---nightly' part.
-			defaultToolChain = defaultToolChain.replace(' (default)', '').trim();
-			defaultToolChain = defaultToolChain.replace('/','--');
-			defaultToolChain = defaultToolChain.replace(':','---')
-			// make sure this string exists in the info view.
-			await waitForHtmlString(info, defaultToolChain);
-		}
-
-		// make sure test is always run in predictable state, which is no file or folder open
-		await vscode.commands.executeCommand('workbench.action.closeAllEditors');
-	}).timeout(60000);
-
 	test('Goto definition in a package folder', async () => {
 		console.log('=================== Load Lean File goto definition in a package folder ===================');
 
