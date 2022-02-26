@@ -203,9 +203,13 @@ export class LeanClient implements Disposable {
                     this.diagnosticsEmitter.fire({uri: uri_, diagnostics: diagnostics_});
                 },
 
-                didOpen: async () => {
-                    // Ignore opening of documents for ctrl+hover
-                    // https://github.com/microsoft/vscode/issues/78453
+                didOpen: async (doc, next) => {
+                    // This event is handled LeanClientProvider.didOpenEditor after the
+                    // 'lean4' languageId is established and it has weeded out documents
+                    // opened to invisible editors (like 'git:' schemes and invisible editors
+                    // created for Ctrl+Hover events - https://github.com/microsoft/vscode/issues/78453).
+                    console.log('>>>>>>>>>>>>>>>>> didOpen: ' + doc.uri.toString());
+                    next(doc);
                     return;
                 },
 
@@ -217,11 +221,12 @@ export class LeanClient implements Disposable {
                 },
 
                 didClose: (doc, next) => {
+                    console.log('>>>>>>>>>>>>>>>>> didClose: ' + doc.uri.toString());
                     if (!this.isOpen.delete(doc.uri.toString())) return;
                     next(doc);
                     if (!this.running || !this.client) return; // there was a problem starting lean server.
-                    const params = this.client.code2ProtocolConverter.asTextDocumentIdentifier(doc);
-                    this.didCloseEmitter.fire({textDocument: params});
+                    const params = this.client.code2ProtocolConverter.asCloseTextDocumentParams(doc);
+                    this.didCloseEmitter.fire(params);
                 },
 
                 provideDocumentHighlights: async (doc, pos, ctok, next) => {
@@ -341,6 +346,9 @@ export class LeanClient implements Disposable {
     }
 
     async openLean4Document(doc: TextDocument) {
+        // Note: we must not send the DidOpenTextDocumentNotification more
+        // than once for each document otherwise we'll end up with
+        // multiple "--workers" for the same doc.
         if (this.isOpen.has(doc.uri.toString())) return;
         if (!this.isSameWorkspace(doc.uri)){
             // skip it, this file belongs to a different workspace...
@@ -359,14 +367,14 @@ export class LeanClient implements Disposable {
     }
 
     notifyDidOpen(doc: TextDocument) {
-        void this.client?.sendNotification(DidOpenTextDocumentNotification.type, {
-            textDocument: {
-                uri: doc.uri.toString(),
-                languageId: doc.languageId,
-                version: 1,
-                text: doc.getText(),
-            },
-        });
+        // void this.client?.sendNotification(DidOpenTextDocumentNotification.type, {
+        //     textDocument: {
+        //         uri: doc.uri.toString(),
+        //         languageId: doc.languageId,
+        //         version: 1,
+        //         text: doc.getText(),
+        //     },
+        // });
     }
 
     isSameWorkspace(uri: Uri){

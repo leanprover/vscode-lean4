@@ -2,7 +2,8 @@ import * as assert from 'assert';
 import { suite } from 'mocha';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { sleep, waitForActiveExtension, waitForActiveEditor, waitForInfoViewOpen, waitForHtmlString, extractPhrase, findWord, restartLeanServer } from '../utils/helpers';
+import { assertLeanServers, waitForActiveExtension, waitForActiveEditor, waitForInfoViewOpen, waitForHtmlString,
+	extractPhrase, findWord, restartLeanServer, sleep } from '../utils/helpers';
 import { InfoProvider } from '../../../src/infoview';
 import { LeanClientProvider} from '../../../src/utils/clientProvider';
 import { LeanInstaller } from '../../../src/utils/leanInstaller';
@@ -17,13 +18,13 @@ suite('Extension Test Suite', () => {
 		await vscode.commands.executeCommand('workbench.action.files.newUntitledFile');
 
 		let editor = await waitForActiveEditor();
-		await editor.edit((builder) => {
-			builder.insert(new vscode.Position(0, 0), '#eval Lean.versionString');
-		});
-
 		// make it a lean4 document even though it is empty and untitled.
 		console.log('Setting lean4 language on untitled doc');
 		await vscode.languages.setTextDocumentLanguage(editor.document, 'lean4');
+
+		await editor.edit((builder) => {
+			builder.insert(new vscode.Position(0, 0), '#eval Lean.versionString');
+		});
 
 		const lean = await waitForActiveExtension('leanprover.lean4');
 		assert(lean, 'Lean extension not loaded');
@@ -58,7 +59,7 @@ suite('Extension Test Suite', () => {
 		// check infoview is working in this new editor, it should be showing the expected type
 		// for the versionString function we just jumped to.
 		html = await waitForHtmlString(info, 'Expected type');
-		// C:\users\clovett\.elan\toolchains\leanprover--lean4---nightly\src\lean\init\meta.lean
+
 		if (vscode.window.activeTextEditor) {
 			editor = vscode.window.activeTextEditor
 			const expected = path.join('.elan', 'toolchains', 'leanprover--lean4---nightly', 'src', 'lean');
@@ -76,8 +77,17 @@ suite('Extension Test Suite', () => {
 			});
 		}
 
+		await sleep(1000);
+
 		// make sure test is always run in predictable state, which is no file or folder open
 		await vscode.commands.executeCommand('workbench.action.closeAllEditors');
+
+		await sleep(1000);
+
+		// after untitled, and goto definition on Lean.versionString we should have 2 lean --servers
+		// running and we should have no --worker processes still running since all editors have been closed.
+		await assertLeanServers(2, 0);
+
 	}).timeout(60000);
 
 	test('Orphaned Lean File', async () => {
@@ -103,7 +113,6 @@ suite('Extension Test Suite', () => {
 
 		const expectedVersion = '5040';  // the factorial function works.
 		let html = await waitForHtmlString(info, expectedVersion);
-		console.log(html);
 
 		const installer = lean.exports.installer as LeanInstaller;
 		const toolChains = await installer.elanListToolChains(null);
@@ -119,8 +128,16 @@ suite('Extension Test Suite', () => {
 			await waitForHtmlString(info, defaultToolChain);
 		}
 
+		await sleep(1000);
+
 		// make sure test is always run in predictable state, which is no file or folder open
 		await vscode.commands.executeCommand('workbench.action.closeAllEditors');
+
+		await sleep(1000);
+
+		// we should have one more server for the 'orphan' folder.
+		await assertLeanServers(3, 0);
+
 	}).timeout(60000);
 
 	test('Goto definition in a package folder', async () => {
@@ -176,8 +193,15 @@ suite('Extension Test Suite', () => {
 			assert(false, 'Lake Version: not found in infoview');
 		}
 
+		await sleep(1000);
+
 		// make sure test is always run in predictable state, which is no file or folder open
 		await vscode.commands.executeCommand('workbench.action.closeAllEditors');
+
+		await sleep(1000);
+
+		// we should have no additional server because of this test.
+		await assertLeanServers(3, 0);
 	}).timeout(60000);
 
 
@@ -221,9 +245,18 @@ suite('Extension Test Suite', () => {
 				assert(false, 'No LeanClient found for folder');
 			}
 
+			await sleep(1000);
+
 			// make sure test is always run in predictable state, which is no file or folder open
 			await vscode.commands.executeCommand('workbench.action.closeAllEditors');
+
+			await sleep(1000);
 		}
+
+		await sleep(1000);
+
+		// we should have no additional server because of this test.
+		await assertLeanServers(3, 0);
 
 	}).timeout(60000);
 

@@ -53,6 +53,10 @@ and place it in a temporary folder `.vscode-test/`.
 	- Start a `npm watch` task to compile the vscode-lean4 extension and watch for changes.
 	- Run the extension integration test in a new VS Code window so you can debug the tests.
 
+Depending on which test it is you want to debug you may have to edit the `Debug Tests` launch
+configuration in `launch.json`.  Be sure to match the arguments there with the way the test
+is launched in `runtests.ts`.
+
 You will be able to set breakpoints in everything except the `runtests.ts` file which is a kind of
 [@vscode/test-electron](https://github.com/microsoft/vscode-test) bootstrapping program.
 

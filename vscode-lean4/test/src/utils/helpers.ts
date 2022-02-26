@@ -4,6 +4,44 @@ import { privateEncrypt } from 'crypto';
 import * as vscode from 'vscode';
 import { InfoProvider } from '../../../src/infoview';
 import { LeanClient} from '../../../src/leanclient';
+import * as ps from 'ps-node';
+
+export async function findProcs(name: string) : Promise<ps.Program[]> {
+  // A simple pid lookup
+  return await new Promise<ps.Program[]>((resolve) => {
+    ps.lookup({ command: name }, function(err, resultList ) {
+      if (err) {
+        resolve([]);
+      }
+      resolve(resultList);
+    });
+  });
+}
+
+export async function assertLeanServers(expectedServers: number, expectedWorkers: number){
+    const action = process.env.GITHUB_ACTION
+    if (action || process.env.USER_NAME === 'clovett') {
+        const list = await findProcs('lean');
+        let servers = 0;
+        let workers = 0;
+        list.forEach((proc) => {
+            if (proc.command == 'lean'){
+                // this is the wrapper lean process that launches the --server
+                // so ignore it.
+            } else {
+                if (proc.arguments.indexOf('--server') >= 0){
+                    servers++;
+                }
+                if (proc.arguments.indexOf('--worker') >= 0){
+                    workers++;
+                }
+            }
+        });
+
+        assert.equal(servers, expectedServers, `Expected ${expectedServers} lean servers, found ${servers}`);
+        assert.equal(workers, expectedWorkers, `Expected ${expectedWorkers} lean workers, found ${workers}`);
+    }
+}
 
 export function sleep(ms : number) {
     return new Promise((resolve) => setTimeout(resolve, ms));
