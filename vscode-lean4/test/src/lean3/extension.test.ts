@@ -2,13 +2,14 @@ import * as assert from 'assert';
 import { suite } from 'mocha';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { waitForActiveExtension, waitForActiveEditor, assertLeanServers, sleep } from '../utils/helpers';
+import { waitForActiveExtension, waitForActiveEditor, assertLeanServers, sleep, findLeanServers} from '../utils/helpers';
 
 suite('Extension Test Suite', () => {
 
 	test('Lean3 project', async () => {
 		void vscode.window.showInformationMessage('Running tests: ' + __dirname);
 
+		const [servers, workers] = await findLeanServers();
 		const testsRoot = path.join(__dirname, '..', '..', '..', '..', 'test', 'suite', 'lean3');
 
 		const doc = await vscode.workspace.openTextDocument(path.join(testsRoot, 'Main.lean'));
@@ -35,7 +36,8 @@ suite('Extension Test Suite', () => {
 
 		await sleep(1000);
 
-		await assertLeanServers(0, 0);
+		// since this only loaded a lean3 project, we should have no new lean servers
+		await assertLeanServers(servers + 0, workers + 0);
 
 	});
 

@@ -2,9 +2,6 @@ name: vscode-lean4 build
 
 on: [push, pull_request]
 
-env:
-  GITHUB_ACTION: on-push
-
 jobs:
   Build:
     runs-on: ubuntu-latest

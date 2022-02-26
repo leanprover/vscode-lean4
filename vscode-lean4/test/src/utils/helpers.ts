@@ -18,6 +18,28 @@ export async function findProcs(name: string) : Promise<ps.Program[]> {
   });
 }
 
+// find out how many lean --server, and lean --worker processes are running
+// and return both counts.
+export async function findLeanServers() : Promise<[number,number]>{
+    const list = await findProcs('lean');
+    let servers = 0;
+    let workers = 0;
+    list.forEach((proc) => {
+        if (proc.command == 'lean'){
+            // this is the wrapper lean process that launches the --server
+            // so ignore it.
+        } else {
+            if (proc.arguments.indexOf('--server') >= 0){
+                servers++;
+            }
+            if (proc.arguments.indexOf('--worker') >= 0){
+                workers++;
+            }
+        }
+    });
+    return [servers, workers];
+}
+
 export async function assertLeanServers(expectedServers: number, expectedWorkers: number){
     const action = process.env.GITHUB_ACTION
     if (action || process.env.USER_NAME === 'clovett') {

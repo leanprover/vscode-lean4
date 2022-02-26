@@ -2,8 +2,8 @@ import * as assert from 'assert';
 import { suite } from 'mocha';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { assertLeanServers, waitForActiveExtension, waitForActiveEditor, waitForInfoViewOpen, waitForHtmlString,
-	extractPhrase, findWord, restartLeanServer, sleep } from '../utils/helpers';
+import { waitForActiveExtension, waitForActiveEditor, waitForInfoViewOpen, waitForHtmlString,
+	extractPhrase, findWord, restartLeanServer, sleep, findLeanServers, assertLeanServers } from '../utils/helpers';
 import { InfoProvider } from '../../../src/infoview';
 import { LeanClientProvider} from '../../../src/utils/clientProvider';
 import { LeanInstaller } from '../../../src/utils/leanInstaller';
@@ -15,6 +15,9 @@ suite('Extension Test Suite', () => {
 		console.log('=================== Untitled Lean File ===================');
 
 		void vscode.window.showInformationMessage('Running tests: ' + __dirname);
+
+		const [servers, workers] = await findLeanServers();
+
 		await vscode.commands.executeCommand('workbench.action.files.newUntitledFile');
 
 		let editor = await waitForActiveEditor();
@@ -84,9 +87,9 @@ suite('Extension Test Suite', () => {
 
 		await sleep(1000);
 
-		// after untitled, and goto definition on Lean.versionString we should have 2 lean --servers
-		// running and we should have no --worker processes still running since all editors have been closed.
-		await assertLeanServers(2, 0);
+		// after untitled, and goto definition on Lean.versionString we should have 2 additional lean --servers
+		// running and we should have no additional --worker processes still running since all editors have been closed.
+		await assertLeanServers( servers + 2, workers + 0);
 
 	}).timeout(60000);
 
@@ -95,6 +98,7 @@ suite('Extension Test Suite', () => {
 		console.log('=================== Orphaned Lean File ===================');
 
 		void vscode.window.showInformationMessage('Running tests: ' + __dirname);
+		const [servers, workers] = await findLeanServers();
 
 		const testsRoot = path.join(__dirname, '..', '..', '..', '..', 'test', 'suite', 'orphan');
 		const doc = await vscode.workspace.openTextDocument(path.join(testsRoot, 'factorial.lean'));
@@ -136,7 +140,7 @@ suite('Extension Test Suite', () => {
 		await sleep(1000);
 
 		// we should have one more server for the 'orphan' folder.
-		await assertLeanServers(3, 0);
+		await assertLeanServers(servers + 1, workers + 0);
 
 	}).timeout(60000);
 
@@ -150,6 +154,7 @@ suite('Extension Test Suite', () => {
 		// have goto definition work showing that the LeanClient is correctly
 		// running in the package root.
 		void vscode.window.showInformationMessage('Running tests: ' + __dirname);
+		const [servers, workers] = await findLeanServers();
 
 		const testsRoot = path.join(__dirname, '..', '..', '..', '..', 'test', 'suite', 'simple');
 		const doc = await vscode.workspace.openTextDocument(path.join(testsRoot, 'Main.lean'));
@@ -200,8 +205,9 @@ suite('Extension Test Suite', () => {
 
 		await sleep(1000);
 
-		// we should have no additional server because of this test.
-		await assertLeanServers(3, 0);
+		// we should have no additional server because of this test, this files has been
+		// opened in previous tests.
+		await assertLeanServers(servers + 0, workers + 0);
 	}).timeout(60000);
 
 
@@ -211,6 +217,7 @@ suite('Extension Test Suite', () => {
 
 		// Test we can restart the lean server
 		void vscode.window.showInformationMessage('Running tests: ' + __dirname);
+		const [servers, workers] = await findLeanServers();
 
 		// run this code twice to ensure that it still works after a Restart Server
 		for (let i = 0; i < 2; i++) {
@@ -256,7 +263,7 @@ suite('Extension Test Suite', () => {
 		await sleep(1000);
 
 		// we should have no additional server because of this test.
-		await assertLeanServers(3, 0);
+		await assertLeanServers(servers + 0, workers + 0);
 
 	}).timeout(60000);
 

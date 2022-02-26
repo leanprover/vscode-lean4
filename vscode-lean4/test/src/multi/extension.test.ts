@@ -3,7 +3,8 @@ import { suite } from 'mocha';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as vscode from 'vscode';
-import { sleep, waitForActiveExtension, waitForActiveEditor, waitForInfoViewOpen, waitForHtmlString, extractPhrase, findWord } from '../utils/helpers';
+import { waitForActiveExtension, waitForActiveEditor, waitForInfoViewOpen, waitForHtmlString, extractPhrase,
+	findLeanServers, assertLeanServers, sleep } from '../utils/helpers';
 import { InfoProvider } from '../../../src/infoview';
 import { LeanClientProvider} from '../../../src/utils/clientProvider';
 import { LeanInstaller } from '../../../src/utils/leanInstaller';
@@ -14,6 +15,7 @@ suite('Extension Test Suite', () => {
 
 		console.log('=================== Load Lean Files in a multi-project workspace ===================');
 		void vscode.window.showInformationMessage('Running tests: ' + __dirname);
+		const [servers, workers] = await findLeanServers();
 
 		const testsRoot = path.join(__dirname, '..', '..', '..', '..', 'test', 'suite', 'multi');
 		const doc = await vscode.workspace.openTextDocument(path.join(testsRoot, 'test', 'Main.lean'));
@@ -47,14 +49,22 @@ suite('Extension Test Suite', () => {
 		const clients = lean.exports.clientProvider as LeanClientProvider;
 		assert(clients.getClients().length === 2, "Expected 2 LeanClients to be running");
 
+		await sleep(1000);
 		// make sure test is always run in predictable state, which is no file or folder open
 		await vscode.commands.executeCommand('workbench.action.closeAllEditors');
+
+		await sleep(1000);
+
+		// we opened two new folders 'multi/test' and 'multi/foo'
+		await assertLeanServers( servers + 2, workers + 0);
+
 	}).timeout(60000);
 
 	test('Select toolchain', async () => {
 		console.log('=================== Test select toolchain ===================');
 
 		void vscode.window.showInformationMessage('Running tests: ' + __dirname);
+		const [servers, workers] = await findLeanServers();
 
 		const testsRoot = path.join(__dirname, '..', '..', '..', '..', 'test', 'suite', 'multi');
 		const doc = await vscode.workspace.openTextDocument(path.join(testsRoot, 'test', 'Main.lean'));
@@ -93,7 +103,12 @@ suite('Extension Test Suite', () => {
 		await waitForHtmlString(info, expectedVersion);
 
 		// make sure test is always run in predictable state, which is no file or folder open
+		await sleep(1000);
 		await vscode.commands.executeCommand('workbench.action.closeAllEditors');
+		await sleep(1000);
+
+		// we opened nothing new in this test, but make sure select toolchain doesn't leak servers
+		await assertLeanServers( servers + 0, workers + 0);
 	}).timeout(60000);
 
 	test('Edit lean-toolchain version', async () => {
@@ -101,6 +116,7 @@ suite('Extension Test Suite', () => {
 		console.log('=================== Test lean-toolchain edits ===================');
 
 		void vscode.window.showInformationMessage('Running tests: ' + __dirname);
+		const [servers, workers] = await findLeanServers();
 
 		const testsRoot = path.join(__dirname, '..', '..', '..', '..', 'test', 'suite', 'multi');
 		const doc = await vscode.workspace.openTextDocument(path.join(testsRoot, 'test', 'Main.lean'));
@@ -160,6 +176,10 @@ suite('Extension Test Suite', () => {
 
 		// make sure test is always run in predictable state, which is no file or folder open
 		await vscode.commands.executeCommand('workbench.action.closeAllEditors');
+
+		// we opened nothing new in this test, but make sure editing the toolchain doesn't leak servers
+		await assertLeanServers( servers + 0, workers + 0);
+
 	}).timeout(60000);
 
 
