@@ -6,7 +6,6 @@ import { sleep, waitForActiveExtension, waitForActiveEditor, waitForInfoViewOpen
 import { InfoProvider } from '../../../src/infoview';
 import { LeanClientProvider} from '../../../src/utils/clientProvider';
 
-const testHackSleep = 1000;
 
 suite('Extension Test Suite', () => {
 
@@ -32,7 +31,6 @@ suite('Extension Test Suite', () => {
         console.log(`Found lean package version: ${lean.packageJSON.version}`);
 		const info = lean.exports.infoProvider as InfoProvider;
 
-		await sleep(testHackSleep); // BUGBUG: this makes the test pass
 		// If info view opens too quickly there is no LeanClient ready yet and
 		// it's initialization gets messed up.
 		assert(await waitForInfoViewOpen(info, 60),
@@ -107,7 +105,6 @@ suite('Extension Test Suite', () => {
 
 		const editor = await waitForActiveEditor('Main.lean');
 
-		await sleep(testHackSleep); // BUGBUG: this makes the test pass
 		const info = lean.exports.infoProvider as InfoProvider;
         assert(await waitForInfoViewOpen(info, 60),
 			'Info view did not open after 20 seconds');
@@ -165,7 +162,6 @@ suite('Extension Test Suite', () => {
 
 			const editor = await waitForActiveEditor('Main.lean');
 
-			await sleep(testHackSleep); // BUGBUG: this makes the test pass
 			const info = lean.exports.infoProvider as InfoProvider;
 			assert(await waitForInfoViewOpen(info, 60),
 				'Info view did not open after 20 seconds');
