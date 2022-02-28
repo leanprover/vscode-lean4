@@ -498,7 +498,7 @@ export class InfoProvider implements Disposable {
         this.autoOpen().then(async () => {
             await this.sendPosition();
             await this.sendConfig();
-        });
+        }).catch(() => {});
     }
 
     private getLocation(editor : TextEditor) : ls.Location | undefined {
