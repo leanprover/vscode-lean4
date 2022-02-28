@@ -453,15 +453,11 @@ export class InfoProvider implements Disposable {
         // by listening to notifications.  Send these notifications when the infoview starts
         // so that it has up-to-date information.
         if (client?.initializeResult) {
-            console.log(">>>>>>>>>> openPreview calling this.webviewPanel.api.serverRestarted");
             await this.webviewPanel?.api.serverRestarted(client.initializeResult);
             await this.sendDiagnostics(client);
             await this.sendProgress(client);
             await this.sendPosition();
             await this.sendConfig();
-        }
-        else{
-            console.log("???????????? client not found");
         }
     }
 
@@ -500,7 +496,6 @@ export class InfoProvider implements Disposable {
 
     private onLanguageChanged() {
         this.autoOpen().then(async () => {
-            console.log(">>>>>>>>>>>>>>>>> onLanguageChanged sendPosition")
             await this.sendPosition();
             await this.sendConfig();
         });
