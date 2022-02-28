@@ -35,6 +35,8 @@ suite('Extension Test Suite', () => {
         console.log(`Found lean package version: ${lean.packageJSON.version}`);
 		const info = lean.exports.infoProvider as InfoProvider;
 
+		// If info view opens too quickly there is no LeanClient ready yet and
+		// it's initialization gets messed up.
 		assert(await waitForInfoViewOpen(info, 60),
 			'Info view did not open after 60 seconds');
 

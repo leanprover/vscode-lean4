@@ -454,7 +454,8 @@ export class LeanClient implements Disposable {
 
     // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
     sendRequest(method: string, params: any) : Promise<any> {
-        return this.running && this.client ? this.client.sendRequest(method, params) : new Promise<any>(()=>{});
+        return this.running && this.client ? this.client.sendRequest(method, params) :
+            new Promise<any>((_, reject)=>{ reject('Client is not running');});
     }
 
     // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
