@@ -4,6 +4,20 @@ import { privateEncrypt } from 'crypto';
 import * as vscode from 'vscode';
 import { InfoProvider } from '../../../src/infoview';
 import { LeanClient} from '../../../src/leanclient';
+import * as ps from 'ps-node';
+
+export async function findProcs(name: string) : Promise<ps.Program[]> {
+  // A simple pid lookup
+  return await new Promise<ps.Program[]>((resolve) => {
+    ps.lookup({ command: name }, function(err, resultList ) {
+      if (err) {
+        resolve([]);
+      } else {
+        resolve(resultList);
+      }
+    });
+  });
+}
 
 export function sleep(ms : number) {
     return new Promise((resolve) => setTimeout(resolve, ms));
@@ -156,4 +170,16 @@ export async function restartLeanServer(client: LeanClient, retries=10, delay=10
     const actual = stateChanges.toString();
     assert(actual === 'stopped,restarted');
     return false;
+}
+
+export async function assertLeanVersion(infoView: InfoProvider, version: string) : Promise<string> {
+    const expectedVersion = '4.0.0-nightly-';
+    const html = await waitForHtmlString(infoView, expectedVersion);
+    const pos = html.indexOf('4.0.0-nightly-');
+    if (pos >= 0) {
+        // e.g. 4.0.0-nightly-2022-02-16
+        const versionString = html.substring(pos, pos + 24)
+        console.log(`>>> Found default "${versionString}" in infoview`)
+    }
+    return html;
 }
