@@ -24,11 +24,11 @@
             "runtimeExecutable": "${execPath}",
             "args": [
                 "--extensionDevelopmentPath=${workspaceFolder}/vscode-lean4",
-                "--extensionTestsPath=${workspaceFolder}/vscode-lean4/out/test/src/toolchains",
-                "${workspaceFolder}/vscode-lean4/test/suite/simple"
+                "--extensionTestsPath=${workspaceFolder}/vscode-lean4/out/test/suite/toolchains",
+                "${workspaceFolder}/vscode-lean4/test/test-fixtures/simple"
             ],
             "cwd": "${workspaceFolder}/vscode-lean4/out/",
-            "outFiles": ["${workspaceFolder}/vscode-lean4/out/test/**/*.js"],
+            "outFiles": ["${workspaceFolder}/vscode-lean4/out/test/suite/**/*.js"],
             "preLaunchTask": "watchTest"
         }
     ]

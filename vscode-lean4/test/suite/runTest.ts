@@ -36,7 +36,7 @@ async function main() {
 
 		// run the lean3 test in one vs code instance, using `open folder` since
 		// lean3 doesn't lile ad-hoc files.
-		const testFolder = path.join(extensionDevelopmentPath, 'test', 'projects', 'lean3');
+		const testFolder = path.join(extensionDevelopmentPath, 'test', 'test-fixtures', 'lean3');
 
 		await runTests({
 			vscodeExecutablePath,
@@ -56,7 +56,7 @@ async function main() {
 			launchArgs: ['--new-window', '--disable-gpu'] });
 
 
-		const lean4TestFolder = path.join(extensionDevelopmentPath, 'test', 'projects', 'simple');
+		const lean4TestFolder = path.join(extensionDevelopmentPath, 'test', 'test-fixtures', 'simple');
 
 		// The '--new-window' doesn't see to be working, so this hack
 		// ensures the following test does not re-open the lean3 folder
@@ -73,7 +73,7 @@ async function main() {
 		// ensures the following test does not re-open the lean3 folder
 		clearUserWorkspaceData(vscodeTestPath);
 
-		const workspacePath = path.join(extensionDevelopmentPath, 'test', 'projects', 'multi', 'workspace.code-workspace');
+		const workspacePath = path.join(extensionDevelopmentPath, 'test', 'test-fixtures', 'multi', 'workspace.code-workspace');
 
 		// Test a multi-folder workspace.
 		await runTests({

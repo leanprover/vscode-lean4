@@ -16,7 +16,7 @@
         "strictNullChecks": true
     },
     "include": [
-        "src/**/*", "test/src/**/*"
+        "src/**/*", "test/suite/**/*"
     ],
     "exclude": ["node_modules", ".vscode-test"]
 }

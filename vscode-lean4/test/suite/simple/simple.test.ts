@@ -95,7 +95,7 @@ suite('Lean3 Basics Test Suite', () => {
 		void vscode.window.showInformationMessage('Running tests: ' + __dirname);
 		const [servers, workers] = await findLeanServers();
 
-		const testsRoot = path.join(__dirname, '..', '..', '..', '..', 'test', 'projects', 'orphan');
+		const testsRoot = path.join(__dirname, '..', '..', '..', '..', 'test', 'test-fixtures', 'orphan');
 		const doc = await vscode.workspace.openTextDocument(path.join(testsRoot, 'factorial.lean'));
 		await vscode.window.showTextDocument(doc);
 
@@ -149,7 +149,7 @@ suite('Lean3 Basics Test Suite', () => {
 		void vscode.window.showInformationMessage('Running tests: ' + __dirname);
 		const [servers, workers] = await findLeanServers();
 
-		const testsRoot = path.join(__dirname, '..', '..', '..', '..', 'test', 'projects', 'simple');
+		const testsRoot = path.join(__dirname, '..', '..', '..', '..', 'test', 'test-fixtures', 'simple');
 		const doc = await vscode.workspace.openTextDocument(path.join(testsRoot, 'Main.lean'));
 		await vscode.window.showTextDocument(doc);
 

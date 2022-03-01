@@ -414,7 +414,7 @@
 		"watchTest": "concurrently \"tsc -p . -w --outDir out\" \"npm run watch\"",
 		"package": "vsce package",
 		"pretest": "tsc -p . --outDir out",
-		"test": "node ./out/test/src/runTest.js"
+		"test": "node ./out/test/suite/runTest.js"
 	},
 	"dependencies": {
 		"@lean4/infoview-api": "^0.1.0",

@@ -17,7 +17,7 @@ suite('Multi-Folder Test Suite', () => {
 		void vscode.window.showInformationMessage('Running tests: ' + __dirname);
 		const [servers, workers] = await findLeanServers();
 
-		const testsRoot = path.join(__dirname, '..', '..', '..', '..', 'test', 'projects', 'multi');
+		const testsRoot = path.join(__dirname, '..', '..', '..', '..', 'test', 'test-fixtures', 'multi');
 		const doc = await vscode.workspace.openTextDocument(path.join(testsRoot, 'test', 'Main.lean'));
 		await vscode.window.showTextDocument(doc);
 
