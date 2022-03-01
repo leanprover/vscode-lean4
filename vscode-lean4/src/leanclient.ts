@@ -204,10 +204,15 @@ export class LeanClient implements Disposable {
                 },
 
                 didOpen: async () => {
-                    // This event is handled by LeanClientProvider.didOpenEditor after the
-                    // 'lean4' languageId is established and it has weeded out documents
-                    // opened to invisible editors (like 'git:' schemes and invisible editors
-                    // created for Ctrl+Hover events - https://github.com/microsoft/vscode/issues/78453).
+                    // Note: as per the LSP spec: An open notification must not be sent more than once
+                    // without a corresponding close notification send before. This means open and close
+                    // notification must be balanced and the max open count for a particular textDocument
+                    // is one.  So this even does nothing the notification is handled by the
+                    // openLean4Document method below after the 'lean4' languageId is established and
+                    // it has weeded out documents opened to invisible editors (like 'git:' schemes and
+                    // invisible editors created for Ctrl+Hover events.  A side effect of unbalanced
+                    // open/close notification is leaking 'lean --worker' processes.
+                    // See https://github.com/microsoft/vscode/issues/78453).
                     return;
                 },
 
@@ -343,9 +348,6 @@ export class LeanClient implements Disposable {
     }
 
     async openLean4Document(doc: TextDocument) {
-        // Note: we must not send the DidOpenTextDocumentNotification more
-        // than once for each document otherwise we'll end up with
-        // multiple "--workers" for the same doc.
         if (this.isOpen.has(doc.uri.toString())) return;
         if (!this.isSameWorkspace(doc.uri)){
             // skip it, this file belongs to a different workspace...
