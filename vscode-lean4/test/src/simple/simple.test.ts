@@ -3,7 +3,7 @@ import { suite } from 'mocha';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { waitForActiveExtension, waitForActiveEditor, waitForInfoViewOpen, waitForHtmlString,
-	extractPhrase, findWord, findLeanServers, assertLeanServers } from '../utils/helpers';
+	extractPhrase, findWord, findLeanServers, assertLeanServers, assertLeanVersion } from '../utils/helpers';
 import { InfoProvider } from '../../../src/infoview';
 import { LeanClientProvider} from '../../../src/utils/clientProvider';
 import { LeanInstaller } from '../../../src/utils/leanInstaller';
@@ -14,6 +14,8 @@ suite('Lean3 Basics Test Suite', () => {
 
 		console.log('=================== Untitled Lean File ===================');
 
+		// make sure test is always run in predictable state, which is no file or folder open
+		await vscode.commands.executeCommand('workbench.action.closeAllEditors');
 		void vscode.window.showInformationMessage('Running tests: ' + __dirname);
 
 		const [servers, workers] = await findLeanServers();
@@ -40,14 +42,7 @@ suite('Lean3 Basics Test Suite', () => {
 		assert(await waitForInfoViewOpen(info, 60),
 			'Info view did not open after 60 seconds');
 
-		const expectedVersion = '4.0.0-nightly-';
-		let html = await waitForHtmlString(info, expectedVersion);
-		const pos = html.indexOf('4.0.0-nightly-');
-		if (pos >= 0) {
-			// 4.0.0-nightly-2022-02-16
-			const versionString = html.substring(pos, pos + 24)
-			console.log(`>>> Found "${versionString}" in infoview`)
-		}
+		await assertLeanVersion(info, '4.0.0-nightly-');
 
 		// test goto definition to lean toolchain works
 
@@ -63,7 +58,7 @@ suite('Lean3 Basics Test Suite', () => {
 
 		// check infoview is working in this new editor, it should be showing the expected type
 		// for the versionString function we just jumped to.
-		html = await waitForHtmlString(info, 'Expected type');
+		const html = await waitForHtmlString(info, 'Expected type');
 
 		if (vscode.window.activeTextEditor) {
 			editor = vscode.window.activeTextEditor
@@ -95,6 +90,8 @@ suite('Lean3 Basics Test Suite', () => {
 
 		console.log('=================== Orphaned Lean File ===================');
 
+		// make sure test is always run in predictable state, which is no file or folder open
+		await vscode.commands.executeCommand('workbench.action.closeAllEditors');
 		void vscode.window.showInformationMessage('Running tests: ' + __dirname);
 		const [servers, workers] = await findLeanServers();
 
@@ -144,6 +141,8 @@ suite('Lean3 Basics Test Suite', () => {
 		// This test is run twice, once as an ad-hoc mode (no folder open)
 		// and again using "open folder" mode.
 
+		// make sure test is always run in predictable state, which is no file or folder open
+		await vscode.commands.executeCommand('workbench.action.closeAllEditors');
 		// Test we can load file in a project folder from a package folder and also
 		// have goto definition work showing that the LeanClient is correctly
 		// running in the package root.

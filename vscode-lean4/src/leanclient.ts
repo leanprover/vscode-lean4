@@ -203,8 +203,8 @@ export class LeanClient implements Disposable {
                     this.diagnosticsEmitter.fire({uri: uri_, diagnostics: diagnostics_});
                 },
 
-                didOpen: async (doc, next) => {
-                    // This event is handled LeanClientProvider.didOpenEditor after the
+                didOpen: async () => {
+                    // This event is handled by LeanClientProvider.didOpenEditor after the
                     // 'lean4' languageId is established and it has weeded out documents
                     // opened to invisible editors (like 'git:' schemes and invisible editors
                     // created for Ctrl+Hover events - https://github.com/microsoft/vscode/issues/78453).
@@ -364,14 +364,14 @@ export class LeanClient implements Disposable {
     }
 
     notifyDidOpen(doc: TextDocument) {
-        // void this.client?.sendNotification(DidOpenTextDocumentNotification.type, {
-        //     textDocument: {
-        //         uri: doc.uri.toString(),
-        //         languageId: doc.languageId,
-        //         version: 1,
-        //         text: doc.getText(),
-        //     },
-        // });
+        void this.client?.sendNotification(DidOpenTextDocumentNotification.type, {
+            textDocument: {
+                uri: doc.uri.toString(),
+                languageId: doc.languageId,
+                version: 1,
+                text: doc.getText(),
+            },
+        });
     }
 
     isSameWorkspace(uri: Uri){

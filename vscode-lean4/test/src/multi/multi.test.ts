@@ -3,7 +3,7 @@ import { suite } from 'mocha';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { waitForActiveExtension, waitForActiveEditor, waitForInfoViewOpen, waitForHtmlString,
-	findLeanServers, assertLeanServers } from '../utils/helpers';
+	findLeanServers, assertLeanServers, assertLeanVersion } from '../utils/helpers';
 import { InfoProvider } from '../../../src/infoview';
 import { LeanClientProvider} from '../../../src/utils/clientProvider';
 
@@ -12,6 +12,8 @@ suite('Multi-Folder Test Suite', () => {
 	test('Load a multi-project workspace', async () => {
 
 		console.log('=================== Load Lean Files in a multi-project workspace ===================');
+		// make sure test is always run in predictable state, which is no file or folder open
+		await vscode.commands.executeCommand('workbench.action.closeAllEditors');
 		void vscode.window.showInformationMessage('Running tests: ' + __dirname);
 		const [servers, workers] = await findLeanServers();
 
@@ -32,16 +34,14 @@ suite('Multi-Folder Test Suite', () => {
 			'Info view did not open after 20 seconds');
 
 		// verify we have a nightly build running in this folder.
-		let expectedVersion = '4.0.0-nightly-';
-		await waitForHtmlString(info, expectedVersion);
+		await assertLeanVersion(info, '4.0.0-nightly-');
 
 		// Now open a file from the other project
 		const doc2 = await vscode.workspace.openTextDocument(path.join(testsRoot, 'foo', 'Foo.lean'));
 		await vscode.window.showTextDocument(doc2);
 
 		// verify that a different version of lean is running here (leanprover/lean4:stable)
-		let expected2 = '4.0.0, commit';
-		await waitForHtmlString(info, expected2);
+		await assertLeanVersion(info, '4.0.0, commit');
 
 		// Now verify we have 2 LeanClients running.
 		const clients = lean.exports.clientProvider as LeanClientProvider;

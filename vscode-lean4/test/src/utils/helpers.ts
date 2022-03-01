@@ -21,6 +21,7 @@ export async function findProcs(name: string) : Promise<ps.Program[]> {
 // find out how many lean --server, and lean --worker processes are running
 // and return both counts.
 export async function findLeanServers() : Promise<[number,number]>{
+    console.log('Finding existing Lean servers...')
     const list = await findProcs('lean');
     let servers = 0;
     let workers = 0;
@@ -37,6 +38,7 @@ export async function findLeanServers() : Promise<[number,number]>{
             }
         }
     });
+    console.log(` ${servers} servers, ${workers} workers`);
     return [servers, workers];
 }
 
@@ -229,4 +231,16 @@ export async function restartLeanServer(client: LeanClient, retries=10, delay=10
     const actual = stateChanges.toString();
     assert(actual === 'stopped,restarted');
     return false;
+}
+
+export async function assertLeanVersion(infoView: InfoProvider, version: string) : Promise<string> {
+    const expectedVersion = '4.0.0-nightly-';
+    const html = await waitForHtmlString(infoView, expectedVersion);
+    const pos = html.indexOf('4.0.0-nightly-');
+    if (pos >= 0) {
+        // e.g. 4.0.0-nightly-2022-02-16
+        const versionString = html.substring(pos, pos + 24)
+        console.log(`>>> Found default "${versionString}" in infoview`)
+    }
+    return html;
 }
