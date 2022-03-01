@@ -12,8 +12,9 @@ export async function findProcs(name: string) : Promise<ps.Program[]> {
     ps.lookup({ command: name }, function(err, resultList ) {
       if (err) {
         resolve([]);
+      } else {
+        resolve(resultList);
       }
-      resolve(resultList);
     });
   });
 }
