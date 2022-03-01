@@ -19,18 +19,6 @@ export async function findProcs(name: string) : Promise<ps.Program[]> {
   });
 }
 
-// find out how many lean --server, and lean --worker processes are running
-// and return both counts.
-export async function findLeanServers() : Promise<[number,number]>{
-    // todo: See work item https://github.com/leanprover/vscode-lean4/issues/144
-    return [0,0];
-}
-
-// Assert that the expected number of servers and workers are running.
-export async function assertLeanServers(expectedServers: number, expectedWorkers: number){
-    // todo: See work item https://github.com/leanprover/vscode-lean4/issues/144
-}
-
 export function sleep(ms : number) {
     return new Promise((resolve) => setTimeout(resolve, ms));
 }

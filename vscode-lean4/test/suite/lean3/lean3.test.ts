@@ -2,14 +2,13 @@ import * as assert from 'assert';
 import { suite } from 'mocha';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { waitForActiveExtension, waitForActiveEditor, assertLeanServers, findLeanServers} from '../utils/helpers';
+import { waitForActiveExtension, waitForActiveEditor } from '../utils/helpers';
 
 suite('Lean3 Compatibility Test Suite', () => {
 
 	test('Lean3 project', async () => {
 		void vscode.window.showInformationMessage('Running tests: ' + __dirname);
 
-		const [servers, workers] = await findLeanServers();
 		const testsRoot = path.join(__dirname, '..', '..', '..', '..', 'test', 'test-fixtures', 'lean3');
 
 		const doc = await vscode.workspace.openTextDocument(path.join(testsRoot, 'Main.lean'));
@@ -31,11 +30,6 @@ suite('Lean3 Compatibility Test Suite', () => {
 		});
 
 		await vscode.commands.executeCommand('workbench.action.closeAllEditors');
-
-		// since this only loaded a lean3 project, we should have 1 new lean server
-		// for the lean3, but no lean4 server.
-		await assertLeanServers(servers + 1, workers + 0);
-
 	});
 
 }).timeout(60000);

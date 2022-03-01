@@ -4,7 +4,7 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import { waitForActiveExtension, waitForActiveEditor, waitForInfoViewOpen, waitForHtmlString,
-	extractPhrase, restartLeanServer, assertLeanVersion, findLeanServers, assertLeanServers } from '../utils/helpers';
+	extractPhrase, restartLeanServer, assertLeanVersion } from '../utils/helpers';
 import { InfoProvider } from '../../../src/infoview';
 import { LeanClientProvider} from '../../../src/utils/clientProvider';
 import { LeanInstaller } from '../../../src/utils/leanInstaller';
@@ -19,8 +19,6 @@ suite('Toolchain Test Suite', () => {
 		// make sure test is always run in predictable state, which is no file or folder open
 		await vscode.commands.executeCommand('workbench.action.closeAllEditors');
 		void vscode.window.showInformationMessage('Running tests: ' + __dirname);
-
-		const [servers, workers] = await findLeanServers();
 
 		await vscode.commands.executeCommand('workbench.action.files.newUntitledFile');
 
@@ -54,10 +52,6 @@ suite('Toolchain Test Suite', () => {
 		// make sure test is always run in predictable state, which is no file or folder open
 		await vscode.commands.executeCommand('workbench.action.closeAllEditors');
 
-		// after untitled, we should have 1 additional lean --servers even after restart of new version
-		// and we should have no additional --worker processes still running since all editors have been closed.
-		await assertLeanServers( servers + 1, workers + 0);
-
 	}).timeout(60000);
 
 	test('Restart Server', async () => {
@@ -68,7 +62,6 @@ suite('Toolchain Test Suite', () => {
 		void vscode.window.showInformationMessage('Running tests: ' + __dirname);
 		// make sure test is always run in predictable state, which is no file or folder open
 		await vscode.commands.executeCommand('workbench.action.closeAllEditors');
-		const [servers, workers] = await findLeanServers();
 
 		// run this code twice to ensure that it still works after a Restart Server
 		for (let i = 0; i < 2; i++) {
@@ -106,10 +99,6 @@ suite('Toolchain Test Suite', () => {
 			// make sure test is always run in predictable state, which is no file or folder open
 			await vscode.commands.executeCommand('workbench.action.closeAllEditors');
 		}
-
-		// we should have no additional server because of this test.
-		await assertLeanServers(servers + 0, workers + 0);
-
 	}).timeout(60000);
 
 	test('Select toolchain', async () => {
@@ -118,7 +107,6 @@ suite('Toolchain Test Suite', () => {
 		void vscode.window.showInformationMessage('Running tests: ' + __dirname);
 		// make sure test is always run in predictable state, which is no file or folder open
 		await vscode.commands.executeCommand('workbench.action.closeAllEditors');
-		const [servers, workers] = await findLeanServers();
 
         const testsRoot = path.join(__dirname, '..', '..', '..', '..', 'test', 'test-fixtures', 'simple');
 		const doc = await vscode.workspace.openTextDocument(path.join(testsRoot, 'Main.lean'));
@@ -158,9 +146,6 @@ suite('Toolchain Test Suite', () => {
 
 		// make sure test is always run in predictable state, which is no file or folder open
 		await vscode.commands.executeCommand('workbench.action.closeAllEditors');
-
-		// we opened nothing new in this test, but make sure select toolchain doesn't leak servers
-		await assertLeanServers( servers + 0, workers + 0);
 	}).timeout(60000);
 
 	test('Edit lean-toolchain version', async () => {
@@ -170,7 +155,6 @@ suite('Toolchain Test Suite', () => {
 		void vscode.window.showInformationMessage('Running tests: ' + __dirname);
 		// make sure test is always run in predictable state, which is no file or folder open
 		await vscode.commands.executeCommand('workbench.action.closeAllEditors');
-		const [servers, workers] = await findLeanServers();
 
         const testsRoot = path.join(__dirname, '..', '..', '..', '..', 'test', 'test-fixtures', 'simple');
 		const doc = await vscode.workspace.openTextDocument(path.join(testsRoot, 'Main.lean'));
@@ -228,9 +212,6 @@ suite('Toolchain Test Suite', () => {
 
 		// make sure test is always run in predictable state, which is no file or folder open
 		await vscode.commands.executeCommand('workbench.action.closeAllEditors');
-
-		// we opened nothing new in this test, but make sure editing the toolchain doesn't leak servers
-		await assertLeanServers( servers + 0, workers + 0);
 
 	}).timeout(60000);
 

@@ -3,7 +3,7 @@ import { suite } from 'mocha';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { waitForActiveExtension, waitForActiveEditor, waitForInfoViewOpen, waitForHtmlString,
-	extractPhrase, findWord, findLeanServers, assertLeanServers, assertLeanVersion } from '../utils/helpers';
+	extractPhrase, findWord, assertLeanVersion } from '../utils/helpers';
 import { InfoProvider } from '../../../src/infoview';
 import { LeanClientProvider} from '../../../src/utils/clientProvider';
 import { LeanInstaller } from '../../../src/utils/leanInstaller';
@@ -17,8 +17,6 @@ suite('Lean3 Basics Test Suite', () => {
 		// make sure test is always run in predictable state, which is no file or folder open
 		await vscode.commands.executeCommand('workbench.action.closeAllEditors');
 		void vscode.window.showInformationMessage('Running tests: ' + __dirname);
-
-		const [servers, workers] = await findLeanServers();
 
 		await vscode.commands.executeCommand('workbench.action.files.newUntitledFile');
 
@@ -80,10 +78,6 @@ suite('Lean3 Basics Test Suite', () => {
 		// make sure test is always run in predictable state, which is no file or folder open
 		await vscode.commands.executeCommand('workbench.action.closeAllEditors');
 
-		// after untitled, and goto definition on Lean.versionString we should have 2 additional lean --servers
-		// running and we should have no additional --worker processes still running since all editors have been closed.
-		await assertLeanServers( servers + 2, workers + 0);
-
 	}).timeout(60000);
 
 	test('Orphaned Lean File', async () => {
@@ -93,7 +87,6 @@ suite('Lean3 Basics Test Suite', () => {
 		// make sure test is always run in predictable state, which is no file or folder open
 		await vscode.commands.executeCommand('workbench.action.closeAllEditors');
 		void vscode.window.showInformationMessage('Running tests: ' + __dirname);
-		const [servers, workers] = await findLeanServers();
 
 		const testsRoot = path.join(__dirname, '..', '..', '..', '..', 'test', 'test-fixtures', 'orphan');
 		const doc = await vscode.workspace.openTextDocument(path.join(testsRoot, 'factorial.lean'));
@@ -130,9 +123,6 @@ suite('Lean3 Basics Test Suite', () => {
 		// make sure test is always run in predictable state, which is no file or folder open
 		await vscode.commands.executeCommand('workbench.action.closeAllEditors');
 
-		// we should have one more server for the 'orphan' folder.
-		await assertLeanServers(servers + 1, workers + 0);
-
 	}).timeout(60000);
 
 	test('Goto definition in a package folder', async () => {
@@ -147,7 +137,6 @@ suite('Lean3 Basics Test Suite', () => {
 		// have goto definition work showing that the LeanClient is correctly
 		// running in the package root.
 		void vscode.window.showInformationMessage('Running tests: ' + __dirname);
-		const [servers, workers] = await findLeanServers();
 
 		const testsRoot = path.join(__dirname, '..', '..', '..', '..', 'test', 'test-fixtures', 'simple');
 		const doc = await vscode.workspace.openTextDocument(path.join(testsRoot, 'Main.lean'));
@@ -194,9 +183,6 @@ suite('Lean3 Basics Test Suite', () => {
 		// make sure test is always run in predictable state, which is no file or folder open
 		await vscode.commands.executeCommand('workbench.action.closeAllEditors');
 
-		// we should have no additional server because of this test, this files has been
-		// opened in previous tests.
-		await assertLeanServers(servers + 0, workers + 0);
 	}).timeout(60000);
 
 }).timeout(60000);

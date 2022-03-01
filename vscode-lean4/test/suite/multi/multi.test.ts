@@ -3,7 +3,7 @@ import { suite } from 'mocha';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { waitForActiveExtension, waitForActiveEditor, waitForInfoViewOpen, waitForHtmlString,
-	findLeanServers, assertLeanServers, assertLeanVersion } from '../utils/helpers';
+	assertLeanVersion } from '../utils/helpers';
 import { InfoProvider } from '../../../src/infoview';
 import { LeanClientProvider} from '../../../src/utils/clientProvider';
 
@@ -15,7 +15,6 @@ suite('Multi-Folder Test Suite', () => {
 		// make sure test is always run in predictable state, which is no file or folder open
 		await vscode.commands.executeCommand('workbench.action.closeAllEditors');
 		void vscode.window.showInformationMessage('Running tests: ' + __dirname);
-		const [servers, workers] = await findLeanServers();
 
 		const testsRoot = path.join(__dirname, '..', '..', '..', '..', 'test', 'test-fixtures', 'multi');
 		const doc = await vscode.workspace.openTextDocument(path.join(testsRoot, 'test', 'Main.lean'));
@@ -49,10 +48,6 @@ suite('Multi-Folder Test Suite', () => {
 
 		// make sure test is always run in predictable state, which is no file or folder open
 		await vscode.commands.executeCommand('workbench.action.closeAllEditors');
-
-		// we opened two new folders 'multi/test' and 'multi/foo'
-		await assertLeanServers( servers + 2, workers + 0);
-
 	}).timeout(60000);
 
 }).timeout(60000);
