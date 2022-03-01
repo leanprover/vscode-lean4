@@ -10,12 +10,26 @@
             "args": ["--extensionDevelopmentPath=${workspaceRoot}/vscode-lean4" ],
             "stopOnEntry": false,
             "sourceMaps": true,
-            "outFiles": [ "${workspaceRoot}/vscode-lean4/out/**/*.js" ],
+            "outFiles": [ "${workspaceRoot}/vscode-lean4/dist/**/*.js" ],
             "preLaunchTask": "watch",
             "debugWebviews": true,
             "rendererDebugOptions": {
                 "webRoot": "${workspaceRoot}/vscode-lean4/media"
             },
+        },
+        {
+            "name": "Debug Tests",
+            "type": "extensionHost",
+            "request": "launch",
+            "runtimeExecutable": "${execPath}",
+            "args": [
+                "--extensionDevelopmentPath=${workspaceFolder}/vscode-lean4",
+                "--extensionTestsPath=${workspaceFolder}/vscode-lean4/out/test/src/simple",
+                "${workspaceFolder}/vscode-lean4/test/suite/simple"
+            ],
+            "cwd": "${workspaceFolder}/vscode-lean4/out/",
+            "outFiles": ["${workspaceFolder}/vscode-lean4/out/test/**/*.js"],
+            "preLaunchTask": "watchTest"
         }
     ]
 }

@@ -111,6 +111,7 @@ export function renderInfoview(editorApi: EditorApi, uiElement: HTMLElement): In
         changedCursorLocation: async loc => editorEvents.changedCursorLocation.fire(loc),
         changedInfoviewConfig: async conf => editorEvents.changedInfoviewConfig.fire(conf),
         requestedAction: async action => editorEvents.requestedAction.fire(action),
+        getInfoviewHtml: async () => document.body.innerHTML,
     };
 
     const ec = new EditorConnection(editorApi, editorEvents);

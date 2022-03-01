@@ -24,6 +24,7 @@ export class LeanInstaller implements Disposable {
     private workspaceSuffix : string = '(workspace override)';
     private defaultSuffix : string = '(default)'
     private versionCache: Map<string,string> = new Map();
+    private promptUser : boolean = true;
 
     // This event is raised whenever a version change happens.
     // The event provides the workspace Uri where the change happened.
@@ -34,7 +35,11 @@ export class LeanInstaller implements Disposable {
         this.outputChannel = outputChannel;
         this.defaultToolchain = defaultToolchain;
         this.localStorage = localStorage;
-        this.subscriptions.push(commands.registerCommand('lean4.selectToolchain', () => this.selectToolchainForActiveEditor()));
+        this.subscriptions.push(commands.registerCommand('lean4.selectToolchain', (args) => this.selectToolchainForActiveEditor(args)));
+    }
+
+    setPromptUser(show: boolean) {
+        this.promptUser = show;
     }
 
     async testLeanVersion(packageUri: Uri) : Promise<LeanVersion> {
@@ -92,33 +97,45 @@ export class LeanInstaller implements Disposable {
             return;
         }
 
-        if (this.prompting) {
-            return;
-        }
-        this.prompting = true;
-        const restartItem = 'Restart Lean';
-        const item = await window.showErrorMessage('Lean version changed', restartItem);
-        if (item === restartItem) {
-            const rc = await this.testLeanVersion(packageUri);
-            if (rc.version === '4'){
-                // it works, so restart the client!
-                this.installChangedEmitter.fire(packageUri);
+        if (this.promptUser){
+            if (this.prompting) {
+                return;
             }
+            this.prompting = true;
+            const restartItem = 'Restart Lean';
+            const item = await window.showErrorMessage('Lean version changed', restartItem);
+            if (item === restartItem) {
+                await this.checkAndFire(packageUri);
+            }
+            this.prompting = false;
+        } else {
+            await this.checkAndFire(packageUri);
         }
-        this.prompting = false;
+    }
+
+    private async checkAndFire(packageUri : Uri) {
+        const rc = await this.testLeanVersion(packageUri);
+        if (rc.version === '4'){
+            // it works, so restart the client!
+            this.installChangedEmitter.fire(packageUri);
+        }
     }
 
     async handleLakeFileChanged(uri: Uri) :  Promise<void> {
-        if (this.prompting) {
-            return;
-        }
-        this.prompting = true;
-        const restartItem = 'Restart Lean';
-        const item = await window.showErrorMessage('Lake file configuration changed', restartItem);
-        if (item === restartItem) {
+        if (this.promptUser){
+            if (this.prompting) {
+                return;
+            }
+            this.prompting = true;
+            const restartItem = 'Restart Lean';
+            const item = await window.showErrorMessage('Lake file configuration changed', restartItem);
+            if (item === restartItem) {
+                this.installChangedEmitter.fire(uri);
+            }
+            this.prompting = false;
+        } else {
             this.installChangedEmitter.fire(uri);
         }
-        this.prompting = false;
     }
 
     async showInstallOptions(uri: Uri) : Promise<void> {
@@ -132,6 +149,7 @@ export class LeanInstaller implements Disposable {
         if (path){
             prompt += ` from ${path}`
         }
+
         const item = await window.showErrorMessage(prompt, installItem, selectItem)
         if (item === installItem) {
             try {
@@ -145,10 +163,24 @@ export class LeanInstaller implements Disposable {
         }
     }
 
-    async selectToolchainForActiveEditor() : Promise<void> {
+    async selectToolchainForActiveEditor(args : any) : Promise<void> {
         if (window.activeTextEditor) {
             const uri = window.activeTextEditor.document.uri;
-            await this.selectToolchain(uri);
+            if (args) {
+                // this is a test codepath that short circuits the UI.
+                const selectedVersion = args as string;
+                let s = this.removeSuffix(selectedVersion);
+                console.log('selectToolchainForActiveEditor: ' + selectedVersion);
+                if (s === 'reset') {
+                    s = '';
+                }
+                this.localStorage.setLeanPath(''); // make sure any local full path override is cleared.
+                this.localStorage.setLeanVersion(s); // request the specified version.
+                this.installChangedEmitter.fire(uri);
+            }
+            else {
+                await this.selectToolchain(uri);
+            }
         }
     }
 
@@ -450,6 +482,9 @@ export class LeanInstaller implements Disposable {
             let promptAndExit = 'read -n 1 -s -r -p "Press any key to start Lean" && exit\n'
             if (process.platform === 'win32') {
                 promptAndExit = 'Read-Host -Prompt "Press ENTER key to start Lean" ; exit\n'
+            }
+            if (!this.promptUser){
+                promptAndExit = 'exit\n'
             }
 
             const toolchain = `-y --default-toolchain ${this.defaultToolchain}`;

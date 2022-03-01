@@ -265,16 +265,6 @@ export class InfoProvider implements Disposable {
 
     private async onClientRestarted(client: LeanClient){
 
-        if (client.isStarted()) {
-            void this.autoOpen();
-        }
-
-        // Inform the infoview about the restart
-        // (this is redundant if the infoview was auto-opened but it doesn't hurt)
-        if (client.initializeResult) {
-            await this.webviewPanel?.api.serverRestarted(client.initializeResult);
-        }
-
         // if we already have subscriptions for a previous client, we need to also
         // subscribe to the same things on this new client.
         for (const [method, [count, subscriptions]] of this.clientNotifSubscriptions) {
@@ -293,11 +283,7 @@ export class InfoProvider implements Disposable {
             }
         }
 
-        // force infoview to fully update state from newly activated LeanClient.
-        await this.sendPosition();
-        await this.sendConfig();
-        await this.sendDiagnostics(client);
-        await this.sendProgress(client);
+        await this.initInfoView(window.activeTextEditor, client);
     }
 
     private async onClientAdded(client: LeanClient) {
@@ -335,6 +321,28 @@ export class InfoProvider implements Disposable {
         for (const s of this.subscriptions) { s.dispose(); }
     }
 
+    isOpen() : boolean {
+        return this.webviewPanel?.visible === true;
+    }
+
+    async getHtmlContents() : Promise<string> {
+        if (this.webviewPanel) {
+            return this.webviewPanel.api.getInfoviewHtml();
+        } else {
+            throw new Error('Cannot retrieve infoview HTML, infoview is closed.');
+        }
+    }
+
+    sleep(ms : number) {
+        return new Promise((resolve) => setTimeout(resolve, ms));
+    }
+
+    async toggleAllMessages() : Promise<void> {
+        if (this.webviewPanel){
+            await this.webviewPanel.api.requestedAction({kind: 'toggleAllMessages'});
+        }
+    }
+
     private updateStylesheet() {
         const fontFamily = workspace.getConfiguration('editor').get<string>('fontFamily')?.replace(/['"]/g, '');
         const fontCodeCSS = `
@@ -347,15 +355,17 @@ export class InfoProvider implements Disposable {
         this.stylesheet = fontCodeCSS + configCSS;
     }
 
-    private async autoOpen() {
+    private async autoOpen() : Promise<boolean> {
         if (!this.webviewPanel && !this.autoOpened && getInfoViewAutoOpen() && window.activeTextEditor) {
             // only auto-open for lean files, not for markdown.
             if (languages.match(this.leanDocs, window.activeTextEditor.document)) {
                 // remember we've auto opened during this session so if user closes it it remains closed.
                 this.autoOpened = true;
                 await this.openPreview(window.activeTextEditor);
+                return true;
             }
         }
+        return false;
     }
 
     private clearNotificationHandlers() {
@@ -399,35 +409,53 @@ export class InfoProvider implements Disposable {
             // inside the webview through the standard message event.
             // The receiving of these messages is done inside webview\index.ts where it
             // calls window.addEventListener('message',...
-            webviewPanel.rpc = new Rpc(m => webviewPanel.webview.postMessage(m));
+            webviewPanel.rpc = new Rpc(m => {
+                try {
+                    void webviewPanel.webview.postMessage(m)
+                } catch (e) {
+                    // ignore any disposed object exceptions
+                }
+            });
             webviewPanel.rpc.register(this.editorApi);
 
             // Similarly, we can received data from the webview by listening to onDidReceiveMessage.
-            webviewPanel.webview.onDidReceiveMessage(m => webviewPanel.rpc.messageReceived(m))
+            webviewPanel.webview.onDidReceiveMessage(m => {
+                try {
+                    webviewPanel.rpc.messageReceived(m)
+                } catch {
+                    // ignore any disposed object exceptions
+                }
+            });
             webviewPanel.api = webviewPanel.rpc.getApi();
             webviewPanel.onDidDispose(() => {
-                this.clearNotificationHandlers();
                 this.webviewPanel = undefined;
+                this.clearNotificationHandlers();
                 this.clearRpcSessions(null); // should be after `webviewPanel = undefined`
             });
             this.webviewPanel = webviewPanel;
             webviewPanel.webview.html = this.initialHtml();
 
+            const uri = editor.document?.uri?.toString();
+            const client = this.clientProvider.findClient(uri);
+            await this.initInfoView(editor, client)
+        }
+    }
+
+    private async initInfoView(editor: TextEditor | undefined, client: LeanClient | null){
+        if (editor) {
             const loc = this.getLocation(editor);
             if (loc) {
-                await webviewPanel.api.initialize(loc);
+                await this.webviewPanel?.api.initialize(loc);
             }
+        }
 
-            // The infoview gets information about file progress, diagnostics, etc.
-            // by listening to notifications.  Send these notifications when the infoview starts
-            // so that it has up-to-date information.
-            const client = this.clientProvider.findClient(editor.document?.uri?.toString());
-            if (client?.initializeResult) {
-                await this.webviewPanel.api.serverRestarted(client.initializeResult);
-                await this.sendDiagnostics(client);
-                await this.sendProgress(client);
-            }
-
+        // The infoview gets information about file progress, diagnostics, etc.
+        // by listening to notifications.  Send these notifications when the infoview starts
+        // so that it has up-to-date information.
+        if (client?.initializeResult) {
+            await this.webviewPanel?.api.serverRestarted(client.initializeResult);
+            await this.sendDiagnostics(client);
+            await this.sendProgress(client);
             await this.sendPosition();
             await this.sendConfig();
         }
@@ -467,8 +495,10 @@ export class InfoProvider implements Disposable {
     }
 
     private onLanguageChanged() {
-        void this.autoOpen();
-        void this.sendPosition();
+        this.autoOpen().then(async () => {
+            await this.sendPosition();
+            await this.sendConfig();
+        }).catch(() => {});
     }
 
     private getLocation(editor : TextEditor) : ls.Location | undefined {
@@ -485,9 +515,10 @@ export class InfoProvider implements Disposable {
     }
 
     private async sendPosition() {
-        if (!window.activeTextEditor) return
-        const loc = this.getLocation(window.activeTextEditor);
-        if (languages.match(this.leanDocs, window.activeTextEditor.document) === 0){
+        const editor = window.activeTextEditor;
+        if (!editor) return
+        const loc = this.getLocation(editor);
+        if (languages.match(this.leanDocs, editor.document) === 0){
             // language is not yet 'lean4', but the LeanClient will fire the didSetLanguage event
             // in openLean4Document and that's when we can send the position to update the
             // InfoView for the newly opened document.

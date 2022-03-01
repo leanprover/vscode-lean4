@@ -127,4 +127,10 @@ export interface InfoviewApi {
    * Must fire whenever the user requests that the infoview perform an action.
    */
   requestedAction(action: InfoviewAction): Promise<void>;
+
+  /**
+   * Return the current HTML contents of the infoview as a string. This is used for testing,
+   * in particular to inspect the page contents and check if the UI is in a correct state.
+   */
+  getInfoviewHtml(): Promise<string>;
 }

@@ -41,6 +41,20 @@ export async function activate(context: ExtensionContext): Promise<any> {
     addDefaultElanPath();
 
     const defaultToolchain = 'leanprover/lean4:nightly';
+
+    // note: workspace.rootPath can be undefined in the untitled or adhoc case
+    // where the user ran "code lean_filename".
+    const doc = getLeanDocument();
+    let packageUri = null;
+    let toolchainVersion = null;
+    if (doc) {
+        [packageUri, toolchainVersion] = await findLeanPackageVersionInfo(doc.uri);
+        if (toolchainVersion && toolchainVersion.indexOf('lean:3') > 0) {
+            console.log(`Lean4 skipping lean 3 project: ${toolchainVersion}`);
+            return { isLean4Project: false, version: toolchainVersion };
+        }
+    }
+
     const outputChannel = window.createOutputChannel('Lean: Editor');
     const storageManager = new LocalStorageService(context.workspaceState);
 
@@ -55,24 +69,8 @@ export async function activate(context: ExtensionContext): Promise<any> {
         }
     }
 
-    // note: workspace.rootPath can be undefined in the untitled or adhoc case
-    // where the user ran "code lean_filename".
-    const doc = getLeanDocument();
-    let packageUri = null;
-    let toolchainVersion = null;
-    if (doc) {
-        [packageUri, toolchainVersion] = await findLeanPackageVersionInfo(doc.uri);
-        if (toolchainVersion && toolchainVersion.indexOf('lean:3') > 0) {
-            // then this file belongs to a lean 3 project!
-            return { isLean4Project: false };
-        }
-    }
-
     const installer = new LeanInstaller(outputChannel, storageManager, defaultToolchain)
     context.subscriptions.push(installer);
-
-    const pkgService = new LeanpkgService()
-    context.subscriptions.push(pkgService);
 
     const versionInfo = await installer.checkLeanVersion(packageUri, toolchainVersion??defaultToolchain)
     // Check whether rootPath is a Lean 3 project (the Lean 3 extension also uses the deprecated rootPath)
@@ -80,28 +78,31 @@ export async function activate(context: ExtensionContext): Promise<any> {
         context.subscriptions.pop()?.dispose(); // stop installer
         // We need to terminate before registering the LeanClientProvider,
         // because that class changes the document id to `lean4`.
-        return { isLean4Project: false };
+        return { isLean4Project: false, version: '3' };
     }
 
-    const clientProvider = new LeanClientProvider(storageManager, installer, pkgService, outputChannel);
-    context.subscriptions.push(clientProvider)
+    const pkgService = new LeanpkgService()
+    context.subscriptions.push(pkgService);
 
-    const info = new InfoProvider(clientProvider, {language: 'lean4'}, context);
+    const leanClientProvider = new LeanClientProvider(storageManager, installer, pkgService, outputChannel);
+    context.subscriptions.push(leanClientProvider)
+
+    const info = new InfoProvider(leanClientProvider, {language: 'lean4'}, context);
     context.subscriptions.push(info)
 
     const abbrev = new AbbreviationFeature();
     context.subscriptions.push(abbrev);
 
-    const docview = new DocViewProvider(context.extensionUri);
-    context.subscriptions.push(docview);
+    const docView = new DocViewProvider(context.extensionUri);
+    context.subscriptions.push(docView);
 
-    // pass the abbreviations through to the docview so it can show them on demand.
-    docview.setAbbreviations(abbrev.abbreviations.symbolsByAbbreviation);
+    // pass the abbreviations through to the docView so it can show them on demand.
+    docView.setAbbreviations(abbrev.abbreviations.symbolsByAbbreviation);
 
-    context.subscriptions.push(new LeanTaskGutter(clientProvider, context))
+    context.subscriptions.push(new LeanTaskGutter(leanClientProvider, context))
 
     pkgService.versionChanged((uri) => installer.handleVersionChanged(uri));
     pkgService.lakeFileChanged((uri) => installer.handleLakeFileChanged(uri));
 
-    return  { isLean4Project: true };
+    return  { isLean4Project: true, infoProvider: info, clientProvider: leanClientProvider, installer};
 }
