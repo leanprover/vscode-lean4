@@ -2,14 +2,14 @@ import * as assert from 'assert';
 import { suite } from 'mocha';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { waitForActiveExtension, waitForActiveEditor, sleep } from '../utils/helpers';
+import { waitForActiveExtension, waitForActiveEditor } from '../utils/helpers';
 
-suite('Extension Test Suite', () => {
+suite('Lean3 Compatibility Test Suite', () => {
 
 	test('Lean3 project', async () => {
 		void vscode.window.showInformationMessage('Running tests: ' + __dirname);
 
-		const testsRoot = path.join(__dirname, '..', '..', '..', '..', 'test', 'suite', 'lean3');
+		const testsRoot = path.join(__dirname, '..', '..', '..', '..', 'test', 'test-fixtures', 'lean3');
 
 		const doc = await vscode.workspace.openTextDocument(path.join(testsRoot, 'Main.lean'));
 		await vscode.window.showTextDocument(doc);

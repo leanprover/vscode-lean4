@@ -2,8 +2,7 @@
   "packages": [
     "lean4-infoview-api",
     "lean4-infoview",
-    "vscode-lean4",
-    "test"
+    "vscode-lean4"
   ],
   "version": "independent"
 }

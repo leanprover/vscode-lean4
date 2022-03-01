@@ -14,6 +14,6 @@ def sum (x : List Nat) : Nat :=
 
 #eval factorial 7
 
-#eval Lean.versionString 
+#eval Lean.versionString
 
-#eval IO.appPath
+#eval IO.appPath 
