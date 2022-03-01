@@ -18,7 +18,48 @@
             },
         },
         {
-            "name": "Debug Tests",
+            "name": "Extension Tests - lean3",
+            "type": "extensionHost",
+            "request": "launch",
+            "runtimeExecutable": "${execPath}",
+            "args": [
+                "--extensionDevelopmentPath=${workspaceFolder}/vscode-lean4",
+                "--extensionTestsPath=${workspaceFolder}/vscode-lean4/out/test/suite/lean3",
+                "${workspaceFolder}/vscode-lean4/test/test-fixtures/lean3"
+            ],
+            "cwd": "${workspaceFolder}/vscode-lean4/out/",
+            "outFiles": ["${workspaceFolder}/vscode-lean4/out/test/suite/**/*.js"],
+            "preLaunchTask": "watchTest"
+        },
+        {
+            "name": "Extension Tests - adhoc",
+            "type": "extensionHost",
+            "request": "launch",
+            "runtimeExecutable": "${execPath}",
+            "args": [
+                "--extensionDevelopmentPath=${workspaceFolder}/vscode-lean4",
+                "--extensionTestsPath=${workspaceFolder}/vscode-lean4/out/test/suite/simple"
+            ],
+            "cwd": "${workspaceFolder}/vscode-lean4/out/",
+            "outFiles": ["${workspaceFolder}/vscode-lean4/out/test/suite/**/*.js"],
+            "preLaunchTask": "watchTest"
+        },
+        {
+            "name": "Extension Tests - simple",
+            "type": "extensionHost",
+            "request": "launch",
+            "runtimeExecutable": "${execPath}",
+            "args": [
+                "--extensionDevelopmentPath=${workspaceFolder}/vscode-lean4",
+                "--extensionTestsPath=${workspaceFolder}/vscode-lean4/out/test/suite/simple",
+                "${workspaceFolder}/vscode-lean4/test/test-fixtures/simple"
+            ],
+            "cwd": "${workspaceFolder}/vscode-lean4/out/",
+            "outFiles": ["${workspaceFolder}/vscode-lean4/out/test/suite/**/*.js"],
+            "preLaunchTask": "watchTest"
+        },
+        {
+            "name": "Extension Tests - toolchains",
             "type": "extensionHost",
             "request": "launch",
             "runtimeExecutable": "${execPath}",
@@ -26,6 +67,20 @@
                 "--extensionDevelopmentPath=${workspaceFolder}/vscode-lean4",
                 "--extensionTestsPath=${workspaceFolder}/vscode-lean4/out/test/suite/toolchains",
                 "${workspaceFolder}/vscode-lean4/test/test-fixtures/simple"
+            ],
+            "cwd": "${workspaceFolder}/vscode-lean4/out/",
+            "outFiles": ["${workspaceFolder}/vscode-lean4/out/test/suite/**/*.js"],
+            "preLaunchTask": "watchTest"
+        },
+        {
+            "name": "Extension Tests - multi-folder",
+            "type": "extensionHost",
+            "request": "launch",
+            "runtimeExecutable": "${execPath}",
+            "args": [
+                "--extensionDevelopmentPath=${workspaceFolder}/vscode-lean4",
+                "--extensionTestsPath=${workspaceFolder}/vscode-lean4/out/test/suite/multi",
+                "${workspaceFolder}/vscode-lean4/test/test-fixtures/multi/multi.code-workspace"
             ],
             "cwd": "${workspaceFolder}/vscode-lean4/out/",
             "outFiles": ["${workspaceFolder}/vscode-lean4/out/test/suite/**/*.js"],

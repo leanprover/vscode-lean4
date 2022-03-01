@@ -12,21 +12,24 @@ folder.  It launches this test version with a `--extensionDevelopmentPath` optio
 for testing.  All this is setup by the [runTests.ts](src/runTests.ts) program.
 
 The test folder is organized into:
-- **src** - for the actual test code.
-- **suite** - contains Lean sample projects used by the tests.
+- **suite** - for the actual test code.
+- **test-fixtures** - contains Lean sample projects used by the tests.
 
 The following is a description of the tests:
-- **src/lean3** - tests that the lean3 extension loads and the lean4 extension does not get in the way.
-- **src/simple** - contains 3 tests:
+- **suite/lean3** - tests that the lean3 extension loads and the lean4 extension does not get in the way.
+- **suite/simple**:
   - `Untitled Lean File` tests that the lean4 extension loads correctly for adhoc files, and untitled files, and that the infoview opens and contains the right output, so this is an end-to-end test ensuring the lean language service is running.  It also tests that you can `Goto Definition` to the Lean source code for `Lean.versionString` and that this takes you to `leanprover--lean4---nightly`.
   - `Orphaned Lean File` tests we can open a Lean 4 file in a folder that has no inherited `lean-toolchain` version information and that you get the `default` toolchain in this case.
   - `Goto definition in a package folder` tests opening a folder containing a Lean 4 project, and that goto definition works across files in the project.
+- **suite/toolchains**:
+  - `Untitled Select Toolchain` tests the `Lean4: Select Toolchain` command when editing an untitled file.
   - `Restart Server` tests the `Lean4: Restart Server` command.
-- **src/multi** - contains 3 tests:
-  - `Load a multi-project workspace` tests lean4 works in a multi-folder VS code workspace where each folder in the workspace uses a different version of lean.  It verifies that 2 separate LeanClients are running in this case.
   - `Select toolchain` tests the `Lean4: Select Toolchain` command can override the lean version used in one of those projects and that this override can be reset.
   - `Edit lean-toolchain version` tests that when you edit the `lean-toolchain` file and specify a
   different version that the lean server is restarted with that new version.
+- **suite/multi**:
+  - `Load a multi-project workspace` tests lean4 works in a multi-folder VS code workspace where each folder in the workspace uses a different version of lean.  It verifies that 2 separate LeanClients are running in this case each using the correct version of
+  the Lean toolchain specified in the `lean-toolchain` in each folder.
 
 ## Running the tests
 
@@ -40,8 +43,7 @@ For these tests to pass on your machine you need to:
 - create a linked toolchain named `master` that points to a build of lean4 bits on your machine.
 See [on-push.yml](../../.github/workflows/on-push.yml) for example of how to set that up).
 
-Now you can run `npx lerna run test` or if your terminal window is inside `vstest-lean4` package
-folder you can run `npm run test` and you will get some handy console output of the test run.
+Now you can run `np run test` and you will get some handy console output of the test run.
 
 The first time you run the test this way it will download a test version of vscode
 and place it in a temporary folder `.vscode-test/`.

@@ -73,7 +73,7 @@ async function main() {
 		// ensures the following test does not re-open the lean3 folder
 		clearUserWorkspaceData(vscodeTestPath);
 
-		const workspacePath = path.join(extensionDevelopmentPath, 'test', 'test-fixtures', 'multi', 'workspace.code-workspace');
+		const workspacePath = path.join(extensionDevelopmentPath, 'test', 'test-fixtures', 'multi', 'multi.code-workspace');
 
 		// Test a multi-folder workspace.
 		await runTests({

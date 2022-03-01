@@ -1,6 +1,6 @@
 # Abbreviation Feature
 
-Edit [abbreviations.ts](./abbreviations.ts) to add common abbreviations.
+Edit [abbreviations.json](./abbreviations.json) to add common abbreviations.
 Use `$CURSOR` to set the new location of the cursor after replacement.
 
 ## Caveat
