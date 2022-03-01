@@ -126,7 +126,7 @@ suite('Lean3 Basics Test Suite', () => {
 	}).timeout(60000);
 
 	test('Goto definition in a package folder', async () => {
-		console.log('=================== Load Lean File goto definition in a package folder ===================');
+		console.log('=================== Goto definition in a package folder ===================');
 
 		// This test is run twice, once as an ad-hoc mode (no folder open)
 		// and again using "open folder" mode.
@@ -173,12 +173,8 @@ suite('Lean3 Basics Test Suite', () => {
 		expectedVersion = 'Lake Version:';
 		html = await waitForHtmlString(info, expectedVersion);
 
-		const lakeVersionString = extractPhrase(html, 'Lake Version:', '<').trim();
-		if (lakeVersionString) {
-			console.log(`>>> Found "${lakeVersionString}" in infoview`)
-		} else {
-			assert(false, 'Lake Version: not found in infoview');
-		}
+		// verify we have a nightly build running in this folder.
+		await assertLeanVersion(info, 'Lake Version:');
 
 		// make sure test is always run in predictable state, which is no file or folder open
 		await vscode.commands.executeCommand('workbench.action.closeAllEditors');

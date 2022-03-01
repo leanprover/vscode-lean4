@@ -303,8 +303,8 @@ the packages in tandem using Lerna.
 
 ### Testing
 - Make sure you have executed the above build steps
-- Run `npx lerna run --scope=@lean4 test`
-- See [test readme](test/readme.md) for more information.
+- Run `npm run test`
+- See [test readme](vscode-lean4/test/readme.md) for more information.
 
 ### Debugging
 - Open VS Code on this folder.
