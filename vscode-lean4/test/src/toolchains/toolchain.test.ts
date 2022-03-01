@@ -73,7 +73,7 @@ suite('Toolchain Test Suite', () => {
 		// run this code twice to ensure that it still works after a Restart Server
 		for (let i = 0; i < 2; i++) {
 
-			const testsRoot = path.join(__dirname, '..', '..', '..', '..', 'test', 'suite', 'simple');
+			const testsRoot = path.join(__dirname, '..', '..', '..', '..', 'test', 'projects', 'simple');
 			const doc = await vscode.workspace.openTextDocument(path.join(testsRoot, 'Main.lean'));
 			await vscode.window.showTextDocument(doc);
 
@@ -120,7 +120,7 @@ suite('Toolchain Test Suite', () => {
 		await vscode.commands.executeCommand('workbench.action.closeAllEditors');
 		const [servers, workers] = await findLeanServers();
 
-        const testsRoot = path.join(__dirname, '..', '..', '..', '..', 'test', 'suite', 'simple');
+        const testsRoot = path.join(__dirname, '..', '..', '..', '..', 'test', 'projects', 'simple');
 		const doc = await vscode.workspace.openTextDocument(path.join(testsRoot, 'Main.lean'));
 		await vscode.window.showTextDocument(doc);
 
@@ -172,7 +172,7 @@ suite('Toolchain Test Suite', () => {
 		await vscode.commands.executeCommand('workbench.action.closeAllEditors');
 		const [servers, workers] = await findLeanServers();
 
-        const testsRoot = path.join(__dirname, '..', '..', '..', '..', 'test', 'suite', 'simple');
+        const testsRoot = path.join(__dirname, '..', '..', '..', '..', 'test', 'projects', 'simple');
 		const doc = await vscode.workspace.openTextDocument(path.join(testsRoot, 'Main.lean'));
 		await vscode.window.showTextDocument(doc);
 

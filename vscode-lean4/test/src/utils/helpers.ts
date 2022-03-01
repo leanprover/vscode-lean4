@@ -22,6 +22,7 @@ export async function findProcs(name: string) : Promise<ps.Program[]> {
 // and return both counts.
 export async function findLeanServers() : Promise<[number,number]>{
     console.log('Finding existing Lean servers...')
+    const start = new Date().getTime();
     const list = await findProcs('lean');
     let servers = 0;
     let workers = 0;
@@ -38,7 +39,8 @@ export async function findLeanServers() : Promise<[number,number]>{
             }
         }
     });
-    console.log(` ${servers} servers, ${workers} workers`);
+    const end = new Date().getTime();
+    console.log(` ${servers} servers, ${workers} workers in ${end - start} ms`);
     return [servers, workers];
 }
 
