@@ -377,7 +377,7 @@ export class LeanClient implements Disposable {
 
     isSameWorkspace(uri: Uri){
         if (this.folderUri) {
-            if (this.folderUri.scheme != uri.scheme) return false;
+            if (this.folderUri.scheme !== uri.scheme) return false;
             if (this.folderUri.scheme === 'file') {
                 const realPath1 = fs.realpathSync(this.folderUri.fsPath).toLowerCase();
                 const realPath2 = fs.realpathSync(uri.fsPath).toLowerCase();
