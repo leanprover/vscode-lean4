@@ -43,7 +43,7 @@ For these tests to pass on your machine you need to:
 - create a linked toolchain named `master` that points to a build of lean4 bits on your machine.
 See [on-push.yml](../../.github/workflows/on-push.yml) for example of how to set that up).
 
-Now you can run `np run test` and you will get some handy console output of the test run.
+Now you can run `npm run test` and you will get some handy console output of the test run.
 
 The first time you run the test this way it will download a test version of vscode
 and place it in a temporary folder `.vscode-test/`.
