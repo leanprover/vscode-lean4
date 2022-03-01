@@ -1,5 +1,5 @@
 import { TextDocument, EventEmitter, Diagnostic,
-    languages, DocumentHighlight, Range, DocumentHighlightKind, window, workspace,
+    DocumentHighlight, Range, DocumentHighlightKind, workspace,
     Disposable, Uri, ConfigurationChangeEvent, OutputChannel, DiagnosticCollection,
     Position, WorkspaceFolder } from 'vscode'
 import {
@@ -23,7 +23,6 @@ import { LeanFileProgressParams, LeanFileProgressProcessingInfo } from '@lean4/i
 import { LocalStorageService} from './utils/localStorage'
 import { batchExecute, testExecute } from './utils/batch'
 import { readLeanVersion } from './utils/projectInfo';
-import { cwd } from 'process'
 import * as fs from 'fs';
 import { URL } from 'url';
 import { join } from 'path';
@@ -378,9 +377,19 @@ export class LeanClient implements Disposable {
 
     isSameWorkspace(uri: Uri){
         if (this.folderUri) {
-            if (uri.toString().startsWith(this.folderUri.toString())) {
-                // skip it, this file belongs to a different workspace...
-                return true;
+            if (this.folderUri.scheme != uri.scheme) return false;
+            if (this.folderUri.scheme === 'file') {
+                const realPath1 = fs.realpathSync(this.folderUri.fsPath).toLowerCase();
+                const realPath2 = fs.realpathSync(uri.fsPath).toLowerCase();
+                if (process.platform === 'win32') {
+                    // windows paths are case insensitive.
+                    return realPath2.startsWith(realPath1);
+                } else {
+                    return realPath2.toString().startsWith(realPath1);
+                }
+            }
+            else {
+                return uri.toString().startsWith(this.folderUri.toString());
             }
         }
         else {
