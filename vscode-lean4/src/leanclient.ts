@@ -23,13 +23,11 @@ import { LeanFileProgressParams, LeanFileProgressProcessingInfo } from '@lean4/i
 import { LocalStorageService} from './utils/localStorage'
 import { batchExecute, testExecute } from './utils/batch'
 import { readLeanVersion } from './utils/projectInfo';
-import { cwd } from 'process'
-import * as fs from 'fs';
 import { URL } from 'url';
 import { join } from 'path';
  // @ts-ignore
 import { SemVer } from 'semver';
-import { fsExistHelper } from './utils/fsHelper';
+import { fileExists } from './utils/fsHelper';
 
 const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
@@ -126,7 +124,7 @@ export class LeanClient implements Disposable {
         if (useLake) {
             let knownDate = false;
             const lakefile = Uri.joinPath(this.folderUri, 'lakefile.lean')
-            if (!await fsExistHelper(new URL(lakefile.toString()))) {
+            if (!await fileExists(new URL(lakefile.toString()))) {
                 useLake = false;
             }
             else {

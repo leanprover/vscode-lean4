@@ -5,11 +5,10 @@ import { URL } from 'url';
 import { commands, Disposable, Uri, ViewColumn, WebviewPanel, window, ColorThemeKind,
      workspace, WebviewOptions, WebviewPanelOptions, TextDocument, languages,
      Range, Position } from 'vscode';
-import * as fs from 'fs';
 import { join, extname } from 'path';
 import { TempFolder } from './utils/tempFolder'
 import { SymbolsByAbbreviation, AbbreviationConfig } from './abbreviation/config'
-import { fsExistHelper } from './utils/fsHelper';
+import { fileExists } from './utils/fsHelper';
 
 export function mkCommandUri(commandName: string, ...args: any[]): string {
     return `command:${commandName}?${encodeURIComponent(JSON.stringify(args))}`;
@@ -27,11 +26,11 @@ async function findProjectDocumentation(): Promise<string | null> {
     const rootPath = findActiveEditorRootPath();
     if (rootPath) {
         let html = join(rootPath, 'html', 'index.html');
-        if(await fsExistHelper(html)) {
+        if(await fileExists(html)) {
             return html;
         }
         html = join(rootPath, 'html', 'index.htm');
-        if(await fsExistHelper(html)) {
+        if(await fileExists(html)) {
             return html;
         }
     }
@@ -81,12 +80,6 @@ export class DocViewProvider implements Disposable {
 
     setAbbreviations(abbrev: SymbolsByAbbreviation) : void{
         this.abbreviations = abbrev;
-    }
-
-    private async offerToOpenProjectDocumentation() {
-        const projDoc = await findProjectDocumentation();
-        if (!projDoc) return;
-        await this.open(Uri.file(projDoc).toString());
     }
 
     private async tryIt(code: string) {

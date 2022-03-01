@@ -1,9 +1,8 @@
 import { EventEmitter, Disposable, Uri, workspace, window, WorkspaceFolder } from 'vscode';
 import { LocalStorageService} from './localStorage'
 import { findLeanPackageRoot, findLeanPackageVersionInfo } from './projectInfo';
-import * as fs from 'fs';
 import * as path from 'path';
-import { fsExistHelper } from './fsHelper';
+import { fileExists } from './fsHelper';
 
 // This service monitors the Lean package root folders for changes to any
 // lean-toolchain, leanpkg.toml or lakefile.lean files found there.
@@ -112,7 +111,7 @@ export class LeanpkgService implements Disposable {
     private async findLakeFile(packageUri: Uri) : Promise<Uri | null> {
         const fullPath = Uri.joinPath(packageUri, this.lakeFileName);
         const url = fullPath.fsPath;
-        if(await fsExistHelper(url)) {
+        if(await fileExists(url)) {
             return fullPath;
         }
         return null;
@@ -129,7 +128,7 @@ export class LeanpkgService implements Disposable {
         }
         catch(ex) {
             // In case there is an error in the read
-            throw ex;
+            return "";
         }
     }
 

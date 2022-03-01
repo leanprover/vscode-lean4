@@ -34,7 +34,7 @@ export class LibraryNoteLinkProvider implements DocumentLinkProvider {
         }
         catch (ex){
             // Throw an exception in case any other issue is encountered
-            window.showErrorMessage('Exception thrown: .' + ex);
+            window.showErrorMessage('Exception thrown: ' + ex);
         }
     }
 }

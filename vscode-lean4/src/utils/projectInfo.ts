@@ -1,12 +1,13 @@
 import * as fs from 'fs';
 import { URL } from 'url';
 import { Uri, workspace, WorkspaceFolder } from 'vscode';
-import { addDefaultElanPath } from '../config';
-import { fsExistHelper, fsReadHelper } from './fsHelper';
+import { fileExists, fileRead } from './fsHelper';
 
 // Detect lean4 root directory (works for both lean4 repo and nightly distribution)
+
 export async function isCoreLean4Directory(path: Uri): Promise<boolean> {
-    return path.scheme === 'file' && await fsExistHelper(Uri.joinPath(path, 'LICENSE').fsPath) && await fsExistHelper(Uri.joinPath(path, 'LICENSES').fsPath);
+    return await fileExists(Uri.joinPath(path, 'LICENSE').fsPath) && await fileExists(Uri.joinPath(path, 'LICENSES').fsPath);
+
 }
 
 // Find the root of a Lean project and return an optional WorkspaceFolder for it,
@@ -48,12 +49,12 @@ export async function findLeanPackageRoot(uri: Uri) : Promise<[WorkspaceFolder |
         while (true) {
             // give preference to 'lean-toolchain' files if any.
             const leanToolchain = Uri.joinPath(path, toolchainFileName);
-            if (await fsExistHelper(leanToolchain.fsPath)) {
+            if (await fileExists(leanToolchain.fsPath)) {
                 return [wsFolder, path, leanToolchain];
             }
             else {
                 const leanPkg = Uri.joinPath(path, tomlFileName);
-                if (await fsExistHelper(leanPkg.fsPath)) {
+                if (await fileExists(leanPkg.fsPath)) {
                     return [wsFolder, path, leanPkg];
                 }
                 else if (await isCoreLean4Directory(path)) {
@@ -100,34 +101,34 @@ export async function findLeanPackageVersionInfo(uri: Uri) : Promise<[Uri | null
 
 // Find the 'leanpkg.toml' or 'lean-toolchain' in the given package root and
 // extract the Lean version info from it.
-export async function readLeanVersion(packageUri: Uri) : Promise<string | null> {
+export async function readLeanVersion(packageUri: Uri) : Promise<string> {
     const toolchainFileName = 'lean-toolchain';
     const tomlFileName = 'leanpkg.toml';
     if (packageUri.scheme === 'file') {
         const leanToolchain = Uri.joinPath(packageUri, toolchainFileName);
-        if (await fsExistHelper(new URL(leanToolchain.toString()))) {
+        if (await fileExists(new URL(leanToolchain.toString()))) {
             return await readLeanVersionFile(leanToolchain);
         }
         else {
             const leanPkg = Uri.joinPath(packageUri, tomlFileName);
-            if (await fsExistHelper(new URL(leanPkg.toString()))) {
+            if (await fileExists(new URL(leanPkg.toString()))) {
                 return await readLeanVersionFile(leanPkg);
             }
         }
     }
-    return null;
+    return "";
 }
 
-async function readLeanVersionFile(packageFileUri : Uri) : Promise<string | null> {
+async function readLeanVersionFile(packageFileUri : Uri) : Promise<string> {
     const url = new URL(packageFileUri.toString());
     const tomlFileName = 'leanpkg.toml';
     if (packageFileUri.scheme !== 'file'){
-        return null;
+        return "";
     }
 
     if (packageFileUri.path.endsWith(tomlFileName))
     {
-        const data = await fsReadHelper(url);
+        const data = await fileRead(url);
         if (data) {
             const match = /lean_version\s*=\s*"([^"]*)"/.exec(data);
             if (match) return match[1].trim();
@@ -135,9 +136,9 @@ async function readLeanVersionFile(packageFileUri : Uri) : Promise<string | null
 
     } else {
         // must be a lean-toolchain file, these are much simpler they only contain a version.
-        return await fsReadHelper(url);
+        return await fileRead(url);
 
     }
-    return null;
+    return "";
 
 }
