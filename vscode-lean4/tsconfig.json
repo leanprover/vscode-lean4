@@ -1,21 +1,22 @@
 {
     "compilerOptions": {
-		"experimentalDecorators": true,
-		"resolveJsonModule": true,
+        "experimentalDecorators": true,
+        "resolveJsonModule": true,
         "module": "commonjs",
         "target": "es6",
         "outDir": "out",
         "lib": [
-			"es6",
-			"es2020.string"
+           "es6",
+           "es2020.string"
         ],
         "sourceMap": true,
         "alwaysStrict": true,
-        "rootDir": "./src",
+        "rootDir": "./",
         "noImplicitAny": true,
         "strictNullChecks": true
     },
     "include": [
-        "src/**/*"
+        "src/**/*", "test/src/**/*"
     ],
+    "exclude": ["node_modules", ".vscode-test"]
 }

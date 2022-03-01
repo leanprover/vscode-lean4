@@ -141,10 +141,12 @@ export function AllMessages({uri: uri0}: { uri: DocumentUri }) {
     )
 }
 
+/** We factor out the body of {@link AllMessages} which lazily fetches its contents only when expanded. */
 function AllMessagesBody({uri, messages}: {uri: DocumentUri, messages: () => Promise<InteractiveDiagnostic[]>}) {
-    const [msgs, setMsgs] = React.useState<InteractiveDiagnostic[]>([])
+    const [msgs, setMsgs] = React.useState<InteractiveDiagnostic[] | undefined>(undefined)
     React.useEffect(() => void messages().then(setMsgs), [messages])
-    return <MessagesList uri={uri} messages={msgs}/>
+    if (msgs === undefined) return <>Loading messages..</>
+    else return <MessagesList uri={uri} messages={msgs}/>
 }
 
 /**

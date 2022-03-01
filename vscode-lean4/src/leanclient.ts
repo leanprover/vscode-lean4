@@ -75,6 +75,9 @@ export class LeanClient implements Disposable {
     private progressChangedEmitter = new EventEmitter<[string, LeanFileProgressProcessingInfo[]]>()
     progressChanged = this.progressChangedEmitter.event
 
+    private stoppedEmitter = new EventEmitter()
+    stopped = this.stoppedEmitter.event
+
     private restartedEmitter = new EventEmitter()
     restarted = this.restartedEmitter.event
 
@@ -101,13 +104,13 @@ export class LeanClient implements Disposable {
     }
 
     async restart(): Promise<void> {
-        this.restartingEmitter.fire(undefined)
         const startTime = Date.now()
 
         if (this.isStarted()) {
             await this.stop()
         }
 
+        this.restartingEmitter.fire(undefined)
         this.toolchainPath = this.storageManager.getLeanPath();
         if (!this.toolchainPath) this.toolchainPath = toolchainPath();
         const version = this.storageManager.getLeanVersion();
@@ -395,6 +398,7 @@ export class LeanClient implements Disposable {
     async stop(): Promise<void> {
         assert(() => this.isStarted())
         if (this.client && this.running) {
+            this.stoppedEmitter.fire(undefined);
             await this.client.stop()
         }
 
@@ -443,7 +447,8 @@ export class LeanClient implements Disposable {
 
     // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
     sendRequest(method: string, params: any) : Promise<any> {
-        return this.running && this.client ? this.client.sendRequest(method, params) : new Promise<any>(()=>{});
+        return this.running && this.client ? this.client.sendRequest(method, params) :
+            new Promise<any>((_, reject)=>{ reject('Client is not running');});
     }
 
     // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types

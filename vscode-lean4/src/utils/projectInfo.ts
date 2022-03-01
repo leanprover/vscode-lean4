@@ -6,7 +6,7 @@ import { fsExistHelper, fsReadHelper } from './fsHelper';
 
 // Detect lean4 root directory (works for both lean4 repo and nightly distribution)
 export async function isCoreLean4Directory(path: Uri): Promise<boolean> {
-    return await fsExistHelper(Uri.joinPath(path, 'LICENSE').fsPath) && await fsExistHelper(Uri.joinPath(path, 'LICENSES').fsPath);
+    return path.scheme === 'file' && await fsExistHelper(Uri.joinPath(path, 'LICENSE').fsPath) && await fsExistHelper(Uri.joinPath(path, 'LICENSES').fsPath);
 }
 
 // Find the root of a Lean project and return an optional WorkspaceFolder for it,

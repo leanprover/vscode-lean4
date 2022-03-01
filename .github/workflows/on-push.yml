@@ -3,20 +3,69 @@ name: vscode-lean4 build
 on: [push, pull_request]
 
 jobs:
-  build_job:
+  Build:
     runs-on: ubuntu-latest
     name: Build
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-node@v2
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Setup Node.js
+        uses: actions/setup-node@v2
         with:
           node-version: '16'
-      - run: npm ci
-      - run: npx lerna bootstrap --ci
-      - run: npm run build
-      - run: npx lerna run --scope=lean4 package
-      - uses: actions/upload-artifact@v2
+      - name: Build
+        run: |
+          npm ci
+          npx lerna bootstrap --ci
+          npm run build
+          npx lerna run --scope=lean4 package
+      - name: Upload artifact
+        uses: actions/upload-artifact@v2
         with:
           name: vscode-lean4
           path: 'vscode-lean4/lean4-*.vsix'
-      - run: npm run lint
+      - name: Lint
+        run: npm run lint
+
+      - name: Download Lean4 build artifact
+        uses: lovettchris/action-download-artifact@v2.15.11
+        with:
+          name: build-Linux release
+          path: .
+          github_token: ${{secrets.GITHUB_TOKEN}}
+          workflow: ci.yml
+          workflow_conclusion: success
+          branch: master
+          repo: leanprover/lean4
+          check_artifacts:  true
+      - name: Unpack Lean4 build
+        run: |
+          if [[ "$(ls *.zst)" != "lean-4.0.0-linux.tar.zst" ]]; then mv $(ls *.gz) lean-4.0.0-linux.tar.zst; fi
+          mkdir lean4
+          tar --use-compress-program=unzstd -xvf lean-4.0.0-linux.tar.zst -C lean4 --strip-components 1
+          ls -al lean4/bin
+          echo ================= ldd lean
+          ldd lean4/bin/lean
+          echo ================= ldd libleanshared.so
+          ldd lean4/lib/lean/libleanshared.so
+          chmod u+x lean4/bin/*
+      - name: Set path to elan
+        run: |
+          echo "$HOME/.elan/bin" >> $GITHUB_PATH
+      - name: Setup elan toolchain so lean can install new versions
+        run: |
+          curl -O --location https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh
+          chmod u+x elan-init.sh
+          ./elan-init.sh -y --default-toolchain leanprover/lean4:nightly
+          echo Checking location "$HOME/.elan/bin"...
+          ls -al "$HOME/.elan/bin"
+          elan --version
+          elan toolchain link master "$(pwd)/lean4"
+      - name: Install 'leanprover/lean4:stable' version
+        run: |
+          elan toolchain install leanprover/lean4:stable
+          elan toolchain list
+      - name: Run tests
+        uses: GabrielBB/xvfb-action@v1.0
+        with:
+          run: npx lerna run --scope=lean4 test
