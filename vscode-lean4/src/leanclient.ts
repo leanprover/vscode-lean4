@@ -208,8 +208,6 @@ export class LeanClient implements Disposable {
                     // 'lean4' languageId is established and it has weeded out documents
                     // opened to invisible editors (like 'git:' schemes and invisible editors
                     // created for Ctrl+Hover events - https://github.com/microsoft/vscode/issues/78453).
-                    console.log('>>>>>>>>>>>>>>>>> didOpen: ' + doc.uri.toString());
-                    next(doc);
                     return;
                 },
 
@@ -221,7 +219,6 @@ export class LeanClient implements Disposable {
                 },
 
                 didClose: (doc, next) => {
-                    console.log('>>>>>>>>>>>>>>>>> didClose: ' + doc.uri.toString());
                     if (!this.isOpen.delete(doc.uri.toString())) return;
                     next(doc);
                     if (!this.running || !this.client) return; // there was a problem starting lean server.

@@ -1,62 +1,64 @@
 import * as assert from 'assert';
 import { suite } from 'mocha';
 import * as path from 'path';
-import * as fs from 'fs';
 import * as vscode from 'vscode';
-import { waitForActiveExtension, waitForActiveEditor, waitForInfoViewOpen, waitForHtmlString, extractPhrase,
-	findLeanServers, assertLeanServers, sleep } from '../utils/helpers';
+import * as fs from 'fs';
+import { waitForActiveExtension, waitForActiveEditor, waitForInfoViewOpen, waitForHtmlString,
+	extractPhrase, restartLeanServer, sleep, findLeanServers, assertLeanServers } from '../utils/helpers';
 import { InfoProvider } from '../../../src/infoview';
 import { LeanClientProvider} from '../../../src/utils/clientProvider';
 import { LeanInstaller } from '../../../src/utils/leanInstaller';
 
-suite('Extension Test Suite', () => {
+// Expects to be launched with folder: ${workspaceFolder}/vscode-lean4/test/suite/simple
+suite('Toolchain Test Suite', () => {
 
-	test('Load a multi-project workspace', async () => {
+	test('Restart Server', async () => {
 
-		console.log('=================== Load Lean Files in a multi-project workspace ===================');
+		console.log('=================== Test Restart Server ===================');
+
+		// Test we can restart the lean server
 		void vscode.window.showInformationMessage('Running tests: ' + __dirname);
 		const [servers, workers] = await findLeanServers();
 
-		const testsRoot = path.join(__dirname, '..', '..', '..', '..', 'test', 'suite', 'multi');
-		const doc = await vscode.workspace.openTextDocument(path.join(testsRoot, 'test', 'Main.lean'));
-		await vscode.window.showTextDocument(doc);
+		// run this code twice to ensure that it still works after a Restart Server
+		for (let i = 0; i < 2; i++) {
 
-		const lean = await waitForActiveExtension('leanprover.lean4');
-		assert(lean, 'Lean extension not loaded');
-		assert(lean.exports.isLean4Project);
-		assert(lean.isActive);
-        console.log(`Found lean package version: ${lean.packageJSON.version}`);
+			const testsRoot = path.join(__dirname, '..', '..', '..', '..', 'test', 'suite', 'simple');
+			const doc = await vscode.workspace.openTextDocument(path.join(testsRoot, 'Main.lean'));
+			await vscode.window.showTextDocument(doc);
 
-		await waitForActiveEditor('Main.lean');
+			const lean = await waitForActiveExtension('leanprover.lean4');
+			assert(lean, 'Lean extension not loaded');
+			assert(lean.exports.isLean4Project);
+			assert(lean.isActive);
+			console.log(`Found lean package version: ${lean.packageJSON.version}`);
 
-		const info = lean.exports.infoProvider as InfoProvider;
-        assert(await waitForInfoViewOpen(info, 60),
-			'Info view did not open after 20 seconds');
+			const editor = await waitForActiveEditor('Main.lean');
 
-		// verify we have a nightly build running in this folder.
-		let expectedVersion = '4.0.0-nightly-';
-		await waitForHtmlString(info, expectedVersion);
+			const info = lean.exports.infoProvider as InfoProvider;
+			assert(await waitForInfoViewOpen(info, 60),
+				'Info view did not open after 20 seconds');
 
-		// Now open a file from the other project
-		const doc2 = await vscode.workspace.openTextDocument(path.join(testsRoot, 'foo', 'Foo.lean'));
-		await vscode.window.showTextDocument(doc2);
+			let expectedVersion = 'Hello:';
+			let html = await waitForHtmlString(info, expectedVersion);
+			const versionString = extractPhrase(html, 'Hello:', '<').trim();
+			console.log(`>>> Found "${versionString}" in infoview`);
 
-		// verify that a different version of lean is running here (leanprover/lean4:stable)
-		let expected2 = '4.0.0, commit';
-		await waitForHtmlString(info, expected2);
+			// Now invoke the restart server command
+			const clients = lean.exports.clientProvider as LeanClientProvider;
+			const client = clients.getClientForFolder(vscode.Uri.file(testsRoot));
+			if (client) {
+				await restartLeanServer(client);
+			} else {
+				assert(false, 'No LeanClient found for folder');
+			}
 
-		// Now verify we have 2 LeanClients running.
-		const clients = lean.exports.clientProvider as LeanClientProvider;
-		assert(clients.getClients().length === 2, "Expected 2 LeanClients to be running");
+			// make sure test is always run in predictable state, which is no file or folder open
+			await vscode.commands.executeCommand('workbench.action.closeAllEditors');
+		}
 
-		await sleep(1000);
-		// make sure test is always run in predictable state, which is no file or folder open
-		await vscode.commands.executeCommand('workbench.action.closeAllEditors');
-
-		await sleep(1000);
-
-		// we opened two new folders 'multi/test' and 'multi/foo'
-		await assertLeanServers( servers + 2, workers + 0);
+		// we should have no additional server because of this test.
+		await assertLeanServers(servers + 0, workers + 0);
 
 	}).timeout(60000);
 
@@ -66,8 +68,8 @@ suite('Extension Test Suite', () => {
 		void vscode.window.showInformationMessage('Running tests: ' + __dirname);
 		const [servers, workers] = await findLeanServers();
 
-		const testsRoot = path.join(__dirname, '..', '..', '..', '..', 'test', 'suite', 'multi');
-		const doc = await vscode.workspace.openTextDocument(path.join(testsRoot, 'test', 'Main.lean'));
+        const testsRoot = path.join(__dirname, '..', '..', '..', '..', 'test', 'suite', 'simple');
+		const doc = await vscode.workspace.openTextDocument(path.join(testsRoot, 'Main.lean'));
 		await vscode.window.showTextDocument(doc);
 
 		const lean = await waitForActiveExtension('leanprover.lean4');
@@ -89,7 +91,7 @@ suite('Extension Test Suite', () => {
 		let expectedVersion = '4.0.0-nightly-';
 		await waitForHtmlString(info, expectedVersion);
 
-		// Now switch toolchains
+		// Now switch toolchains (simple suite uses leanprover/lean4:nightly by default)
 		await vscode.commands.executeCommand('lean4.selectToolchain', 'leanprover/lean4:stable');
 
 		// verify that we switched to leanprover/lean4:stable
@@ -103,9 +105,7 @@ suite('Extension Test Suite', () => {
 		await waitForHtmlString(info, expectedVersion);
 
 		// make sure test is always run in predictable state, which is no file or folder open
-		await sleep(1000);
 		await vscode.commands.executeCommand('workbench.action.closeAllEditors');
-		await sleep(1000);
 
 		// we opened nothing new in this test, but make sure select toolchain doesn't leak servers
 		await assertLeanServers( servers + 0, workers + 0);
@@ -118,8 +118,8 @@ suite('Extension Test Suite', () => {
 		void vscode.window.showInformationMessage('Running tests: ' + __dirname);
 		const [servers, workers] = await findLeanServers();
 
-		const testsRoot = path.join(__dirname, '..', '..', '..', '..', 'test', 'suite', 'multi');
-		const doc = await vscode.workspace.openTextDocument(path.join(testsRoot, 'test', 'Main.lean'));
+        const testsRoot = path.join(__dirname, '..', '..', '..', '..', 'test', 'suite', 'simple');
+		const doc = await vscode.workspace.openTextDocument(path.join(testsRoot, 'Main.lean'));
 		await vscode.window.showTextDocument(doc);
 
 		const lean = await waitForActiveExtension('leanprover.lean4');
@@ -153,7 +153,7 @@ suite('Extension Test Suite', () => {
 		const expectedToolChain = masterToolChain ? 'master' : 'stable';
 
 		// Now edit the lean-toolchain file.
-		const toolchainFile = path.join(testsRoot, 'test', 'lean-toolchain');
+		const toolchainFile = path.join(testsRoot, 'lean-toolchain');
 		const originalContents = fs.readFileSync(toolchainFile, 'utf8').toString();
 		assert(originalContents.trim() === 'leanprover/lean4:nightly');
 		// Switch to a linked toolchain version (setup in our workflow: on-push.yml)
@@ -181,6 +181,5 @@ suite('Extension Test Suite', () => {
 		await assertLeanServers( servers + 0, workers + 0);
 
 	}).timeout(60000);
-
 
 }).timeout(60000);

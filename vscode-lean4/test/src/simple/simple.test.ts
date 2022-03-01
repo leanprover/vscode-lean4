@@ -3,12 +3,12 @@ import { suite } from 'mocha';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { waitForActiveExtension, waitForActiveEditor, waitForInfoViewOpen, waitForHtmlString,
-	extractPhrase, findWord, restartLeanServer, sleep, findLeanServers, assertLeanServers } from '../utils/helpers';
+	extractPhrase, findWord, findLeanServers, assertLeanServers } from '../utils/helpers';
 import { InfoProvider } from '../../../src/infoview';
 import { LeanClientProvider} from '../../../src/utils/clientProvider';
 import { LeanInstaller } from '../../../src/utils/leanInstaller';
 
-suite('Extension Test Suite', () => {
+suite('Lean3 Basics Test Suite', () => {
 
 	test('Untitled Lean File', async () => {
 
@@ -82,12 +82,8 @@ suite('Extension Test Suite', () => {
 			});
 		}
 
-		await sleep(1000);
-
 		// make sure test is always run in predictable state, which is no file or folder open
 		await vscode.commands.executeCommand('workbench.action.closeAllEditors');
-
-		await sleep(1000);
 
 		// after untitled, and goto definition on Lean.versionString we should have 2 additional lean --servers
 		// running and we should have no additional --worker processes still running since all editors have been closed.
@@ -134,12 +130,8 @@ suite('Extension Test Suite', () => {
 			await waitForHtmlString(info, defaultToolChain);
 		}
 
-		await sleep(1000);
-
 		// make sure test is always run in predictable state, which is no file or folder open
 		await vscode.commands.executeCommand('workbench.action.closeAllEditors');
-
-		await sleep(1000);
 
 		// we should have one more server for the 'orphan' folder.
 		await assertLeanServers(servers + 1, workers + 0);
@@ -200,73 +192,12 @@ suite('Extension Test Suite', () => {
 			assert(false, 'Lake Version: not found in infoview');
 		}
 
-		await sleep(1000);
-
 		// make sure test is always run in predictable state, which is no file or folder open
 		await vscode.commands.executeCommand('workbench.action.closeAllEditors');
-
-		await sleep(1000);
 
 		// we should have no additional server because of this test, this files has been
 		// opened in previous tests.
 		await assertLeanServers(servers + 0, workers + 0);
-	}).timeout(60000);
-
-
-	test('Restart Server', async () => {
-
-		console.log('=================== Test Restart Server ===================');
-
-		// Test we can restart the lean server
-		void vscode.window.showInformationMessage('Running tests: ' + __dirname);
-		const [servers, workers] = await findLeanServers();
-
-		// run this code twice to ensure that it still works after a Restart Server
-		for (let i = 0; i < 2; i++) {
-
-			const testsRoot = path.join(__dirname, '..', '..', '..', '..', 'test', 'suite', 'simple');
-			const doc = await vscode.workspace.openTextDocument(path.join(testsRoot, 'Main.lean'));
-			await vscode.window.showTextDocument(doc);
-
-			const lean = await waitForActiveExtension('leanprover.lean4');
-			assert(lean, 'Lean extension not loaded');
-			assert(lean.exports.isLean4Project);
-			assert(lean.isActive);
-			console.log(`Found lean package version: ${lean.packageJSON.version}`);
-
-			const editor = await waitForActiveEditor('Main.lean');
-
-			const info = lean.exports.infoProvider as InfoProvider;
-			assert(await waitForInfoViewOpen(info, 60),
-				'Info view did not open after 20 seconds');
-
-			let expectedVersion = 'Hello:';
-			let html = await waitForHtmlString(info, expectedVersion);
-			const versionString = extractPhrase(html, 'Hello:', '<').trim();
-			console.log(`>>> Found "${versionString}" in infoview`);
-
-			// Now invoke the restart server command
-			const clients = lean.exports.clientProvider as LeanClientProvider;
-			const client = clients.getClientForFolder(vscode.Uri.file(testsRoot));
-			if (client) {
-				await restartLeanServer(client);
-			} else {
-				assert(false, 'No LeanClient found for folder');
-			}
-
-			await sleep(1000);
-
-			// make sure test is always run in predictable state, which is no file or folder open
-			await vscode.commands.executeCommand('workbench.action.closeAllEditors');
-
-			await sleep(1000);
-		}
-
-		await sleep(1000);
-
-		// we should have no additional server because of this test.
-		await assertLeanServers(servers + 0, workers + 0);
-
 	}).timeout(60000);
 
 }).timeout(60000);

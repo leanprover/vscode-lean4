@@ -2,9 +2,9 @@ import * as assert from 'assert';
 import { suite } from 'mocha';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { waitForActiveExtension, waitForActiveEditor, assertLeanServers, sleep, findLeanServers} from '../utils/helpers';
+import { waitForActiveExtension, waitForActiveEditor, assertLeanServers, findLeanServers} from '../utils/helpers';
 
-suite('Extension Test Suite', () => {
+suite('Lean3 Compatibility Test Suite', () => {
 
 	test('Lean3 project', async () => {
 		void vscode.window.showInformationMessage('Running tests: ' + __dirname);
@@ -30,11 +30,7 @@ suite('Extension Test Suite', () => {
 			assert(cmd !== 'lean4.selectToolchain', 'Lean4 extension should not have any registered commands');
 		});
 
-		await sleep(1000);
-
 		await vscode.commands.executeCommand('workbench.action.closeAllEditors');
-
-		await sleep(1000);
 
 		// since this only loaded a lean3 project, we should have 1 new lean server
 		// for the lean3, but no lean4 server.

@@ -43,25 +43,38 @@ export async function findLeanServers() : Promise<[number,number]>{
 export async function assertLeanServers(expectedServers: number, expectedWorkers: number){
     const action = process.env.GITHUB_ACTION
     if (action || process.env.USER_NAME === 'clovett') {
-        const list = await findProcs('lean');
-        let servers = 0;
-        let workers = 0;
-        list.forEach((proc) => {
-            if (proc.command == 'lean'){
-                // this is the wrapper lean process that launches the --server
-                // so ignore it.
-            } else {
-                if (proc.arguments.indexOf('--server') >= 0){
-                    servers++;
+        let retries = 10;
+        while (retries > 0) {
+            const list = await findProcs('lean');
+            let servers = 0;
+            let workers = 0;
+            list.forEach((proc) => {
+                if (proc.command == 'lean'){
+                    // this is the wrapper lean process that launches the --server
+                    // so ignore it.
+                } else {
+                    if (proc.arguments.indexOf('--server') >= 0){
+                        servers++;
+                    }
+                    if (proc.arguments.indexOf('--worker') >= 0){
+                        workers++;
+                    }
                 }
-                if (proc.arguments.indexOf('--worker') >= 0){
-                    workers++;
-                }
-            }
-        });
+            });
 
-        assert.equal(servers, expectedServers, `Expected ${expectedServers} lean servers, found ${servers}`);
-        assert.equal(workers, expectedWorkers, `Expected ${expectedWorkers} lean workers, found ${workers}`);
+            if (servers === expectedServers && workers === expectedWorkers) {
+                return; // we're good!
+            }
+
+            if (retries === 1) {
+                assert.equal(servers, expectedServers, `Expected ${expectedServers} lean servers, found ${servers}`);
+                assert.equal(workers, expectedWorkers, `Expected ${expectedWorkers} lean workers, found ${workers}`);
+            }
+
+            // might need more time to shut down those servers and workers...
+            await sleep(1000);
+            retries -= 1;
+        }
     }
 }
 
