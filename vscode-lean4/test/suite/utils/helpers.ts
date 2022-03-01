@@ -22,69 +22,13 @@ export async function findProcs(name: string) : Promise<ps.Program[]> {
 // find out how many lean --server, and lean --worker processes are running
 // and return both counts.
 export async function findLeanServers() : Promise<[number,number]>{
-    // BUGBUG: this is not working reliably... we seem to be leaking --worker processes
-    // sometimes, especially in the Orphan files test.
-
-    // console.log('Finding existing Lean servers...')
-    // const start = new Date().getTime();
-    // const list = await findProcs('lean');
-    // let servers = 0;
-    // let workers = 0;
-    // list.forEach((proc) => {
-    //     if (proc.command == 'lean'){
-    //         // this is the wrapper lean process that launches the --server
-    //         // so ignore it.
-    //     } else {
-    //         if (proc.arguments.indexOf('--server') >= 0){
-    //             servers++;
-    //         }
-    //         if (proc.arguments.indexOf('--worker') >= 0){
-    //             workers++;
-    //         }
-    //     }
-    // });
-    // const end = new Date().getTime();
-    // console.log(` ${servers} servers, ${workers} workers in ${end - start} ms`);
-    // return [servers, workers];
+    // todo: See work item https://github.com/leanprover/vscode-lean4/issues/144
     return [0,0];
 }
 
+// Assert that the expected number of servers and workers are running.
 export async function assertLeanServers(expectedServers: number, expectedWorkers: number){
-    // const action = process.env.GITHUB_ACTION
-    // if (action || process.env.USER_NAME === 'clovett') {
-    //     let retries = 10;
-    //     while (retries > 0) {
-    //         const list = await findProcs('lean');
-    //         let servers = 0;
-    //         let workers = 0;
-    //         list.forEach((proc) => {
-    //             if (proc.command == 'lean'){
-    //                 // this is the wrapper lean process that launches the --server
-    //                 // so ignore it.
-    //             } else {
-    //                 if (proc.arguments.indexOf('--server') >= 0){
-    //                     servers++;
-    //                 }
-    //                 if (proc.arguments.indexOf('--worker') >= 0){
-    //                     workers++;
-    //                 }
-    //             }
-    //         });
-
-    //         if (servers === expectedServers && workers === expectedWorkers) {
-    //             return; // we're good!
-    //         }
-
-    //         if (retries === 1) {
-    //             assert.equal(servers, expectedServers, `Expected ${expectedServers} lean servers, found ${servers}`);
-    //             assert.equal(workers, expectedWorkers, `Expected ${expectedWorkers} lean workers, found ${workers}`);
-    //         }
-
-    //         // might need more time to shut down those servers and workers...
-    //         await sleep(1000);
-    //         retries -= 1;
-    //     }
-    // }
+    // todo: See work item https://github.com/leanprover/vscode-lean4/issues/144
 }
 
 export function sleep(ms : number) {
