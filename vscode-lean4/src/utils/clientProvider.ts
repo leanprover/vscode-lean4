@@ -152,7 +152,7 @@ export class LeanClientProvider implements Disposable {
                 await client.openLean4Document(document)
             }
         } catch (e) {
-            console.log('### Error opening document: ${e}');
+            console.log(`### Error opening document: ${e}`);
         }
     }
 

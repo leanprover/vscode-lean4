@@ -1,5 +1,4 @@
 import { EventEmitter, Disposable, Uri, workspace, window, WorkspaceFolder } from 'vscode';
-import { LocalStorageService} from './localStorage'
 import { findLeanPackageRoot, findLeanPackageVersionInfo } from './projectInfo';
 import * as path from 'path';
 import { fileExists } from './fsHelper';
