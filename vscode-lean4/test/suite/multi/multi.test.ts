@@ -17,8 +17,9 @@ suite('Multi-Folder Test Suite', () => {
 		void vscode.window.showInformationMessage('Running tests: ' + __dirname);
 
 		const testsRoot = path.join(__dirname, '..', '..', '..', '..', 'test', 'test-fixtures', 'multi');
+		const options : vscode.TextDocumentShowOptions = { preview: false  };
 		const doc = await vscode.workspace.openTextDocument(path.join(testsRoot, 'test', 'Main.lean'));
-		await vscode.window.showTextDocument(doc);
+		await vscode.window.showTextDocument(doc, options);
 
 		const lean = await waitForActiveExtension('leanprover.lean4');
 		assert(lean, 'Lean extension not loaded');
@@ -37,14 +38,15 @@ suite('Multi-Folder Test Suite', () => {
 
 		// Now open a file from the other project
 		const doc2 = await vscode.workspace.openTextDocument(path.join(testsRoot, 'foo', 'Foo.lean'));
-		await vscode.window.showTextDocument(doc2);
+		await vscode.window.showTextDocument(doc2, options);
 
 		// verify that a different version of lean is running here (leanprover/lean4:stable)
 		await assertLeanVersion(info, '4.0.0, commit');
 
 		// Now verify we have 2 LeanClients running.
 		const clients = lean.exports.clientProvider as LeanClientProvider;
-		assert(clients.getClients().length === 2, "Expected 2 LeanClients to be running");
+		const actual = clients.getClients().length
+		assert(actual === 2, "Expected 2 LeanClients to be running, but found " + actual);
 
 		// make sure test is always run in predictable state, which is no file or folder open
 		await vscode.commands.executeCommand('workbench.action.closeAllEditors');
