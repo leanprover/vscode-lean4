@@ -148,10 +148,11 @@ export class LeanClientProvider implements Disposable {
         try {
             const [cached, client] = await this.ensureClient(document.uri, undefined);
             if (client) {
+                console.log('### Client exists');
                 await client.openLean4Document(document)
             }
         } catch (e) {
-            console.log(`### Error opening document: ${e}`);
+            console.log('### Error opening document: ${e}');
         }
     }
 
@@ -211,6 +212,7 @@ export class LeanClientProvider implements Disposable {
     // Returns a boolean "true" if the LeanClient was already created.
     // Returns a null client if it turns out the new workspace is a lean3 workspace.
     async ensureClient(uri : Uri, versionInfo: LeanVersion | undefined) : Promise<[boolean,LeanClient | undefined]> {
+        console.log('### Uri: ${uri}');
         const [workspaceFolder, folder, packageFileUri] = await findLeanPackageRoot(uri);
         const folderUri = folder ? folder : Uri.from({scheme: 'untitled'});
         const path = folderUri.toString();
