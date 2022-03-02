@@ -224,10 +224,8 @@ export class LeanClient implements Disposable {
 
                 didClose: (doc, next) => {
                     if (!this.isOpen.delete(doc.uri.toString())) {
-                        console.log(">> doc not open: " + doc.uri.toString())
                         return;
                     }
-                    console.log(">> didClose: " + doc.uri.toString())
                     next(doc);
                     if (!this.running || !this.client) return; // there was a problem starting lean server.
                     const params = this.client.code2ProtocolConverter.asCloseTextDocumentParams(doc);
@@ -369,7 +367,6 @@ export class LeanClient implements Disposable {
     }
 
     notifyDidOpen(doc: TextDocument) {
-        console.log(">> notifyDidOpen", doc.uri.toString());
         void this.client?.sendNotification(DidOpenTextDocumentNotification.type, {
             textDocument: {
                 uri: doc.uri.toString(),
