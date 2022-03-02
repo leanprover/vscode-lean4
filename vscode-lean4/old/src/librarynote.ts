@@ -25,7 +25,7 @@ export class LibraryNoteLinkProvider implements DocumentLinkProvider {
                     console.log(m[1]);
                     if (m[1] === noteName) {
                         const lineNo = content.substr(0, m.index).split(/\r\n|\r|\n/).length;
-                        link.target = leanFile.with({ fragment: 'L${lineNo}' });
+                        link.target = leanFile.with({ fragment: `L${lineNo}` });
                         return link;
                     }
                 }
