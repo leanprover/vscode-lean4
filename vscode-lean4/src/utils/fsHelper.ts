@@ -31,7 +31,7 @@ export async function fileRead(url: PathLike): Promise<string>{
                 if (data) {
                     resolve(data.trim());
                 } else {
-                    resolve("");
+                    resolve('');
                 }
             }
         });

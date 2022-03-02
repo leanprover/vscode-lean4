@@ -116,14 +116,14 @@ export async function readLeanVersion(packageUri: Uri) : Promise<string> {
             }
         }
     }
-    return "";
+    return '';
 }
 
 async function readLeanVersionFile(packageFileUri : Uri) : Promise<string> {
     const url = new URL(packageFileUri.toString());
     const tomlFileName = 'leanpkg.toml';
     if (packageFileUri.scheme !== 'file'){
-        return "";
+        return '';
     }
 
     if (packageFileUri.path.endsWith(tomlFileName))
@@ -139,6 +139,6 @@ async function readLeanVersionFile(packageFileUri : Uri) : Promise<string> {
         return await fileRead(url);
 
     }
-    return "";
+    return '';
 
 }

@@ -128,7 +128,7 @@ export class LeanpkgService implements Disposable {
         }
         catch(ex) {
             // In case there is an error in the read
-            return "";
+            return '';
         }
     }
 
