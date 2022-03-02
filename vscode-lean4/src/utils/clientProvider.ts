@@ -148,7 +148,6 @@ export class LeanClientProvider implements Disposable {
         try {
             const [cached, client] = await this.ensureClient(document.uri, undefined);
             if (client) {
-                console.log('### Client exists');
                 await client.openLean4Document(document)
             }
         } catch (e) {
