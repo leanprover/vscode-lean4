@@ -50,11 +50,11 @@ export class LeanClientProvider implements Disposable {
 
         workspace.onDidChangeWorkspaceFolders((event) => {
             for (const folder of event.removed) {
-                const path = folder.uri.toString();
-                const client = this.clients.get(path);
+                const key = this.getKeyForFolder(folder.uri);
+                const client = this.clients.get(key);
                 if (client) {
-                    this.clients.delete(path);
-                    this.versions.delete(path);
+                    this.clients.delete(key);
+                    this.versions.delete(key);
                     client.dispose();
                     this.clientRemovedEmitter.fire(client);
                 }
@@ -91,7 +91,6 @@ export class LeanClientProvider implements Disposable {
             }
             this.testing.delete(path);
         });
-
     }
 
     private getVisibleEditor(uri: Uri) : TextEditor | null {
@@ -105,8 +104,8 @@ export class LeanClientProvider implements Disposable {
     }
 
     private refreshFileDependencies() {
-        if (window.activeTextEditor) {
-            this.activeClient?.refreshFileDependencies(window.activeTextEditor.document);
+        if (window.activeTextEditor && this.activeClient) {
+            void this.activeClient.refreshFileDependencies(window.activeTextEditor.document);
         }
     }
 
@@ -170,14 +169,22 @@ export class LeanClientProvider implements Disposable {
         return Array.from(this.clients.values());
     }
 
-    getClientForFolder(folder: Uri) : LeanClient | undefined {
+    getKeyForFolder(folder: Uri | null) : string{
         const folderUri = folder ? folder : Uri.from({scheme: 'untitled'});
         const path = folderUri.toString();
+        if (process.platform === 'win32') {
+            return path.toLowerCase();
+        }
+        return path;
+    }
+
+    getClientForFolder(folder: Uri) : LeanClient | undefined {
         let  client: LeanClient | undefined;
-        const cachedClient = this.clients.has(path);
+        const key = this.getKeyForFolder(folder);
+        const cachedClient = this.clients.has(key);
         if (cachedClient) {
             // we're good then
-            client = this.clients.get(path);
+            client = this.clients.get(key);
         }
         return client;
     }
@@ -213,12 +220,12 @@ export class LeanClientProvider implements Disposable {
     async ensureClient(uri : Uri, versionInfo: LeanVersion | undefined) : Promise<[boolean,LeanClient | undefined]> {
         const [workspaceFolder, folder, packageFileUri] = findLeanPackageRoot(uri);
         const folderUri = folder ? folder : Uri.from({scheme: 'untitled'});
-        const path = folderUri.toString();
         let client = this.getClientForFolder(folderUri);
+        const key = this.getKeyForFolder(folder);
         const cachedClient = (client !== undefined);
-        if (!client && !this.pending.has(path)) {
-            this.pending.set(path, true);
-            console.log('Creating LeanClient for ' + path);
+        if (!client && !this.pending.has(key)) {
+            this.pending.set(key, true);
+            console.log('Creating LeanClient for ' + folderUri.toString());
 
             // We must create a Client before doing the long running testLeanVersion
             // so that ensureClient callers have an "optimistic" client to work with.
@@ -228,7 +235,7 @@ export class LeanClientProvider implements Disposable {
             // testLeanVersion has completed.
             client = new LeanClient(workspaceFolder, folderUri, this.localStorage, this.outputChannel);
             this.subscriptions.push(client);
-            this.clients.set(path, client);
+            this.clients.set(key, client);
 
             if (!versionInfo) {
                 versionInfo = await this.getLeanVersion(folderUri);
@@ -236,16 +243,16 @@ export class LeanClientProvider implements Disposable {
             if (versionInfo && versionInfo.version && versionInfo.version !== '4') {
                 // ignore workspaces that belong to a different version of Lean.
                 console.log(`Lean4 extension ignoring workspace '${folderUri}' because it is not a Lean 4 workspace.`);
-                this.pending.delete(path);
-                this.clients.delete(path);
+                this.pending.delete(key);
+                this.clients.delete(key);
                 client.dispose();
                 return [false, undefined];
             }
 
             client.serverFailed((err) => {
                 // forget this client!
-                const cached = this.clients.get(path);
-                this.clients.delete(path);
+                const cached = this.clients.get(key);
+                this.clients.delete(key);
                 cached?.dispose();
                 void window.showErrorMessage(err);
             });
@@ -255,7 +262,7 @@ export class LeanClientProvider implements Disposable {
                 this.progressChangedEmitter.fire(arg);
             });
 
-            this.pending.delete(path);
+            this.pending.delete(key);
             this.clientAddedEmitter.fire(client);
 
             if (versionInfo && !versionInfo.error) {
