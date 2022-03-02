@@ -25,16 +25,16 @@ export class LibraryNoteLinkProvider implements DocumentLinkProvider {
                     console.log(m[1]);
                     if (m[1] === noteName) {
                         const lineNo = content.substr(0, m.index).split(/\r\n|\r|\n/).length;
-                        link.target = leanFile.with({ fragment: `L${lineNo}` });
+                        link.target = leanFile.with({ fragment: 'L${lineNo}' });
                         return link;
                     }
                 }
             }
-            await window.showErrorMessage(`Library note "${noteName}" not found.`);
+            await window.showErrorMessage('Library note "${noteName}" not found.');
         }
         catch (ex){
             // Throw an exception in case any other issue is encountered
-            window.showErrorMessage('Exception thrown: ' + ex);
+            await window.showErrorMessage('Exception thrown: ' + ex);
         }
     }
 }
