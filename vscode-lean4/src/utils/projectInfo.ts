@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import { URL } from 'url';
 import { Uri, workspace, WorkspaceFolder } from 'vscode';
-import { fileExists, fileRead } from './fsHelper';
+import { fileExists } from './fsHelper';
 
 // Detect lean4 root directory (works for both lean4 repo and nightly distribution)
 
@@ -111,12 +111,6 @@ export async function readLeanVersion(packageUri: Uri) : Promise<string> {
         try {
             return await readLeanVersionFile(leanToolchain);
         } catch (e) {} // file does not exist
-        else {
-            const leanPkg = Uri.joinPath(packageUri, tomlFileName);
-            if (await fileExists(new URL(leanPkg.toString()))) {
-                return await readLeanVersionFile(leanPkg);
-            }
-        }
     }
     return '';
 }
@@ -130,7 +124,7 @@ async function readLeanVersionFile(packageFileUri : Uri) : Promise<string> {
 
     if (packageFileUri.path.endsWith(tomlFileName))
     {
-        const data = await fileRead(url);
+        const data = (await fs.promises.readFile(url, {encoding: 'utf-8'})).trim();
         if (data) {
             const match = /lean_version\s*=\s*"([^"]*)"/.exec(data);
             if (match) return match[1].trim();
@@ -138,7 +132,7 @@ async function readLeanVersionFile(packageFileUri : Uri) : Promise<string> {
 
     } else {
         // must be a lean-toolchain file, these are much simpler they only contain a version.
-        return await fileRead(url);
+        return await (await fs.promises.readFile(url, {encoding: 'utf-8'})).trim();
 
     }
     return '';
