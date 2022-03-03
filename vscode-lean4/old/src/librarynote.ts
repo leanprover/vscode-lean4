@@ -17,7 +17,6 @@ export class LibraryNoteLinkProvider implements DocumentLinkProvider {
 
     async resolveDocumentLink(link: DocumentLink): Promise<DocumentLink> {
         const noteName = link.tooltip;
-        // Adding try-catch statement for read file possible exceptions
         try{
             for (const leanFile of await workspace.findFiles('**/*.lean')) {
                 const content = (await workspace.fs.readFile(leanFile)).toString();
