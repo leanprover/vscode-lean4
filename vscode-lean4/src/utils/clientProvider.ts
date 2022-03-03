@@ -176,7 +176,7 @@ export class LeanClientProvider implements Disposable {
     getKeyFromUri(uri: Uri | null) : string{
         const uriNonNull = uri ?? Uri.from({scheme: 'untitled'});
         const path = uriNonNull.toString();
-        if (uriNonNull.scheme == 'file' && process.platform === 'win32') {
+        if (uriNonNull.scheme === 'file' && process.platform === 'win32') {
             return path.toLowerCase();
         }
         return path;
