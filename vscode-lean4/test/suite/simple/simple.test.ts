@@ -3,7 +3,7 @@ import { suite } from 'mocha';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { waitForActiveExtension, waitForActiveEditor, waitForInfoViewOpen, waitForHtmlString,
-	extractPhrase, findWord, assertLeanVersion } from '../utils/helpers';
+	extractPhrase, findWord, assertStringInInfoview } from '../utils/helpers';
 import { InfoProvider } from '../../../src/infoview';
 import { LeanClientProvider} from '../../../src/utils/clientProvider';
 import { LeanInstaller } from '../../../src/utils/leanInstaller';
@@ -40,7 +40,7 @@ suite('Lean3 Basics Test Suite', () => {
 		assert(await waitForInfoViewOpen(info, 60),
 			'Info view did not open after 60 seconds');
 
-		await assertLeanVersion(info, '4.0.0-nightly-');
+		await assertStringInInfoview(info, '4.0.0-nightly-');
 
 		// test goto definition to lean toolchain works
 
@@ -174,7 +174,7 @@ suite('Lean3 Basics Test Suite', () => {
 		html = await waitForHtmlString(info, expectedVersion);
 
 		// verify we have a nightly build running in this folder.
-		await assertLeanVersion(info, 'Lake Version:');
+		await assertStringInInfoview(info, 'Lake Version:');
 
 		// make sure test is always run in predictable state, which is no file or folder open
 		await vscode.commands.executeCommand('workbench.action.closeAllEditors');

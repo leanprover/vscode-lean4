@@ -50,7 +50,7 @@ export class LeanClientProvider implements Disposable {
 
         workspace.onDidChangeWorkspaceFolders((event) => {
             for (const folder of event.removed) {
-                const key = this.getKeyForFolder(folder.uri);
+                const key = this.getKeyFromUri(folder.uri);
                 const client = this.clients.get(key);
                 if (client) {
                     this.clients.delete(key);
@@ -66,13 +66,14 @@ export class LeanClientProvider implements Disposable {
             // Or it could be a package Uri in the case a lean package file was changed
             // or it could be a document Uri in the case of a command from
             // selectToolchainForActiveEditor.
+            const key = this.getKeyFromUri(uri);
             const path = uri.toString();
-            if (this.testing.has(path)) {
+            if (this.testing.has(key)) {
                 console.log(`Blocking re-entrancy on ${path}`);
                 return;
             }
             // avoid re-entrancy since testLeanVersion can take a while.
-            this.testing.set(path, true);
+            this.testing.set(key, true);
             try {
                 // have to check again here in case elan install had --default-toolchain none.
                 const [workspaceFolder, folder, packageFileUri] = findLeanPackageRoot(uri);
@@ -89,7 +90,7 @@ export class LeanClientProvider implements Disposable {
             } catch (e) {
                 console.log(`Exception checking lean version: ${e}`);
             }
-            this.testing.delete(path);
+            this.testing.delete(key);
         });
     }
 
@@ -169,10 +170,13 @@ export class LeanClientProvider implements Disposable {
         return Array.from(this.clients.values());
     }
 
-    getKeyForFolder(folder: Uri | null) : string{
-        const folderUri = folder ? folder : Uri.from({scheme: 'untitled'});
-        const path = folderUri.toString();
-        if (process.platform === 'win32') {
+    // Return a string that can be used as a key in the clients, versions, testing, and pending
+    // maps.  This is not just uri.toString() because on some platforms the file system is
+    // case insensitive.
+    getKeyFromUri(uri: Uri | null) : string{
+        const uriNonNull = uri ?? Uri.from({scheme: 'untitled'});
+        const path = uriNonNull.toString();
+        if (uriNonNull.scheme == 'file' && process.platform === 'win32') {
             return path.toLowerCase();
         }
         return path;
@@ -180,7 +184,7 @@ export class LeanClientProvider implements Disposable {
 
     getClientForFolder(folder: Uri) : LeanClient | undefined {
         let  client: LeanClient | undefined;
-        const key = this.getKeyForFolder(folder);
+        const key = this.getKeyFromUri(folder);
         const cachedClient = this.clients.has(key);
         if (cachedClient) {
             // we're good then
@@ -202,14 +206,14 @@ export class LeanClientProvider implements Disposable {
 
     async getLeanVersion(uri: Uri) : Promise<LeanVersion | undefined> {
         const [workspaceFolder, folder, packageFileUri] = findLeanPackageRoot(uri);
-        const folderUri = folder ? folder : Uri.from({scheme: 'untitled'});
-        const path = folderUri.toString()
-        if (this.versions.has(path)){
-            return this.versions.get(path);
+        const folderUri = folder ?? Uri.from({scheme: 'untitled'});
+        const key = this.getKeyFromUri(folderUri);
+        if (this.versions.has(key)){
+            return this.versions.get(key);
         }
         const versionInfo = await this.installer.testLeanVersion(folderUri);
         if (!versionInfo.error){
-            this.versions.set(path, versionInfo);
+            this.versions.set(key, versionInfo);
         }
         return versionInfo;
     }
@@ -221,7 +225,7 @@ export class LeanClientProvider implements Disposable {
         const [workspaceFolder, folder, packageFileUri] = findLeanPackageRoot(uri);
         const folderUri = folder ? folder : Uri.from({scheme: 'untitled'});
         let client = this.getClientForFolder(folderUri);
-        const key = this.getKeyForFolder(folder);
+        const key = this.getKeyFromUri(folder);
         const cachedClient = (client !== undefined);
         if (!client && !this.pending.has(key)) {
             this.pending.set(key, true);

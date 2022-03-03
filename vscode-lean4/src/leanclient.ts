@@ -377,24 +377,12 @@ export class LeanClient implements Disposable {
         });
     }
 
-    async getRealPath(fsPath : string) : Promise<string> {
-        return new Promise<string>((resolve, reject) => {
-            fs.realpath(fsPath, (err, resolvedPath) => {
-                if (err) {
-                    reject(err);
-                } else {
-                    resolve(resolvedPath);
-                }
-            });
-        });
-    }
-
     async isSameWorkspace(uri: Uri) : Promise<boolean> {
         if (this.folderUri) {
             if (this.folderUri.scheme !== uri.scheme) return false;
             if (this.folderUri.scheme === 'file') {
-                const realPath1 = await this.getRealPath(this.folderUri.fsPath);
-                const realPath2 = await this.getRealPath(uri.fsPath);
+                const realPath1 = await fs.promises.realpath(this.folderUri.fsPath);
+                const realPath2 = await fs.promises.realpath(uri.fsPath);
                 if (process.platform === 'win32') {
                     // windows paths are case insensitive.
                     return realPath2.toLowerCase().startsWith(realPath1.toLowerCase());
