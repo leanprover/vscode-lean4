@@ -132,7 +132,7 @@ async function readLeanVersionFile(packageFileUri : Uri) : Promise<string> {
 
     } else {
         // must be a lean-toolchain file, these are much simpler they only contain a version.
-        return await (await fs.promises.readFile(url, {encoding: 'utf-8'})).trim();
+        return (await fs.promises.readFile(url, {encoding: 'utf-8'})).trim();
 
     }
     return '';
