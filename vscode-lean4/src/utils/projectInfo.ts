@@ -66,14 +66,12 @@ export async function findLeanPackageRoot(uri: Uri) : Promise<[WorkspaceFolder |
                     const parent = Uri.joinPath(path, '..');
                     if (parent === path) {
                         // no project file found.
-                        console.log('### no project file found');
                         break;
                     }
                     path = parent;
                 }
                 else {
                     // don't search above a WorkspaceFolder barrier.
-                    console.log('### dont search above a WorkspaceFolder barrier.');
                     break;
                 }
             }
