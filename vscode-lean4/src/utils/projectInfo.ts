@@ -108,9 +108,9 @@ export async function readLeanVersion(packageUri: Uri) : Promise<string> {
     const tomlFileName = 'leanpkg.toml';
     if (packageUri.scheme === 'file') {
         const leanToolchain = Uri.joinPath(packageUri, toolchainFileName);
-        if (await fileExists(new URL(leanToolchain.toString()))) {
+        try {
             return await readLeanVersionFile(leanToolchain);
-        }
+        } catch (e) {} // file does not exist
         else {
             const leanPkg = Uri.joinPath(packageUri, tomlFileName);
             if (await fileExists(new URL(leanPkg.toString()))) {
