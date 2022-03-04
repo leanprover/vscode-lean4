@@ -4,7 +4,7 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import { waitForActiveExtension, waitForActiveEditor, waitForInfoViewOpen, waitForHtmlString,
-	extractPhrase, restartLeanServer, assertLeanVersion } from '../utils/helpers';
+	extractPhrase, restartLeanServer, assertStringInInfoview } from '../utils/helpers';
 import { InfoProvider } from '../../../src/infoview';
 import { LeanClientProvider} from '../../../src/utils/clientProvider';
 import { LeanInstaller } from '../../../src/utils/leanInstaller';
@@ -42,12 +42,12 @@ suite('Toolchain Test Suite', () => {
 		assert(await waitForInfoViewOpen(info, 60),
 			'Info view did not open after 60 seconds');
 
-		await assertLeanVersion(info, '4.0.0-nightly-');
+		await assertStringInInfoview(info, '4.0.0-nightly-');
 
 		// Now switch toolchains (simple suite uses leanprover/lean4:nightly by default)
 		await vscode.commands.executeCommand('lean4.selectToolchain', 'leanprover/lean4:stable');
 
-		await assertLeanVersion(info, '4.0.0, commit-');
+		await assertStringInInfoview(info, '4.0.0, commit-');
 
 		// make sure test is always run in predictable state, which is no file or folder open
 		await vscode.commands.executeCommand('workbench.action.closeAllEditors');
@@ -180,7 +180,7 @@ suite('Toolchain Test Suite', () => {
 		installer.setPromptUser(false);
 
 		// verify we have a nightly build running in this folder.
-		await assertLeanVersion(info, '4.0.0-nightly-');
+		await assertStringInInfoview(info, '4.0.0-nightly-');
 
 		// Find out if we have a 'master' toolchain (setup in our workflow: on-push.yml)
 		// and use it if it is there, otherwise use 'leanprover/lean4:stable'.
@@ -197,7 +197,7 @@ suite('Toolchain Test Suite', () => {
 		fs.writeFileSync(toolchainFile, selectedToolChain);
 
 		// verify that we switched to leanprover/lean4:stable
-		const html = await assertLeanVersion(info, '4.0.0, commit');
+		const html = await assertStringInInfoview(info, '4.0.0, commit');
 
 		// check the path to lean.exe from the `eval IO.appPath`
 		const leanPath = extractPhrase(html, 'FilePath.mk', '<').trim();
@@ -208,7 +208,7 @@ suite('Toolchain Test Suite', () => {
 		fs.writeFileSync(toolchainFile, originalContents);
 
 		// Now make sure the reset works and we can go back to the previous nightly version.
-		await assertLeanVersion(info, '4.0.0-nightly-');
+		await assertStringInInfoview(info, '4.0.0-nightly-');
 
 		// make sure test is always run in predictable state, which is no file or folder open
 		await vscode.commands.executeCommand('workbench.action.closeAllEditors');

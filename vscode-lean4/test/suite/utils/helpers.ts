@@ -172,10 +172,9 @@ export async function restartLeanServer(client: LeanClient, retries=10, delay=10
     return false;
 }
 
-export async function assertLeanVersion(infoView: InfoProvider, version: string) : Promise<string> {
-    const expectedVersion = '4.0.0-nightly-';
+export async function assertStringInInfoview(infoView: InfoProvider, expectedVersion: string) : Promise<string> {
     const html = await waitForHtmlString(infoView, expectedVersion);
-    const pos = html.indexOf('4.0.0-nightly-');
+    const pos = html.indexOf(expectedVersion);
     if (pos >= 0) {
         // e.g. 4.0.0-nightly-2022-02-16
         const versionString = html.substring(pos, pos + 24)

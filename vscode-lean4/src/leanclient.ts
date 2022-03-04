@@ -1,5 +1,5 @@
 import { TextDocument, EventEmitter, Diagnostic,
-    languages, DocumentHighlight, Range, DocumentHighlightKind, window, workspace,
+    DocumentHighlight, Range, DocumentHighlightKind, workspace,
     Disposable, Uri, ConfigurationChangeEvent, OutputChannel, DiagnosticCollection,
     Position, WorkspaceFolder } from 'vscode'
 import {
@@ -23,7 +23,6 @@ import { LeanFileProgressParams, LeanFileProgressProcessingInfo } from '@lean4/i
 import { LocalStorageService} from './utils/localStorage'
 import { batchExecute, testExecute } from './utils/batch'
 import { readLeanVersion } from './utils/projectInfo';
-import { cwd } from 'process'
 import * as fs from 'fs';
 import { URL } from 'url';
 import { join } from 'path';
@@ -224,7 +223,9 @@ export class LeanClient implements Disposable {
                 },
 
                 didClose: (doc, next) => {
-                    if (!this.isOpen.delete(doc.uri.toString())) return;
+                    if (!this.isOpen.delete(doc.uri.toString())) {
+                        return;
+                    }
                     next(doc);
                     if (!this.running || !this.client) return; // there was a problem starting lean server.
                     const params = this.client.code2ProtocolConverter.asCloseTextDocumentParams(doc);
@@ -349,7 +350,7 @@ export class LeanClient implements Disposable {
 
     async openLean4Document(doc: TextDocument) {
         if (this.isOpen.has(doc.uri.toString())) return;
-        if (!this.isSameWorkspace(doc.uri)){
+        if (!await this.isSameWorkspace(doc.uri)){
             // skip it, this file belongs to a different workspace...
             return;
         }
@@ -376,11 +377,21 @@ export class LeanClient implements Disposable {
         });
     }
 
-    isSameWorkspace(uri: Uri){
+    async isSameWorkspace(uri: Uri) : Promise<boolean> {
         if (this.folderUri) {
-            if (uri.toString().startsWith(this.folderUri.toString())) {
-                // skip it, this file belongs to a different workspace...
-                return true;
+            if (this.folderUri.scheme !== uri.scheme) return false;
+            if (this.folderUri.scheme === 'file') {
+                const realPath1 = await fs.promises.realpath(this.folderUri.fsPath);
+                const realPath2 = await fs.promises.realpath(uri.fsPath);
+                if (process.platform === 'win32') {
+                    // windows paths are case insensitive.
+                    return realPath2.toLowerCase().startsWith(realPath1.toLowerCase());
+                } else {
+                    return realPath2.startsWith(realPath1);
+                }
+            }
+            else {
+                return uri.toString().startsWith(this.folderUri.toString());
             }
         }
         else {
@@ -421,11 +432,11 @@ export class LeanClient implements Disposable {
         }
     }
 
-    refreshFileDependencies(doc: TextDocument): void {
+    async refreshFileDependencies(doc: TextDocument): Promise<void> {
         if (!this.running) return; // there was a problem starting lean server.
         assert(() => this.isStarted())
 
-        if (!this.isSameWorkspace(doc.uri)){
+        if (!await this.isSameWorkspace(doc.uri)){
             // skip it, this file belongs to a different workspace...
             return;
         }
