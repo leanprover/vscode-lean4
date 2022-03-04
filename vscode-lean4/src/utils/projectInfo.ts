@@ -116,6 +116,7 @@ export async function readLeanVersion(packageUri: Uri) : Promise<string | null> 
                 return await readLeanVersionFile(leanPkg);
             }
         }
+    }
     return null;
 }
 
