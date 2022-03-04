@@ -85,6 +85,20 @@
             "cwd": "${workspaceFolder}/vscode-lean4/out/",
             "outFiles": ["${workspaceFolder}/vscode-lean4/out/test/suite/**/*.js"],
             "preLaunchTask": "watchTest"
+        },
+        {
+            "name": "Extension Tests - docview",
+            "type": "extensionHost",
+            "request": "launch",
+            "runtimeExecutable": "${execPath}",
+            "args": [
+                "--extensionDevelopmentPath=${workspaceFolder}/vscode-lean4",
+                "--extensionTestsPath=${workspaceFolder}/vscode-lean4/out/test/suite/docview",
+                "${workspaceFolder}/vscode-lean4/test/test-fixtures/simple"
+            ],
+            "cwd": "${workspaceFolder}/vscode-lean4/out/",
+            "outFiles": ["${workspaceFolder}/vscode-lean4/out/test/suite/**/*.js"],
+            "preLaunchTask": "watchTest"
         }
     ]
 }

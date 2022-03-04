@@ -4,6 +4,7 @@ import { privateEncrypt } from 'crypto';
 import * as vscode from 'vscode';
 import { InfoProvider } from '../../../src/infoview';
 import { LeanClient} from '../../../src/leanclient';
+import { DocViewProvider } from '../../../src/docview';
 import * as ps from 'ps-node';
 
 export async function findProcs(name: string) : Promise<ps.Program[]> {
@@ -121,6 +122,24 @@ export async function waitForHtmlString(infoView: InfoProvider, toFind : string,
     console.log('>>> infoview contents:')
     console.log(html);
     assert(false, `Missing "${toFind}" in infoview`);
+    return html;
+}
+
+export async function waitForDocViewHtml(docView: DocViewProvider, toFind : string, retries=10, delay=1000): Promise<string> {
+    let count = 0;
+    let html = '';
+    while (count < retries){
+        html = await docView.getHtmlContents();
+        if (html.indexOf(toFind) > 0){
+            return html;
+        }
+        await sleep(delay);
+        count += 1;
+    }
+
+    console.log('>>> docview contents:')
+    console.log(html);
+    assert(false, `Missing "${toFind}" in docview`);
     return html;
 }
 
