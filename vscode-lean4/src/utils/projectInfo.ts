@@ -103,16 +103,20 @@ export async function findLeanPackageVersionInfo(uri: Uri) : Promise<[Uri | null
 
 // Find the 'leanpkg.toml' or 'lean-toolchain' in the given package root and
 // extract the Lean version info from it.
-export async function readLeanVersion(packageUri: Uri) : Promise<string> {
+export async function readLeanVersion(packageUri: Uri) : Promise<string | null> {
     const toolchainFileName = 'lean-toolchain';
     const tomlFileName = 'leanpkg.toml';
     if (packageUri.scheme === 'file') {
         const leanToolchain = Uri.joinPath(packageUri, toolchainFileName);
-        try {
+        if (fs.existsSync(new URL(leanToolchain.toString()))) {
             return await readLeanVersionFile(leanToolchain);
-        } catch (e) {} // file does not exist
-    }
-    return '';
+        } else {
+            const leanPkg = Uri.joinPath(packageUri, tomlFileName);
+            if (fs.existsSync(new URL(leanPkg.toString()))) {
+                return await readLeanVersionFile(leanPkg);
+            }
+        }
+    return null;
 }
 
 async function readLeanVersionFile(packageFileUri : Uri) : Promise<string> {
