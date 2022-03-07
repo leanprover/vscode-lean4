@@ -44,7 +44,7 @@ const MessageView = React.memo(({uri, diag}: MessageViewProps) => {
             </span>
         </summary>
         <div className="ml1">
-            <pre className="font-code pre-wrap">
+            <pre className="font-code fn">
                 <InteractiveMessage pos={{uri: loc.uri, line: loc.range.start.line, character: loc.range.start.character}} fmt={diag.message} />
             </pre>
         </div>

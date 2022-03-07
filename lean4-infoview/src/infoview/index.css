@@ -34,16 +34,13 @@ html,body {
     white-space: pre-wrap;
 }
 
-.fn{ /* for issue-132 */
-    word-wrap: break-word;
-    overflow-wrap: break-word;
-    display: inline-block;
-    /* border: 1px dashed red; */
-    /* Strictly this should be `ch` not `ex`, but that results in the rendering bug in gh-81 */
-    text-indent: -1ex;
-    padding-left: 1ex;
-    white-space: pre-wrap;
-    vertical-align: top;
+.fn {
+    max-width: 98%;
+    padding: 1em;
+    margin-bottom: .4em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .error {
