@@ -34,14 +34,15 @@ module.exports = function(env) {
             path: path.resolve(__dirname, 'dist'),
             filename: 'index.js',
             library: {
-                name: 'lean4-infoview',
+                name: '@lean4/infoview',
                 type: 'umd',
             },
         },
-        externals: {
-            react: 'react',
-            'react-dom': 'react-dom',
-            'react-fast-compare': 'react-fast-compare',
-        },
+        externals: [
+            'react',
+            /^react\/.+$/,
+            'react-dom',
+            'react-popper'
+        ]
     };
 };

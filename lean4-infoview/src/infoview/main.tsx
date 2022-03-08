@@ -3,7 +3,7 @@ import * as ReactDOM from 'react-dom';
 import { DidCloseTextDocumentParams, Location, DocumentUri } from 'vscode-languageserver-protocol';
 
 import 'tachyons/css/tachyons.css';
-import 'vscode-codicons/dist/codicon.css';
+import '@vscode/codicons/dist/codicon.css';
 import './index.css';
 
 import { LeanFileProgressParams, LeanFileProgressProcessingInfo, defaultInfoviewConfig, EditorApi, InfoviewApi } from '@lean4/infoview-api';

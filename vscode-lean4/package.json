@@ -438,10 +438,10 @@
 		"glob": "^7.1.6",
 		"mocha": "^8.2.1",
 		"ovsx": "^0.2.1",
+		"source-map-loader": "^3.0.1",
 		"ts-loader": "^9.2.6",
 		"typescript": "^4.5.4",
 		"vsce": "~2.6.2",
-		"webpack": "^5.65.0",
 		"webpack-cli": "^4.9.1"
 	},
 	"icon": "images/lean_logo.png",
