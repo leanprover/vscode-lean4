@@ -7,7 +7,6 @@ build/
 
 ## Output
 node_modules/
-**/media/webview.*
 *.tsbuildinfo
 *.vsix
 doit.cmd

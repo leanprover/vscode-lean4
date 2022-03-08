@@ -40,7 +40,6 @@ module.exports = function(env) {
         },
         externals: [
             'react',
-            /^react\/.+$/,
             'react-dom',
             'react-popper'
         ]

@@ -2,6 +2,7 @@
 
 const path = require('path');
 const webpack = require('webpack');
+const CopyPlugin = require('copy-webpack-plugin');
 
 function getWebviewConfig(env) {
 	let webview = {
@@ -28,13 +29,48 @@ function getWebviewConfig(env) {
 		devtool: !env.production ? 'inline-source-map' : undefined,
 		output: {
 			filename: 'webview.js',
-			path: path.resolve(__dirname, 'media')
+			path: path.resolve(__dirname, 'dist'),
+			library: {
+				name: 'webview',
+				type: 'amd'
+			}
 		},
+		externals: [
+			'@lean4/infoview'
+		],
 		plugins: [
 			new webpack.IgnorePlugin({
 				resourceRegExp: /^\.\/locale$/,
 				contextRegExp: /moment$/,
 			}),
+			new CopyPlugin({
+				patterns: [
+					{
+						from: path.resolve(__dirname, 'node_modules', '@lean4', 'infoview', 'dist', 'index.js'),
+						to: path.resolve(__dirname, 'dist', 'lean4-infoview.js')
+					},
+					{
+						from: path.resolve(__dirname, 'node_modules', 'react', 'umd', 'react.production.min.js'),
+						to: path.resolve(__dirname, 'dist', 'react.js')
+					},
+					{
+						from: path.resolve(__dirname, 'node_modules', 'react-dom', 'umd', 'react-dom.production.min.js'),
+						to: path.resolve(__dirname, 'dist', 'react-dom.js')
+					},
+					{
+						from: path.resolve(__dirname, 'node_modules', 'react-popper', 'dist', 'index.umd.min.js'),
+						to: path.resolve(__dirname, 'dist', 'react-popper.js')
+					},
+					{
+						from: path.resolve(__dirname, 'node_modules', '@popperjs', 'core', 'dist', 'umd', 'popper.min.js'),
+						to: path.resolve(__dirname, 'dist', 'popperjs-core.js')
+					},
+					{
+						from: path.resolve(__dirname, 'node_modules', 'requirejs', 'require.js'),
+						to: path.resolve(__dirname, 'dist', 'require.js')
+					}
+				]
+			})
 		]
 	};
 

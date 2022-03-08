@@ -599,10 +599,10 @@ export class InfoProvider implements Disposable {
         await window.showTextDocument(editor.document, { viewColumn: editor.viewColumn, preserveFocus: false });
     }
 
-    private getMediaPath(mediaFile: string): string | undefined {
+    private getLocalPath(path: string): string | undefined {
         if (this.webviewPanel) {
             return this.webviewPanel.webview.asWebviewUri(
-                Uri.file(join(this.context.extensionPath, 'media', mediaFile))).toString();
+                Uri.file(join(this.context.extensionPath, path))).toString();
         }
         return undefined;
     }
@@ -619,7 +619,21 @@ export class InfoProvider implements Disposable {
             </head>
             <body>
                 <div id="react_root"></div>
-                <script src="${this.getMediaPath('webview.js')}"></script>
+                <script src="${this.getLocalPath('dist/require.js')}"></script>
+                <script>
+                    requirejs.config({
+                        baseUrl: '${this.getLocalPath('dist/')}',
+                        paths: {
+                            '@lean4/infoview': 'lean4-infoview',
+                            '@popperjs/core': 'popperjs-core',
+                        }
+                    })
+                </script>
+                <script src="${this.getLocalPath('dist/webview.js')}"></script>
+                <script>
+                    requirejs(['webview'], (webview) => { webview.default() })
+                </script>
+
             </body>
             </html>`
     }
