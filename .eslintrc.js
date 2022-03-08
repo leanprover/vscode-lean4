@@ -30,7 +30,7 @@ module.exports = {
         ],
         "sourceType": "module"
     },
-    "ignorePatterns": ["**/dist/**/*", "**/out/**/*"],
+    "ignorePatterns": ["**/dist/**/*", "**/out/**/*", "*.js"],
     "plugins": [
         "@typescript-eslint",
         "@typescript-eslint/eslint-plugin"
