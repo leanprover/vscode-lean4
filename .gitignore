@@ -10,3 +10,4 @@ node_modules/
 *.tsbuildinfo
 *.vsix
 doit.cmd
+.rollup.cache/
