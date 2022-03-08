@@ -3,11 +3,13 @@
 const path = require('path');
 const webpack = require('webpack');
 const CopyPlugin = require('copy-webpack-plugin');
+const prodOrDevString = (env) => env.production ? 'production' : 'development';
+const minIfProd = (env) => env.production ? '.min' : '';
 
 function getWebviewConfig(env) {
 	let webview = {
 		name: 'webview',
-		mode: env.production ? 'production' : 'development',
+		mode: prodOrDevString(env),
 		entry: './webview/index.ts',
 		module: {
 			rules: [
@@ -50,11 +52,11 @@ function getWebviewConfig(env) {
 						to: path.resolve(__dirname, 'dist', 'lean4-infoview.js')
 					},
 					{
-						from: path.resolve(__dirname, 'node_modules', 'react', 'umd', 'react.production.min.js'),
+						from: path.resolve(__dirname, 'node_modules', 'react', 'umd', `react.${prodOrDevString(env)}${minIfProd(env)}.js`),
 						to: path.resolve(__dirname, 'dist', 'react.js')
 					},
 					{
-						from: path.resolve(__dirname, 'node_modules', 'react-dom', 'umd', 'react-dom.production.min.js'),
+						from: path.resolve(__dirname, 'node_modules', 'react-dom', 'umd', `react-dom.${prodOrDevString(env)}${minIfProd(env)}.js`),
 						to: path.resolve(__dirname, 'dist', 'react-dom.js')
 					},
 					{
