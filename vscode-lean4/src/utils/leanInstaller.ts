@@ -388,6 +388,7 @@ export class LeanInstaller implements Disposable {
                 appendLine(value: string) {
                     this.append(value + '\n');
                 },
+                replace(value: string) { /* empty */ },
                 clear() { /* empty */ },
                 show() { /* empty */ },
                 hide() { /* empty */ },
