@@ -5,10 +5,10 @@ import { URL } from 'url';
 import { commands, Disposable, Uri, ViewColumn, WebviewPanel, window, ColorThemeKind,
      workspace, WebviewOptions, WebviewPanelOptions, TextDocument, languages,
      Range, Position } from 'vscode';
-import * as fs from 'fs';
 import { join, extname } from 'path';
 import { TempFolder } from './utils/tempFolder'
 import { SymbolsByAbbreviation, AbbreviationConfig } from './abbreviation/config'
+import { fileExists } from './utils/fsHelper';
 
 export function mkCommandUri(commandName: string, ...args: any[]): string {
     return `command:${commandName}?${encodeURIComponent(JSON.stringify(args))}`;
@@ -22,15 +22,15 @@ function findActiveEditorRootPath(): string | undefined {
     return undefined;
 }
 
-function findProjectDocumentation(): string | null {
+async function findProjectDocumentation(): Promise<string | null> {
     const rootPath = findActiveEditorRootPath();
     if (rootPath) {
         let html = join(rootPath, 'html', 'index.html');
-        if (fs.existsSync(html)) {
+        if(await fileExists(html)) {
             return html;
         }
         html = join(rootPath, 'html', 'index.htm');
-        if (fs.existsSync(html)) {
+        if(await fileExists(html)) {
             return html;
         }
     }
@@ -80,12 +80,6 @@ export class DocViewProvider implements Disposable {
 
     setAbbreviations(abbrev: SymbolsByAbbreviation) : void{
         this.abbreviations = abbrev;
-    }
-
-    private async offerToOpenProjectDocumentation() {
-        const projDoc = findProjectDocumentation();
-        if (!projDoc) return;
-        await this.open(Uri.file(projDoc).toString());
     }
 
     private async tryIt(code: string) {
@@ -192,31 +186,38 @@ export class DocViewProvider implements Disposable {
 
     async fetch(url?: string): Promise<string> {
         if (url) {
-            const uri = Uri.parse(url);
-            let fileType = '';
-            if (uri.scheme === 'file') {
-                fileType = extname(uri.fsPath);
-                if (fileType === '.html' || fileType === '.htm') {
-                    return fs.readFileSync(uri.fsPath).toString();
+            try{
+                const uri = Uri.parse(url);
+                let fileType = '';
+                if (uri.scheme === 'file') {
+                    fileType = extname(uri.fsPath);
+                    if (fileType === '.html' || fileType === '.htm') {
+                        return (await workspace.fs.readFile(uri)).toString();
+                    }
+                } else {
+                    const {data, headers} = await axios.get<string>(url);
+                    fileType = '' + headers['content-type']
+                    if (fileType.startsWith('text/html')) {
+                        return data;
+                    }
                 }
-            } else {
-                const {data, headers} = await axios.get<string>(url);
-                fileType = '' + headers['content-type']
-                if (fileType.startsWith('text/html')) {
-                    return data;
-                }
-            }
 
-            const $ = cheerio.load('<p>');
-            $('p').text(`Unsupported file type '${fileType}', please `)
-                .append($('<a>').attr('href', url).attr('alwaysExternal', 'true')
-                    .text('open in browser instead.'));
-            return $.html();
+                const $ = cheerio.load('<p>');
+                $('p').text(`Unsupported file type '${fileType}', please `)
+                    .append($('<a>').attr('href', url).attr('alwaysExternal', 'true')
+                        .text('open in browser instead.'));
+                return $.html();
+            }
+            catch (ex){
+                const $ = cheerio.load('<p>');
+                $('p').text('Error fetching file. ' + ex);
+                return $.html();
+            }
         } else {
             const $ = cheerio.load('<body>');
             const body = $('body');
 
-            const html = findProjectDocumentation();
+            const html = await findProjectDocumentation();
             if (html) {
                 body.append($('<p>').append($('<a>').attr('href', Uri.file(html).toString())
                     .text('Open documentation of current project')));

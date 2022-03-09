@@ -1,16 +1,20 @@
 import * as fs from 'fs';
 import { URL } from 'url';
 import { Uri, workspace, WorkspaceFolder } from 'vscode';
-import { addDefaultElanPath } from '../config';
+import { fileExists } from './fsHelper';
 
 // Detect lean4 root directory (works for both lean4 repo and nightly distribution)
-export function isCoreLean4Directory(path: Uri): boolean {
-    return path.scheme === 'file' && fs.existsSync(Uri.joinPath(path, 'LICENSE').fsPath) && fs.existsSync(Uri.joinPath(path, 'LICENSES').fsPath);
+
+export async function isCoreLean4Directory(path: Uri): Promise<boolean> {
+    if (path.scheme === 'file'){
+        return await fileExists(Uri.joinPath(path, 'LICENSE').fsPath) && await fileExists(Uri.joinPath(path, 'LICENSES').fsPath);
+    }
+    return false;
 }
 
 // Find the root of a Lean project and return an optional WorkspaceFolder for it,
 // the Uri for the package root and the Uri for the 'leanpkg.toml' or 'lean-toolchain' file found there.
-export function findLeanPackageRoot(uri: Uri) : [WorkspaceFolder | undefined, Uri | null, Uri | null] {
+export async function findLeanPackageRoot(uri: Uri) : Promise<[WorkspaceFolder | undefined, Uri | null, Uri | null]> {
     if (!uri) return [undefined, null, null];
 
     const toolchainFileName = 'lean-toolchain';
@@ -47,15 +51,15 @@ export function findLeanPackageRoot(uri: Uri) : [WorkspaceFolder | undefined, Ur
         while (true) {
             // give preference to 'lean-toolchain' files if any.
             const leanToolchain = Uri.joinPath(path, toolchainFileName);
-            if (fs.existsSync(leanToolchain.fsPath)) {
+            if (await fileExists(leanToolchain.fsPath)) {
                 return [wsFolder, path, leanToolchain];
             }
             else {
                 const leanPkg = Uri.joinPath(path, tomlFileName);
-                if (fs.existsSync(leanPkg.fsPath)) {
+                if (await fileExists(leanPkg.fsPath)) {
                     return [wsFolder, path, leanPkg];
                 }
-                else if (isCoreLean4Directory(path)) {
+                else if (await isCoreLean4Directory(path)) {
                     return [wsFolder, path, null];
                 }
                 else if (searchUpwards) {
@@ -82,7 +86,7 @@ export function findLeanPackageRoot(uri: Uri) : [WorkspaceFolder | undefined, Ur
 // in any 'lean-toolchain' or 'leanpkg.toml' file found there.
 export async function findLeanPackageVersionInfo(uri: Uri) : Promise<[Uri | null, string | null]> {
 
-    const [_, packageUri, packageFileUri] = findLeanPackageRoot(uri);
+    const [_, packageUri, packageFileUri] = await findLeanPackageRoot(uri);
     if (!packageUri || packageUri.scheme === 'untitled') return [null, null];
 
     let version : string | null = null;
@@ -106,8 +110,7 @@ export async function readLeanVersion(packageUri: Uri) : Promise<string | null> 
         const leanToolchain = Uri.joinPath(packageUri, toolchainFileName);
         if (fs.existsSync(new URL(leanToolchain.toString()))) {
             return await readLeanVersionFile(leanToolchain);
-        }
-        else {
+        } else {
             const leanPkg = Uri.joinPath(packageUri, tomlFileName);
             if (fs.existsSync(new URL(leanPkg.toString()))) {
                 return await readLeanVersionFile(leanPkg);
@@ -117,45 +120,26 @@ export async function readLeanVersion(packageUri: Uri) : Promise<string | null> 
     return null;
 }
 
-async function readLeanVersionFile(packageFileUri : Uri) : Promise<string | null> {
+async function readLeanVersionFile(packageFileUri : Uri) : Promise<string> {
     const url = new URL(packageFileUri.toString());
     const tomlFileName = 'leanpkg.toml';
     if (packageFileUri.scheme !== 'file'){
-        return null;
+        return '';
     }
+
     if (packageFileUri.path.endsWith(tomlFileName))
     {
-        return await new Promise<string | null>((resolve, reject) => {
-            if (fs.existsSync(url)) {
-                fs.readFile(url, { encoding: 'utf-8' }, (err, data) =>{
-                    if (err) {
-                        reject(err);
-                    } else {
-                        const match = /lean_version\s*=\s*"([^"]*)"/.exec(data.toString());
-                        if (match) resolve(match[1].trim());
-                        resolve(null);
-                    }
-                });
-            } else {
-                resolve(null);
-            }
-        });
+        const data = (await fs.promises.readFile(url, {encoding: 'utf-8'})).trim();
+        if (data) {
+            const match = /lean_version\s*=\s*"([^"]*)"/.exec(data);
+            if (match) return match[1].trim();
+        }
+
     } else {
         // must be a lean-toolchain file, these are much simpler they only contain a version.
-        return await new Promise<string | null>((resolve, reject) => {
-            if (fs.existsSync(url)) {
-                fs.readFile(url, { encoding: 'utf-8' }, (err, data) =>{
-                    if (err) {
-                        reject(err);
-                    } else if (data) {
-                        resolve(data.trim());
-                    } else {
-                        resolve(null);
-                    }
-                });
-            } else {
-                resolve(null);
-            }
-        });
+        return (await fs.promises.readFile(url, {encoding: 'utf-8'})).trim();
+
     }
+    return '';
+
 }
