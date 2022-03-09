@@ -76,7 +76,7 @@ export class LeanClientProvider implements Disposable {
             this.testing.set(key, true);
             try {
                 // have to check again here in case elan install had --default-toolchain none.
-                const [workspaceFolder, folder, packageFileUri] = findLeanPackageRoot(uri);
+                const [workspaceFolder, folder, packageFileUri] = await findLeanPackageRoot(uri);
                 const packageUri = folder ? folder : Uri.from({scheme: 'untitled'});
                 const version = await installer.testLeanVersion(packageUri);
                 if (version.version === '4') {
@@ -151,7 +151,7 @@ export class LeanClientProvider implements Disposable {
                 await client.openLean4Document(document)
             }
         } catch (e) {
-            console.log(`### error opening document: ${e}`);
+            console.log(`### Error opening document: ${e}`);
         }
     }
 
@@ -205,7 +205,7 @@ export class LeanClientProvider implements Disposable {
     }
 
     async getLeanVersion(uri: Uri) : Promise<LeanVersion | undefined> {
-        const [workspaceFolder, folder, packageFileUri] = findLeanPackageRoot(uri);
+        const [workspaceFolder, folder, packageFileUri] = await findLeanPackageRoot(uri);
         const folderUri = folder ?? Uri.from({scheme: 'untitled'});
         const key = this.getKeyFromUri(folderUri);
         if (this.versions.has(key)){
@@ -222,7 +222,7 @@ export class LeanClientProvider implements Disposable {
     // Returns a boolean "true" if the LeanClient was already created.
     // Returns a null client if it turns out the new workspace is a lean3 workspace.
     async ensureClient(uri : Uri, versionInfo: LeanVersion | undefined) : Promise<[boolean,LeanClient | undefined]> {
-        const [workspaceFolder, folder, packageFileUri] = findLeanPackageRoot(uri);
+        const [workspaceFolder, folder, packageFileUri] = await findLeanPackageRoot(uri);
         const folderUri = folder ? folder : Uri.from({scheme: 'untitled'});
         let client = this.getClientForFolder(folderUri);
         const key = this.getKeyFromUri(folder);

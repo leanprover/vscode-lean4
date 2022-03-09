@@ -28,6 +28,7 @@ import { URL } from 'url';
 import { join } from 'path';
  // @ts-ignore
 import { SemVer } from 'semver';
+import { fileExists } from './utils/fsHelper';
 
 const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
@@ -124,7 +125,7 @@ export class LeanClient implements Disposable {
         if (useLake) {
             let knownDate = false;
             const lakefile = Uri.joinPath(this.folderUri, 'lakefile.lean')
-            if (!fs.existsSync(new URL(lakefile.toString()))) {
+            if (!await fileExists(new URL(lakefile.toString()))) {
                 useLake = false;
             }
             else {

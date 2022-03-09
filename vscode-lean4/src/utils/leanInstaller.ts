@@ -5,7 +5,7 @@ import { LocalStorageService} from './localStorage'
 import { LeanpkgService } from './leanpkg'
 import { readLeanVersion, findLeanPackageRoot, isCoreLean4Directory } from './projectInfo';
 import { join, dirname } from 'path';
-import * as fs from 'fs';
+import { fileExists } from './fsHelper'
 
 export class LeanVersion {
     version: string;
@@ -57,7 +57,7 @@ export class LeanInstaller implements Disposable {
                 // we might as well install the default toolchain as well.
                 void this.showInstallOptions(packageUri);
                 return { version: '4', error: 'no elan installed' }
-            } else if (!isCoreLean4Directory(packageUri)) {
+            } else if (! await isCoreLean4Directory(packageUri)) {
                 const defaultVersion = await this.getDefaultToolchain(packageUri);
                 if (!defaultVersion) {
                     void this.showToolchainOptions(packageUri);
@@ -185,7 +185,7 @@ export class LeanInstaller implements Disposable {
     }
 
     async selectToolchain(uri: Uri) : Promise<void> {
-        const [workspaceFolder, folderUri, packageFileUri] = findLeanPackageRoot(uri);
+        const [workspaceFolder, folderUri, packageFileUri] = await findLeanPackageRoot(uri);
         const installedToolChains = await this.elanListToolChains(folderUri);
         if (installedToolChains.length === 1 && installedToolChains[0] === 'no installed toolchains') {
             installedToolChains[0] = this.defaultToolchain
@@ -231,7 +231,7 @@ export class LeanInstaller implements Disposable {
                 prompt: 'Enter full path to the lean toolchain you want to use or leave blank to use the default path'
             });
             if (selectedPath) {
-                const toolchainPath = this.checkToolchainPath(selectedPath);
+                const toolchainPath = await this.checkToolchainPath(selectedPath);
                 if (toolchainPath) {
                     this.localStorage.setLeanPath(toolchainPath);
                     this.localStorage.setLeanVersion(''); // clear the requested version as we have a full path.
@@ -250,18 +250,18 @@ export class LeanInstaller implements Disposable {
         }
     }
 
-    private checkToolchainPath(path: string) : string | null {
+    private async checkToolchainPath(path: string) : Promise<string | null> {
         let leanProgram = join(path, getLeanExecutableName());
-        if (fs.existsSync(leanProgram)) {
+        if (await fileExists(leanProgram)) {
             // then we want the parent folder.
             path = dirname(path);
         }
 
         const binFolder = join(path, 'bin');
-        if (fs.existsSync(binFolder)) {
+        if (await fileExists(binFolder)) {
             // ensure the lean program exists inside.
             leanProgram = join(binFolder, getLeanExecutableName());
-            if (fs.existsSync(leanProgram)) {
+            if (await fileExists(leanProgram)) {
                 return path;
             }
             void window.showErrorMessage(`Lean program not found in ${binFolder}`);
