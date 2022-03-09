@@ -1,34 +1,41 @@
 {
   "compilerOptions": {
-    /* Code generation */
-    "target": "ES2021",
-    "module": "ES6",
+    /* Projects */
+    "composite": true,
+
+    /* Language and Environment */
+    "target": "esnext",
     "lib": [
-      "dom",
-      "dom.iterable",
-      "ES2021"
+      "DOM",
+      "DOM.Iterable",
+      "ESNext"
     ],
-    "allowJs": true,
     "jsx": "react-jsx",
-    "esModuleInterop": true,
 
-    /* Type-checking */
-    "strict": true,
-    "noFallthroughCasesInSwitch": true,
-    "skipLibCheck": true,
-
-    /* Module resolution */
+    /* Modules */
+    "module": "esnext",
     "moduleResolution": "node",
+
+    /* Emit */
+    "sourceMap": true,
+    "rootDir": "src",
+    "outDir": "dist",
+    // See https://github.com/rollup/plugins/tree/5363f55aa1933b6c650832b08d6a54cb9ea64539/packages/typescript#declaration-output-with-outputfile
+    "declarationDir": ".",
+
+    /* Interop Constraints */
     "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
 
-    /* Output */
-    "composite": true,
-    "rootDir": "src/",
-    "outDir": "dist/",
-    "declaration": true,
-    "sourceMap": true,
-  },
+    /* Type Checking */
+    "strict": true,
+    "noImplicitAny": true,
+    "noFallthroughCasesInSwitch": true,
 
+    /* Completeness */
+    "skipLibCheck": true,
+  },
   "include": ["src/**/*"],
+  "exclude": ["dist"],
 }

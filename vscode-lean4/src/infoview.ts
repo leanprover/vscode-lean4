@@ -616,24 +616,18 @@ export class InfoProvider implements Disposable {
                 <meta http-equiv="Content-type" content="text/html;charset=utf-8">
                 <title>Infoview</title>
                 <style>${this.stylesheet}</style>
+                <link rel="stylesheet" href="${this.getLocalPath('dist/lean4-infoview/index.css')}">
             </head>
             <body>
                 <div id="react_root"></div>
-                <script src="${this.getLocalPath('dist/require.js')}"></script>
-                <script>
-                    requirejs.config({
-                        baseUrl: '${this.getLocalPath('dist/')}',
-                        paths: {
-                            '@lean4/infoview': 'lean4-infoview',
-                            '@popperjs/core': 'popperjs-core',
+                <script type="importmap">
+                    {
+                        "imports": {
+                            "@lean4/infoview": "${this.getLocalPath('dist/lean4-infoview/index.js')}"
                         }
-                    })
+                    }
                 </script>
-                <script src="${this.getLocalPath('dist/webview.js')}"></script>
-                <script>
-                    requirejs(['webview'], (webview) => { webview.default() })
-                </script>
-
+                <script type="module" src="${this.getLocalPath('dist/webview.js')}"></script>
             </body>
             </html>`
     }

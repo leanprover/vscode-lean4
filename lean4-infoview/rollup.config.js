@@ -12,8 +12,12 @@ export default {
         format: 'esm'
     },
     plugins: [
-        commonjs(),
-        typescript(),
+        css({
+            output: 'index.css'
+        }),
+        typescript({
+            tsconfig: "./tsconfig.json"
+        }),
         nodeResolve({
             browser: true
         }),
@@ -21,6 +25,6 @@ export default {
             'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV),
             preventAssignment: true // TODO delete when `true` becomes the default
         }),
-        css()
+        commonjs()
     ]
 };
