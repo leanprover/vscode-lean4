@@ -3,6 +3,7 @@ import * as ReactDOM from 'react-dom';
 import { DidCloseTextDocumentParams, Location, DocumentUri } from 'vscode-languageserver-protocol';
 
 import 'tachyons/css/tachyons.css';
+import '@vscode/codicons/dist/codicon.ttf';
 import '@vscode/codicons/dist/codicon.css';
 import './index.css';
 

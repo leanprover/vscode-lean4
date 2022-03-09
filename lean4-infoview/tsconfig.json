@@ -24,7 +24,6 @@
     "declarationDir": ".",
 
     /* Interop Constraints */
-    "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
 

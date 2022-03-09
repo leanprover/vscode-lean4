@@ -2,6 +2,7 @@ import commonjs from '@rollup/plugin-commonjs';
 import typescript from '@rollup/plugin-typescript';
 import nodeResolve from '@rollup/plugin-node-resolve';
 import replace from '@rollup/plugin-replace';
+import url from '@rollup/plugin-url';
 import css from 'rollup-plugin-css-only';
 
 export default {
@@ -15,8 +16,13 @@ export default {
         css({
             output: 'index.css'
         }),
+        url({
+            include: ['**/*.ttf'],
+            fileName: '[name][extname]'
+        }),
         typescript({
-            tsconfig: "./tsconfig.json"
+            tsconfig: "./tsconfig.json",
+            outputToFilesystem: false
         }),
         nodeResolve({
             browser: true
