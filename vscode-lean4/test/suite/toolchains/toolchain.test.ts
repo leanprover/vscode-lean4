@@ -3,8 +3,8 @@ import { suite } from 'mocha';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import * as fs from 'fs';
-import { waitForActiveExtension, waitForActiveEditor, waitForInfoViewOpen, waitForHtmlString,
-	extractPhrase, restartLeanServer, assertStringInInfoview } from '../utils/helpers';
+import { initLean4Untitled, initLean4, waitForHtmlString,
+	extractPhrase, restartLeanServer, assertStringInInfoview, resetToolchain } from '../utils/helpers';
 import { InfoProvider } from '../../../src/infoview';
 import { LeanClientProvider} from '../../../src/utils/clientProvider';
 import { LeanInstaller } from '../../../src/utils/leanInstaller';
@@ -14,34 +14,11 @@ suite('Toolchain Test Suite', () => {
 
 	test('Untitled Select Toolchain', async () => {
 
-		 console.log('=================== Untitled Select Toolchain ===================');
+		console.log('=================== Untitled Select Toolchain ===================');
 
-		// make sure test is always run in predictable state, which is no file or folder open
-		await vscode.commands.executeCommand('workbench.action.closeAllEditors');
-		void vscode.window.showInformationMessage('Running tests: ' + __dirname);
+        const lean = await initLean4Untitled('#eval Lean.versionString');
 
-		await vscode.commands.executeCommand('workbench.action.files.newUntitledFile');
-
-		const editor = await waitForActiveEditor();
-		// make it a lean4 document even though it is empty and untitled.
-		console.log('Setting lean4 language on untitled doc');
-		await vscode.languages.setTextDocumentLanguage(editor.document, 'lean4');
-
-		await editor.edit((builder) => {
-			builder.insert(new vscode.Position(0, 0), '#eval Lean.versionString');
-		});
-
-		const lean = await waitForActiveExtension('leanprover.lean4');
-		assert(lean, 'Lean extension not loaded');
-
-        console.log(`Found lean package version: ${lean.packageJSON.version}`);
-		const info = lean.exports.infoProvider as InfoProvider;
-
-		// If info view opens too quickly there is no LeanClient ready yet and
-		// it's initialization gets messed up.
-		assert(await waitForInfoViewOpen(info, 60),
-			'Info view did not open after 60 seconds');
-
+        const info = lean.exports.infoProvider as InfoProvider;
 		await assertStringInInfoview(info, '4.0.0-nightly-');
 
 		// Now switch toolchains (simple suite uses leanprover/lean4:nightly by default)
@@ -57,9 +34,9 @@ suite('Toolchain Test Suite', () => {
 	test('Restart Server', async () => {
 
 		console.log('=================== Test Restart Server ===================');
+		void vscode.window.showInformationMessage('Running tests: ' + __dirname);
 
 		// Test we can restart the lean server
-		void vscode.window.showInformationMessage('Running tests: ' + __dirname);
 		// make sure test is always run in predictable state, which is no file or folder open
 		await vscode.commands.executeCommand('workbench.action.closeAllEditors');
 
@@ -67,21 +44,9 @@ suite('Toolchain Test Suite', () => {
 		for (let i = 0; i < 2; i++) {
 
 			const testsRoot = path.join(__dirname, '..', '..', '..', '..', 'test', 'test-fixtures', 'simple');
-			const doc = await vscode.workspace.openTextDocument(path.join(testsRoot, 'Main.lean'));
-			await vscode.window.showTextDocument(doc);
-
-			const lean = await waitForActiveExtension('leanprover.lean4');
-			assert(lean, 'Lean extension not loaded');
-			assert(lean.exports.isLean4Project);
-			assert(lean.isActive);
-			console.log(`Found lean package version: ${lean.packageJSON.version}`);
-
-			const editor = await waitForActiveEditor('Main.lean');
+			const lean = await initLean4(path.join(testsRoot, 'Main.lean'));
 
 			const info = lean.exports.infoProvider as InfoProvider;
-			assert(await waitForInfoViewOpen(info, 60),
-				'Info view did not open after 20 seconds');
-
 			const expectedVersion = 'Hello:';
 			const html = await waitForHtmlString(info, expectedVersion);
 			const versionString = extractPhrase(html, 'Hello:', '<').trim();
@@ -103,32 +68,14 @@ suite('Toolchain Test Suite', () => {
 
 	test('Select toolchain', async () => {
 		console.log('=================== Test select toolchain ===================');
-
 		void vscode.window.showInformationMessage('Running tests: ' + __dirname);
-		// make sure test is always run in predictable state, which is no file or folder open
-		await vscode.commands.executeCommand('workbench.action.closeAllEditors');
 
         const testsRoot = path.join(__dirname, '..', '..', '..', '..', 'test', 'test-fixtures', 'simple');
-		const doc = await vscode.workspace.openTextDocument(path.join(testsRoot, 'Main.lean'));
-		await vscode.window.showTextDocument(doc);
-
-		const lean = await waitForActiveExtension('leanprover.lean4');
-		assert(lean, 'Lean extension not loaded');
-		assert(lean.exports.isLean4Project);
-		assert(lean.isActive);
-        console.log(`Found lean package version: ${lean.packageJSON.version}`);
-
-		await waitForActiveEditor('Main.lean');
-
-		// Now make sure the toolchain is reset (in case previous test failed).
-		await vscode.commands.executeCommand('lean4.selectToolchain', 'reset');
-
-		const info = lean.exports.infoProvider as InfoProvider;
-        assert(await waitForInfoViewOpen(info, 60),
-			'Info view did not open after 20 seconds');
+		const lean = await initLean4(path.join(testsRoot, 'Main.lean'));
 
 		// verify we have a nightly build running in this folder.
 		const expectedVersion = '4.0.0-nightly-';
+		const info = lean.exports.infoProvider as InfoProvider;
 		await waitForHtmlString(info, expectedVersion);
 
 		// Now switch toolchains (simple suite uses leanprover/lean4:nightly by default)
@@ -139,7 +86,7 @@ suite('Toolchain Test Suite', () => {
 		await waitForHtmlString(info, expected2);
 
 		// Now reset the toolchain back to nightly build.
-		await vscode.commands.executeCommand('lean4.selectToolchain', 'reset');
+		await resetToolchain();
 
 		// Now make sure the reset works and we can go back to the previous nightly version.
 		await waitForHtmlString(info, expectedVersion);
@@ -152,30 +99,11 @@ suite('Toolchain Test Suite', () => {
 
 		console.log('=================== Test lean-toolchain edits ===================');
 
-		void vscode.window.showInformationMessage('Running tests: ' + __dirname);
-		// make sure test is always run in predictable state, which is no file or folder open
-		await vscode.commands.executeCommand('workbench.action.closeAllEditors');
-
         const testsRoot = path.join(__dirname, '..', '..', '..', '..', 'test', 'test-fixtures', 'simple');
-		const doc = await vscode.workspace.openTextDocument(path.join(testsRoot, 'Main.lean'));
-		await vscode.window.showTextDocument(doc);
-
-		const lean = await waitForActiveExtension('leanprover.lean4');
-		assert(lean, 'Lean extension not loaded');
-		assert(lean.exports.isLean4Project);
-		assert(lean.isActive);
-        console.log(`Found lean package version: ${lean.packageJSON.version}`);
-
-		await waitForActiveEditor('Main.lean');
-
-		// Now make sure the toolchain is reset (in case previous test failed).
-		await vscode.commands.executeCommand('lean4.selectToolchain', 'reset');
-
-		const info = lean.exports.infoProvider as InfoProvider;
-        assert(await waitForInfoViewOpen(info, 60),
-			'Info view did not open after 20 seconds');
+		const lean = await initLean4(path.join(testsRoot, 'Main.lean'));
 
 		// turn off the user prompts so restart of lean server happens automatically.
+        const info = lean.exports.infoProvider as InfoProvider;
 		const installer = lean.exports.installer as LeanInstaller;
 		installer.setPromptUser(false);
 
