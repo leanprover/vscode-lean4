@@ -2,8 +2,8 @@ import * as assert from 'assert';
 import { suite } from 'mocha';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { waitForActiveExtension, waitForActiveEditor, waitForInfoViewOpen, waitForHtmlString,
-	extractPhrase, findWord, assertStringInInfoview } from '../utils/helpers';
+import { initLean4Untitled, waitForActiveEditor, waitForInfoViewOpen, waitForHtmlString,
+	extractPhrase, findWord, assertStringInInfoview, initLean4 } from '../utils/helpers';
 import { InfoProvider } from '../../../src/infoview';
 import { LeanClientProvider} from '../../../src/utils/clientProvider';
 import { LeanInstaller } from '../../../src/utils/leanInstaller';
@@ -13,37 +13,15 @@ suite('Lean3 Basics Test Suite', () => {
 	test('Untitled Lean File', async () => {
 
 		console.log('=================== Untitled Lean File ===================');
-
-		// make sure test is always run in predictable state, which is no file or folder open
-		await vscode.commands.executeCommand('workbench.action.closeAllEditors');
 		void vscode.window.showInformationMessage('Running tests: ' + __dirname);
 
-		await vscode.commands.executeCommand('workbench.action.files.newUntitledFile');
-
-		let editor = await waitForActiveEditor();
-		// make it a lean4 document even though it is empty and untitled.
-		console.log('Setting lean4 language on untitled doc');
-		await vscode.languages.setTextDocumentLanguage(editor.document, 'lean4');
-
-		await editor.edit((builder) => {
-			builder.insert(new vscode.Position(0, 0), '#eval Lean.versionString');
-		});
-
-		const lean = await waitForActiveExtension('leanprover.lean4');
-		assert(lean, 'Lean extension not loaded');
-
-        console.log(`Found lean package version: ${lean.packageJSON.version}`);
+		const lean = await initLean4Untitled('#eval Lean.versionString');
 		const info = lean.exports.infoProvider as InfoProvider;
-
-		// If info view opens too quickly there is no LeanClient ready yet and
-		// it's initialization gets messed up.
-		assert(await waitForInfoViewOpen(info, 60),
-			'Info view did not open after 60 seconds');
 
 		await assertStringInInfoview(info, '4.0.0-nightly-');
 
 		// test goto definition to lean toolchain works
-
+    	let editor = await waitForActiveEditor();
 		const wordRange = findWord(editor, 'versionString');
 		assert(wordRange, 'Missing versionString in Main.lean');
 
@@ -83,28 +61,16 @@ suite('Lean3 Basics Test Suite', () => {
 	test('Orphaned Lean File', async () => {
 
 		console.log('=================== Orphaned Lean File ===================');
-
-		// make sure test is always run in predictable state, which is no file or folder open
-		await vscode.commands.executeCommand('workbench.action.closeAllEditors');
 		void vscode.window.showInformationMessage('Running tests: ' + __dirname);
 
+		// make sure test is always run in predictable state, which is no file or folder open
+
 		const testsRoot = path.join(__dirname, '..', '..', '..', '..', 'test', 'test-fixtures', 'orphan');
-		const doc = await vscode.workspace.openTextDocument(path.join(testsRoot, 'factorial.lean'));
-		await vscode.window.showTextDocument(doc);
+		const lean = await initLean4(path.join(testsRoot, 'factorial.lean'));
 
-		let editor = await waitForActiveEditor();
-
-		const lean = await waitForActiveExtension('leanprover.lean4');
-		assert(lean, 'Lean extension not loaded');
-
-        console.log(`Found lean package version: ${lean.packageJSON.version}`);
 		const info = lean.exports.infoProvider as InfoProvider;
-
-        assert(await waitForInfoViewOpen(info, 60),
-			'Info view did not open after 60 seconds');
-
 		const expectedVersion = '5040';  // the factorial function works.
-		let html = await waitForHtmlString(info, expectedVersion);
+		const html = await waitForHtmlString(info, expectedVersion);
 
 		const installer = lean.exports.installer as LeanInstaller;
 		const toolChains = await installer.elanListToolChains(null);
@@ -127,38 +93,25 @@ suite('Lean3 Basics Test Suite', () => {
 
 	test('Goto definition in a package folder', async () => {
 		console.log('=================== Goto definition in a package folder ===================');
+		void vscode.window.showInformationMessage('Running tests: ' + __dirname);
+
+		// Test we can load file in a project folder from a package folder and also
+		// have goto definition work showing that the LeanClient is correctly
+		// running in the package root.
 
 		// This test is run twice, once as an ad-hoc mode (no folder open)
 		// and again using "open folder" mode.
 
-		// make sure test is always run in predictable state, which is no file or folder open
-		await vscode.commands.executeCommand('workbench.action.closeAllEditors');
-		// Test we can load file in a project folder from a package folder and also
-		// have goto definition work showing that the LeanClient is correctly
-		// running in the package root.
-		void vscode.window.showInformationMessage('Running tests: ' + __dirname);
-
 		const testsRoot = path.join(__dirname, '..', '..', '..', '..', 'test', 'test-fixtures', 'simple');
-		const doc = await vscode.workspace.openTextDocument(path.join(testsRoot, 'Main.lean'));
-		await vscode.window.showTextDocument(doc);
-
-		const lean = await waitForActiveExtension('leanprover.lean4');
-		assert(lean, 'Lean extension not loaded');
-		assert(lean.exports.isLean4Project);
-		assert(lean.isActive);
-        console.log(`Found lean package version: ${lean.packageJSON.version}`);
-
-		const editor = await waitForActiveEditor('Main.lean');
+		const lean = await initLean4(path.join(testsRoot, 'Main.lean'));
 
 		const info = lean.exports.infoProvider as InfoProvider;
-        assert(await waitForInfoViewOpen(info, 60),
-			'Info view did not open after 20 seconds');
-
 		let expectedVersion = 'Hello:';
 		let html = await waitForHtmlString(info, expectedVersion);
 		const versionString = extractPhrase(html, 'Hello:', '<').trim();
 		console.log(`>>> Found "${versionString}" in infoview`)
 
+		const editor = await waitForActiveEditor();
 		const wordRange = findWord(editor, 'getLeanVersion');
 		assert(wordRange, 'Missing getLeanVersion in Main.lean');
 
