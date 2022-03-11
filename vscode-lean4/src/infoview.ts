@@ -187,13 +187,15 @@ export class InfoProvider implements Disposable {
             await window.showInformationMessage(`Copied to clipboard: ${text}`);
         },
         insertText: async (text, kind, tdpp) => {
+            let uri: Uri | undefined
+            let pos: Position | undefined
             if (tdpp) {
                 const client = this.clientProvider.findClient(tdpp.textDocument.uri);
                 if (!client?.running) return;
-                const uri = client.convertUriFromString(tdpp.textDocument.uri);
-                const pos = client.convertPosition(tdpp.position);
-                await this.handleInsertText(text, kind, uri, pos);
+                uri = client.convertUriFromString(tdpp.textDocument.uri);
+                pos = client.convertPosition(tdpp.position);
             }
+            await this.handleInsertText(text, kind, uri, pos);
         },
         showDocument: async (show) => {
             const client = this.clientProvider.findClient(show.uri);
@@ -323,6 +325,14 @@ export class InfoProvider implements Disposable {
 
     isOpen() : boolean {
         return this.webviewPanel?.visible === true;
+    }
+
+    async runTestScript(javaScript: string) : Promise<void> {
+        if (this.webviewPanel) {
+            return this.webviewPanel.api.runTestScript(javaScript);
+        } else {
+            throw new Error('Cannot run test script, infoview is closed.');
+        }
     }
 
     async getHtmlContents() : Promise<string> {
@@ -566,17 +576,24 @@ export class InfoProvider implements Disposable {
         }
         pos = pos ? pos : editor.selection.active;
         if (kind === 'above') {
-            // in this case, assume that we actually want to insert at the same
-            // indentation level as the neighboring text
-            const prev_line = editor.document.lineAt(pos.line - 1);
-            const spaces = prev_line.firstNonWhitespaceCharacterIndex;
-            const margin_str = [...Array(spaces).keys()].map(x => ' ').join('');
-
-            let new_command = text.replace(/\n/g, '\n' + margin_str);
-            new_command = `\n${margin_str}${new_command}`;
+            let new_command = text;
+            let insertPosition = editor.document.lineAt(0).range.start;
+            let spaces = 0;
+            if (pos.line > 0){
+                // in this case, assume that we actually want to insert at the same
+                // indentation level as the neighboring text
+                const prev_line = editor.document.lineAt(pos.line - 1);
+                spaces = prev_line.firstNonWhitespaceCharacterIndex;
+                const margin_str = [...Array(spaces).keys()].map(x => ' ').join('');
+                new_command = text.replace(/\n/g, '\n' + margin_str);
+                new_command = `\n${margin_str}${new_command}`;
+                insertPosition = prev_line.range.end;
+            } else {
+                new_command += '\n';
+            }
 
             await editor.edit((builder) => {
-                builder.insert(prev_line.range.end, new_command);
+                builder.insert(insertPosition, new_command);
             });
             editor.selection = new Selection(pos.line, spaces, pos.line, spaces);
         } else {

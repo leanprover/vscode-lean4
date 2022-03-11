@@ -3,7 +3,7 @@ import { suite } from 'mocha';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { waitForActiveExtension, waitForActiveEditor, waitForInfoViewOpen, waitForHtmlString,
-	extractPhrase, findWord, assertStringInInfoview } from '../utils/helpers';
+	extractPhrase, gotoDefinition, assertStringInInfoview } from '../utils/helpers';
 import { InfoProvider } from '../../../src/infoview';
 import { LeanClientProvider} from '../../../src/utils/clientProvider';
 import { LeanInstaller } from '../../../src/utils/leanInstaller';
@@ -43,16 +43,7 @@ suite('Lean3 Basics Test Suite', () => {
 		await assertStringInInfoview(info, '4.0.0-nightly-');
 
 		// test goto definition to lean toolchain works
-
-		const wordRange = findWord(editor, 'versionString');
-		assert(wordRange, 'Missing versionString in Main.lean');
-
-		// The -1 is to workaround a bug in goto definition.
-		// The cursor must be placed before the end of the identifier.
-		const secondLastChar = new vscode.Position(wordRange.end.line, wordRange.end.character - 1);
-		editor.selection = new vscode.Selection(wordRange.start, secondLastChar);
-
-		await vscode.commands.executeCommand('editor.action.revealDefinition');
+        await gotoDefinition(editor, 'versionString');
 
 		// check infoview is working in this new editor, it should be showing the expected type
 		// for the versionString function we just jumped to.
@@ -159,15 +150,7 @@ suite('Lean3 Basics Test Suite', () => {
 		const versionString = extractPhrase(html, 'Hello:', '<').trim();
 		console.log(`>>> Found "${versionString}" in infoview`)
 
-		const wordRange = findWord(editor, 'getLeanVersion');
-		assert(wordRange, 'Missing getLeanVersion in Main.lean');
-
-		// The -1 is to workaround a bug in goto definition.
-		// The cursor must be placed before the end of the identifier.
-		const secondLastChar = new vscode.Position(wordRange.end.line, wordRange.end.character - 1);
-		editor.selection = new vscode.Selection(wordRange.start, secondLastChar);
-
-		await vscode.commands.executeCommand('editor.action.revealDefinition');
+        await gotoDefinition(editor, 'getLeanVersion');
 
 		// if goto definition worked, then we are in Version.lean and we should see the Lake version string.
 		expectedVersion = 'Lake Version:';

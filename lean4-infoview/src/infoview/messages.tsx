@@ -32,13 +32,13 @@ const MessageView = React.memo(({uri, diag}: MessageViewProps) => {
     <details open>
         <summary className={severityClass + ' mv2 pointer'}>{title}
             <span className="fr">
-                <a className="link pointer mh2 dim codicon codicon-go-to-file"
+                <a id="revealPosition" className="link pointer mh2 dim codicon codicon-go-to-file"
                    onClick={e => { e.preventDefault(); void ec.revealLocation(loc); }}
                    title="reveal file location"></a>
-                <a className="link pointer mh2 dim codicon codicon-quote"
+                <a id="copyToComment" className="link pointer mh2 dim codicon codicon-quote"
                    onClick={e => {e.preventDefault(); void ec.copyToComment(text)}}
                    title="copy message to comment"></a>
-                <a className="link pointer mh2 dim codicon codicon-clippy"
+                <a id="copyToClipboard" className="link pointer mh2 dim codicon codicon-clippy"
                    onClick={e => {e.preventDefault(); void ec.api.copyToClipboard(text)}}
                    title="copy message to clipboard"></a>
             </span>
@@ -130,7 +130,7 @@ export function AllMessages({uri: uri0}: { uri: DocumentUri }) {
         <summary className="mv2 pointer">
             All Messages ({diags.length})
             <span className="fr">
-                <a className={'link pointer mh2 dim codicon ' + (isPaused ? 'codicon-debug-continue' : 'codicon-debug-pause')}
+                <a id={isPaused ? 'continue' : 'pause'} className={'link pointer mh2 dim codicon ' + (isPaused ? 'codicon-debug-continue' : 'codicon-debug-pause')}
                    onClick={e => { e.preventDefault(); setPaused(p => !p); }}
                    title={isPaused ? 'continue updating' : 'pause updating'}>
                 </a>

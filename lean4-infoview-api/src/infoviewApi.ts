@@ -129,6 +129,11 @@ export interface InfoviewApi {
   requestedAction(action: InfoviewAction): Promise<void>;
 
   /**
+   * Interface for running test scripts inside the infoview webview.
+   */
+  runTestScript(javaScript: string) : Promise<void>;
+
+  /**
    * Return the current HTML contents of the infoview as a string. This is used for testing,
    * in particular to inspect the page contents and check if the UI is in a correct state.
    */
