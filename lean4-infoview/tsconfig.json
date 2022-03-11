@@ -20,8 +20,6 @@
     "sourceMap": true,
     "rootDir": "src",
     "outDir": "dist",
-    // See https://github.com/rollup/plugins/tree/5363f55aa1933b6c650832b08d6a54cb9ea64539/packages/typescript#declaration-output-with-outputfile
-    "declarationDir": ".",
 
     /* Interop Constraints */
     "esModuleInterop": true,

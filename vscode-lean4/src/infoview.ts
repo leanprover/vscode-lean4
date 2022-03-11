@@ -623,7 +623,10 @@ export class InfoProvider implements Disposable {
                 <script type="importmap">
                     {
                         "imports": {
-                            "@lean4/infoview": "${this.getLocalPath('dist/lean4-infoview/index.js')}"
+                            "@lean4/infoview": "${this.getLocalPath('dist/lean4-infoview/index.js')}",
+                            "react": "${this.getLocalPath('dist/react.js')}",
+                            "react-dom": "${this.getLocalPath('dist/react-dom.js')}",
+                            "react-popper": "${this.getLocalPath('dist/lean4-infoview/react-popper.js')}"
                         }
                     }
                 </script>

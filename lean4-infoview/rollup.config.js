@@ -6,12 +6,20 @@ import url from '@rollup/plugin-url';
 import css from 'rollup-plugin-css-only';
 
 export default {
-    input: 'src/index.ts',
+    input: {
+        'index': 'src/index.ts',
+        'react-popper': 'src/react-popper.ts'
+    },
     output: {
-        file: 'dist/index.js',
+        dir: 'dist',
         sourcemap: true,
         format: 'esm'
     },
+    external: [
+        'react',
+        'react-dom'
+        // TODO externalize react-popper when it gets an @esm-bundle
+    ],
     plugins: [
         css({
             output: 'index.css'
