@@ -40,8 +40,10 @@ suite('InfoView Test Suite', () => {
 
 		await assertStringInInfoview(info, '4.0.0-nightly-');
 
+        console.log("Clicking copyToComment button in InfoView");
         await info.runTestScript("document.getElementById('copyToComment').click()");
 
+        console.log("Checking editor contains '4.0.0-nightly'")
         await findWord(editor, "4.0.0-nightly");
 
 	}).timeout(60000);
