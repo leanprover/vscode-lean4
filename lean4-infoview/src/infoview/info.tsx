@@ -50,20 +50,20 @@ export function InfoStatusBar(props: InfoStatusBarProps) {
         {isPinned && isPaused && ' (pinned and paused)'}
         <span className="fr">
             {copyGoalToComment &&
-                <a id="copyGoalToComment" className="link pointer mh2 dim codicon codicon-quote"
+                <a className="link pointer mh2 dim codicon codicon-quote"
                    onClick={e => { e.preventDefault(); copyGoalToComment(); }}
                    title="copy state to comment" />}
             {isPinned &&
-                <a id="revealPosition" className="link pointer mh2 dim codicon codicon-go-to-file"
+                <a className="link pointer mh2 dim codicon codicon-go-to-file"
                    onClick={e => { e.preventDefault(); void ec.revealPosition(pos); }}
                    title="reveal file location" />}
-            <a id="pin" className={'link pointer mh2 dim codicon ' + (isPinned ? 'codicon-pinned' : 'codicon-pin')}
+            <a className={'link pointer mh2 dim codicon ' + (isPinned ? 'codicon-pinned' : 'codicon-pin')}
                 onClick={e => { e.preventDefault(); onPin(pos); }}
                 title={isPinned ? 'unpin' : 'pin'} />
-            <a id="pause" className={'link pointer mh2 dim codicon ' + (isPaused ? 'codicon-debug-continue' : 'codicon-debug-pause')}
+            <a className={'link pointer mh2 dim codicon ' + (isPaused ? 'codicon-debug-continue' : 'codicon-debug-pause')}
                onClick={e => { e.preventDefault(); setPaused(!isPaused); }}
                title={isPaused ? 'continue updating' : 'pause updating'} />
-            <a id="refresh" className="link pointer mh2 dim codicon codicon-refresh"
+            <a className="link pointer mh2 dim codicon codicon-refresh"
                onClick={e => { e.preventDefault(); void triggerUpdate(); }}
                title="update"/>
         </span>
@@ -164,8 +164,8 @@ export function InfoDisplay(props0: InfoDisplayProps) {
             {nothingToShow && (
                 isPaused ?
                     <span>Updating is paused.
-                        <a id="refresh" className="link pointer dim" onClick={e => { e.preventDefault(); void triggerDisplayUpdate(); }}>Refresh</a>
-                        or <a id="resume" className="link pointer dim" onClick={e => { e.preventDefault(); setPaused(false); }}>resume updating</a>
+                        <a className="link pointer dim" onClick={e => { e.preventDefault(); void triggerDisplayUpdate(); }}>Refresh</a>
+                        or <a className="link pointer dim" onClick={e => { e.preventDefault(); setPaused(false); }}>resume updating</a>
                         to see information.
                     </span> :
                     'No info found.')}

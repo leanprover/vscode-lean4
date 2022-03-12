@@ -6,20 +6,20 @@ import { InfoProvider } from '../../../src/infoview';
 
 suite('InfoView Test Suite', () => {
 
-	test('Copy to Comment', async () => {
+    test('Copy to Comment', async () => {
 
-		console.log('=================== Copy to Comment ===================');
+        console.log('=================== Copy to Comment ===================');
 
-		const lean = await initLean4Untitled('#eval Lean.versionString');
-		const info = lean.exports.infoProvider as InfoProvider;
+        const lean = await initLean4Untitled('#eval Lean.versionString');
+        const info = lean.exports.infoProvider as InfoProvider;
 
-		await assertStringInInfoview(info, '4.0.0-nightly-');
+        await assertStringInInfoview(info, '4.0.0-nightly-');
 
         console.log('Clicking copyToComment button in InfoView');
-        await info.runTestScript('document.getElementById(\'copyToComment\').click()');
+        await info.runTestScript('document.getElementsByClassName(\'codicon-quote\')[0].click()');
 
         console.log("Checking editor contains '4.0.0-nightly'")
-		const editor = vscode.window.activeTextEditor;
+        const editor = vscode.window.activeTextEditor;
         assert(editor !== undefined, 'no active editor');
         await findWord(editor, '4.0.0-nightly');
 
@@ -27,6 +27,6 @@ suite('InfoView Test Suite', () => {
         const text = editor.document.getText(editor.selection);
         assert(text.indexOf('4.0.0-nightly') >= 0, 'copyToClipboard did not select the new text');
 
-	}).timeout(60000);
+    }).timeout(60000);
 
 }).timeout(60000);
