@@ -576,21 +576,14 @@ export class InfoProvider implements Disposable {
         }
         pos = pos ? pos : editor.selection.active;
         if (kind === 'above') {
-            let new_command = text;
-            let insertPosition = editor.document.lineAt(0).range.start;
-            let spaces = 0;
-            if (pos.line > 0){
-                // in this case, assume that we actually want to insert at the same
-                // indentation level as the neighboring text
-                const prev_line = editor.document.lineAt(pos.line - 1);
-                spaces = prev_line.firstNonWhitespaceCharacterIndex;
-                const margin_str = [...Array(spaces).keys()].map(x => ' ').join('');
-                new_command = text.replace(/\n/g, '\n' + margin_str);
-                new_command = `\n${margin_str}${new_command}`;
-                insertPosition = prev_line.range.end;
-            } else {
-                new_command += '\n';
-            }
+            // in this case, assume that we actually want to insert at the same
+            // indentation level as the neighboring text
+            const current_line = editor.document.lineAt(pos.line);
+            const spaces = current_line.firstNonWhitespaceCharacterIndex;
+            const margin_str = [...Array(spaces).keys()].map(x => ' ').join('');
+            let new_command = text.replace(/\n/g, '\n' + margin_str);
+            new_command = `${margin_str}${new_command}\n`;
+            let insertPosition = current_line.range.start;
 
             await editor.edit((builder) => {
                 builder.insert(insertPosition, new_command);
