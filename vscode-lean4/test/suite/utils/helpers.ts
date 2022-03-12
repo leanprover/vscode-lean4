@@ -87,7 +87,7 @@ export async function waitForInfoViewOpen(infoView: InfoProvider, retries=10, de
     let opened = false;
     console.log('Waiting for InfoView...');
     while (count < retries){
-        const isOpen = await infoView.isOpen();
+        const isOpen = infoView.isOpen();
         if (isOpen) {
             console.log('InfoView is open.');
             return true;
@@ -125,7 +125,7 @@ export async function waitForHtmlString(infoView: InfoProvider, toFind : string,
 }
 
 export function extractPhrase(html: string, word: string, terminator: string){
-    let pos = html.indexOf(word);
+    const pos = html.indexOf(word);
     if (pos >= 0){
         let endPos = html.indexOf(terminator, pos);
         if (endPos < 0) {
@@ -168,7 +168,7 @@ export async function restartLeanServer(client: LeanClient, retries=10, delay=10
     let count = 0;
     console.log('restarting lean client ...');
 
-    let stateChanges : string[] = []
+    const stateChanges : string[] = []
     client.stopped(() => { stateChanges.push('stopped'); });
     client.restarted(() => { stateChanges.push('restarted'); });
     client.serverFailed(() => { stateChanges.push('failed'); });

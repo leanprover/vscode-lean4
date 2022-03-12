@@ -578,23 +578,29 @@ export class InfoProvider implements Disposable {
         if (kind === 'above') {
             // in this case, assume that we actually want to insert at the same
             // indentation level as the neighboring text
+            const lines = text.split('\n');
+            const last_line = lines.length - 1;
+            const length_of_last_line = lines[last_line].length;
             const current_line = editor.document.lineAt(pos.line);
             const spaces = current_line.firstNonWhitespaceCharacterIndex;
             const margin_str = [...Array(spaces).keys()].map(x => ' ').join('');
             let new_command = text.replace(/\n/g, '\n' + margin_str);
             new_command = `${margin_str}${new_command}\n`;
-            let insertPosition = current_line.range.start;
+            const insertPosition = current_line.range.start;
 
             await editor.edit((builder) => {
                 builder.insert(insertPosition, new_command);
             });
-            editor.selection = new Selection(pos.line, spaces, pos.line, spaces);
+            // select the whole insert so it is easy for user to delete it.
+            editor.selection = new Selection(pos.line, spaces, pos.line + last_line, spaces + length_of_last_line);
         } else {
             await editor.edit((builder) => {
                 if (pos) builder.insert(pos, text);
             });
             editor.selection = new Selection(pos, pos)
         }
+        // ensure the text document has the keyboard focus.
+        void window.showTextDocument(editor.document, { viewColumn: editor.viewColumn, preserveFocus: false });
     }
 
     private getMediaPath(mediaFile: string): string | undefined {

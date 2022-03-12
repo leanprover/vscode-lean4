@@ -18,7 +18,7 @@ suite('InfoView Test Suite', () => {
 
 		await vscode.commands.executeCommand('workbench.action.files.newUntitledFile');
 
-		let editor = await waitForActiveEditor();
+		const editor = await waitForActiveEditor();
 		// make it a lean4 document even though it is empty and untitled.
 		console.log('Setting lean4 language on untitled doc');
 		await vscode.languages.setTextDocumentLanguage(editor.document, 'lean4');
@@ -40,11 +40,15 @@ suite('InfoView Test Suite', () => {
 
 		await assertStringInInfoview(info, '4.0.0-nightly-');
 
-        console.log("Clicking copyToComment button in InfoView");
-        await info.runTestScript("document.getElementById('copyToComment').click()");
+        console.log('Clicking copyToComment button in InfoView');
+        await info.runTestScript('document.getElementById(\'copyToComment\').click()');
 
         console.log("Checking editor contains '4.0.0-nightly'")
-        await findWord(editor, "4.0.0-nightly");
+        await findWord(editor, '4.0.0-nightly');
+
+        console.log('make sure new text is selected');
+        const text = editor.document.getText(editor.selection);
+        assert(text.indexOf('4.0.0-nightly') >= 0, 'copyToClipboard did not select the new text');
 
 	}).timeout(60000);
 

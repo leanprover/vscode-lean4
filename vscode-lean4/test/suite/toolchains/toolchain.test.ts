@@ -22,7 +22,7 @@ suite('Toolchain Test Suite', () => {
 
 		await vscode.commands.executeCommand('workbench.action.files.newUntitledFile');
 
-		let editor = await waitForActiveEditor();
+		const editor = await waitForActiveEditor();
 		// make it a lean4 document even though it is empty and untitled.
 		console.log('Setting lean4 language on untitled doc');
 		await vscode.languages.setTextDocumentLanguage(editor.document, 'lean4');
@@ -82,8 +82,8 @@ suite('Toolchain Test Suite', () => {
 			assert(await waitForInfoViewOpen(info, 60),
 				'Info view did not open after 20 seconds');
 
-			let expectedVersion = 'Hello:';
-			let html = await waitForHtmlString(info, expectedVersion);
+			const expectedVersion = 'Hello:';
+			const html = await waitForHtmlString(info, expectedVersion);
 			const versionString = extractPhrase(html, 'Hello:', '<').trim();
 			console.log(`>>> Found "${versionString}" in infoview`);
 
@@ -128,14 +128,14 @@ suite('Toolchain Test Suite', () => {
 			'Info view did not open after 20 seconds');
 
 		// verify we have a nightly build running in this folder.
-		let expectedVersion = '4.0.0-nightly-';
+		const expectedVersion = '4.0.0-nightly-';
 		await waitForHtmlString(info, expectedVersion);
 
 		// Now switch toolchains (simple suite uses leanprover/lean4:nightly by default)
 		await vscode.commands.executeCommand('lean4.selectToolchain', 'leanprover/lean4:stable');
 
 		// verify that we switched to leanprover/lean4:stable
-		let expected2 = '4.0.0, commit';
+		const expected2 = '4.0.0, commit';
 		await waitForHtmlString(info, expected2);
 
 		// Now reset the toolchain back to nightly build.

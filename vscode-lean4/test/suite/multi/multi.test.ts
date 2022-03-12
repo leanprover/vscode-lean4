@@ -46,7 +46,7 @@ suite('Multi-Folder Test Suite', () => {
 		// Now verify we have 2 LeanClients running.
 		const clients = lean.exports.clientProvider as LeanClientProvider;
 		const actual = clients.getClients().length
-		assert(actual === 2, "Expected 2 LeanClients to be running, but found " + actual);
+		assert(actual === 2, 'Expected 2 LeanClients to be running, but found ' + actual);
 
 		// make sure test is always run in predictable state, which is no file or folder open
 		await vscode.commands.executeCommand('workbench.action.closeAllEditors');

@@ -83,7 +83,7 @@ suite('Lean3 Basics Test Suite', () => {
 		const doc = await vscode.workspace.openTextDocument(path.join(testsRoot, 'factorial.lean'));
 		await vscode.window.showTextDocument(doc);
 
-		let editor = await waitForActiveEditor();
+		const editor = await waitForActiveEditor();
 
 		const lean = await waitForActiveExtension('leanprover.lean4');
 		assert(lean, 'Lean extension not loaded');
@@ -95,7 +95,7 @@ suite('Lean3 Basics Test Suite', () => {
 			'Info view did not open after 60 seconds');
 
 		const expectedVersion = '5040';  // the factorial function works.
-		let html = await waitForHtmlString(info, expectedVersion);
+		const html = await waitForHtmlString(info, expectedVersion);
 
 		const installer = lean.exports.installer as LeanInstaller;
 		const toolChains = await installer.elanListToolChains(null);
