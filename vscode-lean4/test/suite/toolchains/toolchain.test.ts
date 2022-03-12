@@ -37,8 +37,6 @@ suite('Toolchain Test Suite', () => {
 		void vscode.window.showInformationMessage('Running tests: ' + __dirname);
 
 		// Test we can restart the lean server
-		// make sure test is always run in predictable state, which is no file or folder open
-		await vscode.commands.executeCommand('workbench.action.closeAllEditors');
 
 		// run this code twice to ensure that it still works after a Restart Server
 		for (let i = 0; i < 2; i++) {

@@ -54,9 +54,6 @@ suite('Lean3 Basics Test Suite', () => {
 		console.log('=================== Orphaned Lean File ===================');
 		void vscode.window.showInformationMessage('Running tests: ' + __dirname);
 
-		// make sure test is always run in predictable state, which is no file or folder open
-		await vscode.commands.executeCommand('workbench.action.closeAllEditors');
-
 		const testsRoot = path.join(__dirname, '..', '..', '..', '..', 'test', 'test-fixtures', 'orphan');
 		const lean = await initLean4(path.join(testsRoot, 'factorial.lean'));
 
@@ -108,9 +105,6 @@ suite('Lean3 Basics Test Suite', () => {
 		// if goto definition worked, then we are in Version.lean and we should see the Lake version string.
 		expectedVersion = 'Lake Version:';
 		html = await waitForHtmlString(info, expectedVersion);
-
-		// verify we have a nightly build running in this folder.
-		await assertStringInInfoview(info, 'Lake Version:');
 
 		// make sure test is always run in predictable state, which is no file or folder open
 		await vscode.commands.executeCommand('workbench.action.closeAllEditors');
