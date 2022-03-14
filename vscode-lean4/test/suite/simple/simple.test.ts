@@ -2,11 +2,8 @@ import * as assert from 'assert';
 import { suite } from 'mocha';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { initLean4Untitled, waitForActiveEditor, waitForInfoViewOpen, waitForHtmlString,
-    extractPhrase, findWord, gotoDefinition, assertStringInInfoview, initLean4 } from '../utils/helpers';
-import { InfoProvider } from '../../../src/infoview';
-import { LeanClientProvider} from '../../../src/utils/clientProvider';
-import { LeanInstaller } from '../../../src/utils/leanInstaller';
+import { initLean4Untitled, waitForActiveEditor, waitForHtmlString,
+    extractPhrase, gotoDefinition, assertStringInInfoview, initLean4 } from '../utils/helpers';
 
 suite('Lean3 Basics Test Suite', () => {
 
@@ -15,7 +12,8 @@ suite('Lean3 Basics Test Suite', () => {
         console.log('=================== Untitled Lean File ===================');
 
         const lean = await initLean4Untitled('#eval Lean.versionString');
-        const info = lean.exports.infoProvider as InfoProvider;
+        const info = lean.exports.infoProvider;
+        assert(info, 'No InfoProvider export');
 
         await assertStringInInfoview(info, '4.0.0-nightly-');
 
@@ -35,7 +33,8 @@ suite('Lean3 Basics Test Suite', () => {
             `Active text editor is not located in ${expected}`);
 
         // make sure lean client is started in the right place.
-        const clients = lean.exports.clientProvider as LeanClientProvider;
+        const clients = lean.exports.clientProvider;
+		assert(clients, 'No LeanClientProvider export');
         clients.getClients().forEach((client) => {
             const leanRoot = client.getWorkspaceFolder();
             if (leanRoot.indexOf('leanprover--lean4---nightly') > 0){
@@ -58,10 +57,12 @@ suite('Lean3 Basics Test Suite', () => {
         const lean = await initLean4(path.join(testsRoot, 'factorial.lean'));
 
         const expectedVersion = '5040';  // the factorial function works.
-        const info = lean.exports.infoProvider as InfoProvider;
+        const info = lean.exports.infoProvider;
+        assert(info, 'No InfoProvider export');
         await waitForHtmlString(info, expectedVersion);
 
-        const installer = lean.exports.installer as LeanInstaller;
+        const installer = lean.exports.installer;
+        assert(installer, 'No LeanInstaller export');
         const toolChains = await installer.elanListToolChains(null);
         let defaultToolChain = toolChains.find(tc => tc.indexOf('default') > 0);
         if (defaultToolChain) {
@@ -93,7 +94,8 @@ suite('Lean3 Basics Test Suite', () => {
         const testsRoot = path.join(__dirname, '..', '..', '..', '..', 'test', 'test-fixtures', 'simple');
         const lean = await initLean4(path.join(testsRoot, 'Main.lean'));
 
-        const info = lean.exports.infoProvider as InfoProvider;
+        const info = lean.exports.infoProvider;
+        assert(info, 'No InfoProvider export');
         let expectedVersion = 'Hello:';
         let html = await waitForHtmlString(info, expectedVersion);
         const versionString = extractPhrase(html, 'Hello:', '<').trim();

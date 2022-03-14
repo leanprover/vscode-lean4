@@ -4,8 +4,6 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 import { initLean4, waitForActiveEditor, waitForInfoViewOpen, waitForHtmlString,
 	assertStringInInfoview } from '../utils/helpers';
-import { InfoProvider } from '../../../src/infoview';
-import { LeanClientProvider} from '../../../src/utils/clientProvider';
 
 suite('Multi-Folder Test Suite', () => {
 
@@ -20,7 +18,8 @@ suite('Multi-Folder Test Suite', () => {
 		const lean = await initLean4(path.join(testsRoot, 'test', 'Main.lean'));
 
 		// verify we have a nightly build running in this folder.
-		const info = lean.exports.infoProvider as InfoProvider;
+		const info = lean.exports.infoProvider;
+		assert(info, 'No InfoProvider export');
 		await assertStringInInfoview(info, '4.0.0-nightly-');
 
 		// Now open a file from the other project
@@ -32,7 +31,8 @@ suite('Multi-Folder Test Suite', () => {
 		await assertStringInInfoview(info, '4.0.0, commit');
 
 		// Now verify we have 2 LeanClients running.
-		const clients = lean.exports.clientProvider as LeanClientProvider;
+		const clients = lean.exports.clientProvider;
+		assert(clients, 'No LeanClientProvider export');
 		const actual = clients.getClients().length
 		assert(actual === 2, 'Expected 2 LeanClients to be running, but found ' + actual);
 

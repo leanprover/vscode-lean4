@@ -2,7 +2,6 @@ import * as assert from 'assert';
 import { suite } from 'mocha';
 import * as vscode from 'vscode';
 import { initLean4Untitled, assertStringInInfoview, findWord } from '../utils/helpers';
-import { InfoProvider } from '../../../src/infoview';
 
 suite('InfoView Test Suite', () => {
 
@@ -11,7 +10,8 @@ suite('InfoView Test Suite', () => {
         console.log('=================== Copy to Comment ===================');
 
         const lean = await initLean4Untitled('#eval 47*22');
-        const info = lean.exports.infoProvider as InfoProvider;
+        const info = lean.exports.infoProvider;
+        assert(info, 'No InfoProvider export');
 
         await assertStringInInfoview(info, '1034');
 
