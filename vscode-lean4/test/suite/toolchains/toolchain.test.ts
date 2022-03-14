@@ -15,10 +15,12 @@ suite('Toolchain Test Suite', () => {
 	test('Untitled Select Toolchain', async () => {
 
 		console.log('=================== Untitled Select Toolchain ===================');
+		void vscode.window.showInformationMessage('Running tests: ' + __dirname);
 
-        const lean = await initLean4Untitled('#eval Lean.versionString');
+		const lean = await initLean4Untitled('#eval Lean.versionString');
 
-        const info = lean.exports.infoProvider as InfoProvider;
+		const info = lean.exports.infoProvider as InfoProvider;
+
 		await assertStringInInfoview(info, '4.0.0-nightly-');
 
 		// Now switch toolchains (simple suite uses leanprover/lean4:nightly by default)
@@ -70,10 +72,10 @@ suite('Toolchain Test Suite', () => {
 
         const testsRoot = path.join(__dirname, '..', '..', '..', '..', 'test', 'test-fixtures', 'simple');
 		const lean = await initLean4(path.join(testsRoot, 'Main.lean'));
-
+		await resetToolchain();
 		// verify we have a nightly build running in this folder.
-		const expectedVersion = '4.0.0-nightly-';
 		const info = lean.exports.infoProvider as InfoProvider;
+		const expectedVersion = '4.0.0-nightly-';
 		await waitForHtmlString(info, expectedVersion);
 
 		// Now switch toolchains (simple suite uses leanprover/lean4:nightly by default)
@@ -98,10 +100,13 @@ suite('Toolchain Test Suite', () => {
 		console.log('=================== Test lean-toolchain edits ===================');
 
         const testsRoot = path.join(__dirname, '..', '..', '..', '..', 'test', 'test-fixtures', 'simple');
+
 		const lean = await initLean4(path.join(testsRoot, 'Main.lean'));
 
+		// Now make sure the toolchain is reset (in case previous test failed).
+		await resetToolchain();
 		// turn off the user prompts so restart of lean server happens automatically.
-        const info = lean.exports.infoProvider as InfoProvider;
+		const info = lean.exports.infoProvider as InfoProvider;
 		const installer = lean.exports.installer as LeanInstaller;
 		installer.setPromptUser(false);
 

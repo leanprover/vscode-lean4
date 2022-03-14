@@ -3,7 +3,7 @@ import { suite } from 'mocha';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { initLean4Untitled, waitForActiveEditor, waitForInfoViewOpen, waitForHtmlString,
-    extractPhrase, gotoDefinition, assertStringInInfoview, initLean4 } from '../utils/helpers';
+    extractPhrase, findWord, gotoDefinition, assertStringInInfoview, initLean4 } from '../utils/helpers';
 import { InfoProvider } from '../../../src/infoview';
 import { LeanClientProvider} from '../../../src/utils/clientProvider';
 import { LeanInstaller } from '../../../src/utils/leanInstaller';

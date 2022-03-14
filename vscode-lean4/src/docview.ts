@@ -51,7 +51,7 @@ export class DocViewProvider implements Disposable {
     private abbreviations: SymbolsByAbbreviation;
     private extensionUri: Uri;
     private tryItDoc: TextDocument | null = null;
-    private scripts: Map<string, string> = new Map<string, string>();
+    private html: string = '';
 
     constructor(extensionUri: Uri) {
         this.extensionUri = extensionUri;
@@ -263,6 +263,10 @@ export class DocViewProvider implements Disposable {
         }
     }
 
+    async getHtmlContents() : Promise<string> {
+        return this.html ?? '';
+    }
+
     async setHtml(html? : string): Promise<void> {
         const {webview} = this.getWebview();
 
@@ -360,7 +364,8 @@ var side_bar = false; // collapse the side bar menu by default.
         navDiv.append(mkLink('lean4.docView.forward', 'forward', 'forward ➡'));
         $('nav+*').css('margin-top','3em');
 
-        webview.html = $.html();
+        this.html = $.html();
+        webview.html = this.html;
     }
 
     async openHtml(html : string): Promise<void> {

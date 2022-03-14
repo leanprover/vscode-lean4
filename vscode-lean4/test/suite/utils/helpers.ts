@@ -1,9 +1,10 @@
-
 import * as assert from 'assert';
 import { basename } from 'path';
 import * as vscode from 'vscode';
 import { InfoProvider } from '../../../src/infoview';
 import { LeanClient} from '../../../src/leanclient';
+import { DocViewProvider } from '../../../src/docview';
+import cheerio = require('cheerio');
 
 export function sleep(ms : number) {
     return new Promise((resolve) => setTimeout(resolve, ms));
@@ -163,6 +164,24 @@ export async function waitForHtmlString(infoView: InfoProvider, toFind : string,
     return html;
 }
 
+export async function waitForDocViewHtml(docView: DocViewProvider, toFind : string, retries=10, delay=1000): Promise<string> {
+    let count = 0;
+    let html = '';
+    while (count < retries){
+        html = await docView.getHtmlContents();
+        if (html.indexOf(toFind) > 0){
+            return html;
+        }
+        await sleep(delay);
+        count += 1;
+    }
+
+    console.log('>>> docview contents:')
+    console.log(html);
+    assert(false, `Missing "${toFind}" in docview`);
+    return html;
+}
+
 export function extractPhrase(html: string, word: string, terminator: string){
     const pos = html.indexOf(word);
     if (pos >= 0){
@@ -238,4 +257,25 @@ export async function assertStringInInfoview(infoView: InfoProvider, expectedVer
         console.log(`>>> Found default "${versionString}" in infoview`)
     }
     return html;
+}
+
+export async function invokeHrefCommand(html: string, selector: string) : Promise<void> {
+
+    const $ = cheerio.load(html);
+    const link = $(selector);
+    assert(link, 'openExample link not found')
+    if (link) {
+        const href = link.attr('href');
+        if (href) {
+            const prefix = 'command:'
+            assert(href.startsWith(prefix), `expecting the href to start with ${prefix}`);
+            const cmd = href.slice(prefix.length);
+            const uri = vscode.Uri.parse(cmd);
+            const query = decodeURIComponent(uri.query);
+            console.log(`Opening file : ${query}`);
+            const args = JSON.parse(query);
+            await vscode.commands.executeCommand(uri.path.slice(1), args);
+        }
+    }
+
 }
