@@ -5,7 +5,7 @@ import { Rpc } from '../src/rpc';
 
 const vscodeApi = acquireVsCodeApi();
 
-const rpc = new Rpc((m) => { try { vscodeApi.postMessage(m) } catch { /* ignore errors */} });
+const rpc = new Rpc((m) => { vscodeApi.postMessage(m) });
 window.addEventListener('message', (e) => rpc.messageReceived(e.data))
 const editorApi: EditorApi = rpc.getApi();
 
