@@ -1,23 +1,10 @@
-
 import * as assert from 'assert';
-import { privateEncrypt } from 'crypto';
+import { basename } from 'path';
 import * as vscode from 'vscode';
 import { InfoProvider } from '../../../src/infoview';
 import { LeanClient} from '../../../src/leanclient';
-import * as ps from 'ps-node';
-
-export async function findProcs(name: string) : Promise<ps.Program[]> {
-  // A simple pid lookup
-  return await new Promise<ps.Program[]>((resolve) => {
-    ps.lookup({ command: name }, function(err, resultList ) {
-      if (err) {
-        resolve([]);
-      } else {
-        resolve(resultList);
-      }
-    });
-  });
-}
+import { DocViewProvider } from '../../../src/docview';
+import cheerio = require('cheerio');
 
 export function sleep(ms : number) {
     return new Promise((resolve) => setTimeout(resolve, ms));
@@ -25,6 +12,59 @@ export function sleep(ms : number) {
 
 export function closeAllEditors(): Thenable<any> {
 	return vscode.commands.executeCommand('workbench.action.closeAllEditors');
+}
+
+export async function initLean4(fileName: string) : Promise<vscode.Extension<any>>{
+
+    await vscode.commands.executeCommand('workbench.action.closeAllEditors');
+    const options : vscode.TextDocumentShowOptions = { preview: false };
+
+    const doc = await vscode.workspace.openTextDocument(fileName);
+    await vscode.window.showTextDocument(doc, options);
+
+    const lean = await waitForActiveExtension('leanprover.lean4');
+    assert(lean, 'Lean extension not loaded');
+    assert(lean.exports.isLean4Project);
+    assert(lean.isActive);
+    console.log(`Found lean package version: ${lean.packageJSON.version}`);
+    await waitForActiveEditor(basename(fileName));
+
+    const info = lean.exports.infoProvider as InfoProvider;
+    assert(await waitForInfoViewOpen(info, 60),
+        'Info view did not open after 20 seconds');
+    return lean;
+}
+
+export async function initLean4Untitled(contents: string) : Promise<vscode.Extension<any>>{
+    // make sure test is always run in predictable state, which is no file or folder open
+    await vscode.commands.executeCommand('workbench.action.closeAllEditors');
+
+    await vscode.commands.executeCommand('workbench.action.files.newUntitledFile');
+
+    const editor = await waitForActiveEditor();
+    // make it a lean4 document even though it is empty and untitled.
+    console.log('Setting lean4 language on untitled doc');
+    await vscode.languages.setTextDocumentLanguage(editor.document, 'lean4');
+
+    await editor.edit((builder) => {
+        builder.insert(new vscode.Position(0, 0), contents);
+    });
+
+    const lean = await waitForActiveExtension('leanprover.lean4');
+    assert(lean, 'Lean extension not loaded');
+
+    console.log(`Found lean package version: ${lean.packageJSON.version}`);
+    const info = lean.exports.infoProvider as InfoProvider;
+
+    // If info view opens too quickly there is no LeanClient ready yet and
+    // it's initialization gets messed up.
+    assert(await waitForInfoViewOpen(info, 60),
+        'Info view did not open after 60 seconds');
+    return lean;
+}
+
+export async function resetToolchain() : Promise<void>{
+    await vscode.commands.executeCommand('lean4.selectToolchain', 'reset');
 }
 
 export async function waitForActiveExtension(extensionId: string, retries=10, delay=1000) : Promise<vscode.Extension<any> | null> {
@@ -87,7 +127,7 @@ export async function waitForInfoViewOpen(infoView: InfoProvider, retries=10, de
     let opened = false;
     console.log('Waiting for InfoView...');
     while (count < retries){
-        const isOpen = await infoView.isOpen();
+        const isOpen = infoView.isOpen();
         if (isOpen) {
             console.log('InfoView is open.');
             return true;
@@ -124,8 +164,26 @@ export async function waitForHtmlString(infoView: InfoProvider, toFind : string,
     return html;
 }
 
+export async function waitForDocViewHtml(docView: DocViewProvider, toFind : string, retries=10, delay=1000): Promise<string> {
+    let count = 0;
+    let html = '';
+    while (count < retries){
+        html = await docView.getHtmlContents();
+        if (html.indexOf(toFind) > 0){
+            return html;
+        }
+        await sleep(delay);
+        count += 1;
+    }
+
+    console.log('>>> docview contents:')
+    console.log(html);
+    assert(false, `Missing "${toFind}" in docview`);
+    return html;
+}
+
 export function extractPhrase(html: string, word: string, terminator: string){
-    let pos = html.indexOf(word);
+    const pos = html.indexOf(word);
     if (pos >= 0){
         let endPos = html.indexOf(terminator, pos);
         if (endPos < 0) {
@@ -150,7 +208,7 @@ export async function restartLeanServer(client: LeanClient, retries=10, delay=10
     let count = 0;
     console.log('restarting lean client ...');
 
-    let stateChanges : string[] = []
+    const stateChanges : string[] = []
     client.stopped(() => { stateChanges.push('stopped'); });
     client.restarted(() => { stateChanges.push('restarted'); });
     client.serverFailed(() => { stateChanges.push('failed'); });
@@ -181,4 +239,25 @@ export async function assertStringInInfoview(infoView: InfoProvider, expectedVer
         console.log(`>>> Found default "${versionString}" in infoview`)
     }
     return html;
+}
+
+export async function invokeHrefCommand(html: string, selector: string) : Promise<void> {
+
+    const $ = cheerio.load(html);
+    const link = $(selector);
+    assert(link, 'openExample link not found')
+    if (link) {
+        const href = link.attr('href');
+        if (href) {
+            const prefix = 'command:'
+            assert(href.startsWith(prefix), `expecting the href to start with ${prefix}`);
+            const cmd = href.slice(prefix.length);
+            const uri = vscode.Uri.parse(cmd);
+            const query = decodeURIComponent(uri.query);
+            console.log(`Opening file : ${query}`);
+            const args = JSON.parse(query);
+            await vscode.commands.executeCommand(uri.path.slice(1), args);
+        }
+    }
+
 }

@@ -82,6 +82,14 @@ async function main() {
 			extensionTestsPath:path.resolve(__dirname, 'multi'),
 			launchArgs: ['--new-window', '--disable-gpu', workspacePath] });
 
+		// Test documentation view.
+		await runTests({
+			vscodeExecutablePath,
+			extensionDevelopmentPath,
+			extensionTestsPath:path.resolve(__dirname, 'docview'),
+			launchArgs: ['--new-window', '--disable-gpu', lean4TestFolder] });
+
+
 	} catch (err) {
 		console.error('Failed to run tests');
 		process.exit(1);

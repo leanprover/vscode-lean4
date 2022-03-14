@@ -21,7 +21,7 @@ import { toolchainPath, addServerEnvPaths, serverArgs, serverLoggingEnabled, ser
 import { assert } from './utils/assert'
 import { LeanFileProgressParams, LeanFileProgressProcessingInfo } from '@lean4/infoview-api';
 import { LocalStorageService} from './utils/localStorage'
-import { batchExecute, testExecute } from './utils/batch'
+import { batchExecute } from './utils/batch'
 import { readLeanVersion } from './utils/projectInfo';
 import * as fs from 'fs';
 import { URL } from 'url';
