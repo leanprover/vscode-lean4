@@ -16,7 +16,7 @@ suite('InfoView Test Suite', () => {
         await assertStringInInfoview(info, '1034');
 
         console.log('Clicking copyToComment button in InfoView');
-        await info.runTestScript('document.getElementsByClassName(\'copy-to-comment\')[0].click()');
+        await info.runTestScript('document.querySelector(\'[data-id*="copy-to-comment"]\').click()');
 
         console.log("Checking editor contains '1034'")
         const editor = vscode.window.activeTextEditor;
