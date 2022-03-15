@@ -10,14 +10,19 @@ jobs:
           - name: Linux
             os: ubuntu-latest
             artifact: build-Linux release
+            shell: bash {0}
           - name: macOS
             os: macos-latest
             artifact: build-macOS
+            shell: bash -euxo pipefail {0}
           - name: Windows
             os: windows-latest
             shell: msys2 {0}
             artifact: build-Windows
     runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: ${{ matrix.shell }}
     name: ${{ matrix.name }}
     steps:
       - name: Checkout
