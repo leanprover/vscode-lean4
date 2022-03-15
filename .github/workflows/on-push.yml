@@ -3,9 +3,21 @@ name: vscode-lean4 build
 on: [push, pull_request]
 
 jobs:
-  Build:
-    runs-on: ubuntu-latest
-    name: Build
+  build-and-test:
+    strategy:
+      matrix:
+        include:
+          - name: Linux
+            os: ubuntu-latest
+            artifact: build-Linux release
+          - name: macOS
+            os: macos-latest
+            artifact: build-macOS
+          - name: Windows
+            os: windows-latest
+            artifact: build-Windows
+    runs-on: ${{ matrix.os }}
+    name: ${{ matrix.name }}
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -21,16 +33,16 @@ jobs:
           npx lerna run --scope=lean4 package
       - name: Upload artifact
         uses: actions/upload-artifact@v2
+        if: matrix.os == 'ubuntu-latest'
         with:
           name: vscode-lean4
           path: 'vscode-lean4/lean4-*.vsix'
       - name: Lint
         run: npm run lint
-
       - name: Download Lean4 build artifact
-        uses: lovettchris/action-download-artifact@v2.15.11
+        uses: dawidd6/action-download-artifact@v2
         with:
-          name: build-Linux release
+          name: ${{ matrix.artifact }}
           path: .
           github_token: ${{secrets.GITHUB_TOKEN}}
           workflow: ci.yml
@@ -38,20 +50,32 @@ jobs:
           branch: master
           repo: leanprover/lean4
           check_artifacts:  true
-      - name: Unpack Lean4 build
+          search_artifacts: true
+
+      - name: Unpack Lean4 build on Ubuntu or MacOS
+        if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest'
         run: |
           mkdir lean4
-          tar -xvf lean-*-linux.tar.zst -C lean4 --strip-components 1
+          tar -xvf lean-*.tar.zst -C lean4 --strip-components 1
           ls -al lean4/bin
           echo ================= ldd lean
           ldd lean4/bin/lean
           echo ================= ldd libleanshared.so
           ldd lean4/lib/lean/libleanshared.so
           chmod u+x lean4/bin/*
+
+      - name: Unpack Lean4 build on Windows
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          unzip lean-*.zip -d lean4
+          Get-ChildItem leanbin | Get-ChildItem  | Move-Item -Destination leanbin
+          ls -al lean4/bin
       - name: Set path to elan
         run: |
           echo "$HOME/.elan/bin" >> $GITHUB_PATH
       - name: Setup elan toolchain
+        if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest'
         run: |
           curl -O --location https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh
           chmod u+x elan-init.sh
@@ -60,6 +84,15 @@ jobs:
           ls -al "$HOME/.elan/bin"
           elan --version
           elan toolchain link master "$(pwd)/lean4"
+      - name: Setup elan toolchain
+        if: matrix.os == 'windows-latest'
+        run: |
+          curl -O --location https://raw.githubusercontent.com/leanprover/elan/master/elan-init.ps1
+          powershell -f ./elan-init.ps1 -y --default-toolchain leanprover/lean4:nightly
+          echo Checking location "%USERPROFILE%/.elan/bin"...
+          ls -al "%USERPROFILE%/.elan/bin"
+          elan --version
+          elan toolchain link master lean4
       - name: Install 'leanprover/lean4:stable' version
         run: |
           elan toolchain install leanprover/lean4:stable
