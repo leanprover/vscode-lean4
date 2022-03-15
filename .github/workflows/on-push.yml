@@ -26,6 +26,12 @@ jobs:
         uses: actions/setup-node@v2
         with:
           node-version: '16'
+      - name: Install MSYS2
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: clang64
+          install: git zip unzip mingw-w64-clang-x86_64-zstd tar
+        if: matrix.os == 'windows-latest'
       - name: Build
         run: |
           npm ci
