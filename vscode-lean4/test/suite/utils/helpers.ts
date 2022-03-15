@@ -4,6 +4,7 @@ import * as vscode from 'vscode';
 import { InfoProvider } from '../../../src/infoview';
 import { LeanClient} from '../../../src/leanclient';
 import { DocViewProvider } from '../../../src/docview';
+import { Exports } from '../../../src/exports';
 import cheerio = require('cheerio');
 
 export function sleep(ms : number) {
@@ -14,7 +15,7 @@ export function closeAllEditors(): Thenable<any> {
 	return vscode.commands.executeCommand('workbench.action.closeAllEditors');
 }
 
-export async function initLean4(fileName: string) : Promise<vscode.Extension<any>>{
+export async function initLean4(fileName: string) : Promise<vscode.Extension<Exports>>{
 
     await vscode.commands.executeCommand('workbench.action.closeAllEditors');
     const options : vscode.TextDocumentShowOptions = { preview: false };
@@ -29,13 +30,14 @@ export async function initLean4(fileName: string) : Promise<vscode.Extension<any
     console.log(`Found lean package version: ${lean.packageJSON.version}`);
     await waitForActiveEditor(basename(fileName));
 
-    const info = lean.exports.infoProvider as InfoProvider;
+    const info = lean.exports.infoProvider;
+	assert(info, 'No InfoProvider export');
     assert(await waitForInfoViewOpen(info, 60),
         'Info view did not open after 20 seconds');
     return lean;
 }
 
-export async function initLean4Untitled(contents: string) : Promise<vscode.Extension<any>>{
+export async function initLean4Untitled(contents: string) : Promise<vscode.Extension<Exports>>{
     // make sure test is always run in predictable state, which is no file or folder open
     await vscode.commands.executeCommand('workbench.action.closeAllEditors');
 
@@ -54,7 +56,8 @@ export async function initLean4Untitled(contents: string) : Promise<vscode.Exten
     assert(lean, 'Lean extension not loaded');
 
     console.log(`Found lean package version: ${lean.packageJSON.version}`);
-    const info = lean.exports.infoProvider as InfoProvider;
+    const info = lean.exports.infoProvider;
+	assert(info, 'No InfoProvider export');
 
     // If info view opens too quickly there is no LeanClient ready yet and
     // it's initialization gets messed up.
@@ -67,10 +70,10 @@ export async function resetToolchain() : Promise<void>{
     await vscode.commands.executeCommand('lean4.selectToolchain', 'reset');
 }
 
-export async function waitForActiveExtension(extensionId: string, retries=10, delay=1000) : Promise<vscode.Extension<any> | null> {
+export async function waitForActiveExtension(extensionId: string, retries=10, delay=1000) : Promise<vscode.Extension<Exports> | null> {
 
     console.log(`Waiting for extension ${extensionId} to be loaded...`);
-    let lean : vscode.Extension<any> | undefined;
+    let lean : vscode.Extension<Exports> | undefined;
     let count = 0;
     while (!lean) {
         vscode.extensions.all.forEach((e) => {
@@ -195,13 +198,31 @@ export function extractPhrase(html: string, word: string, terminator: string){
     return '';
 }
 
-export function findWord(editor: vscode.TextEditor, word: string) : vscode.Range | undefined {
-    const text = editor.document.getText();
-    const pos = text.indexOf(word);
-    if (pos < 0) {
-        return undefined;
+export async function findWord(editor: vscode.TextEditor, word: string, retries = 10, delay = 1000) : Promise<vscode.Range> {
+    let count = 0;
+    while (retries > 0) {
+            const text = editor.document.getText();
+        const pos = text.indexOf(word);
+        if (pos < 0) {
+            await sleep(delay);
+            count += 1;
+        } else {
+            return new vscode.Range(editor.document.positionAt(pos), editor.document.positionAt(pos + word.length));
+        }
     }
-    return new vscode.Range(editor.document.positionAt(pos), editor.document.positionAt(pos + word.length));
+
+    assert(false, `word ${word} not found in editor`);
+}
+
+export async function gotoDefinition(editor: vscode.TextEditor, word: string, retries = 10, delay = 1000) : Promise<void> {
+    const wordRange = await findWord(editor, word, retries, delay);
+
+    // The -1 is to workaround a bug in goto definition.
+    // The cursor must be placed before the end of the identifier.
+    const secondLastChar = new vscode.Position(wordRange.end.line, wordRange.end.character - 1);
+    editor.selection = new vscode.Selection(wordRange.start, secondLastChar);
+
+    await vscode.commands.executeCommand('editor.action.revealDefinition');
 }
 
 export async function restartLeanServer(client: LeanClient, retries=10, delay=1000) : Promise<boolean> {

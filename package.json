@@ -6,7 +6,7 @@
     "test": "lerna run test",
     "watch": "lerna run --parallel watch",
     "watchTest": "lerna run --parallel watchTest",
-    "lint": "eslint -c .eslintrc.js \"{lean4-infoview-api,lean4-infoview,vscode-lean4}/src/**/*.{ts,tsx}\" \"vscode-lean4/test/**/*.{ts,tsx}\""
+    "lint": "eslint -c .eslintrc.js \"{lean4-infoview-api,lean4-infoview,vscode-lean4}/src/**/*.{ts,tsx}\" \"vscode-lean4/test/suite/**/*.{ts,tsx}\""
   },
   "devDependencies": {
     "lerna": "^4.0.0",

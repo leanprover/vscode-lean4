@@ -3,11 +3,8 @@ import { suite } from 'mocha';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import * as fs from 'fs';
-import { initLean4Untitled, initLean4, resetToolchain, waitForHtmlString,
-	extractPhrase, restartLeanServer, assertStringInInfoview } from '../utils/helpers';
-import { InfoProvider } from '../../../src/infoview';
-import { LeanClientProvider} from '../../../src/utils/clientProvider';
-import { LeanInstaller } from '../../../src/utils/leanInstaller';
+import { initLean4Untitled, initLean4, waitForHtmlString,
+	extractPhrase, restartLeanServer, assertStringInInfoview, resetToolchain, sleep } from '../utils/helpers';
 
 // Expects to be launched with folder: ${workspaceFolder}/vscode-lean4/test/suite/simple
 suite('Toolchain Test Suite', () => {
@@ -18,15 +15,19 @@ suite('Toolchain Test Suite', () => {
 		void vscode.window.showInformationMessage('Running tests: ' + __dirname);
 
 		const lean = await initLean4Untitled('#eval Lean.versionString');
+		await resetToolchain();
 
-		const info = lean.exports.infoProvider as InfoProvider;
+		const info = lean.exports.infoProvider;
+		assert(info, 'No InfoProvider export');
 
 		await assertStringInInfoview(info, '4.0.0-nightly-');
 
 		// Now switch toolchains (simple suite uses leanprover/lean4:nightly by default)
 		await vscode.commands.executeCommand('lean4.selectToolchain', 'leanprover/lean4:stable');
 
-		await assertStringInInfoview(info, '4.0.0, commit-');
+		await assertStringInInfoview(info, '4.0.0, commit');
+
+		await resetToolchain();
 
 		// make sure test is always run in predictable state, which is no file or folder open
 		await vscode.commands.executeCommand('workbench.action.closeAllEditors');
@@ -39,8 +40,6 @@ suite('Toolchain Test Suite', () => {
 		void vscode.window.showInformationMessage('Running tests: ' + __dirname);
 
 		// Test we can restart the lean server
-		// make sure test is always run in predictable state, which is no file or folder open
-		await vscode.commands.executeCommand('workbench.action.closeAllEditors');
 
 		// run this code twice to ensure that it still works after a Restart Server
 		for (let i = 0; i < 2; i++) {
@@ -48,14 +47,16 @@ suite('Toolchain Test Suite', () => {
 			const testsRoot = path.join(__dirname, '..', '..', '..', '..', 'test', 'test-fixtures', 'simple');
 			const lean = await initLean4(path.join(testsRoot, 'Main.lean'));
 
-			const info = lean.exports.infoProvider as InfoProvider;
+			const info = lean.exports.infoProvider;
+			assert(info, 'No InfoProvider export');
 			const expectedVersion = 'Hello:';
 			const html = await waitForHtmlString(info, expectedVersion);
 			const versionString = extractPhrase(html, 'Hello:', '<').trim();
 			console.log(`>>> Found "${versionString}" in infoview`);
 
 			// Now invoke the restart server command
-			const clients = lean.exports.clientProvider as LeanClientProvider;
+			const clients = lean.exports.clientProvider;
+			assert(clients, 'No LeanClientProvider export');
 			const client = clients.getClientForFolder(vscode.Uri.file(testsRoot));
 			if (client) {
 				await restartLeanServer(client);
@@ -76,7 +77,8 @@ suite('Toolchain Test Suite', () => {
 		const lean = await initLean4(path.join(testsRoot, 'Main.lean'));
 		await resetToolchain();
 		// verify we have a nightly build running in this folder.
-		const info = lean.exports.infoProvider as InfoProvider;
+		const info = lean.exports.infoProvider;
+		assert(info, 'No InfoProvider export');
 		const expectedVersion = '4.0.0-nightly-';
 		await waitForHtmlString(info, expectedVersion);
 
@@ -108,8 +110,10 @@ suite('Toolchain Test Suite', () => {
 		// Now make sure the toolchain is reset (in case previous test failed).
 		await resetToolchain();
 		// turn off the user prompts so restart of lean server happens automatically.
-		const info = lean.exports.infoProvider as InfoProvider;
-		const installer = lean.exports.installer as LeanInstaller;
+		const info = lean.exports.infoProvider;
+		assert(info, 'No InfoProvider export');
+		const installer = lean.exports.installer;
+        assert(installer, 'No LeanInstaller export');
 		installer.setPromptUser(false);
 
 		// verify we have a nightly build running in this folder.

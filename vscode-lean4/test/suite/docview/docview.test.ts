@@ -5,8 +5,6 @@ import * as vscode from 'vscode';
 
 import { initLean4, waitForActiveEditor, waitForHtmlString,
 	extractPhrase, waitForDocViewHtml, invokeHrefCommand } from '../utils/helpers';
-import { InfoProvider } from '../../../src/infoview';
-import { DocViewProvider } from '../../../src/docview';
 
 suite('Documentation View Test Suite', () => {
 
@@ -19,7 +17,8 @@ suite('Documentation View Test Suite', () => {
 		const mainFile = path.join(testsRoot, 'Main.lean');
 		const lean = await initLean4(mainFile);
 
-		const info = lean.exports.infoProvider as InfoProvider;
+		const info = lean.exports.infoProvider;
+		assert(info, 'No InfoProvider export');
 		const expectedVersion = 'Hello:';
 		let html = await waitForHtmlString(info, expectedVersion);
 		const versionString = extractPhrase(html, 'Hello:', '<').trim();
@@ -27,7 +26,8 @@ suite('Documentation View Test Suite', () => {
 
 		await vscode.commands.executeCommand('lean4.docView.open');
 
-		const docView = lean.exports.docView as DocViewProvider;
+		const docView = lean.exports.docView;
+		assert(docView, 'No docView export');
 		const exampleLink = 'Example';
 		html = await waitForDocViewHtml(docView, exampleLink);
 

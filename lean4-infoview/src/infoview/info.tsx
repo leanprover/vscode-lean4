@@ -51,6 +51,7 @@ export function InfoStatusBar(props: InfoStatusBarProps) {
         <span className="fr">
             {copyGoalToComment &&
                 <a className="link pointer mh2 dim codicon codicon-quote"
+                   data-id="copy-goal-to-comment"
                    onClick={e => { e.preventDefault(); copyGoalToComment(); }}
                    title="copy state to comment" />}
             {isPinned &&
