@@ -39,6 +39,10 @@ jobs:
           path: 'vscode-lean4/lean4-*.vsix'
       - name: Lint
         run: npm run lint
+      - name: Install Brew Packages
+        run: |
+          brew install ccache tree zstd coreutils
+        if: matrix.os == 'macos-latest'
       - name: Download Lean4 build artifact
         uses: dawidd6/action-download-artifact@v2
         with:
