@@ -23,10 +23,6 @@ suite('InfoView Test Suite', () => {
         assert(editor !== undefined, 'no active editor');
         await findWord(editor, '1034');
 
-        console.log('make sure new text is selected');
-        const text = editor.document.getText(editor.selection);
-        assert(text.indexOf('1034') >= 0, 'copy-to-comment did not select the new text');
-
     }).timeout(60000);
 
 }).timeout(60000);
