@@ -61,13 +61,9 @@ jobs:
         run: |
           mkdir lean4
           tar --use-compress-program=unzstd -xvf lean-*.tar.zst -C lean4 --strip-components 1
-          ls -al lean4/bin
-          echo ================= ldd lean
-          ldd lean4/bin/lean
-          echo ================= ldd libleanshared.so
-          ldd lean4/lib/lean/libleanshared.so
-          chmod u+x lean4/bin/*
-
+          ls -al ./lean4/bin
+          chmod u+x ./lean4/bin/*
+          ./lean4/bin/lean --version
       - name: Unpack Lean4 build on Windows
         if: matrix.os == 'windows-latest'
         shell: pwsh
