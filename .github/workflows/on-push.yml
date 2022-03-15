@@ -60,7 +60,7 @@ jobs:
         if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest'
         run: |
           mkdir lean4
-          tar -xvf lean-*.tar.zst -C lean4 --strip-components 1
+          tar --use-compress-program=unzstd -xvf lean-*.tar.zst -C lean4 --strip-components 1
           ls -al lean4/bin
           echo ================= ldd lean
           ldd lean4/bin/lean
