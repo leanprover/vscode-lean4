@@ -554,7 +554,7 @@ export class InfoProvider implements Disposable {
             editor.revealRange(selection, TextEditorRevealType.InCenterIfOutsideViewport);
             editor.selection = new Selection(selection.start, selection.end);
             // ensure the text document has the keyboard focus.
-            void window.showTextDocument(editor.document, { viewColumn: editor.viewColumn, preserveFocus: false });
+            await window.showTextDocument(editor.document, { viewColumn: editor.viewColumn, preserveFocus: false });
         }
     }
 
@@ -600,7 +600,7 @@ export class InfoProvider implements Disposable {
             editor.selection = new Selection(pos, pos)
         }
         // ensure the text document has the keyboard focus.
-        void window.showTextDocument(editor.document, { viewColumn: editor.viewColumn, preserveFocus: false });
+        await window.showTextDocument(editor.document, { viewColumn: editor.viewColumn, preserveFocus: false });
     }
 
     private getMediaPath(mediaFile: string): string | undefined {
