@@ -66,11 +66,12 @@ jobs:
           ./lean4/bin/lean --version
       - name: Unpack Lean4 build on Windows
         if: matrix.os == 'windows-latest'
-        shell: pwsh
+        shell: msys2 {0}
         run: |
-          unzip lean-*.zip -d lean4
-          Get-ChildItem leanbin | Get-ChildItem  | Move-Item -Destination leanbin
+          mkdir lean4
+          tar --use-compress-program=unzstd -xvf lean-*.tar.zst -C lean4 --strip-components 1
           ls -al lean4/bin
+          .\lean4\bin\lean --version
       - name: Set path to elan
         run: |
           echo "$HOME/.elan/bin" >> $GITHUB_PATH
