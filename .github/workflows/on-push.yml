@@ -10,19 +10,12 @@ jobs:
           - name: Linux
             os: ubuntu-latest
             artifact: build-Linux release
-            shell: bash {0}
           - name: macOS
             os: macos-latest
             artifact: build-macOS
-            shell: bash -euxo pipefail {0}
           - name: Windows
             os: windows-latest
-            shell: msys2 {0}
             artifact: build-Windows
-    runs-on: ${{ matrix.os }}
-    defaults:
-      run:
-        shell: ${{ matrix.shell }}
     name: ${{ matrix.name }}
     steps:
       - name: Checkout
@@ -68,6 +61,16 @@ jobs:
           check_artifacts:  true
           search_artifacts: true
       - name: Unpack Lean4 build on Ubuntu or MacOS
+        if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest'
+        run: |
+          mkdir lean4
+          tar --use-compress-program=unzstd -xvf lean-*.tar.zst -C lean4 --strip-components 1
+          ls -al ./lean4/bin
+          chmod u+x ./lean4/bin/*
+          ./lean4/bin/lean --version
+      - name: Unpack Lean4 build on Windows
+        if: matrix.os == 'windows-latest'
+        shell: msys2 {0}
         run: |
           mkdir lean4
           tar --use-compress-program=unzstd -xvf lean-*.tar.zst -C lean4 --strip-components 1
@@ -75,9 +78,15 @@ jobs:
           chmod u+x ./lean4/bin/*
           ./lean4/bin/lean --version
       - name: Set path to elan on Linux or macOS
+        if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest'
         run: |
           echo "$HOME/.elan/bin" >> $GITHUB_PATH
-      - name: Setup elan toolchain
+      - name: Set path to elan on Windows
+        if: matrix.os == 'windows-latest'
+        run: |
+          echo "%USERPROFILE%\.elan\bin" >> $GITHUB_PATH
+      - name: Setup elan toolchain on Linux or macOS
+        if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest'
         run: |
           curl -O --location https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh
           chmod u+x elan-init.sh
@@ -86,6 +95,16 @@ jobs:
           ls -al "$HOME/.elan/bin"
           elan --version
           elan toolchain link master "$(pwd)/lean4"
+      - name: Setup elan toolchain on Windows
+        shell: pwsh
+        if: matrix.os == 'windows-latest'
+        run: |
+          curl -O --location https://raw.githubusercontent.com/leanprover/elan/master/elan-init.ps1
+          ./elan-init.ps1 -y --default-toolchain leanprover/lean4:nightly
+          echo Checking location "$HOME/.elan/bin"...
+          dir "%USERPROFILE%\.elan\bin"
+          elan --version
+          elan toolchain link master lean4
       - name: Install 'leanprover/lean4:stable' version
         run: |
           elan toolchain install leanprover/lean4:stable
