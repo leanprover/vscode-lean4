@@ -8,7 +8,7 @@ import { InfoProvider } from '../../../src/infoview';
 import { LeanClientProvider} from '../../../src/utils/clientProvider';
 import { LeanInstaller } from '../../../src/utils/leanInstaller';
 
-suite('Lean3 Basics Test Suite', () => {
+suite('Lean4 Basics Test Suite', () => {
 
 	test('Untitled Lean File', async () => {
 
