@@ -45,15 +45,9 @@ jobs:
           brew install ccache tree zstd coreutils
         if: matrix.os == 'macos-latest'
       - name: Set path to elan on Linux or macOS
-        if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest'
         run: |
           echo Adding "$HOME/.elan/bin" to GITHUB_PATH
           echo "$HOME/.elan/bin" >> $GITHUB_PATH
-      - name: Set path to elan on Windows
-        if: matrix.os == 'windows-latest'
-        run: |
-          echo Adding "%HOMEPATH%\.elan\bin" to GITHUB_PATH
-          echo "%HOMEPATH%\.elan\bin" >> $GITHUB_PATH
       - name: Setup elan toolchain on Linux or macOS
         if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest'
         run: |
