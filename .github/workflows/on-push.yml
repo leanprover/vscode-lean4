@@ -47,10 +47,12 @@ jobs:
       - name: Set path to elan on Linux or macOS
         if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest'
         run: |
+          echo Adding "$HOME/.elan/bin" to GITHUB_PATH
           echo "$HOME/.elan/bin" >> $GITHUB_PATH
       - name: Set path to elan on Windows
         if: matrix.os == 'windows-latest'
         run: |
+          echo Adding "%HOMEPATH%\.elan\bin" to GITHUB_PATH
           echo "%HOMEPATH%\.elan\bin" >> $GITHUB_PATH
       - name: Setup elan toolchain on Linux or macOS
         if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest'
@@ -65,13 +67,13 @@ jobs:
           cp -r $HOME/.elan//toolchains/leanprover--lean4---nightly/* temp
           elan toolchain link master temp
       - name: Setup elan toolchain on Windows
-        shell: pwsh
         if: matrix.os == 'windows-latest'
         run: |
           curl -O --location https://raw.githubusercontent.com/leanprover/elan/master/elan-init.ps1
-          ./elan-init.ps1 -y --default-toolchain leanprover/lean4:nightly
-          Write-Host Checking location "$HOME\.elan\bin"...
+          powershell -f ./elan-init.ps1 -y --default-toolchain leanprover/lean4:nightly
+          echo Checking location "$HOME\.elan\bin"...
           dir "$HOME\.elan\bin"
+          set PATH
           elan --version
           mkdir temp
           xcopy /q /s "$HOME\.elan\bin\toolchains\leanprover--lean4---nightly\*.*" temp
@@ -83,4 +85,6 @@ jobs:
       - name: Run tests
         uses: GabrielBB/xvfb-action@v1.0
         with:
-          run: npx lerna run --scope=lean4 test
+          run: |
+            cd vscode-lean4
+            npm run test
