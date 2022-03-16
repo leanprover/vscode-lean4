@@ -85,6 +85,4 @@ jobs:
       - name: Run tests
         uses: GabrielBB/xvfb-action@v1.0
         with:
-          run: |
-            cd vscode-lean4
-            npm run test
+          run: npx lerna run --scope=lean4 test
