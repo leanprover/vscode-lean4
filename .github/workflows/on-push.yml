@@ -69,6 +69,7 @@ jobs:
         if: matrix.os == 'windows-latest'
         shell: pwsh
         run: |
+          gh auth login
           gh release list --repo leanprover/lean4-nightly --limit 10
           $version = (gh release list --repo leanprover/lean4-nightly --limit 1).Split("`t")[0]
           $zipFile = "lean-4.0.0-$version-windows.zip"
