@@ -45,7 +45,6 @@ jobs:
           brew install ccache tree zstd coreutils
         if: matrix.os == 'macos-latest'
       - name: Download Lean4 build artifact
-        if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest'
         uses: dawidd6/action-download-artifact@v2
         with:
           name: ${{ matrix.artifact }}
@@ -65,16 +64,11 @@ jobs:
           ls -al ./lean4/bin
           chmod u+x ./lean4/bin/*
           ./lean4/bin/lean --version
-      - name: Download and Extract Lean4 nightly build on Windows
+      - name: Unpack Lean4 build on Windows
         if: matrix.os == 'windows-latest'
         shell: pwsh
         run: |
-          gh auth login --with-token "${{ secrets.GITHUB_TOKEN }}"
-          gh release list --repo leanprover/lean4-nightly --limit 10
-          $version = (gh release list --repo leanprover/lean4-nightly --limit 1).Split("`t")[0]
-          $zipFile = "lean-4.0.0-$version-windows.zip"
-          gh release download  $version -p $zipFile --repo leanprover/lean4-nightly
-          Expand-Archive -LiteralPath $zipFile -DestinationPath lean4
+          get-item lean*windows.zip | Expand-Archive -DestinationPath lean4
           Get-ChildItem -Path lean4 | Get-ChildItem | Move-Item -Destination lean4
           dir .\lean4\bin
           .\lean4\bin\lean --version
