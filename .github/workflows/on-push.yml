@@ -10,9 +10,9 @@ jobs:
           - name: Linux
             os: ubuntu-latest
             artifact: build-Linux release
-          # - name: macOS
-          #   os: macos-latest
-          #   artifact: build-macOS
+          - name: macOS
+            os: macos-latest
+            artifact: build-macOS
           - name: Windows
             os: windows-latest
             artifact: build-Windows
@@ -44,34 +44,6 @@ jobs:
         run: |
           brew install ccache tree zstd coreutils
         if: matrix.os == 'macos-latest'
-      - name: Download Lean4 build artifact
-        uses: dawidd6/action-download-artifact@v2
-        with:
-          name: ${{ matrix.artifact }}
-          path: .
-          github_token: ${{secrets.GITHUB_TOKEN}}
-          workflow: ci.yml
-          workflow_conclusion: success
-          branch: master
-          repo: leanprover/lean4
-          check_artifacts:  true
-          search_artifacts: true
-      - name: Unpack Lean4 build on Ubuntu or MacOS
-        if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest'
-        run: |
-          mkdir lean4
-          tar --use-compress-program=unzstd -xvf lean-*.tar.zst -C lean4 --strip-components 1
-          ls -al ./lean4/bin
-          chmod u+x ./lean4/bin/*
-          ./lean4/bin/lean --version
-      - name: Unpack Lean4 build on Windows
-        if: matrix.os == 'windows-latest'
-        shell: pwsh
-        run: |
-          get-item lean*windows.zip | Expand-Archive -DestinationPath lean4
-          Get-ChildItem -Path lean4 | Get-ChildItem | Move-Item -Destination lean4
-          dir .\lean4\bin
-          .\lean4\bin\lean --version
       - name: Set path to elan on Linux or macOS
         if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest'
         run: |
@@ -87,9 +59,11 @@ jobs:
           chmod u+x elan-init.sh
           ./elan-init.sh -y --default-toolchain leanprover/lean4:nightly
           echo Checking location "$HOME/.elan/bin"...
-          ls -al "$HOME/.elan/bin"
+          ls -al $HOME/.elan/bin
           elan --version
-          elan toolchain link master "$(pwd)/lean4"
+          mkdir temp
+          cp -r $HOME/.elan//toolchains/leanprover--lean4---nightly/* temp
+          elan toolchain link master temp
       - name: Setup elan toolchain on Windows
         shell: pwsh
         if: matrix.os == 'windows-latest'
@@ -99,7 +73,9 @@ jobs:
           Write-Host Checking location "$HOME\.elan\bin"...
           dir "$HOME\.elan\bin"
           elan --version
-          elan toolchain link master lean4
+          mkdir temp
+          xcopy /q /s "$HOME\.elan\bin\toolchains\leanprover--lean4---nightly\*.*" temp
+          elan toolchain link master temp
       - name: Install 'leanprover/lean4:stable' version
         run: |
           elan toolchain install leanprover/lean4:stable
