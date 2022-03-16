@@ -84,8 +84,9 @@ jobs:
           echo "$HOME/.elan/bin" >> $GITHUB_PATH
       - name: Set path to elan on Windows
         if: matrix.os == 'windows-latest'
+        shell: pwsh
         run: |
-          echo "%USERPROFILE%\.elan\bin" >> $GITHUB_PATH
+          echo "$HOME\.elan\bin" >> $GITHUB_PATH
       - name: Setup elan toolchain on Linux or macOS
         if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest'
         run: |
@@ -102,8 +103,9 @@ jobs:
         run: |
           curl -O --location https://raw.githubusercontent.com/leanprover/elan/master/elan-init.ps1
           ./elan-init.ps1 -y --default-toolchain leanprover/lean4:nightly
-          echo Checking location "$HOME\.elan\bin"...
+          Write-Host Checking location "$HOME\.elan\bin"...
           dir "$HOME\.elan\bin"
+          dir env:
           elan --version
           elan toolchain link master lean4
       - name: Install 'leanprover/lean4:stable' version
