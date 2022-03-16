@@ -2,7 +2,7 @@ import * as assert from 'assert';
 import { suite } from 'mocha';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { initLean4Untitled, waitForActiveEditor, waitForInfoViewOpen, waitForHtmlString,
+import { initLean4Untitled, waitForActiveEditor, waitForInfoViewOpen, waitForInfoviewHtml,
 	extractPhrase, findWord, assertStringInInfoview, initLean4 } from '../utils/helpers';
 import { InfoProvider } from '../../../src/infoview';
 import { LeanClientProvider} from '../../../src/utils/clientProvider';
@@ -34,7 +34,7 @@ suite('Lean4 Basics Test Suite', () => {
 
 		// check infoview is working in this new editor, it should be showing the expected type
 		// for the versionString function we just jumped to.
-		const html = await waitForHtmlString(info, 'Expected type');
+		const html = await waitForInfoviewHtml(info, 'Expected type');
 
 		if (vscode.window.activeTextEditor) {
 			editor = vscode.window.activeTextEditor
@@ -70,7 +70,7 @@ suite('Lean4 Basics Test Suite', () => {
 
 		const info = lean.exports.infoProvider as InfoProvider;
 		const expectedVersion = '5040';  // the factorial function works.
-		const html = await waitForHtmlString(info, expectedVersion);
+		const html = await waitForInfoviewHtml(info, expectedVersion);
 
 		const installer = lean.exports.installer as LeanInstaller;
 		const toolChains = await installer.elanListToolChains(null);
@@ -83,7 +83,7 @@ suite('Lean4 Basics Test Suite', () => {
 			defaultToolChain = defaultToolChain.replace('/','--');
 			defaultToolChain = defaultToolChain.replace(':','---')
 			// make sure this string exists in the info view.
-			await waitForHtmlString(info, defaultToolChain);
+			await waitForInfoviewHtml(info, defaultToolChain);
 		}
 
 		// make sure test is always run in predictable state, which is no file or folder open
@@ -107,7 +107,7 @@ suite('Lean4 Basics Test Suite', () => {
 
 		const info = lean.exports.infoProvider as InfoProvider;
 		let expectedVersion = 'Hello:';
-		let html = await waitForHtmlString(info, expectedVersion);
+		let html = await waitForInfoviewHtml(info, expectedVersion);
 		const versionString = extractPhrase(html, 'Hello:', '<').trim();
 		console.log(`>>> Found "${versionString}" in infoview`)
 
@@ -124,7 +124,7 @@ suite('Lean4 Basics Test Suite', () => {
 
 		// if goto definition worked, then we are in Version.lean and we should see the Lake version string.
 		expectedVersion = 'Lake Version:';
-		html = await waitForHtmlString(info, expectedVersion);
+		html = await waitForInfoviewHtml(info, expectedVersion);
 
 		// verify we have a nightly build running in this folder.
 		await assertStringInInfoview(info, 'Lake Version:');

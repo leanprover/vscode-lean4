@@ -3,7 +3,7 @@ import { suite } from 'mocha';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import * as fs from 'fs';
-import { initLean4Untitled, initLean4, resetToolchain, waitForHtmlString,
+import { initLean4Untitled, initLean4, resetToolchain, waitForInfoviewHtml,
 	extractPhrase, restartLeanServer, assertStringInInfoview } from '../utils/helpers';
 import { InfoProvider } from '../../../src/infoview';
 import { LeanClientProvider} from '../../../src/utils/clientProvider';
@@ -50,7 +50,7 @@ suite('Toolchain Test Suite', () => {
 
 			const info = lean.exports.infoProvider as InfoProvider;
 			const expectedVersion = 'Hello:';
-			const html = await waitForHtmlString(info, expectedVersion);
+			const html = await waitForInfoviewHtml(info, expectedVersion);
 			const versionString = extractPhrase(html, 'Hello:', '<').trim();
 			console.log(`>>> Found "${versionString}" in infoview`);
 
@@ -78,20 +78,20 @@ suite('Toolchain Test Suite', () => {
 		// verify we have a nightly build running in this folder.
 		const info = lean.exports.infoProvider as InfoProvider;
 		const expectedVersion = '4.0.0-nightly-';
-		await waitForHtmlString(info, expectedVersion);
+		await waitForInfoviewHtml(info, expectedVersion);
 
 		// Now switch toolchains (simple suite uses leanprover/lean4:nightly by default)
 		await vscode.commands.executeCommand('lean4.selectToolchain', 'leanprover/lean4:stable');
 
 		// verify that we switched to leanprover/lean4:stable
 		const expected2 = '4.0.0, commit';
-		await waitForHtmlString(info, expected2);
+		await waitForInfoviewHtml(info, expected2);
 
 		// Now reset the toolchain back to nightly build.
 		await resetToolchain();
 
 		// Now make sure the reset works and we can go back to the previous nightly version.
-		await waitForHtmlString(info, expectedVersion);
+		await waitForInfoviewHtml(info, expectedVersion);
 
 		// make sure test is always run in predictable state, which is no file or folder open
 		await vscode.commands.executeCommand('workbench.action.closeAllEditors');

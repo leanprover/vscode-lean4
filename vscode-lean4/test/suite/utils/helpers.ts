@@ -143,7 +143,7 @@ export async function waitForInfoViewOpen(infoView: InfoProvider, retries=10, de
     return false;
 }
 
-export async function waitForHtmlString(infoView: InfoProvider, toFind : string, retries=10, delay=1000): Promise<string> {
+export async function waitForInfoviewHtml(infoView: InfoProvider, toFind : string, retries=10, delay=1000): Promise<string> {
     let count = 0;
     let html = '';
     while (count < retries){
@@ -151,17 +151,16 @@ export async function waitForHtmlString(infoView: InfoProvider, toFind : string,
         if (html.indexOf(toFind) > 0){
             return html;
         }
-        if (html.indexOf('<details>')) { // we want '<details open>' instead...
+        if (html.indexOf('<details>') >= 0) { // we want '<details open>' instead...
             await infoView.toggleAllMessages();
         }
         await sleep(delay);
         count += 1;
     }
 
-    console.log('>>> infoview contents:')
+    console.log(`>>> infoview missing "${toFind}"`);
     console.log(html);
     assert(false, `Missing "${toFind}" in infoview`);
-    return html;
 }
 
 export async function waitForDocViewHtml(docView: DocViewProvider, toFind : string, retries=10, delay=1000): Promise<string> {
@@ -231,7 +230,7 @@ export async function restartLeanServer(client: LeanClient, retries=10, delay=10
 }
 
 export async function assertStringInInfoview(infoView: InfoProvider, expectedVersion: string) : Promise<string> {
-    const html = await waitForHtmlString(infoView, expectedVersion);
+    const html = await waitForInfoviewHtml(infoView, expectedVersion);
     const pos = html.indexOf(expectedVersion);
     if (pos >= 0) {
         // e.g. 4.0.0-nightly-2022-02-16

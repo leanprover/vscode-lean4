@@ -3,7 +3,7 @@ import { suite } from 'mocha';
 import * as path from 'path';
 import * as vscode from 'vscode';
 
-import { initLean4, waitForActiveEditor, waitForHtmlString,
+import { initLean4, waitForActiveEditor, waitForInfoviewHtml,
 	extractPhrase, waitForDocViewHtml, invokeHrefCommand } from '../utils/helpers';
 import { InfoProvider } from '../../../src/infoview';
 import { DocViewProvider } from '../../../src/docview';
@@ -21,7 +21,7 @@ suite('Documentation View Test Suite', () => {
 
 		const info = lean.exports.infoProvider as InfoProvider;
 		const expectedVersion = 'Hello:';
-		let html = await waitForHtmlString(info, expectedVersion);
+		let html = await waitForInfoviewHtml(info, expectedVersion);
 		const versionString = extractPhrase(html, 'Hello:', '<').trim();
 		console.log(`>>> Found "${versionString}" in infoview`)
 
@@ -39,7 +39,7 @@ suite('Documentation View Test Suite', () => {
 
         // the example should be active and should be showing this in the info view.
         const exampleOuput = 'Hello, world!';
-		await waitForHtmlString(info, exampleOuput);
+		await waitForInfoviewHtml(info, exampleOuput);
 
 		// make sure test is always run in predictable state, which is no file or folder open
 		await vscode.commands.executeCommand('workbench.action.closeAllEditors');

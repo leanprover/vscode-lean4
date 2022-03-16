@@ -2,7 +2,7 @@ import * as assert from 'assert';
 import { suite } from 'mocha';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { initLean4, waitForActiveEditor, waitForInfoViewOpen, waitForHtmlString,
+import { initLean4, waitForActiveEditor, waitForInfoViewOpen, waitForInfoviewHtml,
 	assertStringInInfoview } from '../utils/helpers';
 import { InfoProvider } from '../../../src/infoview';
 import { LeanClientProvider} from '../../../src/utils/clientProvider';
