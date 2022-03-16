@@ -66,7 +66,7 @@ jobs:
           chmod u+x ./lean4/bin/*
           ./lean4/bin/lean --version
       - name: Download and Extract Lean4 build artifact on Windows
-        if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest'
+        if: matrix.os == 'windows-latest'
         shell: pwsh
         run: |
           $version = (gh release list --repo leanprover/lean4-nightly --limit 1).Split("`t")[0]
@@ -102,7 +102,6 @@ jobs:
           ./elan-init.ps1 -y --default-toolchain leanprover/lean4:nightly
           Write-Host Checking location "$HOME\.elan\bin"...
           dir "$HOME\.elan\bin"
-          dir env:
           elan --version
           elan toolchain link master lean4
       - name: Install 'leanprover/lean4:stable' version
