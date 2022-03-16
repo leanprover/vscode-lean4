@@ -26,7 +26,7 @@ suite('Toolchain Test Suite', () => {
 		// Now switch toolchains (simple suite uses leanprover/lean4:nightly by default)
 		await vscode.commands.executeCommand('lean4.selectToolchain', 'leanprover/lean4:stable');
 
-		await assertStringInInfoview(info, '4.0.0, commit-');
+		await assertStringInInfoview(info, '4.0.0, commit');
 
 		// make sure test is always run in predictable state, which is no file or folder open
 		await vscode.commands.executeCommand('workbench.action.closeAllEditors');
