@@ -45,9 +45,14 @@ jobs:
           brew install ccache tree zstd coreutils
         if: matrix.os == 'macos-latest'
       - name: Set path to elan on Linux or macOS
+        if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest'
         run: |
-          echo Adding "$HOME/.elan/bin" to GITHUB_PATH
           echo "$HOME/.elan/bin" >> $GITHUB_PATH
+      - name: Set path to elan on Windows
+        shell: pwsh
+        if: matrix.os == 'windows-latest'
+        run: |
+          echo "$HOME\.elan\bin" >> $GITHUB_PATH
       - name: Setup elan toolchain on Linux or macOS
         if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest'
         run: |
@@ -62,9 +67,10 @@ jobs:
           elan toolchain link master temp
       - name: Setup elan toolchain on Windows
         if: matrix.os == 'windows-latest'
+        shell: pwsh
         run: |
           curl -O --location https://raw.githubusercontent.com/leanprover/elan/master/elan-init.ps1
-          powershell -f ./elan-init.ps1 -y --default-toolchain leanprover/lean4:nightly
+          .\elan-init.ps1 -y --default-toolchain leanprover/lean4:nightly
           echo Checking location "$HOME\.elan\bin"...
           dir "$HOME\.elan\bin"
           set PATH
