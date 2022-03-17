@@ -41,7 +41,8 @@ async function main() {
         await runTests({
             vscodeExecutablePath,
             extensionDevelopmentPath,
-            extensionTestsPath: path.resolve(__dirname, 'lean3'),
+            extensionTestsPath: path.resolve(__dirname, 'index'),
+            extensionTestsEnv: {'TEST_FOLDER': 'lean3'},
             launchArgs: ['--new-window', '--disable-gpu', testFolder] });
 
         // The '--new-window' doesn't see to be working, so this hack
@@ -52,7 +53,8 @@ async function main() {
         await runTests({
             vscodeExecutablePath,
             extensionDevelopmentPath,
-            extensionTestsPath:path.resolve(__dirname, 'simple'),
+            extensionTestsPath:path.resolve(__dirname, 'index'),
+            extensionTestsEnv: {'TEST_FOLDER': 'simple'},
             launchArgs: ['--new-window', '--disable-gpu'] });
 
 
@@ -66,7 +68,8 @@ async function main() {
         await runTests({
             vscodeExecutablePath,
             extensionDevelopmentPath,
-            extensionTestsPath:path.resolve(__dirname, 'simple'),
+            extensionTestsPath:path.resolve(__dirname, 'index'),
+            extensionTestsEnv: {'TEST_FOLDER': 'simple'},
             launchArgs: ['--new-window', '--disable-gpu', lean4TestFolder] });
 
         // The '--new-window' doesn't see to be working, so this hack
@@ -79,14 +82,16 @@ async function main() {
         await runTests({
             vscodeExecutablePath,
             extensionDevelopmentPath,
-            extensionTestsPath:path.resolve(__dirname, 'multi'),
+            extensionTestsPath:path.resolve(__dirname, 'index'),
+            extensionTestsEnv: {'TEST_FOLDER': 'multi'},
             launchArgs: ['--new-window', '--disable-gpu', workspacePath] });
 
         // Test documentation view.
         await runTests({
             vscodeExecutablePath,
             extensionDevelopmentPath,
-            extensionTestsPath:path.resolve(__dirname, 'docview'),
+            extensionTestsPath:path.resolve(__dirname, 'index'),
+            extensionTestsEnv: {'TEST_FOLDER': 'docview'},
             launchArgs: ['--new-window', '--disable-gpu', lean4TestFolder] });
 
 

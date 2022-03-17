@@ -12,6 +12,10 @@ export function run(testsRoot: string, cb: (error: any, failures?: number) => vo
         // workaround for https://github.com/microsoft/vscode-test/issues/134
         testsRoot = testsRoot.toLowerCase();
     }
+    const folder = process.env.TEST_FOLDER;
+    if (folder) {
+        testsRoot = path.resolve(testsRoot, '..', folder)
+    }
     console.log('>>>>>>>>> testsRoot=' + testsRoot);
 
     glob('**/**.test.js', { cwd: testsRoot }, (err, files) => {
