@@ -11,7 +11,7 @@ export function sleep(ms : number) {
 }
 
 export function closeAllEditors(): Thenable<any> {
-	return vscode.commands.executeCommand('workbench.action.closeAllEditors');
+    return vscode.commands.executeCommand('workbench.action.closeAllEditors');
 }
 
 export async function initLean4(fileName: string) : Promise<vscode.Extension<any>>{
