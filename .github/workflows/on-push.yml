@@ -66,7 +66,6 @@ jobs:
         if: matrix.os == 'windows-latest'
         run: |
           echo "$HOME\.elan\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-          Write-Host "GITHUB_PATH=$env:GITHUB_PATH"
       - name: Setup elan toolchain on Windows
         if: matrix.os == 'windows-latest'
         shell: pwsh
@@ -74,13 +73,10 @@ jobs:
           curl -O --location https://raw.githubusercontent.com/leanprover/elan/master/elan-init.ps1
           .\elan-init.ps1 -y --default-toolchain leanprover/lean4:nightly
           echo Checking location "$HOME\.elan\bin"...
-          Write-Host "GITHUB_PATH=$env:GITHUB_PATH"
-          Write-Host "PATH=$env:PATH"
           dir "$HOME\.elan\bin"
-          set PATH
           elan --version
           mkdir temp
-          xcopy /q /s "$HOME\.elan\bin\toolchains\leanprover--lean4---nightly\*.*" temp
+          xcopy /q /s "$HOME\.elan\toolchains\leanprover--lean4---nightly\*.*" temp
           elan toolchain link master temp
 
       - name: Install 'leanprover/lean4:stable' version
