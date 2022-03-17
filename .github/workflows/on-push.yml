@@ -83,7 +83,15 @@ jobs:
         run: |
           elan toolchain install leanprover/lean4:stable
           elan toolchain list
-      - name: Run tests
+      - name: Run tests on Linux or macOS
+        if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest'
         uses: GabrielBB/xvfb-action@v1.0
         with:
           run: npx lerna run --scope=lean4 test
+      - name: Run tests on Windows
+        if: matrix.os == 'windows-latest'
+        shell: cmd
+        run: |
+          echo see https://github.com/microsoft/vscode-test/issues/134
+          pushd vscode-lean4
+          npm run test
