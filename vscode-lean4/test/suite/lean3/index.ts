@@ -8,6 +8,10 @@ export function run(testsRoot: string, cb: (error: any, failures?: number) => vo
 		ui: 'tdd'
 	});
 
+    if (process.platform === 'win32') {
+		// workaround for https://github.com/microsoft/vscode-test/issues/134
+		testsRoot = testsRoot.toLowerCase();
+	}
 	console.log('>>>>>>>>> testsRoot=' + testsRoot);
 
 	glob('**/**.test.js', { cwd: testsRoot }, (err, files) => {
