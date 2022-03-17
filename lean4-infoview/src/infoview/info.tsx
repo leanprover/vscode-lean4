@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Location } from 'vscode-languageserver-protocol';
+import type { Location } from 'vscode-languageserver-protocol';
 
 import { Goals as GoalsUi, Goal as GoalUi, goalsToString } from './goals';
 import { basename, DocumentPosition, RangeHelpers, useEvent, usePausableState } from './util';

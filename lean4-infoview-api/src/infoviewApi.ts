@@ -1,4 +1,4 @@
-import { DocumentUri, InitializeResult, Location, ShowDocumentParams, TextDocumentPositionParams } from 'vscode-languageserver-protocol'
+import type { DocumentUri, InitializeResult, Location, ShowDocumentParams, TextDocumentPositionParams } from 'vscode-languageserver-protocol'
 
 export interface EditorFsApi {
   stat(path: string): Promise<any>;
