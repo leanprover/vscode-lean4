@@ -18,6 +18,8 @@ Hosting the infoview boils down to displaying the webview, and then executing a 
 
 The `lean4-infoview` library is distributed as an ECMAScript module. For widget extensions to work, it *must* be loaded as an ECMAScript module using either `<script type="module" ..>` or a loader such as System.js, with external dependencies specified in the [configuration](rollup.config.js) provided under their expected names (probably via an [`importmap`](https://github.com/WICG/import-maps)).
 
+⚠️ WARNING: Note that we have not tested the infoview outside of VSCode, so it is likely that a port to any other environment will need to remove VSCode-specific leftovers.
+
 ### Editor support
 
 - VSCode via [`vscode-lean4`](https://github.com/leanprover-community/vscode-lean4)
