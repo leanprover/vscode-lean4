@@ -10,6 +10,7 @@ import { LeanClientProvider } from './utils/clientProvider';
 import { addDefaultElanPath } from './config';
 import { dirname, basename } from 'path';
 import { findLeanPackageVersionInfo } from './utils/projectInfo';
+import { Exports } from './exports';
 
 function isLean(languageId : string) : boolean {
     return languageId === 'lean' || languageId === 'lean4';
@@ -36,7 +37,7 @@ function getLeanDocument() : TextDocument | undefined {
     return document;
 }
 
-export async function activate(context: ExtensionContext): Promise<any> {
+export async function activate(context: ExtensionContext): Promise<Exports> {
 
     addDefaultElanPath();
 
@@ -51,7 +52,8 @@ export async function activate(context: ExtensionContext): Promise<any> {
         [packageUri, toolchainVersion] = await findLeanPackageVersionInfo(doc.uri);
         if (toolchainVersion && toolchainVersion.indexOf('lean:3') > 0) {
             console.log(`Lean4 skipping lean 3 project: ${toolchainVersion}`);
-            return { isLean4Project: false, version: toolchainVersion };
+            return { isLean4Project: false, version: toolchainVersion,
+                infoProvider: undefined, clientProvider: undefined, installer: undefined, docView: undefined };
         }
     }
 
@@ -78,7 +80,8 @@ export async function activate(context: ExtensionContext): Promise<any> {
         context.subscriptions.pop()?.dispose(); // stop installer
         // We need to terminate before registering the LeanClientProvider,
         // because that class changes the document id to `lean4`.
-        return { isLean4Project: false, version: '3' };
+        return { isLean4Project: false, version: '3',
+            infoProvider: undefined, clientProvider: undefined, installer: undefined, docView: undefined };
     }
 
     const pkgService = new LeanpkgService()
@@ -104,5 +107,6 @@ export async function activate(context: ExtensionContext): Promise<any> {
     pkgService.versionChanged((uri) => installer.handleVersionChanged(uri));
     pkgService.lakeFileChanged((uri) => installer.handleLakeFileChanged(uri));
 
-    return  { isLean4Project: true, infoProvider: info, clientProvider: leanClientProvider, installer, docView};
+    return { isLean4Project: true, version: '4',
+        infoProvider: info, clientProvider: leanClientProvider, installer, docView};
 }

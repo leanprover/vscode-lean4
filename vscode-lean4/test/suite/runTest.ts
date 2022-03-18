@@ -49,13 +49,25 @@ async function main() {
         // ensures the following test does not re-open the lean3 folder
         clearUserWorkspaceData(vscodeTestPath);
 
-        // run the lean4 tests in adhoc file configuration (no folder open)
-        await runTests({
-            vscodeExecutablePath,
-            extensionDevelopmentPath,
+		// run the infoView tests
+		await runTests({
+			vscodeExecutablePath,
+			extensionDevelopmentPath,
+            extensionTestsPath:path.resolve(__dirname, 'index'),
+            extensionTestsEnv: {'TEST_FOLDER': 'info'},
+			launchArgs: ['--new-window', '--disable-gpu'] });
+
+		// The '--new-window' doesn't see to be working, so this hack
+		// ensures the following test does not re-open the lean3 folder
+		clearUserWorkspaceData(vscodeTestPath);
+
+		// run the lean4 tests in adhoc file configuration (no folder open)
+		await runTests({
+			vscodeExecutablePath,
+			extensionDevelopmentPath,
             extensionTestsPath:path.resolve(__dirname, 'index'),
             extensionTestsEnv: {'TEST_FOLDER': 'simple'},
-            launchArgs: ['--new-window', '--disable-gpu'] });
+			launchArgs: ['--new-window', '--disable-gpu'] });
 
 
         const lean4TestFolder = path.join(extensionDevelopmentPath, 'test', 'test-fixtures', 'simple');
@@ -70,6 +82,18 @@ async function main() {
             extensionDevelopmentPath,
             extensionTestsPath:path.resolve(__dirname, 'index'),
             extensionTestsEnv: {'TEST_FOLDER': 'simple'},
+            launchArgs: ['--new-window', '--disable-gpu', lean4TestFolder] });
+
+        // The '--new-window' doesn't see to be working, so this hack
+        // ensures the following test does not re-open the lean3 folder
+        clearUserWorkspaceData(vscodeTestPath);
+
+        // run the lean4 toolchain tests, also reusing the 'simple' project.
+        await runTests({
+            vscodeExecutablePath,
+            extensionDevelopmentPath,
+            extensionTestsPath:path.resolve(__dirname, 'index'),
+            extensionTestsEnv: {'TEST_FOLDER': 'toolchains'},
             launchArgs: ['--new-window', '--disable-gpu', lean4TestFolder] });
 
         // The '--new-window' doesn't see to be working, so this hack

@@ -36,6 +36,7 @@ const MessageView = React.memo(({uri, diag}: MessageViewProps) => {
                    onClick={e => { e.preventDefault(); void ec.revealLocation(loc); }}
                    title="reveal file location"></a>
                 <a className="link pointer mh2 dim codicon codicon-quote"
+                   data-id="copy-to-comment"
                    onClick={e => {e.preventDefault(); void ec.copyToComment(text)}}
                    title="copy message to comment"></a>
                 <a className="link pointer mh2 dim codicon codicon-clippy"

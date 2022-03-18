@@ -95,6 +95,7 @@ export function renderInfoview(editorApi: EditorApi, uiElement: HTMLElement): In
         serverRestarted: new Event(),
         changedCursorLocation: new Event(),
         changedInfoviewConfig: new Event(),
+        runTestScript: new Event(),
         requestedAction: new Event(),
     };
 
@@ -111,6 +112,8 @@ export function renderInfoview(editorApi: EditorApi, uiElement: HTMLElement): In
         changedCursorLocation: async loc => editorEvents.changedCursorLocation.fire(loc),
         changedInfoviewConfig: async conf => editorEvents.changedInfoviewConfig.fire(conf),
         requestedAction: async action => editorEvents.requestedAction.fire(action),
+        // eslint-disable-next-line no-eval
+        runTestScript: async script => eval(script),
         getInfoviewHtml: async () => document.body.innerHTML,
     };
 
