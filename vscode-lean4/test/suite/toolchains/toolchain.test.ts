@@ -15,10 +15,12 @@ suite('Toolchain Test Suite', () => {
 		void vscode.window.showInformationMessage('Running tests: ' + __dirname);
 
 		const lean = await initLean4Untitled('#eval Lean.versionString');
-		await resetToolchain();
-
 		const info = lean.exports.infoProvider;
 		assert(info, 'No InfoProvider export');
+		// wait for infoView to show up.
+		await assertStringInInfoview(info, 'All Messages');
+
+		await resetToolchain(lean.exports.clientProvider);
 
 		await assertStringInInfoview(info, '4.0.0-nightly-');
 
@@ -27,7 +29,7 @@ suite('Toolchain Test Suite', () => {
 
 		await assertStringInInfoview(info, '4.0.0, commit');
 
-		await resetToolchain();
+		await resetToolchain(lean.exports.clientProvider);
 
 		// make sure test is always run in predictable state, which is no file or folder open
 		await vscode.commands.executeCommand('workbench.action.closeAllEditors');
@@ -75,12 +77,14 @@ suite('Toolchain Test Suite', () => {
 
         const testsRoot = path.join(__dirname, '..', '..', '..', '..', 'test', 'test-fixtures', 'simple');
 		const lean = await initLean4(path.join(testsRoot, 'Main.lean'));
-		await resetToolchain();
+
 		// verify we have a nightly build running in this folder.
 		const info = lean.exports.infoProvider;
 		assert(info, 'No InfoProvider export');
 		const expectedVersion = '4.0.0-nightly-';
 		await waitForInfoviewHtml(info, expectedVersion);
+
+		await resetToolchain(lean.exports.clientProvider);
 
 		// Now switch toolchains (simple suite uses leanprover/lean4:nightly by default)
 		await vscode.commands.executeCommand('lean4.selectToolchain', 'leanprover/lean4:stable');
@@ -90,7 +94,7 @@ suite('Toolchain Test Suite', () => {
 		await waitForInfoviewHtml(info, expected2);
 
 		// Now reset the toolchain back to nightly build.
-		await resetToolchain();
+		await resetToolchain(lean.exports.clientProvider);
 
 		// Now make sure the reset works and we can go back to the previous nightly version.
 		await waitForInfoviewHtml(info, expectedVersion);
@@ -107,14 +111,18 @@ suite('Toolchain Test Suite', () => {
 
 		const lean = await initLean4(path.join(testsRoot, 'Main.lean'));
 
-		// Now make sure the toolchain is reset (in case previous test failed).
-		await resetToolchain();
 		// turn off the user prompts so restart of lean server happens automatically.
 		const info = lean.exports.infoProvider;
 		assert(info, 'No InfoProvider export');
 		const installer = lean.exports.installer;
         assert(installer, 'No LeanInstaller export');
 		installer.setPromptUser(false);
+
+		// wait for info view to show up.
+		await assertStringInInfoview(info, 'Hello');
+
+		// Now make sure the toolchain is reset (in case previous test failed).
+		await resetToolchain(lean.exports.clientProvider);
 
 		// verify we have a nightly build running in this folder.
 		await assertStringInInfoview(info, '4.0.0-nightly-');
@@ -138,7 +146,7 @@ suite('Toolchain Test Suite', () => {
 			assert(leanPath.indexOf(expected), `Lean Path does not contain: ${expected}`);
 
 			// Find out if we have a 'master' toolchain (setup in our workflow: on-push.yml)
-			// and use it if it is there, otherwise use 'leanprover/lean4:stable'.
+			// and use it if it is there
 			const toolChains = await installer.elanListToolChains(null);
 			const masterToolChain = toolChains.find(tc => tc === 'master');
 			if (masterToolChain) {

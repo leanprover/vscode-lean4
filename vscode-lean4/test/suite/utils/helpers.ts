@@ -4,6 +4,7 @@ import * as vscode from 'vscode';
 import { InfoProvider } from '../../../src/infoview';
 import { LeanClient} from '../../../src/leanclient';
 import { DocViewProvider } from '../../../src/docview';
+import { LeanClientProvider } from '../../../src/utils/clientProvider'
 import { Exports } from '../../../src/exports';
 import cheerio = require('cheerio');
 
@@ -66,8 +67,40 @@ export async function initLean4Untitled(contents: string) : Promise<vscode.Exten
     return lean;
 }
 
-export async function resetToolchain() : Promise<void>{
+export async function resetToolchain(clientProvider: LeanClientProvider | undefined, retries=10, delay=1000) : Promise<void>{
+
+    assert(clientProvider, 'missing LeanClientProvider');
+    const client = clientProvider.getActiveClient();
+    assert(client, 'Missing active LeanClient');
+
+    let stopped = false;
+    let restarted = false;
+    client.stopped(() => { stopped = true });
+    client.restarted(() => { restarted = true });
+
     await vscode.commands.executeCommand('lean4.selectToolchain', 'reset');
+
+    // wait a second to see if we've been stopped..
+    let count = 0;
+    while (count < retries){
+        if (stopped) {
+            break;
+        }
+        await sleep(100);
+        count += 1;
+    }
+
+    if (stopped){
+        // then we need to wait for restart.
+        count = 0;
+        while (count < retries){
+            if (restarted) {
+                break;
+            }
+            await sleep(delay);
+            count += 1;
+        }
+    }
 }
 
 export async function waitForActiveExtension(extensionId: string, retries=10, delay=1000) : Promise<vscode.Extension<Exports> | null> {
