@@ -4,17 +4,30 @@ import nodeResolve from '@rollup/plugin-node-resolve';
 import replace from '@rollup/plugin-replace';
 import url from '@rollup/plugin-url';
 import css from 'rollup-plugin-css-only';
+import { terser } from 'rollup-plugin-terser';
+
+const output = process.env.NODE_ENV && process.env.NODE_ENV === 'production' ?  {
+        dir: 'dist',
+        sourcemap: false,
+        format: 'esm',
+        compact: true,
+        entryFileNames: '[name].production.min.js',
+        plugins: [
+            terser()
+        ]
+    } : {
+        dir: 'dist',
+        sourcemap: 'inline',
+        format: 'esm',
+        entryFileNames: '[name].development.js'
+    }
 
 export default {
     input: {
         'index': 'src/index.ts',
         'react-popper': 'src/react-popper.ts'
     },
-    output: {
-        dir: 'dist',
-        sourcemap: true,
-        format: 'esm'
-    },
+    output,
     external: [
         'react',
         'react-dom'
