@@ -12,6 +12,7 @@ const output = process.env.NODE_ENV && process.env.NODE_ENV === 'production' ?  
         format: 'esm',
         compact: true,
         entryFileNames: '[name].production.min.js',
+        chunkFileNames: '[name]-[hash].production.min.js',
         plugins: [
             terser()
         ]
@@ -19,7 +20,8 @@ const output = process.env.NODE_ENV && process.env.NODE_ENV === 'production' ?  
         dir: 'dist',
         sourcemap: 'inline',
         format: 'esm',
-        entryFileNames: '[name].development.js'
+        entryFileNames: '[name].development.js',
+        chunkFileNames: '[name]-[hash].development.js'
     }
 
 export default {

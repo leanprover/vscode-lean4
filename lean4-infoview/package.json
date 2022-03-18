@@ -7,7 +7,7 @@
     "watchTest": "npm run watch",
     "build": "rollup --config --environment NODE_ENV:production"
   },
-  "browser": "dist/index",
+  "browser": "dist/index.production.min.js",
   "types": "dist/index",
   "files": [
     "dist/*"

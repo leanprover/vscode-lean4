@@ -8,7 +8,7 @@ import {
 import { EditorApi, InfoviewApi, LeanFileProgressParams, TextInsertKind, RpcConnectParams, RpcConnected, RpcKeepAliveParams } from '@lean4/infoview-api';
 import { LeanClient } from './leanclient';
 import { getInfoViewAllErrorsOnLine, getInfoViewAutoOpen, getInfoViewAutoOpenShowGoal,
-    getInfoViewFilterIndex, getInfoViewStyle, getInfoViewTacticStateFilters } from './config';
+    getInfoViewFilterIndex, getInfoViewStyle, getInfoViewTacticStateFilters, minIfProd, prodOrDev } from './config';
 import { Rpc } from './rpc';
 import { LeanClientProvider } from './utils/clientProvider'
 import * as ls from 'vscode-languageserver-protocol'
@@ -608,6 +608,7 @@ export class InfoProvider implements Disposable {
     }
 
     private initialHtml() {
+        const libPostfix = `.${prodOrDev}${minIfProd}.js`
         return `
             <!DOCTYPE html>
             <html>
@@ -623,10 +624,10 @@ export class InfoProvider implements Disposable {
                 <script type="importmap">
                     {
                         "imports": {
-                            "@lean4/infoview": "${this.getLocalPath('dist/lean4-infoview/index.js')}",
-                            "react": "${this.getLocalPath('dist/react.js')}",
-                            "react-dom": "${this.getLocalPath('dist/react-dom.js')}",
-                            "react-popper": "${this.getLocalPath('dist/lean4-infoview/react-popper.js')}"
+                            "@lean4/infoview": "${this.getLocalPath(`dist/lean4-infoview/index${libPostfix}`)}",
+                            "react": "${this.getLocalPath(`dist/react/react${libPostfix}`)}",
+                            "react-dom": "${this.getLocalPath(`dist/react-dom/react-dom${libPostfix}`)}",
+                            "react-popper": "${this.getLocalPath(`dist/lean4-infoview/react-popper${libPostfix}`)}"
                         }
                     }
                 </script>

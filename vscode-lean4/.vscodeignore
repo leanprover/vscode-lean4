@@ -3,7 +3,11 @@
 */**
 ../**
 
-!dist
+!dist/extension.js*
+!dist/webview.js*
+!dist/**/*.production.min.js
+!dist/lean4-infoview/index.css
+!dist/lean4-infoview/codicon.ttf
 !media
 !images
 !syntaxes

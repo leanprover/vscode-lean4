@@ -5,7 +5,6 @@ const webpack = require('webpack');
 const CopyPlugin = require('copy-webpack-plugin');
 
 const prodOrDev = (env) => env.production ? 'production' : 'development';
-const minIfProd = (env) => env.production ? '.min' : '';
 
 function getWebviewConfig(env) {
 	let webview = {
@@ -29,7 +28,7 @@ function getWebviewConfig(env) {
 		resolve: {
 			extensions: ['.tsx', '.ts', '.js']
 		},
-		devtool: !env.production ? 'inline-source-map' : undefined,
+		devtool: env.production ? undefined : 'inline-source-map',
 		experiments: {
 			outputModule: true
 		},
@@ -53,11 +52,11 @@ function getWebviewConfig(env) {
 					from: path.resolve(__dirname, 'node_modules', '@lean4', 'infoview', 'dist'),
 					to: path.resolve(__dirname, 'dist', 'lean4-infoview')
 				}, {
-					from: path.resolve(__dirname, 'node_modules', '@esm-bundle', 'react', 'esm', `react.${prodOrDev(env)}${minIfProd(env)}.js`),
-					to: path.resolve(__dirname, 'dist', 'react.js')
+					from: path.resolve(__dirname, 'node_modules', '@esm-bundle', 'react', 'esm'),
+					to: path.resolve(__dirname, 'dist', 'react')
 				}, {
-					from: path.resolve(__dirname, 'node_modules', '@esm-bundle', 'react-dom', 'esm', `react-dom.${prodOrDev(env)}${minIfProd(env)}.js`),
-					to: path.resolve(__dirname, 'dist', 'react-dom.js')
+					from: path.resolve(__dirname, 'node_modules', '@esm-bundle', 'react-dom', 'esm'),
+					to: path.resolve(__dirname, 'dist', 'react-dom')
 				}]
 			})
 		]
@@ -69,7 +68,7 @@ function getWebviewConfig(env) {
 function getExtensionConfig(env) {
 	let config = {
 		name: 'extension',
-		mode: env.production ? 'production' : 'development',
+		mode: prodOrDev(env),
 		target: 'node',
 		entry: './src/extension.ts',
 		module: {
@@ -87,7 +86,7 @@ function getExtensionConfig(env) {
 				'node-fetch': path.resolve(__dirname, 'node_modules/node-fetch/lib/index.js'),
 			}
 		},
-		devtool: !env.production ? 'source-map' : undefined,
+		devtool: env.production ? undefined : 'source-map',
 		output: {
 			filename: 'extension.js',
 			path: path.resolve(__dirname, 'dist'),
