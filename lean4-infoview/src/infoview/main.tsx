@@ -113,8 +113,9 @@ export function renderInfoview(editorApi: EditorApi, uiElement: HTMLElement): In
         changedCursorLocation: async loc => editorEvents.changedCursorLocation.fire(loc),
         changedInfoviewConfig: async conf => editorEvents.changedInfoviewConfig.fire(conf),
         requestedAction: async action => editorEvents.requestedAction.fire(action),
-        // eslint-disable-next-line no-eval
-        runTestScript: async script => eval(script),
+        // See https://rollupjs.org/guide/en/#avoiding-eval
+        // eslint-disable-next-line @typescript-eslint/no-implied-eval
+        runTestScript: async script => new Function(script)(),
         getInfoviewHtml: async () => document.body.innerHTML,
     };
 
