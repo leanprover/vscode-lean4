@@ -10,9 +10,9 @@ jobs:
           - name: Linux
             os: ubuntu-latest
             artifact: build-Linux release
-          # - name: macOS
-          #   os: macos-latest
-          #   artifact: build-macOS
+          - name: macOS
+            os: macos-latest
+            artifact: build-macOS
           - name: Windows
             os: windows-latest
             artifact: build-Windows
