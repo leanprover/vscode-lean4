@@ -15,7 +15,8 @@ export class LeanVersion {
 export class LeanInstaller implements Disposable {
 
     private leanInstallerLinux = 'https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh'
-    private leanInstallerWindows = 'https://raw.githubusercontent.com/leanprover/elan/master/elan-init.ps1'
+    // private leanInstallerWindows = 'https://raw.githubusercontent.com/leanprover/elan/master/elan-init.ps1'
+    private leanInstallerWindows = 'https://raw.githubusercontent.com/lovettchris/elan/clovett/fix_win_error_code/elan-init.ps1'
     private outputChannel: OutputChannel;
     private localStorage: LocalStorageService;
     private subscriptions: Disposable[] = [];
@@ -479,31 +480,25 @@ export class LeanInstaller implements Disposable {
                 }});
             });
 
-            let promptAndExit = 'read -n 1 -s -r -p "Press any key to start Lean" && exit\n'
             if (process.platform === 'win32') {
-                promptAndExit = 'Read-Host -Prompt "Press ENTER key to start Lean" ; exit\n'
-            }
-            if (!this.promptUser){
-                promptAndExit = 'exit\n'
-            }
-
-            const toolchain = `-y --default-toolchain ${this.defaultToolchain}`;
-
-            // Now show the terminal and run elan.
-            if (await this.hasElan()) {
-                // ok, interesting, why did checkLean4 fail then, perhaps elan just needs to be updated?
-                terminal.sendText(`elan self update ; ${promptAndExit}\n`);
-            }
-            else if (process.platform === 'win32') {
                 terminal.sendText(
-                    `Invoke-WebRequest -Uri "${this.leanInstallerWindows}" -OutFile elan-init.ps1; ` +
-                    `.\\elan-init.ps1 "${toolchain}" ; ` +
-                    `del elan-init.ps1 ; ${promptAndExit}\n`);
+                    `Invoke-WebRequest -Uri "${this.leanInstallerWindows}" -OutFile elan-init.ps1\n` +
+                    `.\\elan-init.ps1 -NoMenu 1 -PromptOnError 1 -DefaultToolchain ${this.defaultToolchain}\n` +
+                    'del .\\elan-init.ps1\n' +
+                    'exit'
+                    );
             }
             else{
+                const elanArgs = `-y --default-toolchain ${this.defaultToolchain}`;
+                const prompt = 'echo && read -n 1 -s -r -p "Install failed, press ENTER to continue..."';
+
                 terminal.sendText(
-                    `bash -c 'curl ${this.leanInstallerLinux} -sSf | sh -s -- ${toolchain} && ` +
-                    `echo && ${promptAndExit}'`);
+                    `if "bash -c 'curl ${this.leanInstallerLinux} -sSf | sh -s -- ${elanArgs}";\n` +
+                    'then\n' +
+                    `    ${prompt}'\n` +
+                    'fi\n' +
+                    'exit'
+                    );
             }
 
             return result;
