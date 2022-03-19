@@ -489,8 +489,8 @@ export class LeanInstaller implements Disposable {
                     );
             }
             else{
-                const elanArgs = `-y --default-toolchain xx${this.defaultToolchain}`;
-                const promptAndExit = 'echo && read -n 1 -s -r -p "Install failed, press ENTER to continue... && exit"';
+                const elanArgs = `-y --default-toolchain ${this.defaultToolchain}`;
+                const promptAndExit = 'echo && read -n 1 -s -r -p "Install failed, press ENTER to continue..." && exit';
 
                 terminal.sendText(
                     `bash -c 'curl ${this.leanInstallerLinux} -sSf | sh -s -- ${elanArgs} || ${promptAndExit}'\n` +
