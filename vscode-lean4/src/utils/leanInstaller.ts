@@ -485,19 +485,16 @@ export class LeanInstaller implements Disposable {
                     `Invoke-WebRequest -Uri "${this.leanInstallerWindows}" -OutFile elan-init.ps1\n` +
                     `.\\elan-init.ps1 -NoMenu 1 -PromptOnError 1 -DefaultToolchain ${this.defaultToolchain}\n` +
                     'del .\\elan-init.ps1\n' +
-                    'exit'
+                    'exit\n'
                     );
             }
             else{
-                const elanArgs = `-y --default-toolchain ${this.defaultToolchain}`;
-                const prompt = 'echo && read -n 1 -s -r -p "Install failed, press ENTER to continue..."';
+                const elanArgs = `-y --default-toolchain xx${this.defaultToolchain}`;
+                const promptAndExit = 'echo && read -n 1 -s -r -p "Install failed, press ENTER to continue... && exit"';
 
                 terminal.sendText(
-                    `if "bash -c 'curl ${this.leanInstallerLinux} -sSf | sh -s -- ${elanArgs}";\n` +
-                    'then\n' +
-                    `    ${prompt}'\n` +
-                    'fi\n' +
-                    'exit'
+                    `bash -c 'curl ${this.leanInstallerLinux} -sSf | sh -s -- ${elanArgs} || ${promptAndExit}'\n` +
+                    'exit\n'
                     );
             }
 
