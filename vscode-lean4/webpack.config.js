@@ -49,7 +49,8 @@ function getWebviewConfig(env) {
 			}),
 			new CopyPlugin({
 				patterns: [{
-					from: path.resolve(__dirname, 'node_modules', '@lean4', 'infoview', 'dist'),
+					// See https://github.com/webpack-contrib/copy-webpack-plugin/tree/e2274daad21baae3020819aa29ab903bd9992cce#yarn-workspaces-and-monorepos
+					from : `${path.dirname(require.resolve('@lean4/infoview/package.json'))}/dist`,
 					to: path.resolve(__dirname, 'dist', 'lean4-infoview')
 				}, {
 					from: path.resolve(__dirname, 'node_modules', '@esm-bundle', 'react', 'esm'),
