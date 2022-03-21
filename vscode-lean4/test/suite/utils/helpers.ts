@@ -4,6 +4,7 @@ import * as vscode from 'vscode';
 import { InfoProvider } from '../../../src/infoview';
 import { LeanClient} from '../../../src/leanclient';
 import { DocViewProvider } from '../../../src/docview';
+import { LeanClientProvider } from '../../../src/utils/clientProvider'
 import { Exports } from '../../../src/exports';
 import cheerio = require('cheerio');
 
@@ -12,7 +13,7 @@ export function sleep(ms : number) {
 }
 
 export function closeAllEditors(): Thenable<any> {
-	return vscode.commands.executeCommand('workbench.action.closeAllEditors');
+    return vscode.commands.executeCommand('workbench.action.closeAllEditors');
 }
 
 export async function initLean4(fileName: string) : Promise<vscode.Extension<Exports>>{
@@ -66,8 +67,40 @@ export async function initLean4Untitled(contents: string) : Promise<vscode.Exten
     return lean;
 }
 
-export async function resetToolchain() : Promise<void>{
+export async function resetToolchain(clientProvider: LeanClientProvider | undefined, retries=10, delay=1000) : Promise<void>{
+
+    assert(clientProvider, 'missing LeanClientProvider');
+    const client = clientProvider.getActiveClient();
+    assert(client, 'Missing active LeanClient');
+
+    let stopped = false;
+    let restarted = false;
+    client.stopped(() => { stopped = true });
+    client.restarted(() => { restarted = true });
+
     await vscode.commands.executeCommand('lean4.selectToolchain', 'reset');
+
+    // wait a second to see if we've been stopped..
+    let count = 0;
+    while (count < retries){
+        if (stopped) {
+            break;
+        }
+        await sleep(100);
+        count += 1;
+    }
+
+    if (stopped){
+        // then we need to wait for restart.
+        count = 0;
+        while (count < retries){
+            if (restarted) {
+                break;
+            }
+            await sleep(delay);
+            count += 1;
+        }
+    }
 }
 
 export async function waitForActiveExtension(extensionId: string, retries=10, delay=1000) : Promise<vscode.Extension<Exports> | null> {
@@ -146,7 +179,7 @@ export async function waitForInfoViewOpen(infoView: InfoProvider, retries=10, de
     return false;
 }
 
-export async function waitForHtmlString(infoView: InfoProvider, toFind : string, retries=10, delay=1000): Promise<string> {
+export async function waitForInfoviewHtml(infoView: InfoProvider, toFind : string, retries=10, delay=1000): Promise<string> {
     let count = 0;
     let html = '';
     while (count < retries){
@@ -154,17 +187,16 @@ export async function waitForHtmlString(infoView: InfoProvider, toFind : string,
         if (html.indexOf(toFind) > 0){
             return html;
         }
-        if (html.indexOf('<details>')) { // we want '<details open>' instead...
+        if (html.indexOf('<details>') >= 0) { // we want '<details open>' instead...
             await infoView.toggleAllMessages();
         }
         await sleep(delay);
         count += 1;
     }
 
-    console.log('>>> infoview contents:')
+    console.log(`>>> infoview missing "${toFind}"`);
     console.log(html);
     assert(false, `Missing "${toFind}" in infoview`);
-    return html;
 }
 
 export async function waitForDocViewHtml(docView: DocViewProvider, toFind : string, retries=10, delay=1000): Promise<string> {
@@ -252,7 +284,7 @@ export async function restartLeanServer(client: LeanClient, retries=10, delay=10
 }
 
 export async function assertStringInInfoview(infoView: InfoProvider, expectedVersion: string) : Promise<string> {
-    const html = await waitForHtmlString(infoView, expectedVersion);
+    const html = await waitForInfoviewHtml(infoView, expectedVersion);
     const pos = html.indexOf(expectedVersion);
     if (pos >= 0) {
         // e.g. 4.0.0-nightly-2022-02-16

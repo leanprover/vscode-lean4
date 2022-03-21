@@ -94,6 +94,10 @@ export class LeanClientProvider implements Disposable {
         });
     }
 
+    getActiveClient() : LeanClient | undefined {
+        return this.activeClient;
+    }
+
     private getVisibleEditor(uri: Uri) : TextEditor | null {
         const path = uri.toString();
         for (const editor of window.visibleTextEditors) {
