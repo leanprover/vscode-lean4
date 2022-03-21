@@ -15,8 +15,7 @@ export class LeanVersion {
 export class LeanInstaller implements Disposable {
 
     private leanInstallerLinux = 'https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh'
-    // private leanInstallerWindows = 'https://raw.githubusercontent.com/leanprover/elan/master/elan-init.ps1'
-    private leanInstallerWindows = 'https://raw.githubusercontent.com/lovettchris/elan/clovett/fix_win_error_code/elan-init.ps1'
+    private leanInstallerWindows = 'https://raw.githubusercontent.com/leanprover/elan/master/elan-init.ps1'
     private outputChannel: OutputChannel;
     private localStorage: LocalStorageService;
     private subscriptions: Disposable[] = [];
