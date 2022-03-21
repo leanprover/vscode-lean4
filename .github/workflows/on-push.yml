@@ -71,7 +71,7 @@ jobs:
         shell: pwsh
         run: |
           curl -O --location https://raw.githubusercontent.com/leanprover/elan/master/elan-init.ps1
-          .\elan-init.ps1 -NoMenu -PromptOnError -DefaultToolchain leanprover/lean4:nightly
+          .\elan-init.ps1 -NoMenu -DefaultToolchain leanprover/lean4:nightly
           echo Checking location "$HOME\.elan\bin"...
           dir "$HOME\.elan\bin"
           elan --version
