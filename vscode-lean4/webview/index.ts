@@ -1,6 +1,4 @@
 import { renderInfoview, EditorApi } from '@lean4/infoview';
-// HACK: we only want the types but acquireVsCodeApi doesn't seem importable
-import type * as _vsc from 'vscode-webview';
 import { Rpc } from '../src/rpc';
 
 const vscodeApi = acquireVsCodeApi();

@@ -1,5 +1,5 @@
-import React from 'react';
-import { DocumentUri, Diagnostic } from 'vscode-languageserver-protocol';
+import * as React from 'react';
+import type { DocumentUri, Diagnostic } from 'vscode-languageserver-protocol';
 
 import { LeanFileProgressProcessingInfo, InfoviewConfig, defaultInfoviewConfig } from '@lean4/infoview-api';
 

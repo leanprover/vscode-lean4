@@ -8,7 +8,7 @@ import {
 import { EditorApi, InfoviewApi, LeanFileProgressParams, TextInsertKind, RpcConnectParams, RpcConnected, RpcKeepAliveParams } from '@lean4/infoview-api';
 import { LeanClient } from './leanclient';
 import { getInfoViewAllErrorsOnLine, getInfoViewAutoOpen, getInfoViewAutoOpenShowGoal,
-    getInfoViewFilterIndex, getInfoViewStyle, getInfoViewTacticStateFilters } from './config';
+    getInfoViewFilterIndex, getInfoViewStyle, getInfoViewTacticStateFilters, minIfProd, prodOrDev } from './config';
 import { Rpc } from './rpc';
 import { LeanClientProvider } from './utils/clientProvider'
 import * as ls from 'vscode-languageserver-protocol'
@@ -599,15 +599,16 @@ export class InfoProvider implements Disposable {
         await window.showTextDocument(editor.document, { viewColumn: editor.viewColumn, preserveFocus: false });
     }
 
-    private getMediaPath(mediaFile: string): string | undefined {
+    private getLocalPath(path: string): string | undefined {
         if (this.webviewPanel) {
             return this.webviewPanel.webview.asWebviewUri(
-                Uri.file(join(this.context.extensionPath, 'media', mediaFile))).toString();
+                Uri.file(join(this.context.extensionPath, path))).toString();
         }
         return undefined;
     }
 
     private initialHtml() {
+        const libPostfix = `.${prodOrDev}${minIfProd}.js`
         return `
             <!DOCTYPE html>
             <html>
@@ -616,10 +617,21 @@ export class InfoProvider implements Disposable {
                 <meta http-equiv="Content-type" content="text/html;charset=utf-8">
                 <title>Infoview</title>
                 <style>${this.stylesheet}</style>
+                <link rel="stylesheet" href="${this.getLocalPath('dist/lean4-infoview/index.css')}">
             </head>
             <body>
                 <div id="react_root"></div>
-                <script src="${this.getMediaPath('webview.js')}"></script>
+                <script type="importmap">
+                    {
+                        "imports": {
+                            "@lean4/infoview": "${this.getLocalPath(`dist/lean4-infoview/index${libPostfix}`)}",
+                            "react": "${this.getLocalPath(`dist/react/react${libPostfix}`)}",
+                            "react-dom": "${this.getLocalPath(`dist/react-dom/react-dom${libPostfix}`)}",
+                            "react-popper": "${this.getLocalPath(`dist/lean4-infoview/react-popper${libPostfix}`)}"
+                        }
+                    }
+                </script>
+                <script type="module" src="${this.getLocalPath('dist/webview.js')}"></script>
             </body>
             </html>`
     }

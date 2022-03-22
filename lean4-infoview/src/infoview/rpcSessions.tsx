@@ -2,8 +2,8 @@
  * Provides classes to manage an RPC connection to the Lean server.
  * @module
  */
-import React from 'react'
-import { DidCloseTextDocumentParams, Disposable, DocumentUri, TextDocumentPositionParams } from 'vscode-languageserver-protocol'
+import * as React from 'react'
+import type { DidCloseTextDocumentParams, Disposable, DocumentUri } from 'vscode-languageserver-protocol'
 import { RpcPtr, RpcCallParams, RpcNeedsReconnect, RpcReleaseParams } from '@lean4/infoview-api'
 import { EditorContext, RpcContext } from './contexts'
 import { EditorConnection } from './editorConnection'

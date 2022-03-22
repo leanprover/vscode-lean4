@@ -107,3 +107,14 @@ export function getLeanExecutableName(): string {
     }
     return 'lean'
 }
+
+/**
+ * The literal 'production' or 'development', depending on the build.
+ * Should be turned into a string literal by build tools.
+ */
+export const prodOrDev: string = process.env.NODE_ENV && process.env.NODE_ENV === 'production'
+    ? 'production' : 'development'
+
+/** The literal '.min' or empty, depending on the build. See {@link prodOrDev}. */
+export const minIfProd: string = process.env.NODE_ENV && process.env.NODE_ENV === 'production'
+    ? '.min' : ''

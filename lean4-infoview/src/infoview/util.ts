@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-namespace */
 import * as React from 'react';
-import { DocumentUri, Position, Range, TextDocumentPositionParams } from 'vscode-languageserver-protocol';
+import type { DocumentUri, Position, Range, TextDocumentPositionParams } from 'vscode-languageserver-protocol';
 
 import { Event } from './event';
 import { EditorContext } from './contexts';

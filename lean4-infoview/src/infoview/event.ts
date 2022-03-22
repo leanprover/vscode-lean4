@@ -1,4 +1,4 @@
-import { Disposable } from 'vscode-languageserver-protocol';
+import type { Disposable } from 'vscode-languageserver-protocol';
 
 /** An `Event` propagates a value it's `fire`d with to all handlers registered using `on`. */
 export class Event<E> {

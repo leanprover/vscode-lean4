@@ -1,4 +1,4 @@
-import { Diagnostic, DocumentUri, Range, TextDocumentPositionParams, VersionedTextDocumentIdentifier } from 'vscode-languageserver-protocol';
+import type { Diagnostic, DocumentUri, Range, TextDocumentPositionParams, VersionedTextDocumentIdentifier } from 'vscode-languageserver-protocol';
 
 // Lean 4 extensions to LSP.
 

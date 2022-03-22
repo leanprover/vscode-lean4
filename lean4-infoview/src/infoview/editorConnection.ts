@@ -1,4 +1,4 @@
-import { Location, ShowDocumentParams } from 'vscode-languageserver-protocol';
+import type { Location, ShowDocumentParams } from 'vscode-languageserver-protocol';
 
 import { EditorApi, InfoviewApi, PlainGoal, PlainTermGoal } from '@lean4/infoview-api';
 
