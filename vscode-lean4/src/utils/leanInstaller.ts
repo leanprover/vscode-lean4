@@ -483,8 +483,12 @@ export class LeanInstaller implements Disposable {
             if (process.platform === 'win32') {
                 terminal.sendText(
                     `Invoke-WebRequest -Uri "${this.leanInstallerWindows}" -OutFile elan-init.ps1\n` +
-                    `.\\elan-init.ps1 -NoMenu 1 -PromptOnError 1 -DefaultToolchain ${this.defaultToolchain}\n` +
+                    `$rc = .\\elan-init.ps1 -NoPrompt 1 -DefaultToolchain ${this.defaultToolchain}\n` +
+                    'Write-Host "elan-init returned [$rc]"\n' +
                     'del .\\elan-init.ps1\n' +
+                    'if ($rc -ne 0) {\n' +
+                    '    Read-Host -Prompt "Press ENTER to continue"\n' +
+                    '}\n' +
                     'exit\n'
                     );
             }
