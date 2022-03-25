@@ -108,6 +108,7 @@ export interface InfoviewApi {
 
   /** Must fire with the server's initialization message when the server is started or restarted. */
   serverRestarted(serverInitializeResult: InitializeResult): Promise<void>;
+
   /**
    * Must fire whenever the user moves their cursor or makes a selection while in a Lean file.
    * Movements in other kinds of files must *not* fire this event. When no selection is made,
