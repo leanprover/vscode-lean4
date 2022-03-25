@@ -122,57 +122,61 @@ export function InfoDisplay(props0: InfoDisplayProps) {
     const hasGoals = status !== 'error' && goals;
     const hasTermGoal = status !== 'error' && termGoal;
     const hasMessages = status !== 'error' && messages.length !== 0;
-
-    return (
-    <Details initiallyOpen>
-        <InfoStatusBar {...props} triggerUpdate={triggerDisplayUpdate} isPaused={isPaused} setPaused={setPaused} copyGoalToComment={copyGoalToComment} />
-        <div className="ml1">
-            {hasError &&
-                <div className="error">
-                    Error updating: {error}.
-                    <a className="link pointer dim" onClick={e => { e.preventDefault(); void triggerDisplayUpdate(); }}>Try again.</a>
-                </div>}
-            <div style={{display: hasGoals ? 'block' : 'none'}}>
-                <Details initiallyOpen>
-                    <summary className="mv2 pointer">
-                        Tactic state
-                    </summary>
-                    <div className='ml1'>
-                        {hasGoals && <GoalsUi pos={pos} goals={goals} />}
-                    </div>
-                </Details>
+    const activeServer =1;
+    if (activeServer === 1){
+        return <span>Server unavailable. <a className="link pointer dim" onClick={e => { e.preventDefault(); void triggerDisplayUpdate(); }}> Refresh </a></span>
+    } else {
+        return (
+        <Details initiallyOpen>
+            <InfoStatusBar {...props} triggerUpdate={triggerDisplayUpdate} isPaused={isPaused} setPaused={setPaused} copyGoalToComment={copyGoalToComment} />
+            <div className="ml1">
+                {hasError &&
+                    <div className="error">
+                        Error updating: {error}.
+                        <a className="link pointer dim" onClick={e => { e.preventDefault(); void triggerDisplayUpdate(); }}>Try again.</a>
+                    </div>}
+                <div style={{display: hasGoals ? 'block' : 'none'}}>
+                    <Details initiallyOpen>
+                        <summary className="mv2 pointer">
+                            Tactic state
+                        </summary>
+                        <div className='ml1'>
+                            {hasGoals && <GoalsUi pos={pos} goals={goals} />}
+                        </div>
+                    </Details>
+                </div>
+                <div style={{display: hasTermGoal ? 'block' : 'none'}}>
+                    <Details initiallyOpen>
+                        <summary className="mv2 pointer">
+                            Expected type
+                        </summary>
+                        <div className='ml1'>
+                            {hasTermGoal && <GoalUi pos={pos} goal={termGoal} />}
+                        </div>
+                    </Details>
+                </div>
+                <div style={{display: hasMessages ? 'block' : 'none'}}>
+                    <Details initiallyOpen>
+                        <summary className="mv2 pointer">
+                            Messages ({messages.length})
+                        </summary>
+                        <div className="ml1">
+                            <MessagesList uri={pos.uri} messages={messages} />
+                        </div>
+                    </Details>
+                </div>
+                {nothingToShow && (
+                    isPaused ?
+                        <span>Updating is paused.
+                            <a className="link pointer dim" onClick={e => { e.preventDefault(); void triggerDisplayUpdate(); }}> Refresh </a>
+                            or <a className="link pointer dim" onClick={e => { e.preventDefault(); setPaused(false); }}>resume updating </a>
+                            to see information.
+                        </span> :
+                        'No info found.')}
             </div>
-            <div style={{display: hasTermGoal ? 'block' : 'none'}}>
-                <Details initiallyOpen>
-                    <summary className="mv2 pointer">
-                        Expected type
-                    </summary>
-                    <div className='ml1'>
-                        {hasTermGoal && <GoalUi pos={pos} goal={termGoal} />}
-                    </div>
-                </Details>
-            </div>
-            <div style={{display: hasMessages ? 'block' : 'none'}}>
-                <Details initiallyOpen>
-                    <summary className="mv2 pointer">
-                        Messages ({messages.length})
-                    </summary>
-                    <div className="ml1">
-                        <MessagesList uri={pos.uri} messages={messages} />
-                    </div>
-                </Details>
-            </div>
-            {nothingToShow && (
-                isPaused ?
-                    <span>Updating is paused.
-                        <a className="link pointer dim" onClick={e => { e.preventDefault(); void triggerDisplayUpdate(); }}>Refresh</a>
-                        or <a className="link pointer dim" onClick={e => { e.preventDefault(); setPaused(false); }}>resume updating</a>
-                        to see information.
-                    </span> :
-                    'No info found.')}
-        </div>
-    </Details>
-    );
+        </Details>
+        );
+    }
 }
 
 function useIsProcessingAt(p: DocumentPosition): boolean {

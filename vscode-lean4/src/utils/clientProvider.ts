@@ -43,7 +43,8 @@ export class LeanClientProvider implements Disposable {
 
         this.subscriptions.push(
             commands.registerCommand('lean4.refreshFileDependencies', () => this.refreshFileDependencies()),
-            commands.registerCommand('lean4.restartServer', () => this.restartActiveClient())
+            commands.registerCommand('lean4.restartServer', () => this.restartActiveClient()),
+            commands.registerCommand('lean4.killServer', () => this.killActiveClient())
         );
 
         workspace.onDidOpenTextDocument((document) => this.didOpenEditor(document));
@@ -116,6 +117,14 @@ export class LeanClientProvider implements Disposable {
 
     private restartActiveClient() {
         void this.activeClient?.restart();
+    }
+
+    private killActiveClient() {
+        void this.activeClient?.stop();
+    }
+
+    clientIsStarted() {
+        void this.activeClient?.isStarted();
     }
 
     async didOpenEditor(document: TextDocument) {
