@@ -193,6 +193,12 @@
 				"description": "Restart the language server."
 			},
 			{
+				"command": "lean4.killServer",
+				"category": "Lean 4",
+				"title": "Kill Server",
+				"description": "Kill the language server."
+			},
+			{
 				"command": "lean4.refreshFileDependencies",
 				"category": "Lean 4",
 				"title": "Refresh File Dependencies",

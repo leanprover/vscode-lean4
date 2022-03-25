@@ -11,6 +11,7 @@ import { updatePlainGoals, updateTermGoal } from './goalCompat';
 
 type InfoStatus = 'loading' | 'updating' | 'error' | 'ready';
 type InfoKind = 'cursor' | 'pin';
+let count = 0;
 
 interface InfoPinnable {
     kind: InfoKind;
@@ -87,11 +88,13 @@ export function InfoDisplay(props0: InfoDisplayProps) {
     // Used to update the paused state once if a display update is triggered
     const [shouldRefresh, setShouldRefresh] = React.useState<boolean>(false);
     const [isPaused, setPaused, props, propsRef] = usePausableState(false, props0);
+
     if (shouldRefresh) {
         propsRef.current = props0;
         setShouldRefresh(false);
     }
     const triggerDisplayUpdate = async () => {
+        count = 0;
         await props0.triggerUpdate();
         setShouldRefresh(true);
     };
@@ -122,9 +125,13 @@ export function InfoDisplay(props0: InfoDisplayProps) {
     const hasGoals = status !== 'error' && goals;
     const hasTermGoal = status !== 'error' && termGoal;
     const hasMessages = status !== 'error' && messages.length !== 0;
-    const activeServer =1;
-    if (activeServer === 1){
-        return <span>Server unavailable. <a className="link pointer dim" onClick={e => { e.preventDefault(); void triggerDisplayUpdate(); }}> Refresh </a></span>
+
+    if (status === 'error'){
+        // In case we restart the server successfully, this count will be 0 again
+        count += 1;
+    }
+    if (error !== undefined && count > 0){
+        return <span>Server unavailable. Please restart the server and then <a className="link pointer dim" onClick={e => { e.preventDefault(); void triggerDisplayUpdate(); }}> Refresh </a></span>
     } else {
         return (
         <Details initiallyOpen>
