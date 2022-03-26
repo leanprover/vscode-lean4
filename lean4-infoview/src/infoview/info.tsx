@@ -304,7 +304,6 @@ function InfoAux(props: InfoProps) {
     });
 
     React.useEffect(() => void triggerUpdate(), [pos.uri, pos.line, pos.character, serverIsProcessing]);
-
     return (
         <InfoDisplay {...props} pos={pos} status={status} messages={messages} goals={goals} termGoal={termGoal} error={error} triggerUpdate={triggerUpdate} />
     );

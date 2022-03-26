@@ -49,7 +49,6 @@ function Main(props: {}) {
 
     const serverInitializeResult = useEventResult(ec.events.serverRestarted);
     const sv = serverInitializeResult ? new ServerVersion(serverInitializeResult.serverInfo?.version ?? '') : undefined;
-    const serverIsStopped = /**TODO: How to check if it is unavailable;*/ false;
 
     // NB: the cursor may temporarily become `undefined` when a file is closed. In this case
     // it's important not to reconstruct the `WithBlah` wrappers below since they contain state
@@ -59,8 +58,6 @@ function Main(props: {}) {
         ret = <p>Waiting for Lean server to start...</p>
     } else if (!curUri) {
         ret = <p>Click somewhere in the Lean file to enable the infoview.</p>
-    } else if (serverIsStopped){
-        ret = <p>Server unavailable - Restart server.</p>
     }
     else {
         ret =
@@ -71,7 +68,6 @@ function Main(props: {}) {
                 </div>
             </div>)
     }
-
     return (
     <ConfigContext.Provider value={config}>
         <VersionContext.Provider value={sv}>
