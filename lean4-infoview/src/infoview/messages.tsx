@@ -15,7 +15,7 @@ interface MessageViewProps {
     diag: InteractiveDiagnostic;
 }
 
-let clientIsNotRunningFlag = false;
+let clientIsNotRunning = false;
 
 const MessageView = React.memo(({uri, diag}: MessageViewProps) => {
     const ec = React.useContext(EditorContext);
@@ -70,8 +70,8 @@ function mkMessageViewProps(uri: DocumentUri, messages: InteractiveDiagnostic[])
 
 /** Shows the given messages assuming they are for the given file. */
 export function MessagesList({uri, messages}: {uri: DocumentUri, messages: InteractiveDiagnostic[]}) {
-    if(clientIsNotRunningFlag){
-        return <>No messages. Server unavailable.</>
+    if(clientIsNotRunning){
+        return <></>
     }
     const should_hide = messages.length === 0;
     if (should_hide) { return <>No messages.</> }
@@ -93,7 +93,6 @@ function lazy<T>(f: () => T): () => T {
 
 /** Displays all messages for the specified file. Can be paused. */
 export function AllMessages({uri: uri0}: { uri: DocumentUri }) {
-
     const ec = React.useContext(EditorContext);
     const sv = React.useContext(VersionContext);
     const rs = React.useContext(RpcContext);
@@ -104,7 +103,7 @@ export function AllMessages({uri: uri0}: { uri: DocumentUri }) {
     const iDiags0 = React.useMemo(() => lazy(async () => {
         if (sv?.hasWidgetsV1()) {
             try {
-                clientIsNotRunningFlag = false;
+                clientIsNotRunning = false;
                 return await getInteractiveDiagnostics(rs, { uri: uri0, line: 0, character: 0 }) || [];
             } catch (err: any) {
                 if (err?.code === -32801) {
@@ -114,13 +113,12 @@ export function AllMessages({uri: uri0}: { uri: DocumentUri }) {
                     // `getInteractiveDiagnostics` again.
                 } else {
                     console.log('getInteractiveDiagnostics error ', err)
-                    clientIsNotRunningFlag = true;
+                    clientIsNotRunning = true;
                 }
             }
         }
         return diags0.map(d => ({ ...(d as LeanDiagnostic), message: { text: d.message } }));
     }), [sv, rs, uri0, diags0]);
-
     const [isPaused, setPaused, [uri, diags, iDiags], _] = usePausableState(false, [uri0, diags0, iDiags0]);
 
     // Fetch interactive diagnostics when we're entering the paused state
@@ -133,7 +131,8 @@ export function AllMessages({uri: uri0}: { uri: DocumentUri }) {
             setOpenRef.current(t => !t);
         }
     });
-    return (
+    if (clientIsNotRunning) return <>No</>
+    return(
     <Details setOpenRef={setOpenRef as any} initiallyOpen={!config.infoViewAutoOpenShowGoal}>
         <summary className="mv2 pointer">
             All Messages ({diags.length})
@@ -169,7 +168,6 @@ export function WithLspDiagnosticsContext({children}: React.PropsWithChildren<{}
             new Map(diags).set(params.uri, params.diagnostics),
         []
     )
-
     return <LspDiagnosticsContext.Provider value={allDiags}>{children}</LspDiagnosticsContext.Provider>
 }
 
@@ -178,6 +176,7 @@ export function useMessagesForFile(uri: DocumentUri, line?: number): Interactive
     const sv = React.useContext(VersionContext)
     const lspDiags = React.useContext(LspDiagnosticsContext)
     const [diags, setDiags] = React.useState<InteractiveDiagnostic[]>([])
+
     async function updateDiags() {
         setDiags((lspDiags.get(uri) || []).map(d => ({ ...(d as LeanDiagnostic), message: { text: d.message } })));
         if (sv?.hasWidgetsV1()) {
@@ -187,19 +186,23 @@ export function useMessagesForFile(uri: DocumentUri, line?: number): Interactive
                 if (diags) {
                     setDiags(diags)
                 }
-                clientIsNotRunningFlag = false;
+                clientIsNotRunning = false;
             } catch (err: any) {
                 if (err?.code === -32801) {
                     // Document has been changed since we made the request.
                     // This can happen while typing quickly, so server will catch up on next edit.
                 } else {
-                    console.log('getInteractiveDiagnostics error ', err);
-                    clientIsNotRunningFlag = true;
+                    if (err?.code === undefined){
+                        clientIsNotRunning = true;
+                        console.log('Client is not running ', err);
+                    }
+                    //console.log('getInteractiveDiagnostics error ', err);
                 }
             }
         }
     }
     React.useEffect(() => void updateDiags(), [uri, line, lspDiags.get(uri)])
+    //console.log(JSON.stringify(diags))
     return diags;
 }
 

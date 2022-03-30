@@ -321,7 +321,6 @@ export class LeanClient implements Disposable {
         (this.client as any)._serverProcess.stderr.on('data', () => {
             this.client?.outputChannel.show(true);
         });
-
         this.restartedEmitter.fire(undefined)
     }
 

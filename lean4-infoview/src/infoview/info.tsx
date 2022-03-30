@@ -11,7 +11,6 @@ import { updatePlainGoals, updateTermGoal } from './goalCompat';
 
 type InfoStatus = 'loading' | 'updating' | 'error' | 'ready';
 type InfoKind = 'cursor' | 'pin';
-let count = 0;
 
 interface InfoPinnable {
     kind: InfoKind;
@@ -94,7 +93,6 @@ export function InfoDisplay(props0: InfoDisplayProps) {
         setShouldRefresh(false);
     }
     const triggerDisplayUpdate = async () => {
-        count = 0;
         await props0.triggerUpdate();
         setShouldRefresh(true);
     };
@@ -126,12 +124,9 @@ export function InfoDisplay(props0: InfoDisplayProps) {
     const hasTermGoal = status !== 'error' && termGoal;
     const hasMessages = status !== 'error' && messages.length !== 0;
 
-    if (status === 'error'){
-        // In case we restart the server successfully, this count will be 0 again
-        count += 1;
-    }
-    if (error !== undefined && count > 0){
-        return <span>Server unavailable. Please restart the server and then <a className="link pointer dim" onClick={e => { e.preventDefault(); void triggerDisplayUpdate(); }}> Refresh </a></span>
+    if (error !== undefined) {
+        return <div>Server unavailable. Please restart the server and then
+            <a className="link pointer dim" onClick={e => { e.preventDefault(); void triggerDisplayUpdate; }}> Refresh </a></div>
     } else {
         return (
         <Details initiallyOpen>
@@ -257,6 +252,7 @@ function InfoAux(props: InfoProps) {
     const [error, setError] = React.useState<string>();
 
     const messages = useMessagesFor(pos);
+
     const serverIsProcessing = useIsProcessingAt(pos);
 
     const triggerUpdate = useDelayedThrottled(serverIsProcessing ? 500 : 50, async () => {
@@ -282,8 +278,13 @@ function InfoAux(props: InfoProps) {
 
         function onError(err: any) {
             const errS = typeof err === 'string' ? err : JSON.stringify(err);
-            setError(`Error fetching goals: ${errS}`);
-            setStatus('error');
+            // we need to check if this value is empty or not, because maybe we are assigning
+            // a message error with an empty error
+            if (errS === '{}' || errS === undefined) { setError(undefined); }
+            else {
+                setError(`Error fetching goals: ${errS}`);
+                setStatus('error');
+            }
         }
 
         try {
@@ -302,7 +303,6 @@ function InfoAux(props: InfoProps) {
 
         setStatus('ready');
     });
-
     React.useEffect(() => void triggerUpdate(), [pos.uri, pos.line, pos.character, serverIsProcessing]);
     return (
         <InfoDisplay {...props} pos={pos} status={status} messages={messages} goals={goals} termGoal={termGoal} error={error} triggerUpdate={triggerUpdate} />
