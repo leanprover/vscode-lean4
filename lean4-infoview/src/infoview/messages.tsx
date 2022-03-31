@@ -70,9 +70,7 @@ function mkMessageViewProps(uri: DocumentUri, messages: InteractiveDiagnostic[])
 
 /** Shows the given messages assuming they are for the given file. */
 export function MessagesList({uri, messages}: {uri: DocumentUri, messages: InteractiveDiagnostic[]}) {
-    if(clientIsNotRunning){
-        return <></>
-    }
+    //if (clientIsNotRunning) return <>No</>
     const should_hide = messages.length === 0;
     if (should_hide) { return <>No messages.</> }
 
@@ -99,7 +97,6 @@ export function AllMessages({uri: uri0}: { uri: DocumentUri }) {
     const dc = React.useContext(LspDiagnosticsContext);
     const config = React.useContext(ConfigContext);
     const diags0 = dc.get(uri0) || [];
-
     const iDiags0 = React.useMemo(() => lazy(async () => {
         if (sv?.hasWidgetsV1()) {
             try {
@@ -114,6 +111,7 @@ export function AllMessages({uri: uri0}: { uri: DocumentUri }) {
                 } else {
                     console.log('getInteractiveDiagnostics error ', err)
                     clientIsNotRunning = true;
+                    return
                 }
             }
         }
@@ -123,7 +121,7 @@ export function AllMessages({uri: uri0}: { uri: DocumentUri }) {
 
     // Fetch interactive diagnostics when we're entering the paused state
     // (if they haven't already been fetched before)
-    React.useEffect(() => void (isPaused && iDiags()), [iDiags, isPaused]);
+    React.useEffect(() => void ((isPaused && iDiags())), [iDiags, isPaused]);
 
     const setOpenRef = React.useRef<React.Dispatch<React.SetStateAction<boolean>>>();
     useEvent(ec.events.requestedAction, act => {
@@ -131,7 +129,11 @@ export function AllMessages({uri: uri0}: { uri: DocumentUri }) {
             setOpenRef.current(t => !t);
         }
     });
-    if (clientIsNotRunning) return <>No</>
+    const [msgs, setMsgs] = React.useState<InteractiveDiagnostic[] | undefined>(undefined)
+    React.useEffect(() => void iDiags().then(setMsgs), [diags0])
+    if (clientIsNotRunning) {
+        return <></>
+    }
     return(
     <Details setOpenRef={setOpenRef as any} initiallyOpen={!config.infoViewAutoOpenShowGoal}>
         <summary className="mv2 pointer">

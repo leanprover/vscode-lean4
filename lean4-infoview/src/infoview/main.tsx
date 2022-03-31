@@ -1,7 +1,6 @@
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 import type { DidCloseTextDocumentParams, Location, DocumentUri } from 'vscode-languageserver-protocol';
-import process from 'process';
 
 import 'tachyons/css/tachyons.css';
 import '@vscode/codicons/dist/codicon.ttf';
@@ -50,11 +49,7 @@ function Main(props: {}) {
 
     const serverInitializeResult = useEventResult(ec.events.serverRestarted);
     const sv = serverInitializeResult ? new ServerVersion(serverInitializeResult.serverInfo?.version ?? '') : undefined;
-    /*process.on('sv', err => {
-        console.error(err); // or err.stack and err.message or whatever you want
-        process.exit(1);
-      });*/
-    console.log('main');
+
     // NB: the cursor may temporarily become `undefined` when a file is closed. In this case
     // it's important not to reconstruct the `WithBlah` wrappers below since they contain state
     // that we want to persist.
