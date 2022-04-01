@@ -1,0 +1,56 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<DirectedGraph xmlns="http://schemas.microsoft.com/vs/2009/dgml">
+  <Nodes>
+    <Node Id="363a7c32-b456-4bdb-bd05-363c2faf29281" Category="Comment" Bounds="-1191.17666666667,-361.02,189.873333333333,41.92" Label="The Language Server Protocol is implemented in lean itself!" UseManualLocation="True" />
+    <Node Id="54c2f998-1ecb-4270-a8da-7addb93733c61" Category="Comment" Bounds="-987.200010172526,-670.440050048828,247.27,73.8400000000001" Label="The way the extension talks to the infoview is via the InfoviewApi, and the infoview can talk to the vscode-lean4 extension via the EditorApi." UseManualLocation="True" />
+    <Node Id="9425acf0-881c-4047-b729-01d733edac5b1" Category="Comment" Bounds="-1213.15334350586,-715.02,195.953333333333,41.9200000000001" Label="Infoview is hosted in a &quot;webview&quot;&#xD;&#xA;inside VS code." UseManualLocation="True" />
+    <Node Id="Lean--server" Bounds="-1361.71833333333,-344.02,86.7066666666667,25.96" Label="lean --server" UseManualLocation="True" />
+    <Node Id="Lean4-infoview" Bounds="-1039.71845540365,-537.599941876221,97.4366666666666,25.96" Label="lean4-infoview" UseManualLocation="True" />
+    <Node Id="Vscode-languageclient" Bounds="-1430.71833333333,-438.02,139.156666666667,25.96" Label="vscode-languageclient" UseManualLocation="True" />
+    <Node Id="Vscode-lean4" Bounds="-1461.99998860677,-542.079883142138,90.1066666666666,25.96" Label="vscode-lean4" UseManualLocation="True" />
+    <Node Id="Webview" Bounds="-1286.71833333333,-637.02,120.22,25.96" Label="webview (infoview)" UseManualLocation="True" />
+    <Node Id="a4dce224-9d16-49b1-9bc4-1aa97ef7db8f1" Category="Comment" Bounds="-1532.17666666667,-662.999983142138,207.146666666667,41.9200000000001" Label="The VS Code extension&#xD;&#xA;entrypoint is the &quot;activate&quot; function" UseManualLocation="True" />
+    <Node Id="c0758a40-aff2-4dd3-b228-0a1a792002261" Category="Comment" Bounds="-1233.17666666667,-441.02,208.97,41.92" Label="The library provided by VS Code for building extensions" UseManualLocation="True" />
+  </Nodes>
+  <Links>
+    <Link Source="363a7c32-b456-4bdb-bd05-363c2faf29281" Target="Lean--server" Bounds="-1266.01907795999,-336.204834064903,74.8424112933239,3.03918311700971" />
+    <Link Source="54c2f998-1ecb-4270-a8da-7addb93733c61" Target="Lean4-infoview" Bounds="-968.968872906288,-596.600050048828,62.2000018727712,53.1532141660091" />
+    <Link Source="9425acf0-881c-4047-b729-01d733edac5b1" Target="Webview" Bounds="-1198.33118986203,-673.099997558594,49.7982226366637,31.2915616015314" />
+    <Link Source="Lean4-infoview" Target="Vscode-lean4" Bounds="-1362.9208984375,-527.925231933594,342.945861816406,20.9230346679688" Label="EditorApi" LabelBounds="-1157.23319199491,-507.431966033058,49.0133333333333,15.96" />
+    <Link Source="Vscode-languageclient" Target="Lean--server" Bounds="-1355.2334217783,-412.059993286133,27.2341544159622,59.8482631343165" />
+    <Link Source="Vscode-lean4" Target="Lean4-infoview" Bounds="-1371.89331054688,-522.611633300781,382.969848632813,21.4988708496094" Label="InfoviewApi" LabelBounds="-1302.0813524342,-510.903051526076,62.0733333333333,15.96" />
+    <Link Source="Vscode-lean4" Target="Vscode-languageclient" Bounds="-1409.98556588237,-516.119883142138,37.6309001163413,70.1684831309229" />
+    <Link Source="Vscode-lean4" Target="Webview" Bounds="-1390.92402913224,-607.042840893679,130.239348182328,64.9629568604756" />
+    <Link Source="Webview" Target="Lean4-infoview" Bounds="-1195.84800800797,-611.060008544922,165.795536881784,69.9610866039435" />
+    <Link Source="a4dce224-9d16-49b1-9bc4-1aa97ef7db8f1" Target="Vscode-lean4" Bounds="-1426.44002676656,-621.079978027344,7.22969875933813,70.0476508176981" />
+    <Link Source="c0758a40-aff2-4dd3-b228-0a1a792002261" Target="Vscode-languageclient" Bounds="-1282.56374606584,-423.35656858818,49.3870793991691,1.05807301262843" />
+  </Links>
+  <Categories>
+    <Category Id="Comment" Label="Comment" Description="Represents a user defined comment on the diagram" CanBeDataDriven="True" IsProviderRoot="False" NavigationActionLabel="Comments" />
+  </Categories>
+  <Properties>
+    <Property Id="Bounds" DataType="System.Windows.Rect" />
+    <Property Id="CanBeDataDriven" Label="CanBeDataDriven" Description="CanBeDataDriven" DataType="System.Boolean" />
+    <Property Id="Expression" DataType="System.String" />
+    <Property Id="GroupLabel" DataType="System.String" />
+    <Property Id="IsEnabled" DataType="System.Boolean" />
+    <Property Id="IsProviderRoot" Label="IsProviderRoot" Description="IsProviderRoot" DataType="System.Boolean" />
+    <Property Id="Label" Label="Label" Description="Displayable label of an Annotatable object" DataType="System.String" />
+    <Property Id="LabelBounds" DataType="System.Windows.Rect" />
+    <Property Id="NavigationActionLabel" Label="NavigationActionLabel" Description="NavigationActionLabel" DataType="System.String" />
+    <Property Id="TargetType" DataType="System.Type" />
+    <Property Id="UseManualLocation" DataType="System.Boolean" />
+    <Property Id="Value" DataType="System.String" />
+    <Property Id="ValueLabel" DataType="System.String" />
+  </Properties>
+  <Styles>
+    <Style TargetType="Node" GroupLabel="Comment" ValueLabel="Has comment">
+      <Condition Expression="HasCategory('Comment')" />
+      <Setter Property="Background" Value="#FFFFFACD" />
+      <Setter Property="Stroke" Value="#FFE5C365" />
+      <Setter Property="StrokeThickness" Value="1" />
+      <Setter Property="NodeRadius" Value="2" />
+      <Setter Property="MaxWidth" Value="250" />
+    </Style>
+  </Styles>
+</DirectedGraph>
