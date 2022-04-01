@@ -70,7 +70,6 @@ function mkMessageViewProps(uri: DocumentUri, messages: InteractiveDiagnostic[])
 
 /** Shows the given messages assuming they are for the given file. */
 export function MessagesList({uri, messages}: {uri: DocumentUri, messages: InteractiveDiagnostic[]}) {
-    //if (clientIsNotRunning) return <>No</>
     const should_hide = messages.length === 0;
     if (should_hide) { return <>No messages.</> }
 
@@ -111,6 +110,7 @@ export function AllMessages({uri: uri0}: { uri: DocumentUri }) {
                 } else {
                     console.log('getInteractiveDiagnostics error ', err)
                     clientIsNotRunning = true;
+                    return
                 }
             }
         }
@@ -120,7 +120,7 @@ export function AllMessages({uri: uri0}: { uri: DocumentUri }) {
 
     // Fetch interactive diagnostics when we're entering the paused state
     // (if they haven't already been fetched before)
-    React.useEffect(() => void ((isPaused && iDiags())), [iDiags, isPaused]);
+    React.useEffect(() => void (isPaused && iDiags()), [iDiags, isPaused]);
 
     const setOpenRef = React.useRef<React.Dispatch<React.SetStateAction<boolean>>>();
     useEvent(ec.events.requestedAction, act => {
@@ -134,12 +134,12 @@ export function AllMessages({uri: uri0}: { uri: DocumentUri }) {
 
     if (clientIsNotRunning) {
         // in case server crashes
-        return <></>
+        return <>Restarting the server. Please wait.</>
     }
     return(
     <Details setOpenRef={setOpenRef as any} initiallyOpen={!config.infoViewAutoOpenShowGoal}>
         <summary className="mv2 pointer">
-            All Messages ({diags.length})
+            All Messages ({msgs?.length})
             <span className="fr">
                 <a className={'link pointer mh2 dim codicon ' + (isPaused ? 'codicon-debug-continue' : 'codicon-debug-pause')}
                    onClick={e => { e.preventDefault(); setPaused(p => !p); }}
@@ -199,8 +199,9 @@ export function useMessagesForFile(uri: DocumentUri, line?: number): Interactive
                     if (err?.code === undefined){
                         clientIsNotRunning = true;
                         console.log('Client is not running ', err);
+                    } else {
+                        console.log('getInteractiveDiagnostics error ', err);
                     }
-                    console.log('getInteractiveDiagnostics error ', err);
                 }
             }
         }

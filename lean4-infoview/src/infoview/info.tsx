@@ -125,8 +125,7 @@ export function InfoDisplay(props0: InfoDisplayProps) {
     const hasMessages = status !== 'error' && messages.length !== 0;
 
     if (error !== undefined) {
-        return <div>Server unavailable. Please restart the server and then
-            <a className="link pointer dim" onClick={e => { e.preventDefault(); void triggerDisplayUpdate; }}> Refresh </a></div>
+        return <div>Server stopped or unavailable. Click somewhere in the Lean file to enable the infoview.</div>
     } else {
         return (
         <Details initiallyOpen>
@@ -292,7 +291,7 @@ function InfoAux(props: InfoProps) {
             const [goals, termGoal] = await allReq;
             setGoals(goals);
             setTermGoal(termGoal);
-            //onError(undefined)
+            onError(undefined)
         } catch (err: any) {
             if (err?.code === -32801) {
                 // Document has been changed since we made the request, try again

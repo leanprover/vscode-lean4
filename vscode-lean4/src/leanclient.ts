@@ -17,6 +17,8 @@ import {
     State
 } from 'vscode-languageclient/node'
 import * as ls from 'vscode-languageserver-protocol'
+import * as vscode from 'vscode';
+
 import { toolchainPath, addServerEnvPaths, serverArgs, serverLoggingEnabled, serverLoggingPath, getElaborationDelay, lakeEnabled } from './config'
 import { assert } from './utils/assert'
 import { LeanFileProgressParams, LeanFileProgressProcessingInfo } from '@lean4/infoview-api';
@@ -270,7 +272,7 @@ export class LeanClient implements Disposable {
         )
         this.patchConverters(this.client.protocol2CodeConverter, this.client.code2ProtocolConverter)
         try {
-            this.client.onDidChangeState((s) =>{
+            this.client.onDidChangeState(async (s) =>{
                 // see https://github.com/microsoft/vscode-languageserver-node/issues/825
                 if (s.newState === State.Starting) {
                     console.log('client starting');
@@ -280,7 +282,9 @@ export class LeanClient implements Disposable {
                     this.running = true; // may have been auto restarted after it failed.
                 } else if (s.newState === State.Stopped) {
                     console.log('client has stopped or it failed to start');
-                    this.running = false;
+                    await new Promise((resolve) => setTimeout(resolve, 5000));
+                    console.log('client restarting...');
+                    await vscode.commands.executeCommand('lean4.restartServer')
                 }
             })
             this.client.start()
