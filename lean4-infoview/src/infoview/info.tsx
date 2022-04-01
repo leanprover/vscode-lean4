@@ -87,7 +87,7 @@ export function InfoDisplay(props0: InfoDisplayProps) {
     // Used to update the paused state once if a display update is triggered
     const [shouldRefresh, setShouldRefresh] = React.useState<boolean>(false);
     const [isPaused, setPaused, props, propsRef] = usePausableState(false, props0);
-    console.log(props0)
+
     if (shouldRefresh) {
         propsRef.current = props0;
         setShouldRefresh(false);
@@ -292,10 +292,9 @@ function InfoAux(props: InfoProps) {
             const [goals, termGoal] = await allReq;
             setGoals(goals);
             setTermGoal(termGoal);
-            onError(undefined)
+            //onError(undefined)
         } catch (err: any) {
             if (err?.code === -32801) {
-                console.log('errc' + err?.code)
                 // Document has been changed since we made the request, try again
                 void triggerUpdate();
                 return;

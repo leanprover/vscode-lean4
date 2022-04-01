@@ -131,6 +131,7 @@ export function AllMessages({uri: uri0}: { uri: DocumentUri }) {
     });
     const [msgs, setMsgs] = React.useState<InteractiveDiagnostic[] | undefined>(undefined)
     React.useEffect(() => void iDiags().then(setMsgs), [diags0])
+
     if (clientIsNotRunning) {
         return <></>
     }
@@ -198,13 +199,12 @@ export function useMessagesForFile(uri: DocumentUri, line?: number): Interactive
                         clientIsNotRunning = true;
                         console.log('Client is not running ', err);
                     }
-                    //console.log('getInteractiveDiagnostics error ', err);
+                    console.log('getInteractiveDiagnostics error ', err);
                 }
             }
         }
     }
     React.useEffect(() => void updateDiags(), [uri, line, lspDiags.get(uri)])
-    //console.log(JSON.stringify(diags))
     return diags;
 }
 
