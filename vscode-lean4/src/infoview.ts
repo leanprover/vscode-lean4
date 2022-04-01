@@ -183,7 +183,6 @@ export class InfoProvider implements Disposable {
             }
         },
         copyToClipboard: async (text) => {
-            console.log('write')
             await env.clipboard.writeText(text);
             await window.showInformationMessage(`Copied to clipboard: ${text}`);
         },

@@ -111,7 +111,6 @@ export function AllMessages({uri: uri0}: { uri: DocumentUri }) {
                 } else {
                     console.log('getInteractiveDiagnostics error ', err)
                     clientIsNotRunning = true;
-                    return
                 }
             }
         }
@@ -129,10 +128,12 @@ export function AllMessages({uri: uri0}: { uri: DocumentUri }) {
             setOpenRef.current(t => !t);
         }
     });
+    // Fetch interactive diagnostics for updating new messages in case server crashes
     const [msgs, setMsgs] = React.useState<InteractiveDiagnostic[] | undefined>(undefined)
     React.useEffect(() => void iDiags().then(setMsgs), [diags0])
 
     if (clientIsNotRunning) {
+        // in case server crashes
         return <></>
     }
     return(
