@@ -87,7 +87,6 @@ export function InfoDisplay(props0: InfoDisplayProps) {
     // Used to update the paused state once if a display update is triggered
     const [shouldRefresh, setShouldRefresh] = React.useState<boolean>(false);
     const [isPaused, setPaused, props, propsRef] = usePausableState(false, props0);
-
     if (shouldRefresh) {
         propsRef.current = props0;
         setShouldRefresh(false);
@@ -125,7 +124,7 @@ export function InfoDisplay(props0: InfoDisplayProps) {
     const hasMessages = status !== 'error' && messages.length !== 0;
 
     if (error !== undefined) {
-        return <div>Server stopped or unavailable. Click somewhere in the Lean file to enable the infoview.</div>
+        return <div>Server unavailable. Click somewhere in the Lean file to enable the infoview.</div>
     } else {
         return (
         <Details initiallyOpen>
@@ -297,12 +296,14 @@ function InfoAux(props: InfoProps) {
                 // Document has been changed since we made the request, try again
                 void triggerUpdate();
                 return;
-            } else {onError(err); }
+            } else { onError(err); }
         }
 
         setStatus('ready');
     });
+
     React.useEffect(() => void triggerUpdate(), [pos.uri, pos.line, pos.character, serverIsProcessing]);
+
     return (
         <InfoDisplay {...props} pos={pos} status={status} messages={messages} goals={goals} termGoal={termGoal} error={error} triggerUpdate={triggerUpdate} />
     );

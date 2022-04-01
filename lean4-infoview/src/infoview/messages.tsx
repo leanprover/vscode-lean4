@@ -96,6 +96,7 @@ export function AllMessages({uri: uri0}: { uri: DocumentUri }) {
     const dc = React.useContext(LspDiagnosticsContext);
     const config = React.useContext(ConfigContext);
     const diags0 = dc.get(uri0) || [];
+
     const iDiags0 = React.useMemo(() => lazy(async () => {
         if (sv?.hasWidgetsV1()) {
             try {
@@ -172,6 +173,7 @@ export function WithLspDiagnosticsContext({children}: React.PropsWithChildren<{}
             new Map(diags).set(params.uri, params.diagnostics),
         []
     )
+
     return <LspDiagnosticsContext.Provider value={allDiags}>{children}</LspDiagnosticsContext.Provider>
 }
 

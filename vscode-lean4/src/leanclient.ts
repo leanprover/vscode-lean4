@@ -280,11 +280,9 @@ export class LeanClient implements Disposable {
                     const end = Date.now()
                     console.log('client running, started in ', end - startTime, 'ms');
                     this.running = true; // may have been auto restarted after it failed.
-                } else if (s.newState === State.Stopped) {
+                } else {
                     console.log('client has stopped or it failed to start');
-                    await new Promise((resolve) => setTimeout(resolve, 5000));
-                    console.log('client restarting...');
-                    await vscode.commands.executeCommand('lean4.restartServer')
+                    this.running = false;
                 }
             })
             this.client.start()
@@ -297,6 +295,7 @@ export class LeanClient implements Disposable {
             // if we got this far then the client is happy so we are running!
             this.running = true;
         } catch (error) {
+            console.log('errrrr')
             this.outputChannel.appendLine('' + error);
             this.serverFailedEmitter.fire('' + error);
             return;
@@ -325,6 +324,7 @@ export class LeanClient implements Disposable {
         (this.client as any)._serverProcess.stderr.on('data', () => {
             this.client?.outputChannel.show(true);
         });
+
         this.restartedEmitter.fire(undefined)
     }
 

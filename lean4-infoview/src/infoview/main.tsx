@@ -58,8 +58,7 @@ function Main(props: {}) {
         ret = <p>Waiting for Lean server to start...</p>
     } else if (!curUri) {
         ret = <p>Click somewhere in the Lean file to enable the infoview.</p>
-    }
-    else {
+    } else {
         ret =
             (<div className="ma1">
                 <Infos />
@@ -68,6 +67,7 @@ function Main(props: {}) {
                 </div>
             </div>)
     }
+
     return (
     <ConfigContext.Provider value={config}>
         <VersionContext.Provider value={sv}>
@@ -118,8 +118,11 @@ export function renderInfoview(editorApi: EditorApi, uiElement: HTMLElement): In
         runTestScript: async script => new Function(script)(),
         getInfoviewHtml: async () => document.body.innerHTML,
     };
+
     const ec = new EditorConnection(editorApi, editorEvents);
+
     editorEvents.initialize.on((loc: Location) => ec.events.changedCursorLocation.fire(loc))
+
     ReactDOM.render(<React.StrictMode>
         <EditorContext.Provider value={ec}>
             <Main/>
