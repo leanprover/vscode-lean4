@@ -17,7 +17,6 @@ import {
     State
 } from 'vscode-languageclient/node'
 import * as ls from 'vscode-languageserver-protocol'
-import * as vscode from 'vscode';
 
 import { toolchainPath, addServerEnvPaths, serverArgs, serverLoggingEnabled, serverLoggingPath, getElaborationDelay, lakeEnabled } from './config'
 import { assert } from './utils/assert'
@@ -218,18 +217,18 @@ export class LeanClient implements Disposable {
                     return;
                 },
 
-                didChange: (data, next) => {
-                    next(data);
+                didChange: async (data, next) => {
+                    await next(data);
                     if (!this.running || !this.client) return; // there was a problem starting lean server.
                     const params = this.client.code2ProtocolConverter.asChangeTextDocumentParams(data);
                     this.didChangeEmitter.fire(params);
                 },
 
-                didClose: (doc, next) => {
+                didClose: async (doc, next) => {
                     if (!this.isOpen.delete(doc.uri.toString())) {
                         return;
                     }
-                    next(doc);
+                    await next(doc);
                     if (!this.running || !this.client) return; // there was a problem starting lean server.
                     const params = this.client.code2ProtocolConverter.asCloseTextDocumentParams(doc);
                     this.didCloseEmitter.fire(params);
@@ -295,7 +294,6 @@ export class LeanClient implements Disposable {
             // if we got this far then the client is happy so we are running!
             this.running = true;
         } catch (error) {
-            console.log('errrrr')
             this.outputChannel.appendLine('' + error);
             this.serverFailedEmitter.fire('' + error);
             return;
@@ -340,7 +338,7 @@ export class LeanClient implements Disposable {
             diag.fullRange = p2c.asRange(protDiag.fullRange)
             return diag
         }
-        p2c.asDiagnostics = (diags) => diags.map(d => p2c.asDiagnostic(d))
+        p2c.asDiagnostics = async (diags) => diags.map(d => p2c.asDiagnostic(d))
 
         // eslint-disable-next-line @typescript-eslint/unbound-method
         const c2pAsDiagnostic = c2p.asDiagnostic;
@@ -349,7 +347,7 @@ export class LeanClient implements Disposable {
             protDiag.fullRange = c2p.asRange(diag.fullRange)
             return protDiag
         }
-        c2p.asDiagnostics = (diags) => diags.map(d => c2p.asDiagnostic(d))
+        c2p.asDiagnostics = async (diags) => diags.map(d => c2p.asDiagnostic(d))
     }
 
     async openLean4Document(doc: TextDocument) {
@@ -473,7 +471,7 @@ export class LeanClient implements Disposable {
     }
 
     // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-    sendNotification(method: string, params: any): void {
+    sendNotification(method: string, params: any): Promise<void> | undefined{
         return this.running  && this.client ? this.client.sendNotification(method, params) : undefined;
     }
 
@@ -494,10 +492,10 @@ export class LeanClient implements Disposable {
         return this.running && range ? this.client?.protocol2CodeConverter.asRange(range) : undefined;
     }
 
-    getDiagnosticParams(uri: Uri, diagnostics: readonly Diagnostic[]) : PublishDiagnosticsParams {
+    async getDiagnosticParams(uri: Uri, diagnostics: readonly Diagnostic[]) : Promise<PublishDiagnosticsParams> {
         const params: PublishDiagnosticsParams = {
             uri: this.convertUri(uri)?.toString(),
-            diagnostics: this.client?.code2ProtocolConverter.asDiagnostics(diagnostics as Diagnostic[]) ?? []
+            diagnostics: await this.client?.code2ProtocolConverter.asDiagnostics(diagnostics as Diagnostic[]) ?? []
         };
         return params;
     }

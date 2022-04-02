@@ -431,7 +431,7 @@
 		"cheerio": "^1.0.0-rc.10",
 		"mobx": "5.15.7",
 		"semver": "=7.3.5",
-		"vscode-languageclient": "^8.0.0-next.1"
+		"vscode-languageclient": "^8.0.0-next.14"
 	},
 	"devDependencies": {
 		"@types/cheerio": "^0.22.30",
