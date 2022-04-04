@@ -108,7 +108,7 @@ export interface InfoviewApi {
 
   /** Must fire with the server's initialization message when the server is started or restarted. */
   serverRestarted(serverInitializeResult: InitializeResult): Promise<void>;
-  /** TODO */
+  /** Must fire with the server's message when the server is stopped. */
   serverStopped(serverStoppedResult: string): Promise<void>;
 
   /**

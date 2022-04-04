@@ -278,7 +278,7 @@ export class LeanClientProvider implements Disposable {
             });
 
             client.stopped(err => {
-                // TODO:
+                // fires a message in case there is an active client
                 if (client === this.activeClient)
                 {
                     this.activeClientStoppedEmitter.fire(err);
