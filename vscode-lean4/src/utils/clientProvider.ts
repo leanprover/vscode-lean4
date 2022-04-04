@@ -29,6 +29,9 @@ export class LeanClientProvider implements Disposable {
     private clientRemovedEmitter = new EventEmitter<LeanClient>()
     clientRemoved = this.clientRemovedEmitter.event
 
+    private activeClientStoppedEmitter = new EventEmitter<string>()
+    activeClientStopped = this.activeClientStoppedEmitter.event
+
     constructor(localStorage : LocalStorageService, installer : LeanInstaller, pkgService : LeanpkgService, outputChannel : OutputChannel) {
         this.localStorage = localStorage;
         this.outputChannel = outputChannel;
@@ -272,6 +275,14 @@ export class LeanClientProvider implements Disposable {
                 this.clients.delete(key);
                 cached?.dispose();
                 void window.showErrorMessage(err);
+            });
+
+            client.stopped(err => {
+                // TODO:
+                if (client === this.activeClient)
+                {
+                    this.activeClientStoppedEmitter.fire(err);
+                }
             });
 
             // aggregate progress changed events.

@@ -240,6 +240,10 @@ export class InfoProvider implements Disposable {
             void this.onClientRemoved(client);
         });
 
+        provider.activeClientStopped((err) => {
+            void this.onActiveClientStopped(err);
+        });
+
         this.subscriptions.push(
             window.onDidChangeActiveTextEditor(() => this.sendPosition()),
             window.onDidChangeTextEditorSelection(() => this.sendPosition()),
@@ -313,6 +317,11 @@ export class InfoProvider implements Disposable {
 
     onClientRemoved(client: LeanClient) {
         // todo: remove subscriptions for this client...
+    }
+
+    async onActiveClientStopped(msg: string) {
+        // todo: add comment
+        await this.webviewPanel?.api.serverStopped(msg);
     }
 
     dispose(): void {
@@ -463,6 +472,7 @@ export class InfoProvider implements Disposable {
         // by listening to notifications.  Send these notifications when the infoview starts
         // so that it has up-to-date information.
         if (client?.initializeResult) {
+            await this.webviewPanel?.api.serverStopped(''); // clear any server stopped state
             await this.webviewPanel?.api.serverRestarted(client.initializeResult);
             await this.sendDiagnostics(client);
             await this.sendProgress(client);

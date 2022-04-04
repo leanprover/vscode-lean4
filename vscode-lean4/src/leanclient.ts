@@ -75,7 +75,7 @@ export class LeanClient implements Disposable {
     private progressChangedEmitter = new EventEmitter<[string, LeanFileProgressProcessingInfo[]]>()
     progressChanged = this.progressChangedEmitter.event
 
-    private stoppedEmitter = new EventEmitter()
+    private stoppedEmitter = new EventEmitter<string>()
     stopped = this.stoppedEmitter.event
 
     private restartedEmitter = new EventEmitter()
@@ -279,7 +279,8 @@ export class LeanClient implements Disposable {
                     const end = Date.now()
                     console.log('client running, started in ', end - startTime, 'ms');
                     this.running = true; // may have been auto restarted after it failed.
-                } else {
+                } else if (s.newState === State.Stopped) {
+                    this.stoppedEmitter.fire('Lean language server has stopped');
                     console.log('client has stopped or it failed to start');
                     this.running = false;
                 }
@@ -417,7 +418,6 @@ export class LeanClient implements Disposable {
     async stop(): Promise<void> {
         assert(() => this.isStarted())
         if (this.client && this.running) {
-            this.stoppedEmitter.fire(undefined);
             await this.client.stop()
         }
 

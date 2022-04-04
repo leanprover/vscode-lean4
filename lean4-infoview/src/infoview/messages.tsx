@@ -15,8 +15,6 @@ interface MessageViewProps {
     diag: InteractiveDiagnostic;
 }
 
-let clientIsNotRunning = false;
-
 const MessageView = React.memo(({uri, diag}: MessageViewProps) => {
     const ec = React.useContext(EditorContext);
     const fname = escapeHtml(basename(uri));
@@ -100,7 +98,6 @@ export function AllMessages({uri: uri0}: { uri: DocumentUri }) {
     const iDiags0 = React.useMemo(() => lazy(async () => {
         if (sv?.hasWidgetsV1()) {
             try {
-                clientIsNotRunning = false;
                 return await getInteractiveDiagnostics(rs, { uri: uri0, line: 0, character: 0 }) || [];
             } catch (err: any) {
                 if (err?.code === -32801) {
@@ -110,7 +107,6 @@ export function AllMessages({uri: uri0}: { uri: DocumentUri }) {
                     // `getInteractiveDiagnostics` again.
                 } else {
                     console.log('getInteractiveDiagnostics error ', err)
-                    clientIsNotRunning = true;
                     return
                 }
             }
@@ -129,18 +125,11 @@ export function AllMessages({uri: uri0}: { uri: DocumentUri }) {
             setOpenRef.current(t => !t);
         }
     });
-    // Fetch interactive diagnostics for updating new messages in case server crashes
-    const [msgs, setMsgs] = React.useState<InteractiveDiagnostic[] | undefined>(undefined)
-    React.useEffect(() => void iDiags().then(setMsgs), [diags0])
 
-    if (clientIsNotRunning) {
-        // in case server crashes
-        return <>Restarting the server. Please wait.</>
-    }
     return(
     <Details setOpenRef={setOpenRef as any} initiallyOpen={!config.infoViewAutoOpenShowGoal}>
         <summary className="mv2 pointer">
-            All Messages ({msgs?.length})
+            All Messages ({diags.length})
             <span className="fr">
                 <a className={'link pointer mh2 dim codicon ' + (isPaused ? 'codicon-debug-continue' : 'codicon-debug-pause')}
                    onClick={e => { e.preventDefault(); setPaused(p => !p); }}
@@ -192,18 +181,12 @@ export function useMessagesForFile(uri: DocumentUri, line?: number): Interactive
                 if (diags) {
                     setDiags(diags)
                 }
-                clientIsNotRunning = false;
             } catch (err: any) {
                 if (err?.code === -32801) {
                     // Document has been changed since we made the request.
                     // This can happen while typing quickly, so server will catch up on next edit.
                 } else {
-                    if (err?.code === undefined){
-                        clientIsNotRunning = true;
-                        console.log('Client is not running ', err);
-                    } else {
-                        console.log('getInteractiveDiagnostics error ', err);
-                    }
+                    console.log('getInteractiveDiagnostics error ', err);
                 }
             }
         }

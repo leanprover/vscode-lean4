@@ -108,6 +108,8 @@ export interface InfoviewApi {
 
   /** Must fire with the server's initialization message when the server is started or restarted. */
   serverRestarted(serverInitializeResult: InitializeResult): Promise<void>;
+  /** TODO */
+  serverStopped(serverStoppedResult: string): Promise<void>;
 
   /**
    * Must fire whenever the user moves their cursor or makes a selection while in a Lean file.
