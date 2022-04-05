@@ -27,10 +27,10 @@ class RpcSession implements Disposable {
 
     constructor(client: LeanClient, public sessionId: string, public uri: ls.DocumentUri) {
         this.client = client;
-        this.keepAliveInterval = setInterval(async () => {
+        this.keepAliveInterval = setInterval(() => {
             const params: RpcKeepAliveParams = { uri, sessionId }
             try {
-                await client.sendNotification('$/lean/rpc/keepAlive', params)
+                client.sendNotification('$/lean/rpc/keepAlive', params)
             } catch (e) {
                 console.log(`failed to send keepalive for ${uri}`, e)
                 if (this.keepAliveInterval) clearInterval(this.keepAliveInterval)
@@ -100,7 +100,7 @@ export class InfoProvider implements Disposable {
         sendClientNotification: async (uri: string, method: string, params: any): Promise<void> => {
             const client = this.clientProvider.findClient(uri);
             if (client) {
-                await client.sendNotification(method, params);
+                client.sendNotification(method, params);
             }
         },
         subscribeServerNotifications: async (method) => {
