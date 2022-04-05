@@ -59,7 +59,7 @@ function Main(props: {}) {
         ret = <p>Waiting for Lean server to start...</p>
     } else if (serverStoppedResult){
         ret = <p>Server unavailable. Please restart it.</p>
-    } if (!curUri) {
+    } else if (!curUri) {
         ret = <p>Click somewhere in the Lean file to enable the infoview.</p>
     } else {
         ret =
