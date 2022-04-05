@@ -57,10 +57,10 @@ function Main(props: {}) {
     let ret
     if (!serverInitializeResult) {
         ret = <p>Waiting for Lean server to start...</p>
-    } else if (!curUri) {
-        ret = <p>Click somewhere in the Lean file to enable the infoview.</p>
     } else if (serverStoppedResult){
         ret = <p>Server unavailable. Please restart it.</p>
+    } if (!curUri) {
+        ret = <p>Click somewhere in the Lean file to enable the infoview.</p>
     } else {
         ret =
             (<div className="ma1">
