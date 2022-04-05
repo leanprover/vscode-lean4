@@ -107,7 +107,6 @@ export function AllMessages({uri: uri0}: { uri: DocumentUri }) {
                     // `getInteractiveDiagnostics` again.
                 } else {
                     console.log('getInteractiveDiagnostics error ', err)
-                    return
                 }
             }
         }
@@ -126,7 +125,7 @@ export function AllMessages({uri: uri0}: { uri: DocumentUri }) {
         }
     });
 
-    return(
+    return (
     <Details setOpenRef={setOpenRef as any} initiallyOpen={!config.infoViewAutoOpenShowGoal}>
         <summary className="mv2 pointer">
             All Messages ({diags.length})
@@ -186,7 +185,7 @@ export function useMessagesForFile(uri: DocumentUri, line?: number): Interactive
                     // Document has been changed since we made the request.
                     // This can happen while typing quickly, so server will catch up on next edit.
                 } else {
-                    console.log('getInteractiveDiagnostics error ', err);
+                    console.log('getInteractiveDiagnostics error ', err)
                 }
             }
         }

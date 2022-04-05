@@ -60,7 +60,9 @@ function Main(props: {}) {
     } else if (!curUri) {
         ret = <p>Click somewhere in the Lean file to enable the infoview.</p>
     } else if (serverStoppedResult){
-        ret = <p>Server unavailable. Please restart <a>here</a></p>
+        ret = <p>Server unavailable. Please restart <a className={'link pointer mh2 dim codicon '}
+        onClick={e => { e.preventDefault(); /**setPaused(p => !p);*/ }}>here
+        </a></p>
     } else {
         ret =
             (<div className="ma1">
