@@ -320,7 +320,7 @@ export class InfoProvider implements Disposable {
     }
 
     async onActiveClientStopped(msg: string) {
-        // todo: add comment
+        // Will show a message in case the active client stops
         await this.webviewPanel?.api.serverStopped(msg);
     }
 
