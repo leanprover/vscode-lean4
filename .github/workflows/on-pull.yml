@@ -1,7 +1,7 @@
 name: vscode-lean4 build
 
 on:
-  push:
+  pull_request:
     branches:
     - master
 
