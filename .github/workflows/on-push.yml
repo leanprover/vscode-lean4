@@ -3,7 +3,10 @@ name: vscode-lean4 build
 on:
   push:
     branches:
-    - master
+    - '*'
+  pull_request:
+    branches:
+    - '*'
 
 jobs:
   build-and-test:
