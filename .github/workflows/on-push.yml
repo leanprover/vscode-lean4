@@ -1,6 +1,12 @@
 name: vscode-lean4 build
 
-on: [push, pull_request]
+on:
+  pull_request:
+    branches:
+    - '*'
+  push:
+    branches:
+    - '*'
 
 jobs:
   build-and-test:
@@ -54,7 +60,7 @@ jobs:
           curl -O --location https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh
           chmod u+x elan-init.sh
           ./elan-init.sh -y --default-toolchain leanprover/lean4:nightly
-          echo Checking location "$HOME/.elan/bin"...
+          echo "Checking location $HOME/.elan/bin..."
           ls -al $HOME/.elan/bin
           elan --version
           mkdir master
@@ -71,8 +77,8 @@ jobs:
         shell: pwsh
         run: |
           curl -O --location https://raw.githubusercontent.com/leanprover/elan/master/elan-init.ps1
-          .\elan-init.ps1 -NoMenu 1 -DefaultToolchain leanprover/lean4:nightly
-          echo Checking location "$HOME\.elan\bin"...
+          .\elan-init.ps1 -NoPrompt 1 -DefaultToolchain leanprover/lean4:nightly
+          echo "Checking location $HOME\.elan\bin..."
           dir "$HOME\.elan\bin"
           elan --version
           mkdir master
