@@ -35,13 +35,13 @@ adding a newline seems to work, then press F5.
 To publish the extension on the VS Code marketplace you
 should run the `./release.sh` script.
 
-This gives you a .vsix which you can install using the VS Code
-command `Extensions: Install from VSIX...`.
-
 See [publishing extensions](https://code.visualstudio.com/api/working-with-extensions/publishing-extension)
 for more information.
 
 You can build a local .vsix for testing using `npx vsce package`.
+
+This gives you a .vsix which you can install using the VS Code
+command `Extensions: Install from VSIX...`.
 
 ## Troubleshooting
 
