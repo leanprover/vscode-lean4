@@ -41,6 +41,8 @@ command `Extensions: Install from VSIX...`.
 See [publishing extensions](https://code.visualstudio.com/api/working-with-extensions/publishing-extension)
 for more information.
 
+You can build a local .vsix for testing using `npx vsce package`.
+
 ## Troubleshooting
 
 **[!] SyntaxError: Cannot use import statement outside a module**
