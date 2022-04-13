@@ -5,7 +5,7 @@
 	"version": "0.0.70",
 	"publisher": "leanprover",
 	"engines": {
-		"vscode": "^1.57.0"
+		"vscode": "^1.61.0"
 	},
 	"categories": [
 		"Programming Languages"
@@ -425,7 +425,7 @@
 		"cheerio": "^1.0.0-rc.10",
 		"mobx": "5.15.7",
 		"semver": "=7.3.5",
-		"vscode-languageclient": "=7.0.0"
+		"vscode-languageclient": "^8.0.0-next.14"
 	},
 	"devDependencies": {
 		"@types/cheerio": "^0.22.30",
@@ -434,7 +434,7 @@
 		"@types/node": "^17.0.7",
 		"@types/ps-node": "^0.1.1",
 		"@types/semver": "^5.3.30",
-		"@types/vscode": "^1.57.0",
+		"@types/vscode": "^1.61.0",
 		"@types/vscode-webview": "^1.57.0",
 		"@vscode/test-electron": "^2.1.2",
 		"concurrently": "^7.0.0",
