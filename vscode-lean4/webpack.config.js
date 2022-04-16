@@ -58,6 +58,9 @@ function getWebviewConfig(env) {
 				}, {
 					from: path.resolve(__dirname, 'node_modules', '@esm-bundle', 'react-dom', 'esm'),
 					to: path.resolve(__dirname, 'dist', 'react-dom')
+				}, {
+					from: path.resolve(__dirname, 'media', 'es-module-shims.js'),
+					to: path.resolve(__dirname, 'dist', 'es-module-shims.js')
 				}]
 			})
 		]
