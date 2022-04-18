@@ -286,4 +286,6 @@ If this version is not yet installed `lean --version` will install it.
 In the case of a workspace override the `+version` command line option is used on `lean --version`
 and `lean --server` to ensure that the overridden version is used.
 
-See also [Development](docs/dev.md).
+## For VSCode extension developers
+
+See [Development](docs/dev.md).
