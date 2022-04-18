@@ -50,4 +50,4 @@ command `Extensions: Install from VSIX...`.
 On Windows the build can fail if the path in your Terminal window has the wrong "case" on the drive letter.
 For example, if your terminal was started in `d:\git\leanprover\vscode-lean4` and you get this error then
 try and start your terminal using an upper case driver letter like this: `D:\git\leanprover\vscode-lean4`.
-Then the build should succeeded.  This is an open bug in [bug in rollup](https://github.com/rollup/rollup/issues/4439).
+Then the build should succeed.  This is an open [bug in Rollup](https://github.com/rollup/rollup/issues/4439).
