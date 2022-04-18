@@ -299,22 +299,23 @@ export class LeanClient implements Disposable {
         }
 
         // HACK(WN): Register a default notification handler to fire on custom notifications.
-        // There is an API for this in vscode-jsonrpc but not in vscode-languageclient, so we
-        // hack around its implementation.
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-        this.client.onNotification({
-            method: (method: string, params_: any) => {
-                if (method === '$/lean/fileProgress' && this.client) {
-                    const params = params_ as LeanFileProgressParams;
-                    const uri = this.client.protocol2CodeConverter.asUri(params.textDocument.uri)
-                    this.progressChangedEmitter.fire([uri.toString(), params.processing]);
-                    // save the latest progress on this Uri in case infoview needs it later.
-                    this.progress.set(uri, params.processing);
-                }
-
-                this.customNotificationEmitter.fire({method, params: params_});
+        // A mechanism to do this is provided in vscode-jsonrpc. One can register a `StarNotificationHandler`
+        // here: https://github.com/microsoft/vscode-languageserver-node/blob/b2fc85d28a1a44c22896559ee5f4d3ba37a02ef5/jsonrpc/src/common/connection.ts#L497
+        // which fires on any LSP notifications not in the standard, for example the `$/lean/..` ones.
+        // However this mechanism is not exposed in vscode-languageclient, so we hack around its implementation.
+        const starHandler = (method: string, params_: any) => {
+            if (method === '$/lean/fileProgress' && this.client) {
+                const params = params_ as LeanFileProgressParams;
+                const uri = this.client.protocol2CodeConverter.asUri(params.textDocument.uri)
+                this.progressChangedEmitter.fire([uri.toString(), params.processing]);
+                // save the latest progress on this Uri in case infoview needs it later.
+                this.progress.set(uri, params.processing);
             }
-        } as any, ()=>{});
+
+            this.customNotificationEmitter.fire({method, params: params_});
+        };
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+        this.client.onNotification(starHandler as any, () => {});
 
         // Reveal the standard error output channel when the server prints something to stderr.
         // The vscode-languageclient library already takes care of writing it to the output channel.
