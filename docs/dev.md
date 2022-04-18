@@ -38,7 +38,7 @@ should run the `./release.sh` script.
 See [publishing extensions](https://code.visualstudio.com/api/working-with-extensions/publishing-extension)
 for more information.
 
-You can build a local .vsix for testing using `npx vsce package`.
+You can build a local .vsix for testing using `npm run package` in the `vscode-lean4/` subdirectory.
 
 This gives you a .vsix which you can install using the VS Code
 command `Extensions: Install from VSIX...`.
