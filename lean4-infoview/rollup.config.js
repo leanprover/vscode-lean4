@@ -45,7 +45,9 @@ export default {
         }),
         typescript({
             tsconfig: "./tsconfig.json",
-            outputToFilesystem: false
+            outputToFilesystem: false,
+            // https://stackoverflow.com/a/63235210
+            sourceMap: false        
         }),
         nodeResolve({
             browser: true

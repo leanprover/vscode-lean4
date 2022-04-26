@@ -217,18 +217,18 @@ export class LeanClient implements Disposable {
                     return;
                 },
 
-                didChange: (data, next) => {
-                    next(data);
+                didChange: async (data, next) => {
+                    await next(data);
                     if (!this.running || !this.client) return; // there was a problem starting lean server.
                     const params = this.client.code2ProtocolConverter.asChangeTextDocumentParams(data);
                     this.didChangeEmitter.fire(params);
                 },
 
-                didClose: (doc, next) => {
+                didClose: async (doc, next) => {
                     if (!this.isOpen.delete(doc.uri.toString())) {
                         return;
                     }
-                    next(doc);
+                    await next(doc);
                     if (!this.running || !this.client) return; // there was a problem starting lean server.
                     const params = this.client.code2ProtocolConverter.asCloseTextDocumentParams(doc);
                     this.didCloseEmitter.fire(params);
@@ -301,22 +301,23 @@ export class LeanClient implements Disposable {
         }
 
         // HACK(WN): Register a default notification handler to fire on custom notifications.
-        // There is an API for this in vscode-jsonrpc but not in vscode-languageclient, so we
-        // hack around its implementation.
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-        this.client.onNotification({
-            method: (method: string, params_: any) => {
-                if (method === '$/lean/fileProgress' && this.client) {
-                    const params = params_ as LeanFileProgressParams;
-                    const uri = this.client.protocol2CodeConverter.asUri(params.textDocument.uri)
-                    this.progressChangedEmitter.fire([uri.toString(), params.processing]);
-                    // save the latest progress on this Uri in case infoview needs it later.
-                    this.progress.set(uri, params.processing);
-                }
-
-                this.customNotificationEmitter.fire({method, params: params_});
+        // A mechanism to do this is provided in vscode-jsonrpc. One can register a `StarNotificationHandler`
+        // here: https://github.com/microsoft/vscode-languageserver-node/blob/b2fc85d28a1a44c22896559ee5f4d3ba37a02ef5/jsonrpc/src/common/connection.ts#L497
+        // which fires on any LSP notifications not in the standard, for example the `$/lean/..` ones.
+        // However this mechanism is not exposed in vscode-languageclient, so we hack around its implementation.
+        const starHandler = (method: string, params_: any) => {
+            if (method === '$/lean/fileProgress' && this.client) {
+                const params = params_ as LeanFileProgressParams;
+                const uri = this.client.protocol2CodeConverter.asUri(params.textDocument.uri)
+                this.progressChangedEmitter.fire([uri.toString(), params.processing]);
+                // save the latest progress on this Uri in case infoview needs it later.
+                this.progress.set(uri, params.processing);
             }
-        } as any, ()=>{});
+
+            this.customNotificationEmitter.fire({method, params: params_});
+        };
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+        this.client.onNotification(starHandler as any, () => {});
 
         // Reveal the standard error output channel when the server prints something to stderr.
         // The vscode-languageclient library already takes care of writing it to the output channel.
@@ -339,7 +340,7 @@ export class LeanClient implements Disposable {
             diag.fullRange = p2c.asRange(protDiag.fullRange)
             return diag
         }
-        p2c.asDiagnostics = (diags) => diags.map(d => p2c.asDiagnostic(d))
+        p2c.asDiagnostics = async (diags) => diags.map(d => p2c.asDiagnostic(d))
 
         // eslint-disable-next-line @typescript-eslint/unbound-method
         const c2pAsDiagnostic = c2p.asDiagnostic;
@@ -348,7 +349,7 @@ export class LeanClient implements Disposable {
             protDiag.fullRange = c2p.asRange(diag.fullRange)
             return protDiag
         }
-        c2p.asDiagnostics = (diags) => diags.map(d => c2p.asDiagnostic(d))
+        c2p.asDiagnostics = async (diags) => diags.map(d => c2p.asDiagnostic(d))
     }
 
     async openLean4Document(doc: TextDocument) {
@@ -471,7 +472,7 @@ export class LeanClient implements Disposable {
     }
 
     // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-    sendNotification(method: string, params: any): void {
+    sendNotification(method: string, params: any): Promise<void> | undefined{
         return this.running  && this.client ? this.client.sendNotification(method, params) : undefined;
     }
 
@@ -492,10 +493,10 @@ export class LeanClient implements Disposable {
         return this.running && range ? this.client?.protocol2CodeConverter.asRange(range) : undefined;
     }
 
-    getDiagnosticParams(uri: Uri, diagnostics: readonly Diagnostic[]) : PublishDiagnosticsParams {
+    async getDiagnosticParams(uri: Uri, diagnostics: readonly Diagnostic[]) : Promise<PublishDiagnosticsParams> {
         const params: PublishDiagnosticsParams = {
             uri: this.convertUri(uri)?.toString(),
-            diagnostics: this.client?.code2ProtocolConverter.asDiagnostics(diagnostics as Diagnostic[]) ?? []
+            diagnostics: await this.client?.code2ProtocolConverter.asDiagnostics(diagnostics as Diagnostic[]) ?? []
         };
         return params;
     }

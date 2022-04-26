@@ -27,10 +27,10 @@ class RpcSession implements Disposable {
 
     constructor(client: LeanClient, public sessionId: string, public uri: ls.DocumentUri) {
         this.client = client;
-        this.keepAliveInterval = setInterval(() => {
+        this.keepAliveInterval = setInterval(async () => {
             const params: RpcKeepAliveParams = { uri, sessionId }
             try {
-                client.sendNotification('$/lean/rpc/keepAlive', params)
+                await client.sendNotification('$/lean/rpc/keepAlive', params)
             } catch (e) {
                 console.log(`failed to send keepalive for ${uri}`, e)
                 if (this.keepAliveInterval) clearInterval(this.keepAliveInterval)
@@ -100,7 +100,7 @@ export class InfoProvider implements Disposable {
         sendClientNotification: async (uri: string, method: string, params: any): Promise<void> => {
             const client = this.clientProvider.findClient(uri);
             if (client) {
-                client.sendNotification(method, params);
+                await client.sendNotification(method, params);
             }
         },
         subscribeServerNotifications: async (method) => {
@@ -631,7 +631,10 @@ export class InfoProvider implements Disposable {
             </head>
             <body>
                 <div id="react_root"></div>
-                <script type="importmap">
+                <!-- We use guybedford/es-module-shims to polyfill importmaps in browsers
+                which don't support them (i.e. most browsers). -->
+                <script async src="${this.getLocalPath('dist/es-module-shims.js')}"></script>
+                <script type="importmap-shim">
                     {
                         "imports": {
                             "@lean4/infoview": "${this.getLocalPath(`dist/lean4-infoview/index${libPostfix}`)}",
@@ -641,7 +644,7 @@ export class InfoProvider implements Disposable {
                         }
                     }
                 </script>
-                <script type="module" src="${this.getLocalPath('dist/webview.js')}"></script>
+                <script type="module-shim" src="${this.getLocalPath('dist/webview.js')}"></script>
             </body>
             </html>`
     }
