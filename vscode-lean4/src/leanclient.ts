@@ -53,6 +53,7 @@ export class LeanClient implements Disposable {
     private workspaceFolder: WorkspaceFolder | undefined;
     private folderUri: Uri;
     private subscriptions: Disposable[] = []
+    private prompting : boolean = true;
 
     private didChangeEmitter = new EventEmitter<DidChangeTextDocumentParams>()
     didChange = this.didChangeEmitter.event
@@ -280,15 +281,16 @@ export class LeanClient implements Disposable {
                     const end = Date.now()
                     console.log('client running, started in ', end - startTime, 'ms');
                     this.running = true; // may have been auto restarted after it failed.
-                } else if (s.newState === State.Stopped) {
+                } else if (s.newState === State.Stopped && this.prompting) {
                     this.stoppedEmitter.fire('Lean language server has stopped. ');
                     console.log('client has stopped or it failed to start');
                     this.running = false;
                     const restartItem = 'Restart Lean Language Server';
                     const item = await window.showErrorMessage('Please restart Lean language server.',  restartItem);
                     if (item === restartItem) {
-                        void this.restart();
+                        void this.start();
                         this.running = true;
+                        this.prompting = false;
                     }
                 }
             })
