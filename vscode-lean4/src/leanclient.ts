@@ -1,7 +1,7 @@
 import { TextDocument, EventEmitter, Diagnostic,
     DocumentHighlight, Range, DocumentHighlightKind, workspace,
     Disposable, Uri, ConfigurationChangeEvent, OutputChannel, DiagnosticCollection,
-    Position, WorkspaceFolder, window, ExtensionContext } from 'vscode'
+    Position, WorkspaceFolder, window } from 'vscode'
 import {
     Code2ProtocolConverter,
     DidChangeTextDocumentParams,
@@ -284,8 +284,8 @@ export class LeanClient implements Disposable {
                     this.stoppedEmitter.fire('Lean language server has stopped. ');
                     console.log('client has stopped or it failed to start');
                     this.running = false;
-                    const restartItem = 'Restart lean client';
-                    const item = await window.showErrorMessage('Please restart server.',  restartItem);
+                    const restartItem = 'Restart Lean Language Server';
+                    const item = await window.showErrorMessage('Please restart Lean language server.',  restartItem);
                     if (item === restartItem) {
                         void this.restart();
                         this.running = true;
