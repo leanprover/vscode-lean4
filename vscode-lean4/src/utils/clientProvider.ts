@@ -32,6 +32,9 @@ export class LeanClientProvider implements Disposable {
     private activeClientStoppedEmitter = new EventEmitter<string>()
     activeClientStopped = this.activeClientStoppedEmitter.event
 
+    private activateRestartEmitter = new EventEmitter<string>()
+    activateRestart = this.activateRestartEmitter.event
+
     constructor(localStorage : LocalStorageService, installer : LeanInstaller, pkgService : LeanpkgService, outputChannel : OutputChannel) {
         this.localStorage = localStorage;
         this.outputChannel = outputChannel;
@@ -46,7 +49,8 @@ export class LeanClientProvider implements Disposable {
 
         this.subscriptions.push(
             commands.registerCommand('lean4.refreshFileDependencies', () => this.refreshFileDependencies()),
-            commands.registerCommand('lean4.restartServer', () => this.restartActiveClient())
+            commands.registerCommand('lean4.restartServer', () => this.restartActiveClient()),
+            commands.registerCommand('lean4.killServer', () => this.killActiveClient())
         );
 
         workspace.onDidOpenTextDocument((document) => this.didOpenEditor(document));
@@ -119,6 +123,10 @@ export class LeanClientProvider implements Disposable {
 
     private restartActiveClient() {
         void this.activeClient?.restart();
+    }
+
+    private killActiveClient() {
+        void this.activeClient?.stop();
     }
 
     clientIsStarted() {
@@ -278,6 +286,21 @@ export class LeanClientProvider implements Disposable {
                 {
                     this.activeClientStoppedEmitter.fire(err);
                 }
+            });
+            function delay(ms: number) {
+                return new Promise( resolve => setTimeout(resolve, ms) );
+            }
+
+            client.activateRestart(err => {
+                // Try to restart the client.
+                this.activateRestartEmitter.fire(err)
+                void (async () => {
+                    console.log(err + ' Starting delay for restart the client')
+
+                    await delay(7500);
+                    console.log('Restarting...')
+                    this.restartActiveClient()
+                })();
             });
 
             // aggregate progress changed events.

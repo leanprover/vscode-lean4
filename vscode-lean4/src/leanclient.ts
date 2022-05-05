@@ -87,6 +87,9 @@ export class LeanClient implements Disposable {
     private serverFailedEmitter = new EventEmitter<string>();
     serverFailed = this.serverFailedEmitter.event
 
+    private activateRestartEmitter = new EventEmitter<string>();
+    activateRestart = this.activateRestartEmitter.event
+
     /** Files which are open. */
     private isOpen: Map<string, TextDocument> = new Map()
 
@@ -280,7 +283,8 @@ export class LeanClient implements Disposable {
                     console.log('client running, started in ', end - startTime, 'ms');
                     this.running = true; // may have been auto restarted after it failed.
                 } else if (s.newState === State.Stopped) {
-                    this.stoppedEmitter.fire('Lean language server has stopped');
+                    this.stoppedEmitter.fire('Lean language server has stopped. ');
+                    this.activateRestartEmitter.fire('Restarting client... Please wait.');
                     console.log('client has stopped or it failed to start');
                     this.running = false;
                 }

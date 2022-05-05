@@ -110,6 +110,8 @@ export interface InfoviewApi {
   serverRestarted(serverInitializeResult: InitializeResult): Promise<void>;
   /** Must fire with the server's message when the server is stopped. */
   serverStopped(serverStoppedResult: string): Promise<void>;
+  /** Must fire with the server's message when the server is stopped and is restarted. */
+  restartServerStopped(restartServerStoppedResult: string): Promise<void>;
 
   /**
    * Must fire whenever the user moves their cursor or makes a selection while in a Lean file.

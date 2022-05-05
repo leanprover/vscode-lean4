@@ -244,6 +244,11 @@ export class InfoProvider implements Disposable {
             void this.onActiveClientStopped(err);
         });
 
+        provider.activateRestart((err) => {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+            void this.onRestartClientStopped(err);
+        });
+
         this.subscriptions.push(
             window.onDidChangeActiveTextEditor(() => this.sendPosition()),
             window.onDidChangeTextEditorSelection(() => this.sendPosition()),
@@ -322,6 +327,11 @@ export class InfoProvider implements Disposable {
     async onActiveClientStopped(msg: string) {
         // Will show a message in case the active client stops
         await this.webviewPanel?.api.serverStopped(msg);
+    }
+
+    async onRestartClientStopped(msg: string) {
+        // Will show a message in case the server needs to be restarted
+        await this.webviewPanel?.api.restartServerStopped(msg)
     }
 
     dispose(): void {
