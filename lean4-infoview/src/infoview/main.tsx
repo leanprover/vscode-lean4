@@ -52,7 +52,6 @@ function Main(props: {}) {
     const sv = serverInitializeResult ? new ServerVersion(serverInitializeResult.serverInfo?.version ?? '') : undefined;
     // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
     const serverStoppedResult = useEventResult(ec.events.serverStopped);
-    const reloadServerResult = useEventResult(ec.events.restartServerStopped);
     //
     // NB: the cursor may temporarily become `undefined` when a file is closed. In this case
     // it's important not to reconstruct the `WithBlah` wrappers below since they contain state
@@ -61,7 +60,7 @@ function Main(props: {}) {
     if (!serverInitializeResult) {
         ret = <p>Waiting for Lean server to start...</p>
     } else if (serverStoppedResult){
-        ret = <p>{serverStoppedResult + ' ' + reloadServerResult}
+        ret = <p>{serverStoppedResult}
         </p>
     } else if (!curUri) {
         ret = <p>Click somewhere in the Lean file to enable the infoview.</p>
@@ -102,7 +101,6 @@ export function renderInfoview(editorApi: EditorApi, uiElement: HTMLElement): In
         sentClientNotification: new Event(),
         serverRestarted: new Event(),
         serverStopped: new Event(),
-        restartServerStopped: new Event(),
         changedCursorLocation: new Event(),
         changedInfoviewConfig: new Event(),
         runTestScript: new Event(),
@@ -120,7 +118,6 @@ export function renderInfoview(editorApi: EditorApi, uiElement: HTMLElement): In
         },
         serverRestarted: async r => editorEvents.serverRestarted.fire(r),
         serverStopped: async s => editorEvents.serverStopped.fire(s),
-        restartServerStopped: async rs => editorEvents.restartServerStopped.fire(rs),
         changedCursorLocation: async loc => editorEvents.changedCursorLocation.fire(loc),
         changedInfoviewConfig: async conf => editorEvents.changedInfoviewConfig.fire(conf),
         requestedAction: async action => editorEvents.requestedAction.fire(action),

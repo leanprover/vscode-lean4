@@ -1,7 +1,7 @@
 import { TextDocument, EventEmitter, Diagnostic,
     DocumentHighlight, Range, DocumentHighlightKind, workspace,
     Disposable, Uri, ConfigurationChangeEvent, OutputChannel, DiagnosticCollection,
-    Position, WorkspaceFolder } from 'vscode'
+    Position, WorkspaceFolder, window, ExtensionContext } from 'vscode'
 import {
     Code2ProtocolConverter,
     DidChangeTextDocumentParams,
@@ -30,6 +30,7 @@ import { join } from 'path';
  // @ts-ignore
 import { SemVer } from 'semver';
 import { fileExists } from './utils/fsHelper';
+import { LeanInstaller } from './utils/leanInstaller';
 
 const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
@@ -86,9 +87,6 @@ export class LeanClient implements Disposable {
 
     private serverFailedEmitter = new EventEmitter<string>();
     serverFailed = this.serverFailedEmitter.event
-
-    private activateRestartEmitter = new EventEmitter<string>();
-    activateRestart = this.activateRestartEmitter.event
 
     /** Files which are open. */
     private isOpen: Map<string, TextDocument> = new Map()
@@ -274,7 +272,7 @@ export class LeanClient implements Disposable {
         )
         this.patchConverters(this.client.protocol2CodeConverter, this.client.code2ProtocolConverter)
         try {
-            this.client.onDidChangeState((s) =>{
+            this.client.onDidChangeState(async (s) =>{
                 // see https://github.com/microsoft/vscode-languageserver-node/issues/825
                 if (s.newState === State.Starting) {
                     console.log('client starting');
@@ -284,9 +282,14 @@ export class LeanClient implements Disposable {
                     this.running = true; // may have been auto restarted after it failed.
                 } else if (s.newState === State.Stopped) {
                     this.stoppedEmitter.fire('Lean language server has stopped. ');
-                    this.activateRestartEmitter.fire('Restarting client... Please wait.');
                     console.log('client has stopped or it failed to start');
                     this.running = false;
+                    const restartItem = 'Restart lean client';
+                    const item = await window.showErrorMessage('Please restart server.',  restartItem);
+                    if (item === restartItem) {
+                        void this.restart();
+                        this.running = true;
+                    }
                 }
             })
             this.client.start()
