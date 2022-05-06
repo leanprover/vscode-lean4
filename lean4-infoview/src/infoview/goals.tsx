@@ -30,6 +30,7 @@ export function goalsToString(goals: InteractiveGoals): string {
 }
 
 export function Goal({pos, goal}: {pos: DocumentPosition, goal: InteractiveGoal}) {
+    const prefix = goal.goalPrefix ?? '⊢ '
     return <div className="font-code tl pre-wrap">
         <ul className="list pl0">
             {goal.userName && <li key={'case'}><strong className="goal-case">case </strong>{goal.userName}</li>}
@@ -40,7 +41,7 @@ export function Goal({pos, goal}: {pos: DocumentPosition, goal: InteractiveGoal}
                 </li>
             })}
             <li key={'goal'}>
-                <strong className="goal-vdash">⊢ </strong><InteractiveCode pos={pos} fmt={goal.type} />
+                <strong className="goal-vdash">{prefix}</strong><InteractiveCode pos={pos} fmt={goal.type} />
             </li>
         </ul>
     </div>
