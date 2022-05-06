@@ -103,7 +103,7 @@ export async function resetToolchain(clientProvider: LeanClientProvider | undefi
     }
 }
 
-export async function waitForActiveExtension(extensionId: string, retries=10, delay=1000) : Promise<vscode.Extension<Exports> | null> {
+export async function waitForActiveExtension(extensionId: string, retries=30, delay=1000) : Promise<vscode.Extension<Exports> | null> {
 
     console.log(`Waiting for extension ${extensionId} to be loaded...`);
     let lean : vscode.Extension<Exports> | undefined;
@@ -135,7 +135,7 @@ export async function waitForActiveExtension(extensionId: string, retries=10, de
     return lean;
 }
 
-export async function waitForActiveEditor(filename='', retries=10, delay=1000) : Promise<vscode.TextEditor> {
+export async function waitForActiveEditor(filename='', retries=30, delay=1000) : Promise<vscode.TextEditor> {
     let count = 0;
     while (!vscode.window.activeTextEditor && count < retries){
         await sleep(delay);
@@ -158,7 +158,7 @@ export async function waitForActiveEditor(filename='', retries=10, delay=1000) :
     return editor;
 }
 
-export async function waitForInfoViewOpen(infoView: InfoProvider, retries=10, delay=1000) : Promise<boolean> {
+export async function waitForInfoViewOpen(infoView: InfoProvider, retries=30, delay=1000) : Promise<boolean> {
     let count = 0;
     let opened = false;
     console.log('Waiting for InfoView...');
@@ -179,7 +179,7 @@ export async function waitForInfoViewOpen(infoView: InfoProvider, retries=10, de
     return false;
 }
 
-export async function waitForInfoviewHtml(infoView: InfoProvider, toFind : string, retries=10, delay=1000): Promise<string> {
+export async function waitForInfoviewHtml(infoView: InfoProvider, toFind : string, retries=30, delay=1000): Promise<string> {
     let count = 0;
     let html = '';
     while (count < retries){
@@ -199,7 +199,7 @@ export async function waitForInfoviewHtml(infoView: InfoProvider, toFind : strin
     assert(false, `Missing "${toFind}" in infoview`);
 }
 
-export async function waitForDocViewHtml(docView: DocViewProvider, toFind : string, retries=10, delay=1000): Promise<string> {
+export async function waitForDocViewHtml(docView: DocViewProvider, toFind : string, retries=30, delay=1000): Promise<string> {
     let count = 0;
     let html = '';
     while (count < retries){
@@ -230,7 +230,7 @@ export function extractPhrase(html: string, word: string, terminator: string){
     return '';
 }
 
-export async function findWord(editor: vscode.TextEditor, word: string, retries = 10, delay = 1000) : Promise<vscode.Range> {
+export async function findWord(editor: vscode.TextEditor, word: string, retries=30, delay=1000) : Promise<vscode.Range> {
     let count = 0;
     while (retries > 0) {
             const text = editor.document.getText();
@@ -246,7 +246,7 @@ export async function findWord(editor: vscode.TextEditor, word: string, retries 
     assert(false, `word ${word} not found in editor`);
 }
 
-export async function gotoDefinition(editor: vscode.TextEditor, word: string, retries = 10, delay = 1000) : Promise<void> {
+export async function gotoDefinition(editor: vscode.TextEditor, word: string, retries=30, delay=1000) : Promise<void> {
     const wordRange = await findWord(editor, word, retries, delay);
 
     // The -1 is to workaround a bug in goto definition.
@@ -257,7 +257,7 @@ export async function gotoDefinition(editor: vscode.TextEditor, word: string, re
     await vscode.commands.executeCommand('editor.action.revealDefinition');
 }
 
-export async function restartLeanServer(client: LeanClient, retries=10, delay=1000) : Promise<boolean> {
+export async function restartLeanServer(client: LeanClient, retries=30, delay=1000) : Promise<boolean> {
     let count = 0;
     console.log('restarting lean client ...');
 
