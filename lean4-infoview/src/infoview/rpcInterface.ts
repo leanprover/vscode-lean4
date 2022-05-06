@@ -74,6 +74,7 @@ export interface InteractiveGoal {
     hyps: InteractiveHypothesis[]
     type: CodeWithInfos
     userName?: string
+    goalPrefix?: string
 }
 
 function InteractiveGoal_registerRefs(rs: RpcSessions, pos: DocumentPosition, g: InteractiveGoal) {
