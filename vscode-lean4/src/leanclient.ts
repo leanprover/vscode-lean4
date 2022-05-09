@@ -30,7 +30,6 @@ import { join } from 'path';
  // @ts-ignore
 import { SemVer } from 'semver';
 import { fileExists } from './utils/fsHelper';
-import { LeanInstaller } from './utils/leanInstaller';
 
 const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
@@ -53,7 +52,7 @@ export class LeanClient implements Disposable {
     private workspaceFolder: WorkspaceFolder | undefined;
     private folderUri: Uri;
     private subscriptions: Disposable[] = []
-    private prompting : boolean = true;
+    private noPrompt : boolean = false;
 
     private didChangeEmitter = new EventEmitter<DidChangeTextDocumentParams>()
     didChange = this.didChangeEmitter.event
@@ -273,7 +272,7 @@ export class LeanClient implements Disposable {
         )
         this.patchConverters(this.client.protocol2CodeConverter, this.client.code2ProtocolConverter)
         try {
-            this.client.onDidChangeState(async (s) =>{
+            this.client.onDidChangeState(async (s) => {
                 // see https://github.com/microsoft/vscode-languageserver-node/issues/825
                 if (s.newState === State.Starting) {
                     console.log('client starting');
@@ -281,16 +280,17 @@ export class LeanClient implements Disposable {
                     const end = Date.now()
                     console.log('client running, started in ', end - startTime, 'ms');
                     this.running = true; // may have been auto restarted after it failed.
-                } else if (s.newState === State.Stopped && this.prompting) {
+                    return
+                } else if (s.newState === State.Stopped) {
                     this.stoppedEmitter.fire('Lean language server has stopped. ');
                     console.log('client has stopped or it failed to start');
                     this.running = false;
-                    const restartItem = 'Restart Lean Language Server';
-                    const item = await window.showErrorMessage('Please restart Lean language server.',  restartItem);
-                    if (item === restartItem) {
-                        void this.start();
-                        this.running = true;
-                        this.prompting = false;
+                    if (!this.noPrompt){
+                        const restartItem = 'Restart Lean Language Server';
+                        const item = await window.showErrorMessage('Lean Language Server has stopped unexpectedly.', restartItem)
+                        if (item === restartItem) {
+                            void this.start();
+                        }
                     }
                 }
             })
@@ -428,7 +428,9 @@ export class LeanClient implements Disposable {
     async stop(): Promise<void> {
         assert(() => this.isStarted())
         if (this.client && this.running) {
+            this.noPrompt = true;
             await this.client.stop()
+            this.noPrompt = false;
         }
 
         this.progress = new Map()

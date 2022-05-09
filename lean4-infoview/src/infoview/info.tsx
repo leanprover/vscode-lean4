@@ -273,7 +273,9 @@ function InfoAux(props: InfoProps) {
             const errS = typeof err === 'string' ? err : JSON.stringify(err);
             // we need to check if this value is empty or not, because maybe we are assigning
             // a message error with an empty error
-            if (errS === '{}' || errS === undefined) { setError(undefined); }
+            if (errS === '{}' || errS === undefined) {
+                setError(undefined);
+            }
             else {
                 setError(`Error fetching goals: ${errS}`);
                 setStatus('error');
