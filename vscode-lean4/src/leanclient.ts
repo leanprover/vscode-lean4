@@ -107,6 +107,7 @@ export class LeanClient implements Disposable {
     async restart(): Promise<void> {
         const startTime = Date.now()
 
+        console.log('Restarting Lean Language Server')
         if (this.isStarted()) {
             await this.stop()
         }
@@ -429,10 +430,14 @@ export class LeanClient implements Disposable {
         assert(() => this.isStarted())
         if (this.client && this.running) {
             this.noPrompt = true;
-            await this.client.stop()
-            this.noPrompt = false;
+            try {
+                await this.client.stop()
+            } catch (e) {
+                console.log(`Error stopping language client: ${e}`)
+            }
         }
 
+        this.noPrompt = false;
         this.progress = new Map()
         this.client = undefined
         this.running = false
