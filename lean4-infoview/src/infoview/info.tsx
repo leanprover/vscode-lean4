@@ -164,10 +164,10 @@ export function InfoDisplay(props0: InfoDisplayProps) {
             </div>
             {nothingToShow && (
                 isPaused ?
-                    <span>Updating is paused.
-                        <a className="link pointer dim" onClick={e => { e.preventDefault(); void triggerDisplayUpdate(); }}> Refresh </a>
-                        or <a className="link pointer dim" onClick={e => { e.preventDefault(); setPaused(false); }}>resume updating </a>
-                        to see information.
+                    <span>Updating is paused.&nbsp;
+                        <a className="link pointer dim" onClick={e => { e.preventDefault(); void triggerDisplayUpdate(); }}>Refresh</a>
+                        &nbsp;or <a className="link pointer dim" onClick={e => { e.preventDefault(); setPaused(false); }}>resume updating</a>
+                        &nbsp;to see information.
                     </span> :
                     'No info found.')}
         </div>
