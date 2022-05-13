@@ -135,10 +135,12 @@ export interface LineRange {
 export async function getInteractiveDiagnostics(rs: RpcSessions, pos: DocumentPosition, lineRange?: LineRange): Promise<InteractiveDiagnostic[] | undefined> {
     const ret = await rs.call<InteractiveDiagnostic[]>(pos, 'Lean.Widget.getInteractiveDiagnostics', {lineRange})
     if (ret) {
-        for (const d of ret) {
-            TaggedMsg_registerRefs(rs, pos, d.message)
+        if (ret.length > 0) {
+            for (const d of ret) {
+                TaggedMsg_registerRefs(rs, pos, d.message)
+            }
+            return ret
         }
-        return ret
     }
     // in some cases 'ret' could be ''
     return undefined
