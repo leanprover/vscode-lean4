@@ -449,5 +449,11 @@
 		"webpack-cli": "^4.9.1"
 	},
 	"icon": "images/lean_logo.png",
-	"license": "Apache-2.0"
+	"license": "Apache-2.0",
+	"__metadata": {
+		"id": "ddb6b8b1-9e92-40ce-90d4-45bb5f345ef9",
+		"publisherDisplayName": "leanprover",
+		"publisherId": "36715126-cec3-4ee0-926f-91a098ea5112",
+		"isPreReleaseVersion": false
+	}
 }

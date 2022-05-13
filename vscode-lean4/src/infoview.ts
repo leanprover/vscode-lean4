@@ -240,8 +240,8 @@ export class InfoProvider implements Disposable {
             void this.onClientRemoved(client);
         });
 
-        provider.activeClientStopped((err) => {
-            void this.onActiveClientStopped(err);
+        provider.clientStopped(([client, err]) => {
+            void this.onActiveClientStopped(client, err);
         });
 
         this.subscriptions.push(
@@ -319,7 +319,7 @@ export class InfoProvider implements Disposable {
         // todo: remove subscriptions for this client...
     }
 
-    async onActiveClientStopped(msg: string) {
+    async onActiveClientStopped(client: LeanClient, msg: string) {
         // Will show a message in case the active client stops
         await this.webviewPanel?.api.serverStopped(msg);
     }

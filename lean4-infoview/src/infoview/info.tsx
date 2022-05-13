@@ -129,8 +129,8 @@ export function InfoDisplay(props0: InfoDisplayProps) {
         <div className="ml1">
             {hasError &&
                 <div className="error">
-                    Error updating: {error}.
-                    <a className="link pointer dim" onClick={e => { e.preventDefault(); void triggerDisplayUpdate(); }}>Try again.</a>
+                    Error updating:{' '}{error}.
+                    <a className="link pointer dim" onClick={e => { e.preventDefault(); void triggerDisplayUpdate(); }}>{' '}Try again.</a>
                 </div>}
             <div style={{display: hasGoals ? 'block' : 'none'}}>
                 <Details initiallyOpen>
@@ -164,10 +164,10 @@ export function InfoDisplay(props0: InfoDisplayProps) {
             </div>
             {nothingToShow && (
                 isPaused ?
-                    <span>Updating is paused.&nbsp;
+                    <span>Updating is paused.{' '}
                         <a className="link pointer dim" onClick={e => { e.preventDefault(); void triggerDisplayUpdate(); }}>Refresh</a>
-                        &nbsp;or <a className="link pointer dim" onClick={e => { e.preventDefault(); setPaused(false); }}>resume updating</a>
-                        &nbsp;to see information.
+                        {' '}or <a className="link pointer dim" onClick={e => { e.preventDefault(); setPaused(false); }}>resume updating</a>
+                        {' '}to see information.
                     </span> :
                     'No info found.')}
         </div>
