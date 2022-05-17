@@ -124,6 +124,7 @@ export function InfoDisplay(props0: InfoDisplayProps) {
     const hasTermGoal = status !== 'error' && termGoal;
     const hasMessages = status !== 'error' && messages.length !== 0;
     const filterClasses = 'link pointer mh2 dim codicon fr ' + (reverseOrder ? 'codicon-arrow-up' : 'codicon-arrow-down');
+    const sortButton = <a className={filterClasses} onClick={e => { setReverseOrder(!reverseOrder); }} title="reverse list"/>
     return (
     <Details initiallyOpen>
         <InfoStatusBar {...props} triggerUpdate={triggerDisplayUpdate} isPaused={isPaused} setPaused={setPaused} copyGoalToComment={copyGoalToComment} />
@@ -136,10 +137,7 @@ export function InfoDisplay(props0: InfoDisplayProps) {
             <div style={{display: hasGoals ? 'block' : 'none'}}>
                 <Details initiallyOpen>
                     <summary className="mv2 pointer">
-                        Tactic state
-                        <a className={filterClasses}
-                            onClick={e => {setReverseOrder(!reverseOrder); }}
-                            title="reverse list"/>
+                        Tactic state {sortButton}
                     </summary>
                     <div className='ml1'>
                         {hasGoals && <GoalsUi pos={pos} goals={goals} reverseOrder={reverseOrder} />}
@@ -149,10 +147,7 @@ export function InfoDisplay(props0: InfoDisplayProps) {
             <div style={{display: hasTermGoal ? 'block' : 'none'}}>
                 <Details initiallyOpen>
                     <summary className="mv2 pointer">
-                        Expected type
-                        <a className={filterClasses}
-                            onClick={e => {setReverseOrder(!reverseOrder); }}
-                            title="reverse list"/>
+                        Expected type {sortButton}
                     </summary>
                     <div className='ml1'>
                         {hasTermGoal && <GoalUi pos={pos} goal={termGoal} reverse={reverseOrder} />}
