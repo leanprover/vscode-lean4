@@ -150,6 +150,9 @@ export function InfoDisplay(props0: InfoDisplayProps) {
                 <Details initiallyOpen>
                     <summary className="mv2 pointer">
                         Expected type
+                        <a className={filterClasses}
+                            onClick={e => {setReverseOrder(!reverseOrder); }}
+                            title="reverse list"/>
                     </summary>
                     <div className='ml1'>
                         {hasTermGoal && <GoalUi pos={pos} goal={termGoal} reverse={reverseOrder} />}
