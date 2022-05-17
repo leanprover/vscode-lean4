@@ -3,7 +3,7 @@ import * as React from 'react'
 import { RpcContext } from './contexts'
 import { DocumentPosition } from './util'
 import { CodeToken, CodeWithInfos, InfoPopup, InfoWithCtx, InteractiveDiagnostics_infoToInteractive, TaggedText } from './rpcInterface'
-import { HighlightOnHoverSpan, WithTooltipOnHover } from './tooltips'
+import { DetectHoverSpan, HoverState, WithTooltipOnHover } from './tooltips'
 
 export interface InteractiveTextComponentProps<T> {
   pos: DocumentPosition
@@ -68,18 +68,27 @@ function TypePopupContents({pos, info, redrawTooltip}: {pos: DocumentPosition, i
   } else return <>Loading..</>
 }
 
-/** Tags in code represent values which can be hovered over to display extra info. */
+/** Tagged spans can be hovered over to display extra info stored in the associated `CodeToken`. */
 function InteractiveCodeTag({pos, tag: ct, fmt}: InteractiveTagProps<CodeToken>) {
   const mkTooltip = React.useCallback((redrawTooltip: () => void) =>
     <div className="font-code tl pre-wrap">
       <TypePopupContents pos={pos} info={ct.info}
         redrawTooltip={redrawTooltip} />
     </div>, [pos.uri, pos.line, pos.character, ct.info])
+
+  const [hoverState, setHoverState] = React.useState<HoverState>('off')
   return (
-    <WithTooltipOnHover tooltipContent={mkTooltip}>
-      <HighlightOnHoverSpan>
+    <WithTooltipOnHover tooltipContent={mkTooltip} onClick={e => {
+      if (e.ctrlKey) {
+        console.log("gotodef", fmt)
+      }
+    }}>
+      <DetectHoverSpan
+        setHoverState={setHoverState}
+        className={'highlightable ' + (hoverState !== 'off' ? 'highlight ' : '') + (hoverState === 'ctrlOver' ? 'underline ' : '')}
+      >
         <InteractiveCode pos={pos} fmt={fmt} />
-      </HighlightOnHoverSpan>
+      </DetectHoverSpan>
     </WithTooltipOnHover>
   )
 }

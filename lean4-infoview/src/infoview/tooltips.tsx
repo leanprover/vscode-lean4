@@ -70,11 +70,14 @@ export const Tooltip = forwardAndUseRef<HTMLDivElement,
   return ReactDOM.createPortal(popper, document.body)
 })
 
-/** An element which gets highlighted when its DOM children are hovered over. It is implemented
+export type HoverState = 'off' | 'over' | 'ctrlOver'
+/** An element which calls `setHoverState` when its DOM children are hovered over. It is implemented
  * with JS rather than CSS in order to allow nesting of these elements. When nested, only the
- * smallest (deepest in the DOM tree) {@link HighlightOnHoverSpan} is highlighted. */
-export const HighlightOnHoverSpan = forwardAndUseRef<HTMLSpanElement, React.HTMLProps<HTMLSpanElement>>((props, ref, setRef) => {
-  const [isPointerOver, setIsPointerOver] = React.useState<boolean>(false)
+ * smallest (deepest in the DOM tree) {@link HighlightOnHoverSpan} has an enabled hover state. */
+export const DetectHoverSpan =
+  forwardAndUseRef<HTMLSpanElement,
+    React.HTMLProps<HTMLSpanElement> & {setHoverState: (_: HoverState) => void}>((props_, ref, setRef) => {
+  const {setHoverState, ...props} = props_;
   const onPointerEvent = (b: boolean) => (e: React.PointerEvent<HTMLSpanElement>) => {
     // It's more composable to let pointer events bubble up rather than to `stopPropagating`,
     // but we only want to handle hovers in the innermost component. So we record that the
@@ -83,18 +86,19 @@ export const HighlightOnHoverSpan = forwardAndUseRef<HTMLSpanElement, React.HTML
     // tree and not just a logical React child (see useLogicalDom and
     // https://reactjs.org/docs/portals.html#event-bubbling-through-portals).
     if (ref.current && e.target instanceof Node && ref.current.contains(e.target)) {
-      if ('_HighlightOnHoverSpanSeen' in e) return
-      (e as any)._HighlightOnHoverSpanSeen = {}
-      setIsPointerOver(b)
+      if ('_DetectHoverSpanSeen' in e) return
+      (e as any)._DetectHoverSpanSeen = {}
+      if (!b) setHoverState('off')
+      else if (e.ctrlKey) setHoverState('ctrlOver')
+      else setHoverState('over')
     }
   }
 
   return <span
+      {...props}
       ref={setRef}
-      className={'highlightable ' + (isPointerOver ? 'highlight' : '')}
       onPointerOver={onPointerEvent(true)}
       onPointerOut={onPointerEvent(false)}
-      {...props}
     >
       {props.children}
     </span>
@@ -145,7 +149,7 @@ export const WithTooltipOnHover =
   const showDelay = 500
   const hideDelay = 300
 
-  const onClick = (e: React.PointerEvent<HTMLSpanElement>) => {
+  const onClick = (e: React.MouseEvent<HTMLSpanElement>) => {
     if (!isWithinHoverable(e.target)) return
     e.stopPropagation()
     clearTimeout()
@@ -191,7 +195,7 @@ export const WithTooltipOnHover =
     startHideTimeout()
   }
 
-  const onPointerEvent = (act: () => void) => (e: React.PointerEvent<HTMLSpanElement>) => {
+  const onPointerEvent = (act: () => void, e: React.PointerEvent<HTMLSpanElement>) => {
     if ('_WithTooltipOnHoverSeen' in e) return
     if (!isWithinHoverable(e.target)) return
     (e as any)._WithTooltipOnHoverSeen = {}
@@ -200,11 +204,20 @@ export const WithTooltipOnHover =
 
   return <LogicalDomContext.Provider value={logicalDomStorage}>
     <span
-      ref={setRef}
-      onClick={onClick}
-      onPointerOver={onPointerEvent(startShowTimeout)}
-      onPointerOut={onPointerEvent(startHideTimeout)}
       {...props}
+      ref={setRef}
+      onClick={e => {
+        onClick(e)
+        if (props.onClick !== undefined) props.onClick(e)
+      }}
+      onPointerOver={e => {
+        onPointerEvent(startShowTimeout, e)
+        if (props.onPointerOver !== undefined) props.onPointerOver(e)
+      }}
+      onPointerOut={e => {
+        onPointerEvent(startHideTimeout, e)
+        if (props.onPointerOut !== undefined) props.onPointerOut(e)
+      }}
     >
       {shouldShow &&
         <TipChainContext.Provider value={newTipChainCtx}>
