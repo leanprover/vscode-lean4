@@ -159,5 +159,10 @@ export async function InteractiveDiagnostics_msgToInteractive(rs: RpcSessions, p
 
 export type GoToKind = 'definition' | 'declaration' | 'type'
 export async function getGoToLocation(rs: RpcSessions, pos: DocumentPosition, kind: GoToKind, info: InfoWithCtx): Promise<LocationLink[] | undefined> {
-    return rs.call<LocationLink[]>(pos, 'Lean.Widget.getGoToLocation', [kind, info])
+    interface GetGoToLocationParams {
+        kind: GoToKind;
+        info: InfoWithCtx;
+    }
+    const args: GetGoToLocationParams = { kind, info };
+    return rs.call<LocationLink[]>(pos, 'Lean.Widget.getGoToLocation', args)
 }

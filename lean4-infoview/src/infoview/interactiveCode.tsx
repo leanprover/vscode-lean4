@@ -86,7 +86,7 @@ function InteractiveCodeTag({pos, tag: ct, fmt}: InteractiveTagProps<CodeToken>)
   return (
     <WithTooltipOnHover mkTooltipContent={mkTooltip} onClick={(e, next) => {
       // On ctrl-click, if location is known, go to it in the editor
-      if (e.ctrlKey && goToLoc !== undefined) ec.revealPosition({ uri: goToLoc.uri, ...goToLoc.range.start })
+      if (e.ctrlKey && goToLoc !== undefined) void ec.revealPosition({ uri: goToLoc.uri, ...goToLoc.range.start })
       if (!e.ctrlKey) next(e)
     }}>
       <DetectHoverSpan
