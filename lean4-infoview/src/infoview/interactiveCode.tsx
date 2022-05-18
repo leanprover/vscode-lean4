@@ -1,9 +1,10 @@
 import * as React from 'react'
 
-import { RpcContext } from './contexts'
+import { EditorContext, RpcContext } from './contexts'
 import { DocumentPosition } from './util'
-import { CodeToken, CodeWithInfos, InfoPopup, InfoWithCtx, InteractiveDiagnostics_infoToInteractive, TaggedText } from './rpcInterface'
+import { CodeToken, CodeWithInfos, InfoPopup, InfoWithCtx, InteractiveDiagnostics_infoToInteractive, Lean_Widget_getGoToLocation, TaggedText } from './rpcInterface'
 import { DetectHoverSpan, HoverState, WithTooltipOnHover } from './tooltips'
+import { Location } from 'vscode-languageserver-protocol'
 
 export interface InteractiveTextComponentProps<T> {
   pos: DocumentPosition
@@ -76,16 +77,31 @@ function InteractiveCodeTag({pos, tag: ct, fmt}: InteractiveTagProps<CodeToken>)
         redrawTooltip={redrawTooltip} />
     </div>, [pos.uri, pos.line, pos.character, ct.info])
 
+  // We mimick the VSCode ctrl-hover and ctrl-click UI for go-to-definition
+  const rs = React.useContext(RpcContext)
+  const ec = React.useContext(EditorContext);
+  const [goToLoc, setGoToLoc] = React.useState<Location | undefined>(undefined)
   const [hoverState, setHoverState] = React.useState<HoverState>('off')
+
   return (
-    <WithTooltipOnHover tooltipContent={mkTooltip} onClick={e => {
-      if (e.ctrlKey) {
-        console.log("gotodef", fmt)
-      }
+    <WithTooltipOnHover mkTooltipContent={mkTooltip} onClick={(e, next) => {
+      // On ctrl-click, if location is known, go to it in the editor
+      if (e.ctrlKey && goToLoc !== undefined) ec.revealPosition({ uri: goToLoc.uri, ...goToLoc.range.start })
+      if (!e.ctrlKey) next(e)
     }}>
       <DetectHoverSpan
-        setHoverState={setHoverState}
-        className={'highlightable ' + (hoverState !== 'off' ? 'highlight ' : '') + (hoverState === 'ctrlOver' ? 'underline ' : '')}
+        setHoverState={st => {
+          // On ctrl-hover, fetch the go-to location
+          if (st === 'ctrlOver') {
+            void Lean_Widget_getGoToLocation(rs, pos, ct.info, 'definition').then(loc => {
+              if (loc) setGoToLoc(loc)
+            }).catch(e => console.error('Error in go-to-definition: ', e.toString()))
+          }
+          setHoverState(st)
+        }}
+        className={'highlightable '
+                    + (hoverState !== 'off' ? 'highlight ' : '')
+                    + (hoverState === 'ctrlOver' && goToLoc !== undefined ? 'underline ' : '')}
       >
         <InteractiveCode pos={pos} fmt={fmt} />
       </DetectHoverSpan>

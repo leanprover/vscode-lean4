@@ -7,18 +7,18 @@ import { usePopper } from 'react-popper'
 import { forwardAndUseRef, LogicalDomContext, useLogicalDom } from './util'
 
 /** Tooltip contents should call `redrawTooltip` whenever their layout changes. */
-export type TooltipContent = (redrawTooltip: () => void) => React.ReactNode
+export type MkTooltipContentFn = (redrawTooltip: () => void) => React.ReactNode
 
 const TooltipPlacementContext = React.createContext<Popper.Placement>('top')
 
 export const Tooltip = forwardAndUseRef<HTMLDivElement,
   React.HTMLProps<HTMLDivElement> &
     { reference: HTMLElement | null,
-      tooltipContent: TooltipContent,
+      mkTooltipContent: MkTooltipContentFn,
       placement?: Popper.Placement,
       onFirstUpdate?: (_: Partial<Popper.State>) => void
     }>((props_, divRef, setDivRef) => {
-  const {reference, tooltipContent, placement: preferPlacement, onFirstUpdate, ...props} = props_
+  const {reference, mkTooltipContent, placement: preferPlacement, onFirstUpdate, ...props} = props_
 
   // We remember the global trend in placement (as `globalPlacement`) so tooltip chains can bounce
   // off the top and continue downwards or vice versa and initialize to that, but then update
@@ -57,7 +57,7 @@ export const Tooltip = forwardAndUseRef<HTMLDivElement,
       {...attributes.popper}
     >
       <TooltipPlacementContext.Provider value={ourPlacement}>
-        {tooltipContent(update_)}
+        {mkTooltipContent(update_)}
       </TooltipPlacementContext.Provider>
       <div ref={setArrowElement}
         style={styles.arrow}
@@ -110,11 +110,18 @@ interface TipChainContext {
 
 const TipChainContext = React.createContext<TipChainContext>({pinParent: () => {}})
 
-/** Shows a tooltip when the children are hovered over or clicked. */
+/** Shows a tooltip when the children are hovered over or clicked.
+ *
+ * An `onClick` middleware can optionally be given in order to control what happens when the
+ * hoverable area is clicked. The middleware can invoke `next` to execute the default action
+ * (show the tooltip). */
 export const WithTooltipOnHover =
   forwardAndUseRef<HTMLSpanElement,
-    React.HTMLProps<HTMLSpanElement> & {tooltipContent: TooltipContent}>((props_, ref, setRef) => {
-  const {tooltipContent, ...props} = props_
+    Omit<React.HTMLProps<HTMLSpanElement>, 'onClick'> & {
+      mkTooltipContent: MkTooltipContentFn,
+      onClick?: (event: React.MouseEvent<HTMLSpanElement>, next: React.MouseEventHandler<HTMLSpanElement>) => void
+    }>((props_, ref, setRef) => {
+  const {mkTooltipContent, ...props} = props_
 
   // We are pinned when clicked, shown when hovered over, and otherwise hidden.
   type TooltipState = 'pin' | 'show' | 'hide'
@@ -207,8 +214,8 @@ export const WithTooltipOnHover =
       {...props}
       ref={setRef}
       onClick={e => {
-        onClick(e)
-        if (props.onClick !== undefined) props.onClick(e)
+        if (props.onClick !== undefined) props.onClick(e, onClick)
+        else onClick(e)
       }}
       onPointerOver={e => {
         onPointerEvent(startShowTimeout, e)
@@ -225,7 +232,7 @@ export const WithTooltipOnHover =
             reference={ref.current}
             onPointerEnter={onPointerEnter}
             onPointerLeave={onPointerLeave}
-            tooltipContent={tooltipContent}
+            mkTooltipContent={mkTooltipContent}
           />
         </TipChainContext.Provider>}
       {props.children}

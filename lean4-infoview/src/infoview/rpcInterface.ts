@@ -9,6 +9,7 @@ import { RpcPtr, LeanDiagnostic } from '@lean4/infoview-api'
 
 import { DocumentPosition } from './util'
 import { RpcSessions } from './rpcSessions'
+import { Location } from 'vscode-languageserver-protocol'
 
 export type TaggedText<T> =
     { text: string } |
@@ -153,4 +154,9 @@ export async function InteractiveDiagnostics_msgToInteractive(rs: RpcSessions, p
     const ret = await rs.call<TaggedText<MsgEmbed>>(pos, 'Lean.Widget.InteractiveDiagnostics.msgToInteractive', msg)
     if (ret) TaggedMsg_registerRefs(rs, pos, ret)
     return ret
+}
+
+export type GoToKind = 'definition' | 'declaration' | 'type'
+export async function Lean_Widget_getGoToLocation(rs: RpcSessions, pos: DocumentPosition, info: InfoWithCtx, kind: GoToKind): Promise<Location | undefined> {
+    return rs.call<Location>(pos, 'Lean.Widget.getGoToLocation', [info, kind])
 }
