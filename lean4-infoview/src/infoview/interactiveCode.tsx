@@ -80,24 +80,34 @@ function InteractiveCodeTag({pos, tag: ct, fmt}: InteractiveTagProps<SubexprInfo
   // We mimick the VSCode ctrl-hover and ctrl-click UI for go-to-definition
   const rs = React.useContext(RpcContext)
   const ec = React.useContext(EditorContext);
-  const [goToLoc, setGoToLoc] = React.useState<Location | undefined>(undefined)
   const [hoverState, setHoverState] = React.useState<HoverState>('off')
+
+  const [goToLoc, setGoToLoc] = React.useState<Location | undefined>(undefined)
+  const fetchGoToLoc = async () => {
+    if (goToLoc !== undefined) return goToLoc
+    try {
+      const lnks = await getGoToLocation(rs, pos, 'definition', ct.info);
+      if (lnks !== undefined && lnks.length > 0) {
+        const loc = { uri: lnks[0].targetUri, range: lnks[0].targetSelectionRange }
+        setGoToLoc(loc)
+        return loc
+      }
+    } catch(e) {
+      console.error('Error in go-to-definition: ', JSON.stringify(e))
+    }
+    return undefined
+  }
 
   return (
     <WithTooltipOnHover mkTooltipContent={mkTooltip} onClick={(e, next) => {
       // On ctrl-click, if location is known, go to it in the editor
-      if (e.ctrlKey && goToLoc !== undefined) void ec.revealPosition({ uri: goToLoc.uri, ...goToLoc.range.start })
+      if (e.ctrlKey) void fetchGoToLoc().then(loc => loc && ec.revealPosition({ uri: loc.uri, ...loc.range.start }))
       if (!e.ctrlKey) next(e)
     }}>
       <DetectHoverSpan
         setHoverState={st => {
           // On ctrl-hover, fetch the go-to location
-          if (st === 'ctrlOver') {
-            void getGoToLocation(rs, pos, 'definition', ct.info).then(lnks => {
-              if (lnks !== undefined && lnks.length > 0)
-                setGoToLoc({ uri: lnks[0].targetUri, range: lnks[0].targetSelectionRange })
-            }).catch(e => console.error('Error in go-to-definition: ', JSON.stringify(e)))
-          }
+          if (st === 'ctrlOver') void fetchGoToLoc()
           setHoverState(st)
         }}
         className={'highlightable '
