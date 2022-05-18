@@ -39,15 +39,16 @@ export type InfoWithCtx = RpcPtr<'InfoWithCtx'>
 
 export interface CodeToken {
     info: InfoWithCtx
+    subexprPos?: number
 }
 
 export type CodeWithInfos = TaggedText<CodeToken>
 export type ExprWithCtx = RpcPtr<'ExprWithCtx'>
 
 export interface InfoPopup {
-  type?: CodeWithInfos
-  exprExplicit?: CodeWithInfos
-  doc?: string
+    type?: CodeWithInfos
+    exprExplicit?: CodeWithInfos
+    doc?: string
 }
 
 function CodeWithInfos_registerRefs(rs: RpcSessions, pos: DocumentPosition, ci: CodeWithInfos): void {
