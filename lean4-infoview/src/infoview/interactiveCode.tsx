@@ -2,7 +2,7 @@ import * as React from 'react'
 
 import { EditorContext, RpcContext } from './contexts'
 import { DocumentPosition } from './util'
-import { CodeToken, CodeWithInfos, InfoPopup, InfoWithCtx, InteractiveDiagnostics_infoToInteractive, Lean_Widget_getGoToLocation, TaggedText } from './rpcInterface'
+import { CodeToken, CodeWithInfos, InfoPopup, InfoWithCtx, InteractiveDiagnostics_infoToInteractive, getGoToLocation, TaggedText } from './rpcInterface'
 import { DetectHoverSpan, HoverState, WithTooltipOnHover } from './tooltips'
 import { Location } from 'vscode-languageserver-protocol'
 
@@ -93,9 +93,10 @@ function InteractiveCodeTag({pos, tag: ct, fmt}: InteractiveTagProps<CodeToken>)
         setHoverState={st => {
           // On ctrl-hover, fetch the go-to location
           if (st === 'ctrlOver') {
-            void Lean_Widget_getGoToLocation(rs, pos, ct.info, 'definition').then(loc => {
-              if (loc) setGoToLoc(loc)
-            }).catch(e => console.error('Error in go-to-definition: ', e.toString()))
+            void getGoToLocation(rs, pos, 'definition', ct.info).then(lnks => {
+              if (lnks !== undefined && lnks.length > 0)
+                setGoToLoc({ uri: lnks[0].targetUri, range: lnks[0].targetSelectionRange })
+            }).catch(e => console.error('Error in go-to-definition: ', JSON.stringify(e)))
           }
           setHoverState(st)
         }}

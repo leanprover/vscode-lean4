@@ -9,7 +9,7 @@ import { RpcPtr, LeanDiagnostic } from '@lean4/infoview-api'
 
 import { DocumentPosition } from './util'
 import { RpcSessions } from './rpcSessions'
-import { Location } from 'vscode-languageserver-protocol'
+import { LocationLink } from 'vscode-languageserver-protocol'
 
 export type TaggedText<T> =
     { text: string } |
@@ -158,6 +158,6 @@ export async function InteractiveDiagnostics_msgToInteractive(rs: RpcSessions, p
 }
 
 export type GoToKind = 'definition' | 'declaration' | 'type'
-export async function Lean_Widget_getGoToLocation(rs: RpcSessions, pos: DocumentPosition, info: InfoWithCtx, kind: GoToKind): Promise<Location | undefined> {
-    return rs.call<Location>(pos, 'Lean.Widget.getGoToLocation', [info, kind])
+export async function getGoToLocation(rs: RpcSessions, pos: DocumentPosition, kind: GoToKind, info: InfoWithCtx): Promise<LocationLink[] | undefined> {
+    return rs.call<LocationLink[]>(pos, 'Lean.Widget.getGoToLocation', [kind, info])
 }
