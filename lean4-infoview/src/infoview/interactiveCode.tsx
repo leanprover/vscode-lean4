@@ -2,7 +2,7 @@ import * as React from 'react'
 
 import { EditorContext, RpcContext } from './contexts'
 import { DocumentPosition } from './util'
-import { CodeToken, CodeWithInfos, InfoPopup, InfoWithCtx, InteractiveDiagnostics_infoToInteractive, getGoToLocation, TaggedText } from './rpcInterface'
+import { SubexprInfo, CodeWithInfos, InfoPopup, InfoWithCtx, InteractiveDiagnostics_infoToInteractive, getGoToLocation, TaggedText } from './rpcInterface'
 import { DetectHoverSpan, HoverState, WithTooltipOnHover } from './tooltips'
 import { Location } from 'vscode-languageserver-protocol'
 
@@ -69,8 +69,8 @@ function TypePopupContents({pos, info, redrawTooltip}: {pos: DocumentPosition, i
   } else return <>Loading..</>
 }
 
-/** Tagged spans can be hovered over to display extra info stored in the associated `CodeToken`. */
-function InteractiveCodeTag({pos, tag: ct, fmt}: InteractiveTagProps<CodeToken>) {
+/** Tagged spans can be hovered over to display extra info stored in the associated `SubexprInfo`. */
+function InteractiveCodeTag({pos, tag: ct, fmt}: InteractiveTagProps<SubexprInfo>) {
   const mkTooltip = React.useCallback((redrawTooltip: () => void) =>
     <div className="font-code tl pre-wrap">
       <TypePopupContents pos={pos} info={ct.info}

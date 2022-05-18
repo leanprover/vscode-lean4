@@ -37,12 +37,12 @@ export function TaggedText_stripTags<T>(tt: TaggedText<T>): string {
 
 export type InfoWithCtx = RpcPtr<'InfoWithCtx'>
 
-export interface CodeToken {
+export interface SubexprInfo {
     info: InfoWithCtx
     subexprPos?: number
 }
 
-export type CodeWithInfos = TaggedText<CodeToken>
+export type CodeWithInfos = TaggedText<SubexprInfo>
 export type ExprWithCtx = RpcPtr<'ExprWithCtx'>
 
 export interface InfoPopup {
