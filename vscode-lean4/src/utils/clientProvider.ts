@@ -29,7 +29,7 @@ export class LeanClientProvider implements Disposable {
     private clientRemovedEmitter = new EventEmitter<LeanClient>()
     clientRemoved = this.clientRemovedEmitter.event
 
-    private clientStoppedEmitter = new EventEmitter<[LeanClient, string]>()
+    private clientStoppedEmitter = new EventEmitter<[LeanClient | undefined, LeanClient | undefined, string]>()
     clientStopped = this.clientStoppedEmitter.event
 
     constructor(localStorage : LocalStorageService, installer : LeanInstaller, pkgService : LeanpkgService, outputChannel : OutputChannel) {
@@ -273,12 +273,16 @@ export class LeanClientProvider implements Disposable {
             });
 
             client.stopped(err => {
-                // fires a message in case there is an active client
-                if (client === this.activeClient)
-                {
-                    if (client){
-                        this.clientStoppedEmitter.fire([client, err]);
+                // fires a message in case a client is stopped unexpectedly
+                if (client !== this.activeClient){
+                    if (client && this.activeClient){
+                        this.clientStoppedEmitter.fire([client, this.activeClient, err]);
                     }
+                    else {
+                        this.clientStoppedEmitter.fire([undefined, undefined, err]);
+                    }
+                } else {
+                    this.clientStoppedEmitter.fire([undefined, undefined, err]);
                 }
             });
 
