@@ -29,25 +29,28 @@ export function goalsToString(goals: InteractiveGoals): string {
     return goals.goals.map(goalToString).join('\n\n')
 }
 
-export function Goal({pos, goal}: {pos: DocumentPosition, goal: InteractiveGoal}) {
+export function Goal({pos, goal, reverse}: {pos: DocumentPosition, goal: InteractiveGoal, reverse: boolean}) {
     const prefix = goal.goalPrefix ?? '⊢ '
+    const hyps = reverse  ? goal.hyps.slice().reverse() : goal.hyps;
+    const goalLi  = <li key={'goal'}>
+                        <strong className="goal-vdash">{prefix}</strong><InteractiveCode pos={pos} fmt={goal.type} />
+                     </li>
     return <div className="font-code tl pre-wrap">
         <ul className="list pl0">
             {goal.userName && <li key={'case'}><strong className="goal-case">case </strong>{goal.userName}</li>}
-            {goal.hyps.map ((h, i) => {
+            {reverse && goalLi }
+            {hyps.map ((h, i) => {
                 const names = h.names.reduce((acc, n) => acc + ' ' + n, '').slice(1)
                 return <li key={`hyp-${i}`}>
                     <strong className="goal-hyp">{names}</strong> : <InteractiveCode pos={pos} fmt={h.type} />{h.val && <> := <InteractiveCode pos={pos} fmt={h.val}/></>}
                 </li>
             })}
-            <li key={'goal'}>
-                <strong className="goal-vdash">{prefix}</strong><InteractiveCode pos={pos} fmt={goal.type} />
-            </li>
+            {!reverse && goalLi }
         </ul>
     </div>
 }
 
-export function Goals({pos, goals}: {pos: DocumentPosition, goals: InteractiveGoals}) {
+export function Goals({pos, goals, reverseOrder}: {pos: DocumentPosition, goals: InteractiveGoals, reverseOrder: boolean}) {
     const config = React.useContext(ConfigContext)
     // TODO re-add?
     const reFilters = config.infoViewTacticStateFilters || []
@@ -57,7 +60,7 @@ export function Goals({pos, goals}: {pos: DocumentPosition, goals: InteractiveGo
         return <>Goals accomplished 🎉</>
     } else {
         return <>
-            {goals.goals.map ((g, i) => <Goal key={i} pos={pos} goal={g} />)}
+            {goals.goals.map ((g, i) => <Goal key={i} pos={pos} goal={g} reverse={reverseOrder}/>)}
         </>
     }
 }

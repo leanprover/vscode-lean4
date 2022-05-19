@@ -140,6 +140,7 @@ You can also disable auto-opening behavior using the setting `lean4.infoViewAuto
   | ![pause](vscode-lean4/media/pause.png) | Prevent the tactic state widget from updating when the file is edited. When paused you will see the following addition icons show up.
   | ![continue](vscode-lean4/media/continue.png) | Once paused you can then click this icon to resume updates. |
   | ![update](vscode-lean4/media/update.png) | Refresh the tactic state of the pinned widget. |
+  | ![sort](vscode-lean4/media/sort.png) | Reverse the order of the lists under Tactic State.  |
 
 (7). Types in the context can be examined in the tactic state widget using mouse hover:
 

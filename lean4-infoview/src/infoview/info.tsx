@@ -95,6 +95,7 @@ export function InfoDisplay(props0: InfoDisplayProps) {
         await props0.triggerUpdate();
         setShouldRefresh(true);
     };
+    const [reverseOrder, setReverseOrder] = React.useState<boolean>(false);
 
     const {kind, pos, status, messages, goals, termGoal, error} = props;
 
@@ -122,7 +123,8 @@ export function InfoDisplay(props0: InfoDisplayProps) {
     const hasGoals = status !== 'error' && goals;
     const hasTermGoal = status !== 'error' && termGoal;
     const hasMessages = status !== 'error' && messages.length !== 0;
-
+    const filterClasses = 'link pointer mh2 dim codicon fr ' + (reverseOrder ? 'codicon-arrow-up' : 'codicon-arrow-down');
+    const sortButton = <a className={filterClasses} onClick={e => { setReverseOrder(!reverseOrder); }} title="reverse list"/>
     return (
     <Details initiallyOpen>
         <InfoStatusBar {...props} triggerUpdate={triggerDisplayUpdate} isPaused={isPaused} setPaused={setPaused} copyGoalToComment={copyGoalToComment} />
@@ -135,20 +137,20 @@ export function InfoDisplay(props0: InfoDisplayProps) {
             <div style={{display: hasGoals ? 'block' : 'none'}}>
                 <Details initiallyOpen>
                     <summary className="mv2 pointer">
-                        Tactic state
+                        Tactic state {sortButton}
                     </summary>
                     <div className='ml1'>
-                        {hasGoals && <GoalsUi pos={pos} goals={goals} />}
+                        {hasGoals && <GoalsUi pos={pos} goals={goals} reverseOrder={reverseOrder} />}
                     </div>
                 </Details>
             </div>
             <div style={{display: hasTermGoal ? 'block' : 'none'}}>
                 <Details initiallyOpen>
                     <summary className="mv2 pointer">
-                        Expected type
+                        Expected type {sortButton}
                     </summary>
                     <div className='ml1'>
-                        {hasTermGoal && <GoalUi pos={pos} goal={termGoal} />}
+                        {hasTermGoal && <GoalUi pos={pos} goal={termGoal} reverse={reverseOrder} />}
                     </div>
                 </Details>
             </div>

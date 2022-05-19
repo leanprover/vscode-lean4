@@ -430,7 +430,9 @@ export class LeanClient implements Disposable {
         if (this.client && this.running) {
             this.noPrompt = true;
             try {
-                await this.client.stop()
+                // some timing conditions can happen while running unit tests that cause
+                // this to throw an exception which then causes those tests to fail.
+                await this.client.stop();
             } catch (e) {
                 console.log(`Error stopping language client: ${e}`)
             }
