@@ -27,7 +27,7 @@ import { join } from 'path';
  // @ts-ignore
 import { SemVer } from 'semver';
 import { fileExists } from './utils/fsHelper';
-import { c2pConverter, p2cConverter } from './utils/converters'
+import { c2pConverter, p2cConverter, patchConverters } from './utils/converters'
 
 const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
@@ -266,6 +266,7 @@ export class LeanClient implements Disposable {
             serverOptions,
             clientOptions
         )
+        patchConverters(this.client.protocol2CodeConverter, this.client.code2ProtocolConverter)
         try {
             this.client.onDidChangeState((s) =>{
                 // see https://github.com/microsoft/vscode-languageserver-node/issues/825
