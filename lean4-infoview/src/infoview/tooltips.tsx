@@ -157,8 +157,6 @@ export const WithTooltipOnHover =
   const hideDelay = 300
 
   const onClick = (e: React.MouseEvent<HTMLSpanElement>) => {
-    if (!isWithinHoverable(e.target)) return
-    e.stopPropagation()
     clearTimeout()
     setState(state => state === 'pin' ? 'hide' : 'pin')
   }
@@ -214,6 +212,8 @@ export const WithTooltipOnHover =
       {...props}
       ref={setRef}
       onClick={e => {
+        if (!isWithinHoverable(e.target)) return
+        e.stopPropagation()
         if (props.onClick !== undefined) props.onClick(e, onClick)
         else onClick(e)
       }}
