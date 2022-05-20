@@ -286,6 +286,16 @@ function InfoAux(props: InfoProps) {
     const messages = useMessagesFor(pos);
     const serverIsProcessing = useIsProcessingAt(pos);
 
+    // We encapsulate `InfoDisplay` props in a single piece of state for atomicity, in particular
+    // to avoid displaying a new position before the server has sent us all the goal state there.
+    const mkDisplayProps = () => ({ ...props, pos, goals, termGoal, error });
+    const [displayProps, setDisplayProps] = React.useState(mkDisplayProps());
+    const [shouldUpdateDisplay, setShouldUpdateDisplay] = React.useState(false);
+    if (shouldUpdateDisplay) {
+        setDisplayProps(mkDisplayProps());
+        setShouldUpdateDisplay(false);
+    }
+
     const triggerUpdate = useDelayedThrottled(serverIsProcessing ? 500 : 50, async () => {
         setStatus('updating');
 
@@ -327,11 +337,12 @@ function InfoAux(props: InfoProps) {
                 return;
             } else { onError(err); }
         }
+        setShouldUpdateDisplay(true);
     });
 
     React.useEffect(() => void triggerUpdate(), [pos.uri, pos.line, pos.character, serverIsProcessing]);
 
     return (
-        <InfoDisplay {...props} pos={pos} status={status} messages={messages} goals={goals} termGoal={termGoal} error={error} triggerUpdate={triggerUpdate} />
+        <InfoDisplay {...displayProps} status={status} messages={messages} triggerUpdate={triggerUpdate} />
     );
 }
