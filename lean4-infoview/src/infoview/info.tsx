@@ -125,7 +125,7 @@ export function InfoDisplay(props0: InfoDisplayProps) {
     const hasMessages = status !== 'error' && messages.length !== 0;
     const filterClasses = 'link pointer mh2 dim codicon fr ' + (reverseOrder ? 'codicon-arrow-up' : 'codicon-arrow-down');
     const sortButton = <a className={filterClasses} onClick={e => { setReverseOrder(!reverseOrder); }} title="reverse list"/>
-    return (
+    return (/* Adding {' '} to manage string literals properly: https://reactjs.org/docs/jsx-in-depth.html#string-literals-1 */
     <Details initiallyOpen>
         <InfoStatusBar {...props} triggerUpdate={triggerDisplayUpdate} isPaused={isPaused} setPaused={setPaused} copyGoalToComment={copyGoalToComment} />
         <div className="ml1">

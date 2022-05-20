@@ -265,6 +265,7 @@ export async function restartLeanServer(client: LeanClient, retries=30, delay=10
     client.stopped(() => { stateChanges.push('stopped'); });
     client.restarted(() => { stateChanges.push('restarted'); });
     client.serverFailed(() => { stateChanges.push('failed'); });
+
     await vscode.commands.executeCommand('lean4.restartServer');
 
     while (count < retries){
