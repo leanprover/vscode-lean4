@@ -292,7 +292,6 @@ export class InfoProvider implements Disposable {
             }
         }
 
-        console.log('clearing serverStopped because client restarted')
         await this.webviewPanel?.api.serverStopped(''); // clear any server stopped state
         const folder = client.getWorkspaceFolder()
         if (this.clientsFailed.has(folder)) {
@@ -335,9 +334,10 @@ export class InfoProvider implements Disposable {
         if (activeClient)
         {
             // means that client and active client are the same and just show the error message
-            console.log(`active client stopped with message: ${msg}`)
             await this.webviewPanel?.api.serverStopped(msg);
         }
+
+        console.log(`client stopped: ${client.getWorkspaceFolder()}`)
 
         // remember this client is in a stopped state
         this.clientsFailed.set(client.getWorkspaceFolder(), msg)
@@ -490,7 +490,6 @@ export class InfoProvider implements Disposable {
         // by listening to notifications.  Send these notifications when the infoview starts
         // so that it has up-to-date information.
         if (client?.initializeResult) {
-            console.log('clearing serverStopped in initInfoView')
             await this.webviewPanel?.api.serverStopped(''); // clear any server stopped state
             await this.webviewPanel?.api.serverRestarted(client.initializeResult);
             await this.sendDiagnostics(client);
@@ -571,16 +570,13 @@ export class InfoProvider implements Disposable {
                 if (this.clientsFailed.has(folder)){
                     // send stopped event
                     const msg = this.clientsFailed.get(folder)
-                    console.log(`serverStopped with ${msg}`)
                     await this.webviewPanel?.api.serverStopped(msg || '');
                     return;
                 } else {
-                    console.log('clearing serverStopped because client is not in clientsFailed')
                     await this.updateStatus(loc)
                 }
             }
         } else {
-            console.log('clearing serverStopped because clientsFailed is empty')
             await this.updateStatus(loc)
         }
 
