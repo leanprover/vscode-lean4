@@ -279,6 +279,7 @@ export class LeanClient implements Disposable {
             serverOptions,
             clientOptions
         )
+        let insideRestart = true;
         this.patchConverters(this.client.protocol2CodeConverter, this.client.code2ProtocolConverter)
         try {
             this.client.onDidChangeState(async (s) => {
@@ -289,7 +290,9 @@ export class LeanClient implements Disposable {
                     const end = Date.now()
                     console.log('client running, started in ', end - startTime, 'ms');
                     this.running = true; // may have been auto restarted after it failed.
-                    this.restartedEmitter.fire(undefined)
+                    if (!insideRestart) {
+                        this.restartedEmitter.fire(undefined)
+                    }
                 } else if (s.newState === State.Stopped) {
                     this.stoppedEmitter.fire('Lean language server has stopped. ');
                     console.log('client has stopped or it failed to start');
@@ -311,6 +314,7 @@ export class LeanClient implements Disposable {
         } catch (error) {
             this.outputChannel.appendLine('' + error);
             this.serverFailedEmitter.fire('' + error);
+            insideRestart = false;
             return;
         }
 
@@ -340,6 +344,7 @@ export class LeanClient implements Disposable {
         });
 
         this.restartedEmitter.fire(undefined)
+        insideRestart = false;
     }
 
     private patchConverters(p2c: Protocol2CodeConverter, c2p: Code2ProtocolConverter) {
