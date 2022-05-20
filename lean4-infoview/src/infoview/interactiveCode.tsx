@@ -122,15 +122,28 @@ function InteractiveCodeTag({pos, tag: ct, fmt}: InteractiveTagProps<SubexprInfo
   }, [fetchGoToLoc])
 
   return (
-    <WithTooltipOnHover mkTooltipContent={mkTooltip} onClick={(e, next) => {
-      // On ctrl-click, if location is known, go to it in the editor
-      if (e.ctrlKey) void fetchGoToLoc().then(loc => {
-        if (loc === undefined) return
-        setHoverState(st => st === 'over' ? 'ctrlOver' : st)
-        void ec.revealPosition({ uri: loc.uri, ...loc.range.start })
-      })
-      if (!e.ctrlKey) next(e)
-    }}>
+    <WithTooltipOnHover
+      mkTooltipContent={mkTooltip}
+      onClick={(e, next) => {
+        // On ctrl-click, if location is known, go to it in the editor
+        if (e.ctrlKey) void fetchGoToLoc().then(loc => {
+          if (loc === undefined) return
+          setHoverState(st => st === 'over' ? 'ctrlOver' : st)
+          void ec.revealPosition({ uri: loc.uri, ...loc.range.start })
+        })
+        if (!e.ctrlKey) next(e)
+      }}
+      onPointerMove={e => {
+        if (e.ctrlKey)
+          setHoverState(st => {
+            const newst = st === 'over' ? 'ctrlOver' : st
+            if (newst === 'ctrlOver') void fetchGoToLoc()
+            return newst
+          })
+        else
+          setHoverState(st => st === 'ctrlOver' ? 'over' : st)
+      }}
+    >
       <DetectHoverSpan
         setHoverState={st => {
           // On ctrl-hover, fetch the go-to location
