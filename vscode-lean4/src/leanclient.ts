@@ -164,7 +164,6 @@ export class LeanClient implements Disposable {
             command: executable,
             args: options.concat(serverArgs()),
             options: {
-                shell: true,
                 cwd: this.folderUri?.fsPath,
                 env
             }
