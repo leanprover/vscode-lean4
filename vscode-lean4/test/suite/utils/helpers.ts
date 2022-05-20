@@ -265,7 +265,7 @@ export async function restartLeanServer(client: LeanClient, retries=30, delay=10
     client.stopped(() => { stateChanges.push('stopped'); });
     client.restarted(() => { stateChanges.push('restarted'); });
     client.serverFailed(() => { stateChanges.push('failed'); });
-
+    console.log('stateChanges'+stateChanges)
     await vscode.commands.executeCommand('lean4.restartServer');
 
     while (count < retries){
@@ -278,8 +278,8 @@ export async function restartLeanServer(client: LeanClient, retries=30, delay=10
     }
 
     // check we have no errors.
+    console.log('stateChanges2'+stateChanges)
     const actual = stateChanges.toString();
-    console.log('actua'+actual)
     assert(actual === 'stopped,restarted');
     return false;
 }
