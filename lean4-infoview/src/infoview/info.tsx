@@ -166,6 +166,7 @@ export function InfoDisplay(props0: InfoDisplayProps) {
             </div>
             {nothingToShow && (
                 isPaused ?
+                    /* Adding {' '} to manage string literals properly: https://reactjs.org/docs/jsx-in-depth.html#string-literals-1 */
                     <span>Updating is paused.{' '}
                         <a className="link pointer dim" onClick={e => { e.preventDefault(); void triggerDisplayUpdate(); }}>Refresh</a>
                         {' '}or <a className="link pointer dim" onClick={e => { e.preventDefault(); setPaused(false); }}>resume updating</a>

@@ -279,6 +279,7 @@ export async function restartLeanServer(client: LeanClient, retries=30, delay=10
 
     // check we have no errors.
     const actual = stateChanges.toString();
+    console.log('actua'+actual)
     assert(actual === 'stopped,restarted');
     return false;
 }
