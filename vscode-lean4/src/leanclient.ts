@@ -187,6 +187,10 @@ export class LeanClient implements Disposable {
             initializationOptions: {
                 editDelay: getElaborationDelay(), hasWidgets: true,
             },
+            connectionOptions: {
+                maxRestartCount: 0,
+                cancellationStrategy: undefined as any,
+            },
             middleware: {
                 handleDiagnostics: (uri, diagnostics, next) => {
                     next(uri, diagnostics);
