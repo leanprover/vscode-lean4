@@ -29,7 +29,7 @@ import { URL } from 'url';
 import { join } from 'path';
  // @ts-ignore
 import { SemVer } from 'semver';
-import { fileExists } from './utils/fsHelper';
+import { fileExists, isFileInFolder } from './utils/fsHelper';
 
 const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
@@ -104,7 +104,7 @@ export class LeanClient implements Disposable {
         if (this.isStarted()) void this.stop()
     }
 
-    async fireRestartMessage(): Promise<void> {
+    async showRestartMessage(): Promise<void> {
         const restartItem = 'Restart Lean Language Server';
         const item = await window.showErrorMessage('Lean Language Server has stopped unexpectedly.', restartItem)
         if (item === restartItem) {
@@ -289,12 +289,13 @@ export class LeanClient implements Disposable {
                     const end = Date.now()
                     console.log('client running, started in ', end - startTime, 'ms');
                     this.running = true; // may have been auto restarted after it failed.
+                    this.restartedEmitter.fire(undefined)
                 } else if (s.newState === State.Stopped) {
                     this.stoppedEmitter.fire('Lean language server has stopped. ');
                     console.log('client has stopped or it failed to start');
                     this.running = false;
                     if (!this.noPrompt){
-                        await this.fireRestartMessage();
+                        await this.showRestartMessage();
                     }
                 }
             })
@@ -400,12 +401,7 @@ export class LeanClient implements Disposable {
             if (this.folderUri.scheme === 'file') {
                 const realPath1 = await fs.promises.realpath(this.folderUri.fsPath);
                 const realPath2 = await fs.promises.realpath(uri.fsPath);
-                if (process.platform === 'win32') {
-                    // windows paths are case insensitive.
-                    return realPath2.toLowerCase().startsWith(realPath1.toLowerCase());
-                } else {
-                    return realPath2.startsWith(realPath1);
-                }
+                return isFileInFolder(realPath2, realPath1);
             }
             else {
                 return uri.toString().startsWith(this.folderUri.toString());

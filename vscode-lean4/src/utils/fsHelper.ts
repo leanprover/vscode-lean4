@@ -13,3 +13,18 @@ import {promises, PathLike } from 'fs';
 export async function fileExists(pathFile: PathLike): Promise<boolean> {
     return await promises.access(pathFile).then(() => true, () => false);
 }
+
+/**
+ * fill this in later
+ * @param file
+ * @param folder
+ * @returns
+ */
+export function isFileInFolder(file: string, folder: string){
+    if (process.platform === 'win32') {
+        // windows paths are case insensitive.
+        return file.toLowerCase().startsWith(folder.toLowerCase());
+    } else {
+        return file.startsWith(folder);
+    }
+}

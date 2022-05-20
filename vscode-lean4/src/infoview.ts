@@ -12,7 +12,6 @@ import { getInfoViewAllErrorsOnLine, getInfoViewAutoOpen, getInfoViewAutoOpenSho
 import { Rpc } from './rpc';
 import { LeanClientProvider } from './utils/clientProvider'
 import * as ls from 'vscode-languageserver-protocol'
-import { findLeanPackageRoot } from './utils/projectInfo';
 
 const keepAlivePeriodMs = 10000
 
@@ -61,9 +60,7 @@ export class InfoProvider implements Disposable {
 
     private rpcSessions: Map<string, RpcSession> = new Map();
 
-    //private diferentClientFailed: boolean = false;
-    private clientsFailed: string[] = [];
-    private clientMsgFailed: string;
+    private clientsFailed: Map<string, string> = new Map();
 
     private subscribeDidChangeNotification(client: LeanClient, method: string){
         const h = client.didChange((params) => {
@@ -295,9 +292,10 @@ export class InfoProvider implements Disposable {
             }
         }
         await this.webviewPanel?.api.serverStopped(''); // clear any server stopped state
-        if (this.clientsFailed.indexOf(client.getWorkspaceFolder()) > -1) {
-            this.clientsFailed.splice(this.clientsFailed.indexOf(client.getWorkspaceFolder()))// delete from failed clients
-            console.log('Restarting server for workspace: ' + client.getWorkspaceFolder())
+        const folder = client.getWorkspaceFolder()
+        if (this.clientsFailed.has(folder)) {
+            this.clientsFailed.delete(folder) // delete from failed clients
+            console.log('Restarting server for workspace: ' + folder)
         }
         await this.initInfoView(window.activeTextEditor, client);
     }
@@ -329,19 +327,16 @@ export class InfoProvider implements Disposable {
         // todo: remove subscriptions for this client...
     }
 
-    async onActiveClientStopped(client: LeanClient | undefined, activeClient: LeanClient | undefined, msg: string) {
+    async onActiveClientStopped(client: LeanClient, activeClient: boolean, msg: string) {
         // Will show a message in case the active client stops
         // add failed client into a list (will be removed in case the client is restarted)
-        if (!client && !activeClient)
-        // means that client and active client are the same and just show the error message
+        if (activeClient)
         {
+            // means that client and active client are the same and just show the error message
             await this.webviewPanel?.api.serverStopped(msg);
         } else {
             // update just client window
-            if (client){
-                this.clientsFailed.push(client.getWorkspaceFolder())
-                this.clientMsgFailed = msg
-            }
+            this.clientsFailed.set(client.getWorkspaceFolder(), msg)
         }
     }
 
@@ -565,27 +560,29 @@ export class InfoProvider implements Disposable {
             return;
         }
         // actual editor
-        if (this.clientsFailed.length > 0){
+        if (this.clientsFailed.size > 0){
             const client = this.clientProvider.findClient(editor.document.uri.toString())
-            const [workspaceFolder, folder, packageFileUri] = await findLeanPackageRoot(editor.document.uri);
-            if (folder) {
-                if (this.clientsFailed.includes(folder.toString())){
+            if (client) {
+                const folder = client.getWorkspaceFolder()
+                if (this.clientsFailed.has(folder)){
                     // send stopped event
-                    await client?.fireRestartMessage();
+                    const msg = this.clientsFailed.get(folder)
+                    await this.webviewPanel?.api.serverStopped(msg || '');
                     return;
                 } else {
-                    await updateStatus()
+                    await this.updateStatus(loc)
                 }
             }
         } else {
-            await updateStatus()
+            await this.updateStatus(loc)
         }
 
-        async function updateStatus(): Promise<void> {
-            await this.webviewPanel?.api.serverStopped(''); // clear any server stopped state
-            await this.autoOpen();
-            await this.webviewPanel?.api.changedCursorLocation(loc);
-        }
+    }
+
+    private async updateStatus(loc: ls.Location | undefined): Promise<void> {
+        await this.webviewPanel?.api.serverStopped(''); // clear any server stopped state
+        await this.autoOpen();
+        await this.webviewPanel?.api.changedCursorLocation(loc);
     }
 
     private async revealEditorSelection(uri: Uri, selection?: Range) {

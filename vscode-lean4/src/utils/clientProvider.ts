@@ -6,6 +6,7 @@ import { LeanClient } from '../leanclient'
 import { LeanFileProgressProcessingInfo, RpcConnectParams, RpcKeepAliveParams } from '@lean4/infoview-api';
 import * as path from 'path';
 import { findLeanPackageRoot } from './projectInfo';
+import { isFileInFolder } from './fsHelper';
 
 // This class ensures we have one LeanClient per workspace folder.
 export class LeanClientProvider implements Disposable {
@@ -29,7 +30,7 @@ export class LeanClientProvider implements Disposable {
     private clientRemovedEmitter = new EventEmitter<LeanClient>()
     clientRemoved = this.clientRemovedEmitter.event
 
-    private clientStoppedEmitter = new EventEmitter<[LeanClient | undefined, LeanClient | undefined, string]>()
+    private clientStoppedEmitter = new EventEmitter<[LeanClient, boolean, string]>()
     clientStopped = this.clientStoppedEmitter.event
 
     constructor(localStorage : LocalStorageService, installer : LeanInstaller, pkgService : LeanpkgService, outputChannel : OutputChannel) {
@@ -170,7 +171,8 @@ export class LeanClientProvider implements Disposable {
     findClient(path: string){
         if (path) {
             for (const client of this.getClients()) {
-                if (path.startsWith(client.getWorkspaceFolder()))
+                const folder = client.getWorkspaceFolder()
+                if (isFileInFolder(path, folder))
                     return client
             }
         }
@@ -273,16 +275,9 @@ export class LeanClientProvider implements Disposable {
             });
 
             client.stopped(err => {
-                // fires a message in case a client is stopped unexpectedly
-                if (client !== this.activeClient){
-                    if (client && this.activeClient){
-                        this.clientStoppedEmitter.fire([client, this.activeClient, err]);
-                    }
-                    else {
-                        this.clientStoppedEmitter.fire([undefined, undefined, err]);
-                    }
-                } else {
-                    this.clientStoppedEmitter.fire([undefined, undefined, err]);
+                if (client) {
+                    // fires a message in case a client is stopped unexpectedly
+                    this.clientStoppedEmitter.fire([client, client === this.activeClient, err]);
                 }
             });
 
