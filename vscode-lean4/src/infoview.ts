@@ -298,7 +298,6 @@ export class InfoProvider implements Disposable {
             this.clientsFailed.delete(folder) // delete from failed clients
             console.log('Restarting server for workspace: ' + folder)
         }
-        console.log(this.clientsFailed)
         await this.initInfoView(window.activeTextEditor, client);
     }
 
