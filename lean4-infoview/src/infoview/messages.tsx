@@ -177,7 +177,8 @@ export function useMessagesForFile(uri: DocumentUri, line?: number): Interactive
             try {
                 const diags = await getInteractiveDiagnostics(rs, { uri, line: 0, character: 0 },
                     line ? { start: line, end: line + 1 } : undefined)
-                if (diags) {
+                if (diags && diags.length > 0) {
+                    // diags may be '' in some cases
                     setDiags(diags)
                 }
             } catch (err: any) {
