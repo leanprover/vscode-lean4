@@ -79,14 +79,14 @@ function InteractiveCodeTag({pos, tag: ct, fmt}: InteractiveTagProps<SubexprInfo
 
   // We mimick the VSCode ctrl-hover and ctrl-click UI for go-to-definition
   const rs = React.useContext(RpcContext)
-  const ec = React.useContext(EditorContext);
+  const ec = React.useContext(EditorContext)
   const [hoverState, setHoverState] = React.useState<HoverState>('off')
 
   const [goToLoc, setGoToLoc] = React.useState<Location | undefined>(undefined)
-  const fetchGoToLoc = async () => {
+  const fetchGoToLoc = React.useCallback(async () => {
     if (goToLoc !== undefined) return goToLoc
     try {
-      const lnks = await getGoToLocation(rs, pos, 'definition', ct.info);
+      const lnks = await getGoToLocation(rs, pos, 'definition', ct.info)
       if (lnks !== undefined && lnks.length > 0) {
         const loc = { uri: lnks[0].targetUri, range: lnks[0].targetSelectionRange }
         setGoToLoc(loc)
@@ -96,7 +96,30 @@ function InteractiveCodeTag({pos, tag: ct, fmt}: InteractiveTagProps<SubexprInfo
       console.error('Error in go-to-definition: ', JSON.stringify(e))
     }
     return undefined
-  }
+  }, [rs, pos.uri, pos.line, pos.character, ct.info, goToLoc])
+
+  React.useEffect(() => {
+    const onKeyDown = (e : KeyboardEvent) => {
+      if (e.key === 'Control')
+        setHoverState(st => {
+          const newst = st === 'over' ? 'ctrlOver' : st
+          if (newst === 'ctrlOver') void fetchGoToLoc()
+          return newst
+        })
+    }
+
+    const onKeyUp = (e : KeyboardEvent) => {
+      if (e.key === 'Control')
+        setHoverState(st => st === 'ctrlOver' ? 'over' : st)
+    }
+
+    document.addEventListener('keydown', onKeyDown)
+    document.addEventListener('keyup', onKeyUp)
+    return () => {
+      document.removeEventListener('keydown', onKeyDown)
+      document.removeEventListener('keyup', onKeyUp)
+    }
+  }, [fetchGoToLoc])
 
   return (
     <WithTooltipOnHover mkTooltipContent={mkTooltip} onClick={(e, next) => {
