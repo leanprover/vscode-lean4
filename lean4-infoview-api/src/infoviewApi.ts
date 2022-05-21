@@ -73,15 +73,11 @@ export interface InfoviewTacticStateFilter {
 }
 
 export interface InfoviewConfig {
-    filterIndex: number;
-    infoViewTacticStateFilters: InfoviewTacticStateFilter[];
     infoViewAllErrorsOnLine: boolean;
     infoViewAutoOpenShowGoal: boolean;
 }
 
 export const defaultInfoviewConfig: InfoviewConfig = {
-    filterIndex: -1,
-    infoViewTacticStateFilters: [],
     infoViewAllErrorsOnLine: true,
     infoViewAutoOpenShowGoal: true,
 }

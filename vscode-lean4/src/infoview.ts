@@ -8,7 +8,7 @@ import {
 import { EditorApi, InfoviewApi, LeanFileProgressParams, TextInsertKind, RpcConnectParams, RpcConnected, RpcKeepAliveParams } from '@lean4/infoview-api';
 import { LeanClient } from './leanclient';
 import { getInfoViewAllErrorsOnLine, getInfoViewAutoOpen, getInfoViewAutoOpenShowGoal,
-    getInfoViewFilterIndex, getInfoViewStyle, getInfoViewTacticStateFilters, minIfProd, prodOrDev } from './config';
+    getInfoViewStyle, minIfProd, prodOrDev } from './config';
 import { Rpc } from './rpc';
 import { LeanClientProvider } from './utils/clientProvider'
 import * as ls from 'vscode-languageserver-protocol'
@@ -473,8 +473,6 @@ export class InfoProvider implements Disposable {
 
     private async sendConfig() {
        await this.webviewPanel?.api.changedInfoviewConfig({
-           infoViewTacticStateFilters: getInfoViewTacticStateFilters(),
-           filterIndex: getInfoViewFilterIndex(),
            infoViewAllErrorsOnLine: getInfoViewAllErrorsOnLine(),
            infoViewAutoOpenShowGoal: getInfoViewAutoOpenShowGoal(),
        });
