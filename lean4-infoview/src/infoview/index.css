@@ -118,3 +118,7 @@ select {
 .tooltip[data-popper-placement^='right'] > .tooltip-arrow {
     left: -4px;
 }
+
+.filterMenuText { text-align: center; padding: 5px; vertical-align:top; display:inline-block; }
+
+.filterMenuIcon { padding: 3px; margin-top:3px; }

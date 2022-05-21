@@ -124,36 +124,36 @@ export function InfoDisplay(props0: InfoDisplayProps) {
     const hasGoals = status !== 'error' && goals;
     const hasTermGoal = status !== 'error' && termGoal;
     const hasMessages = status !== 'error' && messages.length !== 0;
-    const filterClasses = 'link pointer mh2 dim codicon fr ' + (goalFilters.reverse ? 'codicon-arrow-up' : 'codicon-arrow-down');
-    const sortButton = <a className={filterClasses} title="reverse list" onClick={e => {
+    const sortClasses = 'link pointer mh2 dim codicon fr ' + (goalFilters.reverse ? 'codicon-arrow-up' : 'codicon-arrow-down');
+    const sortButton = <a className={sortClasses} title="reverse list" onClick={e => {
         setGoalFilters(s => {
             return { reverse: !s.reverse, isType: s.isType, isInstance: s.isInstance }
         } ); }
     } />
 
     const filterMenu = <span>
-        <a className='link pointer' title="show types" onClick={e => {
+        <a className='link pointer' onClick={e => {
             setGoalFilters(s => {
                 return { reverse: s.reverse, isType: !s.isType, isInstance: s.isInstance }
             } ); }}>
-                <span className={'codicon dim ' + (goalFilters.isType ? 'codicon-eye' : 'codicon-eye-closed')}>&nbsp;</span>
-                <span className="codicon codicon-symbol-namespace" />
-            </a>
-                <br/>
-
-        <a className='link pointer' title="show instances"  onClick={e => {
+                <span className={'filterMenuIcon codicon ' + (goalFilters.isType ? 'codicon-eye' : 'codicon-eye-closed')}>&nbsp;</span>
+                <span className='filterMenuText'>types</span>
+        </a>
+        <br/>
+        <a className='link pointer' onClick={e => {
             setGoalFilters(s => {
                 return { reverse: s.reverse, isType: s.isType, isInstance: !s.isInstance }
             } ); }}>
-                <span className={'codicon dim ' + (goalFilters.isInstance ? 'codicon-eye' : 'codicon-eye-closed')}>&nbsp;</span>
-                <span className="codicon codicon-info" />
-            </a>
+                <span className={'filterMenuIcon codicon ' + (goalFilters.isInstance ? 'codicon-eye' : 'codicon-eye-closed')}>&nbsp;</span>
+                <span className='filterMenuText'>instances</span>
+        </a>
     </span>
-    const filterButton =  <WithTooltipOnHover tooltipContent={() => {return filterMenu}}>
-        <HighlightOnHoverSpan>
-            <a className='link pointer mh2 dim codicon codicon-filter'/>
-        </HighlightOnHoverSpan>
-    </WithTooltipOnHover>
+    const filterButton = <span className='fr'>
+        <WithTooltipOnHover tooltipContent={() => {return filterMenu}}>
+            <HighlightOnHoverSpan>
+                <a className='link pointer mh2 dim codicon codicon-filter'/>
+            </HighlightOnHoverSpan>
+        </WithTooltipOnHover></span>
 
     return (
     <Details initiallyOpen>
@@ -167,7 +167,7 @@ export function InfoDisplay(props0: InfoDisplayProps) {
             <div style={{display: hasGoals ? 'block' : 'none'}}>
                 <Details initiallyOpen>
                     <summary className="mv2 pointer">
-                        Tactic state {filterButton} {sortButton}
+                        Tactic state {sortButton} {filterButton}
                     </summary>
                     <div className='ml1'>
                         {hasGoals && <GoalsUi pos={pos} goals={goals} filter={goalFilters} />}
@@ -177,7 +177,7 @@ export function InfoDisplay(props0: InfoDisplayProps) {
             <div style={{display: hasTermGoal ? 'block' : 'none'}}>
                 <Details initiallyOpen>
                     <summary className="mv2 pointer">
-                        Expected type {filterButton} {sortButton}
+                        Expected type {sortButton} {filterButton}
                     </summary>
                     <div className='ml1'>
                         {hasTermGoal && <GoalUi pos={pos} goal={termGoal} filter={goalFilters} />}
