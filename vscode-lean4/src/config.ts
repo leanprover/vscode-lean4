@@ -1,5 +1,4 @@
 import { workspace } from 'vscode'
-import { InfoviewTacticStateFilter } from '@lean4/infoview-api';
 import * as path from 'path';
 
 // TODO: does currently not contain config options for `./abbreviation`
@@ -87,14 +86,6 @@ export function getInfoViewAutoOpenShowGoal(): boolean {
 
 export function getInfoViewAllErrorsOnLine(): boolean {
     return workspace.getConfiguration('lean4').get('infoViewAllErrorsOnLine', true);
-}
-
-export function getInfoViewTacticStateFilters(): InfoviewTacticStateFilter[] {
-    return workspace.getConfiguration('lean4').get('infoViewTacticStateFilters', []);
-}
-
-export function getInfoViewFilterIndex(): number {
-    return workspace.getConfiguration('lean4').get('infoViewFilterIndex', -1);
 }
 
 export function getElaborationDelay(): number {
