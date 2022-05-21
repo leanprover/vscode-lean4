@@ -31,6 +31,8 @@ function transformGoalToInteractive(g: string): InteractiveGoal {
         } else if (p.match(/^([^:\n< ][^:\n⊢{[(⦃]*) :/mg)) {
             const ss = p.split(':')
             const hyp: InteractiveHypothesis = {
+                isType: false,
+                isInstance: false,
                 names: ss[0].split(' ')
                     .map(s => s.trim())
                     .filter(s => s.length !== 0),
