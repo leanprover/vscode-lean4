@@ -36,22 +36,9 @@ export interface GoalFilterState {
 }
 
 function getFilteredHypotheses(hyps: InteractiveHypothesis[], filter: GoalFilterState): InteractiveHypothesis[] {
-    const result : InteractiveHypothesis[] = [];
-    for (const h of hyps) {
-        if (h.isInstance) {
-            if (filter.isInstance)
-                result.push(h);
-        }
-        else if (h.isType) {
-            if (filter.isType)
-                result.push(h);
-        }
-        else{
-            // TODO: are there other types?
-            result.push(h);
-        }
-    }
-    return result;
+    return hyps.filter(h =>
+        (!h.isInstance || filter.isInstance) &&
+        (!h.isType || filter.isType));
 }
 
 export function Goal({pos, goal, filter}: {pos: DocumentPosition, goal: InteractiveGoal, filter: GoalFilterState}) {
