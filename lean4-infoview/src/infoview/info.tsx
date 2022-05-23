@@ -96,7 +96,7 @@ export function InfoDisplay(props0: InfoDisplayProps) {
         await props0.triggerUpdate();
         setShouldRefresh(true);
     };
-    const [goalFilters, setGoalFilters] = React.useState<GoalFilterState>({ reverse: false, isType: true, isInstance: true});
+    const [goalFilters, setGoalFilters] = React.useState<GoalFilterState>({ reverse: false, isType: true, isInstance: true, isHiddenAssumption: true});
 
     const {kind, pos, status, messages, goals, termGoal, error} = props;
 
@@ -146,6 +146,14 @@ export function InfoDisplay(props0: InfoDisplayProps) {
             } ); }}>
                 <span className={'filterMenuIcon codicon ' + (goalFilters.isInstance ? 'codicon-check' : 'codicon-blank')}>&nbsp;</span>
                 <span className='filterMenuText'>instances</span>
+        </a>
+        <br/>
+        <a className='link pointer' onClick={e => {
+            setGoalFilters(s => {
+                return { ...s, isHiddenAssumption: !s.isHiddenAssumption }
+            } ); }}>
+                <span className={'filterMenuIcon codicon ' + (goalFilters.isHiddenAssumption ? 'codicon-check' : 'codicon-blank')}>&nbsp;</span>
+                <span className='filterMenuText'>hidden assumptions</span>
         </a>
     </span>
     const filterButton = <span className='fr'>

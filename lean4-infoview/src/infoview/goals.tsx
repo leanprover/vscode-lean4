@@ -32,13 +32,19 @@ export function goalsToString(goals: InteractiveGoals): string {
 export interface GoalFilterState {
     reverse: boolean,
     isType: boolean,
-    isInstance: boolean
+    isInstance: boolean,
+    isHiddenAssumption: boolean
+}
+
+function isHiddenAssumption(h: InteractiveHypothesis){
+    return h.names.every(n => n.indexOf('✝') >= 0);
 }
 
 function getFilteredHypotheses(hyps: InteractiveHypothesis[], filter: GoalFilterState): InteractiveHypothesis[] {
     return hyps.filter(h =>
         (!h.isInstance || filter.isInstance) &&
-        (!h.isType || filter.isType));
+        (!h.isType || filter.isType) &&
+        (filter.isHiddenAssumption || !isHiddenAssumption(h)));
 }
 
 export function Goal({pos, goal, filter}: {pos: DocumentPosition, goal: InteractiveGoal, filter: GoalFilterState}) {
