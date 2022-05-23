@@ -136,7 +136,7 @@ export function InfoDisplay(props0: InfoDisplayProps) {
             setGoalFilters(s => {
                 return { reverse: s.reverse, isType: !s.isType, isInstance: s.isInstance }
             } ); }}>
-                <span className={'filterMenuIcon codicon ' + (goalFilters.isType ? 'codicon-eye' : 'codicon-eye-closed')}>&nbsp;</span>
+                <span className={'filterMenuIcon codicon ' + (goalFilters.isType ? 'codicon-check' : 'codicon-close')}>&nbsp;</span>
                 <span className='filterMenuText'>types</span>
         </a>
         <br/>
@@ -144,14 +144,14 @@ export function InfoDisplay(props0: InfoDisplayProps) {
             setGoalFilters(s => {
                 return { reverse: s.reverse, isType: s.isType, isInstance: !s.isInstance }
             } ); }}>
-                <span className={'filterMenuIcon codicon ' + (goalFilters.isInstance ? 'codicon-eye' : 'codicon-eye-closed')}>&nbsp;</span>
+                <span className={'filterMenuIcon codicon ' + (goalFilters.isInstance ? 'codicon-check' : 'codicon-close')}>&nbsp;</span>
                 <span className='filterMenuText'>instances</span>
         </a>
     </span>
     const filterButton = <span className='fr'>
         <WithTooltipOnHover tooltipContent={() => {return filterMenu}}>
             <HighlightOnHoverSpan>
-                <a className='link pointer mh2 dim codicon codicon-filter'/>
+                <a className={'link pointer mh2 dim codicon ' + ((!goalFilters.isInstance || !goalFilters.isType) ? 'codicon-filter-filled': 'codicon-filter')}/>
             </HighlightOnHoverSpan>
         </WithTooltipOnHover></span>
 
