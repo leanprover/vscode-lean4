@@ -121,4 +121,9 @@ select {
 
 .filterMenuText { text-align: center; padding: 5px; vertical-align:top; display:inline-block; }
 
-.filterMenuIcon { padding: 3px; margin-top:3px; }
+.filterMenuIcon { padding: 0px; margin-top:6px; }
+
+.codicon-blank {
+    width: 20px;
+    height: 16px;
+}

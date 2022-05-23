@@ -127,24 +127,24 @@ export function InfoDisplay(props0: InfoDisplayProps) {
     const sortClasses = 'link pointer mh2 dim codicon fr ' + (goalFilters.reverse ? 'codicon-arrow-up' : 'codicon-arrow-down');
     const sortButton = <a className={sortClasses} title="reverse list" onClick={e => {
         setGoalFilters(s => {
-            return { reverse: !s.reverse, isType: s.isType, isInstance: s.isInstance }
+            return { ...s, reverse: !s.reverse }
         } ); }
     } />
 
     const filterMenu = <span>
         <a className='link pointer' onClick={e => {
             setGoalFilters(s => {
-                return { reverse: s.reverse, isType: !s.isType, isInstance: s.isInstance }
+                return { ...s, isType: !s.isType }
             } ); }}>
-                <span className={'filterMenuIcon codicon ' + (goalFilters.isType ? 'codicon-check' : 'codicon-close')}>&nbsp;</span>
+                <span className={'filterMenuIcon codicon ' + (goalFilters.isType ? 'codicon-check' : 'codicon-blank')}>&nbsp;</span>
                 <span className='filterMenuText'>types</span>
         </a>
         <br/>
         <a className='link pointer' onClick={e => {
             setGoalFilters(s => {
-                return { reverse: s.reverse, isType: s.isType, isInstance: !s.isInstance }
+                return { ...s, isInstance: !s.isInstance }
             } ); }}>
-                <span className={'filterMenuIcon codicon ' + (goalFilters.isInstance ? 'codicon-check' : 'codicon-close')}>&nbsp;</span>
+                <span className={'filterMenuIcon codicon ' + (goalFilters.isInstance ? 'codicon-check' : 'codicon-blank')}>&nbsp;</span>
                 <span className='filterMenuText'>instances</span>
         </a>
     </span>
