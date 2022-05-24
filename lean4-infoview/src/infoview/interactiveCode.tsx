@@ -97,26 +97,25 @@ function InteractiveCodeTag({pos, tag: ct, fmt}: InteractiveTagProps<SubexprInfo
     }
     return undefined
   }, [rs, pos.uri, pos.line, pos.character, ct.info, goToLoc])
+  React.useEffect(() => { if (hoverState === 'ctrlOver') void fetchGoToLoc() }, [hoverState])
 
   return (
     <WithTooltipOnHover
       mkTooltipContent={mkTooltip}
       onClick={(e, next) => {
         // On ctrl-click, if location is known, go to it in the editor
-        if (e.ctrlKey) void fetchGoToLoc().then(loc => {
-          if (loc === undefined) return
+        if (e.ctrlKey) {
           setHoverState(st => st === 'over' ? 'ctrlOver' : st)
-          void ec.revealPosition({ uri: loc.uri, ...loc.range.start })
-        })
+          void fetchGoToLoc().then(loc => {
+            if (loc === undefined) return
+            void ec.revealPosition({ uri: loc.uri, ...loc.range.start })
+          })
+        }
         if (!e.ctrlKey) next(e)
       }}
     >
       <DetectHoverSpan
-        setHoverState={st => {
-          // On ctrl-hover, fetch the go-to location
-          if (st === 'ctrlOver') void fetchGoToLoc()
-          setHoverState(st)
-        }}
+        setHoverState={setHoverState}
         className={'highlightable '
                     + (hoverState !== 'off' ? 'highlight ' : '')
                     + (hoverState === 'ctrlOver' && goToLoc !== undefined ? 'underline ' : '')}
