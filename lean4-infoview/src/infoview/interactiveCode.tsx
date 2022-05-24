@@ -98,29 +98,6 @@ function InteractiveCodeTag({pos, tag: ct, fmt}: InteractiveTagProps<SubexprInfo
     return undefined
   }, [rs, pos.uri, pos.line, pos.character, ct.info, goToLoc])
 
-  React.useEffect(() => {
-    const onKeyDown = (e : KeyboardEvent) => {
-      if (e.key === 'Control')
-        setHoverState(st => {
-          const newst = st === 'over' ? 'ctrlOver' : st
-          if (newst === 'ctrlOver') void fetchGoToLoc()
-          return newst
-        })
-    }
-
-    const onKeyUp = (e : KeyboardEvent) => {
-      if (e.key === 'Control')
-        setHoverState(st => st === 'ctrlOver' ? 'over' : st)
-    }
-
-    document.addEventListener('keydown', onKeyDown)
-    document.addEventListener('keyup', onKeyUp)
-    return () => {
-      document.removeEventListener('keydown', onKeyDown)
-      document.removeEventListener('keyup', onKeyUp)
-    }
-  }, [fetchGoToLoc])
-
   return (
     <WithTooltipOnHover
       mkTooltipContent={mkTooltip}
@@ -132,16 +109,6 @@ function InteractiveCodeTag({pos, tag: ct, fmt}: InteractiveTagProps<SubexprInfo
           void ec.revealPosition({ uri: loc.uri, ...loc.range.start })
         })
         if (!e.ctrlKey) next(e)
-      }}
-      onPointerMove={e => {
-        if (e.ctrlKey)
-          setHoverState(st => {
-            const newst = st === 'over' ? 'ctrlOver' : st
-            if (newst === 'ctrlOver') void fetchGoToLoc()
-            return newst
-          })
-        else
-          setHoverState(st => st === 'ctrlOver' ? 'over' : st)
       }}
     >
       <DetectHoverSpan

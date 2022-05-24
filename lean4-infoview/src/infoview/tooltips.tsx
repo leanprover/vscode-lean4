@@ -71,13 +71,15 @@ export const Tooltip = forwardAndUseRef<HTMLDivElement,
 })
 
 export type HoverState = 'off' | 'over' | 'ctrlOver'
-/** An element which calls `setHoverState` when its DOM children are hovered over. It is implemented
- * with JS rather than CSS in order to allow nesting of these elements. When nested, only the
- * smallest (deepest in the DOM tree) {@link HighlightOnHoverSpan} has an enabled hover state. */
+/** An element which calls `setHoverState` when the hover state of its DOM children changes.
+ *
+ * It is implemented with JS rather than CSS in order to allow nesting of these elements. When nested,
+ * only the smallest (deepest in the DOM tree) {@link DetectHoverSpan} has an enabled hover state. */
 export const DetectHoverSpan =
   forwardAndUseRef<HTMLSpanElement,
-    React.HTMLProps<HTMLSpanElement> & {setHoverState: (_: HoverState) => void}>((props_, ref, setRef) => {
+    React.HTMLProps<HTMLSpanElement> & {setHoverState: React.Dispatch<React.SetStateAction<HoverState>>}>((props_, ref, setRef) => {
   const {setHoverState, ...props} = props_;
+
   const onPointerEvent = (b: boolean) => (e: React.PointerEvent<HTMLSpanElement>) => {
     // It's more composable to let pointer events bubble up rather than to `stopPropagating`,
     // but we only want to handle hovers in the innermost component. So we record that the
@@ -94,11 +96,36 @@ export const DetectHoverSpan =
     }
   }
 
+  React.useEffect(() => {
+    const onKeyDown = (e : KeyboardEvent) => {
+      if (e.key === 'Control')
+        setHoverState(st => st === 'over' ? 'ctrlOver' : st)
+    }
+
+    const onKeyUp = (e : KeyboardEvent) => {
+      if (e.key === 'Control')
+        setHoverState(st => st === 'ctrlOver' ? 'over' : st)
+    }
+
+    document.addEventListener('keydown', onKeyDown)
+    document.addEventListener('keyup', onKeyUp)
+    return () => {
+      document.removeEventListener('keydown', onKeyDown)
+      document.removeEventListener('keyup', onKeyUp)
+    }
+  }, [])
+
   return <span
       {...props}
       ref={setRef}
       onPointerOver={onPointerEvent(true)}
       onPointerOut={onPointerEvent(false)}
+      onPointerMove={e => {
+        if (e.ctrlKey)
+          setHoverState(st => st === 'over' ? 'ctrlOver' : st)
+        else
+          setHoverState(st => st === 'ctrlOver' ? 'over' : st)
+      }}
     >
       {props.children}
     </span>
