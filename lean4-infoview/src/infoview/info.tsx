@@ -158,9 +158,7 @@ export function InfoDisplay(props0: InfoDisplayProps) {
     </span>
     const filterButton = <span className='fr'>
         <WithTooltipOnHover tooltipContent={() => {return filterMenu}}>
-            <HighlightOnHoverSpan>
-                <a className={'link pointer mh2 dim codicon ' + ((!goalFilters.isInstance || !goalFilters.isType || !goalFilters.isHiddenAssumption) ? 'codicon-filter-filled': 'codicon-filter')}/>
-            </HighlightOnHoverSpan>
+            <a className={'link pointer mh2 dim codicon ' + ((!goalFilters.isInstance || !goalFilters.isType || !goalFilters.isHiddenAssumption) ? 'codicon-filter-filled': 'codicon-filter')}/>
         </WithTooltipOnHover></span>
 
     return (
