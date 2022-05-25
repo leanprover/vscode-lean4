@@ -86,8 +86,6 @@ select {
     font-size: 13px;
     border-radius: 4px;
     box-shadow: 1px 1px 5px var(--vscode-widget-shadow);
-    border-color: var(--vscode-editorWidget-border);
-    border-width: 1px;
 }
 
 .tooltip-arrow,
@@ -96,7 +94,6 @@ select {
     width: 8px;
     height: 8px;
     z-index: -1;
-    display: none;  /* TODO: the arrow border is tricky to match, probably need an SVG shape instead */
 }
 
 .tooltip-arrow::before {
