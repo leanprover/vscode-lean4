@@ -80,7 +80,8 @@ select {
 
 /* Styles for the tooltips shown in the widget view. */
 .tooltip {
-    color: var(--vscode-editorWidget-foreground);
+    /* color: var(--vscode-editorWidget-foreground);*/
+    @extend .mtk1;
     background: var(--vscode-editorWidget-background);
     padding: 4px 8px;
     font-size: 13px;
