@@ -175,7 +175,6 @@ export class LeanClient implements Disposable {
             command: executable,
             args: options.concat(serverArgs()),
             options: {
-                shell: true,
                 cwd: this.folderUri?.fsPath,
                 env
             }
@@ -198,6 +197,10 @@ export class LeanClient implements Disposable {
             workspaceFolder: this.workspaceFolder,
             initializationOptions: {
                 editDelay: getElaborationDelay(), hasWidgets: true,
+            },
+            connectionOptions: {
+                maxRestartCount: 0,
+                cancellationStrategy: undefined as any,
             },
             middleware: {
                 handleDiagnostics: (uri, diagnostics, next) => {
