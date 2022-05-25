@@ -291,7 +291,6 @@ function InfoAux(props: InfoProps) {
             const [goals, termGoal] = await allReq;
             setGoals(goals);
             setTermGoal(termGoal);
-            onError(undefined)
         } catch (err: any) {
             if (err?.code === -32801) {
                 // Document has been changed since we made the request, try again
