@@ -30,9 +30,13 @@ export function goalsToString(goals: InteractiveGoals): string {
 }
 
 export interface GoalFilterState {
+    /** If true reverse the list of InteractiveHypothesis, if false present the order received from LSP */
     reverse: boolean,
+    /** If true show InteractiveHypothesis that have isType=True, if false, hide InteractiveHypothesis that have isType=True. */
     isType: boolean,
+    /** If true show InteractiveHypothesis that have isInstance=True, if false, hide InteractiveHypothesis that have isInstance=True. */
     isInstance: boolean,
+    /** If true show InteractiveHypothesis that contain a dagger in the name, if false, hide InteractiveHypothesis that contain a dagger in the name. */
     isHiddenAssumption: boolean
 }
 
