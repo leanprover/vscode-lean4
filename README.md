@@ -189,14 +189,6 @@ name of the relative path to the store the logs.
 
 * `lean4.infoViewAutoOpenShowGoal`: auto open shows goal and messages for the current line (instead of all messages for the whole file).  In this mode the Infoview updates often every time you move the cursor to a different position so it can show context sensitive information.  Default is `true`.
 
-* `lean4.infoViewTacticStateFilters`: An array of objects containing regular expression strings that can be used to filter (positively or negatively) the plain text tactic state in the Infoview. Set to an empty array `[]` to hide the filter select dropdown. Each object must contain the following keys:
-  - `regex` is a properly-escaped regex string,
-  - `match` is a boolean, where `true` (`false`) means blocks in the tactic state matching `regex` will be included (excluded) in the Infoview,
-  - `flags` are additional flags passed to the [JavaScript RegExp constructor](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp).
-  - The `name` key is optional and may contain a string that is displayed in the dropdown instead of the full regex details.
-
-* `lean4.infoViewFilterIndex`: Index of the filter applied to the tactic state (in the array infoViewTacticStateFilters). An index of -1 means no filter is applied (which is the default for this setting).
-
 * `lean4.infoViewAllErrorsOnLine`: show all errors on the current line, instead of just the ones on the right of the cursor, default `true`.
 
 * `lean4.elaborationDelay`: Time (in milliseconds) which must pass since latest edit until elaboration begins. Lower values may make editing feel faster at the cost of higher CPU usage.  The default is 200.

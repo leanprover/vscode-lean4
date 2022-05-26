@@ -43,7 +43,7 @@ function InteractiveMessageTag({pos, tag: embed, fmt}: InteractiveTagProps<MsgEm
     if ('expr' in embed)
         return <InteractiveCode pos={pos} fmt={embed.expr} />
     else if ('goal' in embed)
-        return <Goal pos={pos} goal={embed.goal} reverse={false}/>
+        return <Goal pos={pos} goal={embed.goal} filter={{reverse: false, isType: false, isInstance: false, isHiddenAssumption: false}}/>
     else if ('lazyTrace' in embed)
         return <CollapsibleTrace pos={pos} col={embed.lazyTrace[0]} cls={embed.lazyTrace[1]} msg={embed.lazyTrace[2]} />
     else

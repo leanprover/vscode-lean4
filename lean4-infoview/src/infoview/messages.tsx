@@ -98,7 +98,10 @@ export function AllMessages({uri: uri0}: { uri: DocumentUri }) {
     const iDiags0 = React.useMemo(() => lazy(async () => {
         if (sv?.hasWidgetsV1()) {
             try {
-                return await getInteractiveDiagnostics(rs, { uri: uri0, line: 0, character: 0 }) || [];
+                const diags = await getInteractiveDiagnostics(rs, { uri: uri0, line: 0, character: 0 });
+                if (diags && diags.length > 0) {
+                    return diags
+                }
             } catch (err: any) {
                 if (err?.code === -32801) {
                     // Document has been changed since we made the request. This can happen
@@ -177,7 +180,8 @@ export function useMessagesForFile(uri: DocumentUri, line?: number): Interactive
             try {
                 const diags = await getInteractiveDiagnostics(rs, { uri, line: 0, character: 0 },
                     line ? { start: line, end: line + 1 } : undefined)
-                if (diags) {
+                if (diags && diags.length > 0) {
+                    // diags may be [] when lake fails
                     setDiags(diags)
                 }
             } catch (err: any) {

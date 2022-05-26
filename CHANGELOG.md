@@ -70,7 +70,6 @@
     - `lean4.infoViewAutoOpen`
     - `lean4.infoViewAutoOpenShowGoal`
     - `lean4.infoViewStyle`
-    - `lean4.infoViewTacticStateFilters`
     - `lean4.infoViewFilterIndex`
   - Commands:
     - `lean4.displayGoal` (Ctrl+Shift+Enter)
