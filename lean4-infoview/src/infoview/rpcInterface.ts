@@ -65,6 +65,8 @@ export async function InteractiveDiagnostics_infoToInteractive(rs: RpcSessions, 
 }
 
 export interface InteractiveHypothesis {
+    isInstance?: boolean,
+    isType?: boolean,
     names: string[]
     type: CodeWithInfos
     val?: CodeWithInfos

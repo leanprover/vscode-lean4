@@ -129,55 +129,6 @@
 					"default": "",
 					"markdownDescription": "Add an additional CSS snippet to the infoview."
 				},
-				"lean4.infoViewTacticStateFilters": {
-					"type": "array",
-					"default": [
-						{
-							"regex": "^_",
-							"match": false,
-							"flags": ""
-						},
-						{
-							"name": "goals only",
-							"regex": "^(⊢|\\d+ goals|case|$)",
-							"match": true,
-							"flags": ""
-						}
-					],
-					"markdownDescription": "An array of objects containing regular expression strings that can be used to filter (positively or negatively) the tactic state in the infoview. Set to an empty array `[]` to hide the filter select dropdown.\n \n Each object must contain the following keys: 'regex': string, 'match': boolean, 'flags': string.\n 'regex' is a properly-escaped regex string,\n 'match' = true (false) means blocks in the tactic state matching 'regex' will be included (excluded) in the infoview, \n 'flags' are additional flags passed to the JavaScript `RegExp` constructor.\n The 'name' key is optional and may contain a string that is displayed in the dropdown instead of the full regex details.",
-					"items": {
-						"type": "object",
-						"description": "an object with required properties 'regex': string, 'match': boolean, and 'flags': string, and optional property 'name': string",
-						"properties": {
-							"name": {
-								"type": "string",
-								"description": "name displayed in the dropdown"
-							},
-							"regex": {
-								"type": "string",
-								"description": "a properly-escaped regex string, e.g. '^_' matches any string beginning with an underscore"
-							},
-							"match": {
-								"type": "boolean",
-								"description": "whether tactic state lines matching the value of 'regex' should be included (true) or excluded (false)"
-							},
-							"flags": {
-								"type": "string",
-								"description": "additional flags passed to the RegExp constructor, e.g. 'i' for ignore case"
-							}
-						},
-						"required": [
-							"regex",
-							"match",
-							"flags"
-						]
-					}
-				},
-				"lean4.infoViewFilterIndex": {
-					"type": "number",
-					"default": -1,
-					"markdownDescription": "Index of the filter applied to the tactic state (in the array infoViewTacticStateFilters). An index of -1 means no filter is applied."
-				},
 				"lean4.elaborationDelay": {
 					"type": "number",
 					"default": 200,

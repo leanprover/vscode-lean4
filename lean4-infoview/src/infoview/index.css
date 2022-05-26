@@ -80,13 +80,16 @@ select {
 
 /* Styles for the tooltips shown in the widget view. */
 .tooltip {
-    /* tooltips are _always_ dark.  */
-    background: #333;
-    color: white;
+    /* color: var(--vscode-editorWidget-foreground);*/
+    @extend .mtk1;
+    background: var(--vscode-editorWidget-background);
     padding: 4px 8px;
     font-size: 13px;
     border-radius: 4px;
-    box-shadow: 1px 1px 5px black;
+    box-shadow: 1px 1px 5px var(--vscode-widget-shadow);
+    border-color: var(--vscode-dropdown-border);
+    border-width: 1px;
+    border-style: solid;
 }
 
 .tooltip-arrow,
@@ -100,7 +103,7 @@ select {
 .tooltip-arrow::before {
     content: '';
     transform: rotate(45deg);
-    background: #333;
+    background: var(--vscode-editorWidget-background);
 }
 
 .tooltip[data-popper-placement^='top'] > .tooltip-arrow {
@@ -117,4 +120,18 @@ select {
 
 .tooltip[data-popper-placement^='right'] > .tooltip-arrow {
     left: -4px;
+}
+
+.popup-menu-text { text-align: center; padding: 5px; vertical-align:top; display:inline-block; }
+
+.popup-menu-icon { padding: 0px; margin-top:6px; }
+
+.codicon-blank {
+    width: 20px;
+    height: 16px;
+}
+
+.popup-menu {
+    color: var(--vscode-editorWidget-foreground);
+    background: var(--vscode-editorWidget-background);
 }

@@ -1,13 +1,14 @@
 import * as React from 'react';
 import type { Location } from 'vscode-languageserver-protocol';
 
-import { Goals as GoalsUi, Goal as GoalUi, goalsToString } from './goals';
+import { Goals as GoalsUi, Goal as GoalUi, goalsToString, GoalFilterState } from './goals';
 import { basename, DocumentPosition, RangeHelpers, useEvent, usePausableState } from './util';
 import { Details } from './collapsing';
 import { EditorContext, ProgressContext, RpcContext, VersionContext } from './contexts';
 import { MessagesList, useMessagesFor } from './messages';
 import { getInteractiveGoals, getInteractiveTermGoal, InteractiveDiagnostic, InteractiveGoal, InteractiveGoals } from './rpcInterface';
 import { updatePlainGoals, updateTermGoal } from './goalCompat';
+import { HighlightOnHoverSpan, WithTooltipOnHover } from './tooltips'
 
 type InfoStatus = 'loading' | 'updating' | 'error' | 'ready';
 type InfoKind = 'cursor' | 'pin';
@@ -95,7 +96,7 @@ export function InfoDisplay(props0: InfoDisplayProps) {
         await props0.triggerUpdate();
         setShouldRefresh(true);
     };
-    const [reverseOrder, setReverseOrder] = React.useState<boolean>(false);
+    const [goalFilters, setGoalFilters] = React.useState<GoalFilterState>({ reverse: false, isType: true, isInstance: true, isHiddenAssumption: true});
 
     const {kind, pos, status, messages, goals, termGoal, error} = props;
 
@@ -123,8 +124,43 @@ export function InfoDisplay(props0: InfoDisplayProps) {
     const hasGoals = status !== 'error' && goals;
     const hasTermGoal = status !== 'error' && termGoal;
     const hasMessages = status !== 'error' && messages.length !== 0;
-    const filterClasses = 'link pointer mh2 dim codicon fr ' + (reverseOrder ? 'codicon-arrow-up' : 'codicon-arrow-down');
-    const sortButton = <a className={filterClasses} onClick={e => { setReverseOrder(!reverseOrder); }} title="reverse list"/>
+    const sortClasses = 'link pointer mh2 dim codicon fr ' + (goalFilters.reverse ? 'codicon-arrow-up' : 'codicon-arrow-down');
+    const sortButton = <a className={sortClasses} title="reverse list" onClick={e => {
+        setGoalFilters(s => {
+            return { ...s, reverse: !s.reverse }
+        } ); }
+    } />
+
+    const filterMenu = <span>
+        <a className='link pointer popup-menu' onClick={e => {
+            setGoalFilters(s => {
+                return { ...s, isType: !s.isType }
+            } ); }}>
+                <span className={'popup-menu-icon codicon ' + (goalFilters.isType ? 'codicon-check' : 'codicon-blank')}>&nbsp;</span>
+                <span className='popup-menu-text'>types</span>
+        </a>
+        <br/>
+        <a className='link pointer popup-menu' onClick={e => {
+            setGoalFilters(s => {
+                return { ...s, isInstance: !s.isInstance }
+            } ); }}>
+                <span className={'popup-menu-icon codicon ' + (goalFilters.isInstance ? 'codicon-check' : 'codicon-blank')}>&nbsp;</span>
+                <span className='popup-menu-text'>instances</span>
+        </a>
+        <br/>
+        <a className='link pointer popup-menu' onClick={e => {
+            setGoalFilters(s => {
+                return { ...s, isHiddenAssumption: !s.isHiddenAssumption }
+            } ); }}>
+                <span className={'popup-menu-icon codicon ' + (goalFilters.isHiddenAssumption ? 'codicon-check' : 'codicon-blank')}>&nbsp;</span>
+                <span className='popup-menu-text'>hidden assumptions</span>
+        </a>
+    </span>
+    const filterButton = <span className='fr'>
+        <WithTooltipOnHover tooltipContent={() => {return filterMenu}}>
+            <a className={'link pointer mh2 dim codicon ' + ((!goalFilters.isInstance || !goalFilters.isType || !goalFilters.isHiddenAssumption) ? 'codicon-filter-filled': 'codicon-filter')}/>
+        </WithTooltipOnHover></span>
+
     return (
     <Details initiallyOpen>
         <InfoStatusBar {...props} triggerUpdate={triggerDisplayUpdate} isPaused={isPaused} setPaused={setPaused} copyGoalToComment={copyGoalToComment} />
@@ -137,20 +173,20 @@ export function InfoDisplay(props0: InfoDisplayProps) {
             <div style={{display: hasGoals ? 'block' : 'none'}}>
                 <Details initiallyOpen>
                     <summary className="mv2 pointer">
-                        Tactic state {sortButton}
+                        Tactic state {sortButton} {filterButton}
                     </summary>
                     <div className='ml1'>
-                        {hasGoals && <GoalsUi pos={pos} goals={goals} reverseOrder={reverseOrder} />}
+                        {hasGoals && <GoalsUi pos={pos} goals={goals} filter={goalFilters} />}
                     </div>
                 </Details>
             </div>
             <div style={{display: hasTermGoal ? 'block' : 'none'}}>
                 <Details initiallyOpen>
                     <summary className="mv2 pointer">
-                        Expected type {sortButton}
+                        Expected type {sortButton} {filterButton}
                     </summary>
                     <div className='ml1'>
-                        {hasTermGoal && <GoalUi pos={pos} goal={termGoal} reverse={reverseOrder} />}
+                        {hasTermGoal && <GoalUi pos={pos} goal={termGoal} filter={goalFilters} />}
                     </div>
                 </Details>
             </div>
