@@ -12,6 +12,7 @@ import { getInfoViewAllErrorsOnLine, getInfoViewAutoOpen, getInfoViewAutoOpenSho
 import { Rpc } from './rpc';
 import { LeanClientProvider } from './utils/clientProvider'
 import * as ls from 'vscode-languageserver-protocol'
+import { c2pConverter, p2cConverter } from './utils/converters';
 
 const keepAlivePeriodMs = 10000
 
@@ -190,19 +191,15 @@ export class InfoProvider implements Disposable {
             let uri: Uri | undefined
             let pos: Position | undefined
             if (tdpp) {
-                const client = this.clientProvider.findClient(tdpp.textDocument.uri);
-                if (!client?.running) return;
-                uri = client.convertUriFromString(tdpp.textDocument.uri);
-                pos = client.convertPosition(tdpp.position);
+                uri = p2cConverter.asUri(tdpp.textDocument.uri);
+                pos = p2cConverter.asPosition(tdpp.position);
             }
             await this.handleInsertText(text, kind, uri, pos);
         },
         showDocument: async (show) => {
-            const client = this.clientProvider.findClient(show.uri);
-            if (!client?.running) return;
             void this.revealEditorSelection(
                 Uri.parse(show.uri),
-                client.convertRange(show.selection)
+                p2cConverter.asRange(show.selection)
             );
         },
 
@@ -493,7 +490,7 @@ export class InfoProvider implements Disposable {
         for (const [uri, processing] of client.progress) {
             const params: LeanFileProgressParams = {
                 textDocument: {
-                    uri: client.convertUri(uri)?.toString(),
+                    uri: c2pConverter.asUri(uri),
                     version: 0, // HACK: The infoview ignores this
                 },
                 processing,

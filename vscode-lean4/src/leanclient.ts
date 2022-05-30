@@ -1,9 +1,8 @@
 import { TextDocument, EventEmitter, Diagnostic,
     DocumentHighlight, Range, DocumentHighlightKind, workspace,
     Disposable, Uri, ConfigurationChangeEvent, OutputChannel, DiagnosticCollection,
-    Position, WorkspaceFolder } from 'vscode'
+    WorkspaceFolder } from 'vscode'
 import {
-    Code2ProtocolConverter,
     DidChangeTextDocumentParams,
     DidCloseTextDocumentParams,
     DidOpenTextDocumentNotification,
@@ -11,7 +10,6 @@ import {
     InitializeResult,
     LanguageClient,
     LanguageClientOptions,
-    Protocol2CodeConverter,
     PublishDiagnosticsParams,
     ServerOptions,
     State
@@ -29,12 +27,9 @@ import { join } from 'path';
  // @ts-ignore
 import { SemVer } from 'semver';
 import { fileExists } from './utils/fsHelper';
+import { c2pConverter, p2cConverter, patchConverters } from './utils/converters'
 
 const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-
-interface Lean4Diagnostic extends ls.Diagnostic {
-    fullRange: ls.Range;
-}
 
 export type ServerProgress = Map<Uri, LeanFileProgressProcessingInfo[]>;
 
@@ -195,11 +190,11 @@ export class LeanClient implements Disposable {
                 handleDiagnostics: (uri, diagnostics, next) => {
                     next(uri, diagnostics);
                     if (!this.client) return;
-                    const uri_ = this.client.code2ProtocolConverter.asUri(uri);
+                    const uri_ = c2pConverter.asUri(uri);
                     const diagnostics_ = [];
                     for (const d of diagnostics) {
                         const d_: ls.Diagnostic = {
-                            ...this.client.code2ProtocolConverter.asDiagnostic(d),
+                            ...c2pConverter.asDiagnostic(d),
                         };
                         diagnostics_.push(d_);
                     }
@@ -222,7 +217,7 @@ export class LeanClient implements Disposable {
                 didChange: async (data, next) => {
                     await next(data);
                     if (!this.running || !this.client) return; // there was a problem starting lean server.
-                    const params = this.client.code2ProtocolConverter.asChangeTextDocumentParams(data);
+                    const params = c2pConverter.asChangeTextDocumentParams(data);
                     this.didChangeEmitter.fire(params);
                 },
 
@@ -232,7 +227,7 @@ export class LeanClient implements Disposable {
                     }
                     await next(doc);
                     if (!this.running || !this.client) return; // there was a problem starting lean server.
-                    const params = this.client.code2ProtocolConverter.asCloseTextDocumentParams(doc);
+                    const params = c2pConverter.asCloseTextDocumentParams(doc);
                     this.didCloseEmitter.fire(params);
                 },
 
@@ -271,7 +266,7 @@ export class LeanClient implements Disposable {
             serverOptions,
             clientOptions
         )
-        this.patchConverters(this.client.protocol2CodeConverter, this.client.code2ProtocolConverter)
+        patchConverters(this.client.protocol2CodeConverter, this.client.code2ProtocolConverter)
         try {
             this.client.onDidChangeState((s) =>{
                 // see https://github.com/microsoft/vscode-languageserver-node/issues/825
@@ -309,7 +304,7 @@ export class LeanClient implements Disposable {
         const starHandler = (method: string, params_: any) => {
             if (method === '$/lean/fileProgress' && this.client) {
                 const params = params_ as LeanFileProgressParams;
-                const uri = this.client.protocol2CodeConverter.asUri(params.textDocument.uri)
+                const uri = p2cConverter.asUri(params.textDocument.uri)
                 this.progressChangedEmitter.fire([uri.toString(), params.processing]);
                 // save the latest progress on this Uri in case infoview needs it later.
                 this.progress.set(uri, params.processing);
@@ -327,30 +322,6 @@ export class LeanClient implements Disposable {
         });
 
         this.restartedEmitter.fire(undefined)
-    }
-
-    private patchConverters(p2c: Protocol2CodeConverter, c2p: Code2ProtocolConverter) {
-        // eslint-disable-next-line @typescript-eslint/unbound-method
-        const oldAsDiagnostic = p2c.asDiagnostic
-        p2c.asDiagnostic = function (protDiag: Lean4Diagnostic): Diagnostic {
-            if (!protDiag.message) {
-                // Fixes: Notification handler 'textDocument/publishDiagnostics' failed with message: message must be set
-                protDiag.message = ' ';
-            }
-            const diag = oldAsDiagnostic.apply(this, [protDiag])
-            diag.fullRange = p2c.asRange(protDiag.fullRange)
-            return diag
-        }
-        p2c.asDiagnostics = async (diags) => diags.map(d => p2c.asDiagnostic(d))
-
-        // eslint-disable-next-line @typescript-eslint/unbound-method
-        const c2pAsDiagnostic = c2p.asDiagnostic;
-        c2p.asDiagnostic = function (diag: Diagnostic & {fullRange: Range}): Lean4Diagnostic {
-            const protDiag = c2pAsDiagnostic.apply(this, [diag])
-            protDiag.fullRange = c2p.asRange(diag.fullRange)
-            return protDiag
-        }
-        c2p.asDiagnostics = async (diags) => diags.map(d => c2p.asDiagnostic(d))
     }
 
     async openLean4Document(doc: TextDocument) {
@@ -484,27 +455,10 @@ export class LeanClient implements Disposable {
         return this.running  && this.client ? this.client.sendNotification(method, params) : undefined;
     }
 
-    convertUri(uri: Uri): Uri {
-        return this.running  && this.client ? Uri.parse(this.client.code2ProtocolConverter.asUri(uri)) : uri;
-    }
-
-    convertUriFromString(uri: string): Uri {
-        const u = Uri.parse(uri);
-        return this.running && this.client ? Uri.parse(this.client.code2ProtocolConverter.asUri(u)) : u;
-    }
-
-    convertPosition(pos: ls.Position) : Position | undefined {
-        return this.running ? this.client?.protocol2CodeConverter.asPosition(pos) : undefined;
-    }
-
-    convertRange(range: ls.Range | undefined): Range | undefined {
-        return this.running && range ? this.client?.protocol2CodeConverter.asRange(range) : undefined;
-    }
-
     async getDiagnosticParams(uri: Uri, diagnostics: readonly Diagnostic[]) : Promise<PublishDiagnosticsParams> {
         const params: PublishDiagnosticsParams = {
-            uri: this.convertUri(uri)?.toString(),
-            diagnostics: await this.client?.code2ProtocolConverter.asDiagnostics(diagnostics as Diagnostic[]) ?? []
+            uri: c2pConverter.asUri(uri),
+            diagnostics: await c2pConverter.asDiagnostics(diagnostics as Diagnostic[])
         };
         return params;
     }

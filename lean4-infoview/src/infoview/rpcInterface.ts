@@ -9,6 +9,7 @@ import { RpcPtr, LeanDiagnostic } from '@lean4/infoview-api'
 
 import { DocumentPosition } from './util'
 import { RpcSessions } from './rpcSessions'
+import { LocationLink } from 'vscode-languageserver-protocol'
 
 export type TaggedText<T> =
     { text: string } |
@@ -36,17 +37,18 @@ export function TaggedText_stripTags<T>(tt: TaggedText<T>): string {
 
 export type InfoWithCtx = RpcPtr<'InfoWithCtx'>
 
-export interface CodeToken {
+export interface SubexprInfo {
     info: InfoWithCtx
+    subexprPos?: number
 }
 
-export type CodeWithInfos = TaggedText<CodeToken>
+export type CodeWithInfos = TaggedText<SubexprInfo>
 export type ExprWithCtx = RpcPtr<'ExprWithCtx'>
 
 export interface InfoPopup {
-  type?: CodeWithInfos
-  exprExplicit?: CodeWithInfos
-  doc?: string
+    type?: CodeWithInfos
+    exprExplicit?: CodeWithInfos
+    doc?: string
 }
 
 function CodeWithInfos_registerRefs(rs: RpcSessions, pos: DocumentPosition, ci: CodeWithInfos): void {
@@ -153,4 +155,14 @@ export async function InteractiveDiagnostics_msgToInteractive(rs: RpcSessions, p
     const ret = await rs.call<TaggedText<MsgEmbed>>(pos, 'Lean.Widget.InteractiveDiagnostics.msgToInteractive', msg)
     if (ret) TaggedMsg_registerRefs(rs, pos, ret)
     return ret
+}
+
+export type GoToKind = 'declaration' | 'definition' | 'type'
+export async function getGoToLocation(rs: RpcSessions, pos: DocumentPosition, kind: GoToKind, info: InfoWithCtx): Promise<LocationLink[] | undefined> {
+    interface GetGoToLocationParams {
+        kind: GoToKind;
+        info: InfoWithCtx;
+    }
+    const args: GetGoToLocationParams = { kind, info };
+    return rs.call<LocationLink[]>(pos, 'Lean.Widget.getGoToLocation', args)
 }
