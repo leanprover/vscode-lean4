@@ -8,7 +8,7 @@ import { EditorContext, ProgressContext, RpcContext, VersionContext } from './co
 import { MessagesList, useMessagesFor } from './messages';
 import { getInteractiveGoals, getInteractiveTermGoal, InteractiveDiagnostic, InteractiveGoal, InteractiveGoals } from './rpcInterface';
 import { updatePlainGoals, updateTermGoal } from './goalCompat';
-import { HighlightOnHoverSpan, WithTooltipOnHover } from './tooltips'
+import { WithTooltipOnHover } from './tooltips'
 
 type InfoStatus = 'loading' | 'updating' | 'error' | 'ready';
 type InfoKind = 'cursor' | 'pin';
