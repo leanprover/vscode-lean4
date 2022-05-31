@@ -6,6 +6,10 @@ import * as vscode from 'vscode';
 import { initLean4, waitForActiveEditor, waitForInfoviewHtml,
 	extractPhrase, waitForDocViewHtml, invokeHrefCommand } from '../utils/helpers';
 
+function delay(ms: number) {
+    return new Promise( resolve => setTimeout(resolve, ms) );
+}
+
 suite('Documentation View Test Suite', () => {
 
     test('Documentation View Example Test', async () => {
@@ -28,8 +32,18 @@ suite('Documentation View Test Suite', () => {
 
         const docView = lean.exports.docView;
         assert(docView, 'No docView export');
-        const exampleLink = 'Example';
-        html = await waitForDocViewHtml(docView, exampleLink);
+        const expectedMenuItem = 'Abbreviations cheat sheet';
+        html = await waitForDocViewHtml(docView, expectedMenuItem);
+
+        // invoke the TPIL link
+        await invokeHrefCommand(html, 'a[href*="theorem_proving_in_lean4"]');
+        html = await waitForDocViewHtml(docView, 'Computers and Theorem Proving');
+        await delay(1000); // just so we can see it while debugging
+
+        // go back to menu
+        await invokeHrefCommand(html, 'a[href*="lean4.docView.back"]');
+        html = await waitForDocViewHtml(docView, expectedMenuItem);
+        await delay(1000); // just so we can see it while debugging
 
         // invoke the command in the <a> tag with href containing 'openExample
         await invokeHrefCommand(html, 'a[href*="openExample"]')
