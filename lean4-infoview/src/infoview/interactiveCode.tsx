@@ -1,9 +1,10 @@
 import * as React from 'react'
 
-import { RpcContext } from './contexts'
+import { EditorContext, RpcContext } from './contexts'
 import { DocumentPosition } from './util'
-import { CodeToken, CodeWithInfos, InfoPopup, InfoWithCtx, InteractiveDiagnostics_infoToInteractive, TaggedText } from './rpcInterface'
-import { HighlightOnHoverSpan, WithTooltipOnHover } from './tooltips'
+import { SubexprInfo, CodeWithInfos, InfoPopup, InfoWithCtx, InteractiveDiagnostics_infoToInteractive, getGoToLocation, TaggedText } from './rpcInterface'
+import { DetectHoverSpan, HoverState, WithTooltipOnHover } from './tooltips'
+import { Location } from 'vscode-languageserver-protocol'
 
 export interface InteractiveTextComponentProps<T> {
   pos: DocumentPosition
@@ -68,18 +69,59 @@ function TypePopupContents({pos, info, redrawTooltip}: {pos: DocumentPosition, i
   } else return <>Loading..</>
 }
 
-/** Tags in code represent values which can be hovered over to display extra info. */
-function InteractiveCodeTag({pos, tag: ct, fmt}: InteractiveTagProps<CodeToken>) {
+/** Tagged spans can be hovered over to display extra info stored in the associated `SubexprInfo`. */
+function InteractiveCodeTag({pos, tag: ct, fmt}: InteractiveTagProps<SubexprInfo>) {
   const mkTooltip = React.useCallback((redrawTooltip: () => void) =>
     <div className="font-code tl pre-wrap">
       <TypePopupContents pos={pos} info={ct.info}
         redrawTooltip={redrawTooltip} />
     </div>, [pos.uri, pos.line, pos.character, ct.info])
+
+  // We mimick the VSCode ctrl-hover and ctrl-click UI for go-to-definition
+  const rs = React.useContext(RpcContext)
+  const ec = React.useContext(EditorContext)
+  const [hoverState, setHoverState] = React.useState<HoverState>('off')
+
+  const [goToLoc, setGoToLoc] = React.useState<Location | undefined>(undefined)
+  const fetchGoToLoc = React.useCallback(async () => {
+    if (goToLoc !== undefined) return goToLoc
+    try {
+      const lnks = await getGoToLocation(rs, pos, 'definition', ct.info)
+      if (lnks !== undefined && lnks.length > 0) {
+        const loc = { uri: lnks[0].targetUri, range: lnks[0].targetSelectionRange }
+        setGoToLoc(loc)
+        return loc
+      }
+    } catch(e) {
+      console.error('Error in go-to-definition: ', JSON.stringify(e))
+    }
+    return undefined
+  }, [rs, pos.uri, pos.line, pos.character, ct.info, goToLoc])
+  React.useEffect(() => { if (hoverState === 'ctrlOver') void fetchGoToLoc() }, [hoverState])
+
   return (
-    <WithTooltipOnHover tooltipContent={mkTooltip}>
-      <HighlightOnHoverSpan>
+    <WithTooltipOnHover
+      mkTooltipContent={mkTooltip}
+      onClick={(e, next) => {
+        // On ctrl-click, if location is known, go to it in the editor
+        if (e.ctrlKey) {
+          setHoverState(st => st === 'over' ? 'ctrlOver' : st)
+          void fetchGoToLoc().then(loc => {
+            if (loc === undefined) return
+            void ec.revealPosition({ uri: loc.uri, ...loc.range.start })
+          })
+        }
+        if (!e.ctrlKey) next(e)
+      }}
+    >
+      <DetectHoverSpan
+        setHoverState={setHoverState}
+        className={'highlightable '
+                    + (hoverState !== 'off' ? 'highlight ' : '')
+                    + (hoverState === 'ctrlOver' && goToLoc !== undefined ? 'underline ' : '')}
+      >
         <InteractiveCode pos={pos} fmt={fmt} />
-      </HighlightOnHoverSpan>
+      </DetectHoverSpan>
     </WithTooltipOnHover>
   )
 }
