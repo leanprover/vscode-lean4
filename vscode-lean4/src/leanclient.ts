@@ -1,7 +1,7 @@
 import { TextDocument, EventEmitter, Diagnostic,
     DocumentHighlight, Range, DocumentHighlightKind, workspace,
     Disposable, Uri, ConfigurationChangeEvent, OutputChannel, DiagnosticCollection,
-    WorkspaceFolder } from 'vscode'
+    WorkspaceFolder, window } from 'vscode'
 import {
     DidChangeTextDocumentParams,
     DidCloseTextDocumentParams,
@@ -15,6 +15,7 @@ import {
     State
 } from 'vscode-languageclient/node'
 import * as ls from 'vscode-languageserver-protocol'
+
 import { toolchainPath, addServerEnvPaths, serverArgs, serverLoggingEnabled, serverLoggingPath, getElaborationDelay, lakeEnabled } from './config'
 import { assert } from './utils/assert'
 import { LeanFileProgressParams, LeanFileProgressProcessingInfo } from '@lean4/infoview-api';
@@ -26,7 +27,7 @@ import { URL } from 'url';
 import { join } from 'path';
  // @ts-ignore
 import { SemVer } from 'semver';
-import { fileExists } from './utils/fsHelper';
+import { fileExists, isFileInFolder } from './utils/fsHelper';
 import { c2pConverter, p2cConverter, patchConverters } from './utils/converters'
 
 const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -46,6 +47,7 @@ export class LeanClient implements Disposable {
     private workspaceFolder: WorkspaceFolder | undefined;
     private folderUri: Uri;
     private subscriptions: Disposable[] = []
+    private noPrompt : boolean = false;
 
     private didChangeEmitter = new EventEmitter<DidChangeTextDocumentParams>()
     didChange = this.didChangeEmitter.event
@@ -69,7 +71,7 @@ export class LeanClient implements Disposable {
     private progressChangedEmitter = new EventEmitter<[string, LeanFileProgressProcessingInfo[]]>()
     progressChanged = this.progressChangedEmitter.event
 
-    private stoppedEmitter = new EventEmitter()
+    private stoppedEmitter = new EventEmitter<string>()
     stopped = this.stoppedEmitter.event
 
     private restartedEmitter = new EventEmitter()
@@ -97,9 +99,18 @@ export class LeanClient implements Disposable {
         if (this.isStarted()) void this.stop()
     }
 
+    async showRestartMessage(): Promise<void> {
+        const restartItem = 'Restart Lean Language Server';
+        const item = await window.showErrorMessage('Lean Language Server has stopped unexpectedly.', restartItem)
+        if (item === restartItem) {
+            void this.start();
+        }
+    }
+
     async restart(): Promise<void> {
         const startTime = Date.now()
 
+        console.log('Restarting Lean Language Server')
         if (this.isStarted()) {
             await this.stop()
         }
@@ -266,9 +277,10 @@ export class LeanClient implements Disposable {
             serverOptions,
             clientOptions
         )
+        let insideRestart = true;
         patchConverters(this.client.protocol2CodeConverter, this.client.code2ProtocolConverter)
         try {
-            this.client.onDidChangeState((s) =>{
+            this.client.onDidChangeState(async (s) => {
                 // see https://github.com/microsoft/vscode-languageserver-node/issues/825
                 if (s.newState === State.Starting) {
                     console.log('client starting');
@@ -276,9 +288,16 @@ export class LeanClient implements Disposable {
                     const end = Date.now()
                     console.log('client running, started in ', end - startTime, 'ms');
                     this.running = true; // may have been auto restarted after it failed.
+                    if (!insideRestart) {
+                        this.restartedEmitter.fire(undefined)
+                    }
                 } else if (s.newState === State.Stopped) {
+                    this.stoppedEmitter.fire('Lean language server has stopped. ');
                     console.log('client has stopped or it failed to start');
                     this.running = false;
+                    if (!this.noPrompt){
+                        await this.showRestartMessage();
+                    }
                 }
             })
             this.client.start()
@@ -293,6 +312,7 @@ export class LeanClient implements Disposable {
         } catch (error) {
             this.outputChannel.appendLine('' + error);
             this.serverFailedEmitter.fire('' + error);
+            insideRestart = false;
             return;
         }
 
@@ -322,6 +342,7 @@ export class LeanClient implements Disposable {
         });
 
         this.restartedEmitter.fire(undefined)
+        insideRestart = false;
     }
 
     async openLean4Document(doc: TextDocument) {
@@ -359,12 +380,7 @@ export class LeanClient implements Disposable {
             if (this.folderUri.scheme === 'file') {
                 const realPath1 = await fs.promises.realpath(this.folderUri.fsPath);
                 const realPath2 = await fs.promises.realpath(uri.fsPath);
-                if (process.platform === 'win32') {
-                    // windows paths are case insensitive.
-                    return realPath2.toLowerCase().startsWith(realPath1.toLowerCase());
-                } else {
-                    return realPath2.startsWith(realPath1);
-                }
+                return isFileInFolder(realPath2, realPath1);
             }
             else {
                 return uri.toString().startsWith(this.folderUri.toString());
@@ -391,7 +407,7 @@ export class LeanClient implements Disposable {
     async stop(): Promise<void> {
         assert(() => this.isStarted())
         if (this.client && this.running) {
-            this.stoppedEmitter.fire(undefined);
+            this.noPrompt = true;
             try {
                 // some timing conditions can happen while running unit tests that cause
                 // this to throw an exception which then causes those tests to fail.
@@ -401,6 +417,7 @@ export class LeanClient implements Disposable {
             }
         }
 
+        this.noPrompt = false;
         this.progress = new Map()
         this.client = undefined
         this.running = false

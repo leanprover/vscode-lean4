@@ -6,6 +6,7 @@ import { LeanClient } from '../leanclient'
 import { LeanFileProgressProcessingInfo, RpcConnectParams, RpcKeepAliveParams } from '@lean4/infoview-api';
 import * as path from 'path';
 import { findLeanPackageRoot } from './projectInfo';
+import { isFileInFolder } from './fsHelper';
 
 // This class ensures we have one LeanClient per workspace folder.
 export class LeanClientProvider implements Disposable {
@@ -28,6 +29,9 @@ export class LeanClientProvider implements Disposable {
 
     private clientRemovedEmitter = new EventEmitter<LeanClient>()
     clientRemoved = this.clientRemovedEmitter.event
+
+    private clientStoppedEmitter = new EventEmitter<[LeanClient, boolean, string]>()
+    clientStopped = this.clientStoppedEmitter.event
 
     constructor(localStorage : LocalStorageService, installer : LeanInstaller, pkgService : LeanpkgService, outputChannel : OutputChannel) {
         this.localStorage = localStorage;
@@ -118,6 +122,10 @@ export class LeanClientProvider implements Disposable {
         void this.activeClient?.restart();
     }
 
+    clientIsStarted() {
+        void this.activeClient?.isStarted();
+    }
+
     async didOpenEditor(document: TextDocument) {
         this.pkgService.didOpen(document.uri);
 
@@ -163,7 +171,8 @@ export class LeanClientProvider implements Disposable {
     findClient(path: string){
         if (path) {
             for (const client of this.getClients()) {
-                if (path.startsWith(client.getWorkspaceFolder()))
+                const folder = client.getWorkspaceFolder()
+                if (isFileInFolder(path, folder))
                     return client
             }
         }
@@ -263,6 +272,13 @@ export class LeanClientProvider implements Disposable {
                 this.clients.delete(key);
                 cached?.dispose();
                 void window.showErrorMessage(err);
+            });
+
+            client.stopped(err => {
+                if (client) {
+                    // fires a message in case a client is stopped unexpectedly
+                    this.clientStoppedEmitter.fire([client, client === this.activeClient, err]);
+                }
             });
 
             // aggregate progress changed events.

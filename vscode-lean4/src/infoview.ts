@@ -61,6 +61,8 @@ export class InfoProvider implements Disposable {
 
     private rpcSessions: Map<string, RpcSession> = new Map();
 
+    private clientsFailed: Map<string, string> = new Map();
+
     private subscribeDidChangeNotification(client: LeanClient, method: string){
         const h = client.didChange((params) => {
             void this.webviewPanel?.api.sentClientNotification(method, params);
@@ -237,6 +239,11 @@ export class InfoProvider implements Disposable {
             void this.onClientRemoved(client);
         });
 
+        provider.clientStopped(([client, activeClient, err]) => {
+            void this.onActiveClientStopped(client, activeClient, err);
+
+        });
+
         this.subscriptions.push(
             window.onDidChangeActiveTextEditor(() => this.sendPosition()),
             window.onDidChangeTextEditorSelection(() => this.sendPosition()),
@@ -282,6 +289,12 @@ export class InfoProvider implements Disposable {
             }
         }
 
+        await this.webviewPanel?.api.serverStopped(''); // clear any server stopped state
+        const folder = client.getWorkspaceFolder()
+        if (this.clientsFailed.has(folder)) {
+            this.clientsFailed.delete(folder) // delete from failed clients
+            console.log('Restarting server for workspace: ' + folder)
+        }
         await this.initInfoView(window.activeTextEditor, client);
     }
 
@@ -310,6 +323,21 @@ export class InfoProvider implements Disposable {
 
     onClientRemoved(client: LeanClient) {
         // todo: remove subscriptions for this client...
+    }
+
+    async onActiveClientStopped(client: LeanClient, activeClient: boolean, msg: string) {
+        // Will show a message in case the active client stops
+        // add failed client into a list (will be removed in case the client is restarted)
+        if (activeClient)
+        {
+            // means that client and active client are the same and just show the error message
+            await this.webviewPanel?.api.serverStopped(msg);
+        }
+
+        console.log(`client stopped: ${client.getWorkspaceFolder()}`)
+
+        // remember this client is in a stopped state
+        this.clientsFailed.set(client.getWorkspaceFolder(), msg)
     }
 
     dispose(): void {
@@ -455,11 +483,11 @@ export class InfoProvider implements Disposable {
                 await this.webviewPanel?.api.initialize(loc);
             }
         }
-
         // The infoview gets information about file progress, diagnostics, etc.
         // by listening to notifications.  Send these notifications when the infoview starts
         // so that it has up-to-date information.
         if (client?.initializeResult) {
+            await this.webviewPanel?.api.serverStopped(''); // clear any server stopped state
             await this.webviewPanel?.api.serverRestarted(client.initializeResult);
             await this.sendDiagnostics(client);
             await this.sendProgress(client);
@@ -529,6 +557,28 @@ export class InfoProvider implements Disposable {
             // InfoView for the newly opened document.
             return;
         }
+        // actual editor
+        if (this.clientsFailed.size > 0){
+            const client = this.clientProvider.findClient(editor.document.uri.toString())
+            if (client) {
+                const folder = client.getWorkspaceFolder()
+                if (this.clientsFailed.has(folder)){
+                    // send stopped event
+                    const msg = this.clientsFailed.get(folder)
+                    await this.webviewPanel?.api.serverStopped(msg || '');
+                    return;
+                } else {
+                    await this.updateStatus(loc)
+                }
+            }
+        } else {
+            await this.updateStatus(loc)
+        }
+
+    }
+
+    private async updateStatus(loc: ls.Location | undefined): Promise<void> {
+        await this.webviewPanel?.api.serverStopped(''); // clear any server stopped state
         await this.autoOpen();
         await this.webviewPanel?.api.changedCursorLocation(loc);
     }

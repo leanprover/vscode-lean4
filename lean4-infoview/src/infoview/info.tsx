@@ -160,15 +160,15 @@ export function InfoDisplay(props0: InfoDisplayProps) {
         <WithTooltipOnHover mkTooltipContent={() => {return filterMenu}}>
             <a className={'link pointer mh2 dim codicon ' + ((!goalFilters.isInstance || !goalFilters.isType || !goalFilters.isHiddenAssumption) ? 'codicon-filter-filled ': 'codicon-filter ')}/>
         </WithTooltipOnHover></span>
-
+    /* Adding {' '} to manage string literals properly: https://reactjs.org/docs/jsx-in-depth.html#string-literals-1 */
     return (
     <Details initiallyOpen>
         <InfoStatusBar {...props} triggerUpdate={triggerDisplayUpdate} isPaused={isPaused} setPaused={setPaused} copyGoalToComment={copyGoalToComment} />
         <div className="ml1">
             {hasError &&
                 <div className="error">
-                    Error updating: {error}.
-                    <a className="link pointer dim" onClick={e => { e.preventDefault(); void triggerDisplayUpdate(); }}> Try again.</a>
+                    Error updating:{' '}{error}.
+                    <a className="link pointer dim" onClick={e => { e.preventDefault(); void triggerDisplayUpdate(); }}>{' '}Try again.</a>
                 </div>}
             <div style={{display: hasGoals ? 'block' : 'none'}}>
                 <Details initiallyOpen>
@@ -202,10 +202,11 @@ export function InfoDisplay(props0: InfoDisplayProps) {
             </div>
             {nothingToShow && (
                 isPaused ?
-                    <span>Updating is paused.
+                    /* Adding {' '} to manage string literals properly: https://reactjs.org/docs/jsx-in-depth.html#string-literals-1 */
+                    <span>Updating is paused.{' '}
                         <a className="link pointer dim" onClick={e => { e.preventDefault(); void triggerDisplayUpdate(); }}>Refresh</a>
-                        or <a className="link pointer dim" onClick={e => { e.preventDefault(); setPaused(false); }}>resume updating</a>
-                        to see information.
+                        {' '}or <a className="link pointer dim" onClick={e => { e.preventDefault(); setPaused(false); }}>resume updating</a>
+                        {' '}to see information.
                     </span> :
                     'No info found.')}
         </div>
@@ -319,8 +320,15 @@ function InfoAux(props: InfoProps) {
 
         function onError(err: any) {
             const errS = typeof err === 'string' ? err : JSON.stringify(err);
-            setError(`Error fetching goals: ${errS}`);
-            setStatus('error');
+            // we need to check if this value is empty or not, because maybe we are assigning
+            // a message error with an empty error
+            if (errS === '{}' || errS === undefined) {
+                setError(undefined);
+            }
+            else {
+                setError(`Error fetching goals: ${errS}`);
+                setStatus('error');
+            }
         }
 
         try {

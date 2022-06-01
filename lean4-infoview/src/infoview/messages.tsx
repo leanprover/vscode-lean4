@@ -115,7 +115,6 @@ export function AllMessages({uri: uri0}: { uri: DocumentUri }) {
         }
         return diags0.map(d => ({ ...(d as LeanDiagnostic), message: { text: d.message } }));
     }), [sv, rs, uri0, diags0]);
-
     const [isPaused, setPaused, [uri, diags, iDiags], _] = usePausableState(false, [uri0, diags0, iDiags0]);
 
     // Fetch interactive diagnostics when we're entering the paused state
@@ -174,6 +173,7 @@ export function useMessagesForFile(uri: DocumentUri, line?: number): Interactive
     const sv = React.useContext(VersionContext)
     const lspDiags = React.useContext(LspDiagnosticsContext)
     const [diags, setDiags] = React.useState<InteractiveDiagnostic[]>([])
+
     async function updateDiags() {
         setDiags((lspDiags.get(uri) || []).map(d => ({ ...(d as LeanDiagnostic), message: { text: d.message } })));
         if (sv?.hasWidgetsV1()) {

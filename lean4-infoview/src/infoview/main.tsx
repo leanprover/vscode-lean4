@@ -18,6 +18,7 @@ import { EditorConnection, EditorEvents } from './editorConnection';
 import { Event } from './event';
 import { ServerVersion } from './serverVersion';
 
+
 function Main(props: {}) {
     const ec = React.useContext(EditorContext);
 
@@ -49,13 +50,18 @@ function Main(props: {}) {
 
     const serverInitializeResult = useEventResult(ec.events.serverRestarted);
     const sv = serverInitializeResult ? new ServerVersion(serverInitializeResult.serverInfo?.version ?? '') : undefined;
-
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+    const serverStoppedResult = useEventResult(ec.events.serverStopped);
+    //
     // NB: the cursor may temporarily become `undefined` when a file is closed. In this case
     // it's important not to reconstruct the `WithBlah` wrappers below since they contain state
     // that we want to persist.
     let ret
     if (!serverInitializeResult) {
         ret = <p>Waiting for Lean server to start...</p>
+    } else if (serverStoppedResult){
+        ret = <p>{serverStoppedResult}
+        </p>
     } else if (!curUri) {
         ret = <p>Click somewhere in the Lean file to enable the infoview.</p>
     } else {
@@ -94,6 +100,7 @@ export function renderInfoview(editorApi: EditorApi, uiElement: HTMLElement): In
         gotServerNotification: new Event(),
         sentClientNotification: new Event(),
         serverRestarted: new Event(),
+        serverStopped: new Event(),
         changedCursorLocation: new Event(),
         changedInfoviewConfig: new Event(),
         runTestScript: new Event(),
@@ -110,6 +117,7 @@ export function renderInfoview(editorApi: EditorApi, uiElement: HTMLElement): In
             editorEvents.sentClientNotification.fire([method, params]);
         },
         serverRestarted: async r => editorEvents.serverRestarted.fire(r),
+        serverStopped: async s => editorEvents.serverStopped.fire(s),
         changedCursorLocation: async loc => editorEvents.changedCursorLocation.fire(loc),
         changedInfoviewConfig: async conf => editorEvents.changedInfoviewConfig.fire(conf),
         requestedAction: async action => editorEvents.requestedAction.fire(action),
