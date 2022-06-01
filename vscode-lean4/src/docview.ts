@@ -362,7 +362,13 @@ var side_bar = false; // collapse the side bar menu by default.
             .text(text);
         navDiv.append(mkLink('lean4.docView.back', 'back', '⬅ back'));
         navDiv.append(mkLink('lean4.docView.forward', 'forward', 'forward ➡'));
-        $('nav+*').css('margin-top','3em');
+        try {
+            // move top nav section down to make room for back/forward buttons
+            $('nav+*').css('margin-top','3em');
+        } catch {
+            // ignore it, the TPIL doesn't have these matching html nodes
+            // but some other content does.
+        }
 
         this.html = $.html();
         webview.html = this.html;
