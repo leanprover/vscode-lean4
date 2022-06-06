@@ -70,7 +70,13 @@ export const Tooltip = forwardAndUseRef<HTMLDivElement,
   return ReactDOM.createPortal(popper, document.body)
 })
 
+/** Hover state of an element. The pointer can be
+ * - elsewhere (`off`)
+ * - over the element (`over`)
+ * - over the element with Ctrl or Meta (⌘ on Mac) held (`ctrlOver`)
+ */
 export type HoverState = 'off' | 'over' | 'ctrlOver'
+
 /** An element which calls `setHoverState` when the hover state of its DOM children changes.
  *
  * It is implemented with JS rather than CSS in order to allow nesting of these elements. When nested,
@@ -91,19 +97,19 @@ export const DetectHoverSpan =
       if ('_DetectHoverSpanSeen' in e) return
       (e as any)._DetectHoverSpanSeen = {}
       if (!b) setHoverState('off')
-      else if (e.ctrlKey) setHoverState('ctrlOver')
+      else if (e.ctrlKey || e.metaKey) setHoverState('ctrlOver')
       else setHoverState('over')
     }
   }
 
   React.useEffect(() => {
     const onKeyDown = (e : KeyboardEvent) => {
-      if (e.key === 'Control')
+      if (e.key === 'Control' || e.key === 'Meta')
         setHoverState(st => st === 'over' ? 'ctrlOver' : st)
     }
 
     const onKeyUp = (e : KeyboardEvent) => {
-      if (e.key === 'Control')
+      if (e.key === 'Control' || e.key === 'Meta')
         setHoverState(st => st === 'ctrlOver' ? 'over' : st)
     }
 
@@ -121,7 +127,7 @@ export const DetectHoverSpan =
       onPointerOver={onPointerEvent(true)}
       onPointerOut={onPointerEvent(false)}
       onPointerMove={e => {
-        if (e.ctrlKey)
+        if (e.ctrlKey || e.metaKey)
           setHoverState(st => st === 'over' ? 'ctrlOver' : st)
         else
           setHoverState(st => st === 'ctrlOver' ? 'over' : st)
