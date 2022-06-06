@@ -104,7 +104,7 @@ function InteractiveCodeTag({pos, tag: ct, fmt}: InteractiveTagProps<SubexprInfo
       mkTooltipContent={mkTooltip}
       onClick={(e, next) => {
         // On ctrl-click, if location is known, go to it in the editor
-        if (e.ctrlKey) {
+        if (e.ctrlKey || e.metaKey) {
           setHoverState(st => st === 'over' ? 'ctrlOver' : st)
           void fetchGoToLoc().then(loc => {
             if (loc === undefined) return
