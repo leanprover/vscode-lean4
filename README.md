@@ -4,6 +4,10 @@ This extension provides VSCode editor support for the Lean 4 programming languag
 all new [Language Server](https://docs.microsoft.com/en-us/visualstudio/extensibility/language-server-protocol)
 implemented in Lean.
 
+<div>
+<iframe width="1024" height="720" src="https://www.youtube.com/embed/yZo6k48L0VY" title="Quickstart Video" frameborder="0" allow="clipboard-write; encrypted-media;" allowfullscreen></iframe>
+</div>
+
 ## Installing the extension and Lean 4
 1. Install the extension from the [marketplace](https://marketplace.visualstudio.com/items?itemName=leanprover.lean4).
 1. Create a new folder called `foo` and add a file named `hello.lean`
