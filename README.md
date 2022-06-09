@@ -5,7 +5,7 @@ all new [Language Server](https://docs.microsoft.com/en-us/visualstudio/extensib
 implemented in Lean.
 
 <div>
-<iframe width="1024" height="720" src="https://www.youtube.com/embed/yZo6k48L0VY" title="Quickstart Video" frameborder="0" allow="clipboard-write; encrypted-media;" allowfullscreen></iframe>
+<video src="https://leanassets.blob.core.windows.net/videos/Getting%20Started%20with%20Lean%204%20in%20Visual%20Studio%20Code.mp4" style="width:1024px;" controls></video>
 </div>
 
 ## Installing the extension and Lean 4
