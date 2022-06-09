@@ -25,7 +25,7 @@ function CollapsibleTrace({pos, col, cls, msg}: {pos: DocumentPosition, col: num
                 onClick={ev => {
                     setTt(undefined)
                     ev.stopPropagation()
-                }}>[{cls.slice(1)}] ∨</span>
+                }}>[{cls}] ∨</span>
             <InteractiveMessage pos={pos} fmt={tt} />
         </>
     } else {
@@ -34,7 +34,7 @@ function CollapsibleTrace({pos, col, cls, msg}: {pos: DocumentPosition, col: num
                 onClick={ev => {
                     void InteractiveDiagnostics_msgToInteractive(rs, pos, { msg, indent: col }).then(t => t && setTt(t))
                     ev.stopPropagation()
-                }}>[{cls.slice(1)}] &gt;</span>
+                }}>[{cls}] &gt;</span>
     }
     return inner
 }
