@@ -44,19 +44,24 @@ export interface LeanFileProgressParams {
 
 // https://stackoverflow.com/a/56749647
 declare const tag: unique symbol;
+/** An RPC pointer is a reference to an object on the lean server.
+ * An example where you need this is passing the Environment object,
+ * which we need to be able to reference but which would be too large to
+ * send over directly.
+ */
 export type RpcPtr<T> = { readonly [tag]: T, p: string }
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace RpcPtr {
 
-export function copy<T>(p: RpcPtr<T>): RpcPtr<T> {
-    return { p: p.p } as RpcPtr<T>;
-}
+    export function copy<T>(p: RpcPtr<T>): RpcPtr<T> {
+        return { p: p.p } as RpcPtr<T>;
+    }
 
-/** Turns a reference into a unique string. Useful for React `key`s. */
-export function toKey(p: RpcPtr<any>): string {
-    return p.p;
-}
+    /** Turns a reference into a unique string. Useful for React `key`s. */
+    export function toKey(p: RpcPtr<any>): string {
+        return p.p;
+    }
 
 }
 
@@ -85,4 +90,25 @@ export interface RpcReleaseParams {
     refs: RpcPtr<any>[]
 }
 
-export const RpcNeedsReconnect = -32900
+export enum RpcErrorCode {
+    ParseError = -32700,
+    InvalidRequest = -32600,
+    MethodNotFound = -32601,
+    InvalidParams = -32602,
+    InternalError = -32603,
+    ServerNotInitialized = -32002,
+    UnknownErrorCode = -32001,
+    ContentModified = -32801,
+    RequestCancelled = -32800,
+    RpcNeedsReconnect = -32900,
+}
+
+export interface RpcError {
+    code: RpcErrorCode
+    message: string
+}
+
+export function isRpcError(x : any) : x is RpcError {
+    return !!(x?.code && x?.message)
+}
+

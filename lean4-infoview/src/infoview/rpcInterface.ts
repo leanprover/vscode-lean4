@@ -5,12 +5,13 @@
  * @module
  */
 
-import { RpcPtr, LeanDiagnostic } from '@lean4/infoview-api'
+import { RpcPtr, LeanDiagnostic, isRpcError, RpcErrorCode } from '@lean4/infoview-api'
 
 import { DocumentPosition } from './util'
 import { RpcSessions } from './rpcSessions'
 import { LocationLink } from 'vscode-languageserver-protocol'
 
+/** A string where certain (possibly nested) substrings have been decorated with objects of type T. */
 export type TaggedText<T> =
     { text: string } |
     { append: TaggedText<T>[] } |
@@ -35,7 +36,7 @@ export function TaggedText_stripTags<T>(tt: TaggedText<T>): string {
     return go(tt)
 }
 
-export type InfoWithCtx = RpcPtr<'InfoWithCtx'>
+export type InfoWithCtx = RpcPtr<'Lean.Widget.InfoWithCtx'>
 
 export interface SubexprInfo {
     info: InfoWithCtx
@@ -43,8 +44,8 @@ export interface SubexprInfo {
 }
 
 export type CodeWithInfos = TaggedText<SubexprInfo>
-export type ExprWithCtx = RpcPtr<'ExprWithCtx'>
 
+/** Information that should appear in a popup when clicking on a subexpression. */
 export interface InfoPopup {
     type?: CodeWithInfos
     exprExplicit?: CodeWithInfos
@@ -66,19 +67,35 @@ export async function InteractiveDiagnostics_infoToInteractive(rs: RpcSessions, 
     return ret
 }
 
-export interface InteractiveHypothesis {
+
+export interface InteractiveHypothesisBundle {
     isInstance?: boolean,
     isType?: boolean,
+    /** The pretty names of the variables in the bundle.
+     * If the name is inaccessible this will be `"[anonymous]"`.
+     * Use `InteractiveHypothesis_accessableNames` to filter these out.
+     */
     names: string[]
+    /** The free variable id associated with each of the vars listed in `names`. */
+    fvarIds?: string[]
     type: CodeWithInfos
     val?: CodeWithInfos
 }
 
+/** Filter out inaccessible / anonymous pretty names from the names list. */
+export function InteractiveHypothesisBundle_accessableNames(ih : InteractiveHypothesisBundle) : string[] {
+    return ih.names.filter(x => !x.includes('[anonymous]'))
+}
+
 export interface InteractiveGoal {
-    hyps: InteractiveHypothesis[]
+    hyps: InteractiveHypothesisBundle[]
     type: CodeWithInfos
     userName?: string
     goalPrefix?: string
+    /** metavariable id associated with the goal.
+     * This is undefined when the goal is a term goal
+     * or if we are using an older version of lean. */
+    mvarId?: string
 }
 
 function InteractiveGoal_registerRefs(rs: RpcSessions, pos: DocumentPosition, g: InteractiveGoal) {
@@ -93,7 +110,7 @@ export interface InteractiveGoals {
     goals: InteractiveGoal[]
 }
 
-function InteractiveGoals_registerRefs(rs: RpcSessions, pos: DocumentPosition, gs: InteractiveGoals) {
+export function InteractiveGoals_registerRefs(rs: RpcSessions, pos: DocumentPosition, gs: InteractiveGoals) {
     for (const g of gs.goals) InteractiveGoal_registerRefs(rs, pos, g)
 }
 
@@ -109,7 +126,7 @@ export async function getInteractiveTermGoal(rs: RpcSessions, pos: DocumentPosit
     return ret
 }
 
-export type MessageData = RpcPtr<'MessageData'>
+export type MessageData = RpcPtr<'Lean.MessageData'>
 export type MsgEmbed =
     { expr: CodeWithInfos } |
     { goal: InteractiveGoal } |
@@ -137,7 +154,7 @@ export interface LineRange {
 }
 
 export async function getInteractiveDiagnostics(rs: RpcSessions, pos: DocumentPosition, lineRange?: LineRange): Promise<InteractiveDiagnostic[] | undefined> {
-    const ret = await rs.call<InteractiveDiagnostic[]>(pos, 'Lean.Widget.getInteractiveDiagnostics', {lineRange})
+    const ret = await rs.call<InteractiveDiagnostic[]>(pos, 'Lean.Widget.getInteractiveDiagnostics', { lineRange })
     if (ret) {
         for (const d of ret) {
             TaggedMsg_registerRefs(rs, pos, d.message)
@@ -165,4 +182,17 @@ export async function getGoToLocation(rs: RpcSessions, pos: DocumentPosition, ki
     }
     const args: GetGoToLocationParams = { kind, info };
     return rs.call<LocationLink[]>(pos, 'Lean.Widget.getGoToLocation', args)
+}
+
+/** Sends an exception object to a throwable error.
+ * Maps JSON Rpc errors to throwable errors.
+ */
+export function mapRpcError(err : unknown) : Error {
+    if (isRpcError(err)) {
+        return new Error(`Rpc error: ${RpcErrorCode[err.code]}: ${err.message}`)
+    } else if (! (err instanceof Error)) {
+        return new Error(`Unrecognised error ${JSON.stringify(err)}`)
+    } else {
+        return err
+    }
 }
