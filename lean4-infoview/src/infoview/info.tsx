@@ -2,13 +2,14 @@ import * as React from 'react';
 import type { Location } from 'vscode-languageserver-protocol';
 
 import { Goals as GoalsUi, Goal as GoalUi, goalsToString, GoalFilterState } from './goals';
-import { basename, DocumentPosition, RangeHelpers, useEvent, usePausableState } from './util';
+import { basename, DocumentPosition, RangeHelpers, useAsync, useEvent, usePausableState } from './util';
 import { Details } from './collapsing';
 import { EditorContext, ProgressContext, RpcContext, VersionContext } from './contexts';
 import { MessagesList, useMessagesFor } from './messages';
 import { getInteractiveGoals, getInteractiveTermGoal, InteractiveDiagnostic, InteractiveGoal, InteractiveGoals } from './rpcInterface';
 import { updatePlainGoals, updateTermGoal } from './goalCompat';
 import { WithTooltipOnHover } from './tooltips'
+import { isGetWidgetResponse, UserWidget, useWidget, Widget_getWidget} from './userWidget'
 
 type InfoStatus = 'loading' | 'updating' | 'error' | 'ready';
 type InfoKind = 'cursor' | 'pin';
@@ -100,7 +101,8 @@ export function InfoDisplay(props0: InfoDisplayProps) {
         await props0.triggerUpdate();
         setShouldRefresh(true);
     };
-    const [goalFilters, setGoalFilters] = React.useState<GoalFilterState>({ reverse: false, isType: true, isInstance: true, isHiddenAssumption: true});
+    const [goalFilters, setGoalFilters] = React.useState<GoalFilterState>(
+        { reverse: false, isType: true, isInstance: true, isHiddenAssumption: true});
 
     const {kind, pos, status, messages, goals, termGoal, error} = props;
 
@@ -122,7 +124,13 @@ export function InfoDisplay(props0: InfoDisplayProps) {
         setPaused(isPaused => !isPaused);
     });
 
-    const nothingToShow = !error && !goals && !termGoal && messages.length === 0;
+    const rs = React.useContext(RpcContext);
+    const [widgetStatus, widget, widgetError] = useAsync(
+        () => Widget_getWidget(rs, pos),
+        [pos.uri, pos.line, pos.character])
+    const hasWidget = (widget !== undefined)
+
+    const nothingToShow = !error && !goals && !termGoal && messages.length === 0 && !hasWidget;
 
     const hasError = status === 'error' && error;
     const hasGoals = status !== 'error' && goals;
@@ -201,6 +209,18 @@ export function InfoDisplay(props0: InfoDisplayProps) {
                     </summary>
                     <div className="ml1">
                         <MessagesList uri={pos.uri} messages={messages} />
+                    </div>
+                </Details>
+            </div>
+            <div style={{display: hasWidget ? 'block' : 'none'}}>
+                <Details initiallyOpen>
+                    <summary className="mv2 pointer">
+                    Widget: {widget && widget.id}
+                      {widgetStatus === 'pending' && ' (pending)'}
+                      {widgetStatus === 'rejected' && ' (errored)'}
+                    </summary>
+                    <div className="ml1">
+                      {widget && <UserWidget pos={pos} widget={widget}/>}
                     </div>
                 </Details>
             </div>
