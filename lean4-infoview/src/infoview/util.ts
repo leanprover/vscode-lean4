@@ -270,6 +270,16 @@ type Status = 'pending' | 'fulfilled' | 'rejected'
  * There will only ever be one in-flight promise at a time. If the deps
  * change while a promise is still in-flight, then the function will be run
  * again after the first promise has resolved.
+ *
+ * This function prevents race conditions if the requests resolve in a
+ * different order to that which they were requested in:
+ *
+ * - Request 1 is sent with, say, line=42.
+ * - Request 2 is sent with line=90.
+ * - Request 2 returns with diags=[].
+ * - Request 1 returns with diags=['error'].
+ *
+ * Without `useAsync` we would now return the diagnostics for line 42 even though we're at line 90.
  */
 export function useAsync<T>(fn : () => Promise<T>, deps : React.DependencyList = [])
   : [Status, T | undefined, unknown | undefined] {

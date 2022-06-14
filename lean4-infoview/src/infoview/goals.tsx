@@ -1,7 +1,7 @@
 import * as React from 'react'
 import { DocumentPosition } from './util'
 import { InteractiveCode } from './interactiveCode'
-import { InteractiveGoal, InteractiveGoals, InteractiveHypothesisBundle, InteractiveHypothesisBundle_accessableNames, TaggedText_stripTags } from './rpcInterface'
+import { InteractiveGoal, InteractiveGoals, InteractiveHypothesisBundle, InteractiveHypothesisBundle_accessibleNames, TaggedText_stripTags } from './rpcInterface'
 
 interface HypProps {
     pos: DocumentPosition
@@ -10,17 +10,16 @@ interface HypProps {
 }
 
 export function Hyp({ pos, hyp : h, index }: HypProps) {
-    const names = InteractiveHypothesisBundle_accessableNames(h).map((n, i) =>
+    const names = InteractiveHypothesisBundle_accessibleNames(h).map((n, i) =>
             <span className="mr1">{n}</span>
         )
-    const hypKey = (h.fvarIds?.[0] ?? index)
     return <li>
-            <strong className="goal-hyp">{names}</strong>
-            :&nbsp;
-            <InteractiveCode pos={pos} fmt={h.type} />
-            {h.val && <>
-                := <InteractiveCode pos={pos} fmt={h.val} />
-            </>}
+        <strong className="goal-hyp">{names}</strong>
+        :&nbsp;
+        <InteractiveCode pos={pos} fmt={h.type} />
+        {h.val && <>
+            := <InteractiveCode pos={pos} fmt={h.val} />
+        </>}
     </li>
 }
 
@@ -32,7 +31,7 @@ function goalToString(g: InteractiveGoal): string {
     }
 
     for (const h of g.hyps) {
-        const names = InteractiveHypothesisBundle_accessableNames(h).join(' ')
+        const names = InteractiveHypothesisBundle_accessibleNames(h).join(' ')
         ret += `${names} : ${TaggedText_stripTags(h.type)}`
         if (h.val) {
             ret += ` := ${TaggedText_stripTags(h.val)}`
@@ -110,7 +109,7 @@ export function Goals({ pos, goals, filter }: GoalsProps) {
         return <>Goals accomplished 🎉</>
     } else {
         return <>
-            {goals.goals.map((g, i) => <Goal key={g.mvarId || i} pos={pos} goal={g} filter={filter} index={i} />)}
+            {goals.goals.map((g, i) => <Goal key={i} pos={pos} goal={g} filter={filter} index={i} />)}
         </>
     }
 }

@@ -73,7 +73,7 @@ export interface InteractiveHypothesisBundle {
     isType?: boolean,
     /** The pretty names of the variables in the bundle.
      * If the name is inaccessible this will be `"[anonymous]"`.
-     * Use `InteractiveHypothesis_accessableNames` to filter these out.
+     * Use `InteractiveHypothesis_accessibleNames` to filter these out.
      */
     names: string[]
     /** The free variable id associated with each of the vars listed in `names`. */
@@ -83,7 +83,7 @@ export interface InteractiveHypothesisBundle {
 }
 
 /** Filter out inaccessible / anonymous pretty names from the names list. */
-export function InteractiveHypothesisBundle_accessableNames(ih : InteractiveHypothesisBundle) : string[] {
+export function InteractiveHypothesisBundle_accessibleNames(ih : InteractiveHypothesisBundle) : string[] {
     return ih.names.filter(x => !x.includes('[anonymous]'))
 }
 
