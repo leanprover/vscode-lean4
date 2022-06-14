@@ -163,13 +163,13 @@ export async function getInteractiveDiagnostics(rs: RpcSessions, pos: DocumentPo
     return ret
 }
 
-export interface MessageToInteractive {
-    msg: MessageData
-    indent: number
-}
-
-export async function InteractiveDiagnostics_msgToInteractive(rs: RpcSessions, pos: DocumentPosition, msg: MessageToInteractive): Promise<TaggedText<MsgEmbed> | undefined> {
-    const ret = await rs.call<TaggedText<MsgEmbed>>(pos, 'Lean.Widget.InteractiveDiagnostics.msgToInteractive', msg)
+export async function InteractiveDiagnostics_msgToInteractive(rs: RpcSessions, pos: DocumentPosition, msg: MessageData, indent: number): Promise<TaggedText<MsgEmbed> | undefined> {
+    interface MessageToInteractive {
+        msg: MessageData
+        indent: number
+    }
+    const args: MessageToInteractive = { msg, indent }
+    const ret = await rs.call<TaggedText<MsgEmbed>>(pos, 'Lean.Widget.InteractiveDiagnostics.msgToInteractive', args)
     if (ret) TaggedMsg_registerRefs(rs, pos, ret)
     return ret
 }

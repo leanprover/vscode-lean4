@@ -32,7 +32,7 @@ function CollapsibleTrace({pos, col, cls, msg}: {pos: DocumentPosition, col: num
         inner =
             <span className="underline-hover pointer"
                 onClick={ev => {
-                    void InteractiveDiagnostics_msgToInteractive(rs, pos, { msg, indent: col }).then(t => t && setTt(t))
+                    void InteractiveDiagnostics_msgToInteractive(rs, pos, msg, col).then(t => t && setTt(t))
                     ev.stopPropagation()
                 }}>[{cls}] &gt;</span>
     }

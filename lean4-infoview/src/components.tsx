@@ -1,6 +1,5 @@
 import * as React from 'react';
 
-import { InteractiveCode } from './infoview/interactiveCode';
 import { InteractiveDiagnostics_msgToInteractive, TaggedText, MsgEmbed, CodeWithInfos, MessageData, mapRpcError } from './infoview/rpcInterface';
 import { InteractiveMessage } from './infoview/traceExplorer';
 import { DocumentPosition, useAsync } from './infoview/util';
@@ -17,7 +16,7 @@ export function InteractiveMessageData({ pos, msg }: { pos: DocumentPosition, ms
     const rs = React.useContext(RpcContext)
 
     const [status, tt, error] = useAsync(
-        () => InteractiveDiagnostics_msgToInteractive(rs, pos, { msg, indent: 0 }),
+        () => InteractiveDiagnostics_msgToInteractive(rs, pos, msg, 0),
         [pos.character, pos.line, pos.uri, msg]
     )
 
