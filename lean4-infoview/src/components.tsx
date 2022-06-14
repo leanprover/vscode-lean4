@@ -1,6 +1,6 @@
 import * as React from 'react';
 
-import { InteractiveDiagnostics_msgToInteractive, TaggedText, MsgEmbed, CodeWithInfos, MessageData, mapRpcError } from './infoview/rpcInterface';
+import { InteractiveDiagnostics_msgToInteractive, MessageData, mapRpcError } from './infoview/rpcInterface';
 import { InteractiveMessage } from './infoview/traceExplorer';
 import { DocumentPosition, useAsync } from './infoview/util';
 import { RpcContext } from './infoview/contexts';
@@ -25,7 +25,7 @@ export function InteractiveMessageData({ pos, msg }: { pos: DocumentPosition, ms
     } else if (status === 'pending') {
         return <>...</>
     } else {
-        return <div>failed to load messages
+        return <div>Failed to display message:
             {error && <span>{mapRpcError(error).message}</span>}
         </div>
     }
