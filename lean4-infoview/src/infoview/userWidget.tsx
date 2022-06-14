@@ -42,7 +42,6 @@ export interface StaticJS {
 /** Gets the static JS code for a given widget.
  *
  * We make the assumption that either the code doesn't exist, or it exists and does not change for the lifetime of the widget.
- * [todo] cache on widgetId, but then there needs to be some way of signalling that the widgetId's code has changed if the user edits it?
  */
 export async function Widget_getStaticJS(rs: RpcSessions, pos: DocumentPosition, widgetId: string): Promise<StaticJS | undefined> {
     try {
@@ -52,43 +51,15 @@ export async function Widget_getStaticJS(rs: RpcSessions, pos: DocumentPosition,
     }
 }
 
-
-function memoize<T extends (...args: any[]) => any>(fn: T, keyFn: any = (x: any) => x): T {
-    const cache = new Map()
-    const r: any = (...args: any[]) => {
-        const key = keyFn(...args)
-        if (!cache.has(key)) {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-            const result = fn(...args)
-            if (result) {
-                cache.set(key, result)
-            }
-            return result
-        }
-        return cache.get(key)
-    }
-    return r
-}
-
-const dynamicallyLoadComponent = memoize(function (hash: number, code: string,) {
+function dynamicallyLoadComponent(hash: number, code: string,) {
     return React.lazy(async () => {
         const file = new File([code], `widget_${hash}.js`, { type: 'text/javascript' })
         const url = URL.createObjectURL(file)
         return await import(url)
     })
-})
-
-interface GetWidgetResult {
-    component: any
-    id: string
-    hash: number
-    props: any
 }
 
-const getCode = memoize(
-    (rc: RpcSessions, pos: DocumentPosition, widget: GetWidgetResponse) => Widget_getStaticJS(rc, pos, widget.id),
-    (rc: RpcSessions, pos: DocumentPosition, widget: GetWidgetResponse) => widget.hash,
-)
+const componentCache = new Map()
 
 interface UserWidgetProps {
     pos: DocumentPosition
@@ -102,11 +73,15 @@ export function UserWidget({ pos, widget }: UserWidgetProps) {
     }
     const [status, component, error] = useAsync(
         async () => {
-            const code = await getCode(rs, pos, widget)
+            if (componentCache.has(widget.hash)) {
+                return componentCache.get(widget.hash)
+            }
+            const code = await Widget_getStaticJS(rs, pos, widget.id)
             if (!code) {
                 throw Error(`No widget static javascript found for ${widget.id}.`)
             }
             const component = dynamicallyLoadComponent(widget.hash, code.javascript)
+            componentCache.set(widget.hash, component)
             return component
         },
         [pos.uri, pos.line, pos.character, widget.hash])
