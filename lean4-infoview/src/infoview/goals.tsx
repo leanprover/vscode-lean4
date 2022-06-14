@@ -49,13 +49,13 @@ export function goalsToString(goals: InteractiveGoals): string {
 }
 
 export interface GoalFilterState {
-    /** If true reverse the list of InteractiveHypothesisBundle, if false present the order received from LSP */
+    /** If true reverse the list of hypotheses, if false present the order received from LSP */
     reverse: boolean,
-    /** If true show InteractiveHypothesisBundle that have isType=True, if false, hide InteractiveHypothesisBundle that have isType=True. */
+    /** If true show hypotheses that have isType=True, if false, hide hypotheses that have isType=True. */
     isType: boolean,
-    /** If true show InteractiveHypothesisBundle that have isInstance=True, if false, hide InteractiveHypothesisBundle that have isInstance=True. */
+    /** If true show hypotheses that have isInstance=True, if false, hide hypotheses that have isInstance=True. */
     isInstance: boolean,
-    /** If true show InteractiveHypothesisBundle that contain a dagger in the name, if false, hide InteractiveHypothesisBundle that contain a dagger in the name. */
+    /** If true show hypotheses that contain a dagger in the name, if false, hide hypotheses that contain a dagger in the name. */
     isHiddenAssumption: boolean
 }
 
