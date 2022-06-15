@@ -1,8 +1,8 @@
 import * as React from 'react'
 
 import { EditorContext, RpcContext } from './contexts'
-import { DocumentPosition, useAsync } from './util'
-import { SubexprInfo, CodeWithInfos, InfoPopup, InfoWithCtx, InteractiveDiagnostics_infoToInteractive, getGoToLocation, TaggedText, mapRpcError } from './rpcInterface'
+import { DocumentPosition, useAsync, mapRpcError } from './util'
+import { SubexprInfo, CodeWithInfos, InteractiveDiagnostics_infoToInteractive, getGoToLocation, TaggedText } from './rpcInterface'
 import { DetectHoverSpan, HoverState, WithTooltipOnHover } from './tooltips'
 import { Location } from 'vscode-languageserver-protocol'
 

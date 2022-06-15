@@ -5,7 +5,7 @@
  * @module
  */
 
-import { RpcPtr, LeanDiagnostic, isRpcError, RpcErrorCode } from '@lean4/infoview-api'
+import { RpcPtr, LeanDiagnostic } from '@lean4/infoview-api'
 
 import { DocumentPosition } from './util'
 import { RpcSessions } from './rpcSessions'
@@ -110,7 +110,7 @@ export interface InteractiveGoals {
     goals: InteractiveGoal[]
 }
 
-export function InteractiveGoals_registerRefs(rs: RpcSessions, pos: DocumentPosition, gs: InteractiveGoals) {
+function InteractiveGoals_registerRefs(rs: RpcSessions, pos: DocumentPosition, gs: InteractiveGoals) {
     for (const g of gs.goals) InteractiveGoal_registerRefs(rs, pos, g)
 }
 
@@ -182,17 +182,4 @@ export async function getGoToLocation(rs: RpcSessions, pos: DocumentPosition, ki
     }
     const args: GetGoToLocationParams = { kind, info };
     return rs.call<LocationLink[]>(pos, 'Lean.Widget.getGoToLocation', args)
-}
-
-/** Sends an exception object to a throwable error.
- * Maps JSON Rpc errors to throwable errors.
- */
-export function mapRpcError(err : unknown) : Error {
-    if (isRpcError(err)) {
-        return new Error(`Rpc error: ${RpcErrorCode[err.code]}: ${err.message}`)
-    } else if (! (err instanceof Error)) {
-        return new Error(`Unrecognised error ${JSON.stringify(err)}`)
-    } else {
-        return err
-    }
 }

@@ -1,8 +1,8 @@
 import * as React from 'react';
 
-import { InteractiveDiagnostics_msgToInteractive, MessageData, mapRpcError } from './infoview/rpcInterface';
+import { InteractiveDiagnostics_msgToInteractive, MessageData } from './infoview/rpcInterface';
 import { InteractiveMessage } from './infoview/traceExplorer';
-import { DocumentPosition, useAsync } from './infoview/util';
+import { DocumentPosition, useAsync, mapRpcError } from './infoview/util';
 import { RpcContext } from './infoview/contexts';
 
 export { DocumentPosition };

@@ -2,6 +2,8 @@
 import * as React from 'react';
 import type { DocumentUri, Position, Range, TextDocumentPositionParams } from 'vscode-languageserver-protocol';
 
+import { isRpcError, RpcErrorCode } from '@lean4/infoview-api';
+
 import { Event } from './event';
 import { EditorContext } from './contexts';
 
@@ -262,6 +264,19 @@ export function useLogicalDom(ref: React.RefObject<HTMLElement>): [LogicalDomTra
     React.useMemo(() => ({contains}), [ref]),
     React.useMemo(() => ({registerDescendant}), [parentCtx])
   ]
+}
+
+/** Sends an exception object to a throwable error.
+ * Maps JSON Rpc errors to throwable errors.
+ */
+export function mapRpcError(err : unknown) : Error {
+    if (isRpcError(err)) {
+        return new Error(`Rpc error: ${RpcErrorCode[err.code]}: ${err.message}`)
+    } else if (! (err instanceof Error)) {
+        return new Error(`Unrecognised error ${JSON.stringify(err)}`)
+    } else {
+        return err
+    }
 }
 
 type Status = 'pending' | 'fulfilled' | 'rejected'
