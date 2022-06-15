@@ -186,7 +186,7 @@ export function InfoDisplay(props0: InfoDisplayProps) {
                         Expected type {sortButton} {filterButton}
                     </summary>
                     <div className='ml1'>
-                        {hasTermGoal && <GoalUi pos={pos} goal={termGoal} filter={goalFilters} index={0} />}
+                        {hasTermGoal && <GoalUi pos={pos} goal={termGoal} filter={goalFilters} />}
                     </div>
                 </Details>
             </div>

@@ -74,16 +74,15 @@ interface GoalProps {
     pos: DocumentPosition
     goal: InteractiveGoal
     filter: GoalFilterState
-    /** Where the goal appears in the goal list. */
-    index: number
+    /** Where the goal appears in the goal list. Or none if not present. */
+    index?: number
 }
 
 
-export function Goal({ pos, goal, filter, index }: GoalProps) {
+export function Goal({ pos, goal, filter }: GoalProps) {
     const prefix = goal.goalPrefix ?? '⊢ '
     const filteredList = getFilteredHypotheses(goal.hyps, filter);
     const hyps = filter.reverse ? filteredList.slice().reverse() : filteredList;
-    const goalId = goal.mvarId || index
     const goalLi = <li key={'goal'}>
         <strong className="goal-vdash">{prefix}</strong>
         <InteractiveCode pos={pos} fmt={goal.type} />
