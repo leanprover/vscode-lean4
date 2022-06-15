@@ -1,8 +1,27 @@
 import * as React from 'react'
 import { DocumentPosition } from './util'
-import { ConfigContext } from './contexts'
 import { InteractiveCode } from './interactiveCode'
-import { InteractiveGoal, InteractiveGoals, InteractiveHypothesis, TaggedText_stripTags } from './rpcInterface'
+import { InteractiveGoal, InteractiveGoals, InteractiveHypothesisBundle, InteractiveHypothesisBundle_accessibleNames, TaggedText_stripTags } from './rpcInterface'
+
+interface HypProps {
+    pos: DocumentPosition
+    hyp: InteractiveHypothesisBundle
+    index: number
+}
+
+export function Hyp({ pos, hyp : h, index }: HypProps) {
+    const names = InteractiveHypothesisBundle_accessibleNames(h).map((n, i) =>
+            <span className="mr1">{n}</span>
+        )
+    return <li>
+        <strong className="goal-hyp">{names}</strong>
+        :&nbsp;
+        <InteractiveCode pos={pos} fmt={h.type} />
+        {h.val && <>
+            := <InteractiveCode pos={pos} fmt={h.val} />
+        </>}
+    </li>
+}
 
 function goalToString(g: InteractiveGoal): string {
     let ret = ''
@@ -12,7 +31,7 @@ function goalToString(g: InteractiveGoal): string {
     }
 
     for (const h of g.hyps) {
-        const names = h.names.join(' ')
+        const names = InteractiveHypothesisBundle_accessibleNames(h).join(' ')
         ret += `${names} : ${TaggedText_stripTags(h.type)}`
         if (h.val) {
             ret += ` := ${TaggedText_stripTags(h.val)}`
@@ -30,56 +49,66 @@ export function goalsToString(goals: InteractiveGoals): string {
 }
 
 export interface GoalFilterState {
-    /** If true reverse the list of InteractiveHypothesis, if false present the order received from LSP */
+    /** If true reverse the list of hypotheses, if false present the order received from LSP */
     reverse: boolean,
-    /** If true show InteractiveHypothesis that have isType=True, if false, hide InteractiveHypothesis that have isType=True. */
+    /** If true show hypotheses that have isType=True, if false, hide hypotheses that have isType=True. */
     isType: boolean,
-    /** If true show InteractiveHypothesis that have isInstance=True, if false, hide InteractiveHypothesis that have isInstance=True. */
+    /** If true show hypotheses that have isInstance=True, if false, hide hypotheses that have isInstance=True. */
     isInstance: boolean,
-    /** If true show InteractiveHypothesis that contain a dagger in the name, if false, hide InteractiveHypothesis that contain a dagger in the name. */
+    /** If true show hypotheses that contain a dagger in the name, if false, hide hypotheses that contain a dagger in the name. */
     isHiddenAssumption: boolean
 }
 
-function isHiddenAssumption(h: InteractiveHypothesis){
+function isHiddenAssumption(h: InteractiveHypothesisBundle) {
     return h.names.every(n => n.indexOf('✝') >= 0);
 }
 
-function getFilteredHypotheses(hyps: InteractiveHypothesis[], filter: GoalFilterState): InteractiveHypothesis[] {
+function getFilteredHypotheses(hyps: InteractiveHypothesisBundle[], filter: GoalFilterState): InteractiveHypothesisBundle[] {
     return hyps.filter(h =>
         (!h.isInstance || filter.isInstance) &&
         (!h.isType || filter.isType) &&
         (filter.isHiddenAssumption || !isHiddenAssumption(h)));
 }
 
-export function Goal({pos, goal, filter}: {pos: DocumentPosition, goal: InteractiveGoal, filter: GoalFilterState}) {
+interface GoalProps {
+    pos: DocumentPosition
+    goal: InteractiveGoal
+    filter: GoalFilterState
+    /** Where the goal appears in the goal list. Or none if not present. */
+    index?: number
+}
+
+
+export function Goal({ pos, goal, filter }: GoalProps) {
     const prefix = goal.goalPrefix ?? '⊢ '
     const filteredList = getFilteredHypotheses(goal.hyps, filter);
-    const hyps = filter.reverse  ? filteredList.slice().reverse() : filteredList;
-    const goalLi  = <li key={'goal'}>
-                        <strong className="goal-vdash">{prefix}</strong><InteractiveCode pos={pos} fmt={goal.type} />
-                     </li>
+    const hyps = filter.reverse ? filteredList.slice().reverse() : filteredList;
+    const goalLi = <li key={'goal'}>
+        <strong className="goal-vdash">{prefix}</strong>
+        <InteractiveCode pos={pos} fmt={goal.type} />
+    </li>
     return <div className="font-code tl pre-wrap">
         <ul className="list pl0">
             {goal.userName && <li key={'case'}><strong className="goal-case">case </strong>{goal.userName}</li>}
-            {filter.reverse && goalLi }
-            {hyps.map ((h, i) => {
-                const names = h.names.reduce((acc, n) => acc + ' ' + n, '').slice(1)
-                return <li key={`hyp-${i}`}>
-                    <strong className="goal-hyp">{names}</strong> : <InteractiveCode pos={pos} fmt={h.type} />{h.val && <> := <InteractiveCode pos={pos} fmt={h.val}/></>}
-                </li>
-            })}
-            {!filter.reverse && goalLi }
+            {filter.reverse && goalLi}
+            {hyps.map((h, i) => <Hyp pos={pos} index={i} hyp={h} key={i}/>)}
+            {!filter.reverse && goalLi}
         </ul>
     </div>
 }
 
-export function Goals({pos, goals, filter}: {pos: DocumentPosition, goals: InteractiveGoals, filter: GoalFilterState}) {
-    const config = React.useContext(ConfigContext)
+interface GoalsProps {
+    pos: DocumentPosition
+    goals: InteractiveGoals
+    filter: GoalFilterState
+}
+
+export function Goals({ pos, goals, filter }: GoalsProps) {
     if (goals.goals.length === 0) {
         return <>Goals accomplished 🎉</>
     } else {
         return <>
-            {goals.goals.map ((g, i) => <Goal key={i} pos={pos} goal={g} filter={filter}/>)}
+            {goals.goals.map((g, i) => <Goal key={i} pos={pos} goal={g} filter={filter} index={i} />)}
         </>
     }
 }

@@ -4,7 +4,7 @@
  */
 import * as React from 'react'
 import type { DidCloseTextDocumentParams, Disposable, DocumentUri } from 'vscode-languageserver-protocol'
-import { RpcPtr, RpcCallParams, RpcNeedsReconnect, RpcReleaseParams } from '@lean4/infoview-api'
+import { RpcPtr, RpcCallParams, RpcReleaseParams, RpcErrorCode, isRpcError } from '@lean4/infoview-api'
 import { EditorContext, RpcContext } from './contexts'
 import { EditorConnection } from './editorConnection'
 import { DocumentPosition, useClientNotificationEffect, useEvent } from './util'
@@ -96,13 +96,14 @@ export class RpcSessions implements Disposable {
 
     private async sessionAt(uri: DocumentUri): Promise<RpcSession | undefined> {
         if (this.#connected.has(uri)) return this.#connected.get(uri)
-        else if (this.#connecting.has(uri)) return this.#connecting.get(uri)
+        else if (this.#connecting.has(uri)) return await this.#connecting.get(uri)
         else return undefined
     }
 
     private connectAt(uri: DocumentUri): void {
         if (this.#connecting.has(uri) || this.#connected.has(uri)) {
-            throw new Error(`already connecting or connected at '${uri}'`)
+            // If we are already connecting then there is nothing to do.
+            return;
         }
         let newSesh: Promise<RpcSession | undefined> = this.#ec.api.createRpcSession(uri)
             .then(sessionId => new RpcSession(sessionId, uri, this.#ec))
@@ -152,20 +153,24 @@ export class RpcSessions implements Disposable {
         try {
             const ret = await sesh.call(pos, method, params)
             return ret
-        } catch (ex: any) {
-            if (ex.code === RpcNeedsReconnect) {
-                // Are we reconnecting yet?
-                const uri = pos.uri;
-                if (!this.#connecting.has(uri)) {
-                    // force a reconnect.
-                    this.ensureSessionClosed(uri)
-                    this.connectAt(uri);
+        } catch (ex: unknown) {
+            if (isRpcError(ex) ) {
+                if (ex.code === RpcErrorCode.RpcNeedsReconnect) {
+                    // Are we reconnecting yet?
+                    const uri = pos.uri;
+                    if (!this.#connecting.has(uri)) {
+                        // force a reconnect.
+                        this.ensureSessionClosed(uri)
+                        this.connectAt(uri);
+                    }
+                    return undefined
                 }
-                return undefined
+                // NOTE: these are part of normal control, no need to spam the console
+                throw ex
             }
-            // NOTE: these are part of normal control, no need to spam the console
-            //console.error(`RPC error: ${JSON.stringify(ex)}`)
-            throw ex
+            else {
+                throw Error(`Got unexpected error form ${JSON.stringify(ex)}`)
+            }
         }
     }
 

@@ -1,8 +1,8 @@
 import * as React from 'react'
 
 import { EditorContext, RpcContext } from './contexts'
-import { DocumentPosition } from './util'
-import { SubexprInfo, CodeWithInfos, InfoPopup, InfoWithCtx, InteractiveDiagnostics_infoToInteractive, getGoToLocation, TaggedText } from './rpcInterface'
+import { DocumentPosition, useAsync, mapRpcError } from './util'
+import { SubexprInfo, CodeWithInfos, InteractiveDiagnostics_infoToInteractive, getGoToLocation, TaggedText } from './rpcInterface'
 import { DetectHoverSpan, HoverState, WithTooltipOnHover } from './tooltips'
 import { Location } from 'vscode-languageserver-protocol'
 
@@ -32,48 +32,41 @@ export function InteractiveTaggedText<T>({pos, fmt, InnerTagUi}: InteractiveTagg
   else throw new Error(`malformed 'TaggedText': '${fmt}'`)
 }
 
+interface TypePopupContentsProps {
+  pos: DocumentPosition
+  info: SubexprInfo
+  redrawTooltip: () => void
+}
+
 /** Shows `explicitValue : itsType` and a docstring if there is one. */
-function TypePopupContents({pos, info, redrawTooltip}: {pos: DocumentPosition, info: InfoWithCtx, redrawTooltip: () => void}) {
+function TypePopupContents({ pos, info, redrawTooltip }: TypePopupContentsProps) {
   const rs = React.useContext(RpcContext)
   // When `err` is defined we show the error,
   // otherwise if `ip` is defined we show its contents,
   // otherwise a 'loading' message.
-  const [ip, setIp] = React.useState<InfoPopup>()
-  const [err, setErr] = React.useState<string>()
-
-  React.useEffect(() => {
-    InteractiveDiagnostics_infoToInteractive(rs, pos, info).then(val => {
-      if (val) {
-        setErr(undefined)
-        setIp(val)
-      }
-    }).catch(ex => {
-      if ('message' in ex) setErr('' + ex.message)
-      else if ('code' in ex) setErr(`RPC error (${ex.code})`)
-      else setErr(JSON.stringify(ex))
-    })
-  }, [rs, pos.uri, pos.line, pos.character, info])
+  const [_, ip, err] = useAsync(
+    () => InteractiveDiagnostics_infoToInteractive(rs, pos, info.info),
+    [rs, pos.uri, pos.line, pos.character, info.info, info.subexprPos])
 
   // We let the tooltip know to redo its layout whenever our contents change.
   React.useEffect(() => redrawTooltip(), [ip, err, redrawTooltip])
 
-  if (err)
-    return <>Error: {err}</>
-
-  if (ip) {
-    return <>
+  return <>
+    {ip && <>
       {ip.exprExplicit && <InteractiveCode pos={pos} fmt={ip.exprExplicit} />} : {ip.type && <InteractiveCode pos={pos} fmt={ip.type} />}
       {ip.doc && <hr />}
       {ip.doc && ip.doc} {/* TODO markdown */}
-    </>
-  } else return <>Loading..</>
+    </>}
+    {err && <>Error: {mapRpcError(err).message}</>}
+    {(!ip && !err) && <>Loading..</>}
+  </>
 }
 
 /** Tagged spans can be hovered over to display extra info stored in the associated `SubexprInfo`. */
 function InteractiveCodeTag({pos, tag: ct, fmt}: InteractiveTagProps<SubexprInfo>) {
   const mkTooltip = React.useCallback((redrawTooltip: () => void) =>
     <div className="font-code tl pre-wrap">
-      <TypePopupContents pos={pos} info={ct.info}
+      <TypePopupContents pos={pos} info={ct}
         redrawTooltip={redrawTooltip} />
     </div>, [pos.uri, pos.line, pos.character, ct.info])
 
@@ -126,6 +119,11 @@ function InteractiveCodeTag({pos, tag: ct, fmt}: InteractiveTagProps<SubexprInfo
   )
 }
 
-export function InteractiveCode({pos, fmt}: {pos: DocumentPosition, fmt: CodeWithInfos}) {
-  return InteractiveTaggedText({pos, fmt, InnerTagUi: InteractiveCodeTag})
+interface InteractiveCodeProps {
+  pos: DocumentPosition
+  fmt: CodeWithInfos
+}
+
+export function InteractiveCode(props: InteractiveCodeProps) {
+  return <InteractiveTaggedText InnerTagUi={InteractiveCodeTag} fmt={props.fmt} pos={props.pos} />
 }

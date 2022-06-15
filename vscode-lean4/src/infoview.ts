@@ -606,7 +606,7 @@ export class InfoProvider implements Disposable {
     private async handleInsertText(text: string, kind: TextInsertKind, uri?: Uri, pos?: Position) {
         let editor: TextEditor | undefined
         if (uri) {
-           editor = window.visibleTextEditors.find(e => e.document.uri === uri);
+           editor = window.visibleTextEditors.find(e => e.document.uri.toString() === uri.toString());
         } else {
             editor = window.activeTextEditor;
             if (!editor) { // sometimes activeTextEditor is null.

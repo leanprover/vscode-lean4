@@ -32,7 +32,7 @@ function CollapsibleTrace({pos, col, cls, msg}: {pos: DocumentPosition, col: num
         inner =
             <span className="underline-hover pointer"
                 onClick={ev => {
-                    void InteractiveDiagnostics_msgToInteractive(rs, pos, { msg, indent: col }).then(t => t && setTt(t))
+                    void InteractiveDiagnostics_msgToInteractive(rs, pos, msg, col).then(t => t && setTt(t))
                     ev.stopPropagation()
                 }}>[{cls}] &gt;</span>
     }
@@ -43,7 +43,7 @@ function InteractiveMessageTag({pos, tag: embed, fmt}: InteractiveTagProps<MsgEm
     if ('expr' in embed)
         return <InteractiveCode pos={pos} fmt={embed.expr} />
     else if ('goal' in embed)
-        return <Goal pos={pos} goal={embed.goal} filter={{reverse: false, isType: false, isInstance: false, isHiddenAssumption: false}}/>
+        return <Goal pos={pos} goal={embed.goal} filter={{reverse: false, isType: false, isInstance: false, isHiddenAssumption: false}} index={0} />
     else if ('lazyTrace' in embed)
         return <CollapsibleTrace pos={pos} col={embed.lazyTrace[0]} cls={embed.lazyTrace[1]} msg={embed.lazyTrace[2]} />
     else
