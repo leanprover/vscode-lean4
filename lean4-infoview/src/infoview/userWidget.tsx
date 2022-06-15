@@ -3,8 +3,7 @@ import type { Location } from 'vscode-languageserver-protocol';
 
 import { EditorContext, RpcContext } from './contexts';
 import { Details } from './collapsing';
-import { mapRpcError, } from './rpcInterface';
-import { DocumentPosition, useAsync, useEventResult } from './util';
+import { DocumentPosition, mapRpcError, useAsync, useEventResult } from './util';
 import { ErrorBoundary } from './errors';
 import { RpcSessions } from './rpcSessions';
 import { isRpcError, RpcErrorCode } from '@lean4/infoview-api';
