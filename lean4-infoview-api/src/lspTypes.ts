@@ -101,6 +101,8 @@ export enum RpcErrorCode {
     ContentModified = -32801,
     RequestCancelled = -32800,
     RpcNeedsReconnect = -32900,
+    WorkerExited = -32901,
+    WorkerCrashed = -32902,
 }
 
 export interface RpcError {
