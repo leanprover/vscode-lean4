@@ -487,12 +487,16 @@ export class InfoProvider implements Disposable {
         // by listening to notifications.  Send these notifications when the infoview starts
         // so that it has up-to-date information.
         if (client?.initializeResult) {
-            await this.webviewPanel?.api.serverStopped(''); // clear any server stopped state
-            await this.webviewPanel?.api.serverRestarted(client.initializeResult);
-            await this.sendDiagnostics(client);
-            await this.sendProgress(client);
-            await this.sendPosition();
-            await this.sendConfig();
+            try{
+                await this.webviewPanel?.api.serverStopped(''); // clear any server stopped state
+                await this.webviewPanel?.api.serverRestarted(client.initializeResult);
+                await this.sendDiagnostics(client);
+                await this.sendProgress(client);
+                await this.sendPosition();
+                await this.sendConfig();
+            } catch (err: any){
+                // we are not getting the promise exception here in case the worker fails
+            }
         }
     }
 
@@ -558,8 +562,8 @@ export class InfoProvider implements Disposable {
             return;
         }
         // actual editor
+        const client = this.clientProvider.findClient(editor.document.uri.toString())
         if (this.clientsFailed.size > 0){
-            const client = this.clientProvider.findClient(editor.document.uri.toString())
             if (client) {
                 const folder = client.getWorkspaceFolder()
                 if (this.clientsFailed.has(folder)){
@@ -574,7 +578,6 @@ export class InfoProvider implements Disposable {
         } else {
             await this.updateStatus(loc)
         }
-
     }
 
     private async updateStatus(loc: ls.Location | undefined): Promise<void> {

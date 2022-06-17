@@ -9,6 +9,7 @@ import { EditorContext, RpcContext } from './contexts'
 import { EditorConnection } from './editorConnection'
 import { DocumentPosition, useClientNotificationEffect, useEvent } from './util'
 
+let workerExited = false;
 class RpcSession implements Disposable {
     #ec: EditorConnection
     #uri: DocumentUri
@@ -55,17 +56,26 @@ class RpcSession implements Disposable {
     }
 
     async call(pos: DocumentPosition, method: string, params: any): Promise<any> {
-        if (this.#closed) throw new Error('RPC connection closed')
-        const rpcParams: RpcCallParams = {
-            ...DocumentPosition.toTdpp(pos),
-            sessionId: this.sessionId,
-            method,
-            params,
+        try{
+            if (this.#closed) throw new Error('RPC connection closed')
+            const rpcParams: RpcCallParams = {
+                ...DocumentPosition.toTdpp(pos),
+                sessionId: this.sessionId,
+                method,
+                params,
+            }
+            const val = await this.#ec.api.sendClientRequest(pos.uri, '$/lean/rpc/call', rpcParams)
+            // const s = JSON.stringify(val)
+            // console.log(`'${method}(${JSON.stringify(params)})' at '${pos.line}:${pos.character}' -> '${s.length < 200 ? s : '(..)'}'`)
+            workerExited = false;
+            return val;
+        } catch(ex:any){
+            if (ex?.code === -32901 || ex?.code === -32902 || ex?.code === -32603) {
+                console.log('Worker crashed due to a stackoverflow or a bug.')
+                workerExited = true;
+            }
+            throw ex
         }
-        const val = await this.#ec.api.sendClientRequest(pos.uri, '$/lean/rpc/call', rpcParams)
-        // const s = JSON.stringify(val)
-        // console.log(`'${method}(${JSON.stringify(params)})' at '${pos.line}:${pos.character}' -> '${s.length < 200 ? s : '(..)'}'`)
-        return val;
     }
 
     registerRef(ptr: RpcPtr<any>) {
@@ -165,6 +175,10 @@ export class RpcSessions implements Disposable {
             }
             // NOTE: these are part of normal control, no need to spam the console
             //console.error(`RPC error: ${JSON.stringify(ex)}`)
+            if (ex.code === -32901 || ex.code === -32902 || ex.code === -32603) {
+                console.log('Worker crashed due to a stackoverflow or a bug.')
+                workerExited = true;
+            }
             throw ex
         }
     }

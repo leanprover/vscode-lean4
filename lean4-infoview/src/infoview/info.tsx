@@ -296,7 +296,6 @@ function InfoAux(props: InfoProps) {
         setDisplayProps(mkDisplayProps());
         setShouldUpdateDisplay(false);
     }
-
     const triggerUpdate = useDelayedThrottled(serverIsProcessing ? 500 : 50, async () => {
         setStatus('updating');
 
@@ -305,7 +304,10 @@ function InfoAux(props: InfoProps) {
             // Start both goal requests before awaiting them.
             const goalsReq = getInteractiveGoals(rs, pos);
             const termGoalReq = getInteractiveTermGoal(rs, pos);
-            allReq = Promise.all([goalsReq, termGoalReq]);
+            allReq = Promise.all([goalsReq, termGoalReq]).catch(e => {
+                setStatus('error')
+                return []
+            });
         } else {
             const goalsReq = ec.requestPlainGoal(pos).then(gs => {
                 if (gs) return updatePlainGoals(gs)
