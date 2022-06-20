@@ -57,15 +57,19 @@ export function InfoStatusBar(props: InfoStatusBarProps) {
                    title="copy state to comment" />}
             {isPinned &&
                 <a className="link pointer mh2 dim codicon codicon-go-to-file"
+                   data-id="reveal-file-location"
                    onClick={e => { e.preventDefault(); void ec.revealPosition(pos); }}
                    title="reveal file location" />}
             <a className={'link pointer mh2 dim codicon ' + (isPinned ? 'codicon-pinned ' : 'codicon-pin ')}
+                data-id="toggle-pinned"
                 onClick={e => { e.preventDefault(); onPin(pos); }}
                 title={isPinned ? 'unpin' : 'pin'} />
             <a className={'link pointer mh2 dim codicon ' + (isPaused ? 'codicon-debug-continue ' : 'codicon-debug-pause ')}
+               data-id="toggle-paused"
                onClick={e => { e.preventDefault(); setPaused(!isPaused); }}
                title={isPaused ? 'continue updating' : 'pause updating'} />
             <a className="link pointer mh2 dim codicon codicon-refresh"
+               data-id="update"
                onClick={e => { e.preventDefault(); void triggerUpdate(); }}
                title="update"/>
         </span>
