@@ -9,7 +9,7 @@ import { MessagesList, useMessagesFor } from './messages';
 import { getInteractiveGoals, getInteractiveTermGoal, InteractiveDiagnostic, InteractiveGoal, InteractiveGoals } from './rpcInterface';
 import { updatePlainGoals, updateTermGoal } from './goalCompat';
 import { WithTooltipOnHover } from './tooltips'
-import { isGetWidgetResponse, UserWidget, useWidget, Widget_getWidget} from './userWidget'
+import { UserWidget, Widget_getWidgetInfos} from './userWidget'
 
 type InfoStatus = 'loading' | 'updating' | 'error' | 'ready';
 type InfoKind = 'cursor' | 'pin';
@@ -125,9 +125,11 @@ export function InfoDisplay(props0: InfoDisplayProps) {
     });
 
     const rs = React.useContext(RpcContext);
-    const [widgetStatus, widget, widgetError] = useAsync(
-        () => Widget_getWidget(rs, pos),
+    const [widgetStatus, widgets, widgetError] = useAsync(
+        () => Widget_getWidgetInfos(rs, pos),
         [pos.uri, pos.line, pos.character])
+    // [todo] for now just show the first widget.
+    const widget = (widgets !== undefined) && (widgets.infos.length > 0) && widgets.infos[0]
     const hasWidget = (widget !== undefined)
 
     const nothingToShow = !error && !goals && !termGoal && messages.length === 0 && !hasWidget;
@@ -215,7 +217,7 @@ export function InfoDisplay(props0: InfoDisplayProps) {
             <div style={{display: hasWidget ? 'block' : 'none'}}>
                 <Details initiallyOpen>
                     <summary className="mv2 pointer">
-                    Widget: {widget && widget.id}
+                    Widget: {widget && widget.widgetSourceId}
                       {widgetStatus === 'pending' && ' (pending)'}
                       {widgetStatus === 'rejected' && ' (errored)'}
                     </summary>
