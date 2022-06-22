@@ -9,7 +9,7 @@ import { MessagesList, useMessagesFor } from './messages';
 import { getInteractiveGoals, getInteractiveTermGoal, InteractiveDiagnostic, InteractiveGoal, InteractiveGoals } from './rpcInterface';
 import { updatePlainGoals, updateTermGoal } from './goalCompat';
 import { WithTooltipOnHover } from './tooltips'
-import { UserWidget, Widget_getWidgetInfos} from './userWidget'
+import { UserWidget, Widget_getWidgets} from './userWidget'
 
 type InfoStatus = 'loading' | 'updating' | 'error' | 'ready';
 type InfoKind = 'cursor' | 'pin';
@@ -125,11 +125,11 @@ export function InfoDisplay(props0: InfoDisplayProps) {
     });
 
     const rs = React.useContext(RpcContext);
-    const [widgetStatus, widgets, widgetError] = useAsync(
-        () => Widget_getWidgetInfos(rs, pos),
+    const [widgetStatus, widgetResult, widgetError] = useAsync(
+        () => Widget_getWidgets(rs, pos),
         [pos.uri, pos.line, pos.character])
     // [todo] for now just show the first widget.
-    const widget = (widgets !== undefined) && (widgets.infos.length > 0) && widgets.infos[0]
+    const widget = (widgetResult !== undefined) && (widgetResult.widgets.length > 0) && widgetResult.widgets[0]
     const hasWidget = (widget !== undefined)
 
     const nothingToShow = !error && !goals && !termGoal && messages.length === 0 && !hasWidget;

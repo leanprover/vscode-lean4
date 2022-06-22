@@ -22,19 +22,19 @@ function handleWidgetRpcError(e: unknown): undefined {
     }
 }
 
-export interface UserWidgetInfo {
+export interface UserWidget {
     widgetSourceId: string
     hash : string
     props : any
     range?: Range
 }
 
-export interface GetWidgetInfosResponse {
-    infos : UserWidgetInfo[]
+export interface GetWidgetsResponse {
+    widgets : UserWidget[]
 }
 
-export function Widget_getWidgetInfos(rs: RpcSessions, pos: DocumentPosition): Promise<GetWidgetInfosResponse | undefined> {
-    return rs.call<GetWidgetInfosResponse | undefined>(pos, 'Lean.Widget.getWidgetInfos', DocumentPosition.toTdpp(pos))
+export function Widget_getWidgets(rs: RpcSessions, pos: DocumentPosition): Promise<GetWidgetsResponse | undefined> {
+    return rs.call<GetWidgetsResponse | undefined>(pos, 'Lean.Widget.getWidgets', DocumentPosition.toTdpp(pos))
         .catch<undefined>(handleWidgetRpcError);
 }
 
@@ -68,7 +68,7 @@ const componentCache = new Map()
 
 interface UserWidgetProps {
     pos: DocumentPosition
-    widget: UserWidgetInfo
+    widget: UserWidget
 }
 
 export function UserWidget({ pos, widget }: UserWidgetProps) {
