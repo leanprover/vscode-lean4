@@ -16,9 +16,13 @@ export function closeAllEditors(): Thenable<any> {
     return vscode.commands.executeCommand('workbench.action.closeAllEditors');
 }
 
+export function closeActiveEditor(): Thenable<any> {
+    return vscode.commands.executeCommand('workbench.action.close');
+}
+
 export async function initLean4(fileName: string) : Promise<vscode.Extension<Exports>>{
 
-    await vscode.commands.executeCommand('workbench.action.closeAllEditors');
+    await closeAllEditors();
     const options : vscode.TextDocumentShowOptions = { preview: false };
 
     const doc = await vscode.workspace.openTextDocument(fileName);
@@ -57,7 +61,7 @@ export async function insertText(text: string) : Promise<void> {
 
 export async function initLean4Untitled(contents: string) : Promise<vscode.Extension<Exports>>{
     // make sure test is always run in predictable state, which is no file or folder open
-    await vscode.commands.executeCommand('workbench.action.closeAllEditors');
+    await closeAllEditors();
 
     await vscode.commands.executeCommand('workbench.action.files.newUntitledFile');
 
