@@ -5,12 +5,14 @@ import { InteractiveMessage } from './infoview/traceExplorer';
 import { DocumentPosition, useAsync, mapRpcError } from './infoview/util';
 import { RpcContext } from './infoview/contexts';
 
-export { DocumentPosition };
+export { DocumentPosition, MessageData };
 export { EditorContext, RpcContext, VersionContext } from './infoview/contexts';
 export { EditorConnection } from './infoview/editorConnection';
 export { RpcSessions } from './infoview/rpcSessions';
 export { ServerVersion } from './infoview/serverVersion';
-export { InteractiveCode } from './infoview/interactiveCode';
+
+export { CodeWithInfos } from './infoview/rpcInterface';
+export { InteractiveCode, InteractiveCodeProps } from './infoview/interactiveCode';
 
 /** Display the given message data as interactive, pretty-printed text. */
 export function InteractiveMessageData({ pos, msg }: { pos: DocumentPosition, msg: MessageData }) {

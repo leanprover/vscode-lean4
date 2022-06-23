@@ -43,6 +43,7 @@ export interface SubexprInfo {
     subexprPos?: number
 }
 
+/** A piece of code pretty-printed with subexpression information by the Lean server. */
 export type CodeWithInfos = TaggedText<SubexprInfo>
 
 /** Information that should appear in a popup when clicking on a subexpression. */
@@ -52,7 +53,7 @@ export interface InfoPopup {
     doc?: string
 }
 
-function CodeWithInfos_registerRefs(rs: RpcSessions, pos: DocumentPosition, ci: CodeWithInfos): void {
+export function CodeWithInfos_registerRefs(rs: RpcSessions, pos: DocumentPosition, ci: CodeWithInfos): void {
     TaggedText_mapRefs(ci, ct => rs.registerRef(pos, ct.info))
 }
 
@@ -98,7 +99,7 @@ export interface InteractiveGoal {
     mvarId?: string
 }
 
-function InteractiveGoal_registerRefs(rs: RpcSessions, pos: DocumentPosition, g: InteractiveGoal) {
+export function InteractiveGoal_registerRefs(rs: RpcSessions, pos: DocumentPosition, g: InteractiveGoal) {
     CodeWithInfos_registerRefs(rs, pos, g.type)
     for (const h of g.hyps) {
         CodeWithInfos_registerRefs(rs, pos, h.type)
@@ -110,7 +111,7 @@ export interface InteractiveGoals {
     goals: InteractiveGoal[]
 }
 
-function InteractiveGoals_registerRefs(rs: RpcSessions, pos: DocumentPosition, gs: InteractiveGoals) {
+export function InteractiveGoals_registerRefs(rs: RpcSessions, pos: DocumentPosition, gs: InteractiveGoals) {
     for (const g of gs.goals) InteractiveGoal_registerRefs(rs, pos, g)
 }
 
@@ -138,7 +139,7 @@ function MsgEmbed_registerRefs(rs: RpcSessions, pos: DocumentPosition, e: MsgEmb
     else if ('lazyTrace' in e) rs.registerRef(pos, e.lazyTrace[2])
 }
 
-function TaggedMsg_registerRefs(rs: RpcSessions, pos: DocumentPosition, tt: TaggedText<MsgEmbed>): void {
+export function TaggedMsg_registerRefs(rs: RpcSessions, pos: DocumentPosition, tt: TaggedText<MsgEmbed>): void {
     const go = (t: TaggedText<MsgEmbed>) => {
         if ('append' in t) { for (const a of t.append) go(a) }
         else if ('tag' in t) { MsgEmbed_registerRefs(rs, pos, t.tag[0]); go(t.tag[1]) }
