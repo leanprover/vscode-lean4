@@ -185,22 +185,36 @@ export async function getGoToLocation(rs: RpcSessions, pos: DocumentPosition, ki
     return rs.call<LocationLink[]>(pos, 'Lean.Widget.getGoToLocation', args)
 }
 
+/** Represents an instance of a user widget that can be rendered.
+ * This is used as the input to the `UserWidget` component.
+ */
 export interface UserWidget {
+    /** The identifier of the type of widget to dynamically load. */
     widgetSourceId: string
+    /** A hash (provided by Lean) of the widgetSource's sourcetext.
+     * This is used to look up the WidgetSource object.
+     */
     hash : string
+    /** JSON object to be passed as props to the component */
     props : any
     range?: Range
 }
 
+/** The response type for the RPC call `Widget_getWidgets`. */
 export interface GetWidgetsResponse {
     widgets : UserWidget[]
 }
 
+/** Given a position, returns all of the user-widgets on the infotree at this position. */
 export function Widget_getWidgets(rs: RpcSessions, pos: DocumentPosition): Promise<GetWidgetsResponse | undefined> {
     return rs.call(pos, 'Lean.Widget.getWidgets', DocumentPosition.toTdpp(pos))
 }
 
+/** Code that should be dynamically loaded by the UserWidget component. */
 export interface WidgetSource {
+    /** JavaScript sourcecode. Should be a plain JavaScript ESModule whose default export is
+     * the component to render.
+     */
     sourcetext: string
     hash: string
 }

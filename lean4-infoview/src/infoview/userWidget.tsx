@@ -1,13 +1,9 @@
 import * as React from 'react';
-import type { Location } from 'vscode-languageserver-protocol';
 
-import { EditorContext, RpcContext } from './contexts';
-import { Details } from './collapsing';
-import { DocumentPosition, mapRpcError, useAsync, useEventResult } from './util';
+import { RpcContext } from './contexts';
+import { DocumentPosition, mapRpcError, useAsync } from './util';
 import { ErrorBoundary } from './errors';
-import { RpcSessions } from './rpcSessions';
-import { isRpcError, RpcErrorCode } from '@lean4/infoview-api';
-import { Widget_getWidgetSource, UserWidget, WidgetSource, Widget_getWidgets } from './rpcInterface';
+import { Widget_getWidgetSource, UserWidget } from './rpcInterface';
 
 function dynamicallyLoadComponent(hash: string, code: string,) {
     return React.lazy(async () => {
@@ -23,7 +19,6 @@ interface UserWidgetProps {
     pos: DocumentPosition
     widget: UserWidget
 }
-
 
 export function UserWidget({ pos, widget }: UserWidgetProps) {
     const rs = React.useContext(RpcContext);
