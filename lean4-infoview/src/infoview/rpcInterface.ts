@@ -84,7 +84,7 @@ export interface InteractiveHypothesisBundle {
 }
 
 /** Filter out inaccessible / anonymous pretty names from the names list. */
-export function InteractiveHypothesisBundle_accessibleNames(ih : InteractiveHypothesisBundle) : string[] {
+export function InteractiveHypothesisBundle_accessibleNames(ih: InteractiveHypothesisBundle): string[] {
     return ih.names.filter(x => !x.includes('[anonymous]'))
 }
 
@@ -183,4 +183,32 @@ export async function getGoToLocation(rs: RpcSessions, pos: DocumentPosition, ki
     }
     const args: GetGoToLocationParams = { kind, info };
     return rs.call<LocationLink[]>(pos, 'Lean.Widget.getGoToLocation', args)
+}
+
+export interface UserWidget {
+    widgetSourceId: string
+    hash : string
+    props : any
+    range?: Range
+}
+
+export interface GetWidgetsResponse {
+    widgets : UserWidget[]
+}
+
+export function Widget_getWidgets(rs: RpcSessions, pos: DocumentPosition): Promise<GetWidgetsResponse | undefined> {
+    return rs.call(pos, 'Lean.Widget.getWidgets', DocumentPosition.toTdpp(pos))
+}
+
+export interface WidgetSource {
+    sourcetext: string
+    hash: string
+}
+
+/** Gets the static code for a given widget.
+ *
+ * We make the assumption that either the code doesn't exist, or it exists and does not change for the lifetime of the widget.
+ */
+export function Widget_getWidgetSource(rs: RpcSessions, pos: DocumentPosition, hash: string): Promise<WidgetSource | undefined> {
+    return rs.call(pos, 'Lean.Widget.getWidgetSource', { pos: DocumentPosition.toTdpp(pos), hash })
 }

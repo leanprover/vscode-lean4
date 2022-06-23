@@ -7,53 +7,7 @@ import { DocumentPosition, mapRpcError, useAsync, useEventResult } from './util'
 import { ErrorBoundary } from './errors';
 import { RpcSessions } from './rpcSessions';
 import { isRpcError, RpcErrorCode } from '@lean4/infoview-api';
-
-function handleWidgetRpcError(e: unknown): undefined {
-    if (isRpcError(e)) {
-        if (e.code === RpcErrorCode.MethodNotFound || e.code === RpcErrorCode.InvalidParams) {
-            return undefined
-        } else {
-            throw Error(`RPC Error: ${RpcErrorCode[e.code]}: ${e.message}`)
-        }
-    } else if (e instanceof Error) {
-        throw e
-    } else {
-        throw Error(`Unknown rpc error ${JSON.stringify(e)}`)
-    }
-}
-
-export interface UserWidget {
-    widgetSourceId: string
-    hash : string
-    props : any
-    range?: Range
-}
-
-export interface GetWidgetsResponse {
-    widgets : UserWidget[]
-}
-
-export function Widget_getWidgets(rs: RpcSessions, pos: DocumentPosition): Promise<GetWidgetsResponse | undefined> {
-    return rs.call<GetWidgetsResponse | undefined>(pos, 'Lean.Widget.getWidgets', DocumentPosition.toTdpp(pos))
-        .catch<undefined>(handleWidgetRpcError);
-}
-
-export interface WidgetSource {
-    sourcetext : string
-    hash: string
-}
-
-/** Gets the static JS code for a given widget.
- *
- * We make the assumption that either the code doesn't exist, or it exists and does not change for the lifetime of the widget.
- */
-export async function Widget_getWidgetSource(rs: RpcSessions, pos: DocumentPosition, hash: string): Promise<WidgetSource | undefined> {
-    try {
-        return await rs.call(pos, 'Lean.Widget.getWidgetSource', { pos: DocumentPosition.toTdpp(pos), hash })
-    } catch (e) {
-        return handleWidgetRpcError(e)
-    }
-}
+import { Widget_getWidgetSource, UserWidget, WidgetSource, Widget_getWidgets } from './rpcInterface';
 
 function dynamicallyLoadComponent(hash: string, code: string,) {
     return React.lazy(async () => {
@@ -70,6 +24,7 @@ interface UserWidgetProps {
     widget: UserWidget
 }
 
+
 export function UserWidget({ pos, widget }: UserWidgetProps) {
     const rs = React.useContext(RpcContext);
     if (!pos) {
@@ -82,7 +37,8 @@ export function UserWidget({ pos, widget }: UserWidgetProps) {
             }
             const code = await Widget_getWidgetSource(rs, pos, widget.hash)
             if (!code) {
-                throw Error(`No widget static javascript found for ${widget.widgetSourceId} and hash ${widget.hash}.`)
+                // This case happens when the relevant RPC session is not connected, a react rerender will be triggered.
+                throw new Error('Expected RPC session to be connected.')
             }
             const component = dynamicallyLoadComponent(widget.hash, code.sourcetext)
             componentCache.set(widget.hash, component)

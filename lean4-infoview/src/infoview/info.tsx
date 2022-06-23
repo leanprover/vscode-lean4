@@ -2,14 +2,14 @@ import * as React from 'react';
 import type { Location } from 'vscode-languageserver-protocol';
 
 import { Goals as GoalsUi, Goal as GoalUi, goalsToString, GoalFilterState } from './goals';
-import { basename, DocumentPosition, RangeHelpers, useAsync, useEvent, usePausableState } from './util';
+import { basename, discardMethodNotFound, DocumentPosition, RangeHelpers, useAsync, useEvent, usePausableState } from './util';
 import { Details } from './collapsing';
 import { EditorContext, ProgressContext, RpcContext, VersionContext } from './contexts';
 import { MessagesList, useMessagesFor } from './messages';
-import { getInteractiveGoals, getInteractiveTermGoal, InteractiveDiagnostic, InteractiveGoal, InteractiveGoals } from './rpcInterface';
+import { getInteractiveGoals, getInteractiveTermGoal, InteractiveDiagnostic, InteractiveGoal, InteractiveGoals, Widget_getWidgets } from './rpcInterface';
 import { updatePlainGoals, updateTermGoal } from './goalCompat';
 import { WithTooltipOnHover } from './tooltips'
-import { UserWidget, Widget_getWidgets} from './userWidget'
+import { UserWidget } from './userWidget'
 
 type InfoStatus = 'loading' | 'updating' | 'error' | 'ready';
 type InfoKind = 'cursor' | 'pin';
@@ -126,7 +126,7 @@ export function InfoDisplay(props0: InfoDisplayProps) {
 
     const rs = React.useContext(RpcContext);
     const [widgetStatus, widgetResult, widgetError] = useAsync(
-        () => Widget_getWidgets(rs, pos),
+        () => Widget_getWidgets(rs, pos).catch(discardMethodNotFound),
         [pos.uri, pos.line, pos.character])
     // [todo] for now just show the first widget.
     const widget = (widgetResult !== undefined) && (widgetResult.widgets.length > 0) && widgetResult.widgets[0]
