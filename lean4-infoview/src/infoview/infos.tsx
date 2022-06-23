@@ -11,14 +11,14 @@ export function Infos() {
 
     // Update pins when the document changes. In particular, when edits are made
     // earlier in the text such that a pin has to move up or down.
-    const [pinnedPoss, setPinnedPoss] = useClientNotificationState(
+    const [pinnedPositions, setPinnedPositions] = useClientNotificationState(
         'textDocument/didChange',
         new Array<Keyed<DocumentPosition>>(),
-        (pinnedPoss, params: DidChangeTextDocumentParams) => {
-            if (pinnedPoss.length === 0) return pinnedPoss;
+        (pinnedPositions, params: DidChangeTextDocumentParams) => {
+            if (pinnedPositions.length === 0) return pinnedPositions;
 
             let changed: boolean = false;
-            const newPins = pinnedPoss.map(pin => {
+            const newPins = pinnedPositions.map(pin => {
                 if (pin.uri !== params.textDocument.uri) return pin;
                 // NOTE(WN): It's important to make a clone here, otherwise this
                 // actually mutates the pin. React state updates must be pure.
@@ -69,7 +69,7 @@ export function Infos() {
             });
 
             if (changed) return newPins.filter(p => p !== null) as Keyed<DocumentPosition>[];
-            return pinnedPoss;
+            return pinnedPositions;
         },
         []
     );
@@ -78,7 +78,7 @@ export function Infos() {
     useClientNotificationEffect(
         'textDocument/didClose',
         (params: DidCloseTextDocumentParams) => {
-            setPinnedPoss(pinnedPoss => pinnedPoss.filter(p => p.uri !== params.textDocument.uri));
+            setPinnedPositions(pinnedPositions => pinnedPositions.filter(p => p.uri !== params.textDocument.uri));
         },
         []
     );
@@ -88,20 +88,20 @@ export function Infos() {
 
     // Update pins on UI actions
     const pinKey = React.useRef<number>(0);
-    const isPinned = (pinnedPoss: DocumentPosition[], pos: DocumentPosition) => {
-        return pinnedPoss.some(p => DocumentPosition.isEqual(p, pos));
+    const isPinned = (pinnedPositions: DocumentPosition[], pos: DocumentPosition) => {
+        return pinnedPositions.some(p => DocumentPosition.isEqual(p, pos));
     }
     const pin = React.useCallback((pos: DocumentPosition) => {
-        setPinnedPoss(pinnedPoss => {
-            if (isPinned(pinnedPoss, pos)) return pinnedPoss;
+        setPinnedPositions(pinnedPositions => {
+            if (isPinned(pinnedPositions, pos)) return pinnedPositions;
             pinKey.current += 1;
-            return [ ...pinnedPoss, { ...pos, key: pinKey.current.toString() } ];
+            return [ ...pinnedPositions, { ...pos, key: pinKey.current.toString() } ];
         });
     }, []);
     const unpin = React.useCallback((pos: DocumentPosition) => {
-        setPinnedPoss(pinnedPoss => {
-            if (!isPinned(pinnedPoss, pos)) return pinnedPoss;
-            return pinnedPoss.filter(p => !DocumentPosition.isEqual(p, pos));
+        setPinnedPositions(pinnedPositions => {
+            if (!isPinned(pinnedPositions, pos)) return pinnedPositions;
+            return pinnedPositions.filter(p => !DocumentPosition.isEqual(p, pos));
         });
     }, []);
 
@@ -109,17 +109,17 @@ export function Infos() {
     useEvent(ec.events.requestedAction, act => {
         if (act.kind !== 'togglePin') return
         if (!curPos) return
-        setPinnedPoss(pinnedPoss => {
-            if (isPinned(pinnedPoss, curPos)) {
-                return pinnedPoss.filter(p => !DocumentPosition.isEqual(p, curPos));
+        setPinnedPositions(pinnedPositions => {
+            if (isPinned(pinnedPositions, curPos)) {
+                return pinnedPositions.filter(p => !DocumentPosition.isEqual(p, curPos));
             } else {
                 pinKey.current += 1;
-                return [ ...pinnedPoss, { ...curPos, key: pinKey.current.toString() } ];
+                return [ ...pinnedPositions, { ...curPos, key: pinKey.current.toString() } ];
             }
         });
     }, [curPos?.uri, curPos?.line, curPos?.character]);
 
-    const infoProps: Keyed<InfoProps>[] = pinnedPoss.map(pos => ({ kind: 'pin', onPin: unpin, pos, key: pos.key }));
+    const infoProps: Keyed<InfoProps>[] = pinnedPositions.map(pos => ({ kind: 'pin', onPin: unpin, pos, key: pos.key }));
     if (curPos) infoProps.push({ kind: 'cursor', onPin: pin, key: 'cursor' });
 
     return <div>
