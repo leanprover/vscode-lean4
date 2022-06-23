@@ -1,7 +1,7 @@
 import { join } from 'path';
 import {
     commands, Disposable, DocumentSelector,
-    ExtensionContext, languages, Range,
+    ExtensionContext, languages, Range, TextDocumentChangeEvent,
     Selection, TextEditor, TextEditorRevealType,
     Uri, ViewColumn, WebviewPanel, window, workspace, env, Position,
 } from 'vscode';
@@ -13,6 +13,7 @@ import { Rpc } from './rpc';
 import { LeanClientProvider } from './utils/clientProvider'
 import * as ls from 'vscode-languageserver-protocol'
 import { c2pConverter, p2cConverter } from './utils/converters';
+import { Bookmarks } from './utils/bookmarks';
 
 const keepAlivePeriodMs = 10000
 
@@ -54,6 +55,7 @@ export class InfoProvider implements Disposable {
     private stylesheet: string = '';
     private autoOpened: boolean = false;
     private clientProvider: LeanClientProvider;
+    private bookmarks: Bookmarks = new Bookmarks();
 
     // Subscriptions are counted and only disposed of when count becomes 0.
     private serverNotifSubscriptions: Map<string, [number, Disposable[]]> = new Map();
@@ -65,6 +67,7 @@ export class InfoProvider implements Disposable {
 
     private subscribeDidChangeNotification(client: LeanClient, method: string){
         const h = client.didChange((params) => {
+            this.bookmarks.onChange(params);
             void this.webviewPanel?.api.sentClientNotification(method, params);
         });
         return h;
@@ -72,6 +75,7 @@ export class InfoProvider implements Disposable {
 
     private subscribeDidCloseNotification(client: LeanClient, method: string){
         const h = client.didClose((params) => {
+            this.bookmarks.onClosed(params);
             void this.webviewPanel?.api.sentClientNotification(method, params);
         });
         return h;
@@ -241,7 +245,6 @@ export class InfoProvider implements Disposable {
 
         provider.clientStopped(([client, activeClient, err]) => {
             void this.onActiveClientStopped(client, activeClient, err);
-
         });
 
         this.subscriptions.push(
@@ -252,7 +255,8 @@ export class InfoProvider implements Disposable {
                 this.updateStylesheet();
                 await this.sendConfig();
             }),
-            workspace.onDidChangeTextDocument(async () => {
+            workspace.onDidChangeTextDocument(async (e: TextDocumentChangeEvent) => {
+                console.log(e);
                 await this.sendPosition();
             }),
             commands.registerTextEditorCommand('lean4.displayGoal', (editor) => this.openPreview(editor)),
@@ -265,7 +269,13 @@ export class InfoProvider implements Disposable {
             commands.registerCommand('lean4.infoView.toggleUpdating', () =>
                 this.webviewPanel?.api.requestedAction({kind: 'togglePaused'})),
             commands.registerTextEditorCommand('lean4.infoView.toggleStickyPosition',
-                () => this.webviewPanel?.api.requestedAction({kind: 'togglePin'})),
+                () => {
+                    const editor = window.activeTextEditor;
+                    if (editor) {
+                        this.bookmarks.addBookmark(editor);
+                    }
+                    void this.webviewPanel?.api.requestedAction({kind: 'togglePin'})
+                }),
         );
     }
 
