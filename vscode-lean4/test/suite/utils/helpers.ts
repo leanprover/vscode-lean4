@@ -169,12 +169,12 @@ export async function waitForActiveEditor(filename='', retries=30, delay=1000) :
 
     if (filename) {
         count = 0;
-        while (editor && !editor.document.uri.fsPath.endsWith(filename) && count < retries){
+        while (editor && !editor.document.uri.fsPath.toLowerCase().endsWith(filename.toLowerCase()) && count < retries){
             await sleep(delay);
             count += 1;
             editor = vscode.window.activeTextEditor
         }
-        assert(editor && editor.document.uri.fsPath.endsWith(filename), `Active text editor does not match ${filename}`);
+        assert(editor && editor.document.uri.fsPath.toLowerCase().endsWith(filename.toLowerCase()), `Active text editor does not match ${filename}`);
     }
 
     return editor;
