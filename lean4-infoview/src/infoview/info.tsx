@@ -129,8 +129,8 @@ export function InfoDisplay(props0: InfoDisplayProps) {
         () => Widget_getWidgets(rs, pos).catch(discardMethodNotFound),
         [pos.uri, pos.line, pos.character])
     // [todo] for now just show the first widget.
-    const widget = (widgetResult !== undefined) && (widgetResult.widgets.length > 0) && widgetResult.widgets[0]
-    const hasWidget = (widget !== undefined)
+    const widgets = widgetResult && widgetResult.widgets
+    const hasWidget = (widgets !== undefined) && (widgets.length > 0)
 
     const nothingToShow = !error && !goals && !termGoal && messages.length === 0 && !hasWidget;
 
@@ -180,11 +180,11 @@ export function InfoDisplay(props0: InfoDisplayProps) {
         <InfoStatusBar {...props} triggerUpdate={triggerDisplayUpdate} isPaused={isPaused} setPaused={setPaused} copyGoalToComment={copyGoalToComment} />
         <div className="ml1">
             {hasError &&
-                <div className="error">
+                <div className="error" key="errors">
                     Error updating:{' '}{error}.
                     <a className="link pointer dim" onClick={e => { e.preventDefault(); void triggerDisplayUpdate(); }}>{' '}Try again.</a>
                 </div>}
-            <div style={{display: hasGoals ? 'block' : 'none'}}>
+            <div style={{display: hasGoals ? 'block' : 'none'}} key="goals">
                 <Details initiallyOpen>
                     <summary className="mv2 pointer">
                         Tactic state {sortButton} {filterButton}
@@ -194,7 +194,7 @@ export function InfoDisplay(props0: InfoDisplayProps) {
                     </div>
                 </Details>
             </div>
-            <div style={{display: hasTermGoal ? 'block' : 'none'}}>
+            <div style={{display: hasTermGoal ? 'block' : 'none'}} key="term-goal">
                 <Details initiallyOpen>
                     <summary className="mv2 pointer">
                         Expected type {sortButton} {filterButton}
@@ -204,25 +204,28 @@ export function InfoDisplay(props0: InfoDisplayProps) {
                     </div>
                 </Details>
             </div>
-            <div style={{display: hasMessages ? 'block' : 'none'}}>
+            {widgets && widgets.map(widget =>
+                <div style={{display: hasWidget ? 'block' : 'none'}}
+                     key={`widget::${widget.widgetSourceId}::${widget.range?.toString()}`}>
+                    <Details initiallyOpen>
+                        <summary className="mv2 pointer">
+                            Widget: {widget.widgetSourceId}
+                            {widgetStatus === 'pending' && ' (pending)'}
+                            {widgetStatus === 'rejected' && ' (errored)'}
+                        </summary>
+                        <div className="ml1">
+                             <UserWidget pos={pos} widget={widget}/>
+                        </div>
+                    </Details>
+                </div>
+            )}
+            <div style={{display: hasMessages ? 'block' : 'none'}} key="messages">
                 <Details initiallyOpen>
                     <summary className="mv2 pointer">
                         Messages ({messages.length})
                     </summary>
                     <div className="ml1">
                         <MessagesList uri={pos.uri} messages={messages} />
-                    </div>
-                </Details>
-            </div>
-            <div style={{display: hasWidget ? 'block' : 'none'}}>
-                <Details initiallyOpen>
-                    <summary className="mv2 pointer">
-                    Widget: {widget && widget.widgetSourceId}
-                      {widgetStatus === 'pending' && ' (pending)'}
-                      {widgetStatus === 'rejected' && ' (errored)'}
-                    </summary>
-                    <div className="ml1">
-                      {widget && <UserWidget pos={pos} widget={widget}/>}
                     </div>
                 </Details>
             </div>
