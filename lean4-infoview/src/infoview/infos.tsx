@@ -2,7 +2,7 @@ import * as React from 'react';
 import { DidChangeTextDocumentParams, DidCloseTextDocumentParams, Location, TextDocumentContentChangeEvent } from 'vscode-languageserver-protocol';
 
 import { EditorContext } from './contexts';
-import { DocumentPosition, Keyed, PositionHelpers, useClientNotificationEffect, useClientNotificationState, useEvent } from './util';
+import { DocumentPosition, Keyed, PositionHelpers, useClientNotificationEffect, useClientNotificationState, useEvent, useEventResult } from './util';
 import { Info, InfoProps } from './info';
 
 /** Manages and displays pinned infos, as well as info for the current location. */
@@ -64,11 +64,8 @@ export function Infos() {
         []
     );
 
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const [curLoc, setCurLoc] = React.useState<Location>(ec.events.changedCursorLocation.current!);
-    useEvent(ec.events.changedCursorLocation, loc => loc && setCurLoc(loc), []);
-
-    const curPos: DocumentPosition = { uri: curLoc.uri, ...curLoc.range.start };
+    const curLoc = useEventResult(ec.events.changedCursorLocation)
+    const curPos: DocumentPosition | undefined = curLoc ? { uri: curLoc.uri, ...curLoc.range.start } : undefined
 
     // Update pins on UI actions
     const pinKey = React.useRef<number>(0);
@@ -91,7 +88,8 @@ export function Infos() {
 
     // Toggle pin at current position when the editor requests it
     useEvent(ec.events.requestedAction, act => {
-        if (act.kind !== 'togglePin') return;
+        if (act.kind !== 'togglePin') return
+        if (!curPos) return
         setPinnedPoss(pinnedPoss => {
             if (isPinned(pinnedPoss, curPos)) {
                 return pinnedPoss.filter(p => !DocumentPosition.isEqual(p, curPos));
@@ -100,10 +98,13 @@ export function Infos() {
                 return [ ...pinnedPoss, { ...curPos, key: pinKey.current.toString() } ];
             }
         });
-    }, [curPos.uri, curPos.line, curPos.character]);
+    }, [curPos?.uri, curPos?.line, curPos?.character]);
 
     const infoProps: Keyed<InfoProps>[] = pinnedPoss.map(pos => ({ kind: 'pin', onPin: unpin, pos, key: pos.key }));
-    infoProps.push({ kind: 'cursor', onPin: pin, key: 'cursor' });
+    if (curPos) infoProps.push({ kind: 'cursor', onPin: pin, key: 'cursor' });
 
-    return <div> {infoProps.map (ps => <Info {...ps} />)} </div>;
+    return <div>
+        {infoProps.map (ps => <Info {...ps} />)}
+        {!curPos && <p>Click somewhere in the Lean file to enable the infoview.</p> }
+    </div>;
 }
