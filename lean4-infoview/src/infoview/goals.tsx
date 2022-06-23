@@ -17,9 +17,7 @@ export function Hyp({ pos, hyp : h, index }: HypProps) {
         <strong className="goal-hyp">{names}</strong>
         :&nbsp;
         <InteractiveCode pos={pos} fmt={h.type} />
-        {h.val && <>
-            := <InteractiveCode pos={pos} fmt={h.val} />
-        </>}
+        {h.val && <>&nbsp;:=&nbsp;<InteractiveCode pos={pos} fmt={h.val} /></>}
     </li>
 }
 
