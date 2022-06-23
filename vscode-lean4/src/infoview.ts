@@ -67,7 +67,6 @@ export class InfoProvider implements Disposable {
 
     private subscribeDidChangeNotification(client: LeanClient, method: string){
         const h = client.didChange((params) => {
-            this.bookmarks.onChange(params);
             void this.webviewPanel?.api.sentClientNotification(method, params);
         });
         return h;
@@ -256,7 +255,7 @@ export class InfoProvider implements Disposable {
                 await this.sendConfig();
             }),
             workspace.onDidChangeTextDocument(async (e: TextDocumentChangeEvent) => {
-                console.log(e);
+                this.bookmarks.onChange(e);
                 await this.sendPosition();
             }),
             commands.registerTextEditorCommand('lean4.displayGoal', (editor) => this.openPreview(editor)),
