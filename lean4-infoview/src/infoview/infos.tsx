@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { DidChangeTextDocumentParams, DidCloseTextDocumentParams, Location, TextDocumentContentChangeEvent } from 'vscode-languageserver-protocol';
+import { DidChangeTextDocumentParams, DidCloseTextDocumentParams, TextDocumentContentChangeEvent } from 'vscode-languageserver-protocol';
 
 import { EditorContext } from './contexts';
 import { DocumentPosition, Keyed, PositionHelpers, useClientNotificationEffect, useClientNotificationState, useEvent, useEventResult } from './util';
@@ -29,19 +29,38 @@ export function Infos() {
                         changed = true;
                         return null;
                     }
-                    if (!PositionHelpers.isAfterOrEqual(pin, chg.range.start)) continue;
+                    if (PositionHelpers.isLessThanOrEqual(newPin, chg.range.start)) continue;
+                    // We can assume chg.range.start < pin
 
-                    let lines = 0;
-                    for (const c of chg.text) if (c === '\n') lines++;
-                    newPin.line = chg.range.start.line + Math.max(0, newPin.line - chg.range.end.line) + lines;
-                    newPin.character = newPin.line > chg.range.end.line ?
-                        newPin.character :
-                        lines === 0 ?
-                            chg.range.start.character + Math.max(0, newPin.character - chg.range.end.character) + chg.text.length :
-                            9999;
+                    // If the pinned position is replaced with new text, just delete the pin.
+                    if (PositionHelpers.isLessThanOrEqual(newPin, chg.range.end)) {
+                        changed = true;
+                        return null;
+                    }
+
+                    const oldPin = { ...newPin };
+
+                    // How many lines before the pin position were added by the change.
+                    // Can be negative when more lines are removed than added.
+                    let additionalLines = 0;
+                    let lastLineLen = chg.range.start.character;
+                    for (const c of chg.text)
+                        if (c === '\n') {
+                            additionalLines++;
+                            lastLineLen = 0;
+                        } else lastLineLen++;
+
+                    // Subtract lines that were already present
+                    additionalLines -= (chg.range.end.line - chg.range.start.line)
+                    newPin.line += additionalLines;
+
+                    if (oldPin.line < chg.range.end.line) {
+                        // Should never execute by the <= check above.
+                        throw new Error('unreachable code reached')
+                    } else if (oldPin.line === chg.range.end.line) {
+                        newPin.character = lastLineLen + (oldPin.character - chg.range.end.character);
+                    }
                 }
-                // TODO use a valid position instead of 9999
-                //newPosition = e.document.validatePosition(newPosition);
                 if (!DocumentPosition.isEqual(newPin, pin)) changed = true;
 
                 // NOTE(WN): We maintain the `key` when a pin is moved around to maintain
