@@ -77,33 +77,37 @@ suite('InfoView Test Suite', () => {
 
         const a = 23;
         const b = 95;
+        const prefix = 'Lean version is:'
 
-        const lean =  await initLean4Untitled(`#eval ${a}*${b}`);
+        const lean =  await initLean4Untitled(`#eval ${a}*${b}` +
+            '\n\n#eval s!"' + prefix + ': {Lean.versionString}"');
         const info = lean.exports.infoProvider;
         assert(info, 'No InfoProvider export');
+
+        console.log('move cursor to end of first line')
+        let editor = await waitForActiveEditor();
+        const firstLine = editor.document.lineAt(0).range
+        editor.selection = new vscode.Selection(firstLine.end, firstLine.end);
 
         const expectedEval = (a * b).toString()
         await assertStringInInfoview(info, expectedEval);
 
+        console.log('make sure output of versionString is also there');
+        await assertStringInInfoview(info, prefix);
+
+        //await sleep(1000)
+
         console.log('Pin this info');
         await info.runTestScript('document.querySelector(\'[data-id*="toggle-pinned"]\').click()');
 
-        // await sleep(1000)
-        console.log('Insert Lean.versionString')
-        const prefix = 'Lean version is:'
-        await insertText('\n\n#eval s!"' + prefix + ': {Lean.versionString}"')
-
-        // await sleep(1000)
-        console.log('make sure output of versionString is there');
-        await assertStringInInfoview(info, prefix);
+        //await sleep(1000)
 
         console.log('Goto definition on versionString')
-        let editor = await waitForActiveEditor();
+        editor = await waitForActiveEditor();
         await gotoDefinition(editor, 'versionString');
         editor = await waitForActiveEditor('Meta.lean');
 
-        console.log('make sure output of versionString is there');
-        await assertStringInInfoview(info, prefix);
+        //await sleep(1000)
 
         console.log('make sure pinned expression is still there');
         await assertStringInInfoview(info, expectedEval);
