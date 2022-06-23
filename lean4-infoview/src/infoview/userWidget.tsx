@@ -39,7 +39,6 @@ export function Widget_getWidgets(rs: RpcSessions, pos: DocumentPosition): Promi
 }
 
 export interface WidgetSource {
-    widgetSourceId : string
     sourcetext : string
     hash: string
 }
@@ -48,9 +47,9 @@ export interface WidgetSource {
  *
  * We make the assumption that either the code doesn't exist, or it exists and does not change for the lifetime of the widget.
  */
-export async function Widget_getWidgetSource(rs: RpcSessions, pos: DocumentPosition, widgetSourceId: string): Promise<WidgetSource | undefined> {
+export async function Widget_getWidgetSource(rs: RpcSessions, pos: DocumentPosition, hash: string): Promise<WidgetSource | undefined> {
     try {
-        return await rs.call(pos, 'Lean.Widget.getWidgetSource', { 'pos': DocumentPosition.toTdpp(pos), widgetSourceId })
+        return await rs.call(pos, 'Lean.Widget.getWidgetSource', { pos: DocumentPosition.toTdpp(pos), hash })
     } catch (e) {
         return handleWidgetRpcError(e)
     }
@@ -81,9 +80,9 @@ export function UserWidget({ pos, widget }: UserWidgetProps) {
             if (componentCache.has(widget.hash)) {
                 return componentCache.get(widget.hash)
             }
-            const code = await Widget_getWidgetSource(rs, pos, widget.widgetSourceId)
+            const code = await Widget_getWidgetSource(rs, pos, widget.hash)
             if (!code) {
-                throw Error(`No widget static javascript found for ${widget.widgetSourceId}.`)
+                throw Error(`No widget static javascript found for ${widget.widgetSourceId} and hash ${widget.hash}.`)
             }
             const component = dynamicallyLoadComponent(widget.hash, code.sourcetext)
             componentCache.set(widget.hash, component)
