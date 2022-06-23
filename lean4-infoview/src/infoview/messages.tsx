@@ -188,7 +188,6 @@ export function useMessagesForFile(uri: DocumentUri, line?: number): Interactive
                 if (err?.code === -32801) {
                     // Document has been changed since we made the request.
                     // This can happen while typing quickly, so server will catch up on next edit.
-                    console.log('getInteractiveDiagnostics: document has been changed since we made the request ')
                 } else {
                     console.log('getInteractiveDiagnostics error ', err)
                 }
