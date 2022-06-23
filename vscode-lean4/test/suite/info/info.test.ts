@@ -88,9 +88,15 @@ suite('InfoView Test Suite', () => {
         console.log('Pin this info');
         await info.runTestScript('document.querySelector(\'[data-id*="toggle-pinned"]\').click()');
 
+        await sleep(1000)
+
         console.log('Insert Lean.versionString')
         const prefix = 'Lean version is:'
         await insertText('\n\n#eval s!"' + prefix + ': {Lean.versionString}"')
+
+        await sleep(1000)
+        console.log('make sure output of versionString is there');
+        await assertStringInInfoview(info, prefix);
 
         console.log('Goto definition on versionString')
         let editor = await waitForActiveEditor();
