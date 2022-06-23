@@ -85,26 +85,27 @@ suite('InfoView Test Suite', () => {
         const expectedEval = (a * b).toString()
         await assertStringInInfoview(info, expectedEval);
 
-        await sleep(20000)
-
         console.log('Pin this info');
         await info.runTestScript('document.querySelector(\'[data-id*="toggle-pinned"]\').click()');
 
-        console.log('Goto definition')
+        console.log('Insert Lean.versionString')
+        const prefix = 'Lean version is:'
+        await insertText('\n\n#eval s!"' + prefix + ': {Lean.versionString}"')
+
+        console.log('Goto definition on versionString')
         let editor = await waitForActiveEditor();
         await gotoDefinition(editor, 'versionString');
-
-        await sleep(20000)
-
-        // if goto definition worked, then we are in meta.lean.
         editor = await waitForActiveEditor('meta.lean');
+
+        console.log('make sure output of versionString is there');
+        await assertStringInInfoview(info, prefix);
 
         console.log('make sure pinned expression is still there');
         await assertStringInInfoview(info, expectedEval);
 
         console.log('Close meta.lean');
         await closeActiveEditor();
-        editor = await waitForActiveEditor('Untitled');
+        editor = await waitForActiveEditor('Untitled-1');
 
         console.log('make sure pinned expression is still there');
         await assertStringInInfoview(info, expectedEval);

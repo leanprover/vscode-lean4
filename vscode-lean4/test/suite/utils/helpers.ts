@@ -17,7 +17,7 @@ export function closeAllEditors(): Thenable<any> {
 }
 
 export function closeActiveEditor(): Thenable<any> {
-    return vscode.commands.executeCommand('workbench.action.close');
+    return vscode.commands.executeCommand('workbench.action.closeActiveEditor');
 }
 
 export async function initLean4(fileName: string) : Promise<vscode.Extension<Exports>>{
@@ -162,18 +162,19 @@ export async function waitForActiveEditor(filename='', retries=30, delay=1000) :
         await sleep(delay);
         count += 1;
     }
-    const editor = vscode.window.activeTextEditor
+    let editor = vscode.window.activeTextEditor
     assert(editor, 'Missing active text editor');
 
     console.log(`Loaded document ${editor.document.uri}`);
 
     if (filename) {
         count = 0;
-        while (!editor.document.uri.fsPath.endsWith(filename) && count < retries){
+        while (editor && !editor.document.uri.fsPath.endsWith(filename) && count < retries){
             await sleep(delay);
             count += 1;
+            editor = vscode.window.activeTextEditor
         }
-        assert(editor.document.uri.fsPath.endsWith(filename), `Active text editor does not match ${filename}`);
+        assert(editor && editor.document.uri.fsPath.endsWith(filename), `Active text editor does not match ${filename}`);
     }
 
     return editor;
