@@ -1,8 +1,9 @@
 import {
-    Disposable, TextEditor, EventEmitter, TextDocumentChangeEvent
+    Disposable, TextEditor, EventEmitter, TextDocumentChangeEvent, TextDocumentContentChangeEvent
 } from 'vscode';
 
-import { integer, uinteger, Range, Position, Location, TextDocumentContentChangeEvent, DidCloseTextDocumentParams } from 'vscode-languageserver-protocol';
+import { integer, uinteger, Range, Location, DidCloseTextDocumentParams } from 'vscode-languageserver-protocol';
+import * as ls from 'vscode-languageserver-protocol';
 
 export class Bookmark {
     id: integer;
@@ -16,6 +17,7 @@ export class Bookmark {
         this.uri = uri;
         this.line = line;
         this.character = character;
+        this.valid = true;
     }
 
     /**
@@ -25,7 +27,7 @@ export class Bookmark {
      * valid field is set to false.
      */
     replace(r: Range, originalText: string, newText: string) : boolean{
-        if (r.start.line > this.line || (r.start.line === this.line && r.start.character > this.character)) {
+        if (r.start.line > this.line || (r.start.line === this.line && r.start.character >= this.character)) {
             return false; // nothing to do, the edit starts after this bookmark position.
         }
 
@@ -78,14 +80,16 @@ export class Bookmark {
 
 export class Bookmarks implements Disposable
 {
-    bookmarks: Bookmark[];
-    nextId: integer = 0;
+    private bookmarks: Bookmark[];
+    private nextId: integer = 0;
 
     private changedEmitter = new EventEmitter<Bookmark[]>();
     changed = this.changedEmitter.event
 
     private removedEmitter = new EventEmitter<Bookmark[]>();
     removed = this.removedEmitter.event
+
+    private originalText : Map<string,string> = new Map();
 
     constructor() {
         this.bookmarks= [];
@@ -102,6 +106,10 @@ export class Bookmarks implements Disposable
             }
         };
 
+        // bugbug: why doesn't vscode give us this snapshot management?
+        // See https://github.com/microsoft/vscode/issues/153054
+        this.originalText.set(uri.toString(), editor.document.getText());
+
         const bm = new Bookmark(this.nextId, loc.uri, loc.range.end.line, loc.range.end.character);
         this.bookmarks.push(bm);
         this.nextId++;
@@ -116,54 +124,89 @@ export class Bookmarks implements Disposable
             return;
         }
         const modified : Bookmark[] = [];
+        const removed :  Bookmark[] = [];
         for (const e of change.contentChanges){
-            if (TextDocumentContentChangeEvent.isIncremental(e)) {
+            if (ls.TextDocumentContentChangeEvent.isIncremental(e)) {
                 const range = e.range;
                 const text = e.text;
-                const end = range.end;
-                const start = range.start;
                 // if range is non-empty then it is replacing the range with "text".
-                // and this "replace" operation could have encompassed a pin in which case we
-                // probably should delete that pin.
+                // and this "replace" operation could have encompassed a bookmark in which case we
+                // probably should delete it.
                 for (const bm of documentLocal){
-                    // BUGBUG: this before text is wrong, see
-                    // https://github.com/microsoft/vscode/issues/153054
-                    const before = change.document.getText(range);
+                    // BUGBUG: See https://github.com/microsoft/vscode/issues/153054
+                    let before = '';
+                    if (!range.isEmpty && this.originalText.has(uri)){
+                        const original = this.originalText.get(uri);
+                        if (original) {
+                            before = original.slice(e.rangeOffset, e.rangeOffset+e.rangeLength);
+                        }
+                    }
                     if (bm.replace(range, before, text)){
-                        if (modified.indexOf(bm) < 0){
+                        if (!bm.valid){
+                            if (removed.indexOf(bm) < 0){
+                                removed.push(bm);
+                            }
+                        } else if (modified.indexOf(bm) < 0){
                             modified.push(bm);
                         }
                     }
                 }
-            } else if (TextDocumentContentChangeEvent.isFull(e)){
-                // full replacement of the document blows away all pins then since we have no way to
+            } else if (ls.TextDocumentContentChangeEvent.isFull(e)){
+                // full replacement of the document blows away all bookmarks then since we have no way to
                 // know how the new text compares to what was there before.
-                this.onRemoved(this.bookmarks.filter(i => i.uri === uri));
-                this.bookmarks = this.bookmarks.filter(i => i.uri !== uri);
+                for (const bm of this.bookmarks.filter(i => i.uri === uri)){
+                    if (removed.indexOf(bm) < 0){
+                        removed.push(bm);
+                    }
+                }
             }
         }
+
+        // now apply changes to our originalText snapshots!
+        // Note the contentChanges are already in reverse order so we can apply them incrementally like this.
+        for (const e of change.contentChanges){
+            if (ls.TextDocumentContentChangeEvent.isIncremental(e)) {
+                const text = e.text;
+                if (this.originalText.has(uri)){
+                    const original = this.originalText.get(uri);
+                    if (original) {
+                        const newBuffer = original.slice(0, e.rangeOffset) + text + original.slice(e.rangeOffset + e.rangeLength);
+                        this.originalText.set(uri, newBuffer);
+                    }
+                }
+            }else if (ls.TextDocumentContentChangeEvent.isFull(e)){
+                if (this.originalText.has(uri)){
+                    this.originalText.delete(uri);
+                }
+            }
+        }
+
         if (modified.length > 0){
             this.onChanged(modified);
         }
+        if (removed.length > 0){
+            this.remove(removed);
+        }
+    }
+
+    private remove(removed: Bookmark[]){
+        this.onRemoved(removed);
+        this.bookmarks = this.bookmarks.filter(i => removed.indexOf(i) >= 0);
     }
 
     onClosed(closed: DidCloseTextDocumentParams){
-        this.onRemoved(this.bookmarks.filter(i => i.uri === closed.textDocument.uri));
-        this.bookmarks = this.bookmarks.filter(i => i.uri !== closed.textDocument.uri);
+        this.remove(this.bookmarks.filter(i => i.uri === closed.textDocument.uri));
     }
 
     dispose(): void {
-        if (this.bookmarks.length){
-            this.onRemoved(this.bookmarks);
-        }
-        this.bookmarks = [];
+        this.remove(this.bookmarks);
     }
 
     private onChanged(changes: Bookmark[]){
         this.changedEmitter.fire(changes);
     }
 
-    private onRemoved(changes: Bookmark[]){
-        this.removedEmitter.fire(changes);
+    private onRemoved(removed: Bookmark[]){
+        this.removedEmitter.fire(removed);
     }
 }
