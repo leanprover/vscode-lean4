@@ -39,7 +39,7 @@ export class Bookmark {
 
             if (r.end.line === this.line){
                 // we may also need to a just the bookmark character position since our line was also modified.
-                const newChar = (this.character - r.end.character) + this.lastLine(newText).length;
+                const newChar = (this.character - r.end.character) + this.lastLineLength(newText);
                 charDelta = newChar - this.character;
             }
             this.line += lineDelta;
@@ -63,15 +63,15 @@ export class Bookmark {
         return count;
     }
 
-    private lastLine(s: string){
+    private lastLineLength(s: string){
         let pos = s.length;
         while (pos > 0){
             pos--;
             if (s[pos] === '\n'){
-                return s.substring(pos + 1);
+                return s.length - (pos + 1)
             }
         }
-        return s;
+        return s.length;
     }
 }
 
