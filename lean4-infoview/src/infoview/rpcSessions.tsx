@@ -146,6 +146,7 @@ export class RpcSessions implements Disposable {
     async call<T>(pos: DocumentPosition, method: string, params: any): Promise<T | undefined> {
         const sesh = await this.sessionAt(pos.uri)
         if (!sesh) {
+            console.log(`call ${method} dropped because session does not yet exist`)
             this.connectAt(pos.uri)
             return undefined
         }

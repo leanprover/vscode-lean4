@@ -3,7 +3,7 @@ import { suite } from 'mocha';
 import * as path from 'path';
 import * as vscode from 'vscode';
 
-import { initLean4, waitForActiveEditor, waitForInfoviewHtml,
+import { initLean4, waitForActiveEditor, waitForInfoviewHtml, closeAllEditors,
 	extractPhrase, waitForDocViewHtml, invokeHrefCommand } from '../utils/helpers';
 
 function delay(ms: number) {
@@ -56,7 +56,7 @@ suite('Documentation View Test Suite', () => {
         await waitForInfoviewHtml(info, exampleOuput);
 
         // make sure test is always run in predictable state, which is no file or folder open
-        await vscode.commands.executeCommand('workbench.action.closeAllEditors');
+        await closeAllEditors();
 
     }).timeout(60000);
 
