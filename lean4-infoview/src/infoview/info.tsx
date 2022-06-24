@@ -2,7 +2,7 @@ import * as React from 'react';
 import type { Location } from 'vscode-languageserver-protocol';
 
 import { Goals as GoalsUi, Goal as GoalUi, goalsToString, GoalFilterState } from './goals';
-import { basename, discardMethodNotFound, DocumentPosition, RangeHelpers, useAsync, useEvent, usePausableState } from './util';
+import { basename, DocumentPosition, RangeHelpers, useAsync, useEvent, usePausableState, useClientNotificationEffect, mapRpcError } from './util';
 import { Details } from './collapsing';
 import { EditorContext, ProgressContext, RpcContext, VersionContext } from './contexts';
 import { MessagesList, useMessagesFor } from './messages';
@@ -10,6 +10,7 @@ import { getInteractiveGoals, getInteractiveTermGoal, InteractiveDiagnostic, Int
 import { updatePlainGoals, updateTermGoal } from './goalCompat';
 import { WithTooltipOnHover } from './tooltips'
 import { UserWidget } from './userWidget'
+import { isRpcError, RpcErrorCode } from '@lean4/infoview-api';
 
 type InfoStatus = 'loading' | 'updating' | 'error' | 'ready';
 type InfoKind = 'cursor' | 'pin';
@@ -125,10 +126,29 @@ export function InfoDisplay(props0: InfoDisplayProps) {
     });
 
     const rs = React.useContext(RpcContext);
+
+    // # widgets
+    const [widgetTrig, setWidgetTrig] = React.useState(0)
+    useClientNotificationEffect('textDocument/didChange', () => setWidgetTrig(widgetTrig + 1), [widgetTrig])
     const [widgetStatus, widgetResult, widgetError] = useAsync(
-        () => Widget_getWidgets(rs, pos).catch(discardMethodNotFound),
-        [pos.uri, pos.line, pos.character])
-    // [todo] for now just show the first widget.
+        async () => {
+            try {
+                return await Widget_getWidgets(rs, pos)
+            }
+            catch (err) {
+                console.log( mapRpcError(err).message)
+                if (isRpcError(err)) {
+                    if (err.code === RpcErrorCode.MethodNotFound) {
+                        return undefined
+                    }
+                    if (err.code === RpcErrorCode.ContentModified) {
+                        setWidgetTrig(widgetTrig + 1)
+                    }
+                }
+                throw mapRpcError(err)
+            }},
+        [pos.uri, pos.line, pos.character, widgetTrig, rs])
+
     const widgets = widgetResult && widgetResult.widgets
     const hasWidget = (widgets !== undefined) && (widgets.length > 0)
 
@@ -215,6 +235,7 @@ export function InfoDisplay(props0: InfoDisplayProps) {
                         </summary>
                         <div className="ml1">
                              <UserWidget pos={pos} widget={widget}/>
+                             {widgetError && <span className="red">{mapRpcError(widgetError).message}</span>}
                         </div>
                     </Details>
                 </div>
