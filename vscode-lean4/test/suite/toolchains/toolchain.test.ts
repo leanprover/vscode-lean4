@@ -3,7 +3,7 @@ import { suite } from 'mocha';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import * as fs from 'fs';
-import { initLean4Untitled, initLean4, waitForInfoviewHtml,
+import { initLean4Untitled, initLean4, waitForInfoviewHtml, closeAllEditors,
 	extractPhrase, restartLeanServer, assertStringInInfoview, resetToolchain } from '../utils/helpers';
 
 // Expects to be launched with folder: ${workspaceFolder}/vscode-lean4/test/suite/simple
@@ -32,7 +32,7 @@ suite('Toolchain Test Suite', () => {
 		await resetToolchain(lean.exports.clientProvider);
 
 		// make sure test is always run in predictable state, which is no file or folder open
-		await vscode.commands.executeCommand('workbench.action.closeAllEditors');
+		await closeAllEditors();
 
 	}).timeout(60000);
 
@@ -67,7 +67,7 @@ suite('Toolchain Test Suite', () => {
 			}
 
 			// make sure test is always run in predictable state, which is no file or folder open
-			await vscode.commands.executeCommand('workbench.action.closeAllEditors');
+			await closeAllEditors();
 		}
 	}).timeout(60000);
 
@@ -100,7 +100,7 @@ suite('Toolchain Test Suite', () => {
 		await waitForInfoviewHtml(info, expectedVersion);
 
 		// make sure test is always run in predictable state, which is no file or folder open
-		await vscode.commands.executeCommand('workbench.action.closeAllEditors');
+		await closeAllEditors();
 	}).timeout(60000);
 
 	test('Edit lean-toolchain version', async () => {
@@ -166,7 +166,7 @@ suite('Toolchain Test Suite', () => {
 		await assertStringInInfoview(info, '4.0.0-nightly-');
 
 		// make sure test is always run in predictable state, which is no file or folder open
-		await vscode.commands.executeCommand('workbench.action.closeAllEditors');
+		await closeAllEditors();
 
 	}).timeout(60000);
 
