@@ -1,9 +1,5 @@
-import {
-    Disposable, TextEditor, EventEmitter, TextDocumentChangeEvent, TextDocumentContentChangeEvent
-} from 'vscode';
-
-import { integer, uinteger, Range, Location, DidCloseTextDocumentParams } from 'vscode-languageserver-protocol';
-import * as ls from 'vscode-languageserver-protocol';
+import { Disposable, TextEditor, EventEmitter, TextDocumentChangeEvent} from 'vscode';
+import { integer, uinteger, Range, Position, DidCloseTextDocumentParams, TextDocumentContentChangeEvent } from 'vscode-languageserver-protocol';
 
 export class Bookmark {
     id: integer;
@@ -21,12 +17,12 @@ export class Bookmark {
     }
 
     /**
-     * Adjusts this bookmark according to the given replace operation and returns false
+     * Updates this bookmark according to the given replace operation and returns false
      * if the bookmark was unmodified, otherwise true.  This can also invalidate the bookmark
      * if the bookmark is inside the replaced range, and in this case the bookmark
      * valid field is set to false.
      */
-    replace(r: Range, originalText: string, newText: string) : boolean{
+    update(r: Range, newText: string) : boolean {
         if (r.start.line > this.line || (r.start.line === this.line && r.start.character >= this.character)) {
             return false; // nothing to do, the edit starts after this bookmark position.
         }
@@ -37,11 +33,12 @@ export class Bookmark {
             // what are we replacing?  If the text that was replaced contains newlines then we need
             // to remove that many newlines in our bookmark position then add the number of newlines
             // in the newText.
-            const lineDelta = this.countLines(newText) - this.countLines(originalText);
+            const linesReplaced = r.end.line - r.start.line;
+            const lineDelta = this.countLines(newText) - linesReplaced;
             let charDelta = 0;
 
             if (r.end.line === this.line){
-                // we may also need to ajust the bookmark character position since our line was also modified.
+                // we may also need to a just the bookmark character position since our line was also modified.
                 const newChar = (this.character - r.end.character) + this.lastLine(newText).length;
                 charDelta = newChar - this.character;
             }
@@ -89,18 +86,12 @@ export class Bookmarks implements Disposable
     private removedEmitter = new EventEmitter<Bookmark[]>();
     removed = this.removedEmitter.event
 
-    private originalText : Map<string,string> = new Map();
-
     constructor() {
         this.bookmarks= [];
     }
 
-    addBookmark(editor: TextEditor, pos: ls.Position) : Bookmark {
+    addBookmark(editor: TextEditor, pos: Position) : Bookmark {
         const uri = editor.document.uri;
-        // bugbug: why doesn't vscode give us this snapshot management?
-        // See https://github.com/microsoft/vscode/issues/153054
-        this.originalText.set(uri.toString(), editor.document.getText());
-
         const bm = new Bookmark(this.nextId, uri.toString(), pos.line, pos.character);
         this.bookmarks.push(bm);
         this.nextId++;
@@ -111,10 +102,6 @@ export class Bookmarks implements Disposable
         const bm = this.bookmarks.find(i => i.id.toString() === id);
         if(bm){
             this.bookmarks.splice(this.bookmarks.indexOf(bm), 1);
-            if (!this.bookmarks.find(i => i.uri === bm.uri)){
-                // then we are no longer interested in changes to this document!
-                this.originalText.delete(bm.uri);
-            }
         }
     }
 
@@ -128,22 +115,14 @@ export class Bookmarks implements Disposable
         const modified : Bookmark[] = [];
         const removed :  Bookmark[] = [];
         for (const e of change.contentChanges){
-            if (ls.TextDocumentContentChangeEvent.isIncremental(e)) {
+            if (TextDocumentContentChangeEvent.isIncremental(e)) {
                 const range = e.range;
                 const text = e.text;
                 // if range is non-empty then it is replacing the range with "text".
                 // and this "replace" operation could have encompassed a bookmark in which case we
                 // probably should delete it.
                 for (const bm of documentLocal){
-                    // BUGBUG: See https://github.com/microsoft/vscode/issues/153054
-                    let before = '';
-                    if (!range.isEmpty && this.originalText.has(uri)){
-                        const original = this.originalText.get(uri);
-                        if (original) {
-                            before = original.slice(e.rangeOffset, e.rangeOffset+e.rangeLength);
-                        }
-                    }
-                    if (bm.replace(range, before, text)){
+                    if (bm.update(range, text)){
                         if (!bm.valid){
                             if (removed.indexOf(bm) < 0){
                                 removed.push(bm);
@@ -153,32 +132,13 @@ export class Bookmarks implements Disposable
                         }
                     }
                 }
-            } else if (ls.TextDocumentContentChangeEvent.isFull(e)){
+            } else if (TextDocumentContentChangeEvent.isFull(e)){
                 // full replacement of the document blows away all bookmarks then since we have no way to
                 // know how the new text compares to what was there before.
                 for (const bm of this.bookmarks.filter(i => i.uri === uri)){
                     if (removed.indexOf(bm) < 0){
                         removed.push(bm);
                     }
-                }
-            }
-        }
-
-        // now apply changes to our originalText snapshots!
-        // Note the contentChanges are already in reverse order so we can apply them incrementally like this.
-        for (const e of change.contentChanges){
-            if (ls.TextDocumentContentChangeEvent.isIncremental(e)) {
-                const text = e.text;
-                if (this.originalText.has(uri)){
-                    const original = this.originalText.get(uri);
-                    if (original) {
-                        const newBuffer = original.slice(0, e.rangeOffset) + text + original.slice(e.rangeOffset + e.rangeLength);
-                        this.originalText.set(uri, newBuffer);
-                    }
-                }
-            }else if (ls.TextDocumentContentChangeEvent.isFull(e)){
-                if (this.originalText.has(uri)){
-                    this.originalText.delete(uri);
                 }
             }
         }
