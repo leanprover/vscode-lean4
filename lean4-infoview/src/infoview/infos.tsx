@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { DidChangeTextDocumentParams, DidCloseTextDocumentParams, Location, TextDocumentContentChangeEvent } from 'vscode-languageserver-protocol';
+import { DidChangeTextDocumentParams, DidCloseTextDocumentParams, Location, TextDocumentContentChangeEvent, TextDocumentPositionParams } from 'vscode-languageserver-protocol';
 
 import { EditorContext } from './contexts';
 import { DocumentPosition, Keyed, PositionHelpers, useClientNotificationEffect, useClientNotificationState, useEvent, useEventResult } from './util';
@@ -9,95 +9,81 @@ import { Info, InfoProps } from './info';
 export function Infos() {
     const ec = React.useContext(EditorContext);
 
-    // Update pins when the document changes. In particular, when edits are made
-    // earlier in the text such that a pin has to move up or down.
-    const [pinnedPoss, setPinnedPoss] = useClientNotificationState(
-        'textDocument/didChange',
-        new Array<Keyed<DocumentPosition>>(),
-        (pinnedPoss, params: DidChangeTextDocumentParams) => {
-            if (pinnedPoss.length === 0) return pinnedPoss;
+    const [pinnedPoss, setPinnedPoss] = React.useState(new Array<Keyed<DocumentPosition>>());
 
-            let changed: boolean = false;
-            const newPins = pinnedPoss.map(pin => {
-                if (pin.uri !== params.textDocument.uri) return pin;
-                // NOTE(WN): It's important to make a clone here, otherwise this
-                // actually mutates the pin. React state updates must be pure.
-                // See https://github.com/facebook/react/issues/12856
-                const newPin: Keyed<DocumentPosition> = { ...pin };
-                for (const chg of params.contentChanges) {
-                    if (!TextDocumentContentChangeEvent.isIncremental(chg)) {
-                        changed = true;
-                        return null;
-                    }
-                    if (!PositionHelpers.isAfterOrEqual(pin, chg.range.start)) continue;
+    useEvent(ec.events.bookmarkRemoved, id => {
+        setPinnedPoss(pinnedPoss => {
+            return pinnedPoss.filter(i => i.key !== id);
+        });
+    }, [pinnedPoss]);
 
-                    let lines = 0;
-                    for (const c of chg.text) if (c === '\n') lines++;
-                    newPin.line = chg.range.start.line + Math.max(0, newPin.line - chg.range.end.line) + lines;
-                    newPin.character = newPin.line > chg.range.end.line ?
-                        newPin.character :
-                        lines === 0 ?
-                            chg.range.start.character + Math.max(0, newPin.character - chg.range.end.character) + chg.text.length :
-                            9999;
+    useEvent(ec.events.bookmarkChanged, ([id, pos]) => {
+        setPinnedPoss(pinnedPoss => {
+            return pinnedPoss.map(pin => {
+                if (pin.key === id){
+                    // NOTE(WN): It's important to make a clone here, otherwise this
+                    // actually mutates the pin. React state updates must be pure.
+                    // See https://github.com/facebook/react/issues/12856
+                    const newPin: Keyed<DocumentPosition> = { ...pin };
+                    newPin.line = pos.position.line;
+                    newPin.character = pos.position.character;
+                    return newPin;
                 }
-                // TODO use a valid position instead of 9999
-                //newPosition = e.document.validatePosition(newPosition);
-                if (!DocumentPosition.isEqual(newPin, pin)) changed = true;
-
-                // NOTE(WN): We maintain the `key` when a pin is moved around to maintain
-                // its component identity and minimise flickering.
-                return newPin;
+                return pin;
             });
-
-            if (changed) return newPins.filter(p => p !== null) as Keyed<DocumentPosition>[];
-            return pinnedPoss;
-        },
-        []
-    );
-
-    // Remove pins for closed documents
-    useClientNotificationEffect(
-        'textDocument/didClose',
-        (params: DidCloseTextDocumentParams) => {
-            setPinnedPoss(pinnedPoss => pinnedPoss.filter(p => p.uri !== params.textDocument.uri));
-        },
-        []
-    );
+        });
+    }, [pinnedPoss]);
 
     const curLoc = useEventResult(ec.events.changedCursorLocation)
     const curPos: DocumentPosition | undefined = curLoc ? { uri: curLoc.uri, ...curLoc.range.start } : undefined
 
     // Update pins on UI actions
-    const pinKey = React.useRef<number>(0);
-    const isPinned = (pinnedPoss: DocumentPosition[], pos: DocumentPosition) => {
-        return pinnedPoss.some(p => DocumentPosition.isEqual(p, pos));
+    const isPinned = (pinnedPoss: Keyed<DocumentPosition>[], pos: DocumentPosition) => {
+        return pinnedPoss.find(p => DocumentPosition.isEqual(p, pos));
     }
-    const pin = React.useCallback((pos: DocumentPosition) => {
+    const addPin = async (pos: DocumentPosition) => {
+        const id = await ec.addBookmark(pos);
         setPinnedPoss(pinnedPoss => {
-            if (isPinned(pinnedPoss, pos)) return pinnedPoss;
-            pinKey.current += 1;
-            return [ ...pinnedPoss, { ...pos, key: pinKey.current.toString() } ];
+            // ??? how could the pin already exist and still have a pin button to click?
+            // if (isPinned(pinnedPoss, pos)) return pinnedPoss;
+            return [ ...pinnedPoss, { ...pos, key: id } ];
         });
-    }, []);
-    const unpin = React.useCallback((pos: DocumentPosition) => {
+    }
+    const removePin = async (pos: DocumentPosition) => {
+        let pinned : Keyed<DocumentPosition> | undefined;
+        setPinnedPoss(pinnedPoss => {
+            pinned = isPinned(pinnedPoss, pos);
+            return pinnedPoss;
+        });
+        if (pinned) {
+            await ec.removeBookmark(pinned.key);
+        }
         setPinnedPoss(pinnedPoss => {
             if (!isPinned(pinnedPoss, pos)) return pinnedPoss;
             return pinnedPoss.filter(p => !DocumentPosition.isEqual(p, pos));
         });
+    }
+    const pin = React.useCallback(async (pos: DocumentPosition) => {
+        await addPin(pos);
+    }, []);
+    const unpin = React.useCallback(async (pos: DocumentPosition) => {
+        await removePin(pos);
     }, []);
 
     // Toggle pin at current position when the editor requests it
-    useEvent(ec.events.requestedAction, act => {
+    useEvent(ec.events.requestedAction, async act => {
         if (act.kind !== 'togglePin') return
         if (!curPos) return
+        let pinned : Keyed<DocumentPosition> | undefined;
         setPinnedPoss(pinnedPoss => {
-            if (isPinned(pinnedPoss, curPos)) {
-                return pinnedPoss.filter(p => !DocumentPosition.isEqual(p, curPos));
-            } else {
-                pinKey.current += 1;
-                return [ ...pinnedPoss, { ...curPos, key: pinKey.current.toString() } ];
-            }
+            pinned = isPinned(pinnedPoss, curPos);
+            return pinnedPoss;
         });
+        if (pinned) {
+            await removePin(curPos);
+        } else {
+            await addPin(curPos);
+        }
     }, [curPos?.uri, curPos?.line, curPos?.character]);
 
     const infoProps: Keyed<InfoProps>[] = pinnedPoss.map(pos => ({ kind: 'pin', onPin: unpin, pos, key: pos.key }));

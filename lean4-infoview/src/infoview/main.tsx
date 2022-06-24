@@ -102,6 +102,8 @@ export function renderInfoview(editorApi: EditorApi, uiElement: HTMLElement): In
         changedInfoviewConfig: new Event(),
         runTestScript: new Event(),
         requestedAction: new Event(),
+        bookmarkChanged: new Event(),
+        bookmarkRemoved: new Event()
     };
 
     // Challenge: write a type-correct fn from `Eventify<T>` to `T` without using `any`
@@ -116,6 +118,8 @@ export function renderInfoview(editorApi: EditorApi, uiElement: HTMLElement): In
         serverRestarted: async r => editorEvents.serverRestarted.fire(r),
         serverStopped: async s => editorEvents.serverStopped.fire(s),
         changedCursorLocation: async loc => editorEvents.changedCursorLocation.fire(loc),
+        bookmarkChanged: async (id, loc) => editorEvents.bookmarkChanged.fire([id, loc]),
+        bookmarkRemoved: async id => editorEvents.bookmarkRemoved.fire(id),
         changedInfoviewConfig: async conf => editorEvents.changedInfoviewConfig.fire(conf),
         requestedAction: async action => editorEvents.requestedAction.fire(action),
         // See https://rollupjs.org/guide/en/#avoiding-eval

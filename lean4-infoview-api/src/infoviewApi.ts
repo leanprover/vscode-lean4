@@ -63,6 +63,12 @@ export interface EditorApi {
   createRpcSession(uri: DocumentUri): Promise<string>;
   /** Closes an RPC session created with `createRpcSession`. */
   closeRpcSession(sessionId: string): Promise<void>;
+
+  /** Adds a bookmark that updates its position automatically when prior edits are made in the document,
+   * and returns an "id" for this bookmark that you can correlate with bookmark updates sent to the InfoviewApi. */
+   addBookmark(pos: TextDocumentPositionParams): Promise<string>;
+   /** Removes a bookmark that was added via addBookmark. */
+   removeBookmark(id: string): Promise<void>;
 }
 
 export interface InfoviewTacticStateFilter {
@@ -115,6 +121,19 @@ export interface InfoviewApi {
   // TODO maybe change Location.Range to something aware of directionality (cursor at start/end of selection)
   // TODO what to do when multiple cursors exist?
   changedCursorLocation(loc?: Location): Promise<void>;
+
+  /**
+   * Notifies the infoview when a given bookmark (created via EditorApi createBookmark) has moved.
+   * @param id The id of the bookmark
+   * @param pos The new position of the bookmark.
+   */
+  bookmarkChanged(id: string, pos: TextDocumentPositionParams): Promise<void>;
+
+  /**
+   * Notifies the infoview that the given bookmark is no longer valid.
+   * @param id The id of the bookmark that was removed.
+   */
+  bookmarkRemoved(id: string): Promise<void>;
 
   /**
    * Must fire whenever the infoview configuration changes.

@@ -95,25 +95,27 @@ export class Bookmarks implements Disposable
         this.bookmarks= [];
     }
 
-    addBookmark(editor: TextEditor) : Bookmark {
+    addBookmark(editor: TextEditor, pos: ls.Position) : Bookmark {
         const uri = editor.document.uri;
-        const selection = editor.selection;
-        const loc : Location = {
-            uri: uri.toString(),
-            range: {
-                start: selection.start,
-                end: selection.end
-            }
-        };
-
         // bugbug: why doesn't vscode give us this snapshot management?
         // See https://github.com/microsoft/vscode/issues/153054
         this.originalText.set(uri.toString(), editor.document.getText());
 
-        const bm = new Bookmark(this.nextId, loc.uri, loc.range.end.line, loc.range.end.character);
+        const bm = new Bookmark(this.nextId, uri.toString(), pos.line, pos.character);
         this.bookmarks.push(bm);
         this.nextId++;
         return bm;
+    }
+
+    removeBookmark(id: string){
+        const bm = this.bookmarks.find(i => i.id.toString() === id);
+        if(bm){
+            this.bookmarks.splice(this.bookmarks.indexOf(bm), 1);
+            if (!this.bookmarks.find(i => i.uri === bm.uri)){
+                // then we are no longer interested in changes to this document!
+                this.originalText.delete(bm.uri);
+            }
+        }
     }
 
     onChange(change: TextDocumentChangeEvent){

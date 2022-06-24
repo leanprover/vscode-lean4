@@ -46,4 +46,11 @@ export class EditorConnection {
     const params = DocumentPosition.toTdpp(pos);
     return this.api.sendClientRequest(pos.uri, '$/lean/plainTermGoal', params);
   }
+
+  async addBookmark(pos: DocumentPosition): Promise<string> {
+    return this.api.addBookmark(DocumentPosition.toTdpp(pos));
+  }
+  async removeBookmark(id: string): Promise<void> {
+    return this.api.removeBookmark(id);
+  }
 }

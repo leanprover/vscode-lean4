@@ -14,6 +14,7 @@ import { LeanClientProvider } from './utils/clientProvider'
 import * as ls from 'vscode-languageserver-protocol'
 import { c2pConverter, p2cConverter } from './utils/converters';
 import { Bookmarks } from './utils/bookmarks';
+import { pipeline } from 'stream';
 
 const keepAlivePeriodMs = 10000
 
@@ -228,6 +229,21 @@ export class InfoProvider implements Disposable {
                 session.dispose();
             }
         },
+        addBookmark: async pos => {
+            const uri = pos.textDocument.uri;
+            const loc : ls.Position = pos.position;
+            const editor = window.visibleTextEditors.find(e => {
+                return e.document.uri.toString() === uri
+            });
+            if (editor) {
+                const bm = this.bookmarks.addBookmark(editor, loc);
+                return bm.id.toString();
+            }
+            return '';
+        },
+        removeBookmark: async (id : string) => {
+            this.bookmarks.removeBookmark(id);
+        }
     };
 
     constructor(private provider: LeanClientProvider, private readonly leanDocs: DocumentSelector, private context: ExtensionContext) {
@@ -244,6 +260,24 @@ export class InfoProvider implements Disposable {
 
         provider.clientStopped(([client, activeClient, err]) => {
             void this.onActiveClientStopped(client, activeClient, err);
+        });
+
+        this.bookmarks.changed(async (changed) => {
+            const api = this.webviewPanel?.api;
+            if (api) {
+                for (const bm of changed){
+                    await api.bookmarkChanged(bm.id.toString(), { textDocument: { uri: bm.uri }, position: { line: bm.line, character: bm.character } });
+                }
+            }
+        });
+
+        this.bookmarks.removed(async (removed) => {
+            const api = this.webviewPanel?.api;
+            if (api) {
+                for (const bm of removed){
+                    await api.bookmarkRemoved(bm.id.toString());
+                }
+            }
         });
 
         this.subscriptions.push(
@@ -268,13 +302,7 @@ export class InfoProvider implements Disposable {
             commands.registerCommand('lean4.infoView.toggleUpdating', () =>
                 this.webviewPanel?.api.requestedAction({kind: 'togglePaused'})),
             commands.registerTextEditorCommand('lean4.infoView.toggleStickyPosition',
-                () => {
-                    const editor = window.activeTextEditor;
-                    if (editor) {
-                        this.bookmarks.addBookmark(editor);
-                    }
-                    void this.webviewPanel?.api.requestedAction({kind: 'togglePin'})
-                }),
+                () => { void this.webviewPanel?.api.requestedAction({kind: 'togglePin'}) }),
         );
     }
 
