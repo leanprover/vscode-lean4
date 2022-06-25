@@ -45,17 +45,12 @@ export async function initLean4(fileName: string) : Promise<vscode.Extension<Exp
 export async function insertText(text: string) : Promise<void> {
     const editor = vscode.window.activeTextEditor;
     assert(editor !== undefined, 'no active editor');
-    const pos = editor.selection.active;
-    // in this case, assume that we actually want to insert at the same
-    // indentation level as the neighboring text
-    const current_line = editor.document.lineAt(pos.line);
-    const spaces = current_line.firstNonWhitespaceCharacterIndex;
-    const margin_str = [...Array(spaces).keys()].map(x => ' ').join('');
-    let indented = text.replace(/\n/g, '\n' + margin_str);
-    indented = `${margin_str}${indented}`;
-    const insertPosition = current_line.range.end;
     await editor.edit((builder) => {
-        builder.insert(insertPosition, indented);
+        builder.delete(editor.selection);
+        const cursorPos = editor.selection.end;
+        builder.insert(cursorPos, text);
+        const endInsert = editor.selection.end;
+        editor.selection = new vscode.Selection(endInsert, endInsert);
     });
 }
 
