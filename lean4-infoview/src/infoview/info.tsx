@@ -2,11 +2,11 @@ import * as React from 'react';
 import type { Location } from 'vscode-languageserver-protocol';
 
 import { Goals as GoalsUi, Goal as GoalUi, goalsToString, GoalFilterState } from './goals';
-import { basename, DocumentPosition, RangeHelpers, useAsync, useEvent, usePausableState, useClientNotificationEffect, mapRpcError } from './util';
+import { basename, DocumentPosition, RangeHelpers, useEvent, usePausableState, useClientNotificationEffect, discardMethodNotFound } from './util';
 import { Details } from './collapsing';
 import { EditorContext, ProgressContext, RpcContext, VersionContext } from './contexts';
 import { MessagesList, useMessagesFor } from './messages';
-import { getInteractiveGoals, getInteractiveTermGoal, InteractiveDiagnostic, InteractiveGoal, InteractiveGoals, Widget_getWidgets } from './rpcInterface';
+import { getInteractiveGoals, getInteractiveTermGoal, InteractiveDiagnostic, InteractiveGoal, InteractiveGoals, UserWidgets, Widget_getWidgets } from './rpcInterface';
 import { updatePlainGoals, updateTermGoal } from './goalCompat';
 import { WithTooltipOnHover } from './tooltips'
 import { UserWidget } from './userWidget'
@@ -86,6 +86,7 @@ interface InfoDisplayProps extends InfoPinnable {
     goals?: InteractiveGoals;
     termGoal?: InteractiveGoal;
     error?: string;
+    userWidgets?: UserWidgets;
     triggerUpdate: () => Promise<void>;
 }
 
@@ -105,7 +106,7 @@ export function InfoDisplay(props0: InfoDisplayProps) {
     const [goalFilters, setGoalFilters] = React.useState<GoalFilterState>(
         { reverse: false, isType: true, isInstance: true, isHiddenAssumption: true});
 
-    const {kind, pos, status, messages, goals, termGoal, error} = props;
+    const {kind, pos, status, messages, goals, termGoal, userWidgets, error} = props;
 
     const ec = React.useContext(EditorContext);
     let copyGoalToComment: (() => void) | undefined
@@ -127,29 +128,7 @@ export function InfoDisplay(props0: InfoDisplayProps) {
 
     const rs = React.useContext(RpcContext);
 
-    // # widgets
-    const [widgetTrig, setWidgetTrig] = React.useState(0)
-    useClientNotificationEffect('textDocument/didChange', () => setWidgetTrig(widgetTrig + 1), [widgetTrig])
-    const [widgetStatus, widgetResult, widgetError] = useAsync(
-        async () => {
-            try {
-                return await Widget_getWidgets(rs, pos)
-            }
-            catch (err) {
-                console.log( mapRpcError(err).message)
-                if (isRpcError(err)) {
-                    if (err.code === RpcErrorCode.MethodNotFound) {
-                        return undefined
-                    }
-                    if (err.code === RpcErrorCode.ContentModified) {
-                        setWidgetTrig(widgetTrig + 1)
-                    }
-                }
-                throw mapRpcError(err)
-            }},
-        [pos.uri, pos.line, pos.character, widgetTrig, rs])
-
-    const widgets = widgetResult && widgetResult.widgets
+    const widgets = userWidgets && userWidgets.widgets
     const hasWidget = (widgets !== undefined) && (widgets.length > 0)
 
     const nothingToShow = !error && !goals && !termGoal && messages.length === 0 && !hasWidget;
@@ -230,12 +209,9 @@ export function InfoDisplay(props0: InfoDisplayProps) {
                     <Details initiallyOpen>
                         <summary className="mv2 pointer">
                             Widget: {widget.widgetSourceId}
-                            {widgetStatus === 'pending' && ' (pending)'}
-                            {widgetStatus === 'rejected' && ' (errored)'}
                         </summary>
                         <div className="ml1">
                              <UserWidget pos={pos} widget={widget}/>
-                             {widgetError && <span className="red">{mapRpcError(widgetError).message}</span>}
                         </div>
                     </Details>
                 </div>
@@ -332,6 +308,7 @@ function InfoAux(props: InfoProps) {
     const [status, setStatus] = React.useState<InfoStatus>('loading');
     const [goals, setGoals] = React.useState<InteractiveGoals>();
     const [termGoal, setTermGoal] = React.useState<InteractiveGoal>();
+    const [userWidgets, setUserWidgets] = React.useState<UserWidgets>();
     const [error, setError] = React.useState<string>();
 
     const messages = useMessagesFor(pos);
@@ -339,7 +316,7 @@ function InfoAux(props: InfoProps) {
 
     // We encapsulate `InfoDisplay` props in a single piece of state for atomicity, in particular
     // to avoid displaying a new position before the server has sent us all the goal state there.
-    const mkDisplayProps = () => ({ ...props, pos, goals, termGoal, error });
+    const mkDisplayProps = () => ({ ...props, pos, goals, termGoal, error, userWidgets });
     const [displayProps, setDisplayProps] = React.useState(mkDisplayProps());
     const [shouldUpdateDisplay, setShouldUpdateDisplay] = React.useState(false);
     if (shouldUpdateDisplay) {
@@ -350,12 +327,17 @@ function InfoAux(props: InfoProps) {
     const triggerUpdate = useDelayedThrottled(serverIsProcessing ? 500 : 50, async () => {
         setStatus('updating');
 
-        let allReq
+        let allReq : Promise<[
+            InteractiveGoals | undefined,
+            InteractiveGoal | undefined,
+            UserWidgets | undefined
+        ]>
         if (sv?.hasWidgetsV1()) {
             // Start both goal requests before awaiting them.
             const goalsReq = getInteractiveGoals(rs, pos);
             const termGoalReq = getInteractiveTermGoal(rs, pos);
-            allReq = Promise.all([goalsReq, termGoalReq]);
+            const userWidgets = Widget_getWidgets(rs, pos).catch(discardMethodNotFound);
+            allReq = Promise.all([goalsReq, termGoalReq, userWidgets]);
         } else {
             const goalsReq = ec.requestPlainGoal(pos).then(gs => {
                 if (gs) return updatePlainGoals(gs)
@@ -365,35 +347,46 @@ function InfoAux(props: InfoProps) {
                 if (g) return updateTermGoal(g)
                 else return undefined
             }).catch(() => undefined) // ignore error on Lean version that don't support term goals yet
-            allReq = Promise.all([goalsReq, termGoalReq]);
-        }
-
-        function onError(err: any) {
-            const errS = typeof err === 'string' ? err : JSON.stringify(err);
-            // we need to check if this value is empty or not, because maybe we are assigning
-            // a message error with an empty error
-            if (errS === '{}' || errS === undefined) {
-                setError(undefined);
-            }
-            else {
-                setError(`Error fetching goals: ${errS}`);
-                setStatus('error');
-            }
+            allReq = Promise.all([
+                goalsReq,
+                termGoalReq,
+                new Promise<undefined>(resolve => resolve(undefined))
+            ]);
         }
 
         try {
             // NB: it is important to await both reqs at once, otherwise
             // if both throw then one exception becomes unhandled.
-            const [goals, termGoal] = await allReq;
+            const [goals, termGoal, userWidgets] = await allReq;
             setGoals(goals);
             setTermGoal(termGoal);
+            setUserWidgets(userWidgets);
             setStatus('ready');
         } catch (err: any) {
-            if (err?.code === -32801) {
+            if (isRpcError(err) && err.code === RpcErrorCode.ContentModified) {
                 // Document has been changed since we made the request, try again
                 void triggerUpdate();
                 return;
-            } else { onError(err); }
+            }
+            let errorString : string;
+            if (typeof error === 'string') {
+                errorString = error
+            } else if (isRpcError(err)) {
+                errorString = err.message
+            } else if (err instanceof Error) {
+                errorString = err.toString()
+            } else if (err === undefined || JSON.stringify(err) === '{}')  {
+                // we need to check if this value is empty or not, because maybe we are assigning
+                // a message error with an empty error
+                setError(undefined);
+                return;
+            } else {
+                // unrecognised error
+                errorString = JSON.stringify(err)
+            }
+
+            setError(`Error fetching goals: ${errorString}`);
+            setStatus('error');
         }
         setShouldUpdateDisplay(true);
     });

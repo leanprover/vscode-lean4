@@ -201,12 +201,12 @@ export interface UserWidget {
 }
 
 /** The response type for the RPC call `Widget_getWidgets`. */
-export interface GetWidgetsResponse {
+export interface UserWidgets {
     widgets : UserWidget[]
 }
 
 /** Given a position, returns all of the user-widgets on the infotree at this position. */
-export function Widget_getWidgets(rs: RpcSessions, pos: DocumentPosition): Promise<GetWidgetsResponse | undefined> {
+export function Widget_getWidgets(rs: RpcSessions, pos: DocumentPosition): Promise<UserWidgets | undefined> {
     return rs.call(pos, 'Lean.Widget.getWidgets', DocumentPosition.toTdpp(pos))
 }
 
