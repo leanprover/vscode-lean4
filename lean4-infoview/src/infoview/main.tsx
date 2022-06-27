@@ -11,7 +11,7 @@ import { LeanFileProgressParams, LeanFileProgressProcessingInfo, defaultInfoview
 
 import { Infos } from './infos';
 import { AllMessages, WithLspDiagnosticsContext } from './messages';
-import { useClientNotificationEffect, useEventResult, useServerNotificationState } from './util';
+import { useClientNotificationEffect, useEventResult, useServerNotificationState, useEvent } from './util';
 import { EditorContext, ConfigContext, ProgressContext, VersionContext, ErrorContext } from './contexts';
 import { WithRpcSessions } from './rpcSessions';
 import { EditorConnection, EditorEvents } from './editorConnection';
@@ -22,6 +22,15 @@ function Main(props: {}) {
     const ec = React.useContext(EditorContext);
 
     const errc = React.useContext(ErrorContext);
+    const [getErrorState, setErrorState] = React.useState<string>('');
+    const error : string = getErrorState
+    errc.initialize(error, setErrorState);
+
+    useEvent(ec.events.serverRestarted, () => {
+        console.log('clearing error state because server was restarted')
+        setErrorState('')
+    });
+
     /* Set up updates to the global infoview state on editor events. */
     const config = useEventResult(ec.events.changedInfoviewConfig) || defaultInfoviewConfig;
 
@@ -60,12 +69,10 @@ function Main(props: {}) {
     if (!serverInitializeResult) {
         ret = <p>Waiting for Lean server to start...</p>
     } else if (serverStoppedResult){
-        ret = <p>{serverStoppedResult}
-        </p>
-    } else if (errc.error) {
-        ret = <p>yay it worked !! {errc.error}
-        </p>
-    } else if (!curUri) {
+        ret = <p>{serverStoppedResult}</p>
+    } else if (errc.error){
+        ret = <div><p>Server has stopped</p> <p className='error'>{errc.error}</p></div>
+    }else if (!curUri) {
         ret = <p>Click somewhere in the Lean file to enable the infoview.</p>
     } else {
         ret =
@@ -98,10 +105,6 @@ function Main(props: {}) {
  * @param uiElement the HTML element (e.g. a `<div>`) to render into
  */
 export function renderInfoview(editorApi: EditorApi, uiElement: HTMLElement): InfoviewApi {
-
-    const errc = React.useContext(ErrorContext);
-    const [getErrorState, setErrorState] = React.useState<string>('');
-    errc.initialize(getErrorState, setErrorState);
 
     const editorEvents: EditorEvents = {
         initialize: new Event(),

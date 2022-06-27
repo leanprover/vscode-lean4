@@ -111,8 +111,8 @@ export function AllMessages({uri: uri0}: { uri: DocumentUri }) {
                     // `getInteractiveDiagnostics` again.
                 } else if (err) {
                     console.log('getInteractiveDiagnostics error ', err)
-                    console.log(`calling setError ${err}`)
-                    errc.setError(String(err));
+                    console.log(`calling setError ${err.message}`)
+                    errc.setError(String(err.message));
                 }
             }
         }
@@ -194,8 +194,8 @@ export function useMessagesForFile(uri: DocumentUri, line?: number): Interactive
                     // This can happen while typing quickly, so server will catch up on next edit.
                 } else if (err) {
                     console.log('getInteractiveDiagnostics error ', err)
-                    console.log(`calling setError ${err}`)
-                    errc.setError(String(err));
+                    console.log(`calling setError ${err.message}`)
+                    errc.setError(String(err.message));
                 }
             }
         }
