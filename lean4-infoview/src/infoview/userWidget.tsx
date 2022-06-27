@@ -36,7 +36,7 @@ export function UserWidget({ pos, widget }: UserWidgetProps) {
             componentCache.set(widget.hash, component)
             return component
         },
-        [pos.uri, pos.line, pos.character, widget.hash])
+        [widget.hash])
 
     const componentProps = { pos, ...widget.props }
 
