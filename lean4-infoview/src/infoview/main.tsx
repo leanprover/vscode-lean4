@@ -12,15 +12,18 @@ import { LeanFileProgressParams, LeanFileProgressProcessingInfo, defaultInfoview
 import { Infos } from './infos';
 import { AllMessages, WithLspDiagnosticsContext } from './messages';
 import { useClientNotificationEffect, useEventResult, useServerNotificationState } from './util';
-import { EditorContext, ConfigContext, ProgressContext, VersionContext } from './contexts';
+import { EditorContext, ConfigContext, ProgressContext, VersionContext, ErrorContext } from './contexts';
 import { WithRpcSessions } from './rpcSessions';
 import { EditorConnection, EditorEvents } from './editorConnection';
 import { Event } from './event';
 import { ServerVersion } from './serverVersion';
 
-
 function Main(props: {}) {
     const ec = React.useContext(EditorContext);
+
+    const errc = React.useContext(ErrorContext);
+    const [getErrorState, setErrorState] = React.useState<string>('');
+    errc.initialize(setErrorState);
 
     /* Set up updates to the global infoview state on editor events. */
     const config = useEventResult(ec.events.changedInfoviewConfig) || defaultInfoviewConfig;
@@ -61,6 +64,9 @@ function Main(props: {}) {
         ret = <p>Waiting for Lean server to start...</p>
     } else if (serverStoppedResult){
         ret = <p>{serverStoppedResult}
+        </p>
+    } else if (getErrorState) {
+        ret = <p>yay it worked !! {getErrorState}
         </p>
     } else if (!curUri) {
         ret = <p>Click somewhere in the Lean file to enable the infoview.</p>

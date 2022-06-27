@@ -495,7 +495,7 @@ export class InfoProvider implements Disposable {
                 await this.sendPosition();
                 await this.sendConfig();
             } catch (err: any){
-                // we are not getting the promise exception here in case the worker fails
+                console.log('we are not getting the promise exception here in case the worker fails');
             }
         }
     }

@@ -17,3 +17,21 @@ export const VersionContext = React.createContext<ServerVersion | undefined>(und
 export const ConfigContext = React.createContext<InfoviewConfig>(defaultInfoviewConfig);
 export const LspDiagnosticsContext = React.createContext<Map<DocumentUri, Diagnostic[]>>(new Map());
 export const ProgressContext = React.createContext<Map<DocumentUri, LeanFileProgressProcessingInfo[]>>(new Map());
+
+
+class ErrorInfo
+{
+    setErrorState: React.Dispatch<React.SetStateAction<string>> | undefined;
+
+    initialize(setErrorState : React.Dispatch<React.SetStateAction<string>> ){
+        this.setErrorState = setErrorState;
+    }
+
+    setError(msg:string){
+        if (this.setErrorState){
+            this.setErrorState(_ => { return msg; });
+        }
+    }
+}
+
+export const ErrorContext = React.createContext<ErrorInfo>(new ErrorInfo());
