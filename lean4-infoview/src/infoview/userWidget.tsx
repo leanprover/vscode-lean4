@@ -5,7 +5,7 @@ import { DocumentPosition, mapRpcError, useAsync } from './util';
 import { ErrorBoundary } from './errors';
 import { Widget_getWidgetSource, UserWidget } from './rpcInterface';
 
-function dynamicallyLoadComponent(hash: string, code: string,) {
+function dynamicallyLoadComponent(hash: string, code: string) {
     return React.lazy(async () => {
         const file = new File([code], `widget_${hash}.js`, { type: 'text/javascript' })
         const url = URL.createObjectURL(file)
@@ -13,7 +13,7 @@ function dynamicallyLoadComponent(hash: string, code: string,) {
     })
 }
 
-const componentCache = new Map()
+const componentCache = new Map<string,  React.LazyExoticComponent<React.ComponentType<any>>>()
 
 interface UserWidgetProps {
     pos: DocumentPosition
@@ -22,9 +22,6 @@ interface UserWidgetProps {
 
 export function UserWidget({ pos, widget }: UserWidgetProps) {
     const rs = React.useContext(RpcContext);
-    if (!pos) {
-        return <>Waiting for a location.</>
-    }
     const [status, component, error] = useAsync(
         async () => {
             if (componentCache.has(widget.hash)) {

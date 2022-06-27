@@ -2,7 +2,7 @@ import * as React from 'react';
 import type { Location } from 'vscode-languageserver-protocol';
 
 import { Goals as GoalsUi, Goal as GoalUi, goalsToString, GoalFilterState } from './goals';
-import { basename, DocumentPosition, RangeHelpers, useEvent, usePausableState, useClientNotificationEffect, discardMethodNotFound } from './util';
+import { basename, DocumentPosition, RangeHelpers, useEvent, usePausableState, useClientNotificationEffect, discardMethodNotFound, mapRpcError } from './util';
 import { Details } from './collapsing';
 import { EditorContext, ProgressContext, RpcContext, VersionContext } from './contexts';
 import { MessagesList, useMessagesFor } from './messages';
@@ -372,7 +372,7 @@ function InfoAux(props: InfoProps) {
             if (typeof error === 'string') {
                 errorString = error
             } else if (isRpcError(err)) {
-                errorString = err.message
+                errorString = mapRpcError(err).message
             } else if (err instanceof Error) {
                 errorString = err.toString()
             } else if (err === undefined || JSON.stringify(err) === '{}')  {
@@ -382,7 +382,7 @@ function InfoAux(props: InfoProps) {
                 return;
             } else {
                 // unrecognised error
-                errorString = JSON.stringify(err)
+                errorString = `Unrecognised error: ${JSON.stringify(err)}`
             }
 
             setError(`Error fetching goals: ${errorString}`);
