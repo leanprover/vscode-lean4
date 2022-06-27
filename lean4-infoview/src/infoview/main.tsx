@@ -22,9 +22,6 @@ function Main(props: {}) {
     const ec = React.useContext(EditorContext);
 
     const errc = React.useContext(ErrorContext);
-    const [getErrorState, setErrorState] = React.useState<string>('');
-    errc.initialize(setErrorState);
-
     /* Set up updates to the global infoview state on editor events. */
     const config = useEventResult(ec.events.changedInfoviewConfig) || defaultInfoviewConfig;
 
@@ -65,8 +62,8 @@ function Main(props: {}) {
     } else if (serverStoppedResult){
         ret = <p>{serverStoppedResult}
         </p>
-    } else if (getErrorState) {
-        ret = <p>yay it worked !! {getErrorState}
+    } else if (errc.error) {
+        ret = <p>yay it worked !! {errc.error}
         </p>
     } else if (!curUri) {
         ret = <p>Click somewhere in the Lean file to enable the infoview.</p>
@@ -101,6 +98,11 @@ function Main(props: {}) {
  * @param uiElement the HTML element (e.g. a `<div>`) to render into
  */
 export function renderInfoview(editorApi: EditorApi, uiElement: HTMLElement): InfoviewApi {
+
+    const errc = React.useContext(ErrorContext);
+    const [getErrorState, setErrorState] = React.useState<string>('');
+    errc.initialize(getErrorState, setErrorState);
+
     const editorEvents: EditorEvents = {
         initialize: new Event(),
         gotServerNotification: new Event(),

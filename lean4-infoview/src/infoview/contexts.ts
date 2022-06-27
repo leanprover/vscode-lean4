@@ -22,8 +22,10 @@ export const ProgressContext = React.createContext<Map<DocumentUri, LeanFileProg
 class ErrorInfo
 {
     setErrorState: React.Dispatch<React.SetStateAction<string>> | undefined;
+    error: string = '';
 
-    initialize(setErrorState : React.Dispatch<React.SetStateAction<string>> ){
+    initialize(getErrorState: string, setErrorState : React.Dispatch<React.SetStateAction<string>> ){
+        this.error = getErrorState;
         this.setErrorState = setErrorState;
     }
 
