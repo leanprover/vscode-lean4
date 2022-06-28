@@ -354,3 +354,23 @@ export async function invokeHrefCommand(html: string, selector: string) : Promis
     }
 
 }
+
+export async function clickInfoViewButton(info: InfoProvider, name: string) : Promise<void> {
+    await assertStringInInfoview(info, name);
+    let retries = 5;
+    while (retries > 0) {
+        retries--;
+        try {
+            const cmd = `document.querySelector(\'[data-id*="${name}"]\').click()`;
+            await info.runTestScript(cmd);
+        } catch (err){
+            console.log(`### runTestScript failed: ${err.message}`);
+            if (retries === 0){
+                throw err;
+            }
+            console.log(`### Retrying clickInfoViewButton ${name}...`)
+            await sleep(1000);
+        }
+    }
+}
+
