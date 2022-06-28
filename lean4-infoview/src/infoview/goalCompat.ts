@@ -1,5 +1,5 @@
 import { PlainGoal, PlainTermGoal } from '@lean4/infoview-api';
-import { InteractiveGoal, InteractiveGoals, InteractiveHypothesis } from './rpcInterface';
+import { InteractiveGoal, InteractiveGoals, InteractiveHypothesisBundle } from './rpcInterface';
 
 function getGoals(plainGoals: PlainGoal): string[] {
     if (plainGoals.goals) return plainGoals.goals
@@ -21,7 +21,7 @@ function transformGoalToInteractive(g: string): InteractiveGoal {
     // by keeping indented lines with the most recent non-indented line
     const parts = (g.match(/(^(?!  ).*\n?(  .*\n?)*)/mg) ?? []).map(line => line.trim())
     let userName
-    const hyps: InteractiveHypothesis[] = []
+    const hyps: InteractiveHypothesisBundle[] = []
     let type = ''
     for (const p of parts) {
         if (p.match(/^(⊢) /mg)) {
@@ -30,7 +30,7 @@ function transformGoalToInteractive(g: string): InteractiveGoal {
             userName = p.slice(5)
         } else if (p.match(/^([^:\n< ][^:\n⊢{[(⦃]*) :/mg)) {
             const ss = p.split(':')
-            const hyp: InteractiveHypothesis = {
+            const hyp: InteractiveHypothesisBundle = {
                 isType: false,
                 isInstance: false,
                 names: ss[0].split(' ')

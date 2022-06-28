@@ -1,8 +1,8 @@
 import * as React from 'react';
-import { DidChangeTextDocumentParams, DidCloseTextDocumentParams, Location, TextDocumentContentChangeEvent } from 'vscode-languageserver-protocol';
+import { DidChangeTextDocumentParams, DidCloseTextDocumentParams, TextDocumentContentChangeEvent } from 'vscode-languageserver-protocol';
 
 import { EditorContext } from './contexts';
-import { DocumentPosition, Keyed, PositionHelpers, useClientNotificationEffect, useClientNotificationState, useEvent } from './util';
+import { DocumentPosition, Keyed, PositionHelpers, useClientNotificationEffect, useClientNotificationState, useEvent, useEventResult } from './util';
 import { Info, InfoProps } from './info';
 
 /** Manages and displays pinned infos, as well as info for the current location. */
@@ -11,14 +11,14 @@ export function Infos() {
 
     // Update pins when the document changes. In particular, when edits are made
     // earlier in the text such that a pin has to move up or down.
-    const [pinnedPoss, setPinnedPoss] = useClientNotificationState(
+    const [pinnedPositions, setPinnedPositions] = useClientNotificationState(
         'textDocument/didChange',
         new Array<Keyed<DocumentPosition>>(),
-        (pinnedPoss, params: DidChangeTextDocumentParams) => {
-            if (pinnedPoss.length === 0) return pinnedPoss;
+        (pinnedPositions, params: DidChangeTextDocumentParams) => {
+            if (pinnedPositions.length === 0) return pinnedPositions;
 
             let changed: boolean = false;
-            const newPins = pinnedPoss.map(pin => {
+            const newPins = pinnedPositions.map(pin => {
                 if (pin.uri !== params.textDocument.uri) return pin;
                 // NOTE(WN): It's important to make a clone here, otherwise this
                 // actually mutates the pin. React state updates must be pure.
@@ -29,19 +29,38 @@ export function Infos() {
                         changed = true;
                         return null;
                     }
-                    if (!PositionHelpers.isAfterOrEqual(pin, chg.range.start)) continue;
+                    if (PositionHelpers.isLessThanOrEqual(newPin, chg.range.start)) continue;
+                    // We can assume chg.range.start < pin
 
-                    let lines = 0;
-                    for (const c of chg.text) if (c === '\n') lines++;
-                    newPin.line = chg.range.start.line + Math.max(0, newPin.line - chg.range.end.line) + lines;
-                    newPin.character = newPin.line > chg.range.end.line ?
-                        newPin.character :
-                        lines === 0 ?
-                            chg.range.start.character + Math.max(0, newPin.character - chg.range.end.character) + chg.text.length :
-                            9999;
+                    // If the pinned position is replaced with new text, just delete the pin.
+                    if (PositionHelpers.isLessThanOrEqual(newPin, chg.range.end)) {
+                        changed = true;
+                        return null;
+                    }
+
+                    const oldPin = { ...newPin };
+
+                    // How many lines before the pin position were added by the change.
+                    // Can be negative when more lines are removed than added.
+                    let additionalLines = 0;
+                    let lastLineLen = chg.range.start.character;
+                    for (const c of chg.text)
+                        if (c === '\n') {
+                            additionalLines++;
+                            lastLineLen = 0;
+                        } else lastLineLen++;
+
+                    // Subtract lines that were already present
+                    additionalLines -= (chg.range.end.line - chg.range.start.line)
+                    newPin.line += additionalLines;
+
+                    if (oldPin.line < chg.range.end.line) {
+                        // Should never execute by the <= check above.
+                        throw new Error('unreachable code reached')
+                    } else if (oldPin.line === chg.range.end.line) {
+                        newPin.character = lastLineLen + (oldPin.character - chg.range.end.character);
+                    }
                 }
-                // TODO use a valid position instead of 9999
-                //newPosition = e.document.validatePosition(newPosition);
                 if (!DocumentPosition.isEqual(newPin, pin)) changed = true;
 
                 // NOTE(WN): We maintain the `key` when a pin is moved around to maintain
@@ -50,7 +69,7 @@ export function Infos() {
             });
 
             if (changed) return newPins.filter(p => p !== null) as Keyed<DocumentPosition>[];
-            return pinnedPoss;
+            return pinnedPositions;
         },
         []
     );
@@ -59,51 +78,52 @@ export function Infos() {
     useClientNotificationEffect(
         'textDocument/didClose',
         (params: DidCloseTextDocumentParams) => {
-            setPinnedPoss(pinnedPoss => pinnedPoss.filter(p => p.uri !== params.textDocument.uri));
+            setPinnedPositions(pinnedPositions => pinnedPositions.filter(p => p.uri !== params.textDocument.uri));
         },
         []
     );
 
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const [curLoc, setCurLoc] = React.useState<Location>(ec.events.changedCursorLocation.current!);
-    useEvent(ec.events.changedCursorLocation, loc => loc && setCurLoc(loc), []);
-
-    const curPos: DocumentPosition = { uri: curLoc.uri, ...curLoc.range.start };
+    const curLoc = useEventResult(ec.events.changedCursorLocation)
+    const curPos: DocumentPosition | undefined = curLoc ? { uri: curLoc.uri, ...curLoc.range.start } : undefined
 
     // Update pins on UI actions
     const pinKey = React.useRef<number>(0);
-    const isPinned = (pinnedPoss: DocumentPosition[], pos: DocumentPosition) => {
-        return pinnedPoss.some(p => DocumentPosition.isEqual(p, pos));
+    const isPinned = (pinnedPositions: DocumentPosition[], pos: DocumentPosition) => {
+        return pinnedPositions.some(p => DocumentPosition.isEqual(p, pos));
     }
     const pin = React.useCallback((pos: DocumentPosition) => {
-        setPinnedPoss(pinnedPoss => {
-            if (isPinned(pinnedPoss, pos)) return pinnedPoss;
+        setPinnedPositions(pinnedPositions => {
+            if (isPinned(pinnedPositions, pos)) return pinnedPositions;
             pinKey.current += 1;
-            return [ ...pinnedPoss, { ...pos, key: pinKey.current.toString() } ];
+            return [ ...pinnedPositions, { ...pos, key: pinKey.current.toString() } ];
         });
     }, []);
     const unpin = React.useCallback((pos: DocumentPosition) => {
-        setPinnedPoss(pinnedPoss => {
-            if (!isPinned(pinnedPoss, pos)) return pinnedPoss;
-            return pinnedPoss.filter(p => !DocumentPosition.isEqual(p, pos));
+        setPinnedPositions(pinnedPositions => {
+            if (!isPinned(pinnedPositions, pos)) return pinnedPositions;
+            return pinnedPositions.filter(p => !DocumentPosition.isEqual(p, pos));
         });
     }, []);
 
     // Toggle pin at current position when the editor requests it
     useEvent(ec.events.requestedAction, act => {
-        if (act.kind !== 'togglePin') return;
-        setPinnedPoss(pinnedPoss => {
-            if (isPinned(pinnedPoss, curPos)) {
-                return pinnedPoss.filter(p => !DocumentPosition.isEqual(p, curPos));
+        if (act.kind !== 'togglePin') return
+        if (!curPos) return
+        setPinnedPositions(pinnedPositions => {
+            if (isPinned(pinnedPositions, curPos)) {
+                return pinnedPositions.filter(p => !DocumentPosition.isEqual(p, curPos));
             } else {
                 pinKey.current += 1;
-                return [ ...pinnedPoss, { ...curPos, key: pinKey.current.toString() } ];
+                return [ ...pinnedPositions, { ...curPos, key: pinKey.current.toString() } ];
             }
         });
-    }, [curPos.uri, curPos.line, curPos.character]);
+    }, [curPos?.uri, curPos?.line, curPos?.character]);
 
-    const infoProps: Keyed<InfoProps>[] = pinnedPoss.map(pos => ({ kind: 'pin', onPin: unpin, pos, key: pos.key }));
-    infoProps.push({ kind: 'cursor', onPin: pin, key: 'cursor' });
+    const infoProps: Keyed<InfoProps>[] = pinnedPositions.map(pos => ({ kind: 'pin', onPin: unpin, pos, key: pos.key }));
+    if (curPos) infoProps.push({ kind: 'cursor', onPin: pin, key: 'cursor' });
 
-    return <div> {infoProps.map (ps => <Info {...ps} />)} </div>;
+    return <div>
+        {infoProps.map (ps => <Info {...ps} />)}
+        {!curPos && <p>Click somewhere in the Lean file to enable the infoview.</p> }
+    </div>;
 }

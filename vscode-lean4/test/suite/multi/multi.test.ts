@@ -2,7 +2,7 @@ import * as assert from 'assert';
 import { suite } from 'mocha';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { initLean4, assertStringInInfoview } from '../utils/helpers';
+import { initLean4, assertStringInInfoview, closeAllEditors } from '../utils/helpers';
 
 suite('Multi-Folder Test Suite', () => {
 
@@ -10,7 +10,7 @@ suite('Multi-Folder Test Suite', () => {
 
         console.log('=================== Load Lean Files in a multi-project workspace ===================');
         // make sure test is always run in predictable state, which is no file or folder open
-        await vscode.commands.executeCommand('workbench.action.closeAllEditors');
+        await closeAllEditors();
         void vscode.window.showInformationMessage('Running tests: ' + __dirname);
 
         const testsRoot = path.join(__dirname, '..', '..', '..', '..', 'test', 'test-fixtures', 'multi');
@@ -36,7 +36,7 @@ suite('Multi-Folder Test Suite', () => {
         assert(actual === 2, 'Expected 2 LeanClients to be running, but found ' + actual);
 
         // make sure test is always run in predictable state, which is no file or folder open
-        await vscode.commands.executeCommand('workbench.action.closeAllEditors');
+        await closeAllEditors();
     }).timeout(60000);
 
 }).timeout(60000);

@@ -2,7 +2,7 @@ import * as assert from 'assert';
 import { suite } from 'mocha';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { initLean4Untitled, waitForActiveEditor, waitForInfoviewHtml,
+import { initLean4Untitled, waitForActiveEditor, waitForInfoviewHtml, closeAllEditors,
     extractPhrase, gotoDefinition, assertStringInInfoview, initLean4 } from '../utils/helpers';
 
 suite('Lean4 Basics Test Suite', () => {
@@ -46,7 +46,7 @@ suite('Lean4 Basics Test Suite', () => {
         });
 
         // make sure test is always run in predictable state, which is no file or folder open
-        await vscode.commands.executeCommand('workbench.action.closeAllEditors');
+        await closeAllEditors();
 
     }).timeout(60000);
 
@@ -79,7 +79,7 @@ suite('Lean4 Basics Test Suite', () => {
         }
 
         // make sure test is always run in predictable state, which is no file or folder open
-        await vscode.commands.executeCommand('workbench.action.closeAllEditors');
+        await closeAllEditors();
 
     }).timeout(60000);
 
@@ -112,7 +112,7 @@ suite('Lean4 Basics Test Suite', () => {
         html = await waitForInfoviewHtml(info, expectedVersion);
 
         // make sure test is always run in predictable state, which is no file or folder open
-        await vscode.commands.executeCommand('workbench.action.closeAllEditors');
+        await closeAllEditors();
 
     }).timeout(60000);
 

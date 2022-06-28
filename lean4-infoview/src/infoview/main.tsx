@@ -76,18 +76,12 @@ function Main(props: {}) {
     } else if (!curUri) {
         ret = <p>Click somewhere in the Lean file to enable the infoview.</p>
     } else {
-        try{
-            ret =
-                (<div className="ma1">
-                    <Infos />
-                    <div className="mv2">
-                        <AllMessages uri={curUri} />
-                    </div>
-                </div>)
-            } catch(err:any){
-                ret = <p>{'Worker crashed due to a stackoverflow or a bug.'}
-                </p>
-            }
+        ret = <div className="ma1">
+            <Infos />
+            {curUri && <div className="mv2">
+                <AllMessages uri={curUri} />
+            </div>}
+        </div>
     }
 
     return (
