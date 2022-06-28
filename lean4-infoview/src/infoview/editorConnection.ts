@@ -7,6 +7,8 @@ import { DocumentPosition } from './util';
 
 export type EditorEvents = Eventify<InfoviewApi>;
 
+/** Provides higher-level wrappers around functionality provided by the editor,
+ * e.g. to insert a comment. See also {@link EditorApi}. */
 export class EditorConnection {
   constructor(readonly api: EditorApi, readonly events: EditorEvents) {}
 

@@ -2,9 +2,12 @@
 import * as React from 'react';
 import type { DocumentUri, Position, Range, TextDocumentPositionParams } from 'vscode-languageserver-protocol';
 
+import { isRpcError, RpcErrorCode } from '@lean4/infoview-api';
+
 import { Event } from './event';
 import { EditorContext } from './contexts';
 
+/** A document URI and a position in that document. */
 export interface DocumentPosition extends Position {
   uri: DocumentUri;
 }
@@ -25,8 +28,8 @@ export namespace DocumentPosition {
 }
 
 export namespace PositionHelpers {
-  export function isAfterOrEqual(p1: Position, p2: Position): boolean {
-    return p1.line > p2.line || (p1.line === p2.line && p1.character >= p2.character);
+  export function isLessThanOrEqual(p1: Position, p2: Position): boolean {
+    return p1.line < p2.line || (p1.line === p2.line && p1.character <= p2.character);
   }
 }
 
@@ -75,10 +78,11 @@ export function useEvent<T>(ev: Event<T>, f: (_: T) => void, dependencies?: Reac
 }
 
 export function useEventResult<T>(ev: Event<T>): T | undefined;
-export function useEventResult<T, S>(ev: Event<S>, map: (_: S | undefined) => T | undefined): T | undefined;
+export function useEventResult<T, S>(ev: Event<S>, map: (newVal: S | undefined, prev : T | undefined) => T): T;
 export function useEventResult(ev: Event<unknown>, map?: any): any {
-  const [t, setT] = React.useState(() => map ? map(ev.current) : ev.current);
-  useEvent(ev, newT => setT(map ? map(newT) : newT));
+  map = map ?? ((x : any) => x)
+  const [t, setT] = React.useState(() => map(ev.current, undefined));
+  useEvent(ev, newT => setT(map(newT, t)));
   return t;
 }
 
@@ -260,4 +264,132 @@ export function useLogicalDom(ref: React.RefObject<HTMLElement>): [LogicalDomTra
     React.useMemo(() => ({contains}), [ref]),
     React.useMemo(() => ({registerDescendant}), [parentCtx])
   ]
+}
+
+/** Sends an exception object to a throwable error.
+ * Maps JSON Rpc errors to throwable errors.
+ */
+export function mapRpcError(err : unknown) : Error {
+    if (isRpcError(err)) {
+        return new Error(`Rpc error: ${RpcErrorCode[err.code]}: ${err.message}`)
+    } else if (! (err instanceof Error)) {
+        return new Error(`Unrecognised error ${JSON.stringify(err)}`)
+    } else {
+        return err
+    }
+}
+
+type Status = 'pending' | 'fulfilled' | 'rejected'
+
+
+function useAsyncThrottled<T>(fn : () => Promise<T>, deps : React.DependencyList = [])
+  : [Status, T | undefined, unknown | undefined] {
+    const [result, setResult] = React.useState<T | undefined>(undefined)
+    const [error, setError] = React.useState<unknown | undefined>(undefined)
+    // state that is used to trigger the effect
+    const [trig, setTrig] = React.useState(0)
+    // true when fn should be re-run after resolution of current promise.
+    const retrig = React.useRef(false)
+    const init = React.useRef(true)
+    const status = React.useRef<Status>('pending')
+
+    React.useEffect(function () {
+      if (status.current === 'pending' && !init.current) {
+        // A task is already in flight, rather than
+        // spawning a task for each trigger of the effect,
+        // we mark that the effect should be retriggered and run again
+        // at the end of the promise.
+        retrig.current = true
+        return
+      }
+      init.current = false
+      status.current = 'pending'
+      setError(undefined)
+      fn().then(result => {
+          status.current = 'fulfilled'
+          setResult(result)
+          setError(undefined)
+      }, (err : any) => {
+          status.current = 'rejected'
+          setError(err)
+      }).finally(() => {
+        if (retrig.current) {
+          retrig.current = false
+          // note we can't call `go` directly, because `fn` may have changed and deps may have changed.
+          setTrig(trig + 1)
+        }
+      })
+    }, [...deps, trig])
+    return [status.current, result, error]
+}
+
+function useAsyncUnthrottled<T>(fn : () => Promise<T>, deps : React.DependencyList = []) : [Status, T | undefined, unknown | undefined] {
+  const idCount = React.useRef(0)
+  const latestResolved = React.useRef(0)
+  const [status, setStatus] = React.useState<Status>('pending')
+  const [error, setError] = React.useState<unknown>(undefined)
+  const [result, setResult] = React.useState<T | undefined>(undefined)
+  React.useEffect(() => {
+    idCount.current += 1
+    const taskId = idCount.current
+    setStatus('pending')
+    setError(undefined)
+    fn().then(result => {
+      if (latestResolved.current > taskId) {
+        return
+      }
+      setStatus('fulfilled')
+      setResult(result)
+      latestResolved.current = taskId
+    }, (err : any) => {
+      if (latestResolved.current > taskId) {
+        return
+      }
+      setStatus('rejected')
+      setError(err)
+      latestResolved.current = taskId
+    })
+  }, deps)
+  return [status, result, error]
+}
+
+/** This React hook will run the given promise function `fn` whenever the deps change
+ * and use it to update the status and result when the promise resolves.
+ *
+ * This function prevents race conditions if the requests resolve in a
+ * different order to that which they were requested in:
+ *
+ * - Request 1 is sent with, say, line=42.
+ * - Request 2 is sent with line=90.
+ * - Request 2 returns with diags=[].
+ * - Request 1 returns with diags=['error'].
+ *
+ * Without `useAsync` we would now return the diagnostics for line 42 even though we're at line 90.
+ *
+ * There is a 'throttled' and 'unthrottled' version of this function:
+ * - in _throttled_ `throttle = true`:
+ *   There will only ever be one in-flight promise at a time. If the deps
+ *   change while a promise is still in-flight, then `fn` will be run
+ *   again after the first promise has resolved.
+ * - in _unthrottled_ `throttle = false`:
+ *   `fn` will be fired as soon as the dependencies change. Each invocation of
+ *   `fn` is time ordered. If an earlier invocation resolves after a
+ *   later invocation (as happens in above example), then this result is discarded.
+ */
+export function useAsync<T>(fn : () => Promise<T>, deps : React.DependencyList = [], throttle = false): [Status, T | undefined, unknown | undefined] {
+  if (throttle) {
+    return useAsyncThrottled(fn, deps)
+  } else {
+    return useAsyncUnthrottled(fn, deps)
+  }
+}
+
+/** `intersperse([x,y,z], a) ≡ [x,a,y,a,z]` */
+function intersperse<T>(items : T[], sep : T) : T[] {
+  if (items.length === 0) {return []}
+  const acc = [items[0]]
+  for (let i = 1; i < items.length; i++) {
+    acc.push(sep, items[i])
+  }
+  return acc
 }

@@ -156,7 +156,7 @@ export function AllMessages({uri: uri0}: { uri: DocumentUri }) {
 function AllMessagesBody({uri, messages}: {uri: DocumentUri, messages: () => Promise<InteractiveDiagnostic[]>}) {
     const [msgs, setMsgs] = React.useState<InteractiveDiagnostic[] | undefined>(undefined)
     React.useEffect(() => void messages().then(setMsgs), [messages])
-    if (msgs === undefined) return <>Loading messages..</>
+    if (msgs === undefined) return <>Loading messages...</>
     else return <MessagesList uri={uri} messages={msgs}/>
 }
 
@@ -210,7 +210,7 @@ export function useMessagesForFile(uri: DocumentUri, line?: number): Interactive
             }
         }
     }
-    React.useEffect(() => void updateDiags(), [uri, line, lspDiags.get(uri)])
+    React.useEffect(() => void updateDiags(), [uri, line, rs.sessionIdAt(uri), lspDiags.get(uri)])
     return diags;
     }
 
