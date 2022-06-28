@@ -178,7 +178,7 @@ export class RpcSessions implements Disposable {
             }
             // NOTE: these are part of normal control, no need to spam the console
             //console.error(`RPC error: ${JSON.stringify(ex)}`)
-            if (ex){
+            if (ex) {
                 if (ex.code === -32901 || ex.code === -32902 || ex.code === -32603) {
                     console.log('Worker crashed due to a stackoverflow or a bug.')
                 }
@@ -186,6 +186,7 @@ export class RpcSessions implements Disposable {
             }
         }
     }
+}
 
     /**
      * All {@link RpcPtr}s received from the server must be registered for garbage

@@ -575,6 +575,7 @@ export class InfoProvider implements Disposable {
                     await this.updateStatus(loc)
                 }
             }
+
         } else {
             await this.updateStatus(loc)
         }
