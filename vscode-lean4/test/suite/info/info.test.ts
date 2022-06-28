@@ -78,7 +78,7 @@ suite('InfoView Test Suite', () => {
 
         const expectedEval = '[1, 2, 3]'
 
-        const lean =  await initLean4Untitled('#eval [1, 1+1, 1+1+1]\n');
+        const lean =  await initLean4Untitled('#eval [1, 1+1, 1+1+1] \n');
         const editor = await waitForActiveEditor();
         const firstLine = editor.document.lineAt(0).range
         editor.selection = new vscode.Selection(firstLine.end, firstLine.end);
