@@ -296,6 +296,7 @@ function InfoAux(props: InfoProps) {
         setDisplayProps(mkDisplayProps());
         setShouldUpdateDisplay(false);
     }
+
     const triggerUpdate = useDelayedThrottled(serverIsProcessing ? 500 : 50, async () => {
         setStatus('updating');
 

@@ -487,7 +487,7 @@ export class InfoProvider implements Disposable {
         // by listening to notifications.  Send these notifications when the infoview starts
         // so that it has up-to-date information.
         if (client?.initializeResult) {
-            try{
+            try {
                 await this.webviewPanel?.api.serverStopped(''); // clear any server stopped state
                 await this.webviewPanel?.api.serverRestarted(client.initializeResult);
                 await this.sendDiagnostics(client);

@@ -104,15 +104,20 @@ export function AllMessages({uri: uri0}: { uri: DocumentUri }) {
                     return diags
                 }
             } catch (err: any) {
-                if (err?.code === -32801) {
-                    // Document has been changed since we made the request. This can happen
-                    // while typing quickly. When the server catches up on next edit, it will
-                    // send new diagnostics to which the infoview responds by calling
-                    // `getInteractiveDiagnostics` again.
-                } else if (err) {
-                    console.log('getInteractiveDiagnostics error ', err)
-                    console.log(`calling setError ${err.message}`)
-                    errc.setError(String(err.message));
+                if (err) {
+                    if (err.code === -32801) {
+                        // Document has been changed since we made the request. This can happen
+                        // while typing quickly. When the server catches up on next edit, it will
+                        // send new diagnostics to which the infoview responds by calling
+                        // `getInteractiveDiagnostics` again.
+                    } else {
+                        console.log('getInteractiveDiagnostics error ', err)
+                        if (err.code === -32901 || err.code === -32902 || err.code === -32603) {
+                            // in case worker exited or crashed
+                            console.log(`calling setError ${err.message}`)
+                            errc.setError(String(err.message));
+                        }
+                    }
                 }
             }
         }
@@ -189,20 +194,25 @@ export function useMessagesForFile(uri: DocumentUri, line?: number): Interactive
                     setDiags(diags)
                 }
             } catch (err: any) {
-                if (err?.code === -32801) {
-                    // Document has been changed since we made the request.
-                    // This can happen while typing quickly, so server will catch up on next edit.
-                } else if (err) {
-                    console.log('getInteractiveDiagnostics error ', err)
-                    console.log(`calling setError ${err.message}`)
-                    errc.setError(String(err.message));
+                if (err) {
+                    if (err.code === -32801) {
+                        // Document has been changed since we made the request.
+                        // This can happen while typing quickly, so server will catch up on next edit.
+                    } else {
+                        console.log('getInteractiveDiagnostics error ', err)
+                        if (err.code ===-32901 || err.code ===-32902 || err.code === -32603) {
+                            // in case worker exited or crashed
+                            console.log(`calling setError ${err.message}`)
+                            errc.setError(String(err.message));
+                        }
+                    }
                 }
             }
         }
     }
     React.useEffect(() => void updateDiags(), [uri, line, lspDiags.get(uri)])
     return diags;
-}
+    }
 
 export function useMessagesFor(pos: DocumentPosition): InteractiveDiagnostic[] {
     const config = React.useContext(ConfigContext);

@@ -31,6 +31,7 @@ function Main(props: {}) {
         setErrorState('')
     });
 
+
     /* Set up updates to the global infoview state on editor events. */
     const config = useEventResult(ec.events.changedInfoviewConfig) || defaultInfoviewConfig;
 
@@ -68,11 +69,11 @@ function Main(props: {}) {
     let ret
     if (!serverInitializeResult) {
         ret = <p>Waiting for Lean server to start...</p>
-    } else if (serverStoppedResult){
+    } else if (serverStoppedResult) {
         ret = <p>{serverStoppedResult}</p>
-    } else if (errc.error){
-        ret = <div><p>Server has stopped</p> <p className='error'>{errc.error}</p></div>
-    }else if (!curUri) {
+    } else if (errc.error) {
+        ret = <div><p>Lean Server has stopped due: </p> <p className='error'>{errc.error}</p></div>
+    } else if (!curUri) {
         ret = <p>Click somewhere in the Lean file to enable the infoview.</p>
     } else {
         ret =
