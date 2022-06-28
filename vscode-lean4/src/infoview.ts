@@ -495,7 +495,12 @@ export class InfoProvider implements Disposable {
                 await this.sendPosition();
                 await this.sendConfig();
             } catch (err: any){
+<<<<<<< Updated upstream
                 console.log(`we got an unexpected exception initializing the infoview: ${err.message}`);
+=======
+                console.log('Error initinfoview')
+                // we are not getting the promise exception here in case the worker fails
+>>>>>>> Stashed changes
             }
         }
     }
