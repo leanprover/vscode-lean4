@@ -18,6 +18,7 @@ import { EditorConnection, EditorEvents } from './editorConnection';
 import { Event } from './event';
 import { ServerVersion } from './serverVersion';
 
+
 function Main(props: {}) {
     const ec = React.useContext(EditorContext);
 
@@ -58,8 +59,9 @@ function Main(props: {}) {
     let ret
     if (!serverInitializeResult) {
         ret = <p>Waiting for Lean server to start...</p>
-    } else if (serverStoppedResult) {
-        ret = <p>{serverStoppedResult}</p>
+    } else if (serverStoppedResult){
+        ret = <p>{serverStoppedResult}
+        </p>
     } else if (!curUri) {
         ret = <p>Click somewhere in the Lean file to enable the infoview.</p>
     } else {

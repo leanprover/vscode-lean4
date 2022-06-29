@@ -196,7 +196,7 @@ export function useMessagesForFile(uri: DocumentUri, line?: number): Interactive
     }
     React.useEffect(() => void updateDiags(), [uri, line, rs.sessionIdAt(uri), lspDiags.get(uri)])
     return diags;
-    }
+}
 
 export function useMessagesFor(pos: DocumentPosition): InteractiveDiagnostic[] {
     const config = React.useContext(ConfigContext);
