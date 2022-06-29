@@ -96,7 +96,21 @@ export class InfoProvider implements Disposable {
         sendClientRequest: async (uri: string, method: string, params: any): Promise<any> => {
             const client = this.clientProvider.findClient(uri);
             if (client) {
-                return client.sendRequest(method, params);
+                try {
+                    const result = await client.sendRequest(method, params);
+                    return result;
+                } catch (ex) {
+                    if(ex) {
+                        if (ex.code === -32901 || ex.code === -32902 || ex.code === -32603) {
+                            await client.showRestartMessage()
+                            // worker exited or crashed
+                            console.log(`Lean worker exited or crashed: ${ex.message}`)
+                            void this.webviewPanel?.api.serverStopped(String(ex.message))
+
+                        }
+                        throw ex
+                    }
+                }
             }
             return undefined;
         },
