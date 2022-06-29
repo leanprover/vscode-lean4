@@ -47,20 +47,3 @@ export class EditorConnection {
     return this.api.sendClientRequest(pos.uri, '$/lean/plainTermGoal', params);
   }
 }
-
-export class ErrorInfo
-{
-    setErrorState: React.Dispatch<React.SetStateAction<string>> | undefined;
-    error: string = '';
-
-    initialize(getErrorState: string, setErrorState : React.Dispatch<React.SetStateAction<string>> ) {
-        this.error = getErrorState;
-        this.setErrorState = setErrorState;
-    }
-
-    setError(msg:string) {
-        if (this.setErrorState){
-            this.setErrorState(_ => { return msg; });
-        }
-    }
-}

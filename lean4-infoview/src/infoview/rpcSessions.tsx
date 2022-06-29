@@ -55,27 +55,17 @@ class RpcSession implements Disposable {
     }
 
     async call(pos: DocumentPosition, method: string, params: any): Promise<any> {
-        try {
-            if (this.#closed) throw new Error('RPC connection closed')
-            const rpcParams: RpcCallParams = {
-                ...DocumentPosition.toTdpp(pos),
-                sessionId: this.sessionId,
-                method,
-                params,
-            }
-            const val = await this.#ec.api.sendClientRequest(pos.uri, '$/lean/rpc/call', rpcParams)
-            // const s = JSON.stringify(val)
-            // console.log(`'${method}(${JSON.stringify(params)})' at '${pos.line}:${pos.character}' -> '${s.length < 200 ? s : '(..)'}'`)
-            return val;
-        } catch(ex:any){
-            if (ex){
-                if (ex?.code === -32901 || ex?.code === -32902) {
-                    console.log('Worker crashed due to a stackoverflow or a bug.')
-
-                }
-                throw ex
-            }
+        if (this.#closed) throw new Error('RPC connection closed')
+        const rpcParams: RpcCallParams = {
+            ...DocumentPosition.toTdpp(pos),
+            sessionId: this.sessionId,
+            method,
+            params,
         }
+        const val = await this.#ec.api.sendClientRequest(pos.uri, '$/lean/rpc/call', rpcParams)
+        // const s = JSON.stringify(val)
+        // console.log(`'${method}(${JSON.stringify(params)})' at '${pos.line}:${pos.character}' -> '${s.length < 200 ? s : '(..)'}'`)
+        return val;
     }
 
     registerRef(ptr: RpcPtr<any>) {

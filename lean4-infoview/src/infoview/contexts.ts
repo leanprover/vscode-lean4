@@ -3,7 +3,7 @@ import type { DocumentUri, Diagnostic } from 'vscode-languageserver-protocol';
 
 import { LeanFileProgressProcessingInfo, InfoviewConfig, defaultInfoviewConfig } from '@lean4/infoview-api';
 
-import { EditorConnection, ErrorInfo } from './editorConnection';
+import { EditorConnection } from './editorConnection';
 import { RpcSessions } from './rpcSessions';
 import { ServerVersion } from './serverVersion';
 
@@ -17,5 +17,3 @@ export const VersionContext = React.createContext<ServerVersion | undefined>(und
 export const ConfigContext = React.createContext<InfoviewConfig>(defaultInfoviewConfig);
 export const LspDiagnosticsContext = React.createContext<Map<DocumentUri, Diagnostic[]>>(new Map());
 export const ProgressContext = React.createContext<Map<DocumentUri, LeanFileProgressProcessingInfo[]>>(new Map());
-
-export const ErrorContext = React.createContext<ErrorInfo>(new ErrorInfo());

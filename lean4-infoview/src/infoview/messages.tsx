@@ -5,7 +5,7 @@ import { Location, DocumentUri, Diagnostic, DiagnosticSeverity, PublishDiagnosti
 import { LeanDiagnostic } from '@lean4/infoview-api';
 
 import { basename, escapeHtml, RangeHelpers, usePausableState, useEvent, addUniqueKeys, DocumentPosition, useServerNotificationState } from './util';
-import { ConfigContext, EditorContext, LspDiagnosticsContext, RpcContext, VersionContext, ErrorContext } from './contexts';
+import { ConfigContext, EditorContext, LspDiagnosticsContext, RpcContext, VersionContext } from './contexts';
 import { Details } from './collapsing';
 import { InteractiveMessage } from './traceExplorer';
 import { getInteractiveDiagnostics, InteractiveDiagnostic, TaggedText_stripTags } from './rpcInterface';
@@ -91,7 +91,6 @@ export function AllMessages({uri: uri0}: { uri: DocumentUri }) {
     const ec = React.useContext(EditorContext);
     const sv = React.useContext(VersionContext);
     const rs = React.useContext(RpcContext);
-    const errc = React.useContext(ErrorContext);
     const dc = React.useContext(LspDiagnosticsContext);
     const config = React.useContext(ConfigContext);
     const diags0 = dc.get(uri0) || [];
@@ -104,20 +103,13 @@ export function AllMessages({uri: uri0}: { uri: DocumentUri }) {
                     return diags
                 }
             } catch (err: any) {
-                if (err) {
-                    if (err.code === -32801) {
-                        // Document has been changed since we made the request. This can happen
-                        // while typing quickly. When the server catches up on next edit, it will
-                        // send new diagnostics to which the infoview responds by calling
-                        // `getInteractiveDiagnostics` again.
-                    } else {
-                        console.log('getInteractiveDiagnostics error ', err)
-                        if (err.code === -32901 || err.code === -32902 || err.code === -32603) {
-                            // in case worker exited or crashed
-                            console.log(`calling setError ${err.message}`)
-                            errc.setError(String(err.message));
-                        }
-                    }
+                if (err?.code === -32801) {
+                    // Document has been changed since we made the request. This can happen
+                    // while typing quickly. When the server catches up on next edit, it will
+                    // send new diagnostics to which the infoview responds by calling
+                    // `getInteractiveDiagnostics` again.
+                } else {
+                    console.log('getInteractiveDiagnostics error ', err)
                 }
             }
         }
@@ -179,7 +171,6 @@ export function WithLspDiagnosticsContext({children}: React.PropsWithChildren<{}
 export function useMessagesForFile(uri: DocumentUri, line?: number): InteractiveDiagnostic[] {
     const rs = React.useContext(RpcContext)
     const sv = React.useContext(VersionContext)
-    const errc = React.useContext(ErrorContext);
     const lspDiags = React.useContext(LspDiagnosticsContext)
     const [diags, setDiags] = React.useState<InteractiveDiagnostic[]>([])
 
@@ -194,18 +185,11 @@ export function useMessagesForFile(uri: DocumentUri, line?: number): Interactive
                     setDiags(diags)
                 }
             } catch (err: any) {
-                if (err) {
-                    if (err.code === -32801) {
-                        // Document has been changed since we made the request.
-                        // This can happen while typing quickly, so server will catch up on next edit.
-                    } else {
-                        console.log('getInteractiveDiagnostics error ', err)
-                        if (err.code ===-32901 || err.code ===-32902 || err.code === -32603) {
-                            // in case worker exited or crashed
-                            console.log(`calling setError ${err.message}`)
-                            errc.setError(String(err.message));
-                        }
-                    }
+                if (err?.code === -32801) {
+                    // Document has been changed since we made the request.
+                    // This can happen while typing quickly, so server will catch up on next edit.
+                } else {
+                    console.log('getInteractiveDiagnostics error ', err)
                 }
             }
         }

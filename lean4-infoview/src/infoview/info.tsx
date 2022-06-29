@@ -309,10 +309,7 @@ function InfoAux(props: InfoProps) {
             // Start both goal requests before awaiting them.
             const goalsReq = getInteractiveGoals(rs, pos);
             const termGoalReq = getInteractiveTermGoal(rs, pos);
-            allReq = Promise.all([goalsReq, termGoalReq]).catch(e => {
-                setStatus('error')
-                return []
-            });
+            allReq = Promise.all([goalsReq, termGoalReq]);
         } else {
             const goalsReq = ec.requestPlainGoal(pos).then(gs => {
                 if (gs) return updatePlainGoals(gs)

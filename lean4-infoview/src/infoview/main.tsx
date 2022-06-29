@@ -11,8 +11,8 @@ import { LeanFileProgressParams, LeanFileProgressProcessingInfo, defaultInfoview
 
 import { Infos } from './infos';
 import { AllMessages, WithLspDiagnosticsContext } from './messages';
-import { useClientNotificationEffect, useEventResult, useServerNotificationState, useEvent } from './util';
-import { EditorContext, ConfigContext, ProgressContext, VersionContext, ErrorContext } from './contexts';
+import { useClientNotificationEffect, useEventResult, useServerNotificationState } from './util';
+import { EditorContext, ConfigContext, ProgressContext, VersionContext } from './contexts';
 import { WithRpcSessions } from './rpcSessions';
 import { EditorConnection, EditorEvents } from './editorConnection';
 import { Event } from './event';
@@ -20,17 +20,6 @@ import { ServerVersion } from './serverVersion';
 
 function Main(props: {}) {
     const ec = React.useContext(EditorContext);
-
-    const errc = React.useContext(ErrorContext);
-    const [getErrorState, setErrorState] = React.useState<string>('');
-    const error : string = getErrorState
-    errc.initialize(error, setErrorState);
-
-    useEvent(ec.events.serverRestarted, () => {
-        console.log('clearing error state because server was restarted')
-        setErrorState('')
-    });
-
 
     /* Set up updates to the global infoview state on editor events. */
     const config = useEventResult(ec.events.changedInfoviewConfig) || defaultInfoviewConfig;
@@ -71,8 +60,6 @@ function Main(props: {}) {
         ret = <p>Waiting for Lean server to start...</p>
     } else if (serverStoppedResult) {
         ret = <p>{serverStoppedResult}</p>
-    } else if (errc.error) {
-        ret = <div><p>Lean Server has stopped due: </p> <p className='error'>{errc.error}</p></div>
     } else if (!curUri) {
         ret = <p>Click somewhere in the Lean file to enable the infoview.</p>
     } else {
@@ -105,7 +92,6 @@ function Main(props: {}) {
  * @param uiElement the HTML element (e.g. a `<div>`) to render into
  */
 export function renderInfoview(editorApi: EditorApi, uiElement: HTMLElement): InfoviewApi {
-
     const editorEvents: EditorEvents = {
         initialize: new Event(),
         gotServerNotification: new Event(),
