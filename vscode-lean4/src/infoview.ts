@@ -101,7 +101,7 @@ export class InfoProvider implements Disposable {
                     const result = await client.sendRequest(method, params);
                     return result
                 } catch (ex) {
-                    if (ex.code === -32901 || ex.code === -32902 || ex.code === -32801) {
+                    if (ex.code === -32901 || ex.code === -32902) {
                         // ex codes related with worker exited or crashed
                         this.workerExited = true;
                         console.log(`Lean worker exited or crashed: ${ex.message}`)
@@ -498,12 +498,12 @@ export class InfoProvider implements Disposable {
         // by listening to notifications.  Send these notifications when the infoview starts
         // so that it has up-to-date information.
         if (client?.initializeResult) {
-            await this.webviewPanel?.api.serverStopped(''); // clear any server stopped state
             await this.webviewPanel?.api.serverRestarted(client.initializeResult);
             await this.sendDiagnostics(client);
             await this.sendProgress(client);
             await this.sendPosition();
             await this.sendConfig();
+            await this.webviewPanel?.api.serverStopped(''); // clear any server stopped state
         }
     }
 
