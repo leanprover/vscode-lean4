@@ -62,6 +62,7 @@ export class InfoProvider implements Disposable {
     private rpcSessions: Map<string, RpcSession> = new Map();
 
     private clientsFailed: Map<string, string> = new Map();
+    private workerExited: boolean = false;
 
     private subscribeDidChangeNotification(client: LeanClient, method: string){
         const h = client.didChange((params) => {
@@ -98,17 +99,13 @@ export class InfoProvider implements Disposable {
             if (client) {
                 try {
                     const result = await client.sendRequest(method, params);
-                    return result;
+                    return result
                 } catch (ex) {
-                    if(ex) {
-                        if (ex.code === -32901 || ex.code === -32902 || ex.code === -32603) {
-                            await client.showRestartMessage()
-                            // worker exited or crashed
-                            console.log(`Lean worker exited or crashed: ${ex.message}`)
-                            await this.webviewPanel?.api.serverStopped(String(ex.message))
-
-                        }
-                        throw ex
+                    if (ex.code === -32901 || ex.code === -32902 || ex.code === -32603) {
+                        // worker exited or crashed
+                        this.workerExited = true;
+                        console.log(`Lean worker exited or crashed: ${ex.message}`)
+                        await this.onActiveClientStopped(client, false, `Lean worker exited or crashed: ${ex.message}`)
                     }
                 }
             }
@@ -501,16 +498,12 @@ export class InfoProvider implements Disposable {
         // by listening to notifications.  Send these notifications when the infoview starts
         // so that it has up-to-date information.
         if (client?.initializeResult) {
-            try {
-                await this.webviewPanel?.api.serverStopped(''); // clear any server stopped state
-                await this.webviewPanel?.api.serverRestarted(client.initializeResult);
-                await this.sendDiagnostics(client);
-                await this.sendProgress(client);
-                await this.sendPosition();
-                await this.sendConfig();
-            } catch (err: any){
-                console.log(`we got an unexpected exception initializing the infoview: ${err.message}`);
-            }
+            await this.webviewPanel?.api.serverStopped(''); // clear any server stopped state
+            await this.webviewPanel?.api.serverRestarted(client.initializeResult);
+            await this.sendDiagnostics(client);
+            await this.sendProgress(client);
+            await this.sendPosition();
+            await this.sendConfig();
         }
     }
 
@@ -576,27 +569,30 @@ export class InfoProvider implements Disposable {
             return;
         }
         // actual editor
-        const client = this.clientProvider.findClient(editor.document.uri.toString())
         if (this.clientsFailed.size > 0){
+            const client = this.clientProvider.findClient(editor.document.uri.toString())
             if (client) {
                 const folder = client.getWorkspaceFolder()
                 if (this.clientsFailed.has(folder)){
                     // send stopped event
                     const msg = this.clientsFailed.get(folder)
                     await this.webviewPanel?.api.serverStopped(msg || '');
+                    if (this.workerExited){
+                        await client.showRestartMessage()
+                        this.workerExited = false;
+                    }
                     return;
                 } else {
                     await this.updateStatus(loc)
                 }
             }
-
         } else {
             await this.updateStatus(loc)
         }
+
     }
 
     private async updateStatus(loc: ls.Location | undefined): Promise<void> {
-        await this.webviewPanel?.api.serverStopped(''); // clear any server stopped state
         await this.autoOpen();
         await this.webviewPanel?.api.changedCursorLocation(loc);
     }
