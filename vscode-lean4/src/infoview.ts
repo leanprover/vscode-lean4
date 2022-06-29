@@ -101,7 +101,7 @@ export class InfoProvider implements Disposable {
                     const result = await client.sendRequest(method, params);
                     return result
                 } catch (ex) {
-                    if (ex.code === -32901 || ex.code === -32902) {
+                    if (ex.code === -32901 || ex.code === -32902 || ex.code === -32801) {
                         // ex codes related with worker exited or crashed
                         this.workerExited = true;
                         console.log(`Lean worker exited or crashed: ${ex.message}`)
