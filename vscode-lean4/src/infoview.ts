@@ -105,7 +105,7 @@ export class InfoProvider implements Disposable {
                             await client.showRestartMessage()
                             // worker exited or crashed
                             console.log(`Lean worker exited or crashed: ${ex.message}`)
-                            void this.webviewPanel?.api.serverStopped(String(ex.message))
+                            await this.webviewPanel?.api.serverStopped(String(ex.message))
 
                         }
                         throw ex
