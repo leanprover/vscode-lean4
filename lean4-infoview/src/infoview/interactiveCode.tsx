@@ -5,6 +5,7 @@ import { DocumentPosition, useAsync, mapRpcError } from './util'
 import { SubexprInfo, CodeWithInfos, InteractiveDiagnostics_infoToInteractive, getGoToLocation, TaggedText } from './rpcInterface'
 import { DetectHoverSpan, HoverState, WithTooltipOnHover } from './tooltips'
 import { Location } from 'vscode-languageserver-protocol'
+import { marked } from 'marked'
 
 export interface InteractiveTextComponentProps<T> {
   pos: DocumentPosition
@@ -38,6 +39,115 @@ interface TypePopupContentsProps {
   redrawTooltip: () => void
 }
 
+function parseHrefAndDimensions(href: string): { href: string; dimensions: string[] } {
+	const dimensions: string[] = [];
+	const splitted = href.split('|').map(s => s.trim());
+	href = splitted[0];
+	const parameters = splitted[1];
+	if (parameters) {
+		const heightFromParams = /height=(\d+)/.exec(parameters);
+		const widthFromParams = /width=(\d+)/.exec(parameters);
+		const height = heightFromParams ? heightFromParams[1] : '';
+		const width = widthFromParams ? widthFromParams[1] : '';
+		const widthIsFinite = isFinite(parseInt(width));
+		const heightIsFinite = isFinite(parseInt(height));
+		if (widthIsFinite) {
+			dimensions.push(`width="${width}"`);
+		}
+		if (heightIsFinite) {
+			dimensions.push(`height="${height}"`);
+		}
+	}
+	return { href, dimensions };
+}
+
+function escapeDoubleQuotes(input: string) {
+	return input.replace(/"/g, '&quot;');
+}
+
+function removeMarkdownEscapes(text: string): string {
+	if (!text) {
+		return text;
+	}
+	return text.replace(/\\([\\`*_{}[\]()#+\-.!])/g, '$1');
+}
+
+function renderCodeBlock(lang: string, code: string) : string {
+  // todo: render Lean code blocks using the lean syntax.json
+  return code;
+}
+
+function renderMarkdown(doc: string){
+  const renderer = new marked.Renderer();
+  renderer.image = (href: string, title: string, text: string) => {
+		let dimensions: string[] = [];
+		let attributes: string[] = [];
+		if (href) {
+			({ href, dimensions } = parseHrefAndDimensions(href));
+			attributes.push(`src="${escapeDoubleQuotes(href)}"`);
+		}
+		if (text) {
+			attributes.push(`alt="${escapeDoubleQuotes(text)}"`);
+		}
+		if (title) {
+			attributes.push(`title="${escapeDoubleQuotes(title)}"`);
+		}
+		if (dimensions.length) {
+			attributes = attributes.concat(dimensions);
+		}
+		return '<img ' + attributes.join(' ') + '>';
+	};
+	renderer.link = (href, title, text): string => {
+		if (typeof href !== 'string') {
+			return '';
+		}
+
+		// Remove markdown escapes. Workaround for https://github.com/chjj/marked/issues/829
+		if (href === text) { // raw link case
+
+			text = removeMarkdownEscapes(text as string);
+		}
+
+		title = typeof title === 'string' ? escapeDoubleQuotes(removeMarkdownEscapes(title)) : '';
+		href = removeMarkdownEscapes(href);
+
+		// HTML Encode href
+		href = href.replace(/&/g, '&amp;')
+			.replace(/</g, '&lt;')
+			.replace(/>/g, '&gt;')
+			.replace(/"/g, '&quot;')
+			.replace(/'/g, '&#39;');
+		return `<a href="${href}" title="${title || href}">${text}</a>`;
+	};
+	renderer.paragraph = (text): string => {
+		return `<p>${text}</p>`;
+	};
+
+  renderer.code = (code, lang) => {
+    const id : string = lang ? lang : '';
+    const formatted = renderCodeBlock(id, code as string);
+		return `<div class="code" data-code="${id}">${escape(formatted)}</div>`;
+	}
+
+  const markedOptions: marked.MarkedOptions = {}
+  markedOptions.sanitizer = (html: string): string => {
+    const match = html.match(/^(<span[^>]+>)|(<\/\s*span>)$/);
+    return match ? html : '';
+  };
+  markedOptions.sanitize = true;
+  markedOptions.silent = true;
+  markedOptions.renderer = renderer;
+
+  // todo: vscode also has lots of post render sanitization and hooking up of href clicks and so on.
+  // See https://github.com/microsoft/vscode/blob/main/src/vs/base/browser/markdownRenderer.ts
+
+  // TODO: also need to provide all the vscode CSS styles here since the popup is not inheriting those.
+
+  const renderedMarkdown = marked.parse(doc, markedOptions);
+  // return <div dangerouslySetInnerHTML={{ __html: renderedMarkdown }} />
+  return <div>{ renderedMarkdown } </div>
+}
+
 /** Shows `explicitValue : itsType` and a docstring if there is one. */
 function TypePopupContents({ pos, info, redrawTooltip }: TypePopupContentsProps) {
   const rs = React.useContext(RpcContext)
@@ -55,7 +165,7 @@ function TypePopupContents({ pos, info, redrawTooltip }: TypePopupContentsProps)
     {ip && <>
       {ip.exprExplicit && <InteractiveCode pos={pos} fmt={ip.exprExplicit} />} : {ip.type && <InteractiveCode pos={pos} fmt={ip.type} />}
       {ip.doc && <hr />}
-      {ip.doc && ip.doc} {/* TODO markdown */}
+      {ip.doc && ip.doc && renderMarkdown(ip.doc)}
     </>}
     {err && <>Error: {mapRpcError(err).message}</>}
     {(!ip && !err) && <>Loading..</>}
