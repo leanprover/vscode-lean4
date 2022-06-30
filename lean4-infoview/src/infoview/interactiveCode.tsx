@@ -74,7 +74,7 @@ function removeMarkdownEscapes(text: string): string {
 
 function renderCodeBlock(lang: string, code: string) : string {
   // todo: render Lean code blocks using the lean syntax.json
-  return code;
+  return `<div>${code}</div>`
 }
 
 function renderMarkdown(doc: string){
@@ -126,7 +126,7 @@ function renderMarkdown(doc: string){
   renderer.code = (code, lang) => {
     const id : string = lang ? lang : '';
     const formatted = renderCodeBlock(id, code as string);
-		return `<div class="code" data-code="${id}">${escape(formatted)}</div>`;
+		return `<div class="font-code tl pre-wrap" data-code="${id}">${formatted}</div>`;
 	}
 
   const markedOptions: marked.MarkedOptions = {}
@@ -141,11 +141,12 @@ function renderMarkdown(doc: string){
   // todo: vscode also has lots of post render sanitization and hooking up of href clicks and so on.
   // See https://github.com/microsoft/vscode/blob/main/src/vs/base/browser/markdownRenderer.ts
 
-  // TODO: also need to provide all the vscode CSS styles here since the popup is not inheriting those.
+  // TODO: also need to provide all the vscode CSS styles that are relevant to all HTML tags that
+  // can be returned by the markdown parser, like lists and tables.
 
   const renderedMarkdown = marked.parse(doc, markedOptions);
-  // return <div dangerouslySetInnerHTML={{ __html: renderedMarkdown }} />
-  return <div>{ renderedMarkdown } </div>
+  return <div dangerouslySetInnerHTML={{ __html: renderedMarkdown }} />
+  // return <div>{ renderedMarkdown } </div>
 }
 
 /** Shows `explicitValue : itsType` and a docstring if there is one. */
@@ -163,7 +164,9 @@ function TypePopupContents({ pos, info, redrawTooltip }: TypePopupContentsProps)
 
   return <>
     {ip && <>
+      <div className="font-code tl pre-wrap">
       {ip.exprExplicit && <InteractiveCode pos={pos} fmt={ip.exprExplicit} />} : {ip.type && <InteractiveCode pos={pos} fmt={ip.type} />}
+      </div>
       {ip.doc && <hr />}
       {ip.doc && ip.doc && renderMarkdown(ip.doc)}
     </>}
@@ -175,7 +178,7 @@ function TypePopupContents({ pos, info, redrawTooltip }: TypePopupContentsProps)
 /** Tagged spans can be hovered over to display extra info stored in the associated `SubexprInfo`. */
 function InteractiveCodeTag({pos, tag: ct, fmt}: InteractiveTagProps<SubexprInfo>) {
   const mkTooltip = React.useCallback((redrawTooltip: () => void) =>
-    <div className="font-code tl pre-wrap">
+    <div>
       <TypePopupContents pos={pos} info={ct}
         redrawTooltip={redrawTooltip} />
     </div>, [pos.uri, pos.line, pos.character, ct.info])
