@@ -71,7 +71,7 @@ export class LeanClient implements Disposable {
     private progressChangedEmitter = new EventEmitter<[string, LeanFileProgressProcessingInfo[]]>()
     progressChanged = this.progressChangedEmitter.event
 
-    private stoppedEmitter = new EventEmitter<string>()
+    private stoppedEmitter = new EventEmitter<[string, string]>()
     stopped = this.stoppedEmitter.event
 
     private restartedEmitter = new EventEmitter()
@@ -100,10 +100,12 @@ export class LeanClient implements Disposable {
     }
 
     async showRestartMessage(): Promise<void> {
-        const restartItem = 'Restart Lean Language Server';
-        const item = await window.showErrorMessage('Lean Language Server has stopped unexpectedly.', restartItem)
-        if (item === restartItem) {
-            void this.start();
+        if (!this.noPrompt){
+            const restartItem = 'Restart Lean Language Server';
+            const item = await window.showErrorMessage('Lean Language Server has stopped unexpectedly.', restartItem)
+            if (item === restartItem) {
+                void this.start();
+            }
         }
     }
 
@@ -292,12 +294,10 @@ export class LeanClient implements Disposable {
                         this.restartedEmitter.fire(undefined)
                     }
                 } else if (s.newState === State.Stopped) {
-                    this.stoppedEmitter.fire('Lean language server has stopped. ');
-                    console.log('client has stopped or it failed to start');
                     this.running = false;
-                    if (!this.noPrompt){
-                        await this.showRestartMessage();
-                    }
+                    this.stoppedEmitter.fire(['Lean language server has stopped. ', '']);
+                    console.log('client has stopped or it failed to start');
+                    await this.showRestartMessage();
                 }
             })
             this.client.start()

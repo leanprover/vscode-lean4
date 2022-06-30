@@ -61,8 +61,7 @@ export class InfoProvider implements Disposable {
 
     private rpcSessions: Map<string, RpcSession> = new Map();
 
-    private clientsFailed: Map<string, string> = new Map();
-    private workerExited: boolean = false;
+    private clientsFailed: Map<string, [string, string]> = new Map();
 
     private subscribeDidChangeNotification(client: LeanClient, method: string){
         const h = client.didChange((params) => {
@@ -103,9 +102,9 @@ export class InfoProvider implements Disposable {
                 } catch (ex) {
                     if (ex.code === -32901 || ex.code === -32902) {
                         // ex codes related with worker exited or crashed
-                        this.workerExited = true;
                         console.log(`Lean worker exited or crashed: ${ex.message}`)
-                        await this.onActiveClientStopped(client, false, `Lean worker exited or crashed: ${ex.message}`)
+                        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+                        await this.onActiveClientStopped(client, false, 'Lean worker exited or crashed: ', ex.message)
                     }
                 }
             }
@@ -250,8 +249,8 @@ export class InfoProvider implements Disposable {
             void this.onClientRemoved(client);
         });
 
-        provider.clientStopped(([client, activeClient, err]) => {
-            void this.onActiveClientStopped(client, activeClient, err);
+        provider.clientStopped(([client, activeClient, msg, reason]) => {
+            void this.onActiveClientStopped(client, activeClient, msg, reason);
 
         });
 
@@ -300,7 +299,7 @@ export class InfoProvider implements Disposable {
             }
         }
 
-        await this.webviewPanel?.api.serverStopped(''); // clear any server stopped state
+        await this.webviewPanel?.api.serverStopped('',''); // clear any server stopped state
         const folder = client.getWorkspaceFolder()
         if (this.clientsFailed.has(folder)) {
             this.clientsFailed.delete(folder) // delete from failed clients
@@ -336,19 +335,23 @@ export class InfoProvider implements Disposable {
         // todo: remove subscriptions for this client...
     }
 
-    async onActiveClientStopped(client: LeanClient, activeClient: boolean, msg: string) {
+    async onActiveClientStopped(client: LeanClient, activeClient: boolean, msg: string, reason: string) {
         // Will show a message in case the active client stops
         // add failed client into a list (will be removed in case the client is restarted)
         if (activeClient)
         {
             // means that client and active client are the same and just show the error message
-            await this.webviewPanel?.api.serverStopped(msg);
+            await this.webviewPanel?.api.serverStopped(msg, reason);
         }
 
         console.log(`client stopped: ${client.getWorkspaceFolder()}`)
 
         // remember this client is in a stopped state
-        this.clientsFailed.set(client.getWorkspaceFolder(), msg)
+        const key = client.getWorkspaceFolder();
+        if (!this.clientsFailed.has(key)) {
+            this.clientsFailed.set(key, [msg, reason]);
+            await client.showRestartMessage();
+        }
     }
 
     dispose(): void {
@@ -503,7 +506,7 @@ export class InfoProvider implements Disposable {
             await this.sendProgress(client);
             await this.sendPosition();
             await this.sendConfig();
-            await this.webviewPanel?.api.serverStopped(''); // clear any server stopped state
+            await this.webviewPanel?.api.serverStopped('',''); // clear any server stopped state
         }
     }
 
@@ -575,12 +578,11 @@ export class InfoProvider implements Disposable {
                 const folder = client.getWorkspaceFolder()
                 if (this.clientsFailed.has(folder)){
                     // send stopped event
-                    const msg = this.clientsFailed.get(folder)
-                    await this.webviewPanel?.api.serverStopped(msg || '');
-                    if (this.workerExited){
-                        await client.showRestartMessage()
-                        this.workerExited = false;
+                    const values = this.clientsFailed.get(folder);
+                    if (values) {
+                        await this.webviewPanel?.api.serverStopped(values[0], values[1]);
                     }
+                    await client.showRestartMessage();
                     return;
                 } else {
                     await this.updateStatus(loc)
@@ -593,6 +595,7 @@ export class InfoProvider implements Disposable {
     }
 
     private async updateStatus(loc: ls.Location | undefined): Promise<void> {
+        await this.webviewPanel?.api.serverStopped('',''); // clear any server stopped state
         await this.autoOpen();
         await this.webviewPanel?.api.changedCursorLocation(loc);
     }
