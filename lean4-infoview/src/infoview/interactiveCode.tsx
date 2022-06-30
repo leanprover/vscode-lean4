@@ -39,39 +39,6 @@ interface TypePopupContentsProps {
   redrawTooltip: () => void
 }
 
-function parseHrefAndDimensions(href: string): { href: string; dimensions: string[] } {
-	const dimensions: string[] = [];
-	const splitted = href.split('|').map(s => s.trim());
-	href = splitted[0];
-	const parameters = splitted[1];
-	if (parameters) {
-		const heightFromParams = /height=(\d+)/.exec(parameters);
-		const widthFromParams = /width=(\d+)/.exec(parameters);
-		const height = heightFromParams ? heightFromParams[1] : '';
-		const width = widthFromParams ? widthFromParams[1] : '';
-		const widthIsFinite = isFinite(parseInt(width));
-		const heightIsFinite = isFinite(parseInt(height));
-		if (widthIsFinite) {
-			dimensions.push(`width="${width}"`);
-		}
-		if (heightIsFinite) {
-			dimensions.push(`height="${height}"`);
-		}
-	}
-	return { href, dimensions };
-}
-
-function escapeDoubleQuotes(input: string) {
-	return input.replace(/"/g, '&quot;');
-}
-
-function removeMarkdownEscapes(text: string): string {
-	if (!text) {
-		return text;
-	}
-	return text.replace(/\\([\\`*_{}[\]()#+\-.!])/g, '$1');
-}
-
 function renderCodeBlock(lang: string, code: string) : string {
   // todo: render Lean code blocks using the lean syntax.json
   return `<div>${code}</div>`
@@ -79,28 +46,6 @@ function renderCodeBlock(lang: string, code: string) : string {
 
 function renderMarkdown(doc: string){
   const renderer = new marked.Renderer();
-	renderer.link = (href, title, text): string => {
-		if (typeof href !== 'string') {
-			return '';
-		}
-
-		// Remove markdown escapes. Workaround for https://github.com/chjj/marked/issues/829
-		if (href === text) { // raw link case
-			text = removeMarkdownEscapes(text);
-		}
-
-		title = typeof title === 'string' ? escapeDoubleQuotes(removeMarkdownEscapes(title)) : '';
-		href = removeMarkdownEscapes(href);
-
-		// HTML Encode href
-		href = href.replace(/&/g, '&amp;')
-			.replace(/</g, '&lt;')
-			.replace(/>/g, '&gt;')
-			.replace(/"/g, '&quot;')
-			.replace(/'/g, '&#39;');
-		return `<a href="${href}" title="${title || href}">${text}</a>`;
-	};
-
   renderer.code = (code, lang) => {
     const id : string = lang ? lang : '';
     const formatted = renderCodeBlock(id, code);
@@ -109,22 +54,21 @@ function renderMarkdown(doc: string){
 
   const markedOptions: marked.MarkedOptions = {}
   markedOptions.sanitizer = (html: string): string => {
-    const match = html.match(/^(<span[^>]+>)|(<\/\s*span>)$/);
-    return match ? html : '';
+    return '';
   };
   markedOptions.sanitize = true;
   markedOptions.silent = true;
   markedOptions.renderer = renderer;
 
   // todo: vscode also has lots of post render sanitization and hooking up of href clicks and so on.
-  // See https://github.com/microsoft/vscode/blob/main/src/vs/base/browser/markdownRenderer.ts
+  // see https://github.com/microsoft/vscode/blob/main/src/vs/base/browser/markdownRenderer.ts
 
   // TODO: also need to provide all the vscode CSS styles that are relevant to all HTML tags that
   // can be returned by the markdown parser, like lists and tables.
 
   const renderedMarkdown = marked.parse(doc, markedOptions);
-  // return <div dangerouslySetInnerHTML={{ __html: renderedMarkdown }} />
-  return <div>{ renderedMarkdown } </div>
+  return <div dangerouslySetInnerHTML={{ __html: renderedMarkdown }} />
+  // return <div>{ renderedMarkdown } </div>
 }
 
 /** Shows `explicitValue : itsType` and a docstring if there is one. */
