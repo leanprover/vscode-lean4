@@ -104,8 +104,7 @@ function renderMarkdown(doc: string){
 
 		// Remove markdown escapes. Workaround for https://github.com/chjj/marked/issues/829
 		if (href === text) { // raw link case
-
-			text = removeMarkdownEscapes(text as string);
+			text = removeMarkdownEscapes(text);
 		}
 
 		title = typeof title === 'string' ? escapeDoubleQuotes(removeMarkdownEscapes(title)) : '';
@@ -125,7 +124,7 @@ function renderMarkdown(doc: string){
 
   renderer.code = (code, lang) => {
     const id : string = lang ? lang : '';
-    const formatted = renderCodeBlock(id, code as string);
+    const formatted = renderCodeBlock(id, code);
 		return `<div class="font-code tl pre-wrap" data-code="${id}">${formatted}</div>`;
 	}
 
