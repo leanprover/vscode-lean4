@@ -79,24 +79,6 @@ function renderCodeBlock(lang: string, code: string) : string {
 
 function renderMarkdown(doc: string){
   const renderer = new marked.Renderer();
-  renderer.image = (href: string, title: string, text: string) => {
-		let dimensions: string[] = [];
-		let attributes: string[] = [];
-		if (href) {
-			({ href, dimensions } = parseHrefAndDimensions(href));
-			attributes.push(`src="${escapeDoubleQuotes(href)}"`);
-		}
-		if (text) {
-			attributes.push(`alt="${escapeDoubleQuotes(text)}"`);
-		}
-		if (title) {
-			attributes.push(`title="${escapeDoubleQuotes(title)}"`);
-		}
-		if (dimensions.length) {
-			attributes = attributes.concat(dimensions);
-		}
-		return '<img ' + attributes.join(' ') + '>';
-	};
 	renderer.link = (href, title, text): string => {
 		if (typeof href !== 'string') {
 			return '';
@@ -117,9 +99,6 @@ function renderMarkdown(doc: string){
 			.replace(/"/g, '&quot;')
 			.replace(/'/g, '&#39;');
 		return `<a href="${href}" title="${title || href}">${text}</a>`;
-	};
-	renderer.paragraph = (text): string => {
-		return `<p>${text}</p>`;
 	};
 
   renderer.code = (code, lang) => {
@@ -144,8 +123,8 @@ function renderMarkdown(doc: string){
   // can be returned by the markdown parser, like lists and tables.
 
   const renderedMarkdown = marked.parse(doc, markedOptions);
-  return <div dangerouslySetInnerHTML={{ __html: renderedMarkdown }} />
-  // return <div>{ renderedMarkdown } </div>
+  // return <div dangerouslySetInnerHTML={{ __html: renderedMarkdown }} />
+  return <div>{ renderedMarkdown } </div>
 }
 
 /** Shows `explicitValue : itsType` and a docstring if there is one. */
