@@ -350,6 +350,7 @@ export class InfoProvider implements Disposable {
         const key = client.getWorkspaceFolder();
         if (!this.clientsFailed.has(key)) {
             this.clientsFailed.set(key, [msg, reason]);
+            await this.sendPosition();
             await client.showRestartMessage();
         }
     }
@@ -582,7 +583,6 @@ export class InfoProvider implements Disposable {
                     if (values) {
                         await this.webviewPanel?.api.serverStopped(values[0], values[1]);
                     }
-                    await client.showRestartMessage();
                     return;
                 } else {
                     await this.updateStatus(loc)

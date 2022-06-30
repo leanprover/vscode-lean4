@@ -48,6 +48,7 @@ export class LeanClient implements Disposable {
     private folderUri: Uri;
     private subscriptions: Disposable[] = []
     private noPrompt : boolean = false;
+    private showingRestartMessage : boolean = false;
 
     private didChangeEmitter = new EventEmitter<DidChangeTextDocumentParams>()
     didChange = this.didChangeEmitter.event
@@ -100,8 +101,8 @@ export class LeanClient implements Disposable {
     }
 
     async showRestartMessage(): Promise<void> {
-        if (!this.noPrompt){
-            this.noPrompt = true;
+        if (!this.showingRestartMessage){
+            this.showingRestartMessage = true;
             const restartItem = 'Restart Lean Language Server';
             const item = await window.showErrorMessage('Lean Language Server has stopped unexpectedly.', restartItem)
             if (item === restartItem) {
@@ -114,7 +115,6 @@ export class LeanClient implements Disposable {
         const startTime = Date.now()
 
         console.log('Restarting Lean Language Server')
-        this.noPrompt = false;
         if (this.isStarted()) {
             await this.stop()
         }
@@ -299,7 +299,9 @@ export class LeanClient implements Disposable {
                     this.running = false;
                     this.stoppedEmitter.fire(['Lean language server has stopped. ', '']);
                     console.log('client has stopped or it failed to start');
-                    await this.showRestartMessage();
+                    if (!this.noPrompt){
+                        await this.showRestartMessage();
+                    }
                 }
             })
             this.client.start()
@@ -311,6 +313,7 @@ export class LeanClient implements Disposable {
             }
             // if we got this far then the client is happy so we are running!
             this.running = true;
+            this.showingRestartMessage = false;
         } catch (error) {
             this.outputChannel.appendLine('' + error);
             this.serverFailedEmitter.fire('' + error);
@@ -410,6 +413,7 @@ export class LeanClient implements Disposable {
         assert(() => this.isStarted())
         if (this.client && this.running) {
             this.noPrompt = true;
+            this.showingRestartMessage = true
             try {
                 // some timing conditions can happen while running unit tests that cause
                 // this to throw an exception which then causes those tests to fail.

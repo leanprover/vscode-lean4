@@ -60,8 +60,7 @@ function Main(props: {}) {
     if (!serverInitializeResult) {
         ret = <p>Waiting for Lean server to start...</p>
     } else if (serverStoppedResult && serverStoppedResult[0]){
-        ret = <div><p>{serverStoppedResult[0]}</p><p className="error">{serverStoppedResult[1]}
-            </p></div>
+        ret = <div><p>{serverStoppedResult[0]}</p><p className="error">{serverStoppedResult[1]}</p></div>
     } else {
         ret = <div className="ma1">
             <Infos />
