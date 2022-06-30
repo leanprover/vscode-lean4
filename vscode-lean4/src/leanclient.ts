@@ -105,6 +105,7 @@ export class LeanClient implements Disposable {
             this.showingRestartMessage = true;
             const restartItem = 'Restart Lean Language Server';
             const item = await window.showErrorMessage('Lean Language Server has stopped unexpectedly.', restartItem)
+            this.showingRestartMessage = false;
             if (item === restartItem) {
                 void this.start();
             }
@@ -297,7 +298,7 @@ export class LeanClient implements Disposable {
                     }
                 } else if (s.newState === State.Stopped) {
                     this.running = false;
-                    this.stoppedEmitter.fire(['Lean language server has stopped. ', '']);
+                    this.stoppedEmitter.fire(['Lean language server has stopped.', '']);
                     console.log('client has stopped or it failed to start');
                     if (!this.noPrompt){
                         await this.showRestartMessage();
