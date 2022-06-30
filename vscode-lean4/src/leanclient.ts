@@ -101,6 +101,7 @@ export class LeanClient implements Disposable {
 
     async showRestartMessage(): Promise<void> {
         if (!this.noPrompt){
+            this.noPrompt = true;
             const restartItem = 'Restart Lean Language Server';
             const item = await window.showErrorMessage('Lean Language Server has stopped unexpectedly.', restartItem)
             if (item === restartItem) {
@@ -113,6 +114,7 @@ export class LeanClient implements Disposable {
         const startTime = Date.now()
 
         console.log('Restarting Lean Language Server')
+        this.noPrompt = false;
         if (this.isStarted()) {
             await this.stop()
         }
