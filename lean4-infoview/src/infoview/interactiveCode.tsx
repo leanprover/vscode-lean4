@@ -67,8 +67,8 @@ function renderMarkdown(doc: string){
   // can be returned by the markdown parser, like lists and tables.
 
   const renderedMarkdown = marked.parse(doc, markedOptions);
-  // return <div dangerouslySetInnerHTML={{ __html: renderedMarkdown }} />
-  return <div>{ renderedMarkdown } </div>
+  return <div dangerouslySetInnerHTML={{ __html: renderedMarkdown }} />
+  // return <div>{ renderedMarkdown } </div>
 }
 
 /** Shows `explicitValue : itsType` and a docstring if there is one. */
