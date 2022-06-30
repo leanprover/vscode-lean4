@@ -103,8 +103,8 @@ export class InfoProvider implements Disposable {
                     if (ex.code === -32901 || ex.code === -32902) {
                         // ex codes related with worker exited or crashed
                         console.log(`Lean worker exited or crashed: ${ex.message}`)
-                        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-                        await this.onActiveClientStopped(client, false, 'Lean worker exited or crashed: ', ex.message)
+                        const activeClient = client === this.clientProvider.getActiveClient();
+                        await this.onActiveClientStopped(client, activeClient, 'Lean worker exited or crashed: ', ex.message as string)
                     }
                 }
             }
