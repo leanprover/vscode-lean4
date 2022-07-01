@@ -59,7 +59,7 @@ export async function deleteAllText() : Promise<void> {
     assert(editor !== undefined, 'no active editor');
     await vscode.commands.executeCommand('editor.action.selectAll');
     await editor.edit((builder) => {
-        builder.delete(editor.selection);
+        builder.delete(new vscode.Range(new vscode.Position(0, 0), new vscode.Position(editor.document.lineCount-1, 1000)));
     })
 }
 

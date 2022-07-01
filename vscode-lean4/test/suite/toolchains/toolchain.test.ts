@@ -55,7 +55,7 @@ suite('Toolchain Test Suite', () => {
 		}
 		// make sure language server is up and running.//
 		const hello1 = 'Hello World!!!'
-		await insertText(`#eval "${hello1}"`)
+		await initLean4Untitled(`#eval "${hello1}"`);
 
 		console.log('make sure language server is up and running.');
 		await assertStringInInfoview(info, hello1);
