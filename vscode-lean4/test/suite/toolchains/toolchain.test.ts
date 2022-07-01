@@ -15,8 +15,8 @@ suite('Toolchain Test Suite', () => {
 
 		// add normal values to initialize lean4 file
 		const hello = 'Hello World'
-		let lean = await initLean4Untitled(`#eval "${hello}"`);
-		let info = lean.exports.infoProvider;
+		const lean = await initLean4Untitled(`#eval "${hello}"`);
+		const info = lean.exports.infoProvider;
 		assert(info, 'No InfoProvider export');
 
 		console.log('make sure language server is up and running.');
