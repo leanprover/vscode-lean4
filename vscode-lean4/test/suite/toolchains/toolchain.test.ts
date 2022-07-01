@@ -26,7 +26,7 @@ suite('Toolchain Test Suite', () => {
 		console.log('Insert eval that causes crash.')
 		await insertText('\n\n#eval (unsafeCast 0 : String)')
 
-		const expectedMessage = 'Lean worker exited or crashed: Server process for untitled:Untitled-1 crashed, likely due to a stack overflow or a bug.'
+		const expectedMessage = '<div><p>Lean worker exited or crashed: </p><p class="error">Server process for untitled:Untitled-1 crashed, likely due to a stack overflow or a bug.</p></div></div>'
 		await assertStringInInfoview(info, expectedMessage);
 
 		// restart the server (without modifying the file, it should be showing the same message)
