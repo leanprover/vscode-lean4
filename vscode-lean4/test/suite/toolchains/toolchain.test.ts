@@ -25,7 +25,8 @@ suite('Toolchain Test Suite', () => {
 		// variables for restarting the server
 		const testsRoot = path.join(__dirname, '..', '..', '..', '..', 'test', 'test-fixtures', 'simple');
 		const clients = lean.exports.clientProvider;
-		const client = clients?.getClientForFolder(vscode.Uri.file(testsRoot));
+		assert(clients, 'No LeanClientProvider export');
+		const client = clients.getClientForFolder(vscode.Uri.file(testsRoot));
 
 		// adding string that causes the worker to fail
 		console.log('Insert eval that causes crash.')
