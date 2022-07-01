@@ -82,7 +82,7 @@ function TypePopupContents({ pos, info, redrawTooltip }: TypePopupContentsProps)
   // We let the tooltip know to redo its layout whenever our contents change.
   React.useEffect(() => redrawTooltip(), [ip, err, redrawTooltip])
 
-  return <div className="monaco-hover-content hover-div hover-row markdown-hover">
+  return <div className="monaco-hover monaco-hover-content hover-div hover-row markdown-hover">
     {ip && <>
       <div className="font-code tl pre-wrap">
       {ip.exprExplicit && <InteractiveCode pos={pos} fmt={ip.exprExplicit} />} : {ip.type && <InteractiveCode pos={pos} fmt={ip.type} />}
