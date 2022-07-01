@@ -135,3 +135,7 @@ select {
     color: var(--vscode-editorWidget-foreground);
     background: var(--vscode-editorWidget-background);
 }
+
+.hover-div {
+    overflow: hidden; font-size: 14px; line-height: 1.35714;
+}

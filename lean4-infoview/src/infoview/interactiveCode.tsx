@@ -41,7 +41,7 @@ interface TypePopupContentsProps {
 
 function renderCodeBlock(lang: string, code: string) : string {
   // todo: render Lean code blocks using the lean syntax.json
-  return `<div>${code}</div>`
+  return `<div class="font-code tl pre-wrap">${code}</div>`
 }
 
 function renderMarkdown(doc: string){
@@ -49,7 +49,7 @@ function renderMarkdown(doc: string){
   renderer.code = (code, lang) => {
     const id : string = lang ? lang : '';
     const formatted = renderCodeBlock(id, code);
-		return `<div class="font-code tl pre-wrap" data-code="${id}">${formatted}</div>`;
+		return `<div data-code="${id}">${formatted}</div>`;
 	}
 
   const markedOptions: marked.MarkedOptions = {}
@@ -63,11 +63,9 @@ function renderMarkdown(doc: string){
   // todo: vscode also has lots of post render sanitization and hooking up of href clicks and so on.
   // see https://github.com/microsoft/vscode/blob/main/src/vs/base/browser/markdownRenderer.ts
 
-  // TODO: also need to provide all the vscode CSS styles that are relevant to all HTML tags that
-  // can be returned by the markdown parser, like lists and tables.
-
   const renderedMarkdown = marked.parse(doc, markedOptions);
   return <div dangerouslySetInnerHTML={{ __html: renderedMarkdown }} />
+  // handy for debugging:
   // return <div>{ renderedMarkdown } </div>
 }
 
@@ -84,7 +82,7 @@ function TypePopupContents({ pos, info, redrawTooltip }: TypePopupContentsProps)
   // We let the tooltip know to redo its layout whenever our contents change.
   React.useEffect(() => redrawTooltip(), [ip, err, redrawTooltip])
 
-  return <>
+  return <div className="monaco-hover-content hover-div hover-row markdown-hover">
     {ip && <>
       <div className="font-code tl pre-wrap">
       {ip.exprExplicit && <InteractiveCode pos={pos} fmt={ip.exprExplicit} />} : {ip.type && <InteractiveCode pos={pos} fmt={ip.type} />}
@@ -94,7 +92,7 @@ function TypePopupContents({ pos, info, redrawTooltip }: TypePopupContentsProps)
     </>}
     {err && <>Error: {mapRpcError(err).message}</>}
     {(!ip && !err) && <>Loading..</>}
-  </>
+  </div>
 }
 
 /** Tagged spans can be hovered over to display extra info stored in the associated `SubexprInfo`. */
