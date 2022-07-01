@@ -4,10 +4,29 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import { initLean4Untitled, initLean4, waitForInfoviewHtml, closeAllEditors,
-	extractPhrase, restartLeanServer, assertStringInInfoview, resetToolchain } from '../utils/helpers';
+	extractPhrase, restartLeanServer, assertStringInInfoview, resetToolchain, insertText } from '../utils/helpers';
 
 // Expects to be launched with folder: ${workspaceFolder}/vscode-lean4/test/suite/simple
 suite('Toolchain Test Suite', () => {
+
+	test('Worker crashed and client running', async () => {
+		console.log('=================== Test worker crashed and client running ===================');
+		void vscode.window.showInformationMessage('Running tests: ' + __dirname);
+
+		// initializing string that causes the worker to fail
+
+		const lean = await initLean4Untitled('#eval Lean.versionString');
+		const info = lean.exports.infoProvider;
+		assert(info, 'No InfoProvider export');
+
+        console.log('Insert eval that causes crash.')
+        await insertText('#eval (unsafeCast 0 : String)')
+
+		const expectedMessage = 'Lean worker exited or crashed: '
+
+		await assertStringInInfoview(info, expectedMessage);
+
+	}).timeout(60000);
 
 	test('Untitled Select Toolchain', async () => {
 
