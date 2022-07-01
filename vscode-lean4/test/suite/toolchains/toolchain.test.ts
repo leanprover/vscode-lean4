@@ -3,7 +3,7 @@ import { suite } from 'mocha';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import * as fs from 'fs';
-import { initLean4Untitled, initLean4, waitForInfoviewHtml, closeAllEditors, sleep,
+import { initLean4Untitled, initLean4, waitForInfoviewHtml, closeAllEditors,
 	extractPhrase, restartLeanServer, assertStringInInfoview, resetToolchain, insertText } from '../utils/helpers';
 
 // Expects to be launched with folder: ${workspaceFolder}/vscode-lean4/test/suite/simple
@@ -13,21 +13,44 @@ suite('Toolchain Test Suite', () => {
 		console.log('=================== Test worker crashed and client running ===================');
 		void vscode.window.showInformationMessage('Running tests: ' + __dirname);
 
+		// add normal values to initialize lean4 file
 		const hello = 'Hello World'
-		const lean = await initLean4Untitled(`#eval "${hello}"`);
-		const info = lean.exports.infoProvider;
+		let lean = await initLean4Untitled(`#eval "${hello}"`);
+		let info = lean.exports.infoProvider;
 		assert(info, 'No InfoProvider export');
 
 		console.log('make sure language server is up and running.');
 		await assertStringInInfoview(info, hello);
 
-		await sleep(20000);
-
+		// adding string that causes the worker to fail
 		console.log('Insert eval that causes crash.')
 		await insertText('\n\n#eval (unsafeCast 0 : String)')
 
-		const expectedMessage = 'Lean worker exited or crashed'
+		const expectedMessage = 'Lean worker exited or crashed: Server process for untitled:Untitled-1 crashed, likely due to a stack overflow or a bug.'
 		await assertStringInInfoview(info, expectedMessage);
+
+		// restart the server (without modifying the file, it should be showing the same message)
+		const testsRoot = path.join(__dirname, '..', '..', '..', '..', 'test', 'test-fixtures', 'simple');
+
+		// Now invoke the restart server command
+		const clients = lean.exports.clientProvider;
+		const client = clients?.getClientForFolder(vscode.Uri.file(testsRoot));
+		if (client) {
+			await restartLeanServer(client);
+		} else {
+			assert(false, 'No LeanClient found for folder');
+		}
+		await assertStringInInfoview(info, expectedMessage);
+
+		// deleting the problematic string closing active editors
+		await closeAllEditors();
+
+		lean = await initLean4Untitled(`#eval "${hello}"`);
+		info = lean.exports.infoProvider;
+		assert(info, 'No InfoProvider export');
+
+		console.log('make sure language server is up and running.');
+		await assertStringInInfoview(info, hello);
 
 	}).timeout(60000);
 
