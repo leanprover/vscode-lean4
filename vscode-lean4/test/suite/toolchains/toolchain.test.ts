@@ -42,6 +42,7 @@ suite('Toolchain Test Suite', () => {
 			await restartLeanServer(client);
 		}
 		console.log('Checking that still crashing.')
+		await insertText(`\n\n#eval "${hello}"`);
 		await assertStringInInfoview(info, expectedMessage);
 
 		// deleting the problematic string closing active editors
