@@ -54,8 +54,6 @@ suite('Toolchain Test Suite', () => {
 		if (client) {
 			await restartLeanServer(client);
 		}
-		console.log(info)
-		await assertStringInInfoview(info, expectedMessage);
 
 		// make sure test is always run in predictable state, which is no file or folder open
 		await closeAllEditors();
