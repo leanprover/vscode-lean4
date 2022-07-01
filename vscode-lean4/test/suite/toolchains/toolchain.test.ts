@@ -46,7 +46,7 @@ suite('Toolchain Test Suite', () => {
 
 		await assertStringInInfoview(info, expectedMessage);
 
-		// deleting the problematic string closing active editors and restart the server
+		// deleting the problematic string closing active editors and restarting the server
 
 		await deleteAllText();
 		// Now invoke the restart server command
@@ -56,6 +56,7 @@ suite('Toolchain Test Suite', () => {
 		// make sure language server is up and running.//
 		const hello1 = 'Hello World!!!'
 		lean = await initLean4Untitled(`#eval "${hello1}"`);
+		await insertText(`\n\n#eval "${hello1}"`)
 		info = lean.exports.infoProvider;
 		assert(info, 'No InfoProvider export');
 
