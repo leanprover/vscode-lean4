@@ -3,7 +3,7 @@ import { suite } from 'mocha';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import * as fs from 'fs';
-import { initLean4Untitled, initLean4, waitForInfoviewHtml, closeAllEditors, sleep
+import { initLean4Untitled, initLean4, waitForInfoviewHtml, closeAllEditors, sleep,
 	extractPhrase, restartLeanServer, assertStringInInfoview, resetToolchain, insertText } from '../utils/helpers';
 
 // Expects to be launched with folder: ${workspaceFolder}/vscode-lean4/test/suite/simple
