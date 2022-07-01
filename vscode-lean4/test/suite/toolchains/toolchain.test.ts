@@ -17,6 +17,11 @@ suite('Toolchain Test Suite', () => {
 		const hello = 'Hello World'
 		let lean = await initLean4Untitled(`#eval "${hello}"`);
 		let info = lean.exports.infoProvider;
+		// variables for restarting the server
+		const testsRoot = path.join(__dirname, '..', '..', '..', '..', 'test', 'test-fixtures', 'simple');
+		const clients = lean.exports.clientProvider;
+		const client = clients?.getClientForFolder(vscode.Uri.file(testsRoot));
+
 		assert(info, 'No InfoProvider export');
 
 		console.log('make sure language server is up and running.');
@@ -30,20 +35,19 @@ suite('Toolchain Test Suite', () => {
 		await assertStringInInfoview(info, expectedMessage);
 
 		// restart the server (without modifying the file, it should be showing the same message)
-		const testsRoot = path.join(__dirname, '..', '..', '..', '..', 'test', 'test-fixtures', 'simple');
 
 		// Now invoke the restart server command
-		const clients = lean.exports.clientProvider;
-		const client = clients?.getClientForFolder(vscode.Uri.file(testsRoot));
+		console.log('Restarting the server with the problematic string.')
 		if (client) {
 			await restartLeanServer(client);
-		} else {
-			assert(false, 'No LeanClient found for folder');
 		}
+		console.log('Checking that still crashing.')
 		await assertStringInInfoview(info, expectedMessage);
 
 		// deleting the problematic string closing active editors
 		await closeAllEditors();
+
+		console.log('Deleting problematic string.')
 
 		lean = await initLean4Untitled(`#eval "${hello}"`);
 		info = lean.exports.infoProvider;
