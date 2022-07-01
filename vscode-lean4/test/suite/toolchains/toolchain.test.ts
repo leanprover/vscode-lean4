@@ -53,10 +53,9 @@ suite('Toolchain Test Suite', () => {
 		// Now invoke the restart server command
 		if (client) {
 			await restartLeanServer(client);
-		} else {
-			assert(false, 'No LeanClient found for folder');
 		}
-
+		console.log(info)
+		await assertStringInInfoview(info, expectedMessage);
 
 		// make sure test is always run in predictable state, which is no file or folder open
 		await closeAllEditors();
