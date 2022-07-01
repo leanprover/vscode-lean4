@@ -54,6 +54,20 @@ export async function insertText(text: string) : Promise<void> {
     });
 }
 
+export async function deleteAllText() : Promise<void> {
+    const editor = vscode.window.activeTextEditor;
+    if (!editor) {
+        return;
+    }
+    void editor.edit(builder => {
+    const cursorPos = editor.selection.anchor;
+        builder.delete(editor.document.lineAt(cursorPos).range);
+    });
+    if(editor.document.lineCount>0){
+        void deleteAllText();
+    }
+}
+
 export async function initLean4Untitled(contents: string) : Promise<vscode.Extension<Exports>>{
     // make sure test is always run in predictable state, which is no file or folder open
     await closeAllEditors();
