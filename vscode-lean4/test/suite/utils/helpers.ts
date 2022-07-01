@@ -56,16 +56,11 @@ export async function insertText(text: string) : Promise<void> {
 
 export async function deleteAllText() : Promise<void> {
     const editor = vscode.window.activeTextEditor;
-    if (!editor) {
-        return;
-    }
-    void editor.edit(builder => {
-    const cursorPos = editor.selection.anchor;
-        builder.delete(editor.document.lineAt(cursorPos).range);
-    });
-    if(editor.document.lineCount>0){
-        void deleteAllText();
-    }
+    assert(editor !== undefined, 'no active editor');
+    await vscode.commands.executeCommand('editor.action.selectAll');
+    await editor.edit((builder) => {
+        builder.delete(editor.selection);
+    })
 }
 
 export async function initLean4Untitled(contents: string) : Promise<vscode.Extension<Exports>>{
