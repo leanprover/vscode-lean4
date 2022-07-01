@@ -15,8 +15,8 @@ suite('Toolchain Test Suite', () => {
 
 		// add normal values to initialize lean4 file
 		const hello = 'Hello World'
-		const lean = await initLean4Untitled(`#eval "${hello}"`);
-		const info = lean.exports.infoProvider;
+		let lean = await initLean4Untitled(`#eval "${hello}"`);
+		let info = lean.exports.infoProvider;
 		assert(info, 'No InfoProvider export');
 
 		console.log('make sure language server is up and running.');
@@ -55,7 +55,9 @@ suite('Toolchain Test Suite', () => {
 		}
 		// make sure language server is up and running.//
 		const hello1 = 'Hello World!!!'
-		await insertText(`\n\n#eval "${hello1}"`);
+		lean = await initLean4Untitled(`#eval "${hello}"`);
+		info = lean.exports.infoProvider;
+		assert(info, 'No InfoProvider export');
 
 		console.log('make sure language server is up and running.');
 		await assertStringInInfoview(info, hello1);

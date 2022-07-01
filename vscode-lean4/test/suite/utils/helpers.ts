@@ -57,7 +57,6 @@ export async function insertText(text: string) : Promise<void> {
 export async function deleteAllText() : Promise<void> {
     const editor = vscode.window.activeTextEditor;
     assert(editor !== undefined, 'no active editor');
-    await vscode.commands.executeCommand('editor.action.selectAll');
     await editor.edit((builder) => {
         builder.delete(new vscode.Range(new vscode.Position(0, 0), new vscode.Position(editor.document.lineCount-1, 1000)));
     })
