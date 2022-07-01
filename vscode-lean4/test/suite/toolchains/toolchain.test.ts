@@ -4,7 +4,7 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import { initLean4Untitled, initLean4, waitForInfoviewHtml, closeAllEditors,
-	extractPhrase, restartLeanServer, assertStringInInfoview, resetToolchain, insertText } from '../utils/helpers';
+	extractPhrase, restartLeanServer, assertStringInInfoview, resetToolchain, insertText, deleteAllText } from '../utils/helpers';
 
 // Expects to be launched with folder: ${workspaceFolder}/vscode-lean4/test/suite/simple
 suite('Toolchain Test Suite', () => {
@@ -43,13 +43,18 @@ suite('Toolchain Test Suite', () => {
 		}
 		console.log('Checking that still crashing.')
 		await insertText(`\n\n#eval "${hello}"`);
+
 		await assertStringInInfoview(info, expectedMessage);
 
-		// deleting the problematic string closing active editors
-		await closeAllEditors();
+		// deleting the problematic string closing active editors and restart the server
 
-		console.log('Deleting problematic string.')
-
+		await deleteAllText();
+		// Now invoke the restart server command
+		if (client) {
+			await restartLeanServer(client);
+		}
+		// make sure language server is up and running.//
+		const hello1 = 'Hello World!!!'
 		lean = await initLean4Untitled(`#eval "${hello}"`);
 		info = lean.exports.infoProvider;
 		assert(info, 'No InfoProvider export');
