@@ -15,17 +15,17 @@ suite('Toolchain Test Suite', () => {
 
 		// add normal values to initialize lean4 file
 		const hello = 'Hello World'
-		let lean = await initLean4Untitled(`#eval "${hello}"`);
-		let info = lean.exports.infoProvider;
-		// variables for restarting the server
-		const testsRoot = path.join(__dirname, '..', '..', '..', '..', 'test', 'test-fixtures', 'simple');
-		const clients = lean.exports.clientProvider;
-		const client = clients?.getClientForFolder(vscode.Uri.file(testsRoot));
-
+		const lean = await initLean4Untitled(`#eval "${hello}"`);
+		const info = lean.exports.infoProvider;
 		assert(info, 'No InfoProvider export');
 
 		console.log('make sure language server is up and running.');
 		await assertStringInInfoview(info, hello);
+
+		// variables for restarting the server
+		const testsRoot = path.join(__dirname, '..', '..', '..', '..', 'test', 'test-fixtures', 'simple');
+		const clients = lean.exports.clientProvider;
+		const client = clients?.getClientForFolder(vscode.Uri.file(testsRoot));
 
 		// adding string that causes the worker to fail
 		console.log('Insert eval that causes crash.')
@@ -43,7 +43,6 @@ suite('Toolchain Test Suite', () => {
 			await restartLeanServer(client);
 		}
 		console.log('Checking that still crashing.')
-		await insertText(`\n\n#eval "${hello}"`);
 
 		await assertStringInInfoview(info, expectedMessage);
 
@@ -56,12 +55,10 @@ suite('Toolchain Test Suite', () => {
 		}
 		// make sure language server is up and running.//
 		const hello1 = 'Hello World!!!'
-		lean = await initLean4Untitled(`#eval "${hello}"`);
-		info = lean.exports.infoProvider;
-		assert(info, 'No InfoProvider export');
+		await insertText(`#eval "${hello1}"`)
 
 		console.log('make sure language server is up and running.');
-		await assertStringInInfoview(info, hello);
+		await assertStringInInfoview(info, hello1);
 
 		// make sure test is always run in predictable state, which is no file or folder open
 		await closeAllEditors();
