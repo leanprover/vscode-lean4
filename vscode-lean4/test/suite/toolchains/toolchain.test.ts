@@ -52,16 +52,10 @@ suite('Toolchain Test Suite', () => {
 		// Now invoke the restart server command
 		if (client) {
 			await restartLeanServer(client);
+		} else {
+			assert(false, 'No LeanClient found for folder');
 		}
-		// make sure language server is up and running.//
-		const hello1 = 'Hello World!!!'
-		lean = await initLean4Untitled(`#eval "${hello1}"`);
-		await insertText(`\n\n#eval "${hello1}"`)
-		info = lean.exports.infoProvider;
-		assert(info, 'No InfoProvider export');
 
-		console.log('make sure language server is up and running.');
-		await assertStringInInfoview(info, hello1);
 
 		// make sure test is always run in predictable state, which is no file or folder open
 		await closeAllEditors();
