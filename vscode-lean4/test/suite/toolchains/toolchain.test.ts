@@ -3,7 +3,7 @@ import { suite } from 'mocha';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import * as fs from 'fs';
-import { initLean4Untitled, initLean4, waitForInfoviewHtml, closeAllEditors,
+import { initLean4Untitled, initLean4, waitForInfoviewHtml, closeAllEditors, sleep
 	extractPhrase, restartLeanServer, assertStringInInfoview, resetToolchain, insertText } from '../utils/helpers';
 
 // Expects to be launched with folder: ${workspaceFolder}/vscode-lean4/test/suite/simple
@@ -13,17 +13,20 @@ suite('Toolchain Test Suite', () => {
 		console.log('=================== Test worker crashed and client running ===================');
 		void vscode.window.showInformationMessage('Running tests: ' + __dirname);
 
-		// initializing string that causes the worker to fail
-
-		const lean = await initLean4Untitled('#eval Lean.versionString');
+		const hello = 'Hello World'
+		const lean = await initLean4Untitled(`#eval "${hello}"`);
 		const info = lean.exports.infoProvider;
 		assert(info, 'No InfoProvider export');
 
-        console.log('Insert eval that causes crash.')
-        await insertText('#eval (unsafeCast 0 : String)')
+		console.log('make sure language server is up and running.');
+		await assertStringInInfoview(info, hello);
 
-		const expectedMessage = 'Lean worker exited or crashed: '
+		await sleep(20000);
 
+		console.log('Insert eval that causes crash.')
+		await insertText('\n\n#eval (unsafeCast 0 : String)')
+
+		const expectedMessage = 'Lean worker exited or crashed'
 		await assertStringInInfoview(info, expectedMessage);
 
 	}).timeout(60000);
