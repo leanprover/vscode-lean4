@@ -91,11 +91,16 @@ export async function initLean4Untitled(contents: string) : Promise<vscode.Exten
     return lean;
 }
 
-export async function resetToolchain(clientProvider: LeanClientProvider | undefined, retries=10, delay=1000) : Promise<void>{
-
+export function assertActiveClient(clientProvider: LeanClientProvider | undefined) : LeanClient{
     assert(clientProvider, 'missing LeanClientProvider');
     const client = clientProvider.getActiveClient();
     assert(client, 'Missing active LeanClient');
+    return client;
+}
+
+export async function resetToolchain(clientProvider: LeanClientProvider | undefined, retries=10, delay=1000) : Promise<void>{
+
+    const client = assertActiveClient(clientProvider);
 
     let stopped = false;
     let restarted = false;

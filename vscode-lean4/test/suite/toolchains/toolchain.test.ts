@@ -3,7 +3,7 @@ import { suite } from 'mocha';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import * as fs from 'fs';
-import { initLean4Untitled, initLean4, waitForInfoviewHtml, closeAllEditors,
+import { initLean4Untitled, initLean4, waitForInfoviewHtml, closeAllEditors, assertActiveClient,
 	extractPhrase, restartLeanServer, assertStringInInfoview, resetToolchain, insertText, deleteAllText } from '../utils/helpers';
 
 // Expects to be launched with folder: ${workspaceFolder}/vscode-lean4/test/suite/simple
@@ -32,10 +32,9 @@ suite('Toolchain Test Suite', () => {
 		await assertStringInInfoview(info, expectedMessage);
 
 		console.log('restart the server (without modifying the file, so it should crash again)')
-		let client = clients.getActiveClient();
-		if (client) {
-			await restartLeanServer(client);
-		}
+		let client = assertActiveClient(clients);
+		await restartLeanServer(client);
+
 		console.log('Checking that it crashed again.')
 		await assertStringInInfoview(info, expectedMessage);
 
@@ -43,10 +42,8 @@ suite('Toolchain Test Suite', () => {
 		await deleteAllText();
 		await insertText(`#eval "${hello}"`);
 		console.log('Now invoke the restart server command')
-		client = clients.getActiveClient();
-		if (client) {
-			await restartLeanServer(client);
-		}
+		client = assertActiveClient(clients);
+		await restartLeanServer(client);
 
 		console.log('checking that Hello World comes back after restart')
 		await assertStringInInfoview(info, hello);
