@@ -18,6 +18,10 @@ export function run(testsRoot: string, cb: (error: any, failures?: number) => vo
     }
     console.log('>>>>>>>>> testsRoot=' + testsRoot);
 
+    if (typeof(process.env.DISABLE_ELAN) === 'string') {
+        console.log('>>>>>>>>> running without elan');
+    }
+
     glob('**/**.test.js', { cwd: testsRoot }, (err, files) => {
         if (err) {
             return cb(err);

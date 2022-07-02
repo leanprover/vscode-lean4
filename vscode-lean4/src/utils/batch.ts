@@ -1,5 +1,5 @@
-import { OutputChannel, ProcessExecution } from 'vscode'
-import { spawn, ChildProcessWithoutNullStreams } from 'child_process';
+import { OutputChannel } from 'vscode'
+import { spawn } from 'child_process';
 
 export async function batchExecute(
     executablePath: string,
