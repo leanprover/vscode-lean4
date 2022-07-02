@@ -22,38 +22,34 @@ suite('Toolchain Test Suite', () => {
 		console.log('make sure language server is up and running.');
 		await assertStringInInfoview(info, hello);
 
-		// variables for restarting the server
-		const testsRoot = path.join(__dirname, '..', '..', '..', '..', 'test', 'test-fixtures', 'simple');
 		const clients = lean.exports.clientProvider;
 		assert(clients, 'No LeanClientProvider export');
-		const client = clients.getClientForFolder(vscode.Uri.file(testsRoot));
 
-		// adding string that causes the worker to fail
 		console.log('Insert eval that causes crash.')
 		await insertText('\n\n#eval (unsafeCast 0 : String)')
 
-		const expectedMessage = '<div><p>Lean worker exited or crashed: </p>' +
-		'<p class="error">Server process for untitled:Untitled-1 crashed, likely due to a stack overflow or a bug.</p></div></div>'
+		const expectedMessage = 'Lean worker exited or crashed'
 		await assertStringInInfoview(info, expectedMessage);
 
-		// restart the server (without modifying the file, it must be showing the same message)
-
-		// Now invoke the restart server command
-		console.log('Restarting the server with the problematic string.')
+		console.log('restart the server (without modifying the file, so it should crash again)')
+		let client = clients.getActiveClient();
 		if (client) {
 			await restartLeanServer(client);
 		}
-		console.log('Checking that still crashing.')
-
+		console.log('Checking that it crashed again.')
 		await assertStringInInfoview(info, expectedMessage);
 
-		// deleting the problematic string closing active editors and restarting the server
-
+		console.log('deleting the problematic string closing active editors and restarting the server')
 		await deleteAllText();
-		// Now invoke the restart server command
+		await insertText(`#eval "${hello}"`);
+		console.log('Now invoke the restart server command')
+		client = clients.getActiveClient();
 		if (client) {
 			await restartLeanServer(client);
 		}
+
+		console.log('checking that Hello World comes back after restart')
+		await assertStringInInfoview(info, hello);
 
 		// make sure test is always run in predictable state, which is no file or folder open
 		await closeAllEditors();
