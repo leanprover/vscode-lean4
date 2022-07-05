@@ -89,6 +89,12 @@
 					"default": true,
 					"markdownDescription": "Enable Lake server when possible."
 				},
+				"lean4.lakePath": {
+					"type": "string",
+					"default": "",
+					"markdownDescription": "Path to Lake. Leave this blank to use the Lake from the toolchain.",
+					"scope": "machine-overridable"
+				},
 				"lean4.serverArgs": {
 					"type": "array",
 					"default": [],

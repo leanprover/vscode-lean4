@@ -159,6 +159,8 @@ This extension contributes the following settings (for a complete list, open the
 
 * `lean4.toolchainPath`: specifies the location  of the Lean toolchain to be used when starting the Lean language server. Most users (i.e. those using `elan`) should not ever need to change this. If you are bundling Lean and `vscode-lean` with [Portable mode VS Code](https://code.visualstudio.com/docs/editor/portable), you might find it useful to specify a relative path to Lean. This can be done by starting this setting string with `%extensionPath%`; the extension will replace this with the absolute path of the extension folder. For example, with the default directory setup in Portable mode, `%extensionPath%/../../../lean` will point to `lean` in the same folder as the VS Code executable / application.
 
+* `lean4.lakePath`: specifies the location of the Lake executable to be used when starting the Lean language server (when possible). If left unspecified, the extension defaults to the Lake executable bundled with the Lean toolchain. Most users thus do not need to use this setting. It is only really helpful if you are building a Lake executable from the source and wish to use it with this extension.
+
 * `lean4.serverEnv`: specifies any Environment variables to add to the Lean 4 language server environment.  Note that when opening a [remote folder](https://code.visualstudio.com/docs/remote/ssh) using VS Code the Lean 4 language server will be running on that remote machine.
 
 * `lean4.serverEnvPaths`: specifies any additional paths to add to the Lean 4 language server environment PATH variable.
