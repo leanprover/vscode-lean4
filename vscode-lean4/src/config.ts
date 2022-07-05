@@ -74,10 +74,31 @@ export function addToolchainBinPath(elanPath: string){
     }
 }
 
+export function findProgramInPath(name: string) : string {
+    const extensions : string[] = [];
+    if (process.platform === 'win32') {
+       extensions.push('.exe')
+       extensions.push('.com')
+       extensions.push('.cmd')
+    } else {
+       extensions.push('');
+    }
+    const parts = splitEnvPath(getEnvPath());
+    for (const part of parts) {
+         for (const ext of extensions){
+            const fullPath = path.join(part, name + ext)
+            if (fs.existsSync(fullPath)) {
+               return fullPath;
+            }
+         }
+    }
+    return ''
+}
+
 export function removeElanPath() : string {
     const parts = splitEnvPath(getEnvPath());
     let result = ''
-    for (let i = 1; i < parts.length; ) {
+    for (let i = 0; i < parts.length; ) {
          const part = parts[i]
          if (part.indexOf('.elan') > 0){
             console.log(`removing path to elan: ${part}`)
