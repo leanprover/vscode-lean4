@@ -9,7 +9,7 @@ import { forwardAndUseRef, LogicalDomContext, useLogicalDom } from './util'
 /** Tooltip contents should call `redrawTooltip` whenever their layout changes. */
 export type MkTooltipContentFn = (redrawTooltip: () => void) => React.ReactNode
 
-const TooltipPlacementContext = React.createContext<Popper.Placement>('top')
+const TooltipPlacementContext = React.createContext<Popper.Placement>('auto')
 
 export const Tooltip = forwardAndUseRef<HTMLDivElement,
   React.HTMLProps<HTMLDivElement> &
@@ -197,8 +197,14 @@ export const WithTooltipOnHover =
   React.useEffect(() => {
     const onClickAnywhere = (e: Event) => {
       if (e.target instanceof Node && !logicalDom.contains(e.target)) {
-        clearTimeout()
-        setState('hide')
+        if (e.target instanceof Element && e.target.tagName === 'HTML'){
+          // then user might be clicking in a scrollbar, otherwise
+          // e.target would be 'BODY' so we do not want to hide the popup
+          // so user can scroll and read it all.
+        } else {
+          clearTimeout()
+          setState('hide')
+        }
       }
     }
 

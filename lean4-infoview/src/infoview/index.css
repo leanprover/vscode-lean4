@@ -90,6 +90,14 @@ select {
     border-color: var(--vscode-dropdown-border);
     border-width: 1px;
     border-style: solid;
+	max-width: calc(70%);
+	box-sizing: border-box;
+}
+
+@media (max-width: 500px) {
+	.tooltip {
+		max-width: 100vw;
+	}
 }
 
 .tooltip-arrow,
