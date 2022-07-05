@@ -16,7 +16,7 @@ import {
 } from 'vscode-languageclient/node'
 import * as ls from 'vscode-languageserver-protocol'
 
-import { toolchainPath, addServerEnvPaths, serverArgs, serverLoggingEnabled, serverLoggingPath, getElaborationDelay, lakeEnabled } from './config'
+import { toolchainPath, lakePath, addServerEnvPaths, serverArgs, serverLoggingEnabled, serverLoggingPath, getElaborationDelay, lakeEnabled } from './config'
 import { assert } from './utils/assert'
 import { LeanFileProgressParams, LeanFileProgressProcessingInfo } from '@lean4/infoview-api';
 import { LocalStorageService} from './utils/localStorage'
@@ -124,7 +124,8 @@ export class LeanClient implements Disposable {
             env.LEAN_SERVER_LOG_DIR = serverLoggingPath()
         }
 
-        let executable = (this.toolchainPath) ? join(this.toolchainPath, 'bin', 'lake') : 'lake';
+        let executable = lakePath() ||
+            (this.toolchainPath ? join(this.toolchainPath, 'bin', 'lake') : 'lake');
 
         // check if the lake process will start (skip it on scheme: 'untitled' files)
         let useLake = lakeEnabled() && this.folderUri && this.folderUri.scheme === 'file';
