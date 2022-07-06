@@ -197,17 +197,17 @@ select {
 
 .monaco-hover hr {
 	box-sizing: border-box;
-	border-left: 0px;
-	border-right: 0px;
+	border-left: -8px;
+	border-right: -8px;
 	margin-top: 4px;
 	margin-bottom: 4px;
 	margin-left: -18px;
 	margin-right: -18px;
 	height: 1px;
-    /* bugbug: this needs to be themed, as per line 330 of
-    github.com/microsoft/vscode/src/vs/editor/contrib/hover/browser/hover.ts */
-    border-bottom: 0px solid rgba(69, 69, 69, 0.5);
-    border-top: 1px solid rgba(69, 69, 69, 0.5);
+    border-bottom-width: 0px;
+    border-top-width: 1px;
+	border-top-style: solid;
+	border-top-color: var(--vscode-editorWidget-border);
 }
 
 .monaco-hover p:first-child,
