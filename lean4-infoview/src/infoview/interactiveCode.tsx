@@ -98,10 +98,9 @@ function TypePopupContents({ pos, info, redrawTooltip }: TypePopupContentsProps)
 /** Tagged spans can be hovered over to display extra info stored in the associated `SubexprInfo`. */
 function InteractiveCodeTag({pos, tag: ct, fmt}: InteractiveTagProps<SubexprInfo>) {
   const mkTooltip = React.useCallback((redrawTooltip: () => void) =>
-    <div>
-      <TypePopupContents pos={pos} info={ct}
+    <TypePopupContents pos={pos} info={ct}
         redrawTooltip={redrawTooltip} />
-    </div>, [pos.uri, pos.line, pos.character, ct.info])
+    , [pos.uri, pos.line, pos.character, ct.info])
 
   // We mimick the VSCode ctrl-hover and ctrl-click UI for go-to-definition
   const rs = React.useContext(RpcContext)
