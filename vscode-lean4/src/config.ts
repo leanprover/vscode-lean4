@@ -1,5 +1,6 @@
 import { workspace } from 'vscode'
 import * as path from 'path';
+import * as fs from 'fs'
 
 // TODO: does currently not contain config options for `./abbreviation`
 // so that it is easy to keep it in sync with vscode-lean.
@@ -20,6 +21,14 @@ export function setEnvPath(value : string) : void {
     }
 }
 
+function splitEnvPath(value: string) : string[] {
+    return value.split(path.delimiter)
+}
+
+function joinEnvPath(value: string[]) : string {
+    return value.join(path.delimiter)
+}
+
 // Make a copy of the passed process environment that includes the user's
 // `lean4.serverEnvPaths` in the path key, and adds the key/value pairs from
 // `lean4.serverEnv`. Both of these settings can be found in the user's
@@ -28,20 +37,80 @@ export function addServerEnvPaths(input_env: NodeJS.ProcessEnv): NodeJS.ProcessE
     const env = Object.assign({}, input_env, serverEnv());
     const paths = serverEnvPaths()
     if (paths.length !== 0) {
-        setEnvPath(paths.join(path.delimiter) + path.delimiter + getEnvPath())
+        setEnvPath(joinEnvPath(paths) + path.delimiter + getEnvPath())
     }
     return env
 }
 
 export function addDefaultElanPath() : void {
     const paths = getEnvPath();
-    let elanPath = process.env.HOME + '/.elan/bin';
+    let elanPath = ''
     if (process.platform === 'win32') {
         elanPath = process.env.USERPROFILE + '\\.elan\\bin';
+    } else {
+        elanPath = process.env.HOME + '/.elan/bin';
     }
+
     if (paths.indexOf(elanPath) < 0) {
         setEnvPath(paths + path.delimiter + elanPath);
     }
+}
+
+function findToolchainBin(root:string) : string{
+    const toolchains = fs.readdirSync(path.join(root, '..', 'toolchains'));
+    for(const toolchain of toolchains) {
+        if (toolchain.indexOf('leanprover--lean4') >= 0){
+            return path.join(root, '..', 'toolchains', toolchains[0], 'bin');
+        }
+    }
+    return ''
+}
+
+export function addToolchainBinPath(elanPath: string){
+    const bin = findToolchainBin(elanPath)
+    if (bin){
+        const paths = getEnvPath();
+        setEnvPath(paths + path.delimiter + bin);
+    }
+}
+
+export function findProgramInPath(name: string) : string {
+    const extensions : string[] = [];
+    if (process.platform === 'win32') {
+       extensions.push('.exe')
+       extensions.push('.com')
+       extensions.push('.cmd')
+    } else {
+       extensions.push('');
+    }
+    const parts = splitEnvPath(getEnvPath());
+    for (const part of parts) {
+         for (const ext of extensions){
+            const fullPath = path.join(part, name + ext)
+            if (fs.existsSync(fullPath)) {
+               return fullPath;
+            }
+         }
+    }
+    return ''
+}
+
+export function removeElanPath() : string {
+    const parts = splitEnvPath(getEnvPath());
+    let result = ''
+    for (let i = 0; i < parts.length; ) {
+         const part = parts[i]
+         if (part.indexOf('.elan') > 0){
+            console.log(`removing path to elan: ${part}`)
+            result = part;
+            parts.splice(i, 1);
+         } else {
+            i++;
+         }
+    }
+
+    setEnvPath(joinEnvPath(parts));
+    return result;
 }
 
 export function toolchainPath(): string {

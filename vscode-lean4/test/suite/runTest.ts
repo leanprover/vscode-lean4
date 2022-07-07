@@ -49,12 +49,22 @@ async function main() {
         // ensures the following test does not re-open the lean3 folder
         clearUserWorkspaceData(vscodeTestPath);
 
+		// run no elan tests
+		await runTests({
+			vscodeExecutablePath,
+			extensionDevelopmentPath,
+            extensionTestsPath:path.resolve(__dirname, 'index'),
+            extensionTestsEnv: {'TEST_FOLDER': 'simple', 'DISABLE_ELAN': '1'},
+			launchArgs: ['--new-window', '--disable-gpu'] });
+
+        clearUserWorkspaceData(vscodeTestPath);
+
 		// run the infoView tests
 		await runTests({
 			vscodeExecutablePath,
 			extensionDevelopmentPath,
             extensionTestsPath:path.resolve(__dirname, 'index'),
-            extensionTestsEnv: {'TEST_FOLDER': 'info'},
+            extensionTestsEnv: {'TEST_FOLDER': 'info', 'DISABLE_ELAN': '1'},
 			launchArgs: ['--new-window', '--disable-gpu'] });
 
 		// The '--new-window' doesn't see to be working, so this hack
