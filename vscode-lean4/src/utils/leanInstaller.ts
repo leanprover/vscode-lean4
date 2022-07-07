@@ -347,11 +347,7 @@ export class LeanInstaller implements Disposable {
                 const filterVersion = /version (\d+)\.\d+\..+/
                 const match = filterVersion.exec(stdout)
                 if (!match) {
-                    if (!stdout) {
-                        return { version: '', error: `lean4: '${cmd}' program not found.` }
-                    } else {
-                        return { version: '', error: `lean4: '${cmd} ${options}' returned incorrect version string '${stdout}'.` }
-                    }
+                    return { version: '', error: `lean4: '${cmd} ${options}' returned incorrect version string '${stdout}'.` }
                 }
                 const major = match[1];
                 result.version = major
