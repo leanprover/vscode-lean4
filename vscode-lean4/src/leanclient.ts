@@ -49,6 +49,7 @@ export class LeanClient implements Disposable {
     private subscriptions: Disposable[] = []
     private noPrompt : boolean = false;
     private showingRestartMessage : boolean = false;
+    private showingRestartFileMessage : boolean = false;
 
     private didChangeEmitter = new EventEmitter<DidChangeTextDocumentParams>()
     didChange = this.didChangeEmitter.event
@@ -108,6 +109,20 @@ export class LeanClient implements Disposable {
             this.showingRestartMessage = false;
             if (item === restartItem) {
                 void this.start();
+            }
+        }
+    }
+
+    async showRestartFileMessage(){
+        if (!this.showingRestartFileMessage){
+            this.showingRestartFileMessage = true;
+            const restartItem = 'Restart the Lean Server on this file';
+            const item = await window.showErrorMessage('The Lean Server has stopped processing this file.', restartItem)
+            this.showingRestartFileMessage = false;
+            if (item === restartItem) {
+                if (window.activeTextEditor) {
+                    void this.restartFile(window.activeTextEditor.document);
+                }
             }
         }
     }
@@ -440,7 +455,10 @@ export class LeanClient implements Disposable {
     }
 
     async restartFile(doc: TextDocument): Promise<void> {
-        if (!this.running) return; // there was a problem starting lean server.
+        if (!this.running) {
+            this.showingRestartFileMessage = false;
+            return; // there was a problem starting lean server.
+        }
         assert(() => this.isStarted())
 
         if (!await this.isSameWorkspace(doc.uri)){
@@ -467,6 +485,7 @@ export class LeanClient implements Disposable {
                 'text': doc.getText()
             }
         })
+        this.showingRestartFileMessage = true;
     }
 
     // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
