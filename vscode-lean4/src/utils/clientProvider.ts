@@ -46,7 +46,8 @@ export class LeanClientProvider implements Disposable {
             es.forEach((e) => this.didOpenEditor(e.document))));
 
         this.subscriptions.push(
-            commands.registerCommand('lean4.refreshFileDependencies', () => this.refreshFileDependencies()),
+            commands.registerCommand('lean4.restartFile', () => this.restartFile()),
+            commands.registerCommand('lean4.refreshFileDependencies', () => this.restartFile()),
             commands.registerCommand('lean4.restartServer', () => this.restartActiveClient())
         );
 
@@ -112,9 +113,9 @@ export class LeanClientProvider implements Disposable {
         return null;
     }
 
-    private refreshFileDependencies() {
+    private restartFile() {
         if (window.activeTextEditor && this.activeClient) {
-            void this.activeClient.refreshFileDependencies(window.activeTextEditor.document);
+            void this.activeClient.restartFile(window.activeTextEditor.document);
         }
     }
 

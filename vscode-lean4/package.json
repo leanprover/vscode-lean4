@@ -147,13 +147,19 @@
 				"command": "lean4.restartServer",
 				"category": "Lean 4",
 				"title": "Restart Server",
-				"description": "Restart the language server."
+				"description": "Restart the Lean server (for all files)."
+			},
+			{
+				"command": "lean4.restartFile",
+				"category": "Lean 4",
+				"title": "Restart File",
+				"description": "Restarts the Lean server for the file that is currently focused, refreshing the dependencies."
 			},
 			{
 				"command": "lean4.refreshFileDependencies",
 				"category": "Lean 4",
 				"title": "Refresh File Dependencies",
-				"description": "Restarts the file worker for the file that is currently focused to refresh the dependencies."
+				"description": "Restarts the Lean server for the file that is currently focused to refresh the dependencies."
 			},
 			{
 				"command": "lean4.input.convert",
@@ -276,7 +282,7 @@
 				"when": "editorTextFocus && editorLangId == lean4 && lean4.input.isActive"
 			},
 			{
-				"command": "lean4.refreshFileDependencies",
+				"command": "lean4.restartFile",
 				"key": "ctrl+shift+x",
 				"mac": "cmd+shift+x",
 				"when": "editorTextFocus && editorLangId == lean4"
@@ -301,7 +307,7 @@
 					"when": "editorLangId == lean4 && lean4.input.isActive"
 				},
 				{
-					"command": "lean4.refreshFileDependencies",
+					"command": "lean4.restartFile",
 					"when": "editorLangId == lean4"
 				},
 				{
