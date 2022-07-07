@@ -432,7 +432,7 @@ export class LeanClient implements Disposable {
         }
     }
 
-    async refreshFileDependencies(doc: TextDocument): Promise<void> {
+    async restartFile(doc: TextDocument): Promise<void> {
         if (!this.running) return; // there was a problem starting lean server.
         assert(() => this.isStarted())
 
@@ -442,7 +442,7 @@ export class LeanClient implements Disposable {
         }
         const uri = doc.uri.toString()
         // This causes a text document version number discontinuity. In
-        // (didChange (oldVersion) => refreshFileDependencies => didChange (newVersion))
+        // (didChange (oldVersion) => restartFile => didChange (newVersion))
         // the client emits newVersion = oldVersion + 1, despite the fact that the
         // didOpen packet emitted below initializes the version number to be 1.
         // This is not a problem though, since both client and server are fine
