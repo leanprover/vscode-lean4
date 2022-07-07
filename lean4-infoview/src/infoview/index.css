@@ -84,7 +84,6 @@ select {
     @extend .mtk1;
     background: var(--vscode-editorWidget-background);
     padding: 4px 8px;
-    font-size: 13px;
     border-radius: 4px;
     box-shadow: 1px 1px 5px var(--vscode-widget-shadow);
     border-color: var(--vscode-dropdown-border);
@@ -145,7 +144,8 @@ select {
 }
 
 .hover-div {
-    overflow: hidden; font-size: 14px; line-height: 1.35714;
+    overflow: hidden;
+    line-height: 1.35714;
 }
 
 /*---------------------------------------------------------------------------------------------
