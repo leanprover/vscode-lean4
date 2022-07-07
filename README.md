@@ -159,6 +159,8 @@ This extension contributes the following settings (for a complete list, open the
 
 * `lean4.toolchainPath`: specifies the location  of the Lean toolchain to be used when starting the Lean language server. Most users (i.e. those using `elan`) should not ever need to change this. If you are bundling Lean and `vscode-lean` with [Portable mode VS Code](https://code.visualstudio.com/docs/editor/portable), you might find it useful to specify a relative path to Lean. This can be done by starting this setting string with `%extensionPath%`; the extension will replace this with the absolute path of the extension folder. For example, with the default directory setup in Portable mode, `%extensionPath%/../../../lean` will point to `lean` in the same folder as the VS Code executable / application.
 
+* `lean4.lakePath`: specifies the location of the Lake executable to be used when starting the Lean language server (when possible). If left unspecified, the extension defaults to the Lake executable bundled with the Lean toolchain. Most users thus do not need to use this setting. It is only really helpful if you are building a Lake executable from the source and wish to use it with this extension.
+
 * `lean4.serverEnv`: specifies any Environment variables to add to the Lean 4 language server environment.  Note that when opening a [remote folder](https://code.visualstudio.com/docs/remote/ssh) using VS Code the Lean 4 language server will be running on that remote machine.
 
 * `lean4.serverEnvPaths`: specifies any additional paths to add to the Lean 4 language server environment PATH variable.
@@ -204,11 +206,18 @@ The format below is: "`lean4.commandName` (command name): description", where `l
 
 ### Server commands
 
-* `lean4.restartServer` (Lean 4: Restart Server): restart the Lean 4 Language Server. Useful if the server crashes or if you built new `.olean` files in your workspace.
+* `lean4.restartServer` (Lean 4: Restart Server): restart the Lean 4 Language Server.
+Useful if you built new `.olean` files in your workspace.
 
-* `lean4.refreshFileDependencies` (Lean 4: Refresh File Dependencies): This command is a work around for the fact that full incremental updates do not yet work automatically across files, so after changing and rebuilding the dependency of a
-Lean 4 file, the language server needs to be manually informed that it should re-elaborate the full file, including the
-imports. This command has a default keyboard binding of <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>X</kbd>.
+* `lean4.restartFile` (Lean 4: Restart File): restarts the Lean server for a single file.
+Useful if the server crashes.
+As a side-effect this command will also recompile all dependencies.
+This command has a default keyboard binding of <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>X</kbd>.
+
+* `lean4.refreshFileDependencies` (Lean 4: Refresh File Dependencies): An alias for `lean4.restartFile`.
+The Lean server does not automatically update a file when one of its dependencies is changed.
+So after changing a dependency,
+the server for the file needs to be restarted to pick up the changed dependency.
 
 * `lean4.selectToolchain` (Lean 4: Select Lean Toolchain) Select version of the Lean toolchain to use for the current workspace.  This shows the list of available toolchains returned from `elan toolchain list` and allows you to easily switch. The Lean 4 language server will automatically be restarted using the selected toolchain.  This command also provides a choice labelled `Other...` where you can enter the full path to a Lean 4 toolchain to use instead.  This choice is remembered in your [Workspace Settings](https://code.visualstudio.com/docs/getstarted/settings) and you can reset any custom choice by selecting `Reset workspace override...` from the list (if it is shown).
 

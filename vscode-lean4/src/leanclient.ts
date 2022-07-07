@@ -16,7 +16,7 @@ import {
 } from 'vscode-languageclient/node'
 import * as ls from 'vscode-languageserver-protocol'
 
-import { toolchainPath, addServerEnvPaths, serverArgs, serverLoggingEnabled, serverLoggingPath, getElaborationDelay, lakeEnabled } from './config'
+import { toolchainPath, lakePath, addServerEnvPaths, serverArgs, serverLoggingEnabled, serverLoggingPath, getElaborationDelay, lakeEnabled } from './config'
 import { assert } from './utils/assert'
 import { LeanFileProgressParams, LeanFileProgressProcessingInfo } from '@lean4/infoview-api';
 import { LocalStorageService} from './utils/localStorage'
@@ -129,7 +129,8 @@ export class LeanClient implements Disposable {
             env.LEAN_SERVER_LOG_DIR = serverLoggingPath()
         }
 
-        let executable = (this.toolchainPath) ? join(this.toolchainPath, 'bin', 'lake') : 'lake';
+        let executable = lakePath() ||
+            (this.toolchainPath ? join(this.toolchainPath, 'bin', 'lake') : 'lake');
 
         // check if the lake process will start (skip it on scheme: 'untitled' files)
         let useLake = lakeEnabled() && this.folderUri && this.folderUri.scheme === 'file';
@@ -438,7 +439,7 @@ export class LeanClient implements Disposable {
         }
     }
 
-    async refreshFileDependencies(doc: TextDocument): Promise<void> {
+    async restartFile(doc: TextDocument): Promise<void> {
         if (!this.running) return; // there was a problem starting lean server.
         assert(() => this.isStarted())
 
@@ -448,7 +449,7 @@ export class LeanClient implements Disposable {
         }
         const uri = doc.uri.toString()
         // This causes a text document version number discontinuity. In
-        // (didChange (oldVersion) => refreshFileDependencies => didChange (newVersion))
+        // (didChange (oldVersion) => restartFile => didChange (newVersion))
         // the client emits newVersion = oldVersion + 1, despite the fact that the
         // didOpen packet emitted below initializes the version number to be 1.
         // This is not a problem though, since both client and server are fine

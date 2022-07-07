@@ -23,7 +23,7 @@ export class LeanInstaller implements Disposable {
     private defaultToolchain : string;
     private workspaceSuffix : string = '(workspace override)';
     private defaultSuffix : string = '(default)'
-    private versionCache: Map<string,string> = new Map();
+    private versionCache: Map<string,LeanVersion> = new Map();
     private promptUser : boolean = true;
 
     // This event is raised whenever a version change happens.
@@ -53,10 +53,14 @@ export class LeanInstaller implements Disposable {
         if (!leanVersion){
             const hasElan = await this.hasElan();
             if (!hasElan) {
-                // Ah, then we need to install elan and since we have no leanVersion
-                // we might as well install the default toolchain as well.
-                void this.showInstallOptions(packageUri);
-                return { version: '4', error: 'no elan installed' }
+                // Ah, there is no elan, but what if Lean is in the PATH due to custom install?
+                const found = await this.checkLeanVersion(packageUri, leanVersion);
+                if (found.error) {
+                    // Ah, then we need to install elan and since we have no leanVersion
+                    // we might as well install the default toolchain as well.
+                    await this.showInstallOptions(packageUri);
+                    return { version: '4', error: 'no elan installed' }
+                }
             } else if (! await isCoreLean4Directory(packageUri)) {
                 const defaultVersion = await this.getDefaultToolchain(packageUri);
                 if (!defaultVersion) {
@@ -307,20 +311,13 @@ export class LeanInstaller implements Disposable {
         if (!version || version === '') {
             version = requestedVersion;
         }
-
-        let folderPath: string = '';
-        const scheme = packageUri?.scheme
-        if (scheme === 'scheme') {
-            // assume untitled files are version 4?  Actually no...
-            return { version: '4', error: undefined };
-        }
-        if (scheme === 'file' && packageUri) {
-            folderPath = packageUri.fsPath;
-            if (this.versionCache.has(folderPath)) {
-                const version = this.versionCache.get(folderPath);
-                if (version){
-                    return { version, error: undefined }
-                }
+        const folderUri = packageUri ?? Uri.from({scheme: 'untitled'});
+        const folderPath: string = folderUri.scheme === 'file' ? folderUri.fsPath : '';
+        const cacheKey = folderUri.toString();
+        if (this.versionCache.has(cacheKey)) {
+            const result = this.versionCache.get(cacheKey);
+            if (result){
+                return result;
             }
         }
 
@@ -331,34 +328,36 @@ export class LeanInstaller implements Disposable {
             // user is requesting an explicit version!
             options = ['+' + version, '--version']
         }
+
+        const result : LeanVersion = { version: '', error: undefined }
         try {
             // If folderPath is undefined, this will use the process environment for cwd.
             // Specifically, if the extension was not opened inside of a folder, it
             // looks for a global (default) installation of Lean. This way, we can support
             // single file editing.
+            console.log(`executeWithProgress ${cmd} ${options}`)
             const stdout = await this.executeWithProgress('Checking Lean setup...', cmd, options, folderPath)
             if (!stdout) {
-                return { version: '', error: 'lean not found' };
+                result.error = 'lean not found'
             }
-            if (stdout.indexOf('no default toolchain') > 0) {
-                return { version: '', error: 'no default toolchain' };
+            else if (stdout.indexOf('no default toolchain') > 0) {
+                result.error = 'no default toolchain'
             }
-            const filterVersion = /version (\d+)\.\d+\..+/
-            const match = filterVersion.exec(stdout)
-            if (!match) {
-                if (!stdout) {
-                    return { version: '', error: `lean4: '${cmd}' program not found.` }
-                } else {
+            else {
+                const filterVersion = /version (\d+)\.\d+\..+/
+                const match = filterVersion.exec(stdout)
+                if (!match) {
                     return { version: '', error: `lean4: '${cmd} ${options}' returned incorrect version string '${stdout}'.` }
                 }
+                const major = match[1];
+                result.version = major
             }
-            const major = match[1];
-            this.versionCache.set(folderPath, major);
-            return { version: major, error: undefined }
         } catch (err) {
             if (this.outputChannel) this.outputChannel.appendLine('' + err);
-            return { version: '', error: err };
+            result.error = err
         }
+        this.versionCache.set(cacheKey, result);
+        return result
     }
 
     private async executeWithProgress(prompt: string, cmd: string, options: string[], workingDirectory: string | null): Promise<string>{
