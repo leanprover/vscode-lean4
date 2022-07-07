@@ -59,8 +59,8 @@ function Main(props: {}) {
     let ret
     if (!serverInitializeResult) {
         ret = <p>Waiting for Lean server to start...</p>
-    } else if (serverStoppedResult && serverStoppedResult[0]){
-        ret = <div><p>{serverStoppedResult[0]}</p><p className="error">{serverStoppedResult[1]}</p></div>
+    } else if (serverStoppedResult){
+        ret = <div><p>{serverStoppedResult.message}</p><p className="error">{serverStoppedResult.reason}</p></div>
     } else {
         ret = <div className="ma1">
             <Infos />
@@ -113,8 +113,8 @@ export function renderInfoview(editorApi: EditorApi, uiElement: HTMLElement): In
             editorEvents.sentClientNotification.fire([method, params]);
         },
         serverRestarted: async r => editorEvents.serverRestarted.fire(r),
-        serverStopped: async (msg, reason) => {
-            editorEvents.serverStopped.fire([msg, reason])
+        serverStopped: async serverStoppedReason => {
+            editorEvents.serverStopped.fire(serverStoppedReason)
         },
         changedCursorLocation: async loc => editorEvents.changedCursorLocation.fire(loc),
         changedInfoviewConfig: async conf => editorEvents.changedInfoviewConfig.fire(conf),
