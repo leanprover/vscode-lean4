@@ -28,7 +28,7 @@ suite('Toolchain Test Suite', () => {
 		console.log('Insert eval that causes crash.')
 		await insertText('\n\n#eval (unsafeCast 0 : String)')
 
-		const expectedMessage = 'Lean worker exited or crashed'
+		const expectedMessage = 'The Lean Server has stopped processing this file'
 		await assertStringInInfoview(info, expectedMessage);
 
 		console.log('restart the server (without modifying the file, so it should crash again)')
