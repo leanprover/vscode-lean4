@@ -5,11 +5,19 @@ import * as vscode from 'vscode';
 import { initLean4Untitled, waitForActiveEditor, waitForInfoviewHtml, closeAllEditors,
     extractPhrase, gotoDefinition, assertStringInInfoview, initLean4 } from '../utils/helpers';
 
+function getElanMode(){
+    let mode = ''
+    if (typeof(process.env.DISABLE_ELAN) === 'string') {
+        mode = ' no elan '
+    }
+    return mode;
+}
+
 suite('Lean4 Basics Test Suite', () => {
 
     test('Untitled Lean File', async () => {
 
-        console.log('=================== Untitled Lean File ===================');
+        console.log(`=================== Untitled Lean File ${getElanMode()} ===================`);
         void vscode.window.showInformationMessage('Running tests: ' + __dirname);
 
         const lean = await initLean4Untitled('#eval Lean.versionString');
@@ -52,7 +60,7 @@ suite('Lean4 Basics Test Suite', () => {
 
     test('Orphaned Lean File', async () => {
 
-        console.log('=================== Orphaned Lean File ===================');
+        console.log(`=================== Orphaned Lean File ${getElanMode()} ===================`);
         void vscode.window.showInformationMessage('Running tests: ' + __dirname);
 
         const testsRoot = path.join(__dirname, '..', '..', '..', '..', 'test', 'test-fixtures', 'orphan');
@@ -84,7 +92,7 @@ suite('Lean4 Basics Test Suite', () => {
     }).timeout(60000);
 
     test('Goto definition in a package folder', async () => {
-        console.log('=================== Goto definition in a package folder ===================');
+        console.log(`=================== Goto definition in a package folder  ${getElanMode()} ===================`);
         void vscode.window.showInformationMessage('Running tests: ' + __dirname);
 
         // Test we can load file in a project folder from a package folder and also

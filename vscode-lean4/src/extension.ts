@@ -7,7 +7,7 @@ import { LocalStorageService} from './utils/localStorage'
 import { LeanInstaller } from './utils/leanInstaller'
 import { LeanpkgService } from './utils/leanpkg';
 import { LeanClientProvider } from './utils/clientProvider';
-import { addDefaultElanPath } from './config';
+import { addDefaultElanPath, removeElanPath, addToolchainBinPath} from './config';
 import { dirname, basename } from 'path';
 import { findLeanPackageVersionInfo } from './utils/projectInfo';
 import { Exports } from './exports';
@@ -39,7 +39,15 @@ function getLeanDocument() : TextDocument | undefined {
 
 export async function activate(context: ExtensionContext): Promise<Exports> {
 
-    addDefaultElanPath();
+    // for unit test that tests behavior when there is no elan installed.
+    if (typeof(process.env.DISABLE_ELAN) === 'string') {
+        const elanRoot = removeElanPath();
+        if (elanRoot){
+            addToolchainBinPath(elanRoot);
+        }
+    } else {
+        addDefaultElanPath();
+    }
 
     const defaultToolchain = 'leanprover/lean4:nightly';
 

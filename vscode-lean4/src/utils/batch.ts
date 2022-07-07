@@ -1,5 +1,7 @@
-import { OutputChannel, ProcessExecution } from 'vscode'
-import { spawn, ChildProcessWithoutNullStreams } from 'child_process';
+import { OutputChannel } from 'vscode'
+import { spawn } from 'child_process';
+import { findProgramInPath } from '../config'
+import * as fs from 'fs';
 
 export async function batchExecute(
     executablePath: string,
@@ -13,26 +15,38 @@ export async function batchExecute(
         if (workingDirectory !== undefined) {
             options = { cwd: workingDirectory };
         }
-        try {
-            const exe = spawn(executablePath, args, options);
 
-            if (exe.pid === undefined) {
+        // The mocha test framework listens to process.on('uncaughtException')
+        // which is raised if spawn cannot find the command and the test automatically
+        // fails with "Uncaught Error: spawn elan ENOENT".  Therefore we manually
+        // check if the command exists so as not to trigger that exception.
+
+        try {
+            const fullPath = findProgramInPath(executablePath);
+            if (!fullPath) {
                 resolve(undefined);
+                return;
+            }
+            const proc = spawn(executablePath, args, options);
+
+            if (proc.pid === undefined) {
+                resolve(undefined);
+                return;
             }
 
-            exe.stdout.on('data', (line) => {
+            proc.stdout.on('data', (line) => {
                 const s: string = line.toString();
                 if (channel) channel.appendLine(s);
                 output += s + '\n';
             });
 
-            exe.stderr.on('data', (line) => {
+            proc.stderr.on('data', (line) => {
                 const s: string = line.toString();
                 if (channel) channel.appendLine(s);
                 output += s + '\n';
             });
 
-            exe.on('close', (code) => {
+            proc.on('close', (code) => {
                 console.log(`child process exited with code ${code}`);
                 resolve(output)
             });

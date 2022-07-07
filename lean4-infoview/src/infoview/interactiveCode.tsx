@@ -5,6 +5,7 @@ import { DocumentPosition, useAsync, mapRpcError } from './util'
 import { SubexprInfo, CodeWithInfos, InteractiveDiagnostics_infoToInteractive, getGoToLocation, TaggedText } from './rpcInterface'
 import { DetectHoverSpan, HoverState, WithTooltipOnHover } from './tooltips'
 import { Location } from 'vscode-languageserver-protocol'
+import { marked } from 'marked'
 
 export interface InteractiveTextComponentProps<T> {
   pos: DocumentPosition
@@ -38,6 +39,36 @@ interface TypePopupContentsProps {
   redrawTooltip: () => void
 }
 
+function renderCodeBlock(lang: string, code: string) : string {
+  // todo: render Lean code blocks using the lean syntax.json
+  return `<div class="font-code tl pre-wrap">${code}</div>`
+}
+
+function renderMarkdown(doc: string){
+  const renderer = new marked.Renderer();
+  renderer.code = (code, lang) => {
+    const id : string = lang ? lang : '';
+    const formatted = renderCodeBlock(id, code);
+		return `<div data-code="${id}">${formatted}</div>`;
+	}
+
+  const markedOptions: marked.MarkedOptions = {}
+  markedOptions.sanitizer = (html: string): string => {
+    return '';
+  };
+  markedOptions.sanitize = true;
+  markedOptions.silent = true;
+  markedOptions.renderer = renderer;
+
+  // todo: vscode also has lots of post render sanitization and hooking up of href clicks and so on.
+  // see https://github.com/microsoft/vscode/blob/main/src/vs/base/browser/markdownRenderer.ts
+
+  const renderedMarkdown = marked.parse(doc, markedOptions);
+  return <div dangerouslySetInnerHTML={{ __html: renderedMarkdown }} />
+  // handy for debugging:
+  // return <div>{ renderedMarkdown } </div>
+}
+
 /** Shows `explicitValue : itsType` and a docstring if there is one. */
 function TypePopupContents({ pos, info, redrawTooltip }: TypePopupContentsProps) {
   const rs = React.useContext(RpcContext)
@@ -51,24 +82,25 @@ function TypePopupContents({ pos, info, redrawTooltip }: TypePopupContentsProps)
   // We let the tooltip know to redo its layout whenever our contents change.
   React.useEffect(() => redrawTooltip(), [ip, err, redrawTooltip])
 
-  return <>
+  return <div className="monaco-hover monaco-hover-content hover-div hover-row markdown-hover">
     {ip && <>
+      <div className="font-code tl pre-wrap">
       {ip.exprExplicit && <InteractiveCode pos={pos} fmt={ip.exprExplicit} />} : {ip.type && <InteractiveCode pos={pos} fmt={ip.type} />}
+      </div>
       {ip.doc && <hr />}
-      {ip.doc && ip.doc} {/* TODO markdown */}
+      {ip.doc && ip.doc && renderMarkdown(ip.doc)}
     </>}
     {err && <>Error: {mapRpcError(err).message}</>}
     {(!ip && !err) && <>Loading..</>}
-  </>
+  </div>
 }
 
 /** Tagged spans can be hovered over to display extra info stored in the associated `SubexprInfo`. */
 function InteractiveCodeTag({pos, tag: ct, fmt}: InteractiveTagProps<SubexprInfo>) {
   const mkTooltip = React.useCallback((redrawTooltip: () => void) =>
-    <div className="font-code tl pre-wrap">
-      <TypePopupContents pos={pos} info={ct}
+    <TypePopupContents pos={pos} info={ct}
         redrawTooltip={redrawTooltip} />
-    </div>, [pos.uri, pos.line, pos.character, ct.info])
+    , [pos.uri, pos.line, pos.character, ct.info])
 
   // We mimick the VSCode ctrl-hover and ctrl-click UI for go-to-definition
   const rs = React.useContext(RpcContext)
