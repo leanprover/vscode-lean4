@@ -102,10 +102,10 @@ export class InfoProvider implements Disposable {
                 } catch (ex) {
                     if (ex.code === -32901 || ex.code === -32902) {
                         // ex codes related with worker exited or crashed
-                        console.log(`The Lean language service has stopped processing this file: ${ex.message}`)
                         const activeClient = client === this.clientProvider.getActiveClient();
-                        await this.onActiveClientStopped(client, activeClient, 'The Lean Server has stopped processing this file: ', ex.message as string)
-                    }
+                        console.log(`The Lean language service has stopped processing this file: ${ex.message}`)
+                        await this.onActiveClientStopped(client, activeClient, 'The Lean Server has stopped processing this file: ', ex.message as string, true)
+                        }
                 }
             }
             return undefined;
@@ -335,7 +335,7 @@ export class InfoProvider implements Disposable {
         // todo: remove subscriptions for this client...
     }
 
-    async onActiveClientStopped(client: LeanClient, activeClient: boolean, msg: string, reason: string) {
+    async onActiveClientStopped(client: LeanClient, activeClient: boolean, msg: string, reason: string, restartFile: boolean = false) {
         // Will show a message in case the active client stops
         // add failed client into a list (will be removed in case the client is restarted)
         if (activeClient)
@@ -344,14 +344,18 @@ export class InfoProvider implements Disposable {
             await this.webviewPanel?.api.serverStopped({message:msg, reason});
         }
 
-        console.log(`client stopped: ${client.getWorkspaceFolder()}`)
-
         // remember this client is in a stopped state
         const key = client.getWorkspaceFolder();
         if (!this.clientsFailed.has(key)) {
             this.clientsFailed.set(key, [msg, reason]);
             await this.sendPosition();
-            await client.showRestartMessage()
+            if (restartFile) {
+                console.log(`client crashed: ${key}`)
+                await client.showRestartFileMessage()
+            } else {
+                console.log(`client stopped: ${key}`)
+                await client.showRestartMessage()
+            }
         }
     }
 
@@ -583,7 +587,6 @@ export class InfoProvider implements Disposable {
                     if (values) {
                         await this.webviewPanel?.api.serverStopped({message:values[0], reason:values[1]});
                     }
-                    return;
                 } else {
                     await this.updateStatus(loc)
                 }

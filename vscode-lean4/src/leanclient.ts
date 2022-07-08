@@ -102,10 +102,10 @@ export class LeanClient implements Disposable {
     }
 
     async showRestartMessage(): Promise<void> {
-        if (!this.showingRestartMessage){
+        if (!this.showingRestartMessage) {
             this.showingRestartMessage = true;
-            const restartItem = 'Restart Lean Language Server';
-            const item = await window.showErrorMessage('Lean Language Server has stopped unexpectedly.', restartItem)
+            const restartItem = 'Restart Lean Server';
+            const item = await window.showErrorMessage('Lean Server has stopped unexpectedly.', restartItem)
             this.showingRestartMessage = false;
             if (item === restartItem) {
                 void this.start();
@@ -113,15 +113,15 @@ export class LeanClient implements Disposable {
         }
     }
 
-    async showRestartFileMessage(){
-        if (!this.showingRestartFileMessage){
+    async showRestartFileMessage(): Promise<void> {
+        if (!this.showingRestartFileMessage) {
             this.showingRestartFileMessage = true;
             const restartItem = 'Restart the Lean Server on this file';
             const item = await window.showErrorMessage('The Lean Server has stopped processing this file.', restartItem)
             this.showingRestartFileMessage = false;
             if (item === restartItem) {
                 if (window.activeTextEditor) {
-                    void this.restartFile(window.activeTextEditor.document);
+                    return this.restartFile(window.activeTextEditor.document);
                 }
             }
         }
@@ -130,7 +130,7 @@ export class LeanClient implements Disposable {
     async restart(): Promise<void> {
         const startTime = Date.now()
 
-        console.log('Restarting Lean Language Server')
+        console.log('Restarting Lean Server')
         if (this.isStarted()) {
             await this.stop()
         }
@@ -314,7 +314,7 @@ export class LeanClient implements Disposable {
                     }
                 } else if (s.newState === State.Stopped) {
                     this.running = false;
-                    this.stoppedEmitter.fire(['Lean language server has stopped.', '']);
+                    this.stoppedEmitter.fire(['Lean server has stopped.', '']);
                     console.log('client has stopped or it failed to start');
                     if (!this.noPrompt){
                         await this.showRestartMessage();
@@ -455,10 +455,8 @@ export class LeanClient implements Disposable {
     }
 
     async restartFile(doc: TextDocument): Promise<void> {
-        if (!this.running) {
-            this.showingRestartFileMessage = false;
-            return; // there was a problem starting lean server.
-        }
+        if (!this.running) return; // there was a problem starting lean server.
+
         assert(() => this.isStarted())
 
         if (!await this.isSameWorkspace(doc.uri)){
@@ -466,6 +464,7 @@ export class LeanClient implements Disposable {
             return;
         }
         const uri = doc.uri.toString()
+        console.log(`Restarting File: ${uri}`)
         // This causes a text document version number discontinuity. In
         // (didChange (oldVersion) => restartFile => didChange (newVersion))
         // the client emits newVersion = oldVersion + 1, despite the fact that the
@@ -485,7 +484,7 @@ export class LeanClient implements Disposable {
                 'text': doc.getText()
             }
         })
-        this.showingRestartFileMessage = true;
+        this.showingRestartFileMessage = false;
     }
 
     // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
