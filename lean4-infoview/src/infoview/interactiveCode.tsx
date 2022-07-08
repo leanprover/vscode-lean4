@@ -64,7 +64,7 @@ function renderMarkdown(doc: string){
   // see https://github.com/microsoft/vscode/blob/main/src/vs/base/browser/markdownRenderer.ts
 
   const renderedMarkdown = marked.parse(doc, markedOptions);
-  return <div dangerouslySetInnerHTML={{ __html: renderedMarkdown }} />
+  return <div className="markdown-hover" dangerouslySetInnerHTML={{ __html: renderedMarkdown }} />
   // handy for debugging:
   // return <div>{ renderedMarkdown } </div>
 }
@@ -82,13 +82,13 @@ function TypePopupContents({ pos, info, redrawTooltip }: TypePopupContentsProps)
   // We let the tooltip know to redo its layout whenever our contents change.
   React.useEffect(() => redrawTooltip(), [ip, err, redrawTooltip])
 
-  return <div className="monaco-hover monaco-hover-content hover-div hover-row markdown-hover">
+  return <div className="monaco-hover monaco-hover-content hover-div hover-row">
     {ip && <>
       <div className="font-code tl pre-wrap">
       {ip.exprExplicit && <InteractiveCode pos={pos} fmt={ip.exprExplicit} />} : {ip.type && <InteractiveCode pos={pos} fmt={ip.type} />}
       </div>
       {ip.doc && <hr />}
-      {ip.doc && ip.doc && renderMarkdown(ip.doc)}
+      {ip.doc && renderMarkdown(ip.doc)}
     </>}
     {err && <>Error: {mapRpcError(err).message}</>}
     {(!ip && !err) && <>Loading..</>}
