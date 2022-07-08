@@ -143,11 +143,6 @@ select {
     background: var(--vscode-editorWidget-background);
 }
 
-.hover-div {
-    overflow: hidden;
-    line-height: 1.35714;
-}
-
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
@@ -161,7 +156,6 @@ select {
 	-webkit-user-select: text;
 	-ms-user-select: text;
 	box-sizing: initial;
-	line-height: 1.5em;
 }
 
 .monaco-hover.hidden {
@@ -179,6 +173,7 @@ select {
 .monaco-hover .markdown-hover > .hover-contents:not(.code-hover-contents) {
 	/* max-width: 500px; */
 	word-wrap: break-word;
+	line-height: 1.5em;
 }
 
 .monaco-hover .markdown-hover > .hover-contents:not(.code-hover-contents) hr {

@@ -41,7 +41,7 @@ interface TypePopupContentsProps {
 
 function renderCodeBlock(lang: string, code: string) : string {
   // todo: render Lean code blocks using the lean syntax.json
-  return `<div class="font-code tl pre-wrap">${code}</div>`
+  return `<div class="code-hover-contents font-code tl pre-wrap">${code}</div>`
 }
 
 function renderMarkdown(doc: string){
@@ -49,7 +49,7 @@ function renderMarkdown(doc: string){
   renderer.code = (code, lang) => {
     const id : string = lang ? lang : '';
     const formatted = renderCodeBlock(id, code);
-		return `<div data-code="${id}">${formatted}</div>`;
+		return `<div class="hover-contents" data-code="${id}">${formatted}</div>`;
 	}
 
   const markedOptions: marked.MarkedOptions = {}
@@ -82,7 +82,7 @@ function TypePopupContents({ pos, info, redrawTooltip }: TypePopupContentsProps)
   // We let the tooltip know to redo its layout whenever our contents change.
   React.useEffect(() => redrawTooltip(), [ip, err, redrawTooltip])
 
-  return <div className="monaco-hover monaco-hover-content hover-div hover-row">
+  return <div className="monaco-hover monaco-hover-content hover-row">
     {ip && <>
       <div className="font-code tl pre-wrap">
       {ip.exprExplicit && <InteractiveCode pos={pos} fmt={ip.exprExplicit} />} : {ip.type && <InteractiveCode pos={pos} fmt={ip.type} />}
