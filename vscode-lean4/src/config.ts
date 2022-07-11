@@ -57,6 +57,10 @@ export function addDefaultElanPath() : void {
 }
 
 function findToolchainBin(root:string) : string{
+    console.log(`Looking for toolchains in ${root}`)
+    if (!fs.existsSync(root)) {
+        return '';
+    }
     const toolchains = fs.readdirSync(path.join(root, '..', 'toolchains'));
     for(const toolchain of toolchains) {
         if (toolchain.indexOf('leanprover--lean4') >= 0){
@@ -77,7 +81,7 @@ export function addToolchainBinPath(elanPath: string){
 export function findProgramInPath(name: string) : string {
     if (fs.existsSync(name)) {
         return name;
-     }
+    }
     const extensions : string[] = [];
     if (process.platform === 'win32') {
        extensions.push('.exe')
