@@ -75,6 +75,9 @@ export function addToolchainBinPath(elanPath: string){
 }
 
 export function findProgramInPath(name: string) : string {
+    if (fs.existsSync(name)) {
+        return name;
+     }
     const extensions : string[] = [];
     if (process.platform === 'win32') {
        extensions.push('.exe')

@@ -2,7 +2,6 @@ import { window, TerminalOptions, OutputChannel, commands, Disposable, EventEmit
 import { toolchainPath, addServerEnvPaths, getLeanExecutableName  } from '../config'
 import { batchExecute } from './batch'
 import { LocalStorageService} from './localStorage'
-import { LeanpkgService } from './leanpkg'
 import { readLeanVersion, findLeanPackageRoot, isCoreLean4Directory } from './projectInfo';
 import { join, dirname } from 'path';
 import { fileExists } from './fsHelper'
@@ -454,6 +453,19 @@ export class LeanInstaller implements Disposable {
         return elanInstalled;
     }
 
+    private getPowerShell() : string {
+        const windir = process.env.windir
+        return `${windir}\\System32\\WindowsPowerShell\\v1.0\\powershell.exe`
+    }
+
+    private async getExecutionPolicy(): Promise<string> {
+        return await batchExecute(this.getPowerShell(), ['-c', 'Get-ExecutionPolicy'], null, undefined) ?? '';
+    }
+
+    private async setExecutionPolicy(policy: string) : Promise<void> {
+        await batchExecute(this.getPowerShell(), ['-c', `Set-ExecutionPolicy -ExecutionPolicy ${policy} -Scope CurrentUser`], null, undefined);
+    }
+
     private async installElan() : Promise<boolean> {
 
         if (toolchainPath()) {
@@ -463,23 +475,33 @@ export class LeanInstaller implements Disposable {
         } else {
             const terminalName = 'Lean installation via elan';
 
+            let executionPolicy = '';
             let terminalOptions: TerminalOptions = { name: terminalName };
             if (process.platform === 'win32') {
-                const windir = process.env.windir
-                terminalOptions = { name: terminalName, shellPath: `${windir}\\System32\\WindowsPowerShell\\v1.0\\powershell.exe` };
+                terminalOptions = { name: terminalName, shellPath: this.getPowerShell() };
             }
             const terminal = window.createTerminal(terminalOptions);
             terminal.show();
 
+            const thisObject = this;
             // We register a listener, to restart the Lean extension once elan has finished.
             const result = new Promise<boolean>(function(resolve, reject) {
-                window.onDidCloseTerminal((t) => {
+                window.onDidCloseTerminal(async (t) => {
                 if (t.name === terminalName) {
+                    if (executionPolicy === 'Restricted'){
+                        console.log('Restoring ExecutionPolicy to Restricted')
+                        await thisObject.setExecutionPolicy(executionPolicy);
+                    }
                     resolve(true);
                 }});
             });
 
             if (process.platform === 'win32') {
+                executionPolicy = (await this.getExecutionPolicy()).trim();
+                if (executionPolicy === 'Restricted'){
+                    console.log('Setting ExecutionPolicy to RemoteSigned so we can run elan-init.ps1')
+                    await this.setExecutionPolicy('RemoteSigned');
+                }
                 terminal.sendText(
                     `Invoke-WebRequest -Uri "${this.leanInstallerWindows}" -OutFile elan-init.ps1\n` +
                     `$rc = .\\elan-init.ps1 -NoPrompt 1 -DefaultToolchain ${this.defaultToolchain}\n` +
@@ -491,12 +513,15 @@ export class LeanInstaller implements Disposable {
                     'exit\n'
                     );
             }
-            else{
+            else {
                 const elanArgs = `-y --default-toolchain ${this.defaultToolchain}`;
                 const prompt = '(echo && read -n 1 -s -r -p "Install failed, press ENTER to continue...")';
 
                 terminal.sendText(`bash -c 'curl ${this.leanInstallerLinux} -sSf | sh -s -- ${elanArgs} || ${prompt}' && exit `);
             }
+
+            // clear any previous lean version errors.
+            this.versionCache.clear();
 
             return result;
         }
