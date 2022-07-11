@@ -1,5 +1,5 @@
 import { window, TerminalOptions, OutputChannel, commands, Disposable, EventEmitter, ProgressLocation, Uri } from 'vscode'
-import { toolchainPath, addServerEnvPaths, getLeanExecutableName  } from '../config'
+import { toolchainPath, addServerEnvPaths, getLeanExecutableName, getPowerShellPath } from '../config'
 import { batchExecute } from './batch'
 import { LocalStorageService} from './localStorage'
 import { readLeanVersion, findLeanPackageRoot, isCoreLean4Directory } from './projectInfo';
@@ -144,6 +144,14 @@ export class LeanInstaller implements Disposable {
     async showInstallOptions(uri: Uri) : Promise<void> {
         let path  = this.localStorage.getLeanPath();
         if (!path ) path  = toolchainPath();
+        if (process.env.TEST_FOLDER){
+            // no prompt, just do it!
+            console.log('Installing Lean via Elan during testing')
+            await this.installElan();
+            this.installChangedEmitter.fire(uri);
+            return;
+        }
+
         // note; we keep the LeanClient alive so that it can be restarted if the
         // user changes the Lean: Executable Path.
         const installItem = 'Install Lean using Elan';
@@ -453,19 +461,6 @@ export class LeanInstaller implements Disposable {
         return elanInstalled;
     }
 
-    private getPowerShell() : string {
-        const windir = process.env.windir
-        return `${windir}\\System32\\WindowsPowerShell\\v1.0\\powershell.exe`
-    }
-
-    private async getExecutionPolicy(): Promise<string> {
-        return await batchExecute(this.getPowerShell(), ['-c', 'Get-ExecutionPolicy'], null, undefined) ?? '';
-    }
-
-    private async setExecutionPolicy(policy: string) : Promise<void> {
-        await batchExecute(this.getPowerShell(), ['-c', `Set-ExecutionPolicy -ExecutionPolicy ${policy} -Scope CurrentUser`], null, undefined);
-    }
-
     private async installElan() : Promise<boolean> {
 
         if (toolchainPath()) {
@@ -475,10 +470,9 @@ export class LeanInstaller implements Disposable {
         } else {
             const terminalName = 'Lean installation via elan';
 
-            let executionPolicy = '';
             let terminalOptions: TerminalOptions = { name: terminalName };
             if (process.platform === 'win32') {
-                terminalOptions = { name: terminalName, shellPath: this.getPowerShell() };
+                terminalOptions = { name: terminalName, shellPath: getPowerShellPath() };
             }
             const terminal = window.createTerminal(terminalOptions);
             terminal.show();
@@ -488,22 +482,14 @@ export class LeanInstaller implements Disposable {
             const result = new Promise<boolean>(function(resolve, reject) {
                 window.onDidCloseTerminal(async (t) => {
                 if (t.name === terminalName) {
-                    if (executionPolicy === 'Restricted'){
-                        console.log('Restoring ExecutionPolicy to Restricted')
-                        await thisObject.setExecutionPolicy(executionPolicy);
-                    }
                     resolve(true);
                 }});
             });
 
             if (process.platform === 'win32') {
-                executionPolicy = (await this.getExecutionPolicy()).trim();
-                if (executionPolicy === 'Restricted'){
-                    console.log('Setting ExecutionPolicy to RemoteSigned so we can run elan-init.ps1')
-                    await this.setExecutionPolicy('RemoteSigned');
-                }
                 terminal.sendText(
                     `Invoke-WebRequest -Uri "${this.leanInstallerWindows}" -OutFile elan-init.ps1\n` +
+                    'Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process\n' +
                     `$rc = .\\elan-init.ps1 -NoPrompt 1 -DefaultToolchain ${this.defaultToolchain}\n` +
                     'Write-Host "elan-init returned [$rc]"\n' +
                     'del .\\elan-init.ps1\n' +

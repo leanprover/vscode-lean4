@@ -116,6 +116,11 @@ export function removeElanPath() : string {
     return result;
 }
 
+export function getPowerShellPath() : string {
+    const windir = process.env.windir
+    return `${windir}\\System32\\WindowsPowerShell\\v1.0\\powershell.exe`
+}
+
 export function toolchainPath(): string {
     return workspace.getConfiguration('lean4').get('toolchainPath', '')
 }
