@@ -326,7 +326,6 @@ export class LeanClient implements Disposable {
             }
             // if we got this far then the client is happy so we are running!
             this.running = true;
-            //this.showingRestartMessage = false;
         } catch (error) {
             this.outputChannel.appendLine('' + error);
             this.serverFailedEmitter.fire('' + error);
