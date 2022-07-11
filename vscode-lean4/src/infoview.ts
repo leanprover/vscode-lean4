@@ -251,7 +251,6 @@ export class InfoProvider implements Disposable {
 
         provider.clientStopped(([client, activeClient, msg, reason]) => {
             void this.onActiveClientStopped(client, activeClient, msg, reason);
-
         });
 
         this.subscriptions.push(
@@ -299,12 +298,7 @@ export class InfoProvider implements Disposable {
             }
         }
 
-        await this.webviewPanel?.api.serverStopped(undefined); // clear any server stopped state
-        const folder = client.getWorkspaceFolder()
-        if (this.clientsFailed.has(folder)) {
-            this.clientsFailed.delete(folder) // delete from failed clients
-            console.log('Restarting server for workspace: ' + folder)
-        }
+        await this.onWorkerRestarted(client);
         await this.initInfoView(window.activeTextEditor, client);
     }
 
@@ -324,11 +318,24 @@ export class InfoProvider implements Disposable {
                 // infoview updates properly.
                 await this.onClientRestarted(client);
             }),
+            client.restartedWorker(async () => {
+                await this.onWorkerRestarted(client);
+            }),
             client.didSetLanguage(() => this.onLanguageChanged()),
         );
 
         // Note that when new client is first created it still fires client.restarted
         // event, so all onClientRestarted can happen there so we don't do it twice.
+    }
+
+    async onWorkerRestarted(client: LeanClient) : Promise<void> {
+        await this.webviewPanel?.api.serverStopped(undefined); // clear any server stopped state
+        const folder = client.getWorkspaceFolder()
+        if (this.clientsFailed.has(folder)) {
+            this.clientsFailed.delete(folder) // delete from failed clients
+            console.log('Restarting server for workspace: ' + folder)
+        }
+        await this.sendPosition();
     }
 
     onClientRemoved(client: LeanClient) {
@@ -348,15 +355,14 @@ export class InfoProvider implements Disposable {
         const key = client.getWorkspaceFolder();
         if (!this.clientsFailed.has(key)) {
             this.clientsFailed.set(key, [msg, reason]);
+            await this.sendPosition();
             if (restartFile) {
                 console.log(`client crashed: ${key}`)
                 await client.showRestartMessage(restartFile);
-                await this.onClientRestarted(client); // delete from failed clients and init Infoview
             } else {
                 console.log(`client stopped: ${key}`)
                 await client.showRestartMessage();
             }
-            await this.sendPosition();
         }
     }
 

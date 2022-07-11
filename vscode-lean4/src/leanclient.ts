@@ -81,6 +81,9 @@ export class LeanClient implements Disposable {
     private restartingEmitter = new EventEmitter()
     restarting = this.restartingEmitter.event
 
+    private restartedWorkerEmitter = new EventEmitter()
+    restartedWorker = this.restartedWorkerEmitter.event
+
     private serverFailedEmitter = new EventEmitter<string>();
     serverFailed = this.serverFailedEmitter.event
 
@@ -479,7 +482,7 @@ export class LeanClient implements Disposable {
                 'text': doc.getText()
             }
         })
-        this.restartingEmitter.fire(undefined)
+        this.restartedWorkerEmitter.fire(undefined)
     }
 
     // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
