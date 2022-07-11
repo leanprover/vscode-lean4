@@ -307,6 +307,11 @@ export async function gotoDefinition(editor: vscode.TextEditor, word: string, re
     await vscode.commands.executeCommand('editor.action.revealDefinition');
 }
 
+export async function restartFile() : Promise<void> {
+    console.log('restarting file in lean client ...');
+    await vscode.commands.executeCommand('lean4.restartFile');
+}
+
 export async function restartLeanServer(client: LeanClient, retries=30, delay=1000) : Promise<boolean> {
     let count = 0;
     console.log('restarting lean client ...');
