@@ -278,8 +278,9 @@ export class LeanClientProvider implements Disposable {
             client.stopped(err => {
                 if (client) {
                     // fires a message in case a client is stopped unexpectedly
+                    const [message, reason] = err;
                     this.clientStoppedEmitter.fire([client, client === this.activeClient,
-                        err[0], err[1]]);
+                        message, reason]);
                 }
             });
 

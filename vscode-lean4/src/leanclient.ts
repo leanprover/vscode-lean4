@@ -107,14 +107,15 @@ export class LeanClient implements Disposable {
         if (!this.showingRestartMessage) {
             this.showingRestartMessage = true;
             let restartItem :string;
-            let item :any;
+            let messageTitle :string;
             if (!restartFile) {
                 restartItem = 'Restart Lean Server';
-                item = await window.showErrorMessage('Lean Server has stopped unexpectedly.', restartItem)
+                messageTitle = 'Lean Server has stopped unexpectedly.'
             } else {
                 restartItem = 'Restart Lean Server on this file';
-                item = await window.showErrorMessage('The Lean Server has stopped processing this file.', restartItem)
+                messageTitle = 'The Lean Server has stopped processing this file.'
             }
+            const item = await window.showErrorMessage(messageTitle, restartItem)
             this.showingRestartMessage = false;
             if (item === restartItem) {
                 if (restartFile && window.activeTextEditor){

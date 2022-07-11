@@ -592,7 +592,8 @@ export class InfoProvider implements Disposable {
                     // send stopped event
                     const values = this.clientsFailed.get(folder);
                     if (values) {
-                        await this.webviewPanel?.api.serverStopped({message:values[0], reason:values[1]});
+                        const [message, reason] = values;
+                        await this.webviewPanel?.api.serverStopped({message, reason});
                     }
                 } else {
                     await this.updateStatus(loc)
