@@ -348,14 +348,15 @@ export class InfoProvider implements Disposable {
         const key = client.getWorkspaceFolder();
         if (!this.clientsFailed.has(key)) {
             this.clientsFailed.set(key, [msg, reason]);
-            await this.sendPosition();
             if (restartFile) {
                 console.log(`client crashed: ${key}`)
-                await client.showRestartFileMessage()
+                await client.showRestartMessage(restartFile);
+                await this.onClientRestarted(client); // delete from failed clients and init Infoview
             } else {
                 console.log(`client stopped: ${key}`)
-                await client.showRestartMessage()
+                await client.showRestartMessage();
             }
+            await this.sendPosition();
         }
     }
 

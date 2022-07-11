@@ -101,27 +101,23 @@ export class LeanClient implements Disposable {
         if (this.isStarted()) void this.stop()
     }
 
-    async showRestartMessage(): Promise<void> {
+    async showRestartMessage(restartFile: boolean = false): Promise<void> {
         if (!this.showingRestartMessage) {
             this.showingRestartMessage = true;
-            const restartItem = 'Restart Lean Server';
-            const item = await window.showErrorMessage('Lean Server has stopped unexpectedly.', restartItem)
+            const restartItem = 'Restart Lean Server on this file';
+            const item = await window.showErrorMessage('The Lean Server has stopped processing this file.', restartItem)
+            if (!restartFile) {
+                const restartItem = 'Restart Lean Server';
+                const item = await window.showErrorMessage('Lean Server has stopped unexpectedly.', restartItem)
+            }
             this.showingRestartMessage = false;
             if (item === restartItem) {
-                void this.start();
-            }
-        }
-    }
-
-    async showRestartFileMessage(): Promise<void> {
-        if (!this.showingRestartFileMessage) {
-            this.showingRestartFileMessage = true;
-            const restartItem = 'Restart the Lean Server on this file';
-            const item = await window.showErrorMessage('The Lean Server has stopped processing this file.', restartItem)
-            this.showingRestartFileMessage = false;
-            if (item === restartItem) {
-                if (window.activeTextEditor) {
-                    return this.restartFile(window.activeTextEditor.document);
+                if(restartFile){
+                    if (window.activeTextEditor) {
+                        await this.restartFile(window.activeTextEditor.document);
+                    }
+                } else {
+                    void this.start();
                 }
             }
         }
@@ -330,7 +326,7 @@ export class LeanClient implements Disposable {
             }
             // if we got this far then the client is happy so we are running!
             this.running = true;
-            this.showingRestartMessage = false;
+            //this.showingRestartMessage = false;
         } catch (error) {
             this.outputChannel.appendLine('' + error);
             this.serverFailedEmitter.fire('' + error);
@@ -430,7 +426,7 @@ export class LeanClient implements Disposable {
         assert(() => this.isStarted())
         if (this.client && this.running) {
             this.noPrompt = true;
-            this.showingRestartMessage = true
+            //this.showingRestartMessage = true
             try {
                 // some timing conditions can happen while running unit tests that cause
                 // this to throw an exception which then causes those tests to fail.
@@ -484,7 +480,7 @@ export class LeanClient implements Disposable {
                 'text': doc.getText()
             }
         })
-        this.showingRestartFileMessage = false;
+        this.restartingEmitter.fire(undefined)
     }
 
     // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
