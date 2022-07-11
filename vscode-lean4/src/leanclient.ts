@@ -49,7 +49,6 @@ export class LeanClient implements Disposable {
     private subscriptions: Disposable[] = []
     private noPrompt : boolean = false;
     private showingRestartMessage : boolean = false;
-    private showingRestartFileMessage : boolean = false;
 
     private didChangeEmitter = new EventEmitter<DidChangeTextDocumentParams>()
     didChange = this.didChangeEmitter.event
