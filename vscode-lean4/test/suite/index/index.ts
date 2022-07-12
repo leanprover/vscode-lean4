@@ -18,7 +18,7 @@ export function run(testsRoot: string, cb: (error: any, failures?: number) => vo
     }
     console.log('>>>>>>>>> testsRoot=' + testsRoot);
 
-    if (typeof(process.env.DISABLE_ELAN) === 'string') {
+    if (process.env.DISABLE_ELAN) {
         console.log('>>>>>>>>> running without elan');
     }
 

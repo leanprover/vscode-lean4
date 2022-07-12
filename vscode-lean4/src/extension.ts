@@ -40,7 +40,7 @@ function getLeanDocument() : TextDocument | undefined {
 export async function activate(context: ExtensionContext): Promise<Exports> {
 
     // for unit test that tests behavior when there is no elan installed.
-    if (typeof(process.env.DISABLE_ELAN) === 'string') {
+    if (process.env.DISABLE_ELAN) {
         const elanRoot = removeElanPath();
         if (elanRoot){
             addToolchainBinPath(elanRoot);

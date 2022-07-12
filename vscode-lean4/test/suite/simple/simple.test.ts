@@ -7,7 +7,7 @@ import { initLean4Untitled, waitForActiveEditor, waitForInfoviewHtml, closeAllEd
 
 function getElanMode(){
     let mode = ''
-    if (typeof(process.env.DISABLE_ELAN) === 'string') {
+    if (process.env.DISABLE_ELAN) {
         mode = ' no elan '
     }
     return mode;

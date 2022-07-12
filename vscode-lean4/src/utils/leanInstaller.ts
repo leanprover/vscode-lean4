@@ -150,7 +150,7 @@ export class LeanInstaller implements Disposable {
             // no prompt, just do it!
             console.log('Installing Lean via Elan during testing')
             await this.installElan();
-            if (typeof(process.env.DISABLE_ELAN) === 'string') {
+            if (process.env.DISABLE_ELAN) {
                 addToolchainBinPath(getDefaultElanPath());
             } else {
                 addDefaultElanPath();
