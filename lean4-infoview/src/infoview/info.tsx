@@ -205,10 +205,10 @@ export function InfoDisplay(props0: InfoDisplayProps) {
             </div>
             {widgets && widgets.map(widget =>
                 <div style={{display: hasWidget ? 'block' : 'none'}}
-                     key={`widget::${widget.widgetSourceId}::${widget.range?.toString()}`}>
+                     key={`widget::${widget.id}::${widget.range?.toString()}`}>
                     <Details initiallyOpen>
                         <summary className="mv2 pointer">
-                            Widget: {widget.widgetSourceId}
+                            {widget.name}
                         </summary>
                         <div className="ml1">
                              <UserWidget pos={pos} widget={widget}/>
