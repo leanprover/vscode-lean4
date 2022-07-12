@@ -403,7 +403,6 @@ export function copyFolder(source: string, target: string) {
         const targetFile = path.join(target, file);
         const stats = fs.lstatSync(sourceFile);
         if (stats.isFile()) {
-            console.log(`Copying ${sourceFile}`)
             fs.copyFileSync(sourceFile, targetFile);
         }
         else if (stats.isDirectory()){
