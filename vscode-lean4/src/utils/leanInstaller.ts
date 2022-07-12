@@ -5,7 +5,7 @@ import { LocalStorageService} from './localStorage'
 import { readLeanVersion, findLeanPackageRoot, isCoreLean4Directory } from './projectInfo';
 import { join, dirname } from 'path';
 import { fileExists } from './fsHelper'
-import { addDefaultElanPath, getDefaultElanPath, addToolchainBinPath, isRunningTest, isElanDisabled()} from '../config';
+import { addDefaultElanPath, getDefaultElanPath, addToolchainBinPath, isRunningTest, isElanDisabled } from '../config';
 
 export class LeanVersion {
     version: string;
