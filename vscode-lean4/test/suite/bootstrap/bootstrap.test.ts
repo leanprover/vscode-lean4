@@ -21,7 +21,8 @@ suite('Lean4 Bootstrap Test Suite', () => {
         const info = lean.exports.infoProvider;
         assert(info, 'No InfoProvider export');
 
-        await assertStringInInfoview(info, '4.0.0-nightly-');
+        // give it a extra long timeout in case test machine is really slow.
+		await waitForInfoviewHtml(info, '4.0.0-nightly-', 300);
 
         // test goto definition to lean toolchain works
         await waitForActiveEditor();
@@ -53,7 +54,7 @@ suite('Lean4 Bootstrap Test Suite', () => {
         // make sure test is always run in predictable state, which is no file or folder open
         await closeAllEditors();
 
-    }).timeout(60000);
+    }).timeout(300000); // give it 5 minutes to install lean in case test machine is really slow.
 
     test('Install stable build on demand', async () => {
 
@@ -70,13 +71,15 @@ suite('Lean4 Bootstrap Test Suite', () => {
 
         // install table build which is also needed by subsequent tests.
 		await vscode.commands.executeCommand('lean4.selectToolchain', 'leanprover/lean4:stable');
-		await waitForInfoviewHtml(info, '4.0.0, commit', 60);
+
+        // give it a extra long timeout in case test machine is really slow.
+		await waitForInfoviewHtml(info, '4.0.0, commit', 300);
 		await vscode.commands.executeCommand('lean4.selectToolchain', 'reset');
 
         // make sure test is always run in predictable state, which is no file or folder open
         await closeAllEditors();
 
-    }).timeout(60000);
+    }).timeout(300000);
 
     test('Create linked toolchain named master', async () => {
 
@@ -97,14 +100,15 @@ suite('Lean4 Bootstrap Test Suite', () => {
         assert(info, 'No InfoProvider export');
 
 		await vscode.commands.executeCommand('lean4.selectToolchain', 'leanprover/lean4:stable');
-		await waitForInfoviewHtml(info, '4.0.0, commit', 60);
+		await assertStringInInfoview(info, '4.0.0, commit');
 		await vscode.commands.executeCommand('lean4.selectToolchain', 'master');
-        await assertStringInInfoview(info, '4.0.0-nightly-');
+        // sometimes a copy of lean launches more slowly (especially on Windows).
+        await waitForInfoviewHtml(info, '4.0.0-nightly-', 300);
 		await vscode.commands.executeCommand('lean4.selectToolchain', 'reset');
 
         // make sure test is always run in predictable state, which is no file or folder open
         await closeAllEditors();
 
-    }).timeout(60000);
+    }).timeout(300000);
 
 }).timeout(60000);
