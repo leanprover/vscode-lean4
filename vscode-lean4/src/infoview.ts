@@ -7,7 +7,7 @@ import {
 } from 'vscode';
 import { EditorApi, InfoviewApi, LeanFileProgressParams, TextInsertKind, RpcConnectParams, RpcConnected, RpcKeepAliveParams } from '@lean4/infoview-api';
 import { LeanClient } from './leanclient';
-import { getInfoViewAllErrorsOnLine, getInfoViewAutoOpen, getInfoViewAutoOpenShowGoal,
+import { getEditorLineHeight, getInfoViewAllErrorsOnLine, getInfoViewAutoOpen, getInfoViewAutoOpenShowGoal,
     getInfoViewStyle, minIfProd, prodOrDev } from './config';
 import { Rpc } from './rpc';
 import { LeanClientProvider } from './utils/clientProvider'
@@ -379,15 +379,17 @@ export class InfoProvider implements Disposable {
     }
 
     private updateStylesheet() {
-        const fontFamily = workspace.getConfiguration('editor').get<string>('fontFamily')?.replace(/['"]/g, '');
-        const fontCodeCSS = `
-            .font-code {
-                font-family: ${fontFamily};
-                font-size: ${workspace.getConfiguration('editor').get('fontSize')}px;
+        // Here we add extra CSS variables which depend on the editor configuration,
+        // but are not exposed by default.
+        // Ref: https://code.visualstudio.com/api/extension-guides/webview#theming-webview-content
+
+        const extraCSS = `
+            html {
+                --vscode-editor-line-height: ${getEditorLineHeight()}px;
             }
         `;
         const configCSS = getInfoViewStyle();
-        this.stylesheet = fontCodeCSS + configCSS;
+        this.stylesheet = extraCSS + configCSS;
     }
 
     private async autoOpen() : Promise<boolean> {

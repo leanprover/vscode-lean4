@@ -5,6 +5,13 @@ html,body {
     height: 100%;
 }
 
+.font-code {
+    font-family: var(--vscode-editor-font-family);
+    font-weight: var(--vscode-editor-font-weight);
+    font-size: var(--vscode-editor-font-size);
+    line-height: var(--vscode-editor-line-height);
+}
+
 /* These are syntax highlights for the string goal view. */
 .goal-goals { color: #569cd6; }
 .goal-vdash { color: #569cd6; }
