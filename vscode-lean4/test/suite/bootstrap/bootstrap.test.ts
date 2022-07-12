@@ -12,7 +12,7 @@ suite('Lean4 Bootstrap Test Suite', () => {
 
     test('Install elan on demand', async () => {
 
-        console.log(`=================== Install elan on demand ===================`);
+        console.log('=================== Install elan on demand ===================');
         void vscode.window.showInformationMessage('Running tests: ' + __dirname);
 
         // this will wait up to 60 seconds to do full elan lean install, so test machines better
@@ -57,7 +57,7 @@ suite('Lean4 Bootstrap Test Suite', () => {
 
     test('Install stable build on demand', async () => {
 
-        console.log(`=================== Install stable build on demand ===================`);
+        console.log('=================== Install stable build on demand ===================');
         void vscode.window.showInformationMessage('Running tests: ' + __dirname);
 
         // this will wait up to 60 seconds to do full elan lean install, so test machines better
@@ -80,7 +80,7 @@ suite('Lean4 Bootstrap Test Suite', () => {
 
     test('Create linked toolchain named master', async () => {
 
-        console.log(`=================== Create linked toolchain named master ===================`);
+        console.log('=================== Create linked toolchain named master ===================');
         void vscode.window.showInformationMessage('Running tests: ' + __dirname);
 
         const elanRoot = getDefaultElanPath()
