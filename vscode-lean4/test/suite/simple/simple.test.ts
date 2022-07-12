@@ -5,6 +5,7 @@ import * as vscode from 'vscode';
 import { isElanDisabled } from '../../../src/config'
 import { initLean4Untitled, waitForActiveEditor, waitForInfoviewHtml, closeAllEditors,
     extractPhrase, gotoDefinition, assertStringInInfoview, initLean4 } from '../utils/helpers';
+import { logger } from '../../../src/utils/logger'
 
 function getElanMode(){
     let mode = ''
@@ -18,7 +19,7 @@ suite('Lean4 Basics Test Suite', () => {
 
     test('Untitled Lean File', async () => {
 
-        console.log(`=================== Untitled Lean File ${getElanMode()} ===================`);
+        logger.log(`=================== Untitled Lean File ${getElanMode()} ===================`);
         void vscode.window.showInformationMessage('Running tests: ' + __dirname);
 
         const lean = await initLean4Untitled('#eval Lean.versionString');
@@ -61,7 +62,7 @@ suite('Lean4 Basics Test Suite', () => {
 
     test('Orphaned Lean File', async () => {
 
-        console.log(`=================== Orphaned Lean File ${getElanMode()} ===================`);
+        logger.log(`=================== Orphaned Lean File ${getElanMode()} ===================`);
         void vscode.window.showInformationMessage('Running tests: ' + __dirname);
 
         const testsRoot = path.join(__dirname, '..', '..', '..', '..', 'test', 'test-fixtures', 'orphan');
@@ -93,7 +94,7 @@ suite('Lean4 Basics Test Suite', () => {
     }).timeout(60000);
 
     test('Goto definition in a package folder', async () => {
-        console.log(`=================== Goto definition in a package folder  ${getElanMode()} ===================`);
+        logger.log(`=================== Goto definition in a package folder  ${getElanMode()} ===================`);
         void vscode.window.showInformationMessage('Running tests: ' + __dirname);
 
         // Test we can load file in a project folder from a package folder and also
@@ -111,7 +112,7 @@ suite('Lean4 Basics Test Suite', () => {
         let expectedVersion = 'Hello:';
         let html = await waitForInfoviewHtml(info, expectedVersion);
         const versionString = extractPhrase(html, 'Hello:', '<').trim();
-        console.log(`>>> Found "${versionString}" in infoview`)
+        logger.log(`>>> Found "${versionString}" in infoview`)
 
         const editor = await waitForActiveEditor();
         await gotoDefinition(editor, 'getLeanVersion');

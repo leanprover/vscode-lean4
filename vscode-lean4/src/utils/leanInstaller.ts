@@ -6,6 +6,7 @@ import { readLeanVersion, findLeanPackageRoot, isCoreLean4Directory } from './pr
 import { join, dirname } from 'path';
 import { fileExists } from './fsHelper'
 import { addDefaultElanPath, getDefaultElanPath, addToolchainBinPath, isRunningTest, isElanDisabled } from '../config';
+import { logger } from './logger'
 
 export class LeanVersion {
     version: string;
@@ -148,7 +149,7 @@ export class LeanInstaller implements Disposable {
         if (!path ) path  = toolchainPath();
         if (isRunningTest()){
             // no prompt, just do it!
-            console.log('Installing Lean via Elan during testing')
+            logger.log('Installing Lean via Elan during testing')
             await this.installElan();
             if (isElanDisabled()) {
                 addToolchainBinPath(getDefaultElanPath());
@@ -188,7 +189,7 @@ export class LeanInstaller implements Disposable {
                 // this is a test codepath that short circuits the UI.
                 const selectedVersion = args as string;
                 let s = this.removeSuffix(selectedVersion);
-                console.log('selectToolchainForActiveEditor: ' + selectedVersion);
+                logger.log('selectToolchainForActiveEditor: ' + selectedVersion);
                 if (s === 'reset') {
                     s = '';
                 }
@@ -351,7 +352,7 @@ export class LeanInstaller implements Disposable {
             // Specifically, if the extension was not opened inside of a folder, it
             // looks for a global (default) installation of Lean. This way, we can support
             // single file editing.
-            console.log(`executeWithProgress ${cmd} ${options}`)
+            logger.log(`executeWithProgress ${cmd} ${options}`)
             const stdout = await this.executeWithProgress('Checking Lean setup...', cmd, options, folderPath)
             if (!stdout) {
                 result.error = 'lean not found'

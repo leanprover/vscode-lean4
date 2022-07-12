@@ -5,13 +5,14 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import { initLean4Untitled, initLean4, waitForInfoviewHtml, closeAllEditors,
 	extractPhrase, restartLeanServer, assertStringInInfoview, resetToolchain } from '../utils/helpers';
+import { logger } from '../../../src/utils/logger'
 
 // Expects to be launched with folder: ${workspaceFolder}/vscode-lean4/test/suite/simple
 suite('Toolchain Test Suite', () => {
 
 	test('Untitled Select Toolchain', async () => {
 
-		console.log('=================== Untitled Select Toolchain ===================');
+		logger.log('=================== Untitled Select Toolchain ===================');
 		void vscode.window.showInformationMessage('Running tests: ' + __dirname);
 
 		const lean = await initLean4Untitled('#eval Lean.versionString');
@@ -38,7 +39,7 @@ suite('Toolchain Test Suite', () => {
 
 	test('Restart Server', async () => {
 
-		console.log('=================== Test Restart Server ===================');
+		logger.log('=================== Test Restart Server ===================');
 		void vscode.window.showInformationMessage('Running tests: ' + __dirname);
 
 		// Test we can restart the lean server
@@ -54,7 +55,7 @@ suite('Toolchain Test Suite', () => {
 			const expectedVersion = 'Hello:';
 			const html = await waitForInfoviewHtml(info, expectedVersion);
 			const versionString = extractPhrase(html, 'Hello:', '<').trim();
-			console.log(`>>> Found "${versionString}" in infoview`);
+			logger.log(`>>> Found "${versionString}" in infoview`);
 
 			// Now invoke the restart server command
 			const clients = lean.exports.clientProvider;
@@ -72,7 +73,7 @@ suite('Toolchain Test Suite', () => {
 	}).timeout(60000);
 
 	test('Select toolchain', async () => {
-		console.log('=================== Test select toolchain ===================');
+		logger.log('=================== Test select toolchain ===================');
 		void vscode.window.showInformationMessage('Running tests: ' + __dirname);
 
         const testsRoot = path.join(__dirname, '..', '..', '..', '..', 'test', 'test-fixtures', 'simple');
@@ -105,7 +106,7 @@ suite('Toolchain Test Suite', () => {
 
 	test('Edit lean-toolchain version', async () => {
 
-		console.log('=================== Test lean-toolchain edits ===================');
+		logger.log('=================== Test lean-toolchain edits ===================');
 
         const testsRoot = path.join(__dirname, '..', '..', '..', '..', 'test', 'test-fixtures', 'simple');
 
@@ -142,7 +143,7 @@ suite('Toolchain Test Suite', () => {
 
 			// check the path to lean.exe from the `eval IO.appPath`
 			const leanPath = extractPhrase(html, 'FilePath.mk', '<').trim();
-			console.log(`Found LeanPath: ${leanPath}`)
+			logger.log(`Found LeanPath: ${leanPath}`)
 			assert(leanPath.indexOf(expected), `Lean Path does not contain: ${expected}`);
 
 			// Find out if we have a 'master' toolchain (setup in our workflow: on-push.yml)

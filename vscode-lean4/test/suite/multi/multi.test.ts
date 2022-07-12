@@ -3,12 +3,13 @@ import { suite } from 'mocha';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { initLean4, assertStringInInfoview, closeAllEditors } from '../utils/helpers';
+import { logger } from '../../../src/utils/logger'
 
 suite('Multi-Folder Test Suite', () => {
 
     test('Load a multi-project workspace', async () => {
 
-        console.log('=================== Load Lean Files in a multi-project workspace ===================');
+        logger.log('=================== Load Lean Files in a multi-project workspace ===================');
         // make sure test is always run in predictable state, which is no file or folder open
         await closeAllEditors();
         void vscode.window.showInformationMessage('Running tests: ' + __dirname);

@@ -2,6 +2,7 @@ import * as assert from 'assert';
 import { suite } from 'mocha';
 import * as path from 'path';
 import * as vscode from 'vscode';
+import { logger } from '../../../src/utils/logger'
 
 import { initLean4, waitForActiveEditor, waitForInfoviewHtml, closeAllEditors,
 	extractPhrase, waitForDocViewHtml, invokeHrefCommand } from '../utils/helpers';
@@ -14,7 +15,7 @@ suite('Documentation View Test Suite', () => {
 
     test('Documentation View Example Test', async () => {
         // This test opens the documentation view and selects the "Example" link.
-        console.log('=================== Documentation View Example Test ===================');
+        logger.log('=================== Documentation View Example Test ===================');
 
         void vscode.window.showInformationMessage('Running tests: ' + __dirname);
         const testsRoot = path.join(__dirname, '..', '..', '..', '..', 'test', 'test-fixtures', 'simple');
@@ -26,7 +27,7 @@ suite('Documentation View Test Suite', () => {
         const expectedVersion = 'Hello:';
         let html = await waitForInfoviewHtml(info, expectedVersion);
         const versionString = extractPhrase(html, 'Hello:', '<').trim();
-        console.log(`>>> Found "${versionString}" in infoview`)
+        logger.log(`>>> Found "${versionString}" in infoview`)
 
         await vscode.commands.executeCommand('lean4.docView.open');
 

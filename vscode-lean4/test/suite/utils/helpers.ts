@@ -9,6 +9,7 @@ import { LeanClientProvider } from '../../../src/utils/clientProvider'
 import { Exports } from '../../../src/exports';
 import cheerio = require('cheerio');
 import path = require('path');
+import { logger } from '../../../src/utils/logger'
 
 export function sleep(ms : number) {
     return new Promise((resolve) => setTimeout(resolve, ms));
@@ -34,7 +35,7 @@ export async function initLean4(fileName: string) : Promise<vscode.Extension<Exp
     assert(lean, 'Lean extension not loaded');
     assert(lean.exports.isLean4Project);
     assert(lean.isActive);
-    console.log(`Found lean package version: ${lean.packageJSON.version}`);
+    logger.log(`Found lean package version: ${lean.packageJSON.version}`);
     await waitForActiveEditor(basename(fileName));
 
     const info = lean.exports.infoProvider;
@@ -64,7 +65,7 @@ export async function initLean4Untitled(contents: string) : Promise<vscode.Exten
 
     const editor = await waitForActiveEditor();
     // make it a lean4 document even though it is empty and untitled.
-    console.log('Setting lean4 language on untitled doc');
+    logger.log('Setting lean4 language on untitled doc');
     await vscode.languages.setTextDocumentLanguage(editor.document, 'lean4');
 
     await editor.edit((builder) => {
@@ -74,7 +75,7 @@ export async function initLean4Untitled(contents: string) : Promise<vscode.Exten
     const lean = await waitForActiveExtension('leanprover.lean4', 60);
     assert(lean, 'Lean extension not loaded');
 
-    console.log(`Found lean package version: ${lean.packageJSON.version}`);
+    logger.log(`Found lean package version: ${lean.packageJSON.version}`);
     const info = lean.exports.infoProvider;
 	assert(info, 'No InfoProvider export');
 
@@ -123,14 +124,14 @@ export async function resetToolchain(clientProvider: LeanClientProvider | undefi
 
 export async function waitForActiveExtension(extensionId: string, retries=30, delay=1000) : Promise<vscode.Extension<Exports> | null> {
 
-    console.log(`Waiting for extension ${extensionId} to be loaded...`);
+    logger.log(`Waiting for extension ${extensionId} to be loaded...`);
     let lean : vscode.Extension<Exports> | undefined;
     let count = 0;
     while (!lean) {
         vscode.extensions.all.forEach((e) => {
             if (e.id === extensionId){
                 lean = e;
-                console.log(`Found extension: ${extensionId}`);
+                logger.log(`Found extension: ${extensionId}`);
             }
         });
         if (!lean){
@@ -142,14 +143,14 @@ export async function waitForActiveExtension(extensionId: string, retries=30, de
         }
     }
 
-    console.log(`Waiting for extension ${extensionId} activation...`);
+    logger.log(`Waiting for extension ${extensionId} activation...`);
     count = 0
     while (!lean.isActive && count < retries){
         await sleep(delay);
         count += 1;
     }
 
-    console.log(`Extension ${extensionId} isActive=${lean.isActive}`);
+    logger.log(`Extension ${extensionId} isActive=${lean.isActive}`);
     return lean;
 }
 
@@ -162,7 +163,7 @@ export async function waitForActiveEditor(filename='', retries=30, delay=1000) :
     let editor = vscode.window.activeTextEditor
     assert(editor, 'Missing active text editor');
 
-    console.log(`Loaded document ${editor.document.uri}`);
+    logger.log(`Loaded document ${editor.document.uri}`);
 
     if (filename) {
         count = 0;
@@ -180,11 +181,11 @@ export async function waitForActiveEditor(filename='', retries=30, delay=1000) :
 export async function waitForInfoViewOpen(infoView: InfoProvider, retries=30, delay=1000) : Promise<boolean> {
     let count = 0;
     let opened = false;
-    console.log('Waiting for InfoView...');
+    logger.log('Waiting for InfoView...');
     while (count < retries){
         const isOpen = infoView.isOpen();
         if (isOpen) {
-            console.log('InfoView is open.');
+            logger.log('InfoView is open.');
             return true;
         } else if (!opened) {
             opened = true;
@@ -194,7 +195,7 @@ export async function waitForInfoViewOpen(infoView: InfoProvider, retries=30, de
         count += 1;
     }
 
-    console.log('InfoView not found.');
+    logger.log('InfoView not found.');
     return false;
 }
 
@@ -213,8 +214,8 @@ export async function waitForInfoviewHtml(infoView: InfoProvider, toFind : strin
         count += 1;
     }
 
-    console.log(`>>> infoview missing "${toFind}"`);
-    console.log(html);
+    logger.log(`>>> infoview missing "${toFind}"`);
+    logger.log(html);
     assert(false, `Missing "${toFind}" in infoview`);
 }
 
@@ -233,8 +234,8 @@ export async function waitForInfoviewNotHtml(infoView: InfoProvider, toFind : st
         count += 1;
     }
 
-    console.log(`>>> infoview still contains "${toFind}"`);
-    console.log(html);
+    logger.log(`>>> infoview still contains "${toFind}"`);
+    logger.log(html);
     assert(false, `Text "${toFind}" in infoview is not going away`);
 }
 
@@ -250,8 +251,8 @@ export async function waitForDocViewHtml(docView: DocViewProvider, toFind : stri
         count += 1;
     }
 
-    console.log('>>> docview contents:')
-    console.log(html);
+    logger.log('>>> docview contents:')
+    logger.log(html);
     assert(false, `Missing "${toFind}" in docview`);
     return html;
 }
@@ -298,7 +299,7 @@ export async function gotoDefinition(editor: vscode.TextEditor, word: string, re
 
 export async function restartLeanServer(client: LeanClient, retries=30, delay=1000) : Promise<boolean> {
     let count = 0;
-    console.log('restarting lean client ...');
+    logger.log('restarting lean client ...');
 
     const stateChanges : string[] = []
     client.stopped(() => { stateChanges.push('stopped'); });
@@ -320,7 +321,7 @@ export async function restartLeanServer(client: LeanClient, retries=30, delay=10
     const actual = stateChanges.toString();
     const expected = 'stopped,restarted'
     if (actual !== expected) {
-        console.log(`restartServer did not produce expected result: ${actual}`);
+        logger.log(`restartServer did not produce expected result: ${actual}`);
     }
     assert(actual === expected);
     return false;
@@ -343,7 +344,7 @@ export async function invokeHrefCommand(html: string, selector: string) : Promis
             const cmd = href.slice(prefix.length);
             const uri = vscode.Uri.parse(cmd);
             const query = decodeURIComponent(uri.query);
-            console.log(`Opening file : ${query}`);
+            logger.log(`Opening file : ${query}`);
             const args = JSON.parse(query);
             let arg : string = ''
             if (Array.isArray(args)){
@@ -366,11 +367,11 @@ export async function clickInfoViewButton(info: InfoProvider, name: string) : Pr
             const cmd = `document.querySelector(\'[data-id*="${name}"]\').click()`;
             await info.runTestScript(cmd);
         } catch (err){
-            console.log(`### runTestScript failed: ${err.message}`);
+            logger.log(`### runTestScript failed: ${err.message}`);
             if (retries === 0){
                 throw err;
             }
-            console.log(`### Retrying clickInfoViewButton ${name}...`)
+            logger.log(`### Retrying clickInfoViewButton ${name}...`)
             await sleep(1000);
         }
     }
