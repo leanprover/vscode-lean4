@@ -3,8 +3,9 @@ import * as cp from 'child_process';
 
 console.log(__dirname);
 
-import { runTests, downloadAndUnzipVSCode, resolveCliArgsFromVSCodeExecutablePath  } from '@vscode/test-electron';
+import { runTests, downloadAndUnzipVSCode, resolveCliArgsFromVSCodeExecutablePath } from '@vscode/test-electron';
 import * as fs from 'fs';
+import { DownloadArchitecture } from '@vscode/test-electron/out/download';
 
 function clearUserWorkspaceData(vscodeTest: string) {
     const workspaceData = path.join(vscodeTest, 'user-data', 'Workspaces');
@@ -25,7 +26,16 @@ async function main() {
         clearUserWorkspaceData(vscodeTestPath);
 
         // This will download VS Code, unzip it and run the integration test
-        const vscodeExecutablePath = await downloadAndUnzipVSCode();
+        let vscodeExecutablePath: string;
+
+        if (process.platform === 'win32') {
+            vscodeExecutablePath = await downloadAndUnzipVSCode({
+                platform: 'win32-x64-archive',
+                architecture : DownloadArchitecture.X64});
+        }
+        else{
+            vscodeExecutablePath = await downloadAndUnzipVSCode();
+        }
 
         // Install the lean3 extension!
         const [cli, ...args] = resolveCliArgsFromVSCodeExecutablePath (vscodeExecutablePath);
@@ -34,16 +44,26 @@ async function main() {
             stdio: 'inherit'
         });
 
-        // run the lean3 test in one vs code instance, using `open folder` since
-        // lean3 doesn't lile ad-hoc files.
-        const testFolder = path.join(extensionDevelopmentPath, 'test', 'test-fixtures', 'lean3');
+        clearUserWorkspaceData(vscodeTestPath);
 
+		// run bootstrap tests
+		await runTests({
+			vscodeExecutablePath,
+			extensionDevelopmentPath,
+            extensionTestsPath:path.resolve(__dirname, 'index'),
+            extensionTestsEnv: {'TEST_FOLDER': 'bootstrap'},
+			launchArgs: ['--new-window', '--disable-gpu'] });
+
+        clearUserWorkspaceData(vscodeTestPath);
+
+        // now that elan is installed we can run the lean3 test in one vs code instance,
+        // using `open folder` since lean3 doesn't lile ad-hoc files.
         await runTests({
             vscodeExecutablePath,
             extensionDevelopmentPath,
             extensionTestsPath: path.resolve(__dirname, 'index'),
             extensionTestsEnv: {'TEST_FOLDER': 'lean3'},
-            launchArgs: ['--new-window', '--disable-gpu', testFolder] });
+            launchArgs: ['--new-window', '--disable-gpu'] });
 
         // The '--new-window' doesn't see to be working, so this hack
         // ensures the following test does not re-open the lean3 folder
