@@ -378,10 +378,16 @@ export async function clickInfoViewButton(info: InfoProvider, name: string) : Pr
 
 export function mkdirs(fullPath: string){
     const parts = fullPath.split(path.sep);
-    let newPath = ''
+    // on windows the parts[0] is the drive letter, e.g. "c:"
+    // on other platforms parts[0] is empty string, but we want to start with '/'
+    let newPath = parts[0];
+    parts.splice(0, 1);
+    if (!newPath) {
+        newPath = '/'
+    }
     parts.forEach((p) => {
-        newPath = newPath ? path.join(newPath, p) : p;
-        if (!fs.existsSync(newPath)){
+        newPath = path.join(newPath, p);
+        if (newPath && !fs.existsSync(newPath)){
             fs.mkdirSync(newPath);
         }
     });
