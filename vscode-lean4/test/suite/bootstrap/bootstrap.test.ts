@@ -22,7 +22,7 @@ suite('Lean4 Bootstrap Test Suite', () => {
         assert(info, 'No InfoProvider export');
 
         // give it a extra long timeout in case test machine is really slow.
-		await waitForInfoviewHtml(info, '4.0.0-nightly-', 300);
+		await waitForInfoviewHtml(info, '4.0.0-nightly-', 600);
 
         // test goto definition to lean toolchain works
         await waitForActiveEditor();
@@ -54,7 +54,7 @@ suite('Lean4 Bootstrap Test Suite', () => {
         // make sure test is always run in predictable state, which is no file or folder open
         await closeAllEditors();
 
-    }).timeout(300000); // give it 5 minutes to install lean in case test machine is really slow.
+    }).timeout(600000); // give it 5 minutes to install lean in case test machine is really slow.
 
     test('Install stable build on demand', async () => {
 
@@ -67,19 +67,19 @@ suite('Lean4 Bootstrap Test Suite', () => {
         const info = lean.exports.infoProvider;
         assert(info, 'No InfoProvider export');
 
-        await assertStringInInfoview(info, '4.0.0-nightly-');
+		await waitForInfoviewHtml(info, '4.0.0-nightly-', 60);
 
         // install table build which is also needed by subsequent tests.
 		await vscode.commands.executeCommand('lean4.selectToolchain', 'leanprover/lean4:stable');
 
         // give it a extra long timeout in case test machine is really slow.
-		await waitForInfoviewHtml(info, '4.0.0, commit', 300);
+		await waitForInfoviewHtml(info, '4.0.0, commit', 600);
 		await vscode.commands.executeCommand('lean4.selectToolchain', 'reset');
 
         // make sure test is always run in predictable state, which is no file or folder open
         await closeAllEditors();
 
-    }).timeout(300000);
+    }).timeout(600000);
 
     test('Create linked toolchain named master', async () => {
 
