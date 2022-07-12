@@ -1,7 +1,6 @@
 import { OutputChannel } from 'vscode'
 import { spawn } from 'child_process';
 import { findProgramInPath } from '../config'
-import * as fs from 'fs';
 
 export async function batchExecute(
     executablePath: string,

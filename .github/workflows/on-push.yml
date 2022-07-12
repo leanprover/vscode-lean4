@@ -54,37 +54,11 @@ jobs:
         if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest'
         run: |
           echo "$HOME/.elan/bin" >> $GITHUB_PATH
-      - name: Setup elan toolchain on Linux or macOS
-        if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest'
-        run: |
-          curl -O --location https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh
-          chmod u+x elan-init.sh
-          ./elan-init.sh -y --default-toolchain leanprover/lean4:nightly
-          echo "Checking location $HOME/.elan/bin..."
-          ls -al $HOME/.elan/bin
-          elan --version
-          mkdir master
-          cp -r $HOME/.elan//toolchains/leanprover--lean4---nightly/* master
-          elan toolchain link master master
-
       - name: Set path to elan on Windows
         shell: pwsh
         if: matrix.os == 'windows-latest'
         run: |
           echo "$HOME\.elan\bin" >> $env:GITHUB_PATH
-      - name: Setup elan toolchain on Windows
-        if: matrix.os == 'windows-latest'
-        shell: pwsh
-        run: |
-          curl -O --location https://raw.githubusercontent.com/leanprover/elan/master/elan-init.ps1
-          .\elan-init.ps1 -NoPrompt 1 -DefaultToolchain leanprover/lean4:nightly
-          echo "Checking location $HOME\.elan\bin..."
-          dir "$HOME\.elan\bin"
-          elan --version
-          mkdir master
-          xcopy /q /s "$HOME\.elan\toolchains\leanprover--lean4---nightly\*.*" master
-          elan toolchain link master master
-
       - name: Install 'leanprover/lean4:stable' version
         run: |
           elan toolchain install leanprover/lean4:stable

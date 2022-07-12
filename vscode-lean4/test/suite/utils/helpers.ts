@@ -1,12 +1,14 @@
 import * as assert from 'assert';
 import { basename } from 'path';
 import * as vscode from 'vscode';
+import * as fs from 'fs';
 import { InfoProvider } from '../../../src/infoview';
 import { LeanClient} from '../../../src/leanclient';
 import { DocViewProvider } from '../../../src/docview';
 import { LeanClientProvider } from '../../../src/utils/clientProvider'
 import { Exports } from '../../../src/exports';
 import cheerio = require('cheerio');
+import path = require('path');
 
 export function sleep(ms : number) {
     return new Promise((resolve) => setTimeout(resolve, ms));
@@ -28,7 +30,7 @@ export async function initLean4(fileName: string) : Promise<vscode.Extension<Exp
     const doc = await vscode.workspace.openTextDocument(fileName);
     await vscode.window.showTextDocument(doc, options);
 
-    const lean = await waitForActiveExtension('leanprover.lean4');
+    const lean = await waitForActiveExtension('leanprover.lean4', 60);
     assert(lean, 'Lean extension not loaded');
     assert(lean.exports.isLean4Project);
     assert(lean.isActive);
@@ -69,7 +71,7 @@ export async function initLean4Untitled(contents: string) : Promise<vscode.Exten
         builder.insert(new vscode.Position(0, 0), contents);
     });
 
-    const lean = await waitForActiveExtension('leanprover.lean4');
+    const lean = await waitForActiveExtension('leanprover.lean4', 60);
     assert(lean, 'Lean extension not loaded');
 
     console.log(`Found lean package version: ${lean.packageJSON.version}`);
@@ -374,3 +376,32 @@ export async function clickInfoViewButton(info: InfoProvider, name: string) : Pr
     }
 }
 
+export function mkdirs(fullPath: string){
+    const parts = fullPath.split(path.sep);
+    let newPath = ''
+    parts.forEach((p) => {
+        newPath = newPath ? path.join(newPath, p) : p;
+        if (!fs.existsSync(newPath)){
+            fs.mkdirSync(newPath);
+        }
+    });
+}
+
+export function copyFolder(source: string, target: string) {
+    if (!fs.existsSync(target)){
+        mkdirs(target);
+    }
+    const files = fs.readdirSync(source);
+    for(const file of files) {
+        const sourceFile = path.join(source, file);
+        const targetFile = path.join(target, file);
+        const stats = fs.lstatSync(sourceFile);
+        if (stats.isFile()) {
+            console.log(`Copying ${sourceFile}`)
+            fs.copyFileSync(sourceFile, targetFile);
+        }
+        else if (stats.isDirectory()){
+            copyFolder(sourceFile, targetFile);
+        }
+    }
+}

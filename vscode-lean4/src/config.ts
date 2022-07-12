@@ -42,15 +42,19 @@ export function addServerEnvPaths(input_env: NodeJS.ProcessEnv): NodeJS.ProcessE
     return env
 }
 
-export function addDefaultElanPath() : void {
-    const paths = getEnvPath();
+export function getDefaultElanPath() : string {
     let elanPath = ''
     if (process.platform === 'win32') {
         elanPath = process.env.USERPROFILE + '\\.elan\\bin';
     } else {
         elanPath = process.env.HOME + '/.elan/bin';
     }
+    return elanPath;
+}
 
+export function addDefaultElanPath() : void {
+    const paths = getEnvPath();
+    const elanPath = getDefaultElanPath();
     if (paths.indexOf(elanPath) < 0) {
         setEnvPath(paths + path.delimiter + elanPath);
     }

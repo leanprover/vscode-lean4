@@ -5,6 +5,7 @@ import { LocalStorageService} from './localStorage'
 import { readLeanVersion, findLeanPackageRoot, isCoreLean4Directory } from './projectInfo';
 import { join, dirname } from 'path';
 import { fileExists } from './fsHelper'
+import { addDefaultElanPath, getDefaultElanPath, addToolchainBinPath} from '../config';
 
 export class LeanVersion {
     version: string;
@@ -42,6 +43,7 @@ export class LeanInstaller implements Disposable {
     }
 
     async testLeanVersion(packageUri: Uri) : Promise<LeanVersion> {
+
         // see if there is a lean-toolchain file and use that version info.
         let leanVersion : string | null = await readLeanVersion(packageUri);
         if (!leanVersion) {
@@ -148,6 +150,11 @@ export class LeanInstaller implements Disposable {
             // no prompt, just do it!
             console.log('Installing Lean via Elan during testing')
             await this.installElan();
+            if (typeof(process.env.DISABLE_ELAN) === 'string') {
+                addToolchainBinPath(getDefaultElanPath());
+            } else {
+                addDefaultElanPath();
+            }
             this.installChangedEmitter.fire(uri);
             return;
         }
@@ -185,6 +192,8 @@ export class LeanInstaller implements Disposable {
                 if (s === 'reset') {
                     s = '';
                 }
+                // ensure this version is actually installed.
+                await this.executeWithProgress('Ensure toolchain available...', 'lean', ['+' + s, '--version'], null);
                 this.localStorage.setLeanPath(''); // make sure any local full path override is cleared.
                 this.localStorage.setLeanVersion(s); // request the specified version.
                 this.installChangedEmitter.fire(uri);
@@ -489,7 +498,7 @@ export class LeanInstaller implements Disposable {
             if (process.platform === 'win32') {
                 terminal.sendText(
                     `Invoke-WebRequest -Uri "${this.leanInstallerWindows}" -OutFile elan-init.ps1\n` +
-                    'Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process\n' +
+                    'Set-ExecutionPolicy -ExecutionPolicy Unrestricted -Scope Process\n' +
                     `$rc = .\\elan-init.ps1 -NoPrompt 1 -DefaultToolchain ${this.defaultToolchain}\n` +
                     'Write-Host "elan-init returned [$rc]"\n' +
                     'del .\\elan-init.ps1\n' +
