@@ -5,7 +5,7 @@ import { LocalStorageService} from './localStorage'
 import { readLeanVersion, findLeanPackageRoot, isCoreLean4Directory } from './projectInfo';
 import { join, dirname } from 'path';
 import { fileExists } from './fsHelper'
-import { addDefaultElanPath, getDefaultElanPath, addToolchainBinPath} from '../config';
+import { addDefaultElanPath, getDefaultElanPath, addToolchainBinPath, isRunningTest, isElanDisabled()} from '../config';
 
 export class LeanVersion {
     version: string;
@@ -146,11 +146,11 @@ export class LeanInstaller implements Disposable {
     async showInstallOptions(uri: Uri) : Promise<void> {
         let path  = this.localStorage.getLeanPath();
         if (!path ) path  = toolchainPath();
-        if (process.env.TEST_FOLDER){
+        if (isRunningTest()){
             // no prompt, just do it!
             console.log('Installing Lean via Elan during testing')
             await this.installElan();
-            if (process.env.DISABLE_ELAN) {
+            if (isElanDisabled()) {
                 addToolchainBinPath(getDefaultElanPath());
             } else {
                 addDefaultElanPath();

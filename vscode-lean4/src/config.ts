@@ -188,6 +188,18 @@ export function getLeanExecutableName(): string {
     return 'lean'
 }
 
+export function isRunningTest() : boolean {
+    return typeof(process.env.TEST_FOLDER) === 'string';
+}
+
+export function getTestFolder() : string {
+    return typeof(process.env.TEST_FOLDER) === 'string' ? process.env.TEST_FOLDER : '';
+}
+
+export function isElanDisabled() : boolean {
+    return typeof(process.env.DISABLE_ELAN) === 'string';
+}
+
 /**
  * The literal 'production' or 'development', depending on the build.
  * Should be turned into a string literal by build tools.
