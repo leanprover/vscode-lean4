@@ -5,7 +5,8 @@ import {
     Selection, TextEditor, TextEditorRevealType,
     Uri, ViewColumn, WebviewPanel, window, workspace, env, Position,
 } from 'vscode';
-import { EditorApi, InfoviewApi, LeanFileProgressParams, TextInsertKind, RpcConnectParams, RpcConnected, RpcKeepAliveParams } from '@lean4/infoview-api';
+import { EditorApi, InfoviewApi, LeanFileProgressParams, TextInsertKind,
+    RpcConnectParams, RpcConnected, RpcKeepAliveParams, ServerStoppedReason } from '@lean4/infoview-api';
 import { LeanClient } from './leanclient';
 import { getInfoViewAllErrorsOnLine, getInfoViewAutoOpen, getInfoViewAutoOpenShowGoal,
     getInfoViewStyle, minIfProd, prodOrDev } from './config';
@@ -104,8 +105,8 @@ export class InfoProvider implements Disposable {
                         // ex codes related with worker exited or crashed
                         const activeClient = client === this.clientProvider.getActiveClient();
                         console.log(`The Lean language service has stopped processing this file: ${ex.message}`)
-                        await this.onActiveClientStopped(client, activeClient, 'The Lean Server has stopped processing this file: ', ex.message as string, true)
-                        }
+                        await this.onActiveClientStopped(client, activeClient, {message:'The Lean Server has stopped processing this file: ', reason: ex.message as string}, true)
+                    }
                 }
             }
             return undefined;
@@ -249,8 +250,8 @@ export class InfoProvider implements Disposable {
             void this.onClientRemoved(client);
         });
 
-        provider.clientStopped(([client, activeClient, msg, reason]) => {
-            void this.onActiveClientStopped(client, activeClient, msg, reason);
+        provider.clientStopped(([client, activeClient, reason]) => {
+            void this.onActiveClientStopped(client, activeClient, reason);
         });
 
         this.subscriptions.push(
@@ -348,13 +349,13 @@ export class InfoProvider implements Disposable {
         if (activeClient)
         {
             // means that client and active client are the same and just show the error message
-            await this.webviewPanel?.api.serverStopped({message:msg, reason});
+            await this.webviewPanel?.api.serverStopped(reason);
         }
 
         // remember this client is in a stopped state
         const key = client.getWorkspaceFolder();
         if (!this.clientsFailed.has(key)) {
-            this.clientsFailed.set(key, [msg, reason]);
+            this.clientsFailed.set(key, reason);
             await this.sendPosition();
             if (restartFile) {
                 console.log(`client crashed: ${key}`)
@@ -590,10 +591,9 @@ export class InfoProvider implements Disposable {
                 const folder = client.getWorkspaceFolder()
                 if (this.clientsFailed.has(folder)){
                     // send stopped event
-                    const values = this.clientsFailed.get(folder);
-                    if (values) {
-                        const [message, reason] = values;
-                        await this.webviewPanel?.api.serverStopped({message, reason});
+                    const reason = this.clientsFailed.get(folder);
+                    if (reason) {
+                        await this.webviewPanel?.api.serverStopped(reason);
                     }
                 } else {
                     await this.updateStatus(loc)

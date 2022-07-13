@@ -3,7 +3,7 @@ import { LocalStorageService} from './localStorage'
 import { LeanInstaller, LeanVersion } from './leanInstaller'
 import { LeanpkgService } from './leanpkg';
 import { LeanClient } from '../leanclient'
-import { LeanFileProgressProcessingInfo, RpcConnectParams, RpcKeepAliveParams } from '@lean4/infoview-api';
+import { LeanFileProgressProcessingInfo, ServerStoppedReason } from '@lean4/infoview-api';
 import * as path from 'path';
 import { findLeanPackageRoot } from './projectInfo';
 import { isFileInFolder } from './fsHelper';
@@ -30,7 +30,7 @@ export class LeanClientProvider implements Disposable {
     private clientRemovedEmitter = new EventEmitter<LeanClient>()
     clientRemoved = this.clientRemovedEmitter.event
 
-    private clientStoppedEmitter = new EventEmitter<[LeanClient, boolean, string, string]>()
+    private clientStoppedEmitter = new EventEmitter<[LeanClient, boolean, ServerStoppedReason]>()
     clientStopped = this.clientStoppedEmitter.event
 
     constructor(localStorage : LocalStorageService, installer : LeanInstaller, pkgService : LeanpkgService, outputChannel : OutputChannel) {
@@ -275,12 +275,10 @@ export class LeanClientProvider implements Disposable {
                 void window.showErrorMessage(err);
             });
 
-            client.stopped(err => {
+            client.stopped(reason => {
                 if (client) {
                     // fires a message in case a client is stopped unexpectedly
-                    const [message, reason] = err;
-                    this.clientStoppedEmitter.fire([client, client === this.activeClient,
-                        message, reason]);
+                    this.clientStoppedEmitter.fire([client, client === this.activeClient, reason]);
                 }
             });
 

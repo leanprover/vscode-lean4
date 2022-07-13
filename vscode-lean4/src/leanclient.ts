@@ -18,7 +18,7 @@ import * as ls from 'vscode-languageserver-protocol'
 
 import { toolchainPath, lakePath, addServerEnvPaths, serverArgs, serverLoggingEnabled, serverLoggingPath, getElaborationDelay, lakeEnabled } from './config'
 import { assert } from './utils/assert'
-import { LeanFileProgressParams, LeanFileProgressProcessingInfo } from '@lean4/infoview-api';
+import { LeanFileProgressParams, LeanFileProgressProcessingInfo, ServerStoppedReason } from '@lean4/infoview-api';
 import { LocalStorageService} from './utils/localStorage'
 import { batchExecute } from './utils/batch'
 import { readLeanVersion } from './utils/projectInfo';
@@ -314,7 +314,7 @@ export class LeanClient implements Disposable {
                     }
                 } else if (s.newState === State.Stopped) {
                     this.running = false;
-                    this.stoppedEmitter.fire(['Lean server has stopped.', '']);
+                    this.stoppedEmitter.fire({message:'Lean server has stopped.', reason:''});
                     console.log('client has stopped or it failed to start');
                     if (!this.noPrompt){
                         await this.showRestartMessage();
