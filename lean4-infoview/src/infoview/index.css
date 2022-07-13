@@ -6,6 +6,7 @@ html,body {
 }
 
 .font-code {
+	color: var(--vscode-editor-foreground);
     font-family: var(--vscode-editor-font-family);
     font-weight: var(--vscode-editor-font-weight);
     font-size: var(--vscode-editor-font-size);
@@ -85,15 +86,14 @@ select {
     border-color: var(--vscode-dropdown-border);
 }
 
-/* Styles for the tooltips shown in the widget view. */
+/* Style for tooltips shown in the widget view. This should *not* style the tooltip contents.
+For that, we can use more specific classes. */
 .tooltip {
-    /* color: var(--vscode-editorWidget-foreground);*/
-    @extend .mtk1;
-    background: var(--vscode-editorWidget-background);
+    background-color: var(--vscode-editorHoverWidget-background);
     padding: 4px 8px;
     border-radius: 4px;
     box-shadow: 1px 1px 5px var(--vscode-widget-shadow);
-    border-color: var(--vscode-dropdown-border);
+    border-color: var(--vscode-editorHoverWidget-border);
     border-width: 1px;
     border-style: solid;
 	max-width: calc(70%);
@@ -117,7 +117,7 @@ select {
 .tooltip-arrow::before {
     content: '';
     transform: rotate(45deg);
-    background: var(--vscode-editorWidget-background);
+    background: var(--vscode-editorHoverWidget-background);
 }
 
 .tooltip[data-popper-placement^='top'] > .tooltip-arrow {
@@ -136,18 +136,26 @@ select {
     left: -4px;
 }
 
-.popup-menu-text { text-align: center; padding: 5px; vertical-align:top; display:inline-block; }
+.popup-menu {
+    color: var(--vscode-editorHoverWidget-foreground);
+    background: var(--vscode-editorHoverWidget-background);
+}
 
-.popup-menu-icon { padding: 0px; margin-top:6px; }
+.popup-menu-text {
+    text-align: center;
+    padding: 5px;
+    vertical-align: top;
+    display: inline-block;
+}
+
+.popup-menu-icon {
+    padding: 0px;
+    margin-top:6px;
+}
 
 .codicon-blank {
     width: 20px;
     height: 16px;
-}
-
-.popup-menu {
-    color: var(--vscode-editorWidget-foreground);
-    background: var(--vscode-editorWidget-background);
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -193,10 +201,6 @@ select {
 	margin: 8px 0;
 }
 
-.monaco-hover code {
-	font-family: var(--monaco-monospace-font);
-}
-
 .monaco-hover hr {
 	box-sizing: border-box;
 	border-left: -8px;
@@ -209,7 +213,7 @@ select {
     border-bottom-width: 0px;
     border-top-width: 1px;
 	border-top-style: solid;
-	border-top-color: var(--vscode-editorWidget-border);
+	border-top-color: var(--vscode-editorHoverWidget-border);
 }
 
 .monaco-hover p:first-child,
@@ -243,6 +247,7 @@ select {
 .monaco-hover code {
 	border-radius: 3px;
 	padding: 0 0.4em;
+    background-color: var(--vscode-textCodeBlock-background);
 }
 
 .monaco-hover .monaco-tokenized-source {
