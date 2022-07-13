@@ -72,7 +72,7 @@ export class LeanClient implements Disposable {
     private progressChangedEmitter = new EventEmitter<[string, LeanFileProgressProcessingInfo[]]>()
     progressChanged = this.progressChangedEmitter.event
 
-    private stoppedEmitter = new EventEmitter<[string, string]>()
+    private stoppedEmitter = new EventEmitter<ServerStoppedReason>()
     stopped = this.stoppedEmitter.event
 
     private restartedEmitter = new EventEmitter()
