@@ -200,6 +200,33 @@ export function isElanDisabled() : boolean {
     return typeof(process.env.DISABLE_ELAN) === 'string';
 }
 
+/** The editor line height, in pixels. */
+export function getEditorLineHeight(): number {
+    // The implementation
+    // (recommended by Microsoft: https://github.com/microsoft/vscode/issues/125341#issuecomment-854812591)
+    // is absolutely cursed. It's just to copy whatever VSCode does internally.
+    const fontSize = workspace.getConfiguration('editor').get<number>('fontSize') ?? 0;
+    let lineHeight = workspace.getConfiguration('editor').get<number>('lineHeight') ?? 0;
+
+    const GOLDEN_LINE_HEIGHT_RATIO = process.platform === 'darwin' ? 1.5 : 1.35;
+    const MINIMUM_LINE_HEIGHT = 8;
+
+    if (lineHeight === 0) {
+		lineHeight = GOLDEN_LINE_HEIGHT_RATIO * fontSize;
+    } else if (lineHeight < MINIMUM_LINE_HEIGHT) {
+		// Values too small to be line heights in pixels are in ems.
+		lineHeight = lineHeight * fontSize;
+    }
+
+    // Enforce integer, minimum constraints
+    lineHeight = Math.round(lineHeight);
+    if (lineHeight < MINIMUM_LINE_HEIGHT) {
+        lineHeight = MINIMUM_LINE_HEIGHT;
+    }
+
+    return lineHeight;
+}
+
 /**
  * The literal 'production' or 'development', depending on the build.
  * Should be turned into a string literal by build tools.

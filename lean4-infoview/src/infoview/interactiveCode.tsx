@@ -39,18 +39,15 @@ interface TypePopupContentsProps {
   redrawTooltip: () => void
 }
 
-function renderCodeBlock(lang: string, code: string) : string {
-  // todo: render Lean code blocks using the lean syntax.json
-  return `<div class="font-code tl pre-wrap">${code}</div>`
-}
-
-function renderMarkdown(doc: string){
+function Markdown({contents}: {contents: string}): JSX.Element {
   const renderer = new marked.Renderer();
   renderer.code = (code, lang) => {
-    const id : string = lang ? lang : '';
-    const formatted = renderCodeBlock(id, code);
-		return `<div data-code="${id}">${formatted}</div>`;
+    // todo: render Lean code blocks using the lean syntax.json
+    return `<div class="font-code pre-wrap">${code}</div>`;
 	}
+  renderer.codespan = (code) => {
+    return `<code class="font-code">${code}</code>`;
+  }
 
   const markedOptions: marked.MarkedOptions = {}
   markedOptions.sanitizer = (html: string): string => {
@@ -63,8 +60,8 @@ function renderMarkdown(doc: string){
   // todo: vscode also has lots of post render sanitization and hooking up of href clicks and so on.
   // see https://github.com/microsoft/vscode/blob/main/src/vs/base/browser/markdownRenderer.ts
 
-  const renderedMarkdown = marked.parse(doc, markedOptions);
-  return <div className="markdown-hover" dangerouslySetInnerHTML={{ __html: renderedMarkdown }} />
+  const renderedMarkdown = marked.parse(contents, markedOptions);
+  return <div dangerouslySetInnerHTML={{ __html: renderedMarkdown }} />
   // handy for debugging:
   // return <div>{ renderedMarkdown } </div>
 }
@@ -82,13 +79,13 @@ function TypePopupContents({ pos, info, redrawTooltip }: TypePopupContentsProps)
   // We let the tooltip know to redo its layout whenever our contents change.
   React.useEffect(() => redrawTooltip(), [ip, err, redrawTooltip])
 
-  return <div className="monaco-hover monaco-hover-content hover-div hover-row">
+  return <div className="tooltip-code-content">
     {ip && <>
       <div className="font-code tl pre-wrap">
       {ip.exprExplicit && <InteractiveCode pos={pos} fmt={ip.exprExplicit} />} : {ip.type && <InteractiveCode pos={pos} fmt={ip.type} />}
       </div>
       {ip.doc && <hr />}
-      {ip.doc && renderMarkdown(ip.doc)}
+      {ip.doc && <Markdown contents={ip.doc}/>}
     </>}
     {err && <>Error: {mapRpcError(err).message}</>}
     {(!ip && !err) && <>Loading..</>}

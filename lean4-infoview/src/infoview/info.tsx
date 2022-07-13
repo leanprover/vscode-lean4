@@ -136,28 +136,28 @@ export function InfoDisplay(props0: InfoDisplayProps) {
     } />
 
     const filterMenu = <span>
-        <a className='link pointer popup-menu' onClick={e => {
+        <a className='link pointer tooltip-menu-content' onClick={e => {
             setGoalFilters(s => {
                 return { ...s, isType: !s.isType }
             } ); }}>
-                <span className={'popup-menu-icon codicon ' + (goalFilters.isType ? 'codicon-check ' : 'codicon-blank ')}>&nbsp;</span>
-                <span className='popup-menu-text '>types</span>
+                <span className={'tooltip-menu-icon codicon ' + (goalFilters.isType ? 'codicon-check ' : 'codicon-blank ')}>&nbsp;</span>
+                <span className='tooltip-menu-text '>types</span>
         </a>
         <br/>
-        <a className='link pointer popup-menu' onClick={e => {
+        <a className='link pointer tooltip-menu-content' onClick={e => {
             setGoalFilters(s => {
                 return { ...s, isInstance: !s.isInstance }
             } ); }}>
-                <span className={'popup-menu-icon codicon ' + (goalFilters.isInstance ? 'codicon-check ' : 'codicon-blank ')}>&nbsp;</span>
-                <span className='popup-menu-text '>instances</span>
+                <span className={'tooltip-menu-icon codicon ' + (goalFilters.isInstance ? 'codicon-check ' : 'codicon-blank ')}>&nbsp;</span>
+                <span className='tooltip-menu-text '>instances</span>
         </a>
         <br/>
-        <a className='link pointer popup-menu' onClick={e => {
+        <a className='link pointer tooltip-menu-content' onClick={e => {
             setGoalFilters(s => {
                 return { ...s, isHiddenAssumption: !s.isHiddenAssumption }
             } ); }}>
-                <span className={'popup-menu-icon codicon ' + (goalFilters.isHiddenAssumption ? 'codicon-check ' : 'codicon-blank ')}>&nbsp;</span>
-                <span className='popup-menu-text '>hidden assumptions</span>
+                <span className={'tooltip-menu-icon codicon ' + (goalFilters.isHiddenAssumption ? 'codicon-check ' : 'codicon-blank ')}>&nbsp;</span>
+                <span className='tooltip-menu-text '>hidden assumptions</span>
         </a>
     </span>
     const filterButton = <span className='fr'>
