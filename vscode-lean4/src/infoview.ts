@@ -342,7 +342,7 @@ export class InfoProvider implements Disposable {
         // todo: remove subscriptions for this client...
     }
 
-    async onActiveClientStopped(client: LeanClient, activeClient: boolean, msg: string, reason: string, restartFile: boolean = false) {
+    async onActiveClientStopped(client: LeanClient, activeClient: boolean, reason: ServerStoppedReason, restartFile: boolean = false) {
         // Will show a message in case the active client stops
         // add failed client into a list (will be removed in case the client is restarted)
         if (activeClient)
