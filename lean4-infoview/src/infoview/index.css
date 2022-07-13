@@ -13,6 +13,11 @@ html,body {
     line-height: var(--vscode-editor-line-height);
 }
 
+.codicon-blank {
+    width: 20px;
+    height: 16px;
+}
+
 /* These are syntax highlights for the string goal view. */
 .goal-goals { color: #569cd6; }
 .goal-vdash { color: #569cd6; }
@@ -136,26 +141,22 @@ For that, we can use more specific classes. */
     left: -4px;
 }
 
-.popup-menu {
+/* Contents of a list of selections shown as a tooltip. */
+.tooltip-menu-content {
     color: var(--vscode-editorHoverWidget-foreground);
     background: var(--vscode-editorHoverWidget-background);
 }
 
-.popup-menu-text {
+.tooltip-menu-content .tooltip-menu-text {
     text-align: center;
     padding: 5px;
     vertical-align: top;
     display: inline-block;
 }
 
-.popup-menu-icon {
+.tooltip-menu-content .tooltip-menu-icon {
     padding: 0px;
     margin-top:6px;
-}
-
-.codicon-blank {
-    width: 20px;
-    height: 16px;
 }
 
 /*---------------------------------------------------------------------------------------------
