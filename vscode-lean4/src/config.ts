@@ -198,6 +198,7 @@ export function getTestFolder() : string {
 
 export function isElanDisabled() : boolean {
     return typeof(process.env.DISABLE_ELAN) === 'string';
+}
 
 /** The editor line height, in pixels. */
 export function getEditorLineHeight(): number {
