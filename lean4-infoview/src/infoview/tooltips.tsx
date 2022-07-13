@@ -199,7 +199,7 @@ export const WithTooltipOnHover =
       if (e.target instanceof Node && !logicalDom.contains(e.target)) {
         if (e.target instanceof Element && e.target.tagName === 'HTML'){
           // then user might be clicking in a scrollbar, otherwise
-          // e.target would be 'BODY' so we do not want to hide the popup
+          // e.target would be a tag other than 'HTML' so we do not want to hide the popup
           // so user can scroll and read it all otherwise popup disappears
           // when you click on the scrollbar!
         } else {
