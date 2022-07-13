@@ -1,17 +1,16 @@
 import { Console } from 'console'
-const util = require('util');
 
 class Logger extends Console {
     constructor(stdout: NodeJS.WritableStream, stderr?: NodeJS.WritableStream) {
         super(stdout, stderr);
     }
 
-    log(...args : any) {
-        super.log(new Date().toLocaleTimeString(), '-', util.format(...args));
+    log(msg: string) {
+        super.log(new Date().toLocaleTimeString(), '-', msg);
     }
 
-    error(...args : any) {
-        super.error(new Date().toLocaleTimeString(), '-', util.format(...args));
+    error(msg: string) {
+        super.error(new Date().toLocaleTimeString(), '-', msg);
     }
 }
 

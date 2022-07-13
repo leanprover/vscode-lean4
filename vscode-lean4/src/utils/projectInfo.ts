@@ -95,7 +95,7 @@ export async function findLeanPackageVersionInfo(uri: Uri) : Promise<[Uri | null
         try {
             version = await readLeanVersionFile(packageFileUri);
         } catch (err) {
-            logger.log(err);
+            logger.log(`findLeanPackageVersionInfo caught exception ${err}`);
         }
     }
 
