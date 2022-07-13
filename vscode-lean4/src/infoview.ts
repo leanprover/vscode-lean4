@@ -61,7 +61,7 @@ export class InfoProvider implements Disposable {
 
     private rpcSessions: Map<string, RpcSession> = new Map();
 
-    private clientsFailed: Map<string, [string, string]> = new Map();
+    private clientsFailed: Map<string, ServerStoppedReason> = new Map();
 
     private subscribeDidChangeNotification(client: LeanClient, method: string){
         const h = client.didChange((params) => {
