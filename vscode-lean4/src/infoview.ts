@@ -34,7 +34,7 @@ class RpcSession implements Disposable {
             try {
                 await client.sendNotification('$/lean/rpc/keepAlive', params)
             } catch (e) {
-                logger.log(`failed to send keepalive for ${uri}`, e)
+                logger.log(`failed to send keepalive for ${uri}: ${e}`)
                 if (this.keepAliveInterval) clearInterval(this.keepAliveInterval)
             }
         }, keepAlivePeriodMs)

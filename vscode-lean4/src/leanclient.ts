@@ -288,7 +288,7 @@ export class LeanClient implements Disposable {
                     logger.log('client starting');
                 } else if (s.newState === State.Running) {
                     const end = Date.now()
-                    logger.log('client running, started in ', end - startTime, 'ms');
+                    logger.log(`client running, started in ', ${end - startTime} ms`);
                     this.running = true; // may have been auto restarted after it failed.
                     if (!insideRestart) {
                         this.restartedEmitter.fire(undefined)
