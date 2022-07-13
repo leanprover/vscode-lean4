@@ -2,12 +2,13 @@ import * as assert from 'assert';
 import { suite } from 'mocha';
 import * as path from 'path';
 import * as vscode from 'vscode';
+import { isElanDisabled } from '../../../src/config'
 import { initLean4Untitled, waitForActiveEditor, waitForInfoviewHtml, closeAllEditors,
     extractPhrase, gotoDefinition, assertStringInInfoview, initLean4 } from '../utils/helpers';
 
 function getElanMode(){
     let mode = ''
-    if (typeof(process.env.DISABLE_ELAN) === 'string') {
+    if (isElanDisabled()) {
         mode = ' no elan '
     }
     return mode;

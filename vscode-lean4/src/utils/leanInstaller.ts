@@ -1,11 +1,11 @@
 import { window, TerminalOptions, OutputChannel, commands, Disposable, EventEmitter, ProgressLocation, Uri } from 'vscode'
-import { toolchainPath, addServerEnvPaths, getLeanExecutableName  } from '../config'
+import { toolchainPath, addServerEnvPaths, getLeanExecutableName, getPowerShellPath } from '../config'
 import { batchExecute } from './batch'
 import { LocalStorageService} from './localStorage'
-import { LeanpkgService } from './leanpkg'
 import { readLeanVersion, findLeanPackageRoot, isCoreLean4Directory } from './projectInfo';
 import { join, dirname } from 'path';
 import { fileExists } from './fsHelper'
+import { addDefaultElanPath, getDefaultElanPath, addToolchainBinPath, isRunningTest, isElanDisabled } from '../config';
 
 export class LeanVersion {
     version: string;
@@ -43,6 +43,7 @@ export class LeanInstaller implements Disposable {
     }
 
     async testLeanVersion(packageUri: Uri) : Promise<LeanVersion> {
+
         // see if there is a lean-toolchain file and use that version info.
         let leanVersion : string | null = await readLeanVersion(packageUri);
         if (!leanVersion) {
@@ -145,6 +146,19 @@ export class LeanInstaller implements Disposable {
     async showInstallOptions(uri: Uri) : Promise<void> {
         let path  = this.localStorage.getLeanPath();
         if (!path ) path  = toolchainPath();
+        if (isRunningTest()){
+            // no prompt, just do it!
+            console.log('Installing Lean via Elan during testing')
+            await this.installElan();
+            if (isElanDisabled()) {
+                addToolchainBinPath(getDefaultElanPath());
+            } else {
+                addDefaultElanPath();
+            }
+            this.installChangedEmitter.fire(uri);
+            return;
+        }
+
         // note; we keep the LeanClient alive so that it can be restarted if the
         // user changes the Lean: Executable Path.
         const installItem = 'Install Lean using Elan';
@@ -178,6 +192,8 @@ export class LeanInstaller implements Disposable {
                 if (s === 'reset') {
                     s = '';
                 }
+                // ensure this version is actually installed.
+                await this.executeWithProgress('Ensure toolchain available...', 'lean', ['+' + s, '--version'], null);
                 this.localStorage.setLeanPath(''); // make sure any local full path override is cleared.
                 this.localStorage.setLeanVersion(s); // request the specified version.
                 this.installChangedEmitter.fire(uri);
@@ -465,15 +481,14 @@ export class LeanInstaller implements Disposable {
 
             let terminalOptions: TerminalOptions = { name: terminalName };
             if (process.platform === 'win32') {
-                const windir = process.env.windir
-                terminalOptions = { name: terminalName, shellPath: `${windir}\\System32\\WindowsPowerShell\\v1.0\\powershell.exe` };
+                terminalOptions = { name: terminalName, shellPath: getPowerShellPath() };
             }
             const terminal = window.createTerminal(terminalOptions);
             terminal.show();
 
             // We register a listener, to restart the Lean extension once elan has finished.
             const result = new Promise<boolean>(function(resolve, reject) {
-                window.onDidCloseTerminal((t) => {
+                window.onDidCloseTerminal(async (t) => {
                 if (t.name === terminalName) {
                     resolve(true);
                 }});
@@ -482,6 +497,7 @@ export class LeanInstaller implements Disposable {
             if (process.platform === 'win32') {
                 terminal.sendText(
                     `Invoke-WebRequest -Uri "${this.leanInstallerWindows}" -OutFile elan-init.ps1\n` +
+                    'Set-ExecutionPolicy -ExecutionPolicy Unrestricted -Scope Process\n' +
                     `$rc = .\\elan-init.ps1 -NoPrompt 1 -DefaultToolchain ${this.defaultToolchain}\n` +
                     'Write-Host "elan-init returned [$rc]"\n' +
                     'del .\\elan-init.ps1\n' +
@@ -491,12 +507,15 @@ export class LeanInstaller implements Disposable {
                     'exit\n'
                     );
             }
-            else{
+            else {
                 const elanArgs = `-y --default-toolchain ${this.defaultToolchain}`;
                 const prompt = '(echo && read -n 1 -s -r -p "Install failed, press ENTER to continue...")';
 
                 terminal.sendText(`bash -c 'curl ${this.leanInstallerLinux} -sSf | sh -s -- ${elanArgs} || ${prompt}' && exit `);
             }
+
+            // clear any previous lean version errors.
+            this.versionCache.clear();
 
             return result;
         }

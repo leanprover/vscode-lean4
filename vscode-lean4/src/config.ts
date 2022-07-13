@@ -42,21 +42,29 @@ export function addServerEnvPaths(input_env: NodeJS.ProcessEnv): NodeJS.ProcessE
     return env
 }
 
-export function addDefaultElanPath() : void {
-    const paths = getEnvPath();
+export function getDefaultElanPath() : string {
     let elanPath = ''
     if (process.platform === 'win32') {
         elanPath = process.env.USERPROFILE + '\\.elan\\bin';
     } else {
         elanPath = process.env.HOME + '/.elan/bin';
     }
+    return elanPath;
+}
 
+export function addDefaultElanPath() : void {
+    const paths = getEnvPath();
+    const elanPath = getDefaultElanPath();
     if (paths.indexOf(elanPath) < 0) {
         setEnvPath(paths + path.delimiter + elanPath);
     }
 }
 
 function findToolchainBin(root:string) : string{
+    console.log(`Looking for toolchains in ${root}`)
+    if (!fs.existsSync(root)) {
+        return '';
+    }
     const toolchains = fs.readdirSync(path.join(root, '..', 'toolchains'));
     for(const toolchain of toolchains) {
         if (toolchain.indexOf('leanprover--lean4') >= 0){
@@ -75,6 +83,9 @@ export function addToolchainBinPath(elanPath: string){
 }
 
 export function findProgramInPath(name: string) : string {
+    if (fs.existsSync(name)) {
+        return name;
+    }
     const extensions : string[] = [];
     if (process.platform === 'win32') {
        extensions.push('.exe')
@@ -111,6 +122,11 @@ export function removeElanPath() : string {
 
     setEnvPath(joinEnvPath(parts));
     return result;
+}
+
+export function getPowerShellPath() : string {
+    const windir = process.env.windir
+    return `${windir}\\System32\\WindowsPowerShell\\v1.0\\powershell.exe`
 }
 
 export function toolchainPath(): string {
@@ -170,6 +186,18 @@ export function getLeanExecutableName(): string {
         return 'lean.exe'
     }
     return 'lean'
+}
+
+export function isRunningTest() : boolean {
+    return typeof(process.env.TEST_FOLDER) === 'string';
+}
+
+export function getTestFolder() : string {
+    return typeof(process.env.TEST_FOLDER) === 'string' ? process.env.TEST_FOLDER : '';
+}
+
+export function isElanDisabled() : boolean {
+    return typeof(process.env.DISABLE_ELAN) === 'string';
 }
 
 /**

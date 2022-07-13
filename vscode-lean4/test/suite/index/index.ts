@@ -1,6 +1,7 @@
 import * as path from 'path';
 import * as Mocha from 'mocha';
 import * as glob from 'glob';
+import { isElanDisabled, getTestFolder } from '../../../src/config'
 
 export function run(testsRoot: string, cb: (error: any, failures?: number) => void): void {
     // Create the mocha test
@@ -12,13 +13,13 @@ export function run(testsRoot: string, cb: (error: any, failures?: number) => vo
         // workaround for https://github.com/microsoft/vscode-test/issues/134
         testsRoot = testsRoot.toLowerCase();
     }
-    const folder = process.env.TEST_FOLDER;
+    const folder = getTestFolder();
     if (folder) {
         testsRoot = path.resolve(testsRoot, '..', folder)
     }
     console.log('>>>>>>>>> testsRoot=' + testsRoot);
 
-    if (typeof(process.env.DISABLE_ELAN) === 'string') {
+    if (isElanDisabled()) {
         console.log('>>>>>>>>> running without elan');
     }
 
