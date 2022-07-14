@@ -1,6 +1,7 @@
 import { workspace } from 'vscode'
 import * as path from 'path';
 import * as fs from 'fs'
+import { logger } from './utils/logger'
 
 // TODO: does currently not contain config options for `./abbreviation`
 // so that it is easy to keep it in sync with vscode-lean.
@@ -61,7 +62,7 @@ export function addDefaultElanPath() : void {
 }
 
 function findToolchainBin(root:string) : string{
-    console.log(`Looking for toolchains in ${root}`)
+    logger.log(`Looking for toolchains in ${root}`)
     if (!fs.existsSync(root)) {
         return '';
     }
@@ -112,7 +113,7 @@ export function removeElanPath() : string {
     for (let i = 0; i < parts.length; ) {
          const part = parts[i]
          if (part.indexOf('.elan') > 0){
-            console.log(`removing path to elan: ${part}`)
+            logger.log(`removing path to elan: ${part}`)
             result = part;
             parts.splice(i, 1);
          } else {

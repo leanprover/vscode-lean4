@@ -11,6 +11,7 @@ import { addDefaultElanPath, removeElanPath, addToolchainBinPath, isElanDisabled
 import { dirname, basename } from 'path';
 import { findLeanPackageVersionInfo } from './utils/projectInfo';
 import { Exports } from './exports';
+import { logger } from './utils/logger'
 
 function isLean(languageId : string) : boolean {
     return languageId === 'lean' || languageId === 'lean4';
@@ -59,7 +60,7 @@ export async function activate(context: ExtensionContext): Promise<Exports> {
     if (doc) {
         [packageUri, toolchainVersion] = await findLeanPackageVersionInfo(doc.uri);
         if (toolchainVersion && toolchainVersion.indexOf('lean:3') > 0) {
-            console.log(`Lean4 skipping lean 3 project: ${toolchainVersion}`);
+            logger.log(`Lean4 skipping lean 3 project: ${toolchainVersion}`);
             return { isLean4Project: false, version: toolchainVersion,
                 infoProvider: undefined, clientProvider: undefined, installer: undefined, docView: undefined };
         }

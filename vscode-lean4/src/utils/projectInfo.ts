@@ -2,6 +2,7 @@ import * as fs from 'fs';
 import { URL } from 'url';
 import { Uri, workspace, WorkspaceFolder } from 'vscode';
 import { fileExists } from './fsHelper';
+import { logger } from './logger'
 
 // Detect lean4 root directory (works for both lean4 repo and nightly distribution)
 
@@ -94,7 +95,7 @@ export async function findLeanPackageVersionInfo(uri: Uri) : Promise<[Uri | null
         try {
             version = await readLeanVersionFile(packageFileUri);
         } catch (err) {
-            console.log(err);
+            logger.log(`findLeanPackageVersionInfo caught exception ${err}`);
         }
     }
 

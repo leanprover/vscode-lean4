@@ -1,16 +1,15 @@
 import * as path from 'path';
 import * as cp from 'child_process';
 
-console.log(__dirname);
-
 import { runTests, downloadAndUnzipVSCode, resolveCliArgsFromVSCodeExecutablePath } from '@vscode/test-electron';
 import * as fs from 'fs';
 import { DownloadArchitecture } from '@vscode/test-electron/out/download';
+import { logger } from '../../src/utils/logger'
 
 function clearUserWorkspaceData(vscodeTest: string) {
     const workspaceData = path.join(vscodeTest, 'user-data', 'Workspaces');
     fs.rmdir(workspaceData, { recursive: true }, (err) => {
-        console.log(`deleted user workspace data ${workspaceData} is deleted!`);
+        logger.log(`deleted user workspace data ${workspaceData} is deleted!`);
     });
 }
 
