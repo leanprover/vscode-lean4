@@ -5,12 +5,20 @@ class Logger extends Console {
         super(stdout, stderr);
     }
 
+    private static now(): string {
+		const now = new Date();
+		return String(now.getUTCHours()).padStart(2, '0')
+			+ ':' + String(now.getMinutes()).padStart(2, '0')
+			+ ':' + String(now.getUTCSeconds()).padStart(2, '0') + '.' +
+            String(now.getMilliseconds()).padStart(3, '0');
+    }
+
     log(msg: string) {
-        super.log(new Date().toLocaleTimeString(), '-', msg);
+        super.log(Logger.now(), '-', msg);
     }
 
     error(msg: string) {
-        super.error(new Date().toLocaleTimeString(), '-', msg);
+        super.error(Logger.now(), '-', msg);
     }
 }
 
