@@ -3,11 +3,12 @@ import * as os from 'os';
 import { suite } from 'mocha';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { initLean4Untitled, waitForActiveEditor, waitForInfoviewHtml, closeAllEditors,
-         gotoDefinition, assertStringInInfoview, copyFolder } from '../utils/helpers';
+import { initLean4Untitled, waitForInfoviewHtml, closeAllEditors,
+         getAltBuildVersion, assertStringInInfoview, copyFolder, extractPhrase } from '../utils/helpers';
 import { getDefaultElanPath } from '../../../src/config'
 import { batchExecute } from '../../../src/utils/batch'
 import { logger } from '../../../src/utils/logger'
+import * as fs from 'fs';
 
 suite('Lean4 Bootstrap Test Suite', () => {
 
@@ -33,9 +34,13 @@ suite('Lean4 Bootstrap Test Suite', () => {
 
     }).timeout(600000); // give it 5 minutes to install lean in case test machine is really slow.
 
-    test('Install stable build on demand', async () => {
+    test('Install alternate build on demand', async () => {
 
-        logger.log('=================== Install stable build on demand ===================');
+        // this must match the 'test/test-fixtures/multi/foo/lean-toolchain'
+        // currently should be: leanprover/lean4:nightly-2022-07-03
+        const version = getAltBuildVersion()
+
+        logger.log(`=================== Install leanprover/lean4:${version} build on demand ===================`);
         void vscode.window.showInformationMessage('Running tests: ' + __dirname);
 
         // Lean is already installed so this should be quick.
@@ -48,12 +53,12 @@ suite('Lean4 Bootstrap Test Suite', () => {
         logger.log('Lean nightly build server is running.')
 
         // install table build which is also needed by subsequent tests.
-        logger.log('Wait for lean stable build to be installed...')
-		await vscode.commands.executeCommand('lean4.selectToolchain', 'leanprover/lean4:stable');
+        logger.log(`Wait for lean4:${version} build to be installed...`)
+		await vscode.commands.executeCommand('lean4.selectToolchain', `leanprover/lean4:${version}`);
 
         // give it a extra long timeout in case test machine is really slow.
-		await waitForInfoviewHtml(info, '4.0.0, commit', 600);
-        logger.log('Lean stable build is running.')
+		await waitForInfoviewHtml(info, version, 600);
+        logger.log(`Lean ${version} build is running.`)
 		await vscode.commands.executeCommand('lean4.selectToolchain', 'reset');
 
         // make sure test is always run in predictable state, which is no file or folder open
@@ -65,6 +70,7 @@ suite('Lean4 Bootstrap Test Suite', () => {
 
         logger.log('=================== Create linked toolchain named master ===================');
         void vscode.window.showInformationMessage('Running tests: ' + __dirname);
+        const version = getAltBuildVersion()
 
         logger.log('Create copy of nightly build in a temp master folder...')
         const elanRoot = getDefaultElanPath()
@@ -80,14 +86,17 @@ suite('Lean4 Bootstrap Test Suite', () => {
         const lean = await initLean4Untitled('#eval Lean.versionString');
         const info = lean.exports.infoProvider;
         assert(info, 'No InfoProvider export');
+		const expectedVersion = '4.0.0-nightly-';
+		const html = await waitForInfoviewHtml(info, expectedVersion);
+        const foundVersion = extractPhrase(html, expectedVersion, '"')
 
-        logger.log('Wait for stable lean server to start...')
-		await vscode.commands.executeCommand('lean4.selectToolchain', 'leanprover/lean4:stable');
-		await assertStringInInfoview(info, '4.0.0, commit');
+        logger.log(`Wait for leanprover/lean4:${version} lean server to start...`)
+		await vscode.commands.executeCommand('lean4.selectToolchain', `leanprover/lean4:${version}`);
+		await assertStringInInfoview(info, version);
         logger.log('Wait for master lean server to start...')
 		await vscode.commands.executeCommand('lean4.selectToolchain', 'master');
         // sometimes a copy of lean launches more slowly (especially on Windows).
-        await waitForInfoviewHtml(info, '4.0.0-nightly-', 300);
+        await waitForInfoviewHtml(info, foundVersion, 300);
         logger.log('Linked master toolchain is running.')
 		await vscode.commands.executeCommand('lean4.selectToolchain', 'reset');
 

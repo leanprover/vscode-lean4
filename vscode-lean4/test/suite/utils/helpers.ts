@@ -261,9 +261,9 @@ export function extractPhrase(html: string, word: string, terminator: string){
     const pos = html.indexOf(word);
     if (pos >= 0){
         let endPos = html.indexOf(terminator, pos);
-        if (endPos < 0) {
-            endPos = html.indexOf('\n', pos);
-            return ''
+        const eolPos = html.indexOf('\n', pos);
+        if (eolPos > 0 && eolPos < endPos){
+            endPos = eolPos;
         }
         return html.substring(pos, endPos);
     }
@@ -410,4 +410,11 @@ export function copyFolder(source: string, target: string) {
             copyFolder(sourceFile, targetFile);
         }
     }
+}
+
+export function getAltBuildVersion(){
+    const testsRoot = path.join(__dirname, '..', '..', '..', '..', 'test');
+    const multiFoo = path.join(testsRoot, 'test-fixtures', 'multi', 'foo');
+    const toolchain = fs.readFileSync(path.join(multiFoo, 'lean-toolchain'), 'utf8').toString();
+    return toolchain.trim().split(':')[1];
 }
