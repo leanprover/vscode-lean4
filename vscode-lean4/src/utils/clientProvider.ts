@@ -72,6 +72,7 @@ export class LeanClientProvider implements Disposable {
             // Or it could be a package Uri in the case a lean package file was changed
             // or it could be a document Uri in the case of a command from
             // selectToolchainForActiveEditor.
+            logger.log(`[clientProvider] installChanged for ${uri}`);
             const key = this.getKeyFromUri(uri);
             const path = uri.toString();
             if (this.testing.has(key)) {
@@ -84,17 +85,19 @@ export class LeanClientProvider implements Disposable {
                 // have to check again here in case elan install had --default-toolchain none.
                 const [workspaceFolder, folder, packageFileUri] = await findLeanPackageRoot(uri);
                 const packageUri = folder ? folder : Uri.from({scheme: 'untitled'});
+                logger.log('[clientProvider] testLeanVersion');
                 const version = await installer.testLeanVersion(packageUri);
                 if (version.version === '4') {
+                    logger.log('[clientProvider] got lean version 4');
                     const [cached, client] = await this.ensureClient(uri, version);
                     if (cached && client) {
                         await client.restart();
                     }
                 } else if (version.error) {
-                    logger.log(`Lean version not ok: ${version.error}`);
+                    logger.log(`[clientProvider] Lean version not ok: ${version.error}`);
                 }
             } catch (e) {
-                logger.log(`Exception checking lean version: ${e}`);
+                logger.log(`[clientProvider] Exception checking lean version: ${e}`);
             }
             this.testing.delete(key);
         });
@@ -244,7 +247,7 @@ export class LeanClientProvider implements Disposable {
         const cachedClient = (client !== undefined);
         if (!client && !this.pending.has(key)) {
             this.pending.set(key, true);
-            logger.log('Creating LeanClient for ' + folderUri.toString());
+            logger.log('[ClientProvider] Creating LeanClient for ' + folderUri.toString());
 
             // We must create a Client before doing the long running testLeanVersion
             // so that ensureClient callers have an "optimistic" client to work with.
@@ -261,7 +264,7 @@ export class LeanClientProvider implements Disposable {
             }
             if (versionInfo && versionInfo.version && versionInfo.version !== '4') {
                 // ignore workspaces that belong to a different version of Lean.
-                logger.log(`Lean4 extension ignoring workspace '${folderUri}' because it is not a Lean 4 workspace.`);
+                logger.log(`[ClientProvider] Lean4 extension ignoring workspace '${folderUri}' because it is not a Lean 4 workspace.`);
                 this.pending.delete(key);
                 this.clients.delete(key);
                 client.dispose();

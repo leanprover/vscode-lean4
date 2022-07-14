@@ -406,6 +406,13 @@ export class LeanClient implements Disposable {
         return this.client !== undefined
     }
 
+    isRunning(): boolean {
+        if (this.client) {
+            return this.running;
+        }
+        return false;
+    }
+
     async stop(): Promise<void> {
         assert(() => this.isStarted())
         if (this.client && this.running) {

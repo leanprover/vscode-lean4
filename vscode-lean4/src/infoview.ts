@@ -301,10 +301,11 @@ export class InfoProvider implements Disposable {
 
     private async onClientAdded(client: LeanClient) {
 
-        logger.log(`Adding client for workspace: ${client.getWorkspaceFolder()}`);
+        logger.log(`[InfoProvider] Adding client for workspace: ${client.getWorkspaceFolder()}`);
 
         this.clientSubscriptions.push(
             client.restarted(async () => {
+                logger.log('[InfoProvider] got client restarted event');
                 // This event is triggered both the first time the server starts
                 // as well as when the server restarts.
 
@@ -335,7 +336,7 @@ export class InfoProvider implements Disposable {
             await this.webviewPanel?.api.serverStopped(msg);
         }
 
-        logger.log(`client stopped: ${client.getWorkspaceFolder()}`)
+        logger.log(`[InfoProvider] client stopped: ${client.getWorkspaceFolder()}`)
 
         // remember this client is in a stopped state
         this.clientsFailed.set(client.getWorkspaceFolder(), msg)
