@@ -1,6 +1,7 @@
 import { OutputChannel } from 'vscode'
 import { spawn } from 'child_process';
 import { findProgramInPath } from '../config'
+import { logger } from './logger'
 
 export async function batchExecute(
     executablePath: string,
@@ -46,12 +47,12 @@ export async function batchExecute(
             });
 
             proc.on('close', (code) => {
-                console.log(`child process exited with code ${code}`);
+                logger.log(`child process exited with code ${code}`);
                 resolve(output)
             });
 
         } catch (e){
-            console.log(`error running ${executablePath} : ${e}`);
+            logger.log(`error running ${executablePath} : ${e}`);
             resolve(undefined);
         }
     });

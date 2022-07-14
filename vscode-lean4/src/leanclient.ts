@@ -25,6 +25,7 @@ import { readLeanVersion } from './utils/projectInfo';
 import * as fs from 'fs';
 import { URL } from 'url';
 import { join } from 'path';
+import { logger } from './utils/logger'
  // @ts-ignore
 import { SemVer } from 'semver';
 import { fileExists, isFileInFolder } from './utils/fsHelper';
@@ -110,7 +111,7 @@ export class LeanClient implements Disposable {
     async restart(): Promise<void> {
         const startTime = Date.now()
 
-        console.log('Restarting Lean Language Server')
+        logger.log('Restarting Lean Language Server')
         if (this.isStarted()) {
             await this.stop()
         }
@@ -284,17 +285,17 @@ export class LeanClient implements Disposable {
             this.client.onDidChangeState(async (s) => {
                 // see https://github.com/microsoft/vscode-languageserver-node/issues/825
                 if (s.newState === State.Starting) {
-                    console.log('client starting');
+                    logger.log('client starting');
                 } else if (s.newState === State.Running) {
                     const end = Date.now()
-                    console.log('client running, started in ', end - startTime, 'ms');
+                    logger.log(`client running, started in ', ${end - startTime} ms`);
                     this.running = true; // may have been auto restarted after it failed.
                     if (!insideRestart) {
                         this.restartedEmitter.fire(undefined)
                     }
                 } else if (s.newState === State.Stopped) {
                     this.stoppedEmitter.fire('Lean language server has stopped. ');
-                    console.log('client has stopped or it failed to start');
+                    logger.log('client has stopped or it failed to start');
                     this.running = false;
                     if (!this.noPrompt){
                         await this.showRestartMessage();
@@ -414,7 +415,7 @@ export class LeanClient implements Disposable {
                 // this to throw an exception which then causes those tests to fail.
                 await this.client.stop();
             } catch (e) {
-                console.log(`Error stopping language client: ${e}`)
+                logger.log(`Error stopping language client: ${e}`)
             }
         }
 
@@ -511,7 +512,7 @@ export class LeanClient implements Disposable {
         const versionOptions = version ? ['+' + version, '--version'] : ['--version']
         const start = Date.now()
         const lakeVersion = await batchExecute(executable, versionOptions, this.folderUri?.fsPath, undefined);
-        console.log(`Ran '${executable} ${versionOptions.join(' ')}' in ${Date.now() - start} ms`);
+        logger.log(`Ran '${executable} ${versionOptions.join(' ')}' in ${Date.now() - start} ms`);
         const actual = this.extractVersion(lakeVersion)
         if (actual.compare('3.0.0') > 0) {
             return true;

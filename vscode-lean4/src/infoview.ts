@@ -13,6 +13,7 @@ import { Rpc } from './rpc';
 import { LeanClientProvider } from './utils/clientProvider'
 import * as ls from 'vscode-languageserver-protocol'
 import { c2pConverter, p2cConverter } from './utils/converters';
+import { logger } from './utils/logger'
 
 const keepAlivePeriodMs = 10000
 
@@ -33,7 +34,7 @@ class RpcSession implements Disposable {
             try {
                 await client.sendNotification('$/lean/rpc/keepAlive', params)
             } catch (e) {
-                console.log(`failed to send keepalive for ${uri}`, e)
+                logger.log(`failed to send keepalive for ${uri}: ${e}`)
                 if (this.keepAliveInterval) clearInterval(this.keepAliveInterval)
             }
         }, keepAlivePeriodMs)
@@ -293,14 +294,14 @@ export class InfoProvider implements Disposable {
         const folder = client.getWorkspaceFolder()
         if (this.clientsFailed.has(folder)) {
             this.clientsFailed.delete(folder) // delete from failed clients
-            console.log('Restarting server for workspace: ' + folder)
+            logger.log('Restarting server for workspace: ' + folder)
         }
         await this.initInfoView(window.activeTextEditor, client);
     }
 
     private async onClientAdded(client: LeanClient) {
 
-        console.log(`Adding client for workspace: ${client.getWorkspaceFolder()}`);
+        logger.log(`Adding client for workspace: ${client.getWorkspaceFolder()}`);
 
         this.clientSubscriptions.push(
             client.restarted(async () => {
@@ -334,7 +335,7 @@ export class InfoProvider implements Disposable {
             await this.webviewPanel?.api.serverStopped(msg);
         }
 
-        console.log(`client stopped: ${client.getWorkspaceFolder()}`)
+        logger.log(`client stopped: ${client.getWorkspaceFolder()}`)
 
         // remember this client is in a stopped state
         this.clientsFailed.set(client.getWorkspaceFolder(), msg)

@@ -7,6 +7,7 @@ import { LeanFileProgressProcessingInfo, RpcConnectParams, RpcKeepAliveParams } 
 import * as path from 'path';
 import { findLeanPackageRoot } from './projectInfo';
 import { isFileInFolder } from './fsHelper';
+import { logger } from './logger'
 
 // This class ensures we have one LeanClient per workspace folder.
 export class LeanClientProvider implements Disposable {
@@ -74,7 +75,7 @@ export class LeanClientProvider implements Disposable {
             const key = this.getKeyFromUri(uri);
             const path = uri.toString();
             if (this.testing.has(key)) {
-                console.log(`Blocking re-entrancy on ${path}`);
+                logger.log(`Blocking re-entrancy on ${path}`);
                 return;
             }
             // avoid re-entrancy since testLeanVersion can take a while.
@@ -90,10 +91,10 @@ export class LeanClientProvider implements Disposable {
                         await client.restart();
                     }
                 } else if (version.error) {
-                    console.log(`Lean version not ok: ${version.error}`);
+                    logger.log(`Lean version not ok: ${version.error}`);
                 }
             } catch (e) {
-                console.log(`Exception checking lean version: ${e}`);
+                logger.log(`Exception checking lean version: ${e}`);
             }
             this.testing.delete(key);
         });
@@ -164,7 +165,7 @@ export class LeanClientProvider implements Disposable {
                 await client.openLean4Document(document)
             }
         } catch (e) {
-            console.log(`### Error opening document: ${e}`);
+            logger.log(`### Error opening document: ${e}`);
         }
     }
 
@@ -243,7 +244,7 @@ export class LeanClientProvider implements Disposable {
         const cachedClient = (client !== undefined);
         if (!client && !this.pending.has(key)) {
             this.pending.set(key, true);
-            console.log('Creating LeanClient for ' + folderUri.toString());
+            logger.log('Creating LeanClient for ' + folderUri.toString());
 
             // We must create a Client before doing the long running testLeanVersion
             // so that ensureClient callers have an "optimistic" client to work with.
@@ -260,7 +261,7 @@ export class LeanClientProvider implements Disposable {
             }
             if (versionInfo && versionInfo.version && versionInfo.version !== '4') {
                 // ignore workspaces that belong to a different version of Lean.
-                console.log(`Lean4 extension ignoring workspace '${folderUri}' because it is not a Lean 4 workspace.`);
+                logger.log(`Lean4 extension ignoring workspace '${folderUri}' because it is not a Lean 4 workspace.`);
                 this.pending.delete(key);
                 this.clients.delete(key);
                 client.dispose();

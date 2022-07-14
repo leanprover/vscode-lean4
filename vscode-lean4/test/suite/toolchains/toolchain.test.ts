@@ -4,14 +4,15 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import { initLean4Untitled, initLean4, waitForInfoviewHtml, closeAllEditors,
-	extractPhrase, restartLeanServer, assertStringInInfoview, resetToolchain } from '../utils/helpers';
+	extractPhrase, restartLeanServer, assertStringInInfoview, resetToolchain, getAltBuildVersion } from '../utils/helpers';
+import { logger } from '../../../src/utils/logger'
 
 // Expects to be launched with folder: ${workspaceFolder}/vscode-lean4/test/suite/simple
 suite('Toolchain Test Suite', () => {
 
 	test('Untitled Select Toolchain', async () => {
 
-		console.log('=================== Untitled Select Toolchain ===================');
+		logger.log('=================== Untitled Select Toolchain ===================');
 		void vscode.window.showInformationMessage('Running tests: ' + __dirname);
 
 		const lean = await initLean4Untitled('#eval Lean.versionString');
@@ -25,9 +26,9 @@ suite('Toolchain Test Suite', () => {
 		await assertStringInInfoview(info, '4.0.0-nightly-');
 
 		// Now switch toolchains (simple suite uses leanprover/lean4:nightly by default)
-		await vscode.commands.executeCommand('lean4.selectToolchain', 'leanprover/lean4:stable');
-
-		await assertStringInInfoview(info, '4.0.0, commit');
+		const version = getAltBuildVersion()
+		await vscode.commands.executeCommand('lean4.selectToolchain', `leanprover/lean4:${version}`);
+		await assertStringInInfoview(info, version);
 
 		await resetToolchain(lean.exports.clientProvider);
 
@@ -38,7 +39,7 @@ suite('Toolchain Test Suite', () => {
 
 	test('Restart Server', async () => {
 
-		console.log('=================== Test Restart Server ===================');
+		logger.log('=================== Test Restart Server ===================');
 		void vscode.window.showInformationMessage('Running tests: ' + __dirname);
 
 		// Test we can restart the lean server
@@ -54,7 +55,7 @@ suite('Toolchain Test Suite', () => {
 			const expectedVersion = 'Hello:';
 			const html = await waitForInfoviewHtml(info, expectedVersion);
 			const versionString = extractPhrase(html, 'Hello:', '<').trim();
-			console.log(`>>> Found "${versionString}" in infoview`);
+			logger.log(`>>> Found "${versionString}" in infoview`);
 
 			// Now invoke the restart server command
 			const clients = lean.exports.clientProvider;
@@ -72,7 +73,7 @@ suite('Toolchain Test Suite', () => {
 	}).timeout(60000);
 
 	test('Select toolchain', async () => {
-		console.log('=================== Test select toolchain ===================');
+		logger.log('=================== Test select toolchain ===================');
 		void vscode.window.showInformationMessage('Running tests: ' + __dirname);
 
         const testsRoot = path.join(__dirname, '..', '..', '..', '..', 'test', 'test-fixtures', 'simple');
@@ -82,22 +83,23 @@ suite('Toolchain Test Suite', () => {
 		const info = lean.exports.infoProvider;
 		assert(info, 'No InfoProvider export');
 		const expectedVersion = '4.0.0-nightly-';
-		await waitForInfoviewHtml(info, expectedVersion);
+		const html = await waitForInfoviewHtml(info, expectedVersion);
+        const foundVersion = extractPhrase(html, expectedVersion, '\n')
 
 		await resetToolchain(lean.exports.clientProvider);
 
 		// Now switch toolchains (simple suite uses leanprover/lean4:nightly by default)
-		await vscode.commands.executeCommand('lean4.selectToolchain', 'leanprover/lean4:stable');
+		const version = getAltBuildVersion()
+		await vscode.commands.executeCommand('lean4.selectToolchain', `leanprover/lean4:${version}`);
 
-		// verify that we switched to leanprover/lean4:stable
-		const expected2 = '4.0.0, commit';
-		await waitForInfoviewHtml(info, expected2);
+		// verify that we switched to different version
+		await waitForInfoviewHtml(info, version);
 
 		// Now reset the toolchain back to nightly build.
 		await resetToolchain(lean.exports.clientProvider);
 
 		// Now make sure the reset works and we can go back to the previous nightly version.
-		await waitForInfoviewHtml(info, expectedVersion);
+		await waitForInfoviewHtml(info, foundVersion);
 
 		// make sure test is always run in predictable state, which is no file or folder open
 		await closeAllEditors();
@@ -105,7 +107,7 @@ suite('Toolchain Test Suite', () => {
 
 	test('Edit lean-toolchain version', async () => {
 
-		console.log('=================== Test lean-toolchain edits ===================');
+		logger.log('=================== Test lean-toolchain edits ===================');
 
         const testsRoot = path.join(__dirname, '..', '..', '..', '..', 'test', 'test-fixtures', 'simple');
 
@@ -125,36 +127,37 @@ suite('Toolchain Test Suite', () => {
 		await resetToolchain(lean.exports.clientProvider);
 
 		// verify we have a nightly build running in this folder.
-		await assertStringInInfoview(info, '4.0.0-nightly-');
+		const expectedVersion = '4.0.0-nightly-';
+		const html = await waitForInfoviewHtml(info, expectedVersion);
+        const foundVersion = extractPhrase(html, expectedVersion, '\n')
 
 		// Now edit the lean-toolchain file.
 		const toolchainFile = path.join(testsRoot, 'lean-toolchain');
 		const originalContents = fs.readFileSync(toolchainFile, 'utf8').toString();
 		assert(originalContents.trim() === 'leanprover/lean4:nightly');
-		// Switch to a stable version.
-		let expected = 'stable';
-		fs.writeFileSync(toolchainFile, 'leanprover/lean4:stable');
 
+		// Switch to a alternate version by editing the toolchain file
+		const version = getAltBuildVersion()
+		fs.writeFileSync(toolchainFile, `leanprover/lean4:${version}`);
 
 		try {
-			// verify that we switched to leanprover/lean4:stable
-			const html = await assertStringInInfoview(info, '4.0.0, commit');
+			// verify that we switched to alt version
+			const html = await assertStringInInfoview(info, version);
 
 			// check the path to lean.exe from the `eval IO.appPath`
 			const leanPath = extractPhrase(html, 'FilePath.mk', '<').trim();
-			console.log(`Found LeanPath: ${leanPath}`)
-			assert(leanPath.indexOf(expected), `Lean Path does not contain: ${expected}`);
+			logger.log(`Found LeanPath: ${leanPath}`)
+			assert(leanPath.indexOf(version), `Lean Path does not contain: ${version}`);
 
-			// Find out if we have a 'master' toolchain (setup in our workflow: on-push.yml)
+			// Find out if we have a 'master' toolchain (setup by the bootstrap test)
 			// and use it if it is there
 			const toolChains = await installer.elanListToolChains(null);
 			const masterToolChain = toolChains.find(tc => tc === 'master');
 			if (masterToolChain) {
-				expected = 'master'
 				// Switch to a linked toolchain version (setup in our workflow: on-push.yml)
 				fs.writeFileSync(toolchainFile, masterToolChain);
 				// verify that we switched to the master toolchain.
-				await assertStringInInfoview(info, expected);
+				await assertStringInInfoview(info, 'master');
 			}
 
 		} finally {
@@ -163,7 +166,7 @@ suite('Toolchain Test Suite', () => {
 		}
 
 		// Now make sure the reset works and we can go back to the previous nightly version.
-		await assertStringInInfoview(info, '4.0.0-nightly-');
+		await assertStringInInfoview(info, foundVersion);
 
 		// make sure test is always run in predictable state, which is no file or folder open
 		await closeAllEditors();
