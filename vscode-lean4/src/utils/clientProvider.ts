@@ -40,33 +40,6 @@ export class LeanClientProvider implements Disposable {
         this.installer = installer;
         this.pkgService = pkgService;
 
-        // Only change the document language for *visible* documents,
-        // because this closes and then reopens the document.
-        window.visibleTextEditors.forEach((e) => this.didOpenEditor(e.document));
-        this.subscriptions.push(window.onDidChangeVisibleTextEditors((es) =>
-            es.forEach((e) => this.didOpenEditor(e.document))));
-
-        this.subscriptions.push(
-            commands.registerCommand('lean4.restartFile', () => this.restartFile()),
-            commands.registerCommand('lean4.refreshFileDependencies', () => this.restartFile()),
-            commands.registerCommand('lean4.restartServer', () => this.restartActiveClient())
-        );
-
-        workspace.onDidOpenTextDocument((document) => this.didOpenEditor(document));
-
-        workspace.onDidChangeWorkspaceFolders((event) => {
-            for (const folder of event.removed) {
-                const key = this.getKeyFromUri(folder.uri);
-                const client = this.clients.get(key);
-                if (client) {
-                    this.clients.delete(key);
-                    this.versions.delete(key);
-                    client.dispose();
-                    this.clientRemovedEmitter.fire(client);
-                }
-            }
-        });
-
         installer.installChanged(async (uri: Uri) => {
             // This Uri could be 'undefined' in the case of a selectToolChain "reset"
             // Or it could be a package Uri in the case a lean package file was changed
@@ -100,6 +73,33 @@ export class LeanClientProvider implements Disposable {
                 logger.log(`[clientProvider] Exception checking lean version: ${e}`);
             }
             this.testing.delete(key);
+        });
+
+        // Only change the document language for *visible* documents,
+        // because this closes and then reopens the document.
+        window.visibleTextEditors.forEach((e) => this.didOpenEditor(e.document));
+        this.subscriptions.push(window.onDidChangeVisibleTextEditors((es) =>
+            es.forEach((e) => this.didOpenEditor(e.document))));
+
+        this.subscriptions.push(
+            commands.registerCommand('lean4.restartFile', () => this.restartFile()),
+            commands.registerCommand('lean4.refreshFileDependencies', () => this.restartFile()),
+            commands.registerCommand('lean4.restartServer', () => this.restartActiveClient())
+        );
+
+        workspace.onDidOpenTextDocument((document) => this.didOpenEditor(document));
+
+        workspace.onDidChangeWorkspaceFolders((event) => {
+            for (const folder of event.removed) {
+                const key = this.getKeyFromUri(folder.uri);
+                const client = this.clients.get(key);
+                if (client) {
+                    this.clients.delete(key);
+                    this.versions.delete(key);
+                    client.dispose();
+                    this.clientRemovedEmitter.fire(client);
+                }
+            }
         });
     }
 
@@ -245,7 +245,12 @@ export class LeanClientProvider implements Disposable {
         let client = this.getClientForFolder(folderUri);
         const key = this.getKeyFromUri(folder);
         const cachedClient = (client !== undefined);
-        if (!client && !this.pending.has(key)) {
+        if (!client) {
+            if (this.pending.has(key)) {
+                logger.log('[ClientProvider] ignoring ensureClient already pending on ' + folderUri.toString());
+                return [cachedClient, client];
+            }
+
             this.pending.set(key, true);
             logger.log('[ClientProvider] Creating LeanClient for ' + folderUri.toString());
 
@@ -292,6 +297,7 @@ export class LeanClientProvider implements Disposable {
             });
 
             this.pending.delete(key);
+            logger.log('[ClientProvider] firing clientAddedEmitter event');
             this.clientAddedEmitter.fire(client);
 
             if (versionInfo && !versionInfo.error) {
