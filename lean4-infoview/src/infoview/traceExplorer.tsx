@@ -12,31 +12,52 @@ import { RpcContext } from './contexts'
 import { Goal } from './goals'
 import { InteractiveCode, InteractiveTaggedText, InteractiveTagProps, InteractiveTextComponentProps } from './interactiveCode'
 import { InteractiveDiagnostics_msgToInteractive, MessageData, MsgEmbed, TaggedText } from './rpcInterface'
-import { DocumentPosition } from './util'
+import { DocumentPosition, mapRpcError } from './util'
 
 function CollapsibleTrace({pos, col, cls, msg}: {pos: DocumentPosition, col: number, cls: string, msg: MessageData}) {
-    const rs = React.useContext(RpcContext)
-    const [tt, setTt] = React.useState<TaggedText<MsgEmbed> | undefined>(undefined)
+    type State =
+        { state: 'collapsed' } |
+        { state: 'loading' } |
+        { state: 'open', tt: TaggedText<MsgEmbed> } |
+        { state: 'error', err: string }
 
-    let inner
-    if (tt) {
-        inner = <>
+    const rs = React.useContext(RpcContext)
+    const [st, setSt] = React.useState<State>({state: 'collapsed'})
+
+    const fetchTrace = () => {
+        setSt({state: 'loading'})
+        void InteractiveDiagnostics_msgToInteractive(rs, pos, msg, col)
+            .then(tt => {
+                if (tt) setSt({state: 'open', tt})
+                else setSt({state: 'error', err: 'no trace found'})
+            })
+            .catch(e => setSt({state: 'error', err: mapRpcError(e).toString()}))
+    }
+
+    if (st.state === 'collapsed')
+        return <span className="underline-hover pointer"
+            onClick={ev => {
+                fetchTrace()
+                ev.stopPropagation()
+            }}>[{cls}] &gt;</span>
+    else if (st.state === 'loading')
+        return <span>[{cls}] Loading..</span>
+    else if (st.state === 'open')
+        return <>
             <span className="underline-hover pointer"
                 onClick={ev => {
-                    setTt(undefined)
+                    setSt({state: 'collapsed'})
                     ev.stopPropagation()
                 }}>[{cls}] ∨</span>
-            <InteractiveMessage pos={pos} fmt={tt} />
+            <InteractiveMessage pos={pos} fmt={st.tt} />
         </>
-    } else {
-        inner =
-            <span className="underline-hover pointer"
-                onClick={ev => {
-                    void InteractiveDiagnostics_msgToInteractive(rs, pos, msg, col).then(t => t && setTt(t))
-                    ev.stopPropagation()
-                }}>[{cls}] &gt;</span>
-    }
-    return inner
+    else if (st.state === 'error')
+        return <><span className="underline-hover pointer"
+            onClick={ev => {
+                fetchTrace()
+                ev.stopPropagation()
+            }}>[{cls}] Error (click to retry):</span> {st.err}</>
+    else throw new Error('unreachable')
 }
 
 function InteractiveMessageTag({pos, tag: embed, fmt}: InteractiveTagProps<MsgEmbed>): JSX.Element {
