@@ -5,7 +5,6 @@ import { LocalStorageService} from './localStorage'
 import { readLeanVersion, findLeanPackageRoot, isCoreLean4Directory } from './projectInfo';
 import { join, dirname } from 'path';
 import { fileExists } from './fsHelper'
-import { addDefaultElanPath, getDefaultElanPath, addToolchainBinPath, isRunningTest, isElanDisabled } from '../config';
 import { logger } from './logger'
 
 export class LeanVersion {
@@ -31,6 +30,10 @@ export class LeanInstaller implements Disposable {
     // The event provides the workspace Uri where the change happened.
     private installChangedEmitter = new EventEmitter<Uri>();
     installChanged = this.installChangedEmitter.event
+
+    // this event is raised if showInstallOptions is prompting the user.
+    private promptingInstallEmitter = new EventEmitter<Uri>();
+    promptingInstall = this.promptingInstallEmitter.event
 
     constructor(outputChannel: OutputChannel, localStorage : LocalStorageService, defaultToolchain : string) {
         this.outputChannel = outputChannel;
@@ -58,9 +61,9 @@ export class LeanInstaller implements Disposable {
                 // Ah, there is no elan, but what if Lean is in the PATH due to custom install?
                 const found = await this.checkLeanVersion(packageUri, leanVersion);
                 if (found.error) {
-                    // Ah, then we need to install elan and since we have no leanVersion
-                    // we might as well install the default toolchain as well.
-                    await this.showInstallOptions(packageUri);
+                    // Ah, then we need to install elan so prompt the user, but don't wait
+                    // here for the answer because that could be forever.
+                    void this.showInstallOptions(packageUri);
                     return { version: '4', error: 'no elan installed' }
                 }
             } else if (! await isCoreLean4Directory(packageUri)) {
@@ -83,7 +86,7 @@ export class LeanInstaller implements Disposable {
             if (found.error === 'no default toolchain') {
                 await this.showToolchainOptions(packageUri)
             } else {
-                await this.showInstallOptions(packageUri);
+                void this.showInstallOptions(packageUri);
             }
         }
         return found;
@@ -147,18 +150,6 @@ export class LeanInstaller implements Disposable {
     async showInstallOptions(uri: Uri) : Promise<void> {
         let path  = this.localStorage.getLeanPath();
         if (!path ) path  = toolchainPath();
-        if (isRunningTest()){
-            // no prompt, just do it!
-            logger.log('Installing Lean via Elan during testing')
-            await this.installElan();
-            if (isElanDisabled()) {
-                addToolchainBinPath(getDefaultElanPath());
-            } else {
-                addDefaultElanPath();
-            }
-            this.installChangedEmitter.fire(uri);
-            return;
-        }
 
         // note; we keep the LeanClient alive so that it can be restarted if the
         // user changes the Lean: Executable Path.
@@ -169,6 +160,7 @@ export class LeanInstaller implements Disposable {
             prompt += ` from ${path}`
         }
 
+        this.promptingInstallEmitter.fire(uri);
         const item = await window.showErrorMessage(prompt, installItem, selectItem)
         if (item === installItem) {
             try {
@@ -471,7 +463,7 @@ export class LeanInstaller implements Disposable {
         return elanInstalled;
     }
 
-    private async installElan() : Promise<boolean> {
+    async installElan() : Promise<boolean> {
 
         if (toolchainPath()) {
             void window.showErrorMessage('It looks like you\'ve modified the `lean.toolchainPath` user setting.' +
