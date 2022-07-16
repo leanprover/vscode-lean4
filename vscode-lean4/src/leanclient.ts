@@ -82,7 +82,7 @@ export class LeanClient implements Disposable {
     private restartingEmitter = new EventEmitter()
     restarting = this.restartingEmitter.event
 
-    private restartedWorkerEmitter = new EventEmitter()
+    private restartedWorkerEmitter = new EventEmitter<string>()
     restartedWorker = this.restartedWorkerEmitter.event
 
     private serverFailedEmitter = new EventEmitter<string>();
@@ -315,9 +315,11 @@ export class LeanClient implements Disposable {
                     }
                 } else if (s.newState === State.Stopped) {
                     this.running = false;
-                    this.stoppedEmitter.fire({message:'Lean server has stopped.', reason:''});
                     logger.log('client has stopped or it failed to start');
                     if (!this.noPrompt){
+                        // only raise this event and show the message if we are not the ones
+                        // who called the stop() method.
+                        this.stoppedEmitter.fire({message:'Lean server has stopped.', reason:''});
                         await this.showRestartMessage();
                     }
                 }
@@ -483,7 +485,7 @@ export class LeanClient implements Disposable {
                 'text': doc.getText()
             }
         })
-        this.restartedWorkerEmitter.fire(undefined)
+        this.restartedWorkerEmitter.fire(uri)
     }
 
     // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
