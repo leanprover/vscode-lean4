@@ -604,16 +604,19 @@ export class InfoProvider implements Disposable {
             if (client) {
                 const folder = window.activeTextEditor?.document.uri.toString();
                 let reason;
+                let restartFile = false;
                 if(folder){
                     if (this.clientsFailed.has(folder)){
                         reason = this.clientsFailed.get(folder);
                     } else if (this.workersFailed.has(folder)){
                         reason = this.workersFailed.get(folder);
+                        restartFile = true;
                     }
                 }
                 if (reason) {
                     // send stopped event
                     await this.webviewPanel?.api.serverStopped(reason);
+                    await client.showRestartMessage(restartFile);
                 } else {
                     await this.updateStatus(loc)
                 }
