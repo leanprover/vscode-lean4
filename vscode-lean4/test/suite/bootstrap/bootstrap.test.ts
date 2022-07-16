@@ -3,7 +3,7 @@ import * as os from 'os';
 import { suite } from 'mocha';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { initLean4Untitled, waitForInfoviewHtml, closeAllEditors,
+import { initLean4Untitled, waitForInfoviewHtml, closeAllEditors, waitForActiveClientRunning,
          getAltBuildVersion, assertStringInInfoview, copyFolder, extractPhrase } from '../utils/helpers';
 import { getDefaultElanPath } from '../../../src/config'
 import { batchExecute } from '../../../src/utils/batch'
@@ -25,6 +25,7 @@ suite('Lean4 Bootstrap Test Suite', () => {
 
         // give it a extra long timeout in case test machine is really slow.
         logger.log('Wait for elan install of Lean nightly build...')
+        await waitForActiveClientRunning(lean.exports.clientProvider, 600);
 		await waitForInfoviewHtml(info, '4.0.0-nightly-', 600);
 
         logger.log('Lean installation is complete.')
