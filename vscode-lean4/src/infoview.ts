@@ -65,6 +65,8 @@ export class InfoProvider implements Disposable {
 
     private clientsFailed: Map<string, ServerStoppedReason> = new Map();
 
+    private workersFailed: Map<string, ServerStoppedReason> = new Map();
+
     private subscribeDidChangeNotification(client: LeanClient, method: string){
         const h = client.didChange((params) => {
             void this.webviewPanel?.api.sentClientNotification(method, params);
@@ -107,6 +109,8 @@ export class InfoProvider implements Disposable {
                         const activeClient = client === this.clientProvider.getActiveClient();
                         console.log(`The Lean language service has stopped processing this file: ${ex.message}`)
                         await this.onActiveClientStopped(client, activeClient, {message:'The Lean Server has stopped processing this file: ', reason: ex.message as string}, true)
+                    } else {
+                        // file updated, do nothing
                     }
                 }
             }
@@ -332,10 +336,12 @@ export class InfoProvider implements Disposable {
 
     async onWorkerRestarted(client: LeanClient) : Promise<void> {
         await this.webviewPanel?.api.serverStopped(undefined); // clear any server stopped state
-        const folder = client.getWorkspaceFolder()
-        if (this.clientsFailed.has(folder)) {
-            this.clientsFailed.delete(folder) // delete from failed clients
-            logger.log('Restarting server for workspace: ' + folder)
+        const folder = window.activeTextEditor?.document.uri.toString();
+        if (folder) {
+            if (this.workersFailed.has(folder)) {
+                this.workersFailed.delete(folder) // delete from failed clients
+                logger.log('Restarting worker for file: ' + folder)
+            }
         }
         await this.sendPosition();
     }
@@ -353,20 +359,23 @@ export class InfoProvider implements Disposable {
             await this.webviewPanel?.api.serverStopped(reason);
         }
 
-        console.log(`client stopped: ${client.getWorkspaceFolder()}`)
-
         // remember this client is in a stopped state
-        const key = client.getWorkspaceFolder();
-        if (!this.clientsFailed.has(key)) {
-            this.clientsFailed.set(key, reason);
+        const key = window.activeTextEditor?.document.uri.toString();
+        if (key) {
             await this.sendPosition();
             if (restartFile) {
+                if (!this.workersFailed.has(key)) {
+                    this.workersFailed.set(key, reason);
+                }
                 console.log(`client crashed: ${key}`)
                 await client.showRestartMessage(restartFile);
             } else {
-                console.log(`client stopped: ${key}`)
-                await client.showRestartMessage();
-            }
+                if (!this.clientsFailed.has(key)) {
+                    this.clientsFailed.set(key, reason);
+                }
+                    console.log(`client stopped: ${key}`)
+                    await client.showRestartMessage();
+                }
         }
     }
 
@@ -519,12 +528,12 @@ export class InfoProvider implements Disposable {
         // by listening to notifications.  Send these notifications when the infoview starts
         // so that it has up-to-date information.
         if (client?.initializeResult) {
+            await this.webviewPanel?.api.serverStopped(undefined); // clear any server stopped state
             await this.webviewPanel?.api.serverRestarted(client.initializeResult);
             await this.sendDiagnostics(client);
             await this.sendProgress(client);
             await this.sendPosition();
             await this.sendConfig();
-            await this.webviewPanel?.api.serverStopped(undefined); // clear any server stopped state
         }
     }
 
@@ -590,16 +599,21 @@ export class InfoProvider implements Disposable {
             return;
         }
         // actual editor
-        if (this.clientsFailed.size > 0){
+        if (this.clientsFailed.size > 0 || this.workersFailed.size > 0) {
             const client = this.clientProvider.findClient(editor.document.uri.toString())
             if (client) {
-                const folder = client.getWorkspaceFolder()
-                if (this.clientsFailed.has(folder)){
-                    // send stopped event
-                    const reason = this.clientsFailed.get(folder);
-                    if (reason) {
-                        await this.webviewPanel?.api.serverStopped(reason);
+                const folder = window.activeTextEditor?.document.uri.toString();
+                let reason;
+                if(folder){
+                    if (this.clientsFailed.has(folder)){
+                        reason = this.clientsFailed.get(folder);
+                    } else if (this.workersFailed.has(folder)){
+                        reason = this.workersFailed.get(folder);
                     }
+                }
+                if (reason) {
+                    // send stopped event
+                    await this.webviewPanel?.api.serverStopped(reason);
                 } else {
                     await this.updateStatus(loc)
                 }
