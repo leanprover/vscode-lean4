@@ -63,6 +63,7 @@ export class LeanClientProvider implements Disposable {
                 const key = this.getKeyFromUri(folder.uri);
                 const client = this.clients.get(key);
                 if (client) {
+                    logger.log(`[ClientProvider] onDidChangeWorkspaceFolders removing client for ${key}`);
                     this.clients.delete(key);
                     this.versions.delete(key);
                     client.dispose();
@@ -296,6 +297,7 @@ export class LeanClientProvider implements Disposable {
 
             client.serverFailed((err) => {
                 // forget this client!
+                logger.log(`[ClientProvider] serverFailed, removing client for ${key}`);
                 const cached = this.clients.get(key);
                 this.clients.delete(key);
                 cached?.dispose();
