@@ -83,7 +83,7 @@ export class LeanInstaller implements Disposable {
             if (found.error === 'no default toolchain') {
                 await this.showToolchainOptions(packageUri)
             } else {
-                void this.showInstallOptions(packageUri);
+                await this.showInstallOptions(packageUri);
             }
         }
         return found;
@@ -497,15 +497,15 @@ export class LeanInstaller implements Disposable {
 
             if (process.platform === 'win32') {
                 terminal.sendText(
-                    `Invoke-WebRequest -Uri "${this.leanInstallerWindows}" -OutFile elan-init.ps1\n` +
-                    'Set-ExecutionPolicy -ExecutionPolicy Unrestricted -Scope Process\n' +
-                    `$rc = .\\elan-init.ps1 -NoPrompt 1 -DefaultToolchain ${this.defaultToolchain}\n` +
-                    'Write-Host "elan-init returned [$rc]"\n' +
-                    'del .\\elan-init.ps1\n' +
-                    'if ($rc -ne 0) {\n' +
-                    '    Read-Host -Prompt "Press ENTER to continue"\n' +
-                    '}\n' +
-                    'exit\n'
+                    `Invoke-WebRequest -Uri "${this.leanInstallerWindows}" -OutFile elan-init.ps1\r\n` +
+                    'Set-ExecutionPolicy -ExecutionPolicy Unrestricted -Scope Process\r\n' +
+                    `$rc = .\\elan-init.ps1 -NoPrompt 1 -DefaultToolchain ${this.defaultToolchain}\r\n` +
+                    'Write-Host "elan-init returned [$rc]"\r\n' +
+                    'del .\\elan-init.ps1\r\n' +
+                    'if ($rc -ne 0) {\r\n' +
+                    '    Read-Host -Prompt "Press ENTER to continue"\r\n' +
+                    '}\r\n' +
+                    'exit\r\n'
                     );
             }
             else {
