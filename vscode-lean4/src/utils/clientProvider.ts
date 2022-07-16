@@ -8,6 +8,7 @@ import * as path from 'path';
 import { findLeanPackageRoot } from './projectInfo';
 import { isFileInFolder } from './fsHelper';
 import { logger } from './logger'
+import { addDefaultElanPath, getDefaultElanPath, addToolchainBinPath, isElanDisabled, isRunningTest } from '../config'
 
 // This class ensures we have one LeanClient per workspace folder.
 export class LeanClientProvider implements Disposable {
@@ -40,41 +41,9 @@ export class LeanClientProvider implements Disposable {
         this.installer = installer;
         this.pkgService = pkgService;
 
-        installer.installChanged(async (uri: Uri) => {
-            // This Uri could be 'undefined' in the case of a selectToolChain "reset"
-            // Or it could be a package Uri in the case a lean package file was changed
-            // or it could be a document Uri in the case of a command from
-            // selectToolchainForActiveEditor.
-            logger.log(`[clientProvider] installChanged for ${uri}`);
-            const key = this.getKeyFromUri(uri);
-            const path = uri.toString();
-            if (this.testing.has(key)) {
-                logger.log(`Blocking re-entrancy on ${path}`);
-                return;
-            }
-            // avoid re-entrancy since testLeanVersion can take a while.
-            this.testing.set(key, true);
-            try {
-                // have to check again here in case elan install had --default-toolchain none.
-                const [workspaceFolder, folder, packageFileUri] = await findLeanPackageRoot(uri);
-                const packageUri = folder ? folder : Uri.from({scheme: 'untitled'});
-                logger.log('[clientProvider] testLeanVersion');
-                const version = await installer.testLeanVersion(packageUri);
-                if (version.version === '4') {
-                    logger.log('[clientProvider] got lean version 4');
-                    const [cached, client] = await this.ensureClient(uri, version);
-                    if (cached && client) {
-                        await client.restart();
-                    }
-                } else if (version.error) {
-                    logger.log(`[clientProvider] Lean version not ok: ${version.error}`);
-                }
-            } catch (e) {
-                logger.log(`[clientProvider] Exception checking lean version: ${e}`);
-            }
-            this.testing.delete(key);
-        });
-
+        // we must setup the installChanged event handler first before any didOpenEditor calls.
+        installer.installChanged(async (uri: Uri) => await this.onInstallChanged(uri));
+        installer.promptingInstall(async (uri: Uri) => await this.onPromptingInstall(uri));
         // Only change the document language for *visible* documents,
         // because this closes and then reopens the document.
         window.visibleTextEditors.forEach((e) => this.didOpenEditor(e.document));
@@ -107,6 +76,55 @@ export class LeanClientProvider implements Disposable {
         return this.activeClient;
     }
 
+    private async onInstallChanged(uri: Uri){
+        // This Uri could be 'undefined' in the case of a selectToolChain "reset"
+        // Or it could be a package Uri in the case a lean package file was changed
+        // or it could be a document Uri in the case of a command from
+        // selectToolchainForActiveEditor.
+        logger.log(`[clientProvider] installChanged for ${uri}`);
+        const key = this.getKeyFromUri(uri);
+        const path = uri.toString();
+        if (this.testing.has(key)) {
+            logger.log(`Blocking re-entrancy on ${path}`);
+            return;
+        }
+        // avoid re-entrancy since testLeanVersion can take a while.
+        this.testing.set(key, true);
+        try {
+            // have to check again here in case elan install had --default-toolchain none.
+            const [workspaceFolder, folder, packageFileUri] = await findLeanPackageRoot(uri);
+            const packageUri = folder ? folder : Uri.from({scheme: 'untitled'});
+            logger.log('[clientProvider] testLeanVersion');
+            const version = await this.installer.testLeanVersion(packageUri);
+            if (version.version === '4') {
+                logger.log('[clientProvider] got lean version 4');
+                const [cached, client] = await this.ensureClient(uri, version);
+                if (cached && client) {
+                    await client.restart();
+                }
+            } else if (version.error) {
+                logger.log(`[clientProvider] Lean version not ok: ${version.error}`);
+            }
+        } catch (e) {
+            logger.log(`[clientProvider] Exception checking lean version: ${e}`);
+        }
+        this.testing.delete(key);
+    }
+
+    private async onPromptingInstall(uri: Uri) : Promise<void> {
+        if (isRunningTest()){
+            // no prompt, just do it!
+            logger.log('Installing Lean via Elan during testing')
+            await this.installer.installElan();
+            if (isElanDisabled()) {
+                addToolchainBinPath(getDefaultElanPath());
+            } else {
+                addDefaultElanPath();
+            }
+            await this.onInstallChanged(uri);
+        }
+
+    }
     private getVisibleEditor(uri: Uri) : TextEditor | null {
         const path = uri.toString();
         for (const editor of window.visibleTextEditors) {
@@ -316,5 +334,4 @@ export class LeanClientProvider implements Disposable {
     dispose(): void {
         for (const s of this.subscriptions) { s.dispose(); }
     }
-
 }
