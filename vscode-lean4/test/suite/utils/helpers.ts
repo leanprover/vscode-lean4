@@ -343,7 +343,7 @@ export async function restartLeanServer(client: LeanClient, retries=60, delay=10
 
     while (count < retries){
         const index = stateChanges.indexOf('restarted');
-        if (index > 0) {
+        if (index >= 0) {
             break;
         }
         await sleep(delay);
