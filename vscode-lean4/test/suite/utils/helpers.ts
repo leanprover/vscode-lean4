@@ -63,6 +63,8 @@ export async function deleteAllText() : Promise<void> {
     await editor.edit((builder) => {
         builder.delete(new vscode.Range(new vscode.Position(0, 0), editor.document.lineAt(editor.document.lineCount-1).range.end));
     })
+    // make sure test is always run in predictable state, which is no file or folder open
+    await closeAllEditors();
 }
 
 export async function initLean4Untitled(contents: string) : Promise<vscode.Extension<Exports>>{
@@ -343,7 +345,7 @@ export async function restartLeanServer(client: LeanClient, retries=60, delay=10
 
     while (count < retries){
         const index = stateChanges.indexOf('restarted');
-        if (index >= 0) {
+        if (index > 0) {
             break;
         }
         await sleep(delay);
@@ -351,13 +353,10 @@ export async function restartLeanServer(client: LeanClient, retries=60, delay=10
     }
 
     // check we have no errors.
-    if (stateChanges.length === 0){
-        assert(false, 'restartServer did not fire any events')
-    }
-    const actual = stateChanges[stateChanges.length - 1];
-    const expected = 'restarted'
+    const actual = stateChanges.toString();
+    const expected = 'stopped,restarted'
     if (actual !== expected) {
-        logger.log('restartServer did not generate restarted event');
+        logger.log(`restartServer did not produce expected result: ${actual}`);
     }
     assert(actual === expected);
     return false;
