@@ -253,6 +253,7 @@ suite('Toolchain Test Suite', () => {
 
 		} finally {
 			// make sure we always switch back to original version!
+			logger.log(`switching toolchain back to original version ${originalContents}`);
 			fs.writeFileSync(toolchainFile, originalContents);
 		}
 
