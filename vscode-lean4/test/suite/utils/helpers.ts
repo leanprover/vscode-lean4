@@ -351,7 +351,7 @@ export async function restartLeanServer(client: LeanClient, retries=60, delay=10
     }
 
     // check we have no errors.
-    if (stateChanges.length == 0){
+    if (stateChanges.length === 0){
         assert(false, 'restartServer did not fire any events')
     }
     const actual = stateChanges[stateChanges.length - 1];
