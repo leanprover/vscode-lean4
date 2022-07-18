@@ -351,10 +351,13 @@ export async function restartLeanServer(client: LeanClient, retries=60, delay=10
     }
 
     // check we have no errors.
-    const actual = stateChanges.toString();
-    const expected = 'stopped,restarted'
+    if (stateChanges.length == 0){
+        assert(false, 'restartServer did not fire any events')
+    }
+    const actual = stateChanges[stateChanges.length - 1];
+    const expected = 'restarted'
     if (actual !== expected) {
-        logger.log(`restartServer did not produce expected result: ${actual}`);
+        logger.log(`restartServer did not generate restarted event`);
     }
     assert(actual === expected);
     return false;

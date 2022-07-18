@@ -226,7 +226,6 @@ suite('Toolchain Test Suite', () => {
 		// Now edit the lean-toolchain file.
 		const toolchainFile = path.join(testsRoot, 'lean-toolchain');
 		const originalContents = fs.readFileSync(toolchainFile, 'utf8').toString();
-		assert(originalContents.trim() === 'leanprover/lean4:nightly');
 
 		const version = getAltBuildVersion()
 		logger.log(`Switch to a alternate version ${version} by editing the toolchain file`);
@@ -263,6 +262,6 @@ suite('Toolchain Test Suite', () => {
 		// make sure test is always run in predictable state, which is no file or folder open
 		await closeAllEditors();
 
-	}).timeout(60000);
+	}).timeout(120000);
 
-}).timeout(60000);
+}).timeout(120000);
