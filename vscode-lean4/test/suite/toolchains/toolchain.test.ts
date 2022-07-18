@@ -52,7 +52,7 @@ suite('Toolchain Test Suite', () => {
 		// make sure test is always run in predictable state, which is no file or folder open
 		await closeAllEditors();
 
-	}).timeout(60000);
+	}).timeout(120000);
 
 	test('Worker crashed and client running - Restarting File (Refreshing dependencies)', async () => {
 		logger.log('=================== Test worker crashed and client running ===================');
@@ -96,7 +96,7 @@ suite('Toolchain Test Suite', () => {
 		// make sure test is always run in predictable state, which is no file or folder open
 		await closeAllEditors();
 
-	}).timeout(60000);
+	}).timeout(120000);
 
 	test('Untitled Select Toolchain', async () => {
 
@@ -127,7 +127,7 @@ suite('Toolchain Test Suite', () => {
 		// make sure test is always run in predictable state, which is no file or folder open
 		await closeAllEditors();
 
-	}).timeout(60000);
+	}).timeout(120000);
 
 	test('Restart Server', async () => {
 
@@ -162,7 +162,7 @@ suite('Toolchain Test Suite', () => {
 			// make sure test is always run in predictable state, which is no file or folder open
 			await closeAllEditors();
 		}
-	}).timeout(60000);
+	}).timeout(120000);
 
 	test('Select toolchain', async () => {
 		logger.log('=================== Test select toolchain ===================');
