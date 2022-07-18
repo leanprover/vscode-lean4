@@ -40,7 +40,7 @@ suite('Toolchain Test Suite', () => {
 		await assertStringInInfoview(info, expectedMessage);
 
 		logger.log('deleting the problematic string closing active editors and restarting the server')
-		await deleteAllText();
+		//await deleteAllText();
 		await insertText(`#eval "${hello}"`);
 		logger.log('Now invoke the restart server command')
 		client = assertActiveClient(clients);
@@ -84,7 +84,7 @@ suite('Toolchain Test Suite', () => {
 		await assertStringInInfoview(info, expectedMessage);
 
 		logger.log('deleting the problematic string closing active editors and restarting the server')
-		await deleteAllText();
+		//await deleteAllText();
 		await insertText(`#eval "${hello}"`);
 		logger.log('Now invoke the restart server command')
 		client = assertActiveClient(clients);
