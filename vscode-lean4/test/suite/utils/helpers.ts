@@ -63,8 +63,6 @@ export async function deleteAllText() : Promise<void> {
     await editor.edit((builder) => {
         builder.delete(new vscode.Range(new vscode.Position(0, 0), editor.document.lineAt(editor.document.lineCount-1).range.end));
     })
-    // make sure test is always run in predictable state, which is no file or folder open
-    await closeAllEditors();
 }
 
 export async function initLean4Untitled(contents: string) : Promise<vscode.Extension<Exports>>{
