@@ -168,7 +168,7 @@ suite('Toolchain Test Suite', () => {
 		logger.log('=================== Test select toolchain ===================');
 		void vscode.window.showInformationMessage('Running tests: ' + __dirname);
 
-        const testsRoot = path.join(__dirname, '..', '..', '..', '..', 'test', 'test-fixtures', 'simple');
+		const testsRoot = path.join(__dirname, '..', '..', '..', '..', 'test', 'test-fixtures', 'simple');
 		const lean = await initLean4(path.join(testsRoot, 'Main.lean'));
 
 		// verify we have a nightly build running in this folder.
@@ -176,7 +176,7 @@ suite('Toolchain Test Suite', () => {
 		assert(info, 'No InfoProvider export');
 		const expectedVersion = '4.0.0-nightly-';
 		const html = await waitForInfoviewHtml(info, expectedVersion);
-        const foundVersion = extractPhrase(html, expectedVersion, '\n')
+		const foundVersion = extractPhrase(html, expectedVersion, '\n')
 
 		await resetToolchain(lean.exports.clientProvider);
 
