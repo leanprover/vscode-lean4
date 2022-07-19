@@ -182,6 +182,7 @@ suite('Toolchain Test Suite', () => {
 
 		// Now switch toolchains (simple suite uses leanprover/lean4:nightly by default)
 		const version = getAltBuildVersion()
+		console.log(`Installing lean4 toolchain: leanprover/lean4:${version}`)
 		await vscode.commands.executeCommand('lean4.selectToolchain', `leanprover/lean4:${version}`);
 
 		// verify that we switched to different version
