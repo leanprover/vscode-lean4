@@ -227,6 +227,7 @@ suite('Toolchain Test Suite', () => {
 		// Now edit the lean-toolchain file.
 		const toolchainFile = path.join(testsRoot, 'lean-toolchain');
 		const originalContents = fs.readFileSync(toolchainFile, 'utf8').toString();
+		assert(originalContents.trim() === 'leanprover/lean4:nightly');
 
 		const version = getAltBuildVersion()
 		logger.log(`Switch to a alternate version ${version} by editing the toolchain file`);
