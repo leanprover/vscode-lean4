@@ -304,6 +304,7 @@ export class InfoProvider implements Disposable {
             }
         }
 
+        await this.webviewPanel?.api.serverStopped(undefined); // clear any server stopped state
         const folder = client.getWorkspaceFolder()
         for (const uri of this.workersFailed.keys()){
             if (uri.startsWith(folder)){
@@ -334,6 +335,7 @@ export class InfoProvider implements Disposable {
                 await this.onClientRestarted(client);
             }),
             client.restartedWorker(async (uri) => {
+                logger.log('[InfoProvider] got worker restarted event');
                 await this.onWorkerRestarted(uri);
             }),
             client.didSetLanguage(() => this.onLanguageChanged()),
@@ -616,7 +618,7 @@ export class InfoProvider implements Disposable {
                 const uri = window.activeTextEditor?.document.uri.toString() ?? '';
                 const folder = client.getWorkspaceFolder();
                 let reason : ServerStoppedReason | undefined;
-                if(this.clientsFailed.has(folder)){
+                if (this.clientsFailed.has(folder)){
                     reason = this.clientsFailed.get(folder);
                 } else if (this.workersFailed.has(uri)){
                     reason = this.workersFailed.get(uri);
