@@ -10,6 +10,94 @@ import { initLean4Untitled, initLean4, waitForInfoviewHtml, closeAllEditors, ass
 // Expects to be launched with folder: ${workspaceFolder}/vscode-lean4/test/suite/simple
 suite('Toolchain Test Suite', () => {
 
+	test('Worker crashed and client running - Restarting Lean Server', async () => {
+		logger.log('=================== Test worker crashed and client running ===================');
+		void vscode.window.showInformationMessage('Running tests: ' + __dirname);
+
+		// add normal values to initialize lean4 file
+		const hello = 'Hello World'
+		const lean = await initLean4Untitled(`#eval "${hello}"`);
+		const info = lean.exports.infoProvider;
+		assert(info, 'No InfoProvider export');
+
+		logger.log('make sure language server is up and running.');
+		await assertStringInInfoview(info, hello);
+
+		const clients = lean.exports.clientProvider;
+		assert(clients, 'No LeanClientProvider export');
+
+		logger.log('Insert eval that causes crash.')
+		await insertText('\n\n#eval (unsafeCast 0 : String)')
+
+		const expectedMessage = 'The Lean Server has stopped processing this file'
+		await assertStringInInfoview(info, expectedMessage);
+
+		logger.log('restart the server (without modifying the file, so it should crash again)')
+		let client = assertActiveClient(clients);
+		await restartLeanServer(client);
+
+		logger.log('Checking that it crashed again.')
+		await assertStringInInfoview(info, expectedMessage);
+
+		logger.log('deleting the problematic string closing active editors and restarting the server')
+		await deleteAllText();
+		await insertText(`#eval "${hello}"`);
+		logger.log('Now invoke the restart server command')
+		client = assertActiveClient(clients);
+		await restartLeanServer(client);
+
+		logger.log('checking that Hello World comes back after restart')
+		await assertStringInInfoview(info, hello);
+
+		// make sure test is always run in predictable state, which is no file or folder open
+		await closeAllEditors();
+
+	}).timeout(60000);
+
+	test('Worker crashed and client running - Restarting File (Refreshing dependencies)', async () => {
+		logger.log('=================== Test worker crashed and client running ===================');
+		void vscode.window.showInformationMessage('Running tests: ' + __dirname);
+
+		// add normal values to initialize lean4 file
+		const hello = 'Hello World'
+		const lean = await initLean4Untitled(`#eval "${hello}"`);
+		const info = lean.exports.infoProvider;
+		assert(info, 'No InfoProvider export');
+
+		logger.log('make sure language server is up and running.');
+		await assertStringInInfoview(info, hello);
+
+		const clients = lean.exports.clientProvider;
+		assert(clients, 'No LeanClientProvider export');
+
+		logger.log('Insert eval that causes crash.')
+		await insertText('\n\n#eval (unsafeCast 0 : String)')
+
+		const expectedMessage = 'The Lean Server has stopped processing this file'
+		await assertStringInInfoview(info, expectedMessage);
+
+		logger.log('restart the server (without modifying the file, so it should crash again)')
+		let client = assertActiveClient(clients);
+		await restartFile();
+
+		logger.log('Checking that it crashed again.')
+		await assertStringInInfoview(info, expectedMessage);
+
+		logger.log('deleting the problematic string closing active editors and restarting the server')
+		await deleteAllText();
+		await insertText(`#eval "${hello}"`);
+		logger.log('Now invoke the restart server command')
+		client = assertActiveClient(clients);
+		await restartFile();
+
+		logger.log('checking that Hello World comes back after restart')
+		await assertStringInInfoview(info, hello);
+
+		// make sure test is always run in predictable state, which is no file or folder open
+		await closeAllEditors();
+
+	}).timeout(60000);
+
 	test('Untitled Select Toolchain', async () => {
 
 		logger.log('=================== Untitled Select Toolchain ===================');
@@ -108,7 +196,7 @@ suite('Toolchain Test Suite', () => {
 
 		// make sure test is always run in predictable state, which is no file or folder open
 		await closeAllEditors();
-	}).timeout(120000);
+	}).timeout(60000);
 
 	test('Edit lean-toolchain version', async () => {
 
@@ -176,94 +264,6 @@ suite('Toolchain Test Suite', () => {
 		// make sure test is always run in predictable state, which is no file or folder open
 		await closeAllEditors();
 
-	}).timeout(120000);
+	}).timeout(60000);
 
-	test('Worker crashed and client running - Restarting Lean Server', async () => {
-		logger.log('=================== Test worker crashed and client running ===================');
-		void vscode.window.showInformationMessage('Running tests: ' + __dirname);
-
-		// add normal values to initialize lean4 file
-		const hello = 'Hello World'
-		const lean = await initLean4Untitled(`#eval "${hello}"`);
-		const info = lean.exports.infoProvider;
-		assert(info, 'No InfoProvider export');
-
-		logger.log('make sure language server is up and running.');
-		await assertStringInInfoview(info, hello);
-
-		const clients = lean.exports.clientProvider;
-		assert(clients, 'No LeanClientProvider export');
-
-		logger.log('Insert eval that causes crash.')
-		await insertText('\n\n#eval (unsafeCast 0 : String)')
-
-		const expectedMessage = 'The Lean Server has stopped processing this file'
-		await assertStringInInfoview(info, expectedMessage);
-
-		logger.log('restart the server (without modifying the file, so it should crash again)')
-		let client = assertActiveClient(clients);
-		await restartLeanServer(client);
-
-		logger.log('Checking that it crashed again.')
-		await assertStringInInfoview(info, expectedMessage);
-
-		logger.log('deleting the problematic string closing active editors and restarting the server')
-		await deleteAllText();
-		await insertText(`#eval "${hello}"`);
-		logger.log('Now invoke the restart server command')
-		client = assertActiveClient(clients);
-		await restartLeanServer(client);
-
-		logger.log('checking that Hello World comes back after restart')
-		await assertStringInInfoview(info, hello);
-
-		// make sure test is always run in predictable state, which is no file or folder open
-		await closeAllEditors();
-
-	}).timeout(120000);
-
-	test('Worker crashed and client running - Restarting File (Refreshing dependencies)', async () => {
-		logger.log('=================== Test worker crashed and client running ===================');
-		void vscode.window.showInformationMessage('Running tests: ' + __dirname);
-
-		// add normal values to initialize lean4 file
-		const hello = 'Hello World'
-		const lean = await initLean4Untitled(`#eval "${hello}"`);
-		const info = lean.exports.infoProvider;
-		assert(info, 'No InfoProvider export');
-
-		logger.log('make sure language server is up and running.');
-		await assertStringInInfoview(info, hello);
-
-		const clients = lean.exports.clientProvider;
-		assert(clients, 'No LeanClientProvider export');
-
-		logger.log('Insert eval that causes crash.')
-		await insertText('\n\n#eval (unsafeCast 0 : String)')
-
-		const expectedMessage = 'The Lean Server has stopped processing this file'
-		await assertStringInInfoview(info, expectedMessage);
-
-		logger.log('restart the server (without modifying the file, so it should crash again)')
-		let client = assertActiveClient(clients);
-		await restartFile();
-
-		logger.log('Checking that it crashed again.')
-		await assertStringInInfoview(info, expectedMessage);
-
-		logger.log('deleting the problematic string closing active editors and restarting the server')
-		await deleteAllText();
-		await insertText(`#eval "${hello}"`);
-		logger.log('Now invoke the restart server command')
-		client = assertActiveClient(clients);
-		await restartFile();
-
-		logger.log('checking that Hello World comes back after restart')
-		await assertStringInInfoview(info, hello);
-
-		// make sure test is always run in predictable state, which is no file or folder open
-		await closeAllEditors();
-
-	}).timeout(120000);
-
-}).timeout(120000);
+}).timeout(60000);
