@@ -107,7 +107,7 @@ suite('Toolchain Test Suite', () => {
 
 		// make sure test is always run in predictable state, which is no file or folder open
 		await closeAllEditors();
-	}).timeout(60000);
+	}).timeout(120000);
 
 	test('Edit lean-toolchain version', async () => {
 
@@ -175,6 +175,6 @@ suite('Toolchain Test Suite', () => {
 		// make sure test is always run in predictable state, which is no file or folder open
 		await closeAllEditors();
 
-	}).timeout(60000);
+	}).timeout(120000);
 
 }).timeout(60000);
