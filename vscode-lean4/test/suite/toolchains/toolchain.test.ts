@@ -113,6 +113,9 @@ suite('Toolchain Test Suite', () => {
 
 		const expectedVersion = '4.0.0-nightly-'
 		const html = await waitForInfoviewHtml(info, expectedVersion);
+		console.log('html: '+html)
+		console.log('expectedVersion: '+ expectedVersion)
+		console.log('info: '+info)
         const foundVersion = extractPhrase(html, expectedVersion, '\n')
 
 		const version = getAltBuildVersion()
