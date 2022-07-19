@@ -110,9 +110,8 @@ export class InfoProvider implements Disposable {
                         // ex codes related with worker exited or crashed
                         console.log(`The Lean Server has stopped processing this file: ${ex.message}`)
                         await this.onWorkerStopped(uri, client, {message:'The Lean Server has stopped processing this file: ', reason: ex.message as string})
-                    } else {
-                        // file updated, do nothing
                     }
+                    throw ex;
                 }
             }
             return undefined;
