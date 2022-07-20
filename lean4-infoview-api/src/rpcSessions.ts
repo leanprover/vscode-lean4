@@ -46,6 +46,7 @@ class RpcSessionForFile {
                 throw ex;
             }
         })();
+        this.sessionId.catch(() => {}); // silence uncaught exception warning
 
         // Here we hook into the JS GC and send release-reference notifications
         // whenever the GC finalizes a number of `RpcPtr`s. Requires ES2021.
