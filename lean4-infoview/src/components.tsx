@@ -14,6 +14,8 @@ export { ServerVersion } from './infoview/serverVersion';
 export { CodeWithInfos } from './infoview/rpcInterface';
 export { InteractiveCode, InteractiveCodeProps } from './infoview/interactiveCode';
 
+export * from './infoview/util';
+
 /** Display the given message data as interactive, pretty-printed text. */
 export function InteractiveMessageData({ pos, msg }: { pos: DocumentPosition, msg: MessageData }) {
     const rs = React.useContext(RpcContext)
