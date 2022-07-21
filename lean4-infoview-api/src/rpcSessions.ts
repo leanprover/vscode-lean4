@@ -19,7 +19,7 @@ export interface RpcServerIface {
 /**
  * An RPC session at a specific point in a file.
  * The Lean 4 RPC protocol requires every request to specify a position in the
- * file; only `@[serverRpcMethod]` declarations above this positions are callable.
+ * file; only `@[serverRpcMethod]` declarations above this position are callable.
  * Implementations of this interface bundle the position.
  */
 export interface RpcSessionAtPos {
