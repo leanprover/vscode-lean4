@@ -1,4 +1,4 @@
-import { RpcSessions, RpcCallParams, RpcReleaseParams, RpcSession } from '@lean4/infoview-api'
+import { RpcSessions, RpcCallParams, RpcReleaseParams, RpcSessionAtPos } from '@lean4/infoview-api'
 import * as React from 'react'
 import type { DidCloseTextDocumentParams, DocumentUri, TextDocumentPositionParams } from 'vscode-languageserver-protocol'
 import { EditorContext } from './contexts'
@@ -36,15 +36,15 @@ export function WithRpcSessions({ children }: { children: React.ReactNode }) {
     </RpcSessionsContext.Provider>
 }
 
-const fakeRpcSession: RpcSession =
+const fakeRpcSession: RpcSessionAtPos =
     {call: async () => { throw new Error('no rpc context set') }};
 
-export function useRpcSessionTdpp(pos: TextDocumentPositionParams): RpcSession {
+export function useRpcSessionTdpp(pos: TextDocumentPositionParams): RpcSessionAtPos {
     return React.useContext(RpcSessionsContext)?.connect(pos) || fakeRpcSession;
 }
 
-export function useRpcSessionDp(pos: DocumentPosition): RpcSession {
+export function useRpcSessionDp(pos: DocumentPosition): RpcSessionAtPos {
     return useRpcSessionTdpp(DocumentPosition.toTdpp(pos));
 }
 
-export const RpcContext = React.createContext<RpcSession>(fakeRpcSession)
+export const RpcContext = React.createContext<RpcSessionAtPos>(fakeRpcSession)

@@ -2,7 +2,7 @@ import * as React from 'react';
 import fastIsEqual from 'react-fast-compare';
 import { Location, DocumentUri, Diagnostic, DiagnosticSeverity, PublishDiagnosticsParams } from 'vscode-languageserver-protocol';
 
-import { LeanDiagnostic, RpcSession } from '@lean4/infoview-api';
+import { LeanDiagnostic, RpcSessionAtPos } from '@lean4/infoview-api';
 
 import { basename, escapeHtml, RangeHelpers, usePausableState, useEvent, addUniqueKeys, DocumentPosition, useServerNotificationState } from './util';
 import { ConfigContext, EditorContext, LspDiagnosticsContext, VersionContext } from './contexts';
@@ -171,7 +171,7 @@ export function WithLspDiagnosticsContext({children}: React.PropsWithChildren<{}
     return <LspDiagnosticsContext.Provider value={allDiags}>{children}</LspDiagnosticsContext.Provider>
 }
 
-export function useMessagesForFile(rs: RpcSession, uri: DocumentUri, line?: number): InteractiveDiagnostic[] {
+export function useMessagesForFile(rs: RpcSessionAtPos, uri: DocumentUri, line?: number): InteractiveDiagnostic[] {
     const sv = React.useContext(VersionContext)
     const lspDiags = React.useContext(LspDiagnosticsContext)
     const [diags, setDiags] = React.useState<InteractiveDiagnostic[]>([])
@@ -200,7 +200,7 @@ export function useMessagesForFile(rs: RpcSession, uri: DocumentUri, line?: numb
     return diags;
 }
 
-export function useMessagesFor(rs: RpcSession, pos: DocumentPosition): InteractiveDiagnostic[] {
+export function useMessagesFor(rs: RpcSessionAtPos, pos: DocumentPosition): InteractiveDiagnostic[] {
     const config = React.useContext(ConfigContext);
     return useMessagesForFile(rs, pos.uri, pos.line).filter(d => RangeHelpers.contains(d.range, pos, config.infoViewAllErrorsOnLine));
 }

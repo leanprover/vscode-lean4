@@ -22,7 +22,7 @@ export interface RpcServerIface {
  * file; only `@[serverRpcMethod]` declarations above this positions are callable.
  * Implementations of this interface bundle the position.
  */
-export interface RpcSession {
+export interface RpcSessionAtPos {
     call(method: string, params: any): Promise<any>;
 }
 
@@ -119,7 +119,7 @@ class RpcSessionForFile {
         }
     }
 
-    at(pos: TextDocumentPositionParams): RpcSession {
+    at(pos: TextDocumentPositionParams): RpcSessionAtPos {
         return { call: (method, params) => this.call(pos, method, params) };
     }
 }
@@ -144,13 +144,13 @@ export class RpcSessions {
     }
 
     /**
-     * Returns an `RpcSession` for the given position.
+     * Returns an `RpcSessionAtPos` for the given position.
      * Calling `connect` multiple times will return the same
      * session (with the same session ID).
      * A new session is only created if a fatal error occurs (i.e., the worker
      * crashes) or the session is closed manually (if the file is closed).
      */
-    connect(pos: TextDocumentPositionParams): RpcSession {
+    connect(pos: TextDocumentPositionParams): RpcSessionAtPos {
         return this.connectCore(pos.textDocument.uri).at(pos);
     }
 

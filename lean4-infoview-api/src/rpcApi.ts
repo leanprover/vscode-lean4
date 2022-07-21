@@ -7,7 +7,7 @@
 
 import type { LocationLink, TextDocumentPositionParams } from 'vscode-languageserver-protocol'
 import { LeanDiagnostic, RpcPtr } from './lspTypes'
-import { RpcSession } from './rpcSessions'
+import { RpcSessionAtPos } from './rpcSessions'
 
 /** A string where certain (possibly nested) substrings have been decorated with objects of type T. */
 export type TaggedText<T> =
@@ -60,11 +60,11 @@ export interface InteractiveGoals {
     goals: InteractiveGoal[]
 }
 
-export function getInteractiveGoals(rs: RpcSession, pos: TextDocumentPositionParams): Promise<InteractiveGoals | undefined> {
+export function getInteractiveGoals(rs: RpcSessionAtPos, pos: TextDocumentPositionParams): Promise<InteractiveGoals | undefined> {
     return rs.call('Lean.Widget.getInteractiveGoals', pos);
 }
 
-export function getInteractiveTermGoal(rs: RpcSession, pos: TextDocumentPositionParams): Promise<InteractiveGoal | undefined> {
+export function getInteractiveTermGoal(rs: RpcSessionAtPos, pos: TextDocumentPositionParams): Promise<InteractiveGoal | undefined> {
     return rs.call('Lean.Widget.getInteractiveTermGoal', pos);
 }
 
@@ -81,19 +81,19 @@ export interface LineRange {
     end: number;
 }
 
-export function getInteractiveDiagnostics(rs: RpcSession, lineRange?: LineRange): Promise<InteractiveDiagnostic[]> {
+export function getInteractiveDiagnostics(rs: RpcSessionAtPos, lineRange?: LineRange): Promise<InteractiveDiagnostic[]> {
     return rs.call('Lean.Widget.getInteractiveDiagnostics', {lineRange});
 }
 
-export function InteractiveDiagnostics_msgToInteractive(rs: RpcSession, msg: MessageData, indent: number): Promise<TaggedText<MsgEmbed>> {
+export function InteractiveDiagnostics_msgToInteractive(rs: RpcSessionAtPos, msg: MessageData, indent: number): Promise<TaggedText<MsgEmbed>> {
     return rs.call('Lean.Widget.InteractiveDiagnostics.msgToInteractive', {msg, indent})
 }
 
-export function InteractiveDiagnostics_infoToInteractive(rs: RpcSession, info: InfoWithCtx): Promise<InfoPopup> {
+export function InteractiveDiagnostics_infoToInteractive(rs: RpcSessionAtPos, info: InfoWithCtx): Promise<InfoPopup> {
     return rs.call('Lean.Widget.InteractiveDiagnostics.infoToInteractive', info);
 }
 
 export type GoToKind = 'declaration' | 'definition' | 'type'
-export function getGoToLocation(rs: RpcSession, kind: GoToKind, info: InfoWithCtx): Promise<LocationLink[]> {
+export function getGoToLocation(rs: RpcSessionAtPos, kind: GoToKind, info: InfoWithCtx): Promise<LocationLink[]> {
     return rs.call('Lean.Widget.getGoToLocation', { kind, info });
 }

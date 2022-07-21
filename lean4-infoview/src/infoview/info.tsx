@@ -6,7 +6,7 @@ import { basename, DocumentPosition, RangeHelpers, useEvent, usePausableState } 
 import { Details } from './collapsing';
 import { EditorContext, ProgressContext, VersionContext } from './contexts';
 import { MessagesList, useMessagesFor } from './messages';
-import { getInteractiveGoals, getInteractiveTermGoal, InteractiveDiagnostic, InteractiveGoal, InteractiveGoals, RpcSession } from '@lean4/infoview-api';
+import { getInteractiveGoals, getInteractiveTermGoal, InteractiveDiagnostic, InteractiveGoal, InteractiveGoals, RpcSessionAtPos } from '@lean4/infoview-api';
 import { updatePlainGoals, updateTermGoal } from './goalCompat';
 import { WithTooltipOnHover } from './tooltips'
 import { RpcContext, useRpcSessionDp } from './rpcSessions';
@@ -85,8 +85,8 @@ interface InfoDisplayProps extends InfoPinnable {
     goals?: InteractiveGoals;
     termGoal?: InteractiveGoal;
     error?: string;
-    rpcSess: RpcSession;
-    messagesRpcSess: RpcSession;
+    rpcSess: RpcSessionAtPos;
+    messagesRpcSess: RpcSessionAtPos;
     triggerUpdate: () => Promise<void>;
 }
 
@@ -297,7 +297,7 @@ function InfoAux(props: InfoProps) {
     // RPC session used for the update
     const rpcSess0 = useRpcSessionDp(pos);
     // RPC session used for the data in goals/termGoal
-    const [rpcSess, setRpcSess] = React.useState<RpcSession>(rpcSess0);
+    const [rpcSess, setRpcSess] = React.useState<RpcSessionAtPos>(rpcSess0);
 
     const messages = useMessagesFor(rpcSess, pos);
     const serverIsProcessing = useIsProcessingAt(pos);
