@@ -9,7 +9,7 @@ import { ConfigContext, EditorContext, LspDiagnosticsContext, VersionContext } f
 import { Details } from './collapsing';
 import { InteractiveMessage } from './traceExplorer';
 import { getInteractiveDiagnostics, InteractiveDiagnostic, TaggedText_stripTags } from '@lean4/infoview-api';
-import { RpcContext, useRpcSessionDp } from './rpcSessions';
+import { RpcContext, useRpcSessionAtPos } from './rpcSessions';
 
 interface MessageViewProps {
     uri: DocumentUri;
@@ -91,7 +91,7 @@ function lazy<T>(f: () => T): () => T {
 export function AllMessages({uri: uri0}: { uri: DocumentUri }) {
     const ec = React.useContext(EditorContext);
     const sv = React.useContext(VersionContext);
-    const rs0 = useRpcSessionDp({ uri: uri0, line: 0, character: 0 });
+    const rs0 = useRpcSessionAtPos({ uri: uri0, line: 0, character: 0 });
     const dc = React.useContext(LspDiagnosticsContext);
     const config = React.useContext(ConfigContext);
     const diags0 = dc.get(uri0) || [];

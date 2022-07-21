@@ -9,7 +9,7 @@ import { MessagesList, useMessagesFor } from './messages';
 import { getInteractiveGoals, getInteractiveTermGoal, InteractiveDiagnostic, InteractiveGoal, InteractiveGoals, RpcSessionAtPos } from '@lean4/infoview-api';
 import { updatePlainGoals, updateTermGoal } from './goalCompat';
 import { WithTooltipOnHover } from './tooltips'
-import { RpcContext, useRpcSessionDp } from './rpcSessions';
+import { RpcContext, useRpcSessionAtPos } from './rpcSessions';
 
 type InfoStatus = 'loading' | 'updating' | 'error' | 'ready';
 type InfoKind = 'cursor' | 'pin';
@@ -295,7 +295,7 @@ function InfoAux(props: InfoProps) {
     const [error, setError] = React.useState<string>();
 
     // RPC session used for the update
-    const rpcSess0 = useRpcSessionDp(pos);
+    const rpcSess0 = useRpcSessionAtPos(pos);
     // RPC session used for the data in goals/termGoal
     const [rpcSess, setRpcSess] = React.useState<RpcSessionAtPos>(rpcSess0);
 

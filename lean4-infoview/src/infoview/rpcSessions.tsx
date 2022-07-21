@@ -39,12 +39,12 @@ export function WithRpcSessions({ children }: { children: React.ReactNode }) {
 const fakeRpcSession: RpcSessionAtPos =
     {call: async () => { throw new Error('no rpc context set') }};
 
-export function useRpcSessionTdpp(pos: TextDocumentPositionParams): RpcSessionAtPos {
+export function useRpcSessionAtTdpp(pos: TextDocumentPositionParams): RpcSessionAtPos {
     return React.useContext(RpcSessionsContext)?.connect(pos) || fakeRpcSession;
 }
 
-export function useRpcSessionDp(pos: DocumentPosition): RpcSessionAtPos {
-    return useRpcSessionTdpp(DocumentPosition.toTdpp(pos));
+export function useRpcSessionAtPos(pos: DocumentPosition): RpcSessionAtPos {
+    return useRpcSessionAtTdpp(DocumentPosition.toTdpp(pos));
 }
 
 export const RpcContext = React.createContext<RpcSessionAtPos>(fakeRpcSession)
