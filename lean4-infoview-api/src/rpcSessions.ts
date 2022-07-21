@@ -23,7 +23,7 @@ export interface RpcServerIface {
  * Implementations of this interface bundle the position.
  */
 export interface RpcSessionAtPos {
-    call(method: string, params: any): Promise<any>;
+    call<T, S>(method: string, params: T): Promise<S>;
 }
 
 class RpcSessionForFile {

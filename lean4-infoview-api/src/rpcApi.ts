@@ -86,7 +86,11 @@ export function getInteractiveDiagnostics(rs: RpcSessionAtPos, lineRange?: LineR
 }
 
 export function InteractiveDiagnostics_msgToInteractive(rs: RpcSessionAtPos, msg: MessageData, indent: number): Promise<TaggedText<MsgEmbed>> {
-    return rs.call('Lean.Widget.InteractiveDiagnostics.msgToInteractive', {msg, indent})
+    interface MessageToInteractive {
+        msg: MessageData
+        indent: number
+    }
+    return rs.call<MessageToInteractive, TaggedText<MsgEmbed>>('Lean.Widget.InteractiveDiagnostics.msgToInteractive', {msg, indent})
 }
 
 export function InteractiveDiagnostics_infoToInteractive(rs: RpcSessionAtPos, info: InfoWithCtx): Promise<InfoPopup> {
@@ -95,5 +99,9 @@ export function InteractiveDiagnostics_infoToInteractive(rs: RpcSessionAtPos, in
 
 export type GoToKind = 'declaration' | 'definition' | 'type'
 export function getGoToLocation(rs: RpcSessionAtPos, kind: GoToKind, info: InfoWithCtx): Promise<LocationLink[]> {
-    return rs.call('Lean.Widget.getGoToLocation', { kind, info });
+    interface GetGoToLocationParams {
+        kind: GoToKind;
+        info: InfoWithCtx;
+    }
+    return rs.call<GetGoToLocationParams, LocationLink[]>('Lean.Widget.getGoToLocation', { kind, info });
 }
