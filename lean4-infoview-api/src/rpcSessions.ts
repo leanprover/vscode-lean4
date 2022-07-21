@@ -1,6 +1,14 @@
 import type { DocumentUri, TextDocumentPositionParams } from 'vscode-languageserver-protocol';
 import { RpcCallParams, RpcErrorCode, RpcPtr, RpcReleaseParams } from './lspTypes';
 
+/**
+ * Abstraction of the Lean server interface required for RPC communication.
+ *
+ * This interface can be implemented both in the infoview (relaying the LSP
+ * messages to the extension via webview RPC mechanism), as well as in the
+ * extension itself (directly sending the LSP messages via the
+ * `vscode-languageserver-node` library (TODO)).
+ */
 export interface RpcServerIface {
     /**
      * Creates an RPC session for the given uri and returns the session id.
