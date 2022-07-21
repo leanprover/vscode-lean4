@@ -81,15 +81,17 @@ class RpcSessionForFile {
         this.refsToRelease = [];
     }
 
-    register(o: any) {
+    /** Traverses an object received from the RPC server and registers all contained references
+     * for future garbage collection. */
+    registerRefs(o: any) {
         if (o instanceof Object) {
             if (Object.keys(o as {}).length === 1 && 'p' in o && typeof(o.p) !== 'object') {
                 this.finalizers.register(o as {}, RpcPtr.copy(o as RpcPtr<any>));
             } else {
-                for (const v of Object.values(o as {})) this.register(v);
+                for (const v of Object.values(o as {})) this.registerRefs(v);
             }
         } else if (o instanceof Array) {
-            for (const e of o) this.register(e);
+            for (const e of o) this.registerRefs(e);
         }
     }
 
@@ -108,7 +110,7 @@ class RpcSessionForFile {
         if (this.failed) throw this.failed;
         try {
             const result = await this.sessions.iface.call({ method, params, sessionId, ... pos });
-            this.register(result);
+            this.registerRefs(result);
             return result;
         } catch (ex: any) {
             if (ex?.code === RpcErrorCode.WorkerCrashed || ex?.code === RpcErrorCode.WorkerExited ||
