@@ -90,7 +90,18 @@ class RpcSessionForFile {
     }
 
     /** Traverses an object received from the RPC server and registers all contained references
-     * for future garbage collection. */
+     * for future garbage collection.
+     *
+     * The function implements a form of "conservative garbage collection" where
+     * it treats any subobject `{'p': v}` as a potential reference.  Therefore
+     * `p` should not be used as a field name on the Lean side to prevent false
+     * positives.
+     *
+     * It is unclear if the false positives will become a big issue.  Earlier
+     * versions of the extension had manually written registration functions for
+     * every type, but those are a lot of boilerplate.  If we change back to
+     * that approach, we should generate them automatically.
+     */
     registerRefs(o: any) {
         if (o instanceof Object) {
             if (Object.keys(o as {}).length === 1 && 'p' in o && typeof(o.p) !== 'object') {
