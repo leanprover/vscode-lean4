@@ -42,16 +42,7 @@ export class Rpc {
                     // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
                     this.sendMessage({ seqNum, result: await this.methods[name](...args) })
                 } catch (ex: any) {
-                    if (ex === undefined) {
-                        this.sendMessage({ seqNum, exception: 'error' })
-                        return
-                    }
-                    /* Certain properties (such as `ex.message`) are not /enumerable/ per ECMAScript
-                     * and disappear along the way through `Webview.postMessage`; we create a new object
-                     * so that they make it through. */
-                    const exOut: any = {}
-                    for (const p of Object.getOwnPropertyNames(ex)) { exOut[p] = ex[p] }
-                    this.sendMessage({ seqNum, exception: exOut })
+                    this.sendMessage({ seqNum, exception: prepareExceptionForSerialization(ex) })
                 }
             })()
         }
@@ -78,5 +69,20 @@ export class Rpc {
             get: (_, prop) => (...args: any[]) =>
                 this.invoke(prop as string, args)
         }) as any
+    }
+}
+
+function prepareExceptionForSerialization(ex: any): any {
+    if (ex === undefined) {
+        return 'error';
+    } else if (typeof ex === 'object' && !(ex instanceof Array)) {
+        /* Certain properties (such as `ex.message`) are not /enumerable/ per ECMAScript
+         * and disappear along the way through `Webview.postMessage`; we create a new object
+         * so that they make it through. */
+        const exOut: any = {}
+        for (const p of Object.getOwnPropertyNames(ex)) { exOut[p] = ex[p] }
+        return exOut;
+    } else {
+        return ex;
     }
 }
