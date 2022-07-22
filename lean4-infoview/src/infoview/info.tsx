@@ -4,11 +4,12 @@ import type { Location } from 'vscode-languageserver-protocol';
 import { Goals as GoalsUi, Goal as GoalUi, goalsToString, GoalFilterState } from './goals';
 import { basename, DocumentPosition, RangeHelpers, useEvent, usePausableState } from './util';
 import { Details } from './collapsing';
-import { EditorContext, ProgressContext, RpcContext, VersionContext } from './contexts';
+import { EditorContext, ProgressContext, VersionContext } from './contexts';
 import { MessagesList, useMessagesFor } from './messages';
-import { getInteractiveGoals, getInteractiveTermGoal, InteractiveDiagnostic, InteractiveGoal, InteractiveGoals } from './rpcInterface';
+import { getInteractiveGoals, getInteractiveTermGoal, InteractiveDiagnostic, InteractiveGoal, InteractiveGoals, RpcSessionAtPos } from '@lean4/infoview-api';
 import { updatePlainGoals, updateTermGoal } from './goalCompat';
 import { WithTooltipOnHover } from './tooltips'
+import { RpcContext, useRpcSessionAtPos } from './rpcSessions';
 
 type InfoStatus = 'loading' | 'updating' | 'error' | 'ready';
 type InfoKind = 'cursor' | 'pin';
@@ -84,6 +85,8 @@ interface InfoDisplayProps extends InfoPinnable {
     goals?: InteractiveGoals;
     termGoal?: InteractiveGoal;
     error?: string;
+    rpcSess: RpcSessionAtPos;
+    messagesRpcSess: RpcSessionAtPos;
     triggerUpdate: () => Promise<void>;
 }
 
@@ -102,7 +105,7 @@ export function InfoDisplay(props0: InfoDisplayProps) {
     };
     const [goalFilters, setGoalFilters] = React.useState<GoalFilterState>({ reverse: false, isType: true, isInstance: true, isHiddenAssumption: true});
 
-    const {kind, pos, status, messages, goals, termGoal, error} = props;
+    const {kind, pos, status, messages, goals, termGoal, error, rpcSess, messagesRpcSess} = props;
 
     const ec = React.useContext(EditorContext);
     let copyGoalToComment: (() => void) | undefined
@@ -166,6 +169,7 @@ export function InfoDisplay(props0: InfoDisplayProps) {
         </WithTooltipOnHover></span>
     /* Adding {' '} to manage string literals properly: https://reactjs.org/docs/jsx-in-depth.html#string-literals-1 */
     return (
+    <RpcContext.Provider value={rpcSess}>
     <Details initiallyOpen>
         <InfoStatusBar {...props} triggerUpdate={triggerDisplayUpdate} isPaused={isPaused} setPaused={setPaused} copyGoalToComment={copyGoalToComment} />
         <div className="ml1">
@@ -180,7 +184,7 @@ export function InfoDisplay(props0: InfoDisplayProps) {
                         Tactic state {sortButton} {filterButton}
                     </summary>
                     <div className='ml1'>
-                        {hasGoals && <GoalsUi pos={pos} goals={goals} filter={goalFilters} />}
+                        {hasGoals && <GoalsUi goals={goals} filter={goalFilters} />}
                     </div>
                 </Details>
             </div>
@@ -190,10 +194,11 @@ export function InfoDisplay(props0: InfoDisplayProps) {
                         Expected type {sortButton} {filterButton}
                     </summary>
                     <div className='ml1'>
-                        {hasTermGoal && <GoalUi pos={pos} goal={termGoal} filter={goalFilters} />}
+                        {hasTermGoal && <GoalUi goal={termGoal} filter={goalFilters} />}
                     </div>
                 </Details>
             </div>
+            <RpcContext.Provider value={messagesRpcSess}>
             <div style={{display: hasMessages ? 'block' : 'none'}}>
                 <Details initiallyOpen>
                     <summary className="mv2 pointer">
@@ -204,6 +209,7 @@ export function InfoDisplay(props0: InfoDisplayProps) {
                     </div>
                 </Details>
             </div>
+            </RpcContext.Provider>
             {nothingToShow && (
                 isPaused ?
                     /* Adding {' '} to manage string literals properly: https://reactjs.org/docs/jsx-in-depth.html#string-literals-1 */
@@ -215,6 +221,7 @@ export function InfoDisplay(props0: InfoDisplayProps) {
                     'No info found.')}
         </div>
     </Details>
+    </RpcContext.Provider>
     );
 }
 
@@ -278,7 +285,6 @@ export function Info(props: InfoProps) {
 function InfoAux(props: InfoProps) {
     const ec = React.useContext(EditorContext)
     const sv = React.useContext(VersionContext)
-    const rs = React.useContext(RpcContext);
 
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const pos = props.pos!;
@@ -288,12 +294,17 @@ function InfoAux(props: InfoProps) {
     const [termGoal, setTermGoal] = React.useState<InteractiveGoal>();
     const [error, setError] = React.useState<string>();
 
-    const messages = useMessagesFor(pos);
+    // RPC session used for the update
+    const rpcSess0 = useRpcSessionAtPos(pos);
+    // RPC session used for the data in goals/termGoal
+    const [rpcSess, setRpcSess] = React.useState<RpcSessionAtPos>(rpcSess0);
+
+    const messages = useMessagesFor(rpcSess, pos);
     const serverIsProcessing = useIsProcessingAt(pos);
 
     // We encapsulate `InfoDisplay` props in a single piece of state for atomicity, in particular
     // to avoid displaying a new position before the server has sent us all the goal state there.
-    const mkDisplayProps = () => ({ ...props, pos, goals, termGoal, error });
+    const mkDisplayProps = () => ({ ...props, pos, goals, termGoal, error, rpcSess });
     const [displayProps, setDisplayProps] = React.useState(mkDisplayProps());
     const [shouldUpdateDisplay, setShouldUpdateDisplay] = React.useState(false);
     if (shouldUpdateDisplay) {
@@ -307,8 +318,8 @@ function InfoAux(props: InfoProps) {
         let allReq
         if (sv?.hasWidgetsV1()) {
             // Start both goal requests before awaiting them.
-            const goalsReq = getInteractiveGoals(rs, pos);
-            const termGoalReq = getInteractiveTermGoal(rs, pos);
+            const goalsReq = getInteractiveGoals(rpcSess0, DocumentPosition.toTdpp(pos));
+            const termGoalReq = getInteractiveTermGoal(rpcSess0, DocumentPosition.toTdpp(pos));
             allReq = Promise.all([goalsReq, termGoalReq]);
         } else {
             const goalsReq = ec.requestPlainGoal(pos).then(gs => {
@@ -341,6 +352,7 @@ function InfoAux(props: InfoProps) {
             const [goals, termGoal] = await allReq;
             setGoals(goals);
             setTermGoal(termGoal);
+            setRpcSess(rpcSess0);
             setStatus('ready');
         } catch (err: any) {
             if (err?.code === -32801) {
@@ -355,6 +367,7 @@ function InfoAux(props: InfoProps) {
     React.useEffect(() => void triggerUpdate(), [pos.uri, pos.line, pos.character, serverIsProcessing]);
 
     return (
-        <InfoDisplay {...displayProps} status={status} messages={messages} triggerUpdate={triggerUpdate} />
+        <InfoDisplay {...displayProps} messages={messages} messagesRpcSess={rpcSess}
+             status={status} triggerUpdate={triggerUpdate} />
     );
 }
