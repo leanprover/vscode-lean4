@@ -25,10 +25,20 @@ export interface RpcServerIface {
 }
 
 /**
- * An RPC session at a specific point in a file.
- * The Lean 4 RPC protocol requires every request to specify a position in the
+ * An RPC session.  The session object gives access to all the
+ * `@[serverRpcMethod]`s available at the position it is initialized with.
+ * Morally it is a fixed set of `@[serverRpcMethod]`s together with the RPC
+ * reference state (as identified by the session ID on the wire).
+ *
+ * `RpcRef`s returned by calls from one `RpcSessionAtPos` may only be passed as
+ * arguments to RPC calls *on the same `RpcSessionAtPos` object*.
+ * Passing an `RpcRef` from one session to another is unsafe.
+ *
+ * (The Lean 4 RPC protocol requires every request to specify a position in the
  * file; only `@[serverRpcMethod]` declarations above this position are callable.
  * Implementations of this interface bundle the position.
+ * The position and session ID remain the same over the whole lifetime of the
+ * `RpcSessionAtPos` object.)
  */
 export interface RpcSessionAtPos {
     call<T, S>(method: string, params: T): Promise<S>;
