@@ -220,7 +220,6 @@ export function InfoDisplay(props0: InfoDisplayProps) {
                     </Details>
                 </div>
             )}
-            <div style={{display: hasMessages ? 'block' : 'none'}} key="messages">
             <RpcContext.Provider value={messagesRpcSess}>
             <div style={{display: hasMessages ? 'block' : 'none'}} key="messages">
                 <Details initiallyOpen>
@@ -345,7 +344,7 @@ function InfoAux(props: InfoProps) {
             UserWidgets | undefined
         ]>
         if (sv?.hasWidgetsV1()) {
-            // Start both goal requests before awaiting them.
+            // Start all requests before awaiting them.
             const goalsReq = getInteractiveGoals(rpcSess0, DocumentPosition.toTdpp(pos));
             const termGoalReq = getInteractiveTermGoal(rpcSess0, DocumentPosition.toTdpp(pos));
             const userWidgets = Widget_getWidgets(rpcSess0, pos).catch(discardMethodNotFound);
@@ -362,7 +361,7 @@ function InfoAux(props: InfoProps) {
             allReq = Promise.all([
                 goalsReq,
                 termGoalReq,
-                new Promise<undefined>(resolve => resolve(undefined))
+                undefined
             ]);
         }
 

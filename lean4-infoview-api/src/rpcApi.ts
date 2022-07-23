@@ -5,7 +5,7 @@
  * @module
  */
 
-import type { LocationLink, TextDocumentPositionParams } from 'vscode-languageserver-protocol'
+import type { LocationLink, Position, TextDocumentPositionParams } from 'vscode-languageserver-protocol'
 import { LeanDiagnostic, RpcPtr } from './lspTypes'
 import { RpcSessionAtPos } from './rpcSessions'
 
@@ -22,6 +22,7 @@ export interface SubexprInfo {
     subexprPos?: number
 }
 
+/** A piece of code pretty-printed with subexpression information by the Lean server. */
 export type CodeWithInfos = TaggedText<SubexprInfo>
 
 /** Information that should appear in a popup when clicking on a subexpression. */
@@ -131,8 +132,8 @@ export interface UserWidgets {
 }
 
 /** Given a position, returns all of the user-widgets on the infotree at this position. */
-export function Widget_getWidgets(rs: RpcSessions, pos: DocumentPosition): Promise<UserWidgets | undefined> {
-    return rs.call('Lean.Widget.getWidgets', DocumentPosition.toTdpp(pos))
+export function Widget_getWidgets(rs: RpcSessionAtPos, pos: Position): Promise<UserWidgets> {
+    return rs.call<Position, UserWidgets>('Lean.Widget.getWidgets', pos)
 }
 
 /** Code that should be dynamically loaded by the UserWidget component. */
@@ -147,6 +148,10 @@ export interface WidgetSource {
  *
  * We make the assumption that either the code doesn't exist, or it exists and does not change for the lifetime of the widget.
  */
-export function Widget_getWidgetSource(rs: RpcSessions, pos: DocumentPosition, hash: string): Promise<WidgetSource | undefined> {
-    return rs.call('Lean.Widget.getWidgetSource', { pos: DocumentPosition.toTdpp(pos), hash })
+export function Widget_getWidgetSource(rs: RpcSessionAtPos, pos: Position, hash: string): Promise<WidgetSource> {
+    interface GetWidgetSourceParams {
+        hash: string
+        pos: Position
+    }
+    return rs.call<GetWidgetSourceParams, WidgetSource>('Lean.Widget.getWidgetSource', { pos, hash })
 }

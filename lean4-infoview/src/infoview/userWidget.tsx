@@ -1,9 +1,9 @@
 import * as React from 'react';
 
-import { RpcContext } from './contexts';
+import { Widget_getWidgetSource, UserWidget, UserWidgetInstance } from '@lean4/infoview-api';
+import { RpcContext } from './rpcSessions';
 import { DocumentPosition, mapRpcError, useAsync } from './util';
 import { ErrorBoundary } from './errors';
-import { Widget_getWidgetSource, UserWidget, UserWidgetInstance } from './rpcInterface';
 
 function dynamicallyLoadComponent(hash: string, code: string) {
     return React.lazy(async () => {
@@ -13,7 +13,7 @@ function dynamicallyLoadComponent(hash: string, code: string) {
     })
 }
 
-const componentCache = new Map<string,  React.LazyExoticComponent<React.ComponentType<any>>>()
+const componentCache = new Map<string, React.LazyExoticComponent<React.ComponentType<any>>>()
 
 interface UserWidgetProps {
     pos: DocumentPosition
@@ -29,10 +29,6 @@ export function UserWidget({ pos, widget }: UserWidgetProps) {
                 return componentCache.get(hash)
             }
             const code = await Widget_getWidgetSource(rs, pos, hash)
-            if (!code) {
-                // This case happens when the relevant RPC session is not connected, a react rerender will be triggered.
-                throw new Error('Expected RPC session to be connected.')
-            }
             const component = dynamicallyLoadComponent(hash, code.sourcetext)
             componentCache.set(hash, component)
             return component
