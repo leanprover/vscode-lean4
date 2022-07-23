@@ -5,7 +5,7 @@
  * @module
  */
 
-import type { LocationLink, Position, TextDocumentPositionParams } from 'vscode-languageserver-protocol'
+import type { LocationLink, Position, Range, TextDocumentPositionParams } from 'vscode-languageserver-protocol'
 import { LeanDiagnostic, RpcPtr } from './lspTypes'
 import { RpcSessionAtPos } from './rpcSessions'
 
