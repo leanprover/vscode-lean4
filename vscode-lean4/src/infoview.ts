@@ -35,7 +35,7 @@ class RpcSession implements Disposable {
             try {
                 await client.sendNotification('$/lean/rpc/keepAlive', params)
             } catch (e) {
-                logger.log(`failed to send keepalive for ${uri}: ${e}`)
+                logger.log(`[InfoProvider] failed to send keepalive for ${uri}: ${e}`)
                 if (this.keepAliveInterval) clearInterval(this.keepAliveInterval)
             }
         }, keepAlivePeriodMs)
@@ -108,7 +108,7 @@ export class InfoProvider implements Disposable {
                 } catch (ex) {
                     if (ex.code === -32901 || ex.code === -32902) {
                         // ex codes related with worker exited or crashed
-                        console.log(`The Lean Server has stopped processing this file: ${ex.message}`)
+                        logger.log(`[InfoProvider]The Lean Server has stopped processing this file: ${ex.message}`)
                         await this.onWorkerStopped(uri, client, {message:'The Lean Server has stopped processing this file: ', reason: ex.message as string})
                     }
                     throw ex;
@@ -349,7 +349,7 @@ export class InfoProvider implements Disposable {
         await this.webviewPanel?.api.serverStopped(undefined); // clear any server stopped state
         if (this.workersFailed.has(uri)) {
             this.workersFailed.delete(uri)
-            logger.log('Restarting worker for file: ' + uri)
+            logger.log('[InfoProvider] Restarting worker for file: ' + uri)
         }
         await this.sendPosition();
     }
@@ -361,7 +361,7 @@ export class InfoProvider implements Disposable {
         if (!this.workersFailed.has(uri)) {
             this.workersFailed.set(uri, reason);
         }
-        console.log(`client crashed: ${uri}`)
+        logger.log(`[InfoProvider]client crashed: ${uri}`)
         await client.showRestartMessage(true);
     }
 
@@ -387,7 +387,7 @@ export class InfoProvider implements Disposable {
             if (!this.clientsFailed.has(key)) {
                 this.clientsFailed.set(key, reason);
             }
-            console.log(`client stopped: ${key}`)
+            logger.log(`[InfoProvider] client stopped: ${key}`)
             await client.showRestartMessage();
         }
     }
@@ -629,6 +629,8 @@ export class InfoProvider implements Disposable {
                 } else {
                     await this.updateStatus(loc)
                 }
+            } else {
+                logger.log('[InfoProvider] ### what does it mean to have sendPosition but no LeanClient for this document???')
             }
         } else {
             await this.updateStatus(loc)

@@ -133,6 +133,23 @@
             "preLaunchTask": "watchTest"
         },
         {
+            "name": "Extension Tests - restarts",
+            "type": "extensionHost",
+            "request": "launch",
+            "runtimeExecutable": "${execPath}",
+            "args": [
+                "--extensionDevelopmentPath=${workspaceFolder}/vscode-lean4",
+                "--extensionTestsPath=${workspaceFolder}/vscode-lean4/out/test/suite/index",
+                "${workspaceFolder}/vscode-lean4/test/test-fixtures/simple"
+            ],
+            "env": {
+                "TEST_FOLDER": "restarts"
+            },
+            "cwd": "${workspaceFolder}/vscode-lean4/out/",
+            "outFiles": ["${workspaceFolder}/vscode-lean4/out/test/suite/**/*.js"],
+            "preLaunchTask": "watchTest"
+        },
+        {
             "name": "Extension Tests - multi-folder",
             "type": "extensionHost",
             "request": "launch",

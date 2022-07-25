@@ -131,7 +131,7 @@ export class LeanClient implements Disposable {
     async restart(): Promise<void> {
         const startTime = Date.now()
 
-        logger.log('Restarting Lean Server')
+        logger.log('[LeanClient] Restarting Lean Server')
         if (this.isStarted()) {
             await this.stop()
         }
@@ -305,17 +305,17 @@ export class LeanClient implements Disposable {
             this.client.onDidChangeState(async (s) => {
                 // see https://github.com/microsoft/vscode-languageserver-node/issues/825
                 if (s.newState === State.Starting) {
-                    logger.log('client starting');
+                    logger.log('[LeanClient] starting');
                 } else if (s.newState === State.Running) {
                     const end = Date.now()
-                    logger.log(`client running, started in ', ${end - startTime} ms`);
+                    logger.log(`[LeanClient] running, started in ${end - startTime} ms`);
                     this.running = true; // may have been auto restarted after it failed.
                     if (!insideRestart) {
                         this.restartedEmitter.fire(undefined)
                     }
                 } else if (s.newState === State.Stopped) {
                     this.running = false;
-                    logger.log('client has stopped or it failed to start');
+                    logger.log('[LeanClient] has stopped or it failed to start');
                     if (!this.noPrompt){
                         // only raise this event and show the message if we are not the ones
                         // who called the stop() method.
@@ -444,7 +444,7 @@ export class LeanClient implements Disposable {
                 // this to throw an exception which then causes those tests to fail.
                 await this.client.stop();
             } catch (e) {
-                logger.log(`Error stopping language client: ${e}`)
+                logger.log(`[LeanClient] Error stopping language client: ${e}`)
             }
         }
 
@@ -472,7 +472,7 @@ export class LeanClient implements Disposable {
             return;
         }
         const uri = doc.uri.toString()
-        console.log(`Restarting File: ${uri}`)
+        logger.log(`[LeanClient] Restarting File: ${uri}`)
         // This causes a text document version number discontinuity. In
         // (didChange (oldVersion) => restartFile => didChange (newVersion))
         // the client emits newVersion = oldVersion + 1, despite the fact that the
@@ -544,7 +544,7 @@ export class LeanClient implements Disposable {
         const versionOptions = version ? ['+' + version, '--version'] : ['--version']
         const start = Date.now()
         const lakeVersion = await batchExecute(executable, versionOptions, this.folderUri?.fsPath, undefined);
-        logger.log(`Ran '${executable} ${versionOptions.join(' ')}' in ${Date.now() - start} ms`);
+        logger.log(`[LeanClient] Ran '${executable} ${versionOptions.join(' ')}' in ${Date.now() - start} ms`);
         const actual = this.extractVersion(lakeVersion)
         if (actual.compare('3.0.0') > 0) {
             return true;
