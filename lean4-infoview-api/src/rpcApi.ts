@@ -5,7 +5,7 @@
  * @module
  */
 
-import type { LocationLink, TextDocumentPositionParams } from 'vscode-languageserver-protocol'
+import type { LocationLink, Position, Range, TextDocumentPositionParams } from 'vscode-languageserver-protocol'
 import { LeanDiagnostic, RpcPtr } from './lspTypes'
 import { RpcSessionAtPos } from './rpcSessions'
 
@@ -22,6 +22,7 @@ export interface SubexprInfo {
     subexprPos?: number
 }
 
+/** A piece of code pretty-printed with subexpression information by the Lean server. */
 export type CodeWithInfos = TaggedText<SubexprInfo>
 
 /** Information that should appear in a popup when clicking on a subexpression. */
@@ -104,4 +105,53 @@ export function getGoToLocation(rs: RpcSessionAtPos, kind: GoToKind, info: InfoW
         info: InfoWithCtx;
     }
     return rs.call<GetGoToLocationParams, LocationLink[]>('Lean.Widget.getGoToLocation', { kind, info });
+}
+
+export interface UserWidget {
+    id: string;
+    /** Pretty user name. */
+    name: string;
+    /** A hash (provided by Lean) of the widgetSource's sourcetext.
+     * This is used to look up the WidgetSource object.
+     */
+    javascriptHash: string;
+}
+
+/** Represents an instance of a user widget that can be rendered.
+ * This is used as the input to the `UserWidget` component.
+ */
+export interface UserWidgetInstance extends UserWidget {
+    /** JSON object to be passed as props to the component */
+    props : any
+    range?: Range
+}
+
+/** The response type for the RPC call `Widget_getWidgets`. */
+export interface UserWidgets {
+    widgets : UserWidgetInstance[]
+}
+
+/** Given a position, returns all of the user-widgets on the infotree at this position. */
+export function Widget_getWidgets(rs: RpcSessionAtPos, pos: Position): Promise<UserWidgets> {
+    return rs.call<Position, UserWidgets>('Lean.Widget.getWidgets', pos)
+}
+
+/** Code that should be dynamically loaded by the UserWidget component. */
+export interface WidgetSource {
+    /** JavaScript sourcecode. Should be a plain JavaScript ESModule whose default export is
+     * the component to render.
+     */
+    sourcetext: string
+}
+
+/** Gets the static code for a given widget.
+ *
+ * We make the assumption that either the code doesn't exist, or it exists and does not change for the lifetime of the widget.
+ */
+export function Widget_getWidgetSource(rs: RpcSessionAtPos, pos: Position, hash: string): Promise<WidgetSource> {
+    interface GetWidgetSourceParams {
+        hash: string
+        pos: Position
+    }
+    return rs.call<GetWidgetSourceParams, WidgetSource>('Lean.Widget.getWidgetSource', { pos, hash })
 }

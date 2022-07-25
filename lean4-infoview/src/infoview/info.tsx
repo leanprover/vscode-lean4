@@ -2,13 +2,15 @@ import * as React from 'react';
 import type { Location } from 'vscode-languageserver-protocol';
 
 import { Goals as GoalsUi, Goal as GoalUi, goalsToString, GoalFilterState } from './goals';
-import { basename, DocumentPosition, RangeHelpers, useEvent, usePausableState } from './util';
+import { basename, DocumentPosition, RangeHelpers, useEvent, usePausableState, useClientNotificationEffect, discardMethodNotFound, mapRpcError } from './util';
 import { Details } from './collapsing';
 import { EditorContext, ProgressContext, VersionContext } from './contexts';
 import { MessagesList, useMessagesFor } from './messages';
-import { getInteractiveGoals, getInteractiveTermGoal, InteractiveDiagnostic, InteractiveGoal, InteractiveGoals, RpcSessionAtPos } from '@lean4/infoview-api';
+import { getInteractiveGoals, getInteractiveTermGoal, InteractiveDiagnostic, InteractiveGoal,
+    InteractiveGoals, UserWidgets, Widget_getWidgets, RpcSessionAtPos, isRpcError, RpcErrorCode } from '@lean4/infoview-api';
 import { updatePlainGoals, updateTermGoal } from './goalCompat';
 import { WithTooltipOnHover } from './tooltips'
+import { UserWidget } from './userWidget'
 import { RpcContext, useRpcSessionAtPos } from './rpcSessions';
 
 type InfoStatus = 'loading' | 'updating' | 'error' | 'ready';
@@ -85,6 +87,7 @@ interface InfoDisplayProps extends InfoPinnable {
     goals?: InteractiveGoals;
     termGoal?: InteractiveGoal;
     error?: string;
+    userWidgets?: UserWidgets;
     rpcSess: RpcSessionAtPos;
     messagesRpcSess: RpcSessionAtPos;
     triggerUpdate: () => Promise<void>;
@@ -103,9 +106,10 @@ export function InfoDisplay(props0: InfoDisplayProps) {
         await props0.triggerUpdate();
         setShouldRefresh(true);
     };
-    const [goalFilters, setGoalFilters] = React.useState<GoalFilterState>({ reverse: false, isType: true, isInstance: true, isHiddenAssumption: true});
+    const [goalFilters, setGoalFilters] = React.useState<GoalFilterState>(
+        { reverse: false, isType: true, isInstance: true, isHiddenAssumption: true});
 
-    const {kind, pos, status, messages, goals, termGoal, error, rpcSess, messagesRpcSess} = props;
+    const {kind, pos, status, messages, goals, termGoal, error, userWidgets, rpcSess, messagesRpcSess} = props;
 
     const ec = React.useContext(EditorContext);
     let copyGoalToComment: (() => void) | undefined
@@ -125,7 +129,12 @@ export function InfoDisplay(props0: InfoDisplayProps) {
         setPaused(isPaused => !isPaused);
     });
 
-    const nothingToShow = !error && !goals && !termGoal && messages.length === 0;
+    const rs = React.useContext(RpcContext);
+
+    const widgets = userWidgets && userWidgets.widgets
+    const hasWidget = (widgets !== undefined) && (widgets.length > 0)
+
+    const nothingToShow = !error && !goals && !termGoal && messages.length === 0 && !hasWidget;
 
     const hasError = status === 'error' && error;
     const hasGoals = status !== 'error' && goals;
@@ -174,11 +183,11 @@ export function InfoDisplay(props0: InfoDisplayProps) {
         <InfoStatusBar {...props} triggerUpdate={triggerDisplayUpdate} isPaused={isPaused} setPaused={setPaused} copyGoalToComment={copyGoalToComment} />
         <div className="ml1">
             {hasError &&
-                <div className="error">
+                <div className="error" key="errors">
                     Error updating:{' '}{error}.
                     <a className="link pointer dim" onClick={e => { e.preventDefault(); void triggerDisplayUpdate(); }}>{' '}Try again.</a>
                 </div>}
-            <div style={{display: hasGoals ? 'block' : 'none'}}>
+            <div style={{display: hasGoals ? 'block' : 'none'}} key="goals">
                 <Details initiallyOpen>
                     <summary className="mv2 pointer">
                         Tactic state {sortButton} {filterButton}
@@ -188,7 +197,7 @@ export function InfoDisplay(props0: InfoDisplayProps) {
                     </div>
                 </Details>
             </div>
-            <div style={{display: hasTermGoal ? 'block' : 'none'}}>
+            <div style={{display: hasTermGoal ? 'block' : 'none'}} key="term-goal">
                 <Details initiallyOpen>
                     <summary className="mv2 pointer">
                         Expected type {sortButton} {filterButton}
@@ -198,8 +207,21 @@ export function InfoDisplay(props0: InfoDisplayProps) {
                     </div>
                 </Details>
             </div>
+            {widgets && widgets.map(widget =>
+                <div style={{display: hasWidget ? 'block' : 'none'}}
+                     key={`widget::${widget.id}::${widget.range?.toString()}`}>
+                    <Details initiallyOpen>
+                        <summary className="mv2 pointer">
+                            {widget.name}
+                        </summary>
+                        <div className="ml1">
+                             <UserWidget pos={pos} widget={widget}/>
+                        </div>
+                    </Details>
+                </div>
+            )}
             <RpcContext.Provider value={messagesRpcSess}>
-            <div style={{display: hasMessages ? 'block' : 'none'}}>
+            <div style={{display: hasMessages ? 'block' : 'none'}} key="messages">
                 <Details initiallyOpen>
                     <summary className="mv2 pointer">
                         Messages ({messages.length})
@@ -292,6 +314,7 @@ function InfoAux(props: InfoProps) {
     const [status, setStatus] = React.useState<InfoStatus>('loading');
     const [goals, setGoals] = React.useState<InteractiveGoals>();
     const [termGoal, setTermGoal] = React.useState<InteractiveGoal>();
+    const [userWidgets, setUserWidgets] = React.useState<UserWidgets>();
     const [error, setError] = React.useState<string>();
 
     // RPC session used for the update
@@ -304,7 +327,7 @@ function InfoAux(props: InfoProps) {
 
     // We encapsulate `InfoDisplay` props in a single piece of state for atomicity, in particular
     // to avoid displaying a new position before the server has sent us all the goal state there.
-    const mkDisplayProps = () => ({ ...props, pos, goals, termGoal, error, rpcSess });
+    const mkDisplayProps = () => ({ ...props, pos, goals, termGoal, error, rpcSess, userWidgets });
     const [displayProps, setDisplayProps] = React.useState(mkDisplayProps());
     const [shouldUpdateDisplay, setShouldUpdateDisplay] = React.useState(false);
     if (shouldUpdateDisplay) {
@@ -315,12 +338,17 @@ function InfoAux(props: InfoProps) {
     const triggerUpdate = useDelayedThrottled(serverIsProcessing ? 500 : 50, async () => {
         setStatus('updating');
 
-        let allReq
+        let allReq : Promise<[
+            InteractiveGoals | undefined,
+            InteractiveGoal | undefined,
+            UserWidgets | undefined
+        ]>
         if (sv?.hasWidgetsV1()) {
-            // Start both goal requests before awaiting them.
+            // Start all requests before awaiting them.
             const goalsReq = getInteractiveGoals(rpcSess0, DocumentPosition.toTdpp(pos));
             const termGoalReq = getInteractiveTermGoal(rpcSess0, DocumentPosition.toTdpp(pos));
-            allReq = Promise.all([goalsReq, termGoalReq]);
+            const userWidgets = Widget_getWidgets(rpcSess0, pos).catch(discardMethodNotFound);
+            allReq = Promise.all([goalsReq, termGoalReq, userWidgets]);
         } else {
             const goalsReq = ec.requestPlainGoal(pos).then(gs => {
                 if (gs) return updatePlainGoals(gs)
@@ -330,36 +358,47 @@ function InfoAux(props: InfoProps) {
                 if (g) return updateTermGoal(g)
                 else return undefined
             }).catch(() => undefined) // ignore error on Lean version that don't support term goals yet
-            allReq = Promise.all([goalsReq, termGoalReq]);
-        }
-
-        function onError(err: any) {
-            const errS = typeof err === 'string' ? err : JSON.stringify(err);
-            // we need to check if this value is empty or not, because maybe we are assigning
-            // a message error with an empty error
-            if (errS === '{}' || errS === undefined) {
-                setError(undefined);
-            }
-            else {
-                setError(`Error fetching goals: ${errS}`);
-                setStatus('error');
-            }
+            allReq = Promise.all([
+                goalsReq,
+                termGoalReq,
+                undefined
+            ]);
         }
 
         try {
             // NB: it is important to await both reqs at once, otherwise
             // if both throw then one exception becomes unhandled.
-            const [goals, termGoal] = await allReq;
+            const [goals, termGoal, userWidgets] = await allReq;
             setGoals(goals);
             setTermGoal(termGoal);
+            setUserWidgets(userWidgets);
             setRpcSess(rpcSess0);
             setStatus('ready');
         } catch (err: any) {
-            if (err?.code === -32801) {
+            if (isRpcError(err) && err.code === RpcErrorCode.ContentModified) {
                 // Document has been changed since we made the request, try again
                 void triggerUpdate();
                 return;
-            } else { onError(err); }
+            }
+            let errorString : string;
+            if (typeof error === 'string') {
+                errorString = error
+            } else if (isRpcError(err)) {
+                errorString = mapRpcError(err).message
+            } else if (err instanceof Error) {
+                errorString = err.toString()
+            } else if (err === undefined || JSON.stringify(err) === '{}')  {
+                // we need to check if this value is empty or not, because maybe we are assigning
+                // a message error with an empty error
+                setError(undefined);
+                return;
+            } else {
+                // unrecognised error
+                errorString = `Unrecognised error: ${JSON.stringify(err)}`
+            }
+
+            setError(`Error fetching goals: ${errorString}`);
+            setStatus('error');
         }
         setShouldUpdateDisplay(true);
     });

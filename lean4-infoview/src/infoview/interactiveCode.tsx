@@ -146,10 +146,11 @@ function InteractiveCodeTag({tag: ct, fmt}: InteractiveTagProps<SubexprInfo>) {
   )
 }
 
-interface InteractiveCodeProps {
+export interface InteractiveCodeProps {
   fmt: CodeWithInfos
 }
 
+/** Displays a {@link CodeWithInfos} obtained via RPC from the Lean server. */
 export function InteractiveCode({fmt}: InteractiveCodeProps) {
   return <InteractiveTaggedText InnerTagUi={InteractiveCodeTag} fmt={fmt} />
 }
