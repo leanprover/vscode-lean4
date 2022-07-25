@@ -374,27 +374,27 @@ function InfoAux(props: InfoProps) {
             setUserWidgets(userWidgets);
             setRpcSess(rpcSess0);
             setStatus('ready');
-        } catch (err: any) {
-            if (isRpcError(err) && err.code === RpcErrorCode.ContentModified) {
+        } catch (ex: any) {
+            if (isRpcError(ex) && ex.code === RpcErrorCode.ContentModified) {
                 // Document has been changed since we made the request, try again
                 void triggerUpdate();
                 return;
             }
             let errorString : string;
-            if (typeof error === 'string') {
-                errorString = error
-            } else if (isRpcError(err)) {
-                errorString = mapRpcError(err).message
-            } else if (err instanceof Error) {
-                errorString = err.toString()
-            } else if (err === undefined || JSON.stringify(err) === '{}')  {
+            if (typeof ex === 'string') {
+                errorString = ex
+            } else if (isRpcError(ex)) {
+                errorString = mapRpcError(ex).message
+            } else if (ex instanceof Error) {
+                errorString = ex.toString()
+            } else if (ex === undefined || JSON.stringify(ex) === '{}')  {
                 // we need to check if this value is empty or not, because maybe we are assigning
                 // a message error with an empty error
                 setError(undefined);
                 return;
             } else {
                 // unrecognised error
-                errorString = `Unrecognised error: ${JSON.stringify(err)}`
+                errorString = `Unrecognised error: ${JSON.stringify(ex)}`
             }
 
             setError(`Error fetching goals: ${errorString}`);
