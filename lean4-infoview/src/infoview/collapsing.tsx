@@ -37,7 +37,8 @@ export function Details({initiallyOpen, children: [summary, ...children], setOpe
         }
     }, []);
     if (setOpenRef) setOpenRef.current = setOpen;
-    return <details ref={setupEventListener} open={isOpen}>
+    /* HACK: `as any` works around a bug in `@types/react` */
+    return <details ref={setupEventListener as any} open={isOpen}>
         {summary}
         { isOpen && children }
     </details>;

@@ -2,13 +2,14 @@ import * as React from 'react';
 import fastIsEqual from 'react-fast-compare';
 import { Location, DocumentUri, Diagnostic, DiagnosticSeverity, PublishDiagnosticsParams } from 'vscode-languageserver-protocol';
 
-import { LeanDiagnostic } from '@lean4/infoview-api';
+import { LeanDiagnostic, RpcSessionAtPos } from '@lean4/infoview-api';
 
 import { basename, escapeHtml, RangeHelpers, usePausableState, useEvent, addUniqueKeys, DocumentPosition, useServerNotificationState } from './util';
-import { ConfigContext, EditorContext, LspDiagnosticsContext, RpcContext, VersionContext } from './contexts';
+import { ConfigContext, EditorContext, LspDiagnosticsContext, VersionContext } from './contexts';
 import { Details } from './collapsing';
 import { InteractiveMessage } from './traceExplorer';
-import { getInteractiveDiagnostics, InteractiveDiagnostic, TaggedText_stripTags } from './rpcInterface';
+import { getInteractiveDiagnostics, InteractiveDiagnostic, TaggedText_stripTags } from '@lean4/infoview-api';
+import { RpcContext, useRpcSessionAtPos } from './rpcSessions';
 
 interface MessageViewProps {
     uri: DocumentUri;
@@ -46,7 +47,7 @@ const MessageView = React.memo(({uri, diag}: MessageViewProps) => {
         </summary>
         <div className="ml1">
             <pre className="font-code pre-wrap">
-                <InteractiveMessage pos={{uri: loc.uri, line: loc.range.start.line, character: loc.range.start.character}} fmt={diag.message} />
+                <InteractiveMessage fmt={diag.message} />
             </pre>
         </div>
     </details>
@@ -90,7 +91,7 @@ function lazy<T>(f: () => T): () => T {
 export function AllMessages({uri: uri0}: { uri: DocumentUri }) {
     const ec = React.useContext(EditorContext);
     const sv = React.useContext(VersionContext);
-    const rs = React.useContext(RpcContext);
+    const rs0 = useRpcSessionAtPos({ uri: uri0, line: 0, character: 0 });
     const dc = React.useContext(LspDiagnosticsContext);
     const config = React.useContext(ConfigContext);
     const diags0 = dc.get(uri0) || [];
@@ -98,8 +99,8 @@ export function AllMessages({uri: uri0}: { uri: DocumentUri }) {
     const iDiags0 = React.useMemo(() => lazy(async () => {
         if (sv?.hasWidgetsV1()) {
             try {
-                const diags = await getInteractiveDiagnostics(rs, { uri: uri0, line: 0, character: 0 });
-                if (diags && diags.length > 0) {
+                const diags = await getInteractiveDiagnostics(rs0);
+                if (diags.length > 0) {
                     return diags
                 }
             } catch (err: any) {
@@ -114,8 +115,8 @@ export function AllMessages({uri: uri0}: { uri: DocumentUri }) {
             }
         }
         return diags0.map(d => ({ ...(d as LeanDiagnostic), message: { text: d.message } }));
-    }), [sv, rs, uri0, diags0]);
-    const [isPaused, setPaused, [uri, diags, iDiags], _] = usePausableState(false, [uri0, diags0, iDiags0]);
+    }), [sv, rs0, uri0, diags0]);
+    const [isPaused, setPaused, [uri, rs, diags, iDiags], _] = usePausableState(false, [uri0, rs0, diags0, iDiags0]);
 
     // Fetch interactive diagnostics when we're entering the paused state
     // (if they haven't already been fetched before)
@@ -129,6 +130,7 @@ export function AllMessages({uri: uri0}: { uri: DocumentUri }) {
     });
 
     return (
+    <RpcContext.Provider value={rs}>
     <Details setOpenRef={setOpenRef as any} initiallyOpen={!config.infoViewAutoOpenShowGoal}>
         <summary className="mv2 pointer">
             All Messages ({diags.length})
@@ -141,6 +143,7 @@ export function AllMessages({uri: uri0}: { uri: DocumentUri }) {
         </summary>
         <AllMessagesBody uri={uri} messages={iDiags} />
     </Details>
+    </RpcContext.Provider>
     )
 }
 
@@ -168,8 +171,7 @@ export function WithLspDiagnosticsContext({children}: React.PropsWithChildren<{}
     return <LspDiagnosticsContext.Provider value={allDiags}>{children}</LspDiagnosticsContext.Provider>
 }
 
-export function useMessagesForFile(uri: DocumentUri, line?: number): InteractiveDiagnostic[] {
-    const rs = React.useContext(RpcContext)
+export function useMessagesForFile(rs: RpcSessionAtPos, uri: DocumentUri, line?: number): InteractiveDiagnostic[] {
     const sv = React.useContext(VersionContext)
     const lspDiags = React.useContext(LspDiagnosticsContext)
     const [diags, setDiags] = React.useState<InteractiveDiagnostic[]>([])
@@ -178,9 +180,9 @@ export function useMessagesForFile(uri: DocumentUri, line?: number): Interactive
         setDiags((lspDiags.get(uri) || []).map(d => ({ ...(d as LeanDiagnostic), message: { text: d.message } })));
         if (sv?.hasWidgetsV1()) {
             try {
-                const diags = await getInteractiveDiagnostics(rs, { uri, line: 0, character: 0 },
+                const diags = await getInteractiveDiagnostics(rs,
                     line ? { start: line, end: line + 1 } : undefined)
-                if (diags && diags.length > 0) {
+                if (diags.length > 0) {
                     // diags may be [] when lake fails
                     setDiags(diags)
                 }
@@ -194,11 +196,11 @@ export function useMessagesForFile(uri: DocumentUri, line?: number): Interactive
             }
         }
     }
-    React.useEffect(() => void updateDiags(), [uri, line, rs.sessionIdAt(uri), lspDiags.get(uri)])
+    React.useEffect(() => void updateDiags(), [uri, line, rs, lspDiags.get(uri)])
     return diags;
 }
 
-export function useMessagesFor(pos: DocumentPosition): InteractiveDiagnostic[] {
+export function useMessagesFor(rs: RpcSessionAtPos, pos: DocumentPosition): InteractiveDiagnostic[] {
     const config = React.useContext(ConfigContext);
-    return useMessagesForFile(pos.uri, pos.line).filter(d => RangeHelpers.contains(d.range, pos, config.infoViewAllErrorsOnLine));
+    return useMessagesForFile(rs, pos.uri, pos.line).filter(d => RangeHelpers.contains(d.range, pos, config.infoViewAllErrorsOnLine));
 }

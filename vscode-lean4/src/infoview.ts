@@ -24,7 +24,7 @@ async function rpcConnect(client: LeanClient, uri: ls.DocumentUri): Promise<stri
     return result.sessionId;
 }
 
-class RpcSession implements Disposable {
+class RpcSessionAtPos implements Disposable {
     keepAliveInterval?: NodeJS.Timeout;
     client : LeanClient;
 
@@ -61,7 +61,7 @@ export class InfoProvider implements Disposable {
     private serverNotifSubscriptions: Map<string, [number, Disposable[]]> = new Map();
     private clientNotifSubscriptions: Map<string, [number, Disposable[]]> = new Map();
 
-    private rpcSessions: Map<string, RpcSession> = new Map();
+    private rpcSessions: Map<string, RpcSessionAtPos> = new Map();
 
     // the key is the LeanClient.getWorkspaceFolder()
     private clientsFailed: Map<string, ServerStoppedReason> = new Map();
@@ -225,7 +225,7 @@ export class InfoProvider implements Disposable {
             const client = this.clientProvider.findClient(uri);
             if (!client) return '';
             const sessionId = await rpcConnect(client, uri);
-            const session = new RpcSession(client, sessionId, uri);
+            const session = new RpcSessionAtPos(client, sessionId, uri);
             if (!this.webviewPanel) {
                 session.dispose();
                 throw Error('infoview disconnect while connecting to RPC session');

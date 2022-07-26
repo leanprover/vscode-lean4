@@ -7,6 +7,7 @@
         "outDir": "out",
         "lib": [
            "es6",
+           "ES2021",
            "es2020.string"
         ],
         "sourceMap": true,

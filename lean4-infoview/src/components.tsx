@@ -1,27 +1,31 @@
 import * as React from 'react';
 
-import { InteractiveDiagnostics_msgToInteractive, MessageData } from './infoview/rpcInterface';
+import { InteractiveDiagnostics_msgToInteractive, MessageData } from '@lean4/infoview-api';
 import { InteractiveMessage } from './infoview/traceExplorer';
-import { DocumentPosition, useAsync, mapRpcError } from './infoview/util';
-import { RpcContext } from './infoview/contexts';
+import { useAsync, mapRpcError } from './infoview/util';
+import { RpcContext } from './infoview/rpcSessions';
 
-export { DocumentPosition };
-export { EditorContext, RpcContext, VersionContext } from './infoview/contexts';
+export * from '@lean4/infoview-api';
+export * from './infoview/util';
+export { EditorContext, VersionContext } from './infoview/contexts';
 export { EditorConnection } from './infoview/editorConnection';
-export { RpcSessions } from './infoview/rpcSessions';
+export { RpcContext } from './infoview/rpcSessions';
 export { ServerVersion } from './infoview/serverVersion';
 
+export { InteractiveCode, InteractiveCodeProps } from './infoview/interactiveCode';
+
+
 /** Display the given message data as interactive, pretty-printed text. */
-export function InteractiveMessageData({ pos, msg }: { pos: DocumentPosition, msg: MessageData }) {
+export function InteractiveMessageData({ msg }: { msg: MessageData }) {
     const rs = React.useContext(RpcContext)
 
     const [status, tt, error] = useAsync(
-        () => InteractiveDiagnostics_msgToInteractive(rs, pos, msg, 0),
-        [pos.character, pos.line, pos.uri, msg]
+        () => InteractiveDiagnostics_msgToInteractive(rs, msg, 0),
+        [rs, msg]
     )
 
     if (tt) {
-        return <InteractiveMessage pos={pos} fmt={tt} />
+        return <InteractiveMessage fmt={tt} />
     } else if (status === 'pending') {
         return <>...</>
     } else {
