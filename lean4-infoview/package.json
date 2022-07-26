@@ -1,7 +1,7 @@
 {
-  "name": "@lean4/infoview",
+  "name": "@leanprover/infoview",
   "version": "0.1.0",
-  "description": "An interactive display for the Lean 4 theorem prover",
+  "description": "An interactive display for the Lean 4 theorem prover.",
   "scripts": {
     "watch": "rollup --config --environment NODE_ENV:development --watch",
     "watchTest": "npm run watch",
@@ -29,7 +29,7 @@
     "@types/marked": "^4.0.3"
   },
   "dependencies": {
-    "@lean4/infoview-api": "^0.1.0",
+    "@leanprover/infoview-api": "^0.1.0",
     "@vscode/codicons": "0.0.28",
     "react-fast-compare": "^3.2.0",
     "tachyons": "^4.12.0",

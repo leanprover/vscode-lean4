@@ -7,7 +7,7 @@ import '@vscode/codicons/dist/codicon.ttf';
 import '@vscode/codicons/dist/codicon.css';
 import './index.css';
 
-import { LeanFileProgressParams, LeanFileProgressProcessingInfo, defaultInfoviewConfig, EditorApi, InfoviewApi } from '@lean4/infoview-api';
+import { LeanFileProgressParams, LeanFileProgressProcessingInfo, defaultInfoviewConfig, EditorApi, InfoviewApi } from '@leanprover/infoview-api';
 
 import { Infos } from './infos';
 import { AllMessages, WithLspDiagnosticsContext } from './messages';

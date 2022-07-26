@@ -5,7 +5,7 @@ import {
     Selection, TextEditor, TextEditorRevealType,
     Uri, ViewColumn, WebviewPanel, window, workspace, env, Position,
 } from 'vscode';
-import { EditorApi, InfoviewApi, LeanFileProgressParams, TextInsertKind, RpcConnectParams, RpcConnected, RpcKeepAliveParams } from '@lean4/infoview-api';
+import { EditorApi, InfoviewApi, LeanFileProgressParams, TextInsertKind, RpcConnectParams, RpcConnected, RpcKeepAliveParams } from '@leanprover/infoview-api';
 import { LeanClient } from './leanclient';
 import { getEditorLineHeight, getInfoViewAllErrorsOnLine, getInfoViewAutoOpen, getInfoViewAutoOpenShowGoal,
     getInfoViewStyle, minIfProd, prodOrDev } from './config';
@@ -676,7 +676,7 @@ export class InfoProvider implements Disposable {
                 <script type="importmap-shim">
                     {
                         "imports": {
-                            "@lean4/infoview": "${this.getLocalPath(`dist/lean4-infoview/index${libPostfix}`)}",
+                            "@leanprover/infoview": "${this.getLocalPath(`dist/lean4-infoview/index${libPostfix}`)}",
                             "react": "${this.getLocalPath(`dist/react/react${libPostfix}`)}",
                             "react-dom": "${this.getLocalPath(`dist/react-dom/react-dom${libPostfix}`)}",
                             "react-popper": "${this.getLocalPath(`dist/lean4-infoview/react-popper${libPostfix}`)}"

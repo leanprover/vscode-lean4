@@ -1,5 +1,5 @@
 {
-  "name": "@lean4/repo",
+  "name": "@leanprover/vscode-lean4-repo",
   "private": true,
   "scripts": {
     "build": "lerna run build",
