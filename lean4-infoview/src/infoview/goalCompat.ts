@@ -1,4 +1,4 @@
-import { InteractiveGoal, InteractiveGoals, InteractiveHypothesisBundle, PlainGoal, PlainTermGoal } from '@lean4/infoview-api';
+import { InteractiveGoal, InteractiveGoals, InteractiveHypothesisBundle, PlainGoal, PlainTermGoal } from '@leanprover/infoview-api';
 
 function getGoals(plainGoals: PlainGoal): string[] {
     if (plainGoals.goals) return plainGoals.goals

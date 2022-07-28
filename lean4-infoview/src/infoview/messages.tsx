@@ -2,13 +2,13 @@ import * as React from 'react';
 import fastIsEqual from 'react-fast-compare';
 import { Location, DocumentUri, Diagnostic, DiagnosticSeverity, PublishDiagnosticsParams } from 'vscode-languageserver-protocol';
 
-import { LeanDiagnostic, RpcSessionAtPos } from '@lean4/infoview-api';
+import { LeanDiagnostic, RpcSessionAtPos } from '@leanprover/infoview-api';
 
 import { basename, escapeHtml, RangeHelpers, usePausableState, useEvent, addUniqueKeys, DocumentPosition, useServerNotificationState } from './util';
 import { ConfigContext, EditorContext, LspDiagnosticsContext, VersionContext } from './contexts';
 import { Details } from './collapsing';
 import { InteractiveMessage } from './traceExplorer';
-import { getInteractiveDiagnostics, InteractiveDiagnostic, TaggedText_stripTags } from '@lean4/infoview-api';
+import { getInteractiveDiagnostics, InteractiveDiagnostic, TaggedText_stripTags } from '@leanprover/infoview-api';
 import { RpcContext, useRpcSessionAtPos } from './rpcSessions';
 
 interface MessageViewProps {

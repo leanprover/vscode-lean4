@@ -10,7 +10,7 @@
 import * as React from 'react'
 import { Goal } from './goals'
 import { InteractiveCode, InteractiveTaggedText, InteractiveTagProps, InteractiveTextComponentProps } from './interactiveCode'
-import { InteractiveDiagnostics_msgToInteractive, MessageData, MsgEmbed, TaggedText } from '@lean4/infoview-api'
+import { InteractiveDiagnostics_msgToInteractive, MessageData, MsgEmbed, TaggedText } from '@leanprover/infoview-api'
 import { mapRpcError } from './util'
 import { RpcContext } from './rpcSessions'
 

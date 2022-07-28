@@ -1,7 +1,7 @@
 import * as React from 'react'
 import { DocumentPosition } from './util'
 import { InteractiveCode } from './interactiveCode'
-import { InteractiveGoal, InteractiveGoals, InteractiveHypothesisBundle, InteractiveHypothesisBundle_accessibleNames, TaggedText_stripTags } from '@lean4/infoview-api'
+import { InteractiveGoal, InteractiveGoals, InteractiveHypothesisBundle, InteractiveHypothesisBundle_accessibleNames, TaggedText_stripTags } from '@leanprover/infoview-api'
 
 interface HypProps {
     hyp: InteractiveHypothesisBundle

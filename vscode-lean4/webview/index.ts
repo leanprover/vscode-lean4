@@ -1,4 +1,4 @@
-import { renderInfoview, EditorApi } from '@lean4/infoview';
+import { renderInfoview, EditorApi } from '@leanprover/infoview';
 import { Rpc } from '../src/rpc';
 
 const vscodeApi = acquireVsCodeApi();

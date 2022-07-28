@@ -2,7 +2,7 @@
 import * as React from 'react';
 import type { DocumentUri, Position, Range, TextDocumentPositionParams } from 'vscode-languageserver-protocol';
 
-import { isRpcError, RpcErrorCode } from '@lean4/infoview-api';
+import { isRpcError, RpcErrorCode } from '@leanprover/infoview-api';
 
 import { Event } from './event';
 import { EditorContext } from './contexts';

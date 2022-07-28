@@ -2,7 +2,7 @@ import * as React from 'react'
 
 import { EditorContext } from './contexts'
 import { DocumentPosition, useAsync, mapRpcError } from './util'
-import { SubexprInfo, CodeWithInfos, InteractiveDiagnostics_infoToInteractive, getGoToLocation, TaggedText } from '@lean4/infoview-api'
+import { SubexprInfo, CodeWithInfos, InteractiveDiagnostics_infoToInteractive, getGoToLocation, TaggedText } from '@leanprover/infoview-api'
 import { DetectHoverSpan, HoverState, WithTooltipOnHover } from './tooltips'
 import { Location } from 'vscode-languageserver-protocol'
 import { marked } from 'marked'

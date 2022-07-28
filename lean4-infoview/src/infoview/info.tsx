@@ -7,7 +7,7 @@ import { Details } from './collapsing';
 import { EditorContext, ProgressContext, VersionContext } from './contexts';
 import { MessagesList, useMessagesFor } from './messages';
 import { getInteractiveGoals, getInteractiveTermGoal, InteractiveDiagnostic, InteractiveGoal,
-    InteractiveGoals, UserWidgets, Widget_getWidgets, RpcSessionAtPos, isRpcError, RpcErrorCode } from '@lean4/infoview-api';
+    InteractiveGoals, UserWidgets, Widget_getWidgets, RpcSessionAtPos, isRpcError, RpcErrorCode } from '@leanprover/infoview-api';
 import { updatePlainGoals, updateTermGoal } from './goalCompat';
 import { WithTooltipOnHover } from './tooltips'
 import { UserWidget } from './userWidget'

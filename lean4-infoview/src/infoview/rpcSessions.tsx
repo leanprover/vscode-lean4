@@ -1,4 +1,4 @@
-import { RpcSessions, RpcCallParams, RpcReleaseParams, RpcSessionAtPos } from '@lean4/infoview-api'
+import { RpcSessions, RpcCallParams, RpcReleaseParams, RpcSessionAtPos } from '@leanprover/infoview-api'
 import * as React from 'react'
 import type { DidCloseTextDocumentParams, DocumentUri, TextDocumentPositionParams } from 'vscode-languageserver-protocol'
 import { EditorContext } from './contexts'

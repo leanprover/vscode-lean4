@@ -1,6 +1,6 @@
 import * as React from 'react';
 
-import { Widget_getWidgetSource, UserWidget, UserWidgetInstance } from '@lean4/infoview-api';
+import { Widget_getWidgetSource, UserWidget, UserWidgetInstance } from '@leanprover/infoview-api';
 import { RpcContext } from './rpcSessions';
 import { DocumentPosition, mapRpcError, useAsync } from './util';
 import { ErrorBoundary } from './errors';
