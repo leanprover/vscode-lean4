@@ -30,6 +30,7 @@ import { logger } from './utils/logger'
 import { SemVer } from 'semver';
 import { fileExists, isFileInFolder } from './utils/fsHelper';
 import { c2pConverter, p2cConverter, patchConverters } from './utils/converters'
+import { TempFolder } from './utils/tempFolder'
 
 const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
@@ -49,6 +50,7 @@ export class LeanClient implements Disposable {
     private folderUri: Uri;
     private subscriptions: Disposable[] = []
     private noPrompt : boolean = false;
+    private tempFolder : TempFolder | undefined;
     private showingRestartMessage : boolean = false;
 
     private didChangeEmitter = new EventEmitter<DidChangeTextDocumentParams>()
@@ -182,17 +184,29 @@ export class LeanClient implements Disposable {
         }
 
         // Add folder name to command-line so that it shows up in `ps aux`.
-        if (this.folderUri) {
+        if (this.folderUri && this.folderUri.fsPath) {
             options.push('' + this.folderUri.fsPath)
         } else {
             options.push('untitled')
+        }
+
+        let cwd = this.folderUri?.fsPath
+        if (!cwd){
+            // Fixes issue #227, must have a cwd even for adhoc files so it does not pickup a default
+            // lean version from the current open workspace.  Instead we want lean to use the elan default
+            // toolchain in this case and so pointing to an empty temp folder as cwd achieves this.
+            if (!this.tempFolder){
+                this.tempFolder = new TempFolder('lean4_untitiled');
+                this.subscriptions.push(this.tempFolder);
+            }
+            cwd = this.tempFolder.folder;
         }
 
         const serverOptions: ServerOptions = {
             command: executable,
             args: options.concat(serverArgs()),
             options: {
-                cwd: this.folderUri?.fsPath,
+                cwd,
                 env
             }
         }
