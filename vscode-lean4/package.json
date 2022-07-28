@@ -115,6 +115,11 @@
 					"description": "Path to the directory where Lean 4 server log files are stored.",
 					"scope": "machine-overridable"
 				},
+				"lean4.autofocusOutput": {
+					"type": "boolean",
+					"default": false,
+					"description": "Automatically show the Output panel when the Lean 4 server prints a new message."
+				},
 				"lean4.infoViewAllErrorsOnLine": {
 					"type": "boolean",
 					"default": true,
