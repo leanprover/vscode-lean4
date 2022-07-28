@@ -5,7 +5,8 @@ import {
     Selection, TextEditor, TextEditorRevealType,
     Uri, ViewColumn, WebviewPanel, window, workspace, env, Position,
 } from 'vscode';
-import { EditorApi, InfoviewApi, LeanFileProgressParams, TextInsertKind, RpcConnectParams, RpcConnected, RpcKeepAliveParams } from '@leanprover/infoview-api';
+import { EditorApi, InfoviewApi, LeanFileProgressParams, TextInsertKind,
+    RpcConnectParams, RpcConnected, RpcKeepAliveParams, ServerStoppedReason } from '@leanprover/infoview-api';
 import { LeanClient } from './leanclient';
 import { getEditorLineHeight, getInfoViewAllErrorsOnLine, getInfoViewAutoOpen, getInfoViewAutoOpenShowGoal,
     getInfoViewStyle, minIfProd, prodOrDev } from './config';
@@ -34,7 +35,7 @@ class RpcSessionAtPos implements Disposable {
             try {
                 await client.sendNotification('$/lean/rpc/keepAlive', params)
             } catch (e) {
-                logger.log(`failed to send keepalive for ${uri}: ${e}`)
+                logger.log(`[InfoProvider] failed to send keepalive for ${uri}: ${e}`)
                 if (this.keepAliveInterval) clearInterval(this.keepAliveInterval)
             }
         }, keepAlivePeriodMs)
@@ -62,7 +63,11 @@ export class InfoProvider implements Disposable {
 
     private rpcSessions: Map<string, RpcSessionAtPos> = new Map();
 
-    private clientsFailed: Map<string, string> = new Map();
+    // the key is the LeanClient.getWorkspaceFolder()
+    private clientsFailed: Map<string, ServerStoppedReason> = new Map();
+
+    // the key is the uri of the file who's worker has failed.
+    private workersFailed: Map<string, ServerStoppedReason> = new Map();
 
     private subscribeDidChangeNotification(client: LeanClient, method: string){
         const h = client.didChange((params) => {
@@ -97,7 +102,17 @@ export class InfoProvider implements Disposable {
         sendClientRequest: async (uri: string, method: string, params: any): Promise<any> => {
             const client = this.clientProvider.findClient(uri);
             if (client) {
-                return client.sendRequest(method, params);
+                try {
+                    const result = await client.sendRequest(method, params);
+                    return result
+                } catch (ex) {
+                    if (ex.code === -32901 || ex.code === -32902) {
+                        // ex codes related with worker exited or crashed
+                        logger.log(`[InfoProvider]The Lean Server has stopped processing this file: ${ex.message}`)
+                        await this.onWorkerStopped(uri, client, {message:'The Lean Server has stopped processing this file: ', reason: ex.message as string})
+                    }
+                    throw ex;
+                }
             }
             return undefined;
         },
@@ -240,9 +255,8 @@ export class InfoProvider implements Disposable {
             void this.onClientRemoved(client);
         });
 
-        provider.clientStopped(([client, activeClient, err]) => {
-            void this.onActiveClientStopped(client, activeClient, err);
-
+        provider.clientStopped(([client, activeClient, reason]) => {
+            void this.onActiveClientStopped(client, activeClient, reason);
         });
 
         this.subscriptions.push(
@@ -290,11 +304,15 @@ export class InfoProvider implements Disposable {
             }
         }
 
-        await this.webviewPanel?.api.serverStopped(''); // clear any server stopped state
+        await this.webviewPanel?.api.serverStopped(undefined); // clear any server stopped state
         const folder = client.getWorkspaceFolder()
-        if (this.clientsFailed.has(folder)) {
-            this.clientsFailed.delete(folder) // delete from failed clients
-            logger.log('Restarting server for workspace: ' + folder)
+        for (const uri of this.workersFailed.keys()){
+            if (uri.startsWith(folder)){
+                this.workersFailed.delete(uri)
+            }
+        }
+        if (this.clientsFailed.has(folder)){
+            this.clientsFailed.delete(folder);
         }
         await this.initInfoView(window.activeTextEditor, client);
     }
@@ -316,6 +334,10 @@ export class InfoProvider implements Disposable {
                 // infoview updates properly.
                 await this.onClientRestarted(client);
             }),
+            client.restartedWorker(async (uri) => {
+                logger.log('[InfoProvider] got worker restarted event');
+                await this.onWorkerRestarted(uri);
+            }),
             client.didSetLanguage(() => this.onLanguageChanged()),
         );
 
@@ -323,23 +345,51 @@ export class InfoProvider implements Disposable {
         // event, so all onClientRestarted can happen there so we don't do it twice.
     }
 
+    async onWorkerRestarted(uri: string) : Promise<void> {
+        await this.webviewPanel?.api.serverStopped(undefined); // clear any server stopped state
+        if (this.workersFailed.has(uri)) {
+            this.workersFailed.delete(uri)
+            logger.log('[InfoProvider] Restarting worker for file: ' + uri)
+        }
+        await this.sendPosition();
+    }
+
+    async onWorkerStopped(uri: string, client: LeanClient, reason: ServerStoppedReason)
+    {
+        await this.webviewPanel?.api.serverStopped(reason);
+
+        if (!this.workersFailed.has(uri)) {
+            this.workersFailed.set(uri, reason);
+        }
+        logger.log(`[InfoProvider]client crashed: ${uri}`)
+        await client.showRestartMessage(true);
+    }
+
     onClientRemoved(client: LeanClient) {
         // todo: remove subscriptions for this client...
     }
 
-    async onActiveClientStopped(client: LeanClient, activeClient: boolean, msg: string) {
+    async onActiveClientStopped(client: LeanClient, activeClient: boolean, reason: ServerStoppedReason) {
         // Will show a message in case the active client stops
         // add failed client into a list (will be removed in case the client is restarted)
         if (activeClient)
         {
             // means that client and active client are the same and just show the error message
-            await this.webviewPanel?.api.serverStopped(msg);
+            await this.webviewPanel?.api.serverStopped(reason);
         }
 
         logger.log(`[InfoProvider] client stopped: ${client.getWorkspaceFolder()}`)
 
         // remember this client is in a stopped state
-        this.clientsFailed.set(client.getWorkspaceFolder(), msg)
+        const key = client.getWorkspaceFolder()
+        if (key) {
+            await this.sendPosition();
+            if (!this.clientsFailed.has(key)) {
+                this.clientsFailed.set(key, reason);
+            }
+            logger.log(`[InfoProvider] client stopped: ${key}`)
+            await client.showRestartMessage();
+        }
     }
 
     dispose(): void {
@@ -491,7 +541,7 @@ export class InfoProvider implements Disposable {
         // by listening to notifications.  Send these notifications when the infoview starts
         // so that it has up-to-date information.
         if (client?.initializeResult) {
-            await this.webviewPanel?.api.serverStopped(''); // clear any server stopped state
+            await this.webviewPanel?.api.serverStopped(undefined); // clear any server stopped state
             await this.webviewPanel?.api.serverRestarted(client.initializeResult);
             await this.sendDiagnostics(client);
             await this.sendProgress(client);
@@ -562,27 +612,33 @@ export class InfoProvider implements Disposable {
             return;
         }
         // actual editor
-        if (this.clientsFailed.size > 0){
+        if (this.clientsFailed.size > 0 || this.workersFailed.size > 0) {
             const client = this.clientProvider.findClient(editor.document.uri.toString())
             if (client) {
-                const folder = client.getWorkspaceFolder()
+                const uri = window.activeTextEditor?.document.uri.toString() ?? '';
+                const folder = client.getWorkspaceFolder();
+                let reason : ServerStoppedReason | undefined;
                 if (this.clientsFailed.has(folder)){
+                    reason = this.clientsFailed.get(folder);
+                } else if (this.workersFailed.has(uri)){
+                    reason = this.workersFailed.get(uri);
+                }
+                if (reason) {
                     // send stopped event
-                    const msg = this.clientsFailed.get(folder)
-                    await this.webviewPanel?.api.serverStopped(msg || '');
-                    return;
+                    await this.webviewPanel?.api.serverStopped(reason);
                 } else {
                     await this.updateStatus(loc)
                 }
+            } else {
+                logger.log('[InfoProvider] ### what does it mean to have sendPosition but no LeanClient for this document???')
             }
         } else {
             await this.updateStatus(loc)
         }
-
     }
 
     private async updateStatus(loc: ls.Location | undefined): Promise<void> {
-        await this.webviewPanel?.api.serverStopped(''); // clear any server stopped state
+        await this.webviewPanel?.api.serverStopped(undefined); // clear any server stopped state
         await this.autoOpen();
         await this.webviewPanel?.api.changedCursorLocation(loc);
     }

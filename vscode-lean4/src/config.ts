@@ -162,6 +162,10 @@ export function serverLoggingPath(): string {
     return workspace.getConfiguration('lean4.serverLogging').get('path', '.')
 }
 
+export function shouldAutofocusOutput(): boolean {
+    return workspace.getConfiguration('lean4').get('autofocusOutput', false)
+}
+
 export function getInfoViewStyle(): string {
     return workspace.getConfiguration('lean4').get('infoViewStyle', '');
 }

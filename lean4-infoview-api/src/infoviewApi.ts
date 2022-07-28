@@ -105,7 +105,7 @@ export interface InfoviewApi {
   /** Must fire with the server's initialization message when the server is started or restarted. */
   serverRestarted(serverInitializeResult: InitializeResult): Promise<void>;
   /** Must fire with the server's message when the server is stopped. */
-  serverStopped(serverStoppedResult: string): Promise<void>;
+  serverStopped(serverStoppedReason: ServerStoppedReason | undefined): Promise<void>;
 
   /**
    * Must fire whenever the user moves their cursor or makes a selection while in a Lean file.
@@ -137,4 +137,9 @@ export interface InfoviewApi {
    * in particular to inspect the page contents and check if the UI is in a correct state.
    */
   getInfoviewHtml(): Promise<string>;
+}
+
+export interface ServerStoppedReason {
+  message: string;
+  reason: string;
 }

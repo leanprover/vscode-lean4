@@ -88,7 +88,7 @@ async function main() {
 			launchArgs: ['--new-window', '--disable-gpu'] });
 
 		// The '--new-window' doesn't see to be working, so this hack
-		// ensures the following test does not re-open the lean3 folder
+		// ensures the following test does not re-open the previous folder
 		clearUserWorkspaceData(vscodeTestPath);
 
 		// run the lean4 tests in adhoc file configuration (no folder open)
@@ -103,7 +103,7 @@ async function main() {
         const lean4TestFolder = path.join(extensionDevelopmentPath, 'test', 'test-fixtures', 'simple');
 
         // The '--new-window' doesn't see to be working, so this hack
-        // ensures the following test does not re-open the lean3 folder
+        // ensures the following test does not re-open the previous folder
         clearUserWorkspaceData(vscodeTestPath);
 
         // run the lean4 simple tests again, this time with an "open folder" configuration
@@ -115,7 +115,7 @@ async function main() {
             launchArgs: ['--new-window', '--disable-gpu', lean4TestFolder] });
 
         // The '--new-window' doesn't see to be working, so this hack
-        // ensures the following test does not re-open the lean3 folder
+        // ensures the following test does not re-open the previous folder
         clearUserWorkspaceData(vscodeTestPath);
 
         // run the lean4 toolchain tests, also reusing the 'simple' project.
@@ -127,7 +127,19 @@ async function main() {
             launchArgs: ['--new-window', '--disable-gpu', lean4TestFolder] });
 
         // The '--new-window' doesn't see to be working, so this hack
-        // ensures the following test does not re-open the lean3 folder
+        // ensures the following test does not re-open the previous folder
+        clearUserWorkspaceData(vscodeTestPath);
+
+        // run the lean4 restart tests, also reusing the 'simple' project.
+        await runTests({
+            vscodeExecutablePath,
+            extensionDevelopmentPath,
+            extensionTestsPath:path.resolve(__dirname, 'index'),
+            extensionTestsEnv: {'TEST_FOLDER': 'restarts'},
+            launchArgs: ['--new-window', '--disable-gpu', lean4TestFolder] });
+
+        // The '--new-window' doesn't see to be working, so this hack
+        // ensures the following test does not re-open the previous folder
         clearUserWorkspaceData(vscodeTestPath);
 
         const workspacePath = path.join(extensionDevelopmentPath, 'test', 'test-fixtures', 'multi', 'multi.code-workspace');

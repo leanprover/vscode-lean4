@@ -57,6 +57,14 @@ export async function insertText(text: string) : Promise<void> {
     });
 }
 
+export async function deleteAllText() : Promise<void> {
+    const editor = vscode.window.activeTextEditor;
+    assert(editor !== undefined, 'no active editor');
+    await editor.edit((builder) => {
+        builder.delete(new vscode.Range(new vscode.Position(0, 0), editor.document.lineAt(editor.document.lineCount-1).range.end));
+    })
+}
+
 export async function initLean4Untitled(contents: string) : Promise<vscode.Extension<Exports>>{
     // make sure test is always run in predictable state, which is no file or folder open
     await closeAllEditors();
@@ -101,11 +109,16 @@ export async function waitForActiveClientRunning(clientProvider: LeanClientProvi
     assert(false, 'active client is not reaching the running state');
 }
 
-export async function resetToolchain(clientProvider: LeanClientProvider | undefined, retries=10, delay=1000) : Promise<void>{
-
+export function assertActiveClient(clientProvider: LeanClientProvider | undefined) : LeanClient{
     assert(clientProvider, 'missing LeanClientProvider');
     const client = clientProvider.getActiveClient();
     assert(client, 'Missing active LeanClient');
+    return client;
+}
+
+export async function resetToolchain(clientProvider: LeanClientProvider | undefined, retries=10, delay=1000) : Promise<void>{
+
+    const client = assertActiveClient(clientProvider);
 
     let stopped = false;
     let restarted = false;
@@ -312,6 +325,11 @@ export async function gotoDefinition(editor: vscode.TextEditor, word: string, re
     await vscode.commands.executeCommand('editor.action.revealDefinition');
 }
 
+export async function restartFile() : Promise<void> {
+    console.log('restarting file in lean client ...');
+    await vscode.commands.executeCommand('lean4.restartFile');
+}
+
 export async function restartLeanServer(client: LeanClient, retries=60, delay=1000) : Promise<boolean> {
     let count = 0;
     logger.log('restarting lean client ...');
@@ -325,7 +343,7 @@ export async function restartLeanServer(client: LeanClient, retries=60, delay=10
 
     while (count < retries){
         const index = stateChanges.indexOf('restarted');
-        if (index > 0) {
+        if (index >= 0) {
             break;
         }
         await sleep(delay);
@@ -333,8 +351,11 @@ export async function restartLeanServer(client: LeanClient, retries=60, delay=10
     }
 
     // check we have no errors.
-    const actual = stateChanges.toString();
-    const expected = 'stopped,restarted'
+    if (stateChanges.length === 0){
+        assert(false, 'restartServer did not fire any events')
+    }
+    const actual = stateChanges[stateChanges.length - 1];
+    const expected = 'restarted'
     if (actual !== expected) {
         logger.log(`restartServer did not produce expected result: ${actual}`);
     }

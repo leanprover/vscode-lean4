@@ -16,9 +16,9 @@ import {
 } from 'vscode-languageclient/node'
 import * as ls from 'vscode-languageserver-protocol'
 
-import { toolchainPath, lakePath, addServerEnvPaths, serverArgs, serverLoggingEnabled, serverLoggingPath, getElaborationDelay, lakeEnabled } from './config'
+import { toolchainPath, lakePath, addServerEnvPaths, serverArgs, serverLoggingEnabled, serverLoggingPath, shouldAutofocusOutput, getElaborationDelay, lakeEnabled } from './config'
 import { assert } from './utils/assert'
-import { LeanFileProgressParams, LeanFileProgressProcessingInfo } from '@leanprover/infoview-api';
+import { LeanFileProgressParams, LeanFileProgressProcessingInfo, ServerStoppedReason } from '@leanprover/infoview-api';
 import { LocalStorageService} from './utils/localStorage'
 import { batchExecute } from './utils/batch'
 import { readLeanVersion } from './utils/projectInfo';
@@ -49,6 +49,7 @@ export class LeanClient implements Disposable {
     private folderUri: Uri;
     private subscriptions: Disposable[] = []
     private noPrompt : boolean = false;
+    private showingRestartMessage : boolean = false;
 
     private didChangeEmitter = new EventEmitter<DidChangeTextDocumentParams>()
     didChange = this.didChangeEmitter.event
@@ -72,7 +73,7 @@ export class LeanClient implements Disposable {
     private progressChangedEmitter = new EventEmitter<[string, LeanFileProgressProcessingInfo[]]>()
     progressChanged = this.progressChangedEmitter.event
 
-    private stoppedEmitter = new EventEmitter<string>()
+    private stoppedEmitter = new EventEmitter<ServerStoppedReason>()
     stopped = this.stoppedEmitter.event
 
     private restartedEmitter = new EventEmitter()
@@ -80,6 +81,9 @@ export class LeanClient implements Disposable {
 
     private restartingEmitter = new EventEmitter()
     restarting = this.restartingEmitter.event
+
+    private restartedWorkerEmitter = new EventEmitter<string>()
+    restartedWorker = this.restartedWorkerEmitter.event
 
     private serverFailedEmitter = new EventEmitter<string>();
     serverFailed = this.serverFailedEmitter.event
@@ -100,18 +104,34 @@ export class LeanClient implements Disposable {
         if (this.isStarted()) void this.stop()
     }
 
-    async showRestartMessage(): Promise<void> {
-        const restartItem = 'Restart Lean Language Server';
-        const item = await window.showErrorMessage('Lean Language Server has stopped unexpectedly.', restartItem)
-        if (item === restartItem) {
-            void this.start();
+    async showRestartMessage(restartFile: boolean = false): Promise<void> {
+        if (!this.showingRestartMessage) {
+            this.showingRestartMessage = true;
+            let restartItem :string;
+            let messageTitle :string;
+            if (!restartFile) {
+                restartItem = 'Restart Lean Server';
+                messageTitle = 'Lean Server has stopped unexpectedly.'
+            } else {
+                restartItem = 'Restart Lean Server on this file';
+                messageTitle = 'The Lean Server has stopped processing this file.'
+            }
+            const item = await window.showErrorMessage(messageTitle, restartItem)
+            this.showingRestartMessage = false;
+            if (item === restartItem) {
+                if (restartFile && window.activeTextEditor){
+                    await this.restartFile(window.activeTextEditor.document);
+                } else {
+                    void this.start();
+                }
+            }
         }
     }
 
     async restart(): Promise<void> {
         const startTime = Date.now()
 
-        logger.log('Restarting Lean Language Server')
+        logger.log('[LeanClient] Restarting Lean Server')
         if (this.isStarted()) {
             await this.stop()
         }
@@ -285,19 +305,21 @@ export class LeanClient implements Disposable {
             this.client.onDidChangeState(async (s) => {
                 // see https://github.com/microsoft/vscode-languageserver-node/issues/825
                 if (s.newState === State.Starting) {
-                    logger.log('client starting');
+                    logger.log('[LeanClient] starting');
                 } else if (s.newState === State.Running) {
                     const end = Date.now()
-                    logger.log(`client running, started in ', ${end - startTime} ms`);
+                    logger.log(`[LeanClient] running, started in ${end - startTime} ms`);
                     this.running = true; // may have been auto restarted after it failed.
                     if (!insideRestart) {
                         this.restartedEmitter.fire(undefined)
                     }
                 } else if (s.newState === State.Stopped) {
-                    this.stoppedEmitter.fire('Lean language server has stopped. ');
-                    logger.log('client has stopped or it failed to start');
                     this.running = false;
+                    logger.log('[LeanClient] has stopped or it failed to start');
                     if (!this.noPrompt){
+                        // only raise this event and show the message if we are not the ones
+                        // who called the stop() method.
+                        this.stoppedEmitter.fire({message:'Lean server has stopped.', reason:''});
                         await this.showRestartMessage();
                     }
                 }
@@ -340,7 +362,7 @@ export class LeanClient implements Disposable {
         // Reveal the standard error output channel when the server prints something to stderr.
         // The vscode-languageclient library already takes care of writing it to the output channel.
         (this.client as any)._serverProcess.stderr.on('data', () => {
-            this.client?.outputChannel.show(true);
+            if (shouldAutofocusOutput()) this.client?.outputChannel.show(true);
         });
 
         this.restartedEmitter.fire(undefined)
@@ -422,7 +444,7 @@ export class LeanClient implements Disposable {
                 // this to throw an exception which then causes those tests to fail.
                 await this.client.stop();
             } catch (e) {
-                logger.log(`Error stopping language client: ${e}`)
+                logger.log(`[LeanClient] Error stopping language client: ${e}`)
             }
         }
 
@@ -442,6 +464,7 @@ export class LeanClient implements Disposable {
 
     async restartFile(doc: TextDocument): Promise<void> {
         if (!this.running) return; // there was a problem starting lean server.
+
         assert(() => this.isStarted())
 
         if (!await this.isSameWorkspace(doc.uri)){
@@ -449,6 +472,7 @@ export class LeanClient implements Disposable {
             return;
         }
         const uri = doc.uri.toString()
+        logger.log(`[LeanClient] Restarting File: ${uri}`)
         // This causes a text document version number discontinuity. In
         // (didChange (oldVersion) => restartFile => didChange (newVersion))
         // the client emits newVersion = oldVersion + 1, despite the fact that the
@@ -468,6 +492,7 @@ export class LeanClient implements Disposable {
                 'text': doc.getText()
             }
         })
+        this.restartedWorkerEmitter.fire(uri)
     }
 
     // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
@@ -519,7 +544,7 @@ export class LeanClient implements Disposable {
         const versionOptions = version ? ['+' + version, '--version'] : ['--version']
         const start = Date.now()
         const lakeVersion = await batchExecute(executable, versionOptions, this.folderUri?.fsPath, undefined);
-        logger.log(`Ran '${executable} ${versionOptions.join(' ')}' in ${Date.now() - start} ms`);
+        logger.log(`[LeanClient] Ran '${executable} ${versionOptions.join(' ')}' in ${Date.now() - start} ms`);
         const actual = this.extractVersion(lakeVersion)
         if (actual.compare('3.0.0') > 0) {
             return true;
