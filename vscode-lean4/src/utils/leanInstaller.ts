@@ -155,13 +155,14 @@ export class LeanInstaller implements Disposable {
         // user changes the Lean: Executable Path.
         const installItem = 'Install Lean using Elan';
         const selectItem = 'Select Lean Toolchain';
+        const outputItem = 'See the output';
         let prompt = 'Failed to start \'lean\' language server'
         if (path){
             prompt += ` from ${path}`
         }
 
         this.promptingInstallEmitter.fire(uri);
-        const item = await window.showErrorMessage(prompt, installItem, selectItem)
+        const item = await window.showErrorMessage(prompt, installItem, selectItem, outputItem)
         if (item === installItem) {
             try {
                 const result = await this.installElan();
@@ -171,6 +172,8 @@ export class LeanInstaller implements Disposable {
             }
         } else if (item === selectItem){
             void this.selectToolchain(uri);
+        } else if (item == outputItem) {
+            this.outputChannel.show(true);
         }
     }
 
