@@ -16,7 +16,7 @@ import {
 } from 'vscode-languageclient/node'
 import * as ls from 'vscode-languageserver-protocol'
 
-import { toolchainPath, lakePath, addServerEnvPaths, serverArgs, serverLoggingEnabled, serverLoggingPath, getElaborationDelay, lakeEnabled } from './config'
+import { toolchainPath, lakePath, addServerEnvPaths, serverArgs, serverLoggingEnabled, serverLoggingPath, autofocusOutput, getElaborationDelay, lakeEnabled } from './config'
 import { assert } from './utils/assert'
 import { LeanFileProgressParams, LeanFileProgressProcessingInfo } from '@leanprover/infoview-api';
 import { LocalStorageService} from './utils/localStorage'
@@ -340,7 +340,7 @@ export class LeanClient implements Disposable {
         // Reveal the standard error output channel when the server prints something to stderr.
         // The vscode-languageclient library already takes care of writing it to the output channel.
         (this.client as any)._serverProcess.stderr.on('data', () => {
-            this.client?.outputChannel.show(true);
+            if (autofocusOutput()) this.client?.outputChannel.show(true);
         });
 
         this.restartedEmitter.fire(undefined)
