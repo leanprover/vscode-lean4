@@ -172,7 +172,7 @@ export class LeanInstaller implements Disposable {
             }
         } else if (item === selectItem){
             void this.selectToolchain(uri);
-        } else if (item == outputItem) {
+        } else if (item === outputItem) {
             this.outputChannel.show(true);
         }
     }
