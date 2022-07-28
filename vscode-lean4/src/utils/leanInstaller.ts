@@ -155,7 +155,7 @@ export class LeanInstaller implements Disposable {
         // user changes the Lean: Executable Path.
         const installItem = 'Install Lean using Elan';
         const selectItem = 'Select Lean Toolchain';
-        const outputItem = 'See the output';
+        const outputItem = 'Go to output';
         let prompt = 'Failed to start \'lean\' language server'
         if (path){
             prompt += ` from ${path}`
