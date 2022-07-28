@@ -6,7 +6,7 @@ import {
     Uri, ViewColumn, WebviewPanel, window, workspace, env, Position,
 } from 'vscode';
 import { EditorApi, InfoviewApi, LeanFileProgressParams, TextInsertKind,
-    RpcConnectParams, RpcConnected, RpcKeepAliveParams, ServerStoppedReason } from '@lean4/infoview-api';
+    RpcConnectParams, RpcConnected, RpcKeepAliveParams, ServerStoppedReason } from '@leanprover/infoview-api';
 import { LeanClient } from './leanclient';
 import { getEditorLineHeight, getInfoViewAllErrorsOnLine, getInfoViewAutoOpen, getInfoViewAutoOpenShowGoal,
     getInfoViewStyle, minIfProd, prodOrDev } from './config';
