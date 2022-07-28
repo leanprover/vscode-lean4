@@ -184,9 +184,10 @@ export class LeanInstaller implements Disposable {
                 logger.log('selectToolchainForActiveEditor: ' + selectedVersion);
                 if (s === 'reset') {
                     s = '';
+                } else {
+                    // ensure this version is actually installed.
+                    await this.executeWithProgress('Ensure toolchain available...', 'lean', ['+' + s, '--version'], null);
                 }
-                // ensure this version is actually installed.
-                await this.executeWithProgress('Ensure toolchain available...', 'lean', ['+' + s, '--version'], null);
                 this.localStorage.setLeanPath(''); // make sure any local full path override is cleared.
                 this.localStorage.setLeanVersion(s); // request the specified version.
                 this.installChangedEmitter.fire(uri);

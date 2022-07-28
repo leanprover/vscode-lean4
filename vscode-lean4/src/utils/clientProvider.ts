@@ -3,7 +3,7 @@ import { LocalStorageService} from './localStorage'
 import { LeanInstaller, LeanVersion } from './leanInstaller'
 import { LeanpkgService } from './leanpkg';
 import { LeanClient } from '../leanclient'
-import { LeanFileProgressProcessingInfo, RpcConnectParams, RpcKeepAliveParams } from '@leanprover/infoview-api';
+import { LeanFileProgressProcessingInfo, RpcConnectParams, RpcKeepAliveParams, ServerStoppedReason } from '@leanprover/infoview-api';
 import * as path from 'path';
 import { findLeanPackageRoot } from './projectInfo';
 import { isFileInFolder } from './fsHelper';
@@ -32,7 +32,7 @@ export class LeanClientProvider implements Disposable {
     private clientRemovedEmitter = new EventEmitter<LeanClient>()
     clientRemoved = this.clientRemovedEmitter.event
 
-    private clientStoppedEmitter = new EventEmitter<[LeanClient, boolean, string]>()
+    private clientStoppedEmitter = new EventEmitter<[LeanClient, boolean, ServerStoppedReason]>()
     clientStopped = this.clientStoppedEmitter.event
 
     constructor(localStorage : LocalStorageService, installer : LeanInstaller, pkgService : LeanpkgService, outputChannel : OutputChannel) {
@@ -82,11 +82,11 @@ export class LeanClientProvider implements Disposable {
         // Or it could be a package Uri in the case a lean package file was changed
         // or it could be a document Uri in the case of a command from
         // selectToolchainForActiveEditor.
-        logger.log(`[clientProvider] installChanged for ${uri}`);
+        logger.log(`[ClientProvider] installChanged for ${uri}`);
         const key = this.getKeyFromUri(uri);
         const path = uri.toString();
         if (this.testing.has(key)) {
-            logger.log(`Blocking re-entrancy on ${path}`);
+            logger.log(`[ClientProvider] Blocking re-entrancy on ${path}`);
             return;
         }
         // avoid re-entrancy since testLeanVersion can take a while.
@@ -95,19 +95,20 @@ export class LeanClientProvider implements Disposable {
             // have to check again here in case elan install had --default-toolchain none.
             const [workspaceFolder, folder, packageFileUri] = await findLeanPackageRoot(uri);
             const packageUri = folder ? folder : Uri.from({scheme: 'untitled'});
-            logger.log('[clientProvider] testLeanVersion');
+            logger.log('[ClientProvider] testLeanVersion');
             const version = await this.installer.testLeanVersion(packageUri);
             if (version.version === '4') {
-                logger.log('[clientProvider] got lean version 4');
+                logger.log('[ClientProvider] got lean version 4');
                 const [cached, client] = await this.ensureClient(uri, version);
                 if (cached && client) {
                     await client.restart();
+                    logger.log('[ClientProvider] restart complete');
                 }
             } else if (version.error) {
-                logger.log(`[clientProvider] Lean version not ok: ${version.error}`);
+                logger.log(`[ClientProvider] Lean version not ok: ${version.error}`);
             }
         } catch (e) {
-            logger.log(`[clientProvider] Exception checking lean version: ${e}`);
+            logger.log(`[ClientProvider] Exception checking lean version: ${e}`);
         }
         this.testing.delete(key);
     }
@@ -115,7 +116,7 @@ export class LeanClientProvider implements Disposable {
     private async onPromptingInstall(uri: Uri) : Promise<void> {
         if (isRunningTest()){
             // no prompt, just do it!
-            logger.log('Installing Lean via Elan during testing')
+            logger.log('[ClientProvider] Installing Lean via Elan during testing')
             await this.installer.installElan();
             if (isElanDisabled()) {
                 addToolchainBinPath(getDefaultElanPath());
@@ -187,7 +188,7 @@ export class LeanClientProvider implements Disposable {
                 await client.openLean4Document(document)
             }
         } catch (e) {
-            logger.log(`### Error opening document: ${e}`);
+            logger.log(`[ClientProvider] ### Error opening document: ${e}`);
         }
     }
 
@@ -304,10 +305,10 @@ export class LeanClientProvider implements Disposable {
                 void window.showErrorMessage(err);
             });
 
-            client.stopped(err => {
+            client.stopped(reason => {
                 if (client) {
                     // fires a message in case a client is stopped unexpectedly
-                    this.clientStoppedEmitter.fire([client, client === this.activeClient, err]);
+                    this.clientStoppedEmitter.fire([client, client === this.activeClient, reason]);
                 }
             });
 
