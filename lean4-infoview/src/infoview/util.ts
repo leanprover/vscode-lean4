@@ -2,7 +2,7 @@
 import * as React from 'react';
 import type { DocumentUri, Position, Range, TextDocumentPositionParams } from 'vscode-languageserver-protocol';
 
-import { isRpcError, RpcErrorCode } from '@lean4/infoview-api';
+import { isRpcError, RpcErrorCode } from '@leanprover/infoview-api';
 
 import { Event } from './event';
 import { EditorContext } from './contexts';
@@ -277,6 +277,17 @@ export function mapRpcError(err : unknown) : Error {
     } else {
         return err
     }
+}
+
+/** Catch handler for RPC methods that just returns undefined if the method is not found.
+ * This is useful for compatibility with versions of Lean that do not yet have the given RPC method.
+*/
+ export function discardMethodNotFound(e: unknown) : undefined {
+  if (isRpcError(e) && (e.code === RpcErrorCode.MethodNotFound)) {
+    return undefined
+  } else {
+      throw mapRpcError(e)
+  }
 }
 
 type Status = 'pending' | 'fulfilled' | 'rejected'

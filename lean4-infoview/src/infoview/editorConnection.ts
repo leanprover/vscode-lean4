@@ -1,6 +1,6 @@
 import type { Location, ShowDocumentParams } from 'vscode-languageserver-protocol';
 
-import { EditorApi, InfoviewApi, PlainGoal, PlainTermGoal } from '@lean4/infoview-api';
+import { EditorApi, InfoviewApi, PlainGoal, PlainTermGoal } from '@leanprover/infoview-api';
 
 import { Eventify } from './event';
 import { DocumentPosition } from './util';

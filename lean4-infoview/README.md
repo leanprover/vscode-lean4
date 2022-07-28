@@ -2,7 +2,7 @@
 
 The Lean 4 infoview is a React app providing an interactive display of messages, errors, proof states, and other outputs of Lean elaboration. Its contents can be customized using extensions we call *widgets*. Widgets are written in Lean itself, and in TypeScript.
 
-The package here — `@lean4/infoview` — provides both the React app with its single `renderInfoview` entry point, as well as React components and other utilities for implementing widgets.
+The package here — `@leanprover/infoview` — provides both the React app with its single `renderInfoview` entry point, as well as React components and other utilities for implementing widgets.
 
 ## Components
 

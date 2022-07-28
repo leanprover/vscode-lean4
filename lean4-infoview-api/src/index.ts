@@ -1,2 +1,5 @@
 export * from './lspTypes'
 export * from './infoviewApi'
+export * from './rpcSessions'
+export * from './rpcApi'
+export * from './util'
