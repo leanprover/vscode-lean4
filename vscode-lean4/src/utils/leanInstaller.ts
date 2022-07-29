@@ -166,7 +166,10 @@ export class LeanInstaller implements Disposable {
         } else {
             const outputItem = 'Go to output';
             const outPrompt = 'See output window for more information';
-            window.showErrorMessage(outPrompt, outputItem)
+            const outItem = await window.showErrorMessage(outPrompt, outputItem)
+            if (outItem === outputItem) {
+                this.outputChannel.show(true);
+            }
         }
         const item = await window.showErrorMessage(prompt, installItem, selectItem)
         if (item === installItem) {
