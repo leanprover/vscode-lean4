@@ -1,5 +1,5 @@
 import { window, TerminalOptions, OutputChannel, commands, Disposable, EventEmitter, ProgressLocation, Uri } from 'vscode'
-import { toolchainPath, addServerEnvPaths, getLeanExecutableName, getPowerShellPath } from '../config'
+import { toolchainPath, addServerEnvPaths, getLeanExecutableName, getPowerShellPath, shouldAutofocusOutput } from '../config'
 import { batchExecute } from './batch'
 import { LocalStorageService} from './localStorage'
 import { readLeanVersion, findLeanPackageRoot, isCoreLean4Directory } from './projectInfo';
@@ -161,7 +161,13 @@ export class LeanInstaller implements Disposable {
         }
 
         this.promptingInstallEmitter.fire(uri);
-        this.outputChannel.show(true);
+        if (shouldAutofocusOutput()) {
+            this.outputChannel.show(true);
+        } else {
+            const outputItem = 'Go to output';
+            const outPrompt = 'See output window for more information';
+            window.showErrorMessage(outPrompt, outputItem)
+        }
         const item = await window.showErrorMessage(prompt, installItem, selectItem)
         if (item === installItem) {
             try {
