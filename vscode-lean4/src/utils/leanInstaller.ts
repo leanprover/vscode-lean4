@@ -21,6 +21,7 @@ export class LeanInstaller implements Disposable {
     private subscriptions: Disposable[] = [];
     private prompting : boolean = false;
     private defaultToolchain : string;
+    private elanDefaultToolchain : string = '';
     private workspaceSuffix : string = '(workspace override)';
     private defaultSuffix : string = '(default)'
     private versionCache: Map<string,LeanVersion> = new Map();
@@ -67,7 +68,7 @@ export class LeanInstaller implements Disposable {
                     return { version: '4', error: 'no elan installed' }
                 }
             } else if (! await isCoreLean4Directory(packageUri)) {
-                const defaultVersion = await this.getDefaultToolchain(packageUri);
+                const defaultVersion = await this.getElanDefaultToolchain(packageUri);
                 if (!defaultVersion) {
                     void this.showToolchainOptions(packageUri);
                 } else {
@@ -409,7 +410,11 @@ export class LeanInstaller implements Disposable {
         return stdout;
     }
 
-    async getDefaultToolchain(packageUri: Uri): Promise<string> {
+    async getElanDefaultToolchain(packageUri: Uri): Promise<string> {
+        if (this.elanDefaultToolchain){
+            return this.elanDefaultToolchain;
+        }
+
         const toolChains = await this.elanListToolChains(packageUri);
         let result :string = ''
         toolChains.forEach((s) => {
@@ -417,6 +422,8 @@ export class LeanInstaller implements Disposable {
                 result = this.removeSuffix(s);
             }
         });
+
+        this.elanDefaultToolchain = result;
         return result;
     }
 
@@ -510,6 +517,7 @@ export class LeanInstaller implements Disposable {
 
             // clear any previous lean version errors.
             this.versionCache.clear();
+            this.elanDefaultToolchain = this.defaultToolchain;
 
             return result;
         }
