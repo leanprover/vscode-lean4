@@ -192,7 +192,7 @@ export class LeanClient implements Disposable {
 
         // Add folder name to command-line so that it shows up in `ps aux`.
         if (cwd) {
-            options.push('' + this.folderUri.fsPath)
+            options.push('' + cwd)
         } else {
             options.push('untitled')
         }

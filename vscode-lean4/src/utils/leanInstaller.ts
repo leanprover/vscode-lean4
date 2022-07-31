@@ -20,8 +20,8 @@ export class LeanInstaller implements Disposable {
     private localStorage: LocalStorageService;
     private subscriptions: Disposable[] = [];
     private prompting : boolean = false;
-    private defaultToolchain : string;
-    private elanDefaultToolchain : string = '';
+    private defaultToolchain : string; // the default to use if there is no elan installed
+    private elanDefaultToolchain : string = ''; // the default toolchain according to elan (toolchain marked with '(default)')
     private workspaceSuffix : string = '(workspace override)';
     private defaultSuffix : string = '(default)'
     private versionCache: Map<string,LeanVersion> = new Map();
