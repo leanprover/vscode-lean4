@@ -1,6 +1,6 @@
 import { OutputChannel } from 'vscode'
 import { spawn } from 'child_process';
-import { findProgramInPath } from '../config'
+import { findProgramInPath, isRunningTest } from '../config'
 import { logger } from './logger'
 
 export async function batchExecute(
@@ -16,16 +16,18 @@ export async function batchExecute(
             options = { cwd: workingDirectory };
         }
 
-        // The mocha test framework listens to process.on('uncaughtException')
-        // which is raised if spawn cannot find the command and the test automatically
-        // fails with "Uncaught Error: spawn elan ENOENT".  Therefore we manually
-        // check if the command exists so as not to trigger that exception.
-
         try {
-            const fullPath = findProgramInPath(executablePath);
-            if (!fullPath) {
-                resolve(undefined);
-                return;
+            if (isRunningTest())
+            {
+                // The mocha test framework listens to process.on('uncaughtException')
+                // which is raised if spawn cannot find the command and the test automatically
+                // fails with "Uncaught Error: spawn elan ENOENT".  Therefore we manually
+                // check if the command exists so as not to trigger that exception.
+                const fullPath = findProgramInPath(executablePath);
+                if (!fullPath) {
+                    resolve(undefined);
+                    return;
+                }
             }
             const proc = spawn(executablePath, args, options);
 
