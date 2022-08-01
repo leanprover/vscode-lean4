@@ -274,13 +274,15 @@ export class LeanClientProvider implements Disposable {
             this.pending.set(key, true);
             logger.log('[ClientProvider] Creating LeanClient for ' + folderUri.toString());
 
+            const elanDefaultToolchain = await this.installer.getElanDefaultToolchain(folderUri);
+
             // We must create a Client before doing the long running testLeanVersion
             // so that ensureClient callers have an "optimistic" client to work with.
             // This is needed in our constructor where it is calling ensureClient for
             // every open file.  A workspace could have multiple files open and we want
             // to remember all those open files are associated with this client before
             // testLeanVersion has completed.
-            client = new LeanClient(workspaceFolder, folderUri, this.localStorage, this.outputChannel);
+            client = new LeanClient(workspaceFolder, folderUri, this.localStorage, this.outputChannel, elanDefaultToolchain);
             this.subscriptions.push(client);
             this.clients.set(key, client);
 

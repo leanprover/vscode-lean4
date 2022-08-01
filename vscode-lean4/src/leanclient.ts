@@ -50,6 +50,7 @@ export class LeanClient implements Disposable {
     private subscriptions: Disposable[] = []
     private noPrompt : boolean = false;
     private showingRestartMessage : boolean = false;
+    private elanDefaultToolchain: string;
 
     private didChangeEmitter = new EventEmitter<DidChangeTextDocumentParams>()
     didChange = this.didChangeEmitter.event
@@ -91,11 +92,12 @@ export class LeanClient implements Disposable {
     /** Files which are open. */
     private isOpen: Map<string, TextDocument> = new Map()
 
-    constructor(workspaceFolder: WorkspaceFolder | undefined, folderUri: Uri, storageManager : LocalStorageService, outputChannel : OutputChannel) {
+    constructor(workspaceFolder: WorkspaceFolder | undefined, folderUri: Uri, storageManager : LocalStorageService, outputChannel : OutputChannel, elanDefaultToolchain: string) {
         this.storageManager = storageManager;
         this.outputChannel = outputChannel;
         this.workspaceFolder = workspaceFolder; // can be null when opening adhoc files.
         this.folderUri = folderUri;
+        this.elanDefaultToolchain = elanDefaultToolchain;
         this.subscriptions.push(workspace.onDidChangeConfiguration((e) => this.configChanged(e)));
     }
 
@@ -139,7 +141,7 @@ export class LeanClient implements Disposable {
         this.restartingEmitter.fire(undefined)
         this.toolchainPath = this.storageManager.getLeanPath();
         if (!this.toolchainPath) this.toolchainPath = toolchainPath();
-        const version = this.storageManager.getLeanVersion();
+        let version = this.storageManager.getLeanVersion();
         const env = addServerEnvPaths(process.env);
         if (serverLoggingEnabled()) {
             env.LEAN_SERVER_LOG_DIR = serverLoggingPath()
@@ -174,6 +176,13 @@ export class LeanClient implements Disposable {
             executable = (this.toolchainPath) ? join(this.toolchainPath, 'bin', 'lean') : 'lean';
         }
 
+        const cwd = this.folderUri?.fsPath
+        if (!cwd && !version){
+            // Fixes issue #227, for adhoc files it would pick up the cwd from the open folder
+            // which is not what we want.  For adhoc files we want the (default) toolchain instead.
+            version = this.elanDefaultToolchain;
+        }
+
         let options = version ? ['+' + version] :[]
         if (useLake) {
             options = options.concat(['serve', '--'])
@@ -182,8 +191,8 @@ export class LeanClient implements Disposable {
         }
 
         // Add folder name to command-line so that it shows up in `ps aux`.
-        if (this.folderUri) {
-            options.push('' + this.folderUri.fsPath)
+        if (cwd) {
+            options.push('' + cwd)
         } else {
             options.push('untitled')
         }
@@ -192,7 +201,7 @@ export class LeanClient implements Disposable {
             command: executable,
             args: options.concat(serverArgs()),
             options: {
-                cwd: this.folderUri?.fsPath,
+                cwd,
                 env
             }
         }
