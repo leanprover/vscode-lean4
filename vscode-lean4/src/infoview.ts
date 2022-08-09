@@ -6,7 +6,7 @@ import {
     Uri, ViewColumn, WebviewPanel, window, workspace, env, Position,
 } from 'vscode';
 import { EditorApi, InfoviewApi, LeanFileProgressParams, TextInsertKind,
-    RpcConnectParams, RpcConnected, RpcKeepAliveParams, ServerStoppedReason } from '@leanprover/infoview-api';
+    RpcConnectParams, RpcConnected, RpcKeepAliveParams, ServerStoppedReason, RpcErrorCode } from '@leanprover/infoview-api';
 import { LeanClient } from './leanclient';
 import { getEditorLineHeight, getInfoViewAllErrorsOnLine, getInfoViewAutoOpen, getInfoViewAutoOpenShowGoal,
     getInfoViewStyle, minIfProd, prodOrDev } from './config';
@@ -106,7 +106,7 @@ export class InfoProvider implements Disposable {
                     const result = await client.sendRequest(method, params);
                     return result
                 } catch (ex) {
-                    if (ex.code === -32901 || ex.code === -32902) {
+                    if (ex.code === RpcErrorCode.WorkerCrashed) {
                         // ex codes related with worker exited or crashed
                         logger.log(`[InfoProvider]The Lean Server has stopped processing this file: ${ex.message}`)
                         await this.onWorkerStopped(uri, client, {message:'The Lean Server has stopped processing this file: ', reason: ex.message as string})

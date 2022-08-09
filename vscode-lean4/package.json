@@ -332,6 +332,14 @@
 					"when": "editorLangId == lean4"
 				},
 				{
+					"command": "lean4.restartFile",
+					"when": "editorLangId == lean4"
+				},
+				{
+					"command": "lean4.refreshFileDependencies",
+					"when": "editorLangId == lean4"
+				},
+				{
 					"command": "lean4.selectToolchain",
 					"when": "editorLangId == lean4"
 				},

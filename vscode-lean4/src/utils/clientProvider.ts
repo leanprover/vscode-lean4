@@ -138,7 +138,7 @@ export class LeanClientProvider implements Disposable {
     }
 
     private restartFile() {
-        if (window.activeTextEditor && this.activeClient) {
+        if (window.activeTextEditor && this.activeClient && window.activeTextEditor.document.languageId ==='lean4') {
             void this.activeClient.restartFile(window.activeTextEditor.document);
         }
     }
