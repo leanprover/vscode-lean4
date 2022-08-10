@@ -11,6 +11,7 @@ import {
     LanguageClient,
     LanguageClientOptions,
     PublishDiagnosticsParams,
+    RevealOutputChannelOn,
     ServerOptions,
     State
 } from 'vscode-languageclient/node'
@@ -219,6 +220,7 @@ export class LeanClient implements Disposable {
 
         const clientOptions: LanguageClientOptions = {
             outputChannel: this.outputChannel,
+            revealOutputChannelOn: RevealOutputChannelOn.Never, // contrary to the name, this disables the message boxes
             documentSelector: [documentSelector],
             workspaceFolder: this.workspaceFolder,
             initializationOptions: {
