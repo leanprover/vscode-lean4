@@ -183,6 +183,12 @@
 				}
 			},
 			{
+				"command": "lean4.toggleInfoview",
+				"category": "Lean 4",
+				"title": "Infoview: Toggle",
+				"description": "Toggle whether the infoview is displayed."
+			},
+			{
 				"command": "lean4.displayList",
 				"category": "Lean 4",
 				"title": "Infoview: Toggle \"All Messages\"",
@@ -293,7 +299,7 @@
 				"when": "editorTextFocus && editorLangId == lean4"
 			},
 			{
-				"command": "lean4.displayGoal",
+				"command": "lean4.toggleInfoview",
 				"key": "ctrl+shift+enter",
 				"mac": "cmd+shift+enter",
 				"when": "editorTextFocus && editorLangId == lean4"

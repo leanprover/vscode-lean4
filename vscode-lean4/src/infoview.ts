@@ -271,6 +271,7 @@ export class InfoProvider implements Disposable {
                 await this.sendPosition();
             }),
             commands.registerTextEditorCommand('lean4.displayGoal', (editor) => this.openPreview(editor)),
+            commands.registerTextEditorCommand('lean4.toggleInfoview', (editor) => this.toggleInfoview(editor)),
             commands.registerTextEditorCommand('lean4.displayList', async (editor) => {
                 await this.openPreview(editor);
                 await this.webviewPanel?.api.requestedAction({kind: 'toggleAllMessages'});
@@ -476,6 +477,15 @@ export class InfoProvider implements Disposable {
             }
         }
         this.rpcSessions = remaining
+    }
+
+    private async toggleInfoview(editor: TextEditor) {
+        if (this.webviewPanel) {
+            this.webviewPanel.dispose();
+            // the onDispose handler sets this.webviewPanel = undefined
+        } else {
+            return this.openPreview(editor);
+        }
     }
 
     private async openPreview(editor: TextEditor) {
