@@ -11,6 +11,7 @@ import {
     LanguageClient,
     LanguageClientOptions,
     PublishDiagnosticsParams,
+    RevealOutputChannelOn,
     ServerOptions,
     State
 } from 'vscode-languageclient/node'
@@ -219,6 +220,7 @@ export class LeanClient implements Disposable {
 
         const clientOptions: LanguageClientOptions = {
             outputChannel: this.outputChannel,
+            revealOutputChannelOn: RevealOutputChannelOn.Never, // contrary to the name, this disables the message boxes
             documentSelector: [documentSelector],
             workspaceFolder: this.workspaceFolder,
             initializationOptions: {
@@ -370,8 +372,19 @@ export class LeanClient implements Disposable {
 
         // Reveal the standard error output channel when the server prints something to stderr.
         // The vscode-languageclient library already takes care of writing it to the output channel.
-        (this.client as any)._serverProcess.stderr.on('data', () => {
-            if (shouldAutofocusOutput()) this.client?.outputChannel.show(true);
+        let stderrMsgBoxVisible = false;
+        (this.client as any)._serverProcess.stderr.on('data', async (chunk : Buffer) => {
+            if (shouldAutofocusOutput()) {
+                this.client?.outputChannel.show(true);
+            } else if (!stderrMsgBoxVisible) {
+                stderrMsgBoxVisible = true;
+                const outputItem = 'Show stderr output';
+                const outPrompt = `Lean server printed an error:\n${chunk.toString()}`;
+                if (await window.showErrorMessage(outPrompt, outputItem) === outputItem) {
+                    this.outputChannel.show(false);
+                }
+                stderrMsgBoxVisible = false;
+            }
         });
 
         this.restartedEmitter.fire(undefined)
