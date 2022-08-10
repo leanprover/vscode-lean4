@@ -370,8 +370,19 @@ export class LeanClient implements Disposable {
 
         // Reveal the standard error output channel when the server prints something to stderr.
         // The vscode-languageclient library already takes care of writing it to the output channel.
-        (this.client as any)._serverProcess.stderr.on('data', () => {
-            if (shouldAutofocusOutput()) this.client?.outputChannel.show(true);
+        let stderrMsgBoxVisible = false;
+        (this.client as any)._serverProcess.stderr.on('data', async (chunk : Buffer) => {
+            if (shouldAutofocusOutput()) {
+                this.client?.outputChannel.show(true);
+            } else if (!stderrMsgBoxVisible) {
+                stderrMsgBoxVisible = true;
+                const outputItem = 'Show stderr output';
+                const outPrompt = `Lean server printed an error:\n${chunk.toString()}`;
+                if (await window.showErrorMessage(outPrompt, outputItem) === outputItem) {
+                    this.outputChannel.show(false);
+                }
+                stderrMsgBoxVisible = false;
+            }
         });
 
         this.restartedEmitter.fire(undefined)
