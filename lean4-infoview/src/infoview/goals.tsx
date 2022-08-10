@@ -5,12 +5,11 @@ import { InteractiveGoal, InteractiveGoals, InteractiveHypothesisBundle, Interac
 
 interface HypProps {
     hyp: InteractiveHypothesisBundle
-    index: number
 }
 
-export function Hyp({ hyp : h, index }: HypProps) {
+export function Hyp({ hyp : h }: HypProps) {
     const names = InteractiveHypothesisBundle_accessibleNames(h).map((n, i) =>
-            <span className="mr1">{n}</span>
+            <span className="mr1" key={i}>{n}</span>
         )
     return <li>
         <strong className="goal-hyp">{names}</strong>
@@ -87,7 +86,7 @@ export function Goal({ goal, filter }: GoalProps) {
         <ul className="list pl0">
             {goal.userName && <li key={'case'}><strong className="goal-case">case </strong>{goal.userName}</li>}
             {filter.reverse && goalLi}
-            {hyps.map((h, i) => <Hyp index={i} hyp={h} key={i}/>)}
+            {hyps.map((h, i) => <Hyp hyp={h} key={i}/>)}
             {!filter.reverse && goalLi}
         </ul>
     </div>
