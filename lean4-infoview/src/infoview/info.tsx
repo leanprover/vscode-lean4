@@ -140,6 +140,8 @@ export function InfoDisplay(props0: InfoDisplayProps) {
     const hasGoals = status !== 'error' && goals;
     const hasTermGoal = status !== 'error' && termGoal;
     const hasMessages = status !== 'error' && messages.length !== 0;
+    const isRpcErr = error && error.includes('Rpc error')
+
     const sortClasses = 'link pointer mh2 dim codicon fr ' + (goalFilters.reverse ? 'codicon-arrow-up ' : 'codicon-arrow-down ');
     const sortButton = <a className={sortClasses} title="reverse list" onClick={e => {
         setGoalFilters(s => {
@@ -182,7 +184,7 @@ export function InfoDisplay(props0: InfoDisplayProps) {
     <Details initiallyOpen>
         <InfoStatusBar {...props} triggerUpdate={triggerDisplayUpdate} isPaused={isPaused} setPaused={setPaused} copyGoalToComment={copyGoalToComment} />
         <div className="ml1">
-            {hasError &&
+            {hasError && !isRpcErr &&
                 <div className="error" key="errors">
                     Error updating:{' '}{error}.
                     <a className="link pointer dim" onClick={e => { e.preventDefault(); void triggerDisplayUpdate(); }}>{' '}Try again.</a>
