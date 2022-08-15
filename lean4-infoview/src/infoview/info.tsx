@@ -140,7 +140,6 @@ export function InfoDisplay(props0: InfoDisplayProps) {
     const hasGoals = status !== 'error' && goals;
     const hasTermGoal = status !== 'error' && termGoal;
     const hasMessages = status !== 'error' && messages.length !== 0;
-    const isRpcErr = error && error.includes('Rpc error')
 
     const sortClasses = 'link pointer mh2 dim codicon fr ' + (goalFilters.reverse ? 'codicon-arrow-up ' : 'codicon-arrow-down ');
     const sortButton = <a className={sortClasses} title="reverse list" onClick={e => {
@@ -184,7 +183,7 @@ export function InfoDisplay(props0: InfoDisplayProps) {
     <Details initiallyOpen>
         <InfoStatusBar {...props} triggerUpdate={triggerDisplayUpdate} isPaused={isPaused} setPaused={setPaused} copyGoalToComment={copyGoalToComment} />
         <div className="ml1">
-            {hasError && !isRpcErr &&
+            {hasError &&
                 <div className="error" key="errors">
                     Error updating:{' '}{error}.
                     <a className="link pointer dim" onClick={e => { e.preventDefault(); void triggerDisplayUpdate(); }}>{' '}Try again.</a>
@@ -377,26 +376,37 @@ function InfoAux(props: InfoProps) {
             setRpcSess(rpcSess0);
             setStatus('ready');
         } catch (ex: any) {
+            let errorString : string;
             if (isRpcError(ex) && ex.code === RpcErrorCode.ContentModified) {
                 // Document has been changed since we made the request, try again
                 void triggerUpdate();
                 return;
             }
-            let errorString : string;
-            if (typeof ex === 'string') {
-                errorString = ex
-            } else if (isRpcError(ex)) {
-                errorString = mapRpcError(ex).message
-            } else if (ex instanceof Error) {
-                errorString = ex.toString()
-            } else if (ex === undefined || JSON.stringify(ex) === '{}')  {
-                // we need to check if this value is empty or not, because maybe we are assigning
-                // a message error with an empty error
-                setError(undefined);
-                return;
-            } else {
-                // unrecognised error
-                errorString = `Unrecognised error: ${JSON.stringify(ex)}`
+            if (isRpcError(ex) && ex.code === RpcErrorCode.InvalidParams) {
+                // Check if the position is valid, if yes just update error message
+                if(pos.line !== undefined || null && pos.line !== undefined || null)
+                {
+                    errorString = 'Invalid Lean code';
+                } else {
+                    errorString = mapRpcError(ex).message
+                }
+            }
+            else {
+                if (typeof ex === 'string') {
+                    errorString = ex
+                } else if (isRpcError(ex)) {
+                    errorString = mapRpcError(ex).message
+                } else if (ex instanceof Error) {
+                    errorString = ex.toString()
+                } else if (ex === undefined || JSON.stringify(ex) === '{}')  {
+                    // we need to check if this value is empty or not, because maybe we are assigning
+                    // a message error with an empty error
+                    setError(undefined);
+                    return;
+                } else {
+                    // unrecognised error
+                    errorString = `Unrecognised error: ${JSON.stringify(ex)}`
+                }
             }
 
             setError(`Error fetching goals: ${errorString}`);
