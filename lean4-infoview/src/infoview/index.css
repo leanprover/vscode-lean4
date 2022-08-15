@@ -43,6 +43,17 @@ html,body {
     background-color: #3c6c92;
 }
 
+/* Interactive traces */
+.trace-line:hover {
+    background-color: #dbeeff;
+}
+.vscode-dark .trace-line:hover {
+    background-color: #1a2c3c;
+}
+.trace-class {
+    opacity: 0.4;
+}
+
 .pre-wrap {
     white-space: pre-wrap;
 }

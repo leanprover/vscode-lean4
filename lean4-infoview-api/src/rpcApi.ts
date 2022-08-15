@@ -69,11 +69,24 @@ export function getInteractiveTermGoal(rs: RpcSessionAtPos, pos: TextDocumentPos
     return rs.call('Lean.Widget.getInteractiveTermGoal', pos);
 }
 
+export type Name = string
+
+export type StrictOrLazy<S, L> = { strict: S } | { lazy: L }
+export type LazyTraceChildren = RpcPtr<'Lean.Widget.LazyTraceChildren'>
+export interface TraceEmbed {
+    indent: number;
+    cls: Name;
+    msg: TaggedText<MsgEmbed>;
+    collapsed: boolean; // collapsed by default
+    children: StrictOrLazy<TaggedText<MsgEmbed>[], LazyTraceChildren>;
+}
+
 export type MessageData = RpcPtr<'Lean.MessageData'>
 export type MsgEmbed =
     { expr: CodeWithInfos } |
     { goal: InteractiveGoal } |
-    { lazyTrace: [number, string, MessageData] }
+    { trace: TraceEmbed } |
+    { lazyTrace: [number, Name, MessageData] } // old collapsible trace support
 
 export type InteractiveDiagnostic = Omit<LeanDiagnostic, 'message'> & { message: TaggedText<MsgEmbed> }
 
@@ -92,6 +105,10 @@ export function InteractiveDiagnostics_msgToInteractive(rs: RpcSessionAtPos, msg
         indent: number
     }
     return rs.call<MessageToInteractive, TaggedText<MsgEmbed>>('Lean.Widget.InteractiveDiagnostics.msgToInteractive', {msg, indent})
+}
+
+export function lazyTraceChildrenToInteractive(rs: RpcSessionAtPos, children: LazyTraceChildren): Promise<TaggedText<MsgEmbed>[]> {
+    return rs.call('Lean.Widget.lazyTraceChildrenToInteractive', children)
 }
 
 export function InteractiveDiagnostics_infoToInteractive(rs: RpcSessionAtPos, info: InfoWithCtx): Promise<InfoPopup> {

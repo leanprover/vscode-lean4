@@ -76,6 +76,7 @@ module.exports = {
         "@typescript-eslint/restrict-template-expressions": "off",
         "@typescript-eslint/require-await": "off",
         "@typescript-eslint/no-unsafe-assignment": "off",
+        "@typescript-eslint/no-unsafe-argument": "off", // lots of false positives
         "@typescript-eslint/quotes": [
             "error",
             "single",

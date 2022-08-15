@@ -11,12 +11,12 @@ export function Hyp({ hyp : h }: HypProps) {
     const names = InteractiveHypothesisBundle_accessibleNames(h).map((n, i) =>
             <span className="mr1" key={i}>{n}</span>
         )
-    return <li>
+    return <div>
         <strong className="goal-hyp">{names}</strong>
         :&nbsp;
         <InteractiveCode fmt={h.type} />
         {h.val && <>&nbsp;:=&nbsp;<InteractiveCode fmt={h.val} /></>}
-    </li>
+    </div>
 }
 
 function goalToString(g: InteractiveGoal): string {
@@ -78,17 +78,15 @@ export function Goal({ goal, filter }: GoalProps) {
     const prefix = goal.goalPrefix ?? '⊢ '
     const filteredList = getFilteredHypotheses(goal.hyps, filter);
     const hyps = filter.reverse ? filteredList.slice().reverse() : filteredList;
-    const goalLi = <li key={'goal'}>
+    const goalLi = <div key={'goal'}>
         <strong className="goal-vdash">{prefix}</strong>
         <InteractiveCode fmt={goal.type} />
-    </li>
+    </div>
     return <div className="font-code tl pre-wrap">
-        <ul className="list pl0">
             {goal.userName && <li key={'case'}><strong className="goal-case">case </strong>{goal.userName}</li>}
             {filter.reverse && goalLi}
             {hyps.map((h, i) => <Hyp hyp={h} key={i}/>)}
             {!filter.reverse && goalLi}
-        </ul>
     </div>
 }
 
