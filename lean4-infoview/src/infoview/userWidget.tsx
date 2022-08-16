@@ -23,10 +23,11 @@ interface UserWidgetProps {
 export function UserWidget({ pos, widget }: UserWidgetProps) {
     const rs = React.useContext(RpcContext);
     const hash = widget.javascriptHash
-    const [status, component, error] = useAsync(
+    const component = useAsync(
         async () => {
             if (componentCache.has(hash)) {
-                return componentCache.get(hash)
+                // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+                return componentCache.get(hash)!
             }
             const code = await Widget_getWidgetSource(rs, pos, hash)
             const component = dynamicallyLoadComponent(hash, code.sourcetext)
@@ -38,10 +39,10 @@ export function UserWidget({ pos, widget }: UserWidgetProps) {
     const componentProps = { pos, ...widget.props }
 
     return (
-        <React.Suspense fallback={`Loading widget: ${widget.id} ${status}.`}>
+        <React.Suspense fallback={`Loading widget: ${widget.id} ${component.state}.`}>
             <ErrorBoundary>
-                {component && <div>{React.createElement(component, componentProps)}</div>}
-                {error && <div>{mapRpcError(error).message}</div>}
+                {component.state === 'resolved' && <div>{React.createElement(component.value, componentProps)}</div>}
+                {component.state === 'rejected' && <div>{mapRpcError(component.error).message}</div>}
             </ErrorBoundary>
         </React.Suspense>
     )

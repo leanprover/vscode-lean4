@@ -11,50 +11,42 @@ import * as React from 'react'
 import { Goal } from './goals'
 import { InteractiveCode, InteractiveTaggedText, InteractiveTagProps, InteractiveTextComponentProps } from './interactiveCode'
 import { InteractiveDiagnostics_msgToInteractive, lazyTraceChildrenToInteractive, MessageData, MsgEmbed, TaggedText, TraceEmbed } from '@leanprover/infoview-api'
-import { mapRpcError } from './util'
+import { mapRpcError, useAsyncWithTrigger } from './util'
 import { RpcContext } from './rpcSessions'
 
 function LazyTrace({col, cls, msg}: {col: number, cls: string, msg: MessageData}) {
-    type State =
-        { state: 'collapsed' } |
-        { state: 'loading' } |
-        { state: 'open', tt: TaggedText<MsgEmbed> } |
-        { state: 'error', err: string }
-
     const rs = React.useContext(RpcContext)
-    const [st, setSt] = React.useState<State>({state: 'collapsed'})
 
-    const fetchTrace = () => {
-        setSt({state: 'loading'})
-        void InteractiveDiagnostics_msgToInteractive(rs, msg, col)
-            .then(tt => setSt({state: 'open', tt}))
-            .catch(e => setSt({state: 'error', err: mapRpcError(e).toString()}))
-    }
+    const [tt, fetchTrace] = useAsyncWithTrigger(() =>
+            InteractiveDiagnostics_msgToInteractive(rs, msg, col),
+        [rs, msg, col])
 
-    if (st.state === 'collapsed')
+    const [open, setOpen] = React.useState(false)
+
+    if (!open)
         return <span className="underline-hover pointer"
             onClick={ev => {
                 fetchTrace()
+                setOpen(true)
                 ev.stopPropagation()
             }}>[{cls}] &gt;</span>
-    else if (st.state === 'loading')
-        return <span>[{cls}] Loading..</span>
-    else if (st.state === 'open')
+    else if (tt.state === 'resolved')
         return <>
             <span className="underline-hover pointer"
                 onClick={ev => {
-                    setSt({state: 'collapsed'})
+                    setOpen(false)
                     ev.stopPropagation()
                 }}>[{cls}] ∨</span>
-            <InteractiveMessage fmt={st.tt} />
+            <InteractiveMessage fmt={tt.value} />
         </>
-    else if (st.state === 'error')
+    else if (tt.state === 'rejected')
         return <><span className="underline-hover pointer"
             onClick={ev => {
                 fetchTrace()
                 ev.stopPropagation()
-            }}>[{cls}] Error (click to retry):</span> {st.err}</>
-    else throw new Error('unreachable')
+            }}>[{cls}] Error (click to retry):</span> {mapRpcError(tt.error)}</>
+    else
+        return <span>[{cls}] Loading..</span>
 }
 
 const TraceClassContext = React.createContext<string>('')
@@ -67,65 +59,54 @@ function abbreviateCommonPrefix(parent: string, cls: string): string {
     return clsParts.slice(i).join('.');
 }
 
-function Trace({indent, cls, msg, collapsed: collapsed0, children}: TraceEmbed) {
-    type State =
-        { state: 'collapsed' } |
-        { state: 'loading' } |
-        { state: 'open', tt: TaggedText<MsgEmbed>[] } |
-        { state: 'error', err: string }
+function TraceLine({ indent, cls, msg, icon }: TraceEmbed & { icon: string }) {
+    const spaces = ' '.repeat(indent)
+    const abbrCls = abbreviateCommonPrefix(React.useContext(TraceClassContext), cls);
+    return <div className='trace-line'>{spaces}<span className="trace-class" title={cls}>[{abbrCls}]</span> <InteractiveMessage fmt={msg}/> {icon}</div>;
+}
+
+function ChildlessTraceNode(traceEmbed: TraceEmbed) {
+    return <TraceLine {...traceEmbed} icon=''/>
+}
+
+function CollapsibleTraceNode(traceEmbed: TraceEmbed) {
+    const {cls, collapsed: collapsedByDefault, children: lazyKids} = traceEmbed
 
     const rs = React.useContext(RpcContext)
-    const [st, setSt] = React.useState<State>(
-        (!collapsed0 && 'strict' in children) ? {state: 'open', tt: children.strict} : {state: 'collapsed'});
-    // TODO: reset state when props change
-
-    const fetchTrace = () => {
-        if ('strict' in children) {
-            setSt({state: 'open', tt: children.strict})
+    const [children, fetchChildren] = useAsyncWithTrigger(async () => {
+        if ('strict' in lazyKids) {
+            return lazyKids.strict
         } else {
-            setSt({state: 'loading'})
-            void lazyTraceChildrenToInteractive(rs, children.lazy)
-                .then(tt => setSt({state: 'open', tt}))
-                .catch(e => setSt({state: 'error', err: mapRpcError(e).toString()}))
+            return lazyTraceChildrenToInteractive(rs, lazyKids.lazy)
         }
-    }
+    }, [rs, lazyKids])
 
-    const spaces = ' '.repeat(indent)
+    const [open, setOpen] = React.useState(!collapsedByDefault) // TODO: reset when collapsedByDefault changes?
+    if (open && children.state === 'notStarted') fetchChildren();
+    let icon = open ? '▼' : '▶';
+    if (children.state === 'loading') icon += ' ⋯'
 
-    const noChildren = 'strict' in children && children.strict.length === 0;
-    const icon =
-        noChildren ? '' :
-        st.state === 'collapsed' ? '▶' :
-        st.state === 'loading' ? '᠁' :
-        st.state === 'error' ? '⚠' :
-        st.state === 'open' ? '▼' :
-        '';
-
-    const abbrCls = abbreviateCommonPrefix(React.useContext(TraceClassContext), cls);
-    let line = <>{spaces}<span className="trace-class" title={cls}>[{abbrCls}]</span> <InteractiveMessage fmt={msg}/> {icon}</>;
-    if (noChildren) {
-        line = <div>{line}</div>; // same DOM structure as other cases
-    } else if (st.state === 'open') {
-        line = <div className="pointer" onClick={ev => {
-            setSt({state: 'collapsed'})
-            ev.stopPropagation();
-        }}>{line}</div>;
-    } else if (st.state === 'collapsed' || st.state === 'error') {
-        line = <div className="pointer" onClick={ev => {
-            fetchTrace();
-            ev.stopPropagation();
-        }}>{line}</div>;
-    } else {
-        line = <div>{line}</div>; // same DOM structure as other cases
-    }
+    const onClick = React.useCallback((ev: React.MouseEvent) => {
+        ev.stopPropagation()
+        if (!open) fetchChildren();
+        setOpen(o => !o)
+    }, [open])
 
     return <div>
-        <div className="trace-line">{line}</div>
-        <TraceClassContext.Provider value={cls}>
-            {st.state === 'open' && st.tt.map((tt, i) => <InteractiveMessage fmt={tt} key={i}/>)}
-            {st.state === 'error' && st.err}
-        </TraceClassContext.Provider>
+        <div className='pointer' onClick={onClick}><TraceLine {...traceEmbed} icon={icon} /></div>
+        <div style={{display: open ? 'block' : 'none'}}>
+            <TraceClassContext.Provider value={cls}>
+                {children.state === 'resolved' &&
+                    children.value.map((tt, i) => <InteractiveMessage fmt={tt} key={i}/>)}
+                {children.state === 'rejected' && mapRpcError(children.error)}
+            </TraceClassContext.Provider>
+        </div>
     </div>
+}
+
+function Trace(traceEmbed: TraceEmbed) {
+    const noChildren = 'strict' in traceEmbed.children && traceEmbed.children.strict.length === 0
+    return noChildren ? <ChildlessTraceNode {...traceEmbed}/> : <CollapsibleTraceNode {...traceEmbed}/>
 }
 
 function InteractiveMessageTag({tag: embed}: InteractiveTagProps<MsgEmbed>): JSX.Element {
