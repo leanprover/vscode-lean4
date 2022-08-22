@@ -19,18 +19,18 @@ export { InteractiveCode, InteractiveCodeProps } from './infoview/interactiveCod
 export function InteractiveMessageData({ msg }: { msg: MessageData }) {
     const rs = React.useContext(RpcContext)
 
-    const [status, tt, error] = useAsync(
+    const interactive = useAsync(
         () => InteractiveDiagnostics_msgToInteractive(rs, msg, 0),
         [rs, msg]
     )
 
-    if (tt) {
-        return <InteractiveMessage fmt={tt} />
-    } else if (status === 'pending') {
+    if (interactive.state === 'resolved') {
+        return <InteractiveMessage fmt={interactive.value} />
+    } else if (interactive.state === 'loading') {
         return <>...</>
     } else {
         return <div>Failed to display message:
-            {error && <span>{mapRpcError(error).message}</span>}
+            {<span>{mapRpcError(interactive.error).message}</span>}
         </div>
     }
 }

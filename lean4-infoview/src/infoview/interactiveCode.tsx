@@ -71,23 +71,23 @@ function TypePopupContents({ info, redrawTooltip }: TypePopupContentsProps) {
   // When `err` is defined we show the error,
   // otherwise if `ip` is defined we show its contents,
   // otherwise a 'loading' message.
-  const [_, ip, err] = useAsync(
+  const interactive = useAsync(
     () => InteractiveDiagnostics_infoToInteractive(rs, info.info),
     [rs, info.info, info.subexprPos])
 
   // We let the tooltip know to redo its layout whenever our contents change.
-  React.useEffect(() => redrawTooltip(), [ip, err, redrawTooltip])
+  React.useEffect(() => redrawTooltip(), [interactive.state, (interactive as any)?.value, (interactive as any)?.error, redrawTooltip])
 
   return <div className="tooltip-code-content">
-    {ip && <>
+    {interactive.state === 'resolved' ? <>
       <div className="font-code tl pre-wrap">
-      {ip.exprExplicit && <InteractiveCode fmt={ip.exprExplicit} />} : {ip.type && <InteractiveCode fmt={ip.type} />}
+      {interactive.value.exprExplicit && <InteractiveCode fmt={interactive.value.exprExplicit} />} : {
+        interactive.value.type && <InteractiveCode fmt={interactive.value.type} />}
       </div>
-      {ip.doc && <hr />}
-      {ip.doc && <Markdown contents={ip.doc}/>}
-    </>}
-    {err && <>Error: {mapRpcError(err).message}</>}
-    {(!ip && !err) && <>Loading..</>}
+      {interactive.value.doc && <><hr /><Markdown contents={interactive.value.doc}/></>}
+    </> :
+    interactive.state === 'rejected' ? <>Error: {mapRpcError(interactive.error).message}</> :
+    <>Loading..</>}
   </div>
 }
 
