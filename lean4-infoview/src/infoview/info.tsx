@@ -341,13 +341,29 @@ function InfoAux(props: InfoProps) {
             goalsReq = getInteractiveGoals(rpcSess, DocumentPosition.toTdpp(pos));
             termGoalReq = getInteractiveTermGoal(rpcSess, DocumentPosition.toTdpp(pos));
             widgetsReq = Widget_getWidgets(rpcSess, pos).catch(discardMethodNotFound);
-            messagesReq = getInteractiveDiagnostics(rpcSess, {start: pos.line, end: pos.line+1});
+            messagesReq = getInteractiveDiagnostics(rpcSess, {start: pos.line, end: pos.line+1})
+                // fall back to dumb diagnostics when lake fails (see https://github.com/leanprover/vscode-lean4/issues/90)
+                .then(diags => diags.length === 0 ? lspDiagsHere : diags);
         } else {
             goalsReq = ec.requestPlainGoal(pos).then(gs => gs && updatePlainGoals(gs))
             termGoalReq = ec.requestPlainTermGoal(pos).then(g => g && updateTermGoal(g))
                 .catch(() => undefined) // ignore error on Lean version that don't support term goals yet
             widgetsReq = Promise.resolve(undefined)
             messagesReq = Promise.resolve(lspDiagsHere)
+        }
+
+        // While `lake print-paths` is running, the output of Lake is shown as
+        // info diagnostics on line 1.  However, all RPC requests block until
+        // Lake is finished, so we don't see these diagnostics while Lake is
+        // building.  Therefore we show the LSP diagnostics on line 1 if the
+        // server does not respond within half a second.
+        if (pos.line === 0 && lspDiagsHere.length) {
+            setTimeout(() => {
+                if (tickAtStart > displayPropsTick.current) {
+                    setDisplayProps({ pos, messages: lspDiagsHere, rpcSess, status: 'updating' })
+                    displayPropsTick.current = tickAtStart
+                }
+            }, 500)
         }
 
         let newProps: Omit<InfoDisplayProps, 'triggerUpdate'>
