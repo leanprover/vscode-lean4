@@ -12,6 +12,7 @@
             "sourceMaps": true,
             "outFiles": [ "${workspaceRoot}/vscode-lean4/dist/**/*.js" ],
             "preLaunchTask": "watch",
+            "preLaunchTask": "clear-cache-history",
             "debugWebviews": true,
             "rendererDebugOptions": {
                 "webRoot": "${workspaceRoot}/vscode-lean4/media"

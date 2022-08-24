@@ -104,6 +104,10 @@
 				"kind": "build",
 				"isDefault": true
 			}
+		},
+		{
+			"label": "clear-editor-history",
+      		"command": "${command:workbench.action.clearEditorHistory}"
 		}
 	]
 }
