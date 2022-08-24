@@ -171,13 +171,17 @@ export function WithLspDiagnosticsContext({children}: React.PropsWithChildren<{}
     return <LspDiagnosticsContext.Provider value={allDiags}>{children}</LspDiagnosticsContext.Provider>
 }
 
+export function lspDiagToInteractive(diag: Diagnostic): InteractiveDiagnostic {
+    return { ...(diag as LeanDiagnostic), message: { text: diag.message } };
+}
+
 export function useMessagesForFile(rs: RpcSessionAtPos, uri: DocumentUri, line?: number): InteractiveDiagnostic[] {
     const sv = React.useContext(VersionContext)
     const lspDiags = React.useContext(LspDiagnosticsContext)
     const [diags, setDiags] = React.useState<InteractiveDiagnostic[]>([])
 
     async function updateDiags() {
-        setDiags((lspDiags.get(uri) || []).map(d => ({ ...(d as LeanDiagnostic), message: { text: d.message } })));
+        setDiags((lspDiags.get(uri) || []).map(lspDiagToInteractive));
         if (sv?.hasWidgetsV1()) {
             try {
                 const diags = await getInteractiveDiagnostics(rs,
@@ -198,9 +202,4 @@ export function useMessagesForFile(rs: RpcSessionAtPos, uri: DocumentUri, line?:
     }
     React.useEffect(() => void updateDiags(), [uri, line, rs, lspDiags.get(uri)])
     return diags;
-}
-
-export function useMessagesFor(rs: RpcSessionAtPos, pos: DocumentPosition): InteractiveDiagnostic[] {
-    const config = React.useContext(ConfigContext);
-    return useMessagesForFile(rs, pos.uri, pos.line).filter(d => RangeHelpers.contains(d.range, pos, config.infoViewAllErrorsOnLine));
 }
