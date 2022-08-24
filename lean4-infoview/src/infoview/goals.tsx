@@ -83,7 +83,7 @@ export function Goal({ goal, filter }: GoalProps) {
         <InteractiveCode fmt={goal.type} />
     </div>
     return <div className="font-code tl pre-wrap">
-            {goal.userName && <li key={'case'}><strong className="goal-case">case </strong>{goal.userName}</li>}
+            {goal.userName && <div key={'case'}><strong className="goal-case">case </strong>{goal.userName}</div>}
             {filter.reverse && goalLi}
             {hyps.map((h, i) => <Hyp hyp={h} key={i}/>)}
             {!filter.reverse && goalLi}
