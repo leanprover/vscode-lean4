@@ -4,10 +4,10 @@ import type { Location } from 'vscode-languageserver-protocol';
 import { Goals as GoalsUi, Goal as GoalUi, goalsToString, GoalFilterState } from './goals';
 import { basename, DocumentPosition, RangeHelpers, useEvent, usePausableState, useClientNotificationEffect, discardMethodNotFound, mapRpcError } from './util';
 import { Details } from './collapsing';
-import { EditorContext, ProgressContext, VersionContext } from './contexts';
-import { MessagesList, useMessagesFor } from './messages';
+import { ConfigContext, EditorContext, LspDiagnosticsContext, ProgressContext, VersionContext } from './contexts';
+import { lspDiagToInteractive, MessagesList } from './messages';
 import { getInteractiveGoals, getInteractiveTermGoal, InteractiveDiagnostic, InteractiveGoal,
-    InteractiveGoals, UserWidgets, Widget_getWidgets, RpcSessionAtPos, isRpcError, RpcErrorCode } from '@leanprover/infoview-api';
+    InteractiveGoals, UserWidgets, Widget_getWidgets, RpcSessionAtPos, isRpcError, RpcErrorCode, getInteractiveDiagnostics } from '@leanprover/infoview-api';
 import { updatePlainGoals, updateTermGoal } from './goalCompat';
 import { WithTooltipOnHover } from './tooltips'
 import { UserWidget } from './userWidget'
@@ -80,7 +80,7 @@ export function InfoStatusBar(props: InfoStatusBarProps) {
     );
 }
 
-interface InfoDisplayProps extends InfoPinnable {
+interface InfoDisplayProps {
     pos: DocumentPosition;
     status: InfoStatus;
     messages: InteractiveDiagnostic[];
@@ -89,12 +89,11 @@ interface InfoDisplayProps extends InfoPinnable {
     error?: string;
     userWidgets?: UserWidgets;
     rpcSess: RpcSessionAtPos;
-    messagesRpcSess: RpcSessionAtPos;
     triggerUpdate: () => Promise<void>;
 }
 
 /** Displays goal state and messages. Can be paused. */
-export function InfoDisplay(props0: InfoDisplayProps) {
+export function InfoDisplay(props0: InfoDisplayProps & InfoPinnable) {
     // Used to update the paused state once if a display update is triggered
     const [shouldRefresh, setShouldRefresh] = React.useState<boolean>(false);
     const [isPaused, setPaused, props, propsRef] = usePausableState(false, props0);
@@ -109,7 +108,7 @@ export function InfoDisplay(props0: InfoDisplayProps) {
     const [goalFilters, setGoalFilters] = React.useState<GoalFilterState>(
         { reverse: false, isType: true, isInstance: true, isHiddenAssumption: true});
 
-    const {kind, pos, status, messages, goals, termGoal, error, userWidgets, rpcSess, messagesRpcSess} = props;
+    const {kind, pos, messages, goals, termGoal, error, userWidgets, rpcSess} = props;
 
     const ec = React.useContext(EditorContext);
     let copyGoalToComment: (() => void) | undefined
@@ -129,17 +128,15 @@ export function InfoDisplay(props0: InfoDisplayProps) {
         setPaused(isPaused => !isPaused);
     });
 
-    const rs = React.useContext(RpcContext);
-
     const widgets = userWidgets && userWidgets.widgets
     const hasWidget = (widgets !== undefined) && (widgets.length > 0)
 
     const nothingToShow = !error && !goals && !termGoal && messages.length === 0 && !hasWidget;
 
-    const hasError = status === 'error' && error;
-    const hasGoals = status !== 'error' && goals;
-    const hasTermGoal = status !== 'error' && termGoal;
-    const hasMessages = status !== 'error' && messages.length !== 0;
+    const hasError = !!error;
+    const hasGoals = !!goals;
+    const hasTermGoal = !!termGoal;
+    const hasMessages = messages.length !== 0;
     const sortClasses = 'link pointer mh2 dim codicon fr ' + (goalFilters.reverse ? 'codicon-arrow-up ' : 'codicon-arrow-down ');
     const sortButton = <a className={sortClasses} title="reverse list" onClick={e => {
         setGoalFilters(s => {
@@ -220,7 +217,6 @@ export function InfoDisplay(props0: InfoDisplayProps) {
                     </Details>
                 </div>
             )}
-            <RpcContext.Provider value={messagesRpcSess}>
             <div style={{display: hasMessages ? 'block' : 'none'}} key="messages">
                 <Details initiallyOpen>
                     <summary className="mv2 pointer">
@@ -231,7 +227,6 @@ export function InfoDisplay(props0: InfoDisplayProps) {
                     </div>
                 </Details>
             </div>
-            </RpcContext.Provider>
             {nothingToShow && (
                 isPaused ?
                     /* Adding {' '} to manage string literals properly: https://reactjs.org/docs/jsx-in-depth.html#string-literals-1 */
@@ -263,7 +258,7 @@ function useDelayedThrottled(ms: number, cb: () => Promise<void>): () => Promise
     const waiting = React.useRef<boolean>(false);
     const callbackRef = React.useRef<() => Promise<void>>();
     callbackRef.current = cb;
-    return async () => {
+    return React.useCallback(async () => {
         if (!waiting.current) {
             waiting.current = true;
             const promise = new Promise((resolved, rejected) => {
@@ -274,7 +269,7 @@ function useDelayedThrottled(ms: number, cb: () => Promise<void>): () => Promise
             });
             await promise;
         }
-    };
+    }, [ms]);
 }
 
 /**
@@ -311,75 +306,81 @@ function InfoAux(props: InfoProps) {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const pos = props.pos!;
 
-    const [status, setStatus] = React.useState<InfoStatus>('loading');
-    const [goals, setGoals] = React.useState<InteractiveGoals>();
-    const [termGoal, setTermGoal] = React.useState<InteractiveGoal>();
-    const [userWidgets, setUserWidgets] = React.useState<UserWidgets>();
-    const [error, setError] = React.useState<string>();
+    const rpcSess = useRpcSessionAtPos(pos);
 
-    // RPC session used for the update
-    const rpcSess0 = useRpcSessionAtPos(pos);
-    // RPC session used for the data in goals/termGoal
-    const [rpcSess, setRpcSess] = React.useState<RpcSessionAtPos>(rpcSess0);
+    const lspDiags = React.useContext(LspDiagnosticsContext);
+    const config = React.useContext(ConfigContext);
 
-    const messages = useMessagesFor(rpcSess, pos);
     const serverIsProcessing = useIsProcessingAt(pos);
 
-    // We encapsulate `InfoDisplay` props in a single piece of state for atomicity, in particular
-    // to avoid displaying a new position before the server has sent us all the goal state there.
-    const mkDisplayProps = () => ({ ...props, pos, goals, termGoal, error, rpcSess, userWidgets });
-    const [displayProps, setDisplayProps] = React.useState(mkDisplayProps());
-    const [shouldUpdateDisplay, setShouldUpdateDisplay] = React.useState(false);
-    if (shouldUpdateDisplay) {
-        setDisplayProps(mkDisplayProps());
-        setShouldUpdateDisplay(false);
-    }
+    // We encapsulate `InfoDisplay` props in a single piece of state for atomicity
+    const [displayProps, setDisplayProps] = React.useState<Omit<InfoDisplayProps, 'triggerUpdate'>>(
+        () => ({ pos, goals: undefined, termGoal: undefined, error: undefined, rpcSess, userWidgets: undefined, messages: [], status: 'loading' }));
 
-    const triggerUpdate = useDelayedThrottled(serverIsProcessing ? 500 : 50, async () => {
-        setStatus('updating');
+    // Two counters used to ensure monotonic updates
+    const tick = React.useRef(0) // Incremented when an update is triggered
+    const displayPropsTick = React.useRef(0) // Assigned when setDisplayProps is called
+    // If displayPropsTick.current < tick.current, then an update is in flight.
 
-        let allReq : Promise<[
-            InteractiveGoals | undefined,
-            InteractiveGoal | undefined,
-            UserWidgets | undefined
-        ]>
+    const triggerUpdate = useDelayedThrottled(serverIsProcessing ? 250 : 50, async () => {
+        tick.current += 1
+        const tickAtStart = tick.current
+
+        setDisplayProps(props => ({...props, status: 'updating'}));
+
+        const diagPred = (d: InteractiveDiagnostic) =>
+            RangeHelpers.contains(d.range, pos, config.infoViewAllErrorsOnLine);
+        const lspDiagsHere = (lspDiags.get(pos.uri) || []).map(lspDiagToInteractive).filter(diagPred)
+
+        let goalsReq: Promise<InteractiveGoals | undefined>
+        let termGoalReq: Promise<InteractiveGoal | undefined>
+        let widgetsReq: Promise<UserWidgets | undefined>
+        let messagesReq: Promise<InteractiveDiagnostic[]>
+
         if (sv?.hasWidgetsV1()) {
-            // Start all requests before awaiting them.
-            const goalsReq = getInteractiveGoals(rpcSess0, DocumentPosition.toTdpp(pos));
-            const termGoalReq = getInteractiveTermGoal(rpcSess0, DocumentPosition.toTdpp(pos));
-            const userWidgets = Widget_getWidgets(rpcSess0, pos).catch(discardMethodNotFound);
-            allReq = Promise.all([goalsReq, termGoalReq, userWidgets]);
+            goalsReq = getInteractiveGoals(rpcSess, DocumentPosition.toTdpp(pos));
+            termGoalReq = getInteractiveTermGoal(rpcSess, DocumentPosition.toTdpp(pos));
+            widgetsReq = Widget_getWidgets(rpcSess, pos).catch(discardMethodNotFound);
+            messagesReq = getInteractiveDiagnostics(rpcSess, {start: pos.line, end: pos.line+1})
+                // fall back to dumb diagnostics when lake fails (see https://github.com/leanprover/vscode-lean4/issues/90)
+                .then(diags => diags.length === 0 ? lspDiagsHere : diags);
         } else {
-            const goalsReq = ec.requestPlainGoal(pos).then(gs => {
-                if (gs) return updatePlainGoals(gs)
-                else return undefined
-            })
-            const termGoalReq = ec.requestPlainTermGoal(pos).then(g => {
-                if (g) return updateTermGoal(g)
-                else return undefined
-            }).catch(() => undefined) // ignore error on Lean version that don't support term goals yet
-            allReq = Promise.all([
-                goalsReq,
-                termGoalReq,
-                undefined
-            ]);
+            goalsReq = ec.requestPlainGoal(pos).then(gs => gs && updatePlainGoals(gs))
+            termGoalReq = ec.requestPlainTermGoal(pos).then(g => g && updateTermGoal(g))
+                .catch(() => undefined) // ignore error on Lean version that don't support term goals yet
+            widgetsReq = Promise.resolve(undefined)
+            messagesReq = Promise.resolve(lspDiagsHere)
         }
 
+        // While `lake print-paths` is running, the output of Lake is shown as
+        // info diagnostics on line 1.  However, all RPC requests block until
+        // Lake is finished, so we don't see these diagnostics while Lake is
+        // building.  Therefore we show the LSP diagnostics on line 1 if the
+        // server does not respond within half a second.
+        if (pos.line === 0 && lspDiagsHere.length) {
+            setTimeout(() => {
+                if (tickAtStart > displayPropsTick.current) {
+                    setDisplayProps({ pos, messages: lspDiagsHere, rpcSess, status: 'updating' })
+                    displayPropsTick.current = tickAtStart
+                }
+            }, 500)
+        }
+
+        let newProps: Omit<InfoDisplayProps, 'triggerUpdate'>
         try {
             // NB: it is important to await both reqs at once, otherwise
             // if both throw then one exception becomes unhandled.
-            const [goals, termGoal, userWidgets] = await allReq;
-            setGoals(goals);
-            setTermGoal(termGoal);
-            setUserWidgets(userWidgets);
-            setRpcSess(rpcSess0);
-            setStatus('ready');
+            const [goals, termGoal, userWidgets, messages] = await Promise.all([goalsReq, termGoalReq, widgetsReq, messagesReq]);
+            newProps = { pos, messages, goals, termGoal, userWidgets, rpcSess, status: 'ready' }
         } catch (ex: any) {
-            if (isRpcError(ex) && ex.code === RpcErrorCode.ContentModified) {
+            if (ex?.code === RpcErrorCode.ContentModified) {
                 // Document has been changed since we made the request, try again
-                void triggerUpdate();
-                return;
+                return void triggerUpdate();
+            } else if (ex?.code === RpcErrorCode.RpcNeedsReconnect) {
+                // Need to reconnect to RPC session
+                return void triggerUpdate();
             }
+
             let errorString : string;
             if (typeof ex === 'string') {
                 errorString = ex
@@ -387,26 +388,30 @@ function InfoAux(props: InfoProps) {
                 errorString = mapRpcError(ex).message
             } else if (ex instanceof Error) {
                 errorString = ex.toString()
-            } else if (ex === undefined || JSON.stringify(ex) === '{}')  {
-                // we need to check if this value is empty or not, because maybe we are assigning
-                // a message error with an empty error
-                setError(undefined);
-                return;
             } else {
-                // unrecognised error
-                errorString = `Unrecognised error: ${JSON.stringify(ex)}`
+                errorString = `Unrecognized error: ${JSON.stringify(ex)}`
             }
 
-            setError(`Error fetching goals: ${errorString}`);
-            setStatus('error');
+            newProps = {
+                pos,
+                messages: lspDiagsHere,
+                goals: undefined,
+                termGoal: undefined,
+                error: `Error fetching goals: ${errorString}`,
+                rpcSess,
+                status: 'error',
+            }
         }
-        setShouldUpdateDisplay(true);
+
+        if (tickAtStart < displayPropsTick.current) return;
+        displayPropsTick.current = tickAtStart;
+        if (tickAtStart < tick.current) newProps.status = 'updating';
+        setDisplayProps(newProps)
     });
 
-    React.useEffect(() => void triggerUpdate(), [pos.uri, pos.line, pos.character, serverIsProcessing]);
+    React.useEffect(() => void triggerUpdate(), [pos.uri, pos.line, pos.character, lspDiags, serverIsProcessing]);
 
     return (
-        <InfoDisplay {...displayProps} messages={messages} messagesRpcSess={rpcSess}
-             status={status} triggerUpdate={triggerUpdate} />
+        <InfoDisplay {...props} {...displayProps} triggerUpdate={triggerUpdate} />
     );
 }
