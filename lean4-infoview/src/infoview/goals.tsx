@@ -7,9 +7,15 @@ interface HypProps {
     hyp: InteractiveHypothesisBundle
 }
 
+
+/** Returns true if `h` is inaccessible according to Lean's default name rendering. */
+function isInaccessibleName(h: string): boolean {
+    return h.indexOf('✝') >= 0;
+}
+
 export function Hyp({ hyp : h }: HypProps) {
     const names = InteractiveHypothesisBundle_accessibleNames(h).map((n, i) =>
-            <span className="mr1" key={i}>{n}</span>
+            <span className={'mr1 ' + (isInaccessibleName(n) ? 'goal-inaccessible' : '')} key={i}>{n}</span>
         )
     return <div>
         <strong className="goal-hyp">{names}</strong>
@@ -55,15 +61,11 @@ export interface GoalFilterState {
     isHiddenAssumption: boolean
 }
 
-function isHiddenAssumption(h: InteractiveHypothesisBundle) {
-    return h.names.every(n => n.indexOf('✝') >= 0);
-}
-
 function getFilteredHypotheses(hyps: InteractiveHypothesisBundle[], filter: GoalFilterState): InteractiveHypothesisBundle[] {
     return hyps.filter(h =>
         (!h.isInstance || filter.isInstance) &&
         (!h.isType || filter.isType) &&
-        (filter.isHiddenAssumption || !isHiddenAssumption(h)));
+        (filter.isHiddenAssumption || !h.names.every(isInaccessibleName)));
 }
 
 interface GoalProps {

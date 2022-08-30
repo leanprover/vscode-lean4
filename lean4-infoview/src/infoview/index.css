@@ -23,13 +23,17 @@ html,body {
 .goal-vdash { color: #569cd6; }
 .goal-case { color: #a1df90; }
 .goal-hyp { color: #ffcc00; }
-.goal-inaccessible { color: #808080 }
+.goal-inaccessible {
+    color: var(--vscode-editor-foreground);
+    opacity: 0.7;
+    font-style: italic;
+    font-weight: normal;
+}
 
 .vscode-light .goal-goals { color: #367cb6; }
 .vscode-light .goal-vdash { color: #367cb6; }
 .vscode-light .goal-case { color: #1f7a1f; }
 .vscode-light .goal-hyp { color: #cc7a00; }
-.vscode-light .goal-inaccessible { color: #777; }
 
 /* Used to denote text highlighted by the pretty-print expression widget. */
 .highlightable {
