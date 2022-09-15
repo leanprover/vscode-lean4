@@ -335,8 +335,7 @@ export class LeanClient implements Disposable {
                     }
                 }
             })
-            this.client.start()
-            await this.client.onReady();
+            await this.client.start()
             // tell the new client about the documents that are already open!
             for (const key of this.isOpen.keys()) {
                 const doc = this.isOpen.get(key);
