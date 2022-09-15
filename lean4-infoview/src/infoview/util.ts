@@ -326,7 +326,10 @@ export function useAsyncWithTrigger<T>(fn: () => Promise<T>, deps: React.Depende
     )
   }, deps);
 
-  if (!asyncStateDeps.current.every((d, i) => Object.is(d, deps[i]))) {
+  const depsTheSame =
+    asyncStateDeps.current.length === deps.length &&
+    asyncStateDeps.current.every((d, i) => Object.is(d, deps[i]))
+  if (!depsTheSame) {
     tick.current += 1
     asyncState.current = {state: 'notStarted'}
     asyncStateDeps.current = deps
