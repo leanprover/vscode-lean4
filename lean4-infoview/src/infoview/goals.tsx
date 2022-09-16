@@ -7,7 +7,6 @@ interface HypProps {
     hyp: InteractiveHypothesisBundle
 }
 
-
 /** Returns true if `h` is inaccessible according to Lean's default name rendering. */
 function isInaccessibleName(h: string): boolean {
     return h.indexOf('✝') >= 0;
@@ -93,8 +92,6 @@ export function Goal(props: GoalProps) {
     let cn = 'font-code tl pre-wrap mv1 bl bw1 pl1 b--transparent '
     if (props.goal.isInserted) {
         cn += 'b--inserted '
-    } else if (props.goal.isInserted === false) {
-        // cn += 'b--modified '
     }
     return <div className={cn}>
         {goal.userName && <div key={'case'}><strong className="goal-case">case </strong>{goal.userName}</div>}
@@ -117,7 +114,7 @@ export function Goals({ goals, filter }: GoalsProps) {
         return <>Goals accomplished 🎉</>
     } else {
         return <>
-            {goals.goals.map((g, i) => <Goal key={i} goal={g} filter={filter} index={i}/> )}
+            {goals.goals.map((g, i) => <Goal key={i} goal={g} filter={filter} index={i} />)}
             {goals.message && <div className="font-normal">goals.message</div>}
         </>
     }
