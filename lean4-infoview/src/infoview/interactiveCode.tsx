@@ -85,6 +85,10 @@ function TypePopupContents({ info, redrawTooltip }: TypePopupContentsProps) {
         interactive.value.type && <InteractiveCode fmt={interactive.value.type} />}
       </div>
       {interactive.value.doc && <><hr /><Markdown contents={interactive.value.doc}/></>}
+      {info.tags && <>
+        <hr/>
+        tags: {info.tags.join(', ')}
+      </>}
     </> :
     interactive.state === 'rejected' ? <>Error: {mapRpcError(interactive.error).message}</> :
     <>Loading..</>}
@@ -119,6 +123,16 @@ function InteractiveCodeTag({tag: ct, fmt}: InteractiveTagProps<SubexprInfo>) {
   }, [rs, ct.info, goToLoc])
   React.useEffect(() => { if (hoverState === 'ctrlOver') void fetchGoToLoc() }, [hoverState])
 
+  let spanClassName : any = 'highlightable '
+    + (hoverState !== 'off' ? 'highlight ' : '')
+    + (hoverState === 'ctrlOver' && goToLoc !== undefined ? 'underline ' : '')
+
+  if (ct.tags) {
+    if (ct.tags.includes('inserted')) {
+      spanClassName += 'bg-inserted '
+    }
+  }
+
   return (
     <WithTooltipOnHover
       mkTooltipContent={mkTooltip}
@@ -136,9 +150,7 @@ function InteractiveCodeTag({tag: ct, fmt}: InteractiveTagProps<SubexprInfo>) {
     >
       <DetectHoverSpan
         setHoverState={setHoverState}
-        className={'highlightable '
-                    + (hoverState !== 'off' ? 'highlight ' : '')
-                    + (hoverState === 'ctrlOver' && goToLoc !== undefined ? 'underline ' : '')}
+        className={spanClassName}
       >
         <InteractiveCode fmt={fmt} />
       </DetectHoverSpan>

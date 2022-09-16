@@ -13,6 +13,12 @@ html,body {
     line-height: var(--vscode-editor-line-height);
 }
 
+.font-normal {
+    font-family: var(--vscode-font-family);
+    font-weight: var(--vscode-font-weight);
+    font-size: var(--vscode-font-size);
+}
+
 .codicon-blank {
     width: 20px;
     height: 16px;
@@ -245,4 +251,30 @@ For that, we can use more specific classes. */
     border-radius: 3px;
     padding: 0 0.4em;
     background-color: var(--vscode-textCodeBlock-background);
+}
+
+.vscode-light {
+    --diff-insert-color: #9EEBCF; /* #3b894b #9EEBCF */
+    --diff-modified-color: #9ec3eb;
+}
+
+.vscode-dark {
+    --diff-insert-color: #3a6e04;
+    --diff-modified-color: #0c6ac8;
+}
+
+.bg-inserted {
+    background-color: var(--diff-insert-color)
+}
+
+.b--inserted {
+    border-color: var(--diff-insert-color) !important
+}
+
+.b--modified {
+    border-color: var(--diff-modified-color) !important
+}
+
+.b--transparent {
+    border-color: transparent
 }

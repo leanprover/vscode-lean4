@@ -13,15 +13,20 @@ function isInaccessibleName(h: string): boolean {
     return h.indexOf('✝') >= 0;
 }
 
-export function Hyp({ hyp : h }: HypProps) {
+export function Hyp({ hyp: h }: HypProps) {
     const names = InteractiveHypothesisBundle_accessibleNames(h).map((n, i) =>
-            <span className={'mr1 ' + (isInaccessibleName(n) ? 'goal-inaccessible' : '')} key={i}>{n}</span>
-        )
+        <span className={'mr1 ' + (isInaccessibleName(n) ? 'goal-inaccessible' : '')} key={i}>{n}</span>
+    )
+    let cn = 'goal-hyp '
+    if (h.isInserted) {
+        cn += 'bg-inserted '
+    }
     return <div>
-        <strong className="goal-hyp">{names}</strong>
+        <strong className={cn}>{names}</strong>
         :&nbsp;
         <InteractiveCode fmt={h.type} />
         {h.val && <>&nbsp;:=&nbsp;<InteractiveCode fmt={h.val} /></>}
+        {h.message && <span className="pl2 font-normal">{h.message}</span>}
     </div>
 }
 
@@ -76,7 +81,8 @@ interface GoalProps {
 }
 
 
-export function Goal({ goal, filter }: GoalProps) {
+export function Goal(props: GoalProps) {
+    const { goal, filter } = props
     const prefix = goal.goalPrefix ?? '⊢ '
     const filteredList = getFilteredHypotheses(goal.hyps, filter);
     const hyps = filter.reverse ? filteredList.slice().reverse() : filteredList;
@@ -84,11 +90,20 @@ export function Goal({ goal, filter }: GoalProps) {
         <strong className="goal-vdash">{prefix}</strong>
         <InteractiveCode fmt={goal.type} />
     </div>
-    return <div className="font-code tl pre-wrap">
-            {goal.userName && <div key={'case'}><strong className="goal-case">case </strong>{goal.userName}</div>}
-            {filter.reverse && goalLi}
-            {hyps.map((h, i) => <Hyp hyp={h} key={i}/>)}
-            {!filter.reverse && goalLi}
+    let cn = 'font-code tl pre-wrap mv1 bl bw1 pl1 b--transparent '
+    if (props.goal.isInserted) {
+        cn += 'b--inserted '
+    } else if (props.goal.isInserted === false) {
+        // cn += 'b--modified '
+    }
+    return <div className={cn}>
+        {goal.userName && <div key={'case'}><strong className="goal-case">case </strong>{goal.userName}</div>}
+        {filter.reverse && goalLi}
+        {hyps.map((h, i) => <Hyp hyp={h} key={i} />)}
+        {!filter.reverse && goalLi}
+        <div className="font-normal">
+            {goal.message}
+        </div>
     </div>
 }
 
@@ -102,7 +117,8 @@ export function Goals({ goals, filter }: GoalsProps) {
         return <>Goals accomplished 🎉</>
     } else {
         return <>
-            {goals.goals.map((g, i) => <Goal key={i} goal={g} filter={filter} index={i} />)}
+            {goals.goals.map((g, i) => <Goal key={i} goal={g} filter={filter} index={i}/> )}
+            {goals.message && <div className="font-normal">goals.message</div>}
         </>
     }
 }
