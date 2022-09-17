@@ -5,7 +5,7 @@
 	"version": "0.0.95",
 	"publisher": "leanprover",
 	"engines": {
-		"vscode": "^1.61.0"
+		"vscode": "^1.70.0"
 	},
 	"categories": [
 		"Programming Languages"
