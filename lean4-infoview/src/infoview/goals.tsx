@@ -20,18 +20,13 @@ export function Hyp({ hyp: h }: HypProps) {
         nameStyle.backgroundColor = 'var(--red)';
     }
     const names = InteractiveHypothesisBundle_accessibleNames(h).map((n, i) =>
-        <span className={
-            'mr1 '
-            + (isInaccessibleName(n) ? 'goal-inaccessible' : '')
-            + (h.isInserted ? 'bg-inserted ' : '')
-            + (h.isRemoved ? 'bg-removed ' : '')} key={i}>{n}</span>
+        <span className={ 'mr1 ' + (isInaccessibleName(n) ? 'goal-inaccessible' : '')} key={i} style={nameStyle}>{n}</span>
     )
     return <div>
         <strong className="goal-hyp">{names}</strong>
         :&nbsp;
         <InteractiveCode fmt={h.type} />
         {h.val && <>&nbsp;:=&nbsp;<InteractiveCode fmt={h.val} /></>}
-        {h.message && <span className="pl2 font-normal">{h.message}</span>}
     </div>
 }
 
@@ -107,9 +102,6 @@ export function Goal(props: GoalProps) {
         {filter.reverse && goalLi}
         {hyps.map((h, i) => <Hyp hyp={h} key={i} />)}
         {!filter.reverse && goalLi}
-        <div className="font-normal">
-            {goal.message}
-        </div>
     </div>
 }
 
@@ -124,7 +116,6 @@ export function Goals({ goals, filter }: GoalsProps) {
     } else {
         return <>
             {goals.goals.map((g, i) => <Goal key={i} goal={g} filter={filter} index={i} />)}
-            {goals.message && <div className="font-normal">{goals.message}</div>}
         </>
     }
 }
