@@ -254,39 +254,31 @@ For that, we can use more specific classes. */
 }
 
 .vscode-light {
-    --diff-insert-color: #9EEBCF; /* #3b894b #9EEBCF */
-    --diff-modified-color: #9ec3eb;
-    --diff-removed-color: #eb9e9e;
+    --green: #9EEBCF;
+    --blue: #9ec3eb;
+    --red: #eb9e9e;
+    --yellow: #e5eb9e;
+    --purple: #eb9eeb;
 }
 
 .vscode-dark {
-    --diff-insert-color: #3a6e04;
-    --diff-modified-color: #0c6ac8;
-    --diff-removed-color: #c81c0c;
-}
-
-.bg-inserted {
-    background-color: var(--diff-insert-color);
-}
-
-.bg-removed {
-    background-color: var(--diff-removed-color);
-}
-
-.bg-modified {
-    background-color: var(--diff-insert-color);
+    --green: #274903;
+    --blue: #0c6ac8;
+    --red: #6a1008;
+    --yellow: #5d5b07;
+    --purple: #5a0853;
 }
 
 .b--inserted {
-    border-color: var(--diff-insert-color) !important;
+    border-color: var(--green) !important;
 }
 
 .b--modified {
-    border-color: var(--diff-insert-color) !important;
+    border-color: var(--green) !important;
 }
 
 .b--removed {
-    border-color: var(--diff-removed-color) !important;
+    border-color: var(--red) !important;
 }
 
 .b--transparent {

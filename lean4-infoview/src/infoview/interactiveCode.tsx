@@ -85,10 +85,6 @@ function TypePopupContents({ info, redrawTooltip }: TypePopupContentsProps) {
         interactive.value.type && <InteractiveCode fmt={interactive.value.type} />}
       </div>
       {interactive.value.doc && <><hr /><Markdown contents={interactive.value.doc}/></>}
-      {info.tags && <>
-        <hr/>
-        tags: {info.tags.join(', ')}
-      </>}
     </> :
     interactive.state === 'rejected' ? <>Error: {mapRpcError(interactive.error).message}</> :
     <>Loading..</>}
@@ -128,20 +124,12 @@ function InteractiveCodeTag({tag: ct, fmt}: InteractiveTagProps<SubexprInfo>) {
   }, [rs, ct.info, goToLoc])
   React.useEffect(() => { if (hoverState === 'ctrlOver') void fetchGoToLoc() }, [hoverState])
 
-  let spanClassName : any = 'highlightable '
+  const spanClassName : any = 'highlightable '
     + (hoverState !== 'off' ? 'highlight ' : '')
     + (hoverState === 'ctrlOver' && goToLoc !== undefined ? 'underline ' : '')
-
-  if (ct.tags) {
-    if (ct.tags.includes('insert')) {
-      spanClassName += 'bg-inserted '
-    }
-    if (ct.tags.includes('delete')) {
-      spanClassName += 'bg-removed '
-    }
-    if (ct.tags.includes('change')) {
-        spanClassName += 'bg-modified '
-    }
+  const spanStyle : any = {}
+  if (ct.highlightColor) {
+    spanStyle.backgroundColor = `var(--${ct.highlightColor})`
   }
 
   return (
@@ -162,6 +150,7 @@ function InteractiveCodeTag({tag: ct, fmt}: InteractiveTagProps<SubexprInfo>) {
       <DetectHoverSpan
         setHoverState={setHoverState}
         className={spanClassName}
+        style={spanStyle}
       >
         <InteractiveCode fmt={fmt} />
       </DetectHoverSpan>

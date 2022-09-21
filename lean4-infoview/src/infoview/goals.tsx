@@ -13,6 +13,12 @@ function isInaccessibleName(h: string): boolean {
 }
 
 export function Hyp({ hyp: h }: HypProps) {
+    const nameStyle : any = {}
+    if (h.isInserted) {
+        nameStyle.backgroundColor = 'var(--green)';
+    } else if (h.isRemoved) {
+        nameStyle.backgroundColor = 'var(--red)';
+    }
     const names = InteractiveHypothesisBundle_accessibleNames(h).map((n, i) =>
         <span className={
             'mr1 '
