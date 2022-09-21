@@ -95,6 +95,11 @@ function TypePopupContents({ info, redrawTooltip }: TypePopupContentsProps) {
   </div>
 }
 
+const TAG_TO_BG = {
+  'delete': 'bg-removed ',
+  'insert': 'bg-inserted '
+}
+
 /** Tagged spans can be hovered over to display extra info stored in the associated `SubexprInfo`. */
 function InteractiveCodeTag({tag: ct, fmt}: InteractiveTagProps<SubexprInfo>) {
   const mkTooltip = React.useCallback((redrawTooltip: () => void) =>
@@ -128,8 +133,14 @@ function InteractiveCodeTag({tag: ct, fmt}: InteractiveTagProps<SubexprInfo>) {
     + (hoverState === 'ctrlOver' && goToLoc !== undefined ? 'underline ' : '')
 
   if (ct.tags) {
-    if (ct.tags.includes('inserted')) {
+    if (ct.tags.includes('insert')) {
       spanClassName += 'bg-inserted '
+    }
+    if (ct.tags.includes('delete')) {
+      spanClassName += 'bg-removed '
+    }
+    if (ct.tags.includes('change')) {
+        spanClassName += 'bg-modified '
     }
   }
 

@@ -256,25 +256,39 @@ For that, we can use more specific classes. */
 .vscode-light {
     --diff-insert-color: #9EEBCF; /* #3b894b #9EEBCF */
     --diff-modified-color: #9ec3eb;
+    --diff-removed-color: #eb9e9e;
 }
 
 .vscode-dark {
     --diff-insert-color: #3a6e04;
     --diff-modified-color: #0c6ac8;
+    --diff-removed-color: #c81c0c;
 }
 
 .bg-inserted {
-    background-color: var(--diff-insert-color)
+    background-color: var(--diff-insert-color);
+}
+
+.bg-removed {
+    background-color: var(--diff-removed-color);
+}
+
+.bg-modified {
+    background-color: var(--diff-insert-color);
 }
 
 .b--inserted {
-    border-color: var(--diff-insert-color) !important
+    border-color: var(--diff-insert-color) !important;
 }
 
 .b--modified {
-    border-color: var(--diff-modified-color) !important
+    border-color: var(--diff-insert-color) !important;
+}
+
+.b--removed {
+    border-color: var(--diff-removed-color) !important;
 }
 
 .b--transparent {
-    border-color: transparent
+    border-color: transparent;
 }

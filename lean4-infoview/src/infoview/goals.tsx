@@ -17,7 +17,8 @@ export function Hyp({ hyp: h }: HypProps) {
         <span className={
             'mr1 '
             + (isInaccessibleName(n) ? 'goal-inaccessible' : '')
-            + (h.isInserted ? 'bg-inserted ' : '')} key={i}>{n}</span>
+            + (h.isInserted ? 'bg-inserted ' : '')
+            + (h.isRemoved ? 'bg-removed ' : '')} key={i}>{n}</span>
     )
     return <div>
         <strong className="goal-hyp">{names}</strong>
@@ -92,6 +93,9 @@ export function Goal(props: GoalProps) {
     if (props.goal.isInserted) {
         cn += 'b--inserted '
     }
+    if (props.goal.isRemoved) {
+        cn += 'b--removed '
+    }
     return <div className={cn}>
         {goal.userName && <div key={'case'}><strong className="goal-case">case </strong>{goal.userName}</div>}
         {filter.reverse && goalLi}
@@ -114,7 +118,7 @@ export function Goals({ goals, filter }: GoalsProps) {
     } else {
         return <>
             {goals.goals.map((g, i) => <Goal key={i} goal={g} filter={filter} index={i} />)}
-            {goals.message && <div className="font-normal">goals.message</div>}
+            {goals.message && <div className="font-normal">{goals.message}</div>}
         </>
     }
 }
