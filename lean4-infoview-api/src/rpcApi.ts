@@ -20,6 +20,7 @@ export type InfoWithCtx = RpcPtr<'Lean.Widget.InfoWithCtx'>
 export interface SubexprInfo {
     info: InfoWithCtx
     subexprPos?: number
+    highlightColor?: 'green' | 'red' | 'yellow' | 'purple' | 'blue';
 }
 
 /** A piece of code pretty-printed with subexpression information by the Lean server. */
@@ -44,6 +45,10 @@ export interface InteractiveHypothesisBundle {
     fvarIds?: string[]
     type: CodeWithInfos
     val?: CodeWithInfos
+    /** If true, the hypothesis was not present on the previous tactic state. */
+    isInserted?: boolean;
+    /** If true, the hypothesis will be deleted on the next tactic state. */
+    isRemoved?: boolean;
 }
 
 export interface InteractiveGoal {
@@ -55,6 +60,10 @@ export interface InteractiveGoal {
      * This is undefined when the goal is a term goal
      * or if we are using an older version of lean. */
     mvarId?: string
+    /** If true, the goal was not present on the previous tactic state. */
+    isInserted?: boolean;
+    /** If true, the goal will be deleted on the next tactic state. */
+    isRemoved?: boolean;
 }
 
 export interface InteractiveGoals {
