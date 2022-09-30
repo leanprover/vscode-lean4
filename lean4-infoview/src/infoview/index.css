@@ -47,7 +47,7 @@ html,body {
     transition: background-color 100ms ease-in-out;
 }
 .highlight {
-    background-color: #96ccff;
+    background-color: #96ccff !important;
 }
 .vscode-dark .highlight {
     background-color: #3c6c92;
@@ -253,32 +253,16 @@ For that, we can use more specific classes. */
     background-color: var(--vscode-textCodeBlock-background);
 }
 
-.vscode-light {
-    --green: #9EEBCF;
-    --blue: #9ec3eb;
-    --red: #eb9e9e;
-    --yellow: #e5eb9e;
-    --purple: #eb9eeb;
-}
-
-.vscode-dark {
-    --green: #274903;
-    --blue: #0c6ac8;
-    --red: #6a1008;
-    --yellow: #5d5b07;
-    --purple: #5a0853;
-}
-
 .b--inserted {
-    border-color: var(--green) !important;
+    border-color: var(--vscode-diffEditor-insertedTextBackground) !important;
 }
 
 .b--modified {
-    border-color: var(--green) !important;
+    border-color: var(--vscode-diffEditor-insertedTextBackground) !important;
 }
 
 .b--removed {
-    border-color: var(--red) !important;
+    border-color: var(--vscode-diffEditor-removedTextBackground) !important;
 }
 
 .b--transparent {

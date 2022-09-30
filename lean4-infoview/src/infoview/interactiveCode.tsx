@@ -2,7 +2,7 @@ import * as React from 'react'
 
 import { EditorContext } from './contexts'
 import { DocumentPosition, useAsync, mapRpcError } from './util'
-import { SubexprInfo, CodeWithInfos, InteractiveDiagnostics_infoToInteractive, getGoToLocation, TaggedText } from '@leanprover/infoview-api'
+import { SubexprInfo, CodeWithInfos, InteractiveDiagnostics_infoToInteractive, getGoToLocation, TaggedText, DiffTag } from '@leanprover/infoview-api'
 import { DetectHoverSpan, HoverState, WithTooltipOnHover } from './tooltips'
 import { Location } from 'vscode-languageserver-protocol'
 import { marked } from 'marked'
@@ -85,15 +85,36 @@ function TypePopupContents({ info, redrawTooltip }: TypePopupContentsProps) {
         interactive.value.type && <InteractiveCode fmt={interactive.value.type} />}
       </div>
       {interactive.value.doc && <><hr /><Markdown contents={interactive.value.doc}/></>}
+      {info.diffTag && <><hr/><div>{DIFF_TAG_TO_EXPLANATION[info.diffTag]}</div></>}
     </> :
     interactive.state === 'rejected' ? <>Error: {mapRpcError(interactive.error).message}</> :
     <>Loading..</>}
   </div>
 }
 
-const TAG_TO_BG = {
-  'delete': 'bg-removed ',
-  'insert': 'bg-inserted '
+const COLOR_VARS = {
+  'bg-insert': '--vscode-diffEditor-insertedTextBackground',
+  'bg-remove': '--vscode-diffEditor-removedTextBackground',
+  'insert': '--vscode-gitDecoration-addedResourceForeground',
+  'remove': '--vscode-gitDecoration-deletedResourceForeground',
+}
+
+const DIFF_TAG_TO_COLOR_VAR : {[K in DiffTag] : keyof (typeof COLOR_VARS)} = {
+  'wasChanged': 'bg-insert',
+  'willChange': 'bg-remove',
+  'wasInserted': 'bg-insert',
+  'willInsert': 'bg-insert',
+  'willDelete': 'bg-remove',
+  'wasDeleted': 'bg-remove',
+}
+
+const DIFF_TAG_TO_EXPLANATION : {[K in DiffTag] : string} = {
+  'wasChanged': 'This subexpression has been modified.',
+  'willChange': 'This subexpression will be modified.',
+  'wasInserted': 'This subexpression has been inserted.',
+  'willInsert': 'This subexpression will be inserted.',
+  'wasDeleted': 'This subexpression has been removed.',
+  'willDelete': 'This subexpression will be deleted.',
 }
 
 /** Tagged spans can be hovered over to display extra info stored in the associated `SubexprInfo`. */
@@ -128,8 +149,9 @@ function InteractiveCodeTag({tag: ct, fmt}: InteractiveTagProps<SubexprInfo>) {
     + (hoverState !== 'off' ? 'highlight ' : '')
     + (hoverState === 'ctrlOver' && goToLoc !== undefined ? 'underline ' : '')
   const spanStyle : any = {}
-  if (ct.highlightColor) {
-    spanStyle.backgroundColor = `var(--${ct.highlightColor})`
+  if (ct.diffTag) {
+    const x = COLOR_VARS[DIFF_TAG_TO_COLOR_VAR[ct.diffTag]]
+    spanStyle.backgroundColor = `var(${x})`
   }
 
   return (

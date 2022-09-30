@@ -17,10 +17,15 @@ export type TaggedText<T> =
 
 export type InfoWithCtx = RpcPtr<'Lean.Widget.InfoWithCtx'>
 
+export type DiffTag =
+  | 'wasChanged'  | 'willChange'
+  | 'wasDeleted'  | 'willDelete'
+  | 'wasInserted' | 'willInsert'
+
 export interface SubexprInfo {
     info: InfoWithCtx
     subexprPos?: number
-    highlightColor?: 'green' | 'red' | 'yellow' | 'purple' | 'blue';
+    diffTag?: DiffTag
 }
 
 /** A piece of code pretty-printed with subexpression information by the Lean server. */

@@ -15,9 +15,9 @@ function isInaccessibleName(h: string): boolean {
 export function Hyp({ hyp: h }: HypProps) {
     const nameStyle : any = {}
     if (h.isInserted) {
-        nameStyle.backgroundColor = 'var(--green)';
+        nameStyle.backgroundColor = 'var(--vscode-diffEditor-insertedTextBackground)';
     } else if (h.isRemoved) {
-        nameStyle.backgroundColor = 'var(--red)';
+        nameStyle.backgroundColor = 'var(--vscode-diffEditor-removedTextBackground)';
     }
     const names = InteractiveHypothesisBundle_accessibleNames(h).map((n, i) =>
         <span className={ 'mr1 ' + (isInaccessibleName(n) ? 'goal-inaccessible' : '')} key={i} style={nameStyle}>{n}</span>
