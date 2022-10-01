@@ -85,7 +85,7 @@ function TypePopupContents({ info, redrawTooltip }: TypePopupContentsProps) {
         interactive.value.type && <InteractiveCode fmt={interactive.value.type} />}
       </div>
       {interactive.value.doc && <><hr /><Markdown contents={interactive.value.doc}/></>}
-      {info.diffTag && <><hr/><div>{DIFF_TAG_TO_EXPLANATION[info.diffTag]}</div></>}
+      {info.diffStatus && <><hr/><div>{DIFF_TAG_TO_EXPLANATION[info.diffStatus]}</div></>}
     </> :
     interactive.state === 'rejected' ? <>Error: {mapRpcError(interactive.error).message}</> :
     <>Loading..</>}
@@ -149,8 +149,8 @@ function InteractiveCodeTag({tag: ct, fmt}: InteractiveTagProps<SubexprInfo>) {
     + (hoverState !== 'off' ? 'highlight ' : '')
     + (hoverState === 'ctrlOver' && goToLoc !== undefined ? 'underline ' : '')
   const spanStyle : any = {}
-  if (ct.diffTag) {
-    const x = COLOR_VARS[DIFF_TAG_TO_COLOR_VAR[ct.diffTag]]
+  if (ct.diffStatus) {
+    const x = COLOR_VARS[DIFF_TAG_TO_COLOR_VAR[ct.diffStatus]]
     spanStyle.backgroundColor = `var(${x})`
   }
 

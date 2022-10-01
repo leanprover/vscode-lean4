@@ -25,7 +25,7 @@ export type DiffTag =
 export interface SubexprInfo {
     info: InfoWithCtx
     subexprPos?: number
-    diffTag?: DiffTag
+    diffStatus?: DiffTag
 }
 
 /** A piece of code pretty-printed with subexpression information by the Lean server. */
