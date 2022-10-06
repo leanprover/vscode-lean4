@@ -3,7 +3,7 @@ import {
     commands, Disposable, DocumentSelector,
     ExtensionContext, languages, Range,
     Selection, TextEditor, TextEditorRevealType,
-    Uri, ViewColumn, WebviewPanel, window, workspace, env, Position,
+    Uri, ViewColumn, WebviewPanel, window, workspace, env, Position, WorkspaceEdit,
 } from 'vscode';
 import { EditorApi, InfoviewApi, LeanFileProgressParams, TextInsertKind,
     RpcConnectParams, RpcConnected, RpcKeepAliveParams, ServerStoppedReason, RpcErrorCode } from '@leanprover/infoview-api';
@@ -213,6 +213,10 @@ export class InfoProvider implements Disposable {
                 pos = p2cConverter.asPosition(tdpp.position);
             }
             await this.handleInsertText(text, kind, uri, pos);
+        },
+        applyEdit: async (e : ls.WorkspaceEdit) => {
+            const we = await p2cConverter.asWorkspaceEdit(e)
+            await workspace.applyEdit(we);
         },
         showDocument: async (show) => {
             void this.revealEditorSelection(
