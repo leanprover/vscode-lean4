@@ -92,20 +92,13 @@ function TypePopupContents({ info, redrawTooltip }: TypePopupContentsProps) {
   </div>
 }
 
-const COLOR_VARS = {
-  'bg-insert': '--vscode-diffEditor-insertedTextBackground',
-  'bg-remove': '--vscode-diffEditor-removedTextBackground',
-  'insert': '--vscode-gitDecoration-addedResourceForeground',
-  'remove': '--vscode-gitDecoration-deletedResourceForeground',
-}
-
-const DIFF_TAG_TO_COLOR_VAR : {[K in DiffTag] : keyof (typeof COLOR_VARS)} = {
-  'wasChanged': 'bg-insert',
-  'willChange': 'bg-remove',
-  'wasInserted': 'bg-insert',
-  'willInsert': 'bg-insert',
-  'willDelete': 'bg-remove',
-  'wasDeleted': 'bg-remove',
+const DIFF_TAG_TO_CLASS : {[K in DiffTag] : string} = {
+  'wasChanged': 'inserted-text',
+  'willChange': 'removed-text',
+  'wasInserted': 'inserted-text',
+  'willInsert': 'inserted-text',
+  'willDelete': 'removed-text',
+  'wasDeleted': 'removed-text',
 }
 
 const DIFF_TAG_TO_EXPLANATION : {[K in DiffTag] : string} = {
@@ -145,13 +138,11 @@ function InteractiveCodeTag({tag: ct, fmt}: InteractiveTagProps<SubexprInfo>) {
   }, [rs, ct.info, goToLoc])
   React.useEffect(() => { if (hoverState === 'ctrlOver') void fetchGoToLoc() }, [hoverState])
 
-  const spanClassName : any = 'highlightable '
+  let spanClassName : any = 'highlightable '
     + (hoverState !== 'off' ? 'highlight ' : '')
     + (hoverState === 'ctrlOver' && goToLoc !== undefined ? 'underline ' : '')
-  const spanStyle : any = {}
   if (ct.diffStatus) {
-    const x = COLOR_VARS[DIFF_TAG_TO_COLOR_VAR[ct.diffStatus]]
-    spanStyle.backgroundColor = `var(${x})`
+    spanClassName += DIFF_TAG_TO_CLASS[ct.diffStatus] + ' '
   }
 
   return (
@@ -172,7 +163,6 @@ function InteractiveCodeTag({tag: ct, fmt}: InteractiveTagProps<SubexprInfo>) {
       <DetectHoverSpan
         setHoverState={setHoverState}
         className={spanClassName}
-        style={spanStyle}
       >
         <InteractiveCode fmt={fmt} />
       </DetectHoverSpan>
