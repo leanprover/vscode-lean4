@@ -1,4 +1,4 @@
-import type { DocumentUri, InitializeResult, Location, ShowDocumentParams, TextDocumentPositionParams } from 'vscode-languageserver-protocol'
+import type { DocumentUri, InitializeResult, Location, ShowDocumentParams, TextDocumentPositionParams, WorkspaceEdit } from 'vscode-languageserver-protocol'
 
 export interface EditorFsApi {
   stat(path: string): Promise<any>;
@@ -50,6 +50,9 @@ export interface EditorApi {
 
   /** Insert text into a document. When `pos` is not present, write at the current cursor location. */
   insertText(text: string, kind: TextInsertKind, pos?: TextDocumentPositionParams): Promise<void>
+
+  /** Applies the given WorkspaceEdit to the workspace. */
+  applyEdit(te : WorkspaceEdit): Promise<void>;
 
   /** Highlight a range in a document in the editor. */
   showDocument(show: ShowDocumentParams): Promise<void>;
