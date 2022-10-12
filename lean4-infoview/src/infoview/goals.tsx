@@ -7,16 +7,21 @@ interface HypProps {
     hyp: InteractiveHypothesisBundle
 }
 
-
 /** Returns true if `h` is inaccessible according to Lean's default name rendering. */
 function isInaccessibleName(h: string): boolean {
     return h.indexOf('✝') >= 0;
 }
 
-export function Hyp({ hyp : h }: HypProps) {
+export function Hyp({ hyp: h }: HypProps) {
+    let namecls : string = ''
+    if (h.isInserted) {
+        namecls += 'inserted-text '
+    } else if (h.isRemoved) {
+        namecls += 'removed-text '
+    }
     const names = InteractiveHypothesisBundle_accessibleNames(h).map((n, i) =>
-            <span className={'mr1 ' + (isInaccessibleName(n) ? 'goal-inaccessible' : '')} key={i}>{n}</span>
-        )
+        <span className={ 'mr1 ' + (isInaccessibleName(n) ? 'goal-inaccessible ' : '') + namecls} key={i}>{n}</span>
+    )
     return <div>
         <strong className="goal-hyp">{names}</strong>
         :&nbsp;
@@ -76,7 +81,8 @@ interface GoalProps {
 }
 
 
-export function Goal({ goal, filter }: GoalProps) {
+export function Goal(props: GoalProps) {
+    const { goal, filter } = props
     const prefix = goal.goalPrefix ?? '⊢ '
     const filteredList = getFilteredHypotheses(goal.hyps, filter);
     const hyps = filter.reverse ? filteredList.slice().reverse() : filteredList;
@@ -84,11 +90,18 @@ export function Goal({ goal, filter }: GoalProps) {
         <strong className="goal-vdash">{prefix}</strong>
         <InteractiveCode fmt={goal.type} />
     </div>
-    return <div className="font-code tl pre-wrap">
-            {goal.userName && <div key={'case'}><strong className="goal-case">case </strong>{goal.userName}</div>}
-            {filter.reverse && goalLi}
-            {hyps.map((h, i) => <Hyp hyp={h} key={i}/>)}
-            {!filter.reverse && goalLi}
+    let cn = 'font-code tl pre-wrap mv1 bl bw1 pl1 b--transparent '
+    if (props.goal.isInserted) {
+        cn += 'b--inserted '
+    }
+    if (props.goal.isRemoved) {
+        cn += 'b--removed '
+    }
+    return <div className={cn}>
+        {goal.userName && <div key={'case'}><strong className="goal-case">case </strong>{goal.userName}</div>}
+        {filter.reverse && goalLi}
+        {hyps.map((h, i) => <Hyp hyp={h} key={i} />)}
+        {!filter.reverse && goalLi}
     </div>
 }
 

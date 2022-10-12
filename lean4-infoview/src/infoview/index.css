@@ -13,6 +13,12 @@ html,body {
     line-height: var(--vscode-editor-line-height);
 }
 
+.font-normal {
+    font-family: var(--vscode-font-family);
+    font-weight: var(--vscode-font-weight);
+    font-size: var(--vscode-font-size);
+}
+
 .codicon-blank {
     width: 20px;
     height: 16px;
@@ -35,16 +41,18 @@ html,body {
 .vscode-light .goal-case { color: #1f7a1f; }
 .vscode-light .goal-hyp { color: #cc7a00; }
 
+.vscode-high-contrast  .goal-goals { color: var(--vscode-terminal-ansiBlue); }
+.vscode-high-contrast  .goal-vdash { color: var(--vscode-terminal-ansiBlue); }
+.vscode-high-contrast  .goal-case { color: var(--vscode-terminal-ansiGreen); }
+.vscode-high-contrast  .goal-hyp { color: var(--vscode-terminal-ansiYellow); }
+
 /* Used to denote text highlighted by the pretty-print expression widget. */
 .highlightable {
     border-radius: 2pt;
     transition: background-color 100ms ease-in-out;
 }
 .highlight {
-    background-color: #96ccff;
-}
-.vscode-dark .highlight {
-    background-color: #3c6c92;
+    background-color: var(--vscode-editor-selectionBackground) !important;
 }
 
 /* Interactive traces */
@@ -245,4 +253,38 @@ For that, we can use more specific classes. */
     border-radius: 3px;
     padding: 0 0.4em;
     background-color: var(--vscode-textCodeBlock-background);
+}
+
+.vscode-high-contrast .inserted-text {
+    border: thin solid var(--vscode-diffEditor-insertedTextBorder);
+}
+
+.vscode-high-contrast .removed-text {
+    border: thin solid var(--vscode-diffEditor-removedTextBorder);
+}
+
+.inserted-text {
+    background-color: var(--vscode-diffEditor-insertedTextBackground);
+    border-radius: 2pt;
+}
+
+.removed-text {
+    background-color: var(--vscode-diffEditor-removedTextBackground);
+    border-radius: 2pt;
+}
+
+.b--inserted {
+    border-color: var(--vscode-diffEditor-insertedTextBackground) !important;
+}
+
+.b--modified {
+    border-color: var(--vscode-diffEditor-insertedTextBackground) !important;
+}
+
+.b--removed {
+    border-color: var(--vscode-diffEditor-removedTextBackground) !important;
+}
+
+.b--transparent {
+    border-color: transparent;
 }

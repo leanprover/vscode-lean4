@@ -2,7 +2,7 @@ import * as React from 'react'
 
 import { EditorContext } from './contexts'
 import { DocumentPosition, useAsync, mapRpcError } from './util'
-import { SubexprInfo, CodeWithInfos, InteractiveDiagnostics_infoToInteractive, getGoToLocation, TaggedText } from '@leanprover/infoview-api'
+import { SubexprInfo, CodeWithInfos, InteractiveDiagnostics_infoToInteractive, getGoToLocation, TaggedText, DiffTag } from '@leanprover/infoview-api'
 import { DetectHoverSpan, HoverState, WithTooltipOnHover } from './tooltips'
 import { Location } from 'vscode-languageserver-protocol'
 import { marked } from 'marked'
@@ -85,10 +85,29 @@ function TypePopupContents({ info, redrawTooltip }: TypePopupContentsProps) {
         interactive.value.type && <InteractiveCode fmt={interactive.value.type} />}
       </div>
       {interactive.value.doc && <><hr /><Markdown contents={interactive.value.doc}/></>}
+      {info.diffStatus && <><hr/><div>{DIFF_TAG_TO_EXPLANATION[info.diffStatus]}</div></>}
     </> :
     interactive.state === 'rejected' ? <>Error: {mapRpcError(interactive.error).message}</> :
     <>Loading..</>}
   </div>
+}
+
+const DIFF_TAG_TO_CLASS : {[K in DiffTag] : string} = {
+  'wasChanged': 'inserted-text',
+  'willChange': 'removed-text',
+  'wasInserted': 'inserted-text',
+  'willInsert': 'inserted-text',
+  'willDelete': 'removed-text',
+  'wasDeleted': 'removed-text',
+}
+
+const DIFF_TAG_TO_EXPLANATION : {[K in DiffTag] : string} = {
+  'wasChanged': 'This subexpression has been modified.',
+  'willChange': 'This subexpression will be modified.',
+  'wasInserted': 'This subexpression has been inserted.',
+  'willInsert': 'This subexpression will be inserted.',
+  'wasDeleted': 'This subexpression has been removed.',
+  'willDelete': 'This subexpression will be deleted.',
 }
 
 /** Tagged spans can be hovered over to display extra info stored in the associated `SubexprInfo`. */
@@ -119,6 +138,13 @@ function InteractiveCodeTag({tag: ct, fmt}: InteractiveTagProps<SubexprInfo>) {
   }, [rs, ct.info, goToLoc])
   React.useEffect(() => { if (hoverState === 'ctrlOver') void fetchGoToLoc() }, [hoverState])
 
+  let spanClassName : any = 'highlightable '
+    + (hoverState !== 'off' ? 'highlight ' : '')
+    + (hoverState === 'ctrlOver' && goToLoc !== undefined ? 'underline ' : '')
+  if (ct.diffStatus) {
+    spanClassName += DIFF_TAG_TO_CLASS[ct.diffStatus] + ' '
+  }
+
   return (
     <WithTooltipOnHover
       mkTooltipContent={mkTooltip}
@@ -136,9 +162,7 @@ function InteractiveCodeTag({tag: ct, fmt}: InteractiveTagProps<SubexprInfo>) {
     >
       <DetectHoverSpan
         setHoverState={setHoverState}
-        className={'highlightable '
-                    + (hoverState !== 'off' ? 'highlight ' : '')
-                    + (hoverState === 'ctrlOver' && goToLoc !== undefined ? 'underline ' : '')}
+        className={spanClassName}
       >
         <InteractiveCode fmt={fmt} />
       </DetectHoverSpan>
