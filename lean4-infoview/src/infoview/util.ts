@@ -301,7 +301,10 @@ export type AsyncWithTriggerState<T> =
 export function useAsyncWithTrigger<T>(fn: () => Promise<T>, deps: React.DependencyList = []): [AsyncWithTriggerState<T>, () => void] {
   const asyncState = React.useRef<AsyncWithTriggerState<T>>({state: 'notStarted'})
   const asyncStateDeps = React.useRef<React.DependencyList>([])
+  // A monotonically increasing counter.
   const tick = React.useRef(0)
+  // This is bumped up to the current `tick` whenever `asyncState.current` is assigned,
+  // in order to trigger a React update.
   const [_, setUpdate] = React.useState(0)
 
   const trigger = React.useCallback(() => {
@@ -333,6 +336,7 @@ export function useAsyncWithTrigger<T>(fn: () => Promise<T>, deps: React.Depende
     tick.current += 1
     asyncState.current = {state: 'notStarted'}
     asyncStateDeps.current = deps
+    setUpdate(tick.current)
   }
   return [asyncState.current, trigger]
 }
@@ -360,14 +364,4 @@ export function useAsync<T>(fn: () => Promise<T>, deps: React.DependencyList = [
   } else {
     return state
   }
-}
-
-/** `intersperse([x,y,z], a) ≡ [x,a,y,a,z]` */
-function intersperse<T>(items : T[], sep : T) : T[] {
-  if (items.length === 0) {return []}
-  const acc = [items[0]]
-  for (let i = 1; i < items.length; i++) {
-    acc.push(sep, items[i])
-  }
-  return acc
 }
