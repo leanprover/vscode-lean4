@@ -13,7 +13,7 @@ import { WithTooltipOnHover } from './tooltips'
 import { UserWidget } from './userWidget'
 import { RpcContext, useRpcSessionAtPos } from './rpcSessions';
 
-type InfoStatus = 'loading' | 'updating' | 'error' | 'ready';
+type InfoStatus = 'updating' | 'error' | 'ready';
 type InfoKind = 'cursor' | 'pin';
 
 interface InfoPinnable {
@@ -37,7 +37,6 @@ export function InfoStatusBar(props: InfoStatusBarProps) {
     const ec = React.useContext(EditorContext);
 
     const statusColTable: {[T in InfoStatus]: string} = {
-        'loading': 'gold ',
         'updating': 'gold ',
         'error': 'dark-red ',
         'ready': '',
@@ -315,7 +314,7 @@ function InfoAux(props: InfoProps) {
 
     // We encapsulate `InfoDisplay` props in a single piece of state for atomicity
     const [displayProps, setDisplayProps] = React.useState<Omit<InfoDisplayProps, 'triggerUpdate'>>(
-        () => ({ pos, goals: undefined, termGoal: undefined, error: undefined, rpcSess, userWidgets: undefined, messages: [], status: 'loading' }));
+        () => ({ pos, goals: undefined, termGoal: undefined, error: undefined, rpcSess, userWidgets: undefined, messages: [], status: 'updating' }));
 
     // Two counters used to ensure monotonic updates
     const tick = React.useRef(0) // Incremented when an update is triggered
