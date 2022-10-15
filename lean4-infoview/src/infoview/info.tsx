@@ -278,24 +278,19 @@ function useDelayedThrottled(ms: number, cb: () => Promise<void>): () => Promise
  */
 export type InfoProps = InfoPinnable & { pos?: DocumentPosition };
 
+function InfoAtCursor(props: InfoProps) {
+    const ec = React.useContext(EditorContext);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const [curLoc, setCurLoc] = React.useState<Location>(ec.events.changedCursorLocation.current!);
+    useEvent(ec.events.changedCursorLocation, loc => loc && setCurLoc(loc), []);
+    const pos = { uri: curLoc.uri, ...curLoc.range.start };
+    return <InfoAuxNew {...props} pos={pos} />
+}
+
 /** Fetches info from the server and renders an {@link InfoDisplay}. */
 export function Info(props: InfoProps) {
-    const ec = React.useContext(EditorContext);
-
-    // Note: `kind` may not change throughout the lifetime of an `Info` component,
-    // otherwise the hooks will differ.
-    const pos = props.kind === 'cursor' ?
-        (() => {
-            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-            const [curLoc, setCurLoc] = React.useState<Location>(ec.events.changedCursorLocation.current!);
-            useEvent(ec.events.changedCursorLocation, loc => loc && setCurLoc(loc), []);
-            return { uri: curLoc.uri, ...curLoc.range.start };
-        })()
-        : props.pos;
-
-    return (
-        <InfoAux {...props} pos={pos} />
-    );
+    if (props.kind === 'cursor') return <InfoAtCursor {...props} />
+    else return <InfoAux {...props} pos={props.pos} />
 }
 
 function InfoAux(props: InfoProps) {
