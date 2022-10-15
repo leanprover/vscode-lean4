@@ -97,21 +97,19 @@ export function AllMessages({uri: uri0}: { uri: DocumentUri }) {
     const diags0 = dc.get(uri0) || [];
 
     const iDiags0 = React.useMemo(() => lazy(async () => {
-        if (sv?.hasWidgetsV1()) {
-            try {
-                const diags = await getInteractiveDiagnostics(rs0);
-                if (diags.length > 0) {
-                    return diags
-                }
-            } catch (err: any) {
-                if (err?.code === -32801) {
-                    // Document has been changed since we made the request. This can happen
-                    // while typing quickly. When the server catches up on next edit, it will
-                    // send new diagnostics to which the infoview responds by calling
-                    // `getInteractiveDiagnostics` again.
-                } else {
-                    console.log('getInteractiveDiagnostics error ', err)
-                }
+        try {
+            const diags = await getInteractiveDiagnostics(rs0);
+            if (diags.length > 0) {
+                return diags
+            }
+        } catch (err: any) {
+            if (err?.code === -32801) {
+                // Document has been changed since we made the request. This can happen
+                // while typing quickly. When the server catches up on next edit, it will
+                // send new diagnostics to which the infoview responds by calling
+                // `getInteractiveDiagnostics` again.
+            } else {
+                console.log('getInteractiveDiagnostics error ', err)
             }
         }
         return diags0.map(d => ({ ...(d as LeanDiagnostic), message: { text: d.message } }));
