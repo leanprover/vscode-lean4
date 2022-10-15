@@ -305,7 +305,7 @@ function InfoAux(props: InfoProps) {
             const diagPred = (d: Diagnostic) =>
                 RangeHelpers.contains(d.range, pos, config.infoViewAllErrorsOnLine)
             const newDiags = (lspDiags.get(pos.uri) || []).filter(diagPred)
-            if (newDiags.length == diags0.length && newDiags.every((d, i) => d === diags0[i])) return diags0
+            if (newDiags.length === diags0.length && newDiags.every((d, i) => d === diags0[i])) return diags0
             return newDiags
         })
     }), [lspDiags, pos.uri, pos.line, pos.character, config.infoViewAllErrorsOnLine])
@@ -371,7 +371,7 @@ function InfoAux(props: InfoProps) {
     const triggerUpdate = React.useCallback(() => new Promise<void>(resolve => {
         clearUpdaterTimeout()
         const tm = window.setTimeout(() => {
-            triggerUpdateCore().then(resolve)
+            void triggerUpdateCore().then(resolve)
             updaterTimeout.current = undefined
         }, 50)
         // Hack: even if the request is cancelled, the promise should resolve so that no `await`

@@ -26,7 +26,7 @@ function LazyTrace({col, cls, msg}: {col: number, cls: string, msg: MessageData}
     if (!open)
         return <span className="underline-hover pointer"
             onClick={ev => {
-                fetchTrace()
+                void fetchTrace()
                 setOpen(true)
                 ev.stopPropagation()
             }}>[{cls}] &gt;</span>
@@ -42,7 +42,7 @@ function LazyTrace({col, cls, msg}: {col: number, cls: string, msg: MessageData}
     else if (tt.state === 'rejected')
         return <><span className="underline-hover pointer"
             onClick={ev => {
-                fetchTrace()
+                void fetchTrace()
                 ev.stopPropagation()
             }}>[{cls}] Error (click to retry):</span> {mapRpcError(tt.error)}</>
     else
@@ -82,13 +82,13 @@ function CollapsibleTraceNode(traceEmbed: TraceEmbed) {
     }, [rs, lazyKids])
 
     const [open, setOpen] = React.useState(!collapsedByDefault) // TODO: reset when collapsedByDefault changes?
-    if (open && children.state === 'notStarted') fetchChildren();
+    if (open && children.state === 'notStarted') void fetchChildren();
     let icon = open ? '▼' : '▶';
     if (children.state === 'loading') icon += ' ⋯'
 
     const onClick = React.useCallback((ev: React.MouseEvent) => {
         ev.stopPropagation()
-        if (!open) fetchChildren();
+        if (!open) void fetchChildren();
         setOpen(o => !o)
     }, [open])
 
