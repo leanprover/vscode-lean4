@@ -145,8 +145,14 @@ export function useClientNotificationState<S, T>(method: string, initial: S, f: 
   return [s, setS];
 }
 
+/** Useful for controlling {@link usePausableState} from child components. */
+export interface PausableProps {
+    isPaused: boolean;
+    setPaused: React.Dispatch<React.SetStateAction<boolean>>;
+}
+
 /**
- * Returns `[isPaused, setPaused, tPausable, tRef]` s.t.
+ * Returns `[{ isPaused, setPaused }, tPausable, tRef]` s.t.
  * - `[isPaused, setPaused]` are the paused status state
  * - for as long as `isPaused` is set, `tPausable` holds its initial value (the `t` passed before pausing)
  *   rather than updates with changes to `t`.
@@ -154,12 +160,13 @@ export function useClientNotificationState<S, T>(method: string, initial: S, f: 
  *
  * To pause child components, `startPaused` can be passed in their props.
  */
-export function usePausableState<T>(startPaused: boolean, t: T): [boolean, React.Dispatch<React.SetStateAction<boolean>>, T, React.MutableRefObject<T>] {
+export function usePausableState<T>(startPaused: boolean, t: T): [PausableProps, T, React.MutableRefObject<T>] {
   const [isPaused, setPaused] = React.useState<boolean>(startPaused);
   const old = React.useRef<T>(t);
   if (!isPaused) old.current = t;
-  return [isPaused, setPaused, old.current, old];
+  return [{ isPaused, setPaused }, old.current, old];
 }
+
 
 /**
  * Returns a stateful log string and a function to update it.
@@ -298,7 +305,7 @@ export type AsyncState<T> =
 export type AsyncWithTriggerState<T> =
   { state: 'notStarted' } | AsyncState<T>
 
-export function useAsyncWithTrigger<T>(fn: () => Promise<T>, deps: React.DependencyList = []): [AsyncWithTriggerState<T>, () => void] {
+export function useAsyncWithTrigger<T>(fn: () => Promise<T>, deps: React.DependencyList = []): [AsyncWithTriggerState<T>, () => Promise<void>] {
   const asyncState = React.useRef<AsyncWithTriggerState<T>>({state: 'notStarted'})
   const asyncStateDeps = React.useRef<React.DependencyList>([])
   // A monotonically increasing counter.
@@ -307,9 +314,9 @@ export function useAsyncWithTrigger<T>(fn: () => Promise<T>, deps: React.Depende
   // in order to trigger a React update.
   const [_, setUpdate] = React.useState(0)
 
-  const trigger = React.useCallback(() => {
+  const trigger = React.useCallback(async () => {
     if (asyncState.current.state === 'loading' || asyncState.current.state === 'resolved')
-      return;
+      return
 
     tick.current += 1
     asyncState.current = { state: 'loading' }
@@ -323,7 +330,7 @@ export function useAsyncWithTrigger<T>(fn: () => Promise<T>, deps: React.Depende
         setUpdate(tick.current)
       }
     }
-    fn().then(
+    return fn().then(
       value => set({state: 'resolved', value}),
       error => set({state: 'rejected', error}),
     )
@@ -359,7 +366,7 @@ export function useAsyncWithTrigger<T>(fn: () => Promise<T>, deps: React.Depende
 export function useAsync<T>(fn: () => Promise<T>, deps: React.DependencyList = []): AsyncState<T> {
   const [state, trigger] = useAsyncWithTrigger(fn, deps)
   if (state.state === 'notStarted') {
-    trigger()
+    void trigger()
     return {state: 'loading'}
   } else {
     return state
