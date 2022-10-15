@@ -80,8 +80,7 @@ interface GoalProps {
     index?: number
 }
 
-
-export function Goal(props: GoalProps) {
+export const Goal = React.memo((props: GoalProps) => {
     const { goal, filter } = props
     const prefix = goal.goalPrefix ?? '⊢ '
     const filteredList = getFilteredHypotheses(goal.hyps, filter);
@@ -103,7 +102,7 @@ export function Goal(props: GoalProps) {
         {hyps.map((h, i) => <Hyp hyp={h} key={i} />)}
         {!filter.reverse && goalLi}
     </div>
-}
+})
 
 interface GoalsProps {
     goals: InteractiveGoals
