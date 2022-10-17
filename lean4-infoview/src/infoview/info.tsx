@@ -316,11 +316,14 @@ function InfoAux(props: InfoProps) {
     // indicates that another request should be made. Bumping it dirties the dep state of
     // `useAsyncWithTrigger` below, causing the `useEffect` lower down in this component to
     // make the request. We cannot simply call `triggerUpdateCore` because `useAsyncWithTrigger`
-    //  does not support reentrancy like that.
+    // does not support reentrancy like that.
     const [updaterTick, setUpdaterTick] = React.useState<number>(0)
 
     // For atomicity, we use a single update function that fetches all the info at `pos` at once.
-    type InfoRequestResult = [InteractiveGoals | undefined, InteractiveGoal | undefined, UserWidgets | undefined, InteractiveDiagnostic[]]
+    // Besides what the server replies with, we also include the inputs (deps) in this type so
+    // that the displayed state cannot ever get out of sync by showing an old reply together
+    // with e.g. a new `pos`.
+    type InfoRequestResult = Omit<InfoDisplayProps, 'triggerUpdate'>
     const [state, triggerUpdateCore] = useAsyncWithTrigger(() => new Promise<InfoRequestResult>((resolve, reject) => {
         const goalsReq = getInteractiveGoals(rpcSess, DocumentPosition.toTdpp(pos));
         const termGoalReq = getInteractiveTermGoal(rpcSess, DocumentPosition.toTdpp(pos))
@@ -336,15 +339,31 @@ function InfoAux(props: InfoProps) {
         // building.  Therefore we show the LSP diagnostics on line 1 if the
         // server does not respond within half a second.
         if (pos.line === 0 && lspDiagsHere.length) {
-            setTimeout(() =>
-                resolve([undefined, undefined, undefined, lspDiagsHere.map(lspDiagToInteractive)]),
-                500)
+            setTimeout(() => resolve({
+                pos,
+                status: 'updating',
+                messages: lspDiagsHere.map(lspDiagToInteractive),
+                goals: undefined,
+                termGoal: undefined,
+                error: undefined,
+                userWidgets: undefined,
+                rpcSess
+            }), 500)
         }
 
         // NB: it is important to await await reqs at once, otherwise
         // if both throw then one exception becomes unhandled.
         Promise.all([goalsReq, termGoalReq, widgetsReq, messagesReq]).then(
-            val => resolve(val),
+            ([goals, termGoal, userWidgets, messages]) => resolve({
+                pos,
+                status: 'ready',
+                messages,
+                goals,
+                termGoal,
+                error: undefined,
+                userWidgets,
+                rpcSess
+            }),
             ex => {
                 if (ex?.code === RpcErrorCode.ContentModified ||
                     ex?.code === RpcErrorCode.RpcNeedsReconnect) {
@@ -353,10 +372,31 @@ function InfoAux(props: InfoProps) {
                     setUpdaterTick(t => t + 1)
                     reject('retry')
                 }
-                reject(ex)
+
+                let errorString = ''
+                if (typeof ex === 'string') {
+                    errorString = ex
+                } else if (isRpcError(ex)) {
+                    errorString = mapRpcError(ex).message
+                } else if (ex instanceof Error) {
+                    errorString = ex.toString()
+                } else {
+                    errorString = `Unrecognized error: ${JSON.stringify(ex)}`
+                }
+
+                resolve({
+                    pos,
+                    status: 'error',
+                    messages: lspDiagsHere.map(lspDiagToInteractive),
+                    goals: undefined,
+                    termGoal: undefined,
+                    error: `Error fetching goals: ${errorString}`,
+                    userWidgets: undefined,
+                    rpcSess
+                })
             }
         )
-    }), [updaterTick, pos.uri, pos.line, pos.character, serverIsProcessing, lspDiagsHere])
+    }), [updaterTick, pos.uri, pos.line, pos.character, rpcSess, serverIsProcessing, lspDiagsHere])
 
     // We use a timeout to debounce info requests. Whenever a request is already scheduled
     // but something happens that warrants a request for newer info, we cancel the old request
@@ -402,41 +442,10 @@ function InfoAux(props: InfoProps) {
         else if (state.state === 'loading')
             setDisplayProps(dp => ({ ...dp, status: 'updating' }))
         else if (state.state === 'resolved') {
-            const [goals, termGoal, userWidgets, messages] = state.value
-            setDisplayProps({
-                pos,
-                status: 'ready',
-                messages,
-                goals,
-                termGoal,
-                error: undefined,
-                userWidgets,
-                rpcSess,
-                triggerUpdate
-            })
+            setDisplayProps({ ...state.value, triggerUpdate })
         } else if (state.state === 'rejected' && state.error !== 'retry') {
-            let errorString = ''
-            if (typeof state.error === 'string') {
-                errorString = state.error
-            } else if (isRpcError(state.error)) {
-                errorString = mapRpcError(state.error).message
-            } else if (state.error instanceof Error) {
-                errorString = state.error.toString()
-            } else {
-                errorString = `Unrecognized error: ${JSON.stringify(state.error)}`
-            }
-
-            setDisplayProps({
-                pos,
-                status: 'error',
-                messages: lspDiagsHere.map(lspDiagToInteractive),
-                goals: undefined,
-                termGoal: undefined,
-                error: `Error fetching goals: ${errorString}`,
-                userWidgets: undefined,
-                rpcSess,
-                triggerUpdate
-            })
+            // The code inside `useAsyncWithTrigger` may only ever reject with a `retry` exception.
+            console.warn(`Unreachable code reached with error: `, state.error)
         }
     }, [state])
 
