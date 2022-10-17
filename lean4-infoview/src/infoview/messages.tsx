@@ -2,9 +2,9 @@ import * as React from 'react';
 import fastIsEqual from 'react-fast-compare';
 import { Location, DocumentUri, Diagnostic, DiagnosticSeverity, PublishDiagnosticsParams } from 'vscode-languageserver-protocol';
 
-import { LeanDiagnostic, RpcSessionAtPos } from '@leanprover/infoview-api';
+import { LeanDiagnostic, RpcErrorCode } from '@leanprover/infoview-api';
 
-import { basename, escapeHtml, RangeHelpers, usePausableState, useEvent, addUniqueKeys, DocumentPosition, useServerNotificationState } from './util';
+import { basename, escapeHtml, usePausableState, useEvent, addUniqueKeys, DocumentPosition, useServerNotificationState } from './util';
 import { ConfigContext, EditorContext, LspDiagnosticsContext, VersionContext } from './contexts';
 import { Details } from './collapsing';
 import { InteractiveMessage } from './traceExplorer';
@@ -103,7 +103,7 @@ export function AllMessages({uri: uri0}: { uri: DocumentUri }) {
                 return diags
             }
         } catch (err: any) {
-            if (err?.code === -32801) {
+            if (err?.code === RpcErrorCode.ContentModified) {
                 // Document has been changed since we made the request. This can happen
                 // while typing quickly. When the server catches up on next edit, it will
                 // send new diagnostics to which the infoview responds by calling
