@@ -165,7 +165,7 @@ class RpcSessionForFile {
     at(pos: TextDocumentPositionParams): RpcSessionAtPos {
         // As JS tradition dictates, we use stringification for deep comparison of `Position`s in a `Map`.
         const posStr = `${pos.position.line}:${pos.position.character}`
-        if (this.sessionsAtPos.has(posStr)) return this.sessionsAtPos.get(posStr)!
+        if (this.sessionsAtPos.has(posStr)) return this.sessionsAtPos.get(posStr) as RpcSessionAtPos
         const atPos: RpcSessionAtPos = { call: (method, params) => this.call(pos, method, params) }
         this.sessionsAtPos.set(posStr, atPos)
         return atPos

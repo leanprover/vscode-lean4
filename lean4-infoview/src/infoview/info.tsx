@@ -445,7 +445,7 @@ function InfoAux(props: InfoProps) {
             setDisplayProps({ ...state.value, triggerUpdate })
         } else if (state.state === 'rejected' && state.error !== 'retry') {
             // The code inside `useAsyncWithTrigger` may only ever reject with a `retry` exception.
-            console.warn(`Unreachable code reached with error: `, state.error)
+            console.warn('Unreachable code reached with error: ', state.error)
         }
     }, [state])
 
