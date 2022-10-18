@@ -167,19 +167,23 @@ export function shouldAutofocusOutput(): boolean {
 }
 
 export function getInfoViewStyle(): string {
-    return workspace.getConfiguration('lean4').get('infoViewStyle', '');
+    return workspace.getConfiguration('lean4.infoview').get('style', '');
 }
 
 export function getInfoViewAutoOpen(): boolean {
-    return workspace.getConfiguration('lean4').get('infoViewAutoOpen', true);
+    return workspace.getConfiguration('lean4.infoview').get('autoOpen', true);
 }
 
-export function getInfoViewAutoOpenShowGoal(): boolean {
-    return workspace.getConfiguration('lean4').get('infoViewAutoOpenShowGoal', true);
+export function getInfoViewAutoOpenShowsGoal(): boolean {
+    return workspace.getConfiguration('lean4.infoview').get('autoOpenShowsGoal', true);
 }
 
 export function getInfoViewAllErrorsOnLine(): boolean {
-    return workspace.getConfiguration('lean4').get('infoViewAllErrorsOnLine', true);
+    return workspace.getConfiguration('lean4.infoview').get('allErrorsOnLine', true);
+}
+
+export function getInfoViewDebounceTime(): number {
+    return workspace.getConfiguration('lean4.infoview').get('debounceTime', 50);
 }
 
 export function getElaborationDelay(): number {

@@ -120,22 +120,27 @@
 					"default": false,
 					"description": "Automatically show the Output panel when the Lean 4 server prints a new message."
 				},
-				"lean4.infoViewAllErrorsOnLine": {
+				"lean4.infoview.autoOpen": {
 					"type": "boolean",
 					"default": true,
-					"markdownDescription": "Infoview: show all errors on the current line, instead of just the ones on the right of the cursor."
+					"markdownDescription": "Open infoview when Lean extension is activated for the first time."
 				},
-				"lean4.infoViewAutoOpen": {
+				"lean4.infoview.autoOpenShowsGoal": {
 					"type": "boolean",
 					"default": true,
-					"markdownDescription": "Infoview: open infoview when Lean extension is activated for the first time."
+					"markdownDescription": "When auto-opened, the infoview shows goal and messages for the current line (instead of all messages for the whole file)."
 				},
-				"lean4.infoViewAutoOpenShowGoal": {
+				"lean4.infoview.allErrorsOnLine": {
 					"type": "boolean",
 					"default": true,
-					"markdownDescription": "Infoview: auto open shows goal and messages for the current line (instead of all messages for the whole file)"
+					"markdownDescription": "Show all errors on the current line, instead of just the ones to the right of the cursor."
 				},
-				"lean4.infoViewStyle": {
+				"lean4.infoview.debounceTime": {
+					"type": "number",
+					"default": 50,
+					"markdownDescription": "How long (in milliseconds) the infoview waits before displaying new information after the cursor has stopped moving. The optimal value depends on your machine - try experimenting."
+				},
+				"lean4.infoview.style": {
 					"type": "string",
 					"default": "",
 					"markdownDescription": "Add an additional CSS snippet to the infoview."

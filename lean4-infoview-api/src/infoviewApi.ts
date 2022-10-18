@@ -76,13 +76,15 @@ export interface InfoviewTacticStateFilter {
 }
 
 export interface InfoviewConfig {
-    infoViewAllErrorsOnLine: boolean;
-    infoViewAutoOpenShowGoal: boolean;
+    allErrorsOnLine: boolean;
+    autoOpenShowsGoal: boolean;
+    debounceTime: number;
 }
 
 export const defaultInfoviewConfig: InfoviewConfig = {
-    infoViewAllErrorsOnLine: true,
-    infoViewAutoOpenShowGoal: true,
+    allErrorsOnLine: true,
+    autoOpenShowsGoal: true,
+    debounceTime: 50,
 }
 
 export type InfoviewAction =

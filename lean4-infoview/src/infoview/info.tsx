@@ -303,12 +303,12 @@ function InfoAux(props: InfoProps) {
         // Note: the curly braces are important. https://medium.com/geekculture/react-uncaught-typeerror-destroy-is-not-a-function-192738a6e79b
         setLspDiagsHere(diags0 => {
             const diagPred = (d: Diagnostic) =>
-                RangeHelpers.contains(d.range, pos, config.infoViewAllErrorsOnLine)
+                RangeHelpers.contains(d.range, pos, config.allErrorsOnLine)
             const newDiags = (lspDiags.get(pos.uri) || []).filter(diagPred)
             if (newDiags.length === diags0.length && newDiags.every((d, i) => d === diags0[i])) return diags0
             return newDiags
         })
-    }), [lspDiags, pos.uri, pos.line, pos.character, config.infoViewAllErrorsOnLine])
+    }, [lspDiags, pos.uri, pos.line, pos.character, config.allErrorsOnLine])
 
     const serverIsProcessing = useIsProcessingAt(pos)
 
@@ -413,12 +413,12 @@ function InfoAux(props: InfoProps) {
         const tm = window.setTimeout(() => {
             void triggerUpdateCore().then(resolve)
             updaterTimeout.current = undefined
-        }, 50)
+        }, config.debounceTime)
         // Hack: even if the request is cancelled, the promise should resolve so that no `await`
         // is left waiting forever. We ensure this happens in a simple way.
-        window.setTimeout(resolve, 50)
+        window.setTimeout(resolve, config.debounceTime)
         updaterTimeout.current = tm
-    }), [triggerUpdateCore])
+    }), [triggerUpdateCore, config.debounceTime])
 
     const [displayProps, setDisplayProps] = React.useState<InfoDisplayProps>({
         pos,
