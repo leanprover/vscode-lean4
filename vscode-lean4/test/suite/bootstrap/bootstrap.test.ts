@@ -3,8 +3,8 @@ import * as os from 'os';
 import { suite } from 'mocha';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { initLean4Untitled, waitForInfoviewHtml, closeAllEditors, waitForActiveClientRunning,
-         getAltBuildVersion, assertStringInInfoview, copyFolder, extractPhrase } from '../utils/helpers';
+import { initLean4Untitled, waitForInfoviewHtml, closeAllEditors, waitForActiveClientRunning, assertActiveClient,
+         getAltBuildVersion, assertStringInInfoview, copyFolder, extractPhrase, restartLeanServer } from '../utils/helpers';
 import { getDefaultElanPath } from '../../../src/config'
 import { batchExecute } from '../../../src/utils/batch'
 import { logger } from '../../../src/utils/logger'
@@ -25,8 +25,11 @@ suite('Lean4 Bootstrap Test Suite', () => {
 
         // give it a extra long timeout in case test machine is really slow.
         logger.log('Wait for elan install of Lean nightly build...')
-        await waitForActiveClientRunning(lean.exports.clientProvider, 600);
-		await waitForInfoviewHtml(info, '4.0.0-nightly-', 600);
+        await waitForActiveClientRunning(lean.exports.clientProvider, 500);
+        const client = assertActiveClient(lean.exports.clientProvider);
+        // wait 60 seconds, if nothing then kick it with a restart server command, and try that up to 5 times
+        // and if it times out at 300 seconds then waitForInfoviewHtml prints the contents of the InfoView so we can see what happened.
+		await waitForInfoviewHtml(info, '4.0.0-nightly-', 5, 60000, false, () => restartLeanServer(client));
 
         logger.log('Lean installation is complete.')
 

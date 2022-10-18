@@ -227,9 +227,14 @@ export async function waitForInfoViewOpen(infoView: InfoProvider, retries=60, de
     return false;
 }
 
-export async function waitForInfoviewHtml(infoView: InfoProvider, toFind : string, retries=60, delay=1000, expand=true): Promise<string> {
+function nullHandler() {
+    return;
+}
+
+export async function waitForInfoviewHtml(infoView: InfoProvider, toFind : string, retries=60, delay=1000, expand=true, retryHandler=nullHandler): Promise<string> {
     let count = 0;
     let html = '';
+    let total = 0;
     while (count < retries){
         html = await infoView.getHtmlContents();
         if (html.indexOf(toFind) > 0){
@@ -238,12 +243,22 @@ export async function waitForInfoviewHtml(infoView: InfoProvider, toFind : strin
         if (expand && html.indexOf('<details>') >= 0) { // we want '<details open>' instead...
             await infoView.toggleAllMessages();
         }
-        await sleep(delay);
+        await sleep(1000);
+        total += 1000;
         count += 1;
+        if (total > delay) {
+            total = 0;
+            if (retryHandler) {
+                retryHandler();
+            }
+        }
     }
 
     logger.log(`>>> infoview missing "${toFind}"`);
+    logger.log('>>> infoview contains:');
     logger.log(html);
+    logger.log('>>> end of infoview contents');
+
     assert(false, `Missing "${toFind}" in infoview`);
 }
 
