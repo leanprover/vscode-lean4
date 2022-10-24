@@ -120,7 +120,7 @@ export function AllMessages({uri: uri0}: { uri: DocumentUri }) {
 
     // Fetch interactive diagnostics when we're entering the paused state
     // (if they haven't already been fetched before)
-    React.useEffect(() => void (isPaused && iDiags()), [iDiags, isPaused]);
+    React.useEffect(() => { if (isPaused) { void iDiags() } }, [iDiags, isPaused]);
 
     const setOpenRef = React.useRef<React.Dispatch<React.SetStateAction<boolean>>>();
     useEvent(ec.events.requestedAction, act => {
@@ -150,7 +150,7 @@ export function AllMessages({uri: uri0}: { uri: DocumentUri }) {
 /** We factor out the body of {@link AllMessages} which lazily fetches its contents only when expanded. */
 function AllMessagesBody({uri, messages}: {uri: DocumentUri, messages: () => Promise<InteractiveDiagnostic[]>}) {
     const [msgs, setMsgs] = React.useState<InteractiveDiagnostic[] | undefined>(undefined)
-    React.useEffect(() => void messages().then(setMsgs), [messages])
+    React.useEffect(() => { void messages().then(setMsgs) }, [messages])
     if (msgs === undefined) return <>Loading messages...</>
     else return <MessagesList uri={uri} messages={msgs}/>
 }
@@ -200,6 +200,6 @@ export function useMessagesForFile(rs: RpcSessionAtPos, uri: DocumentUri, line?:
             }
         }
     }
-    React.useEffect(() => void updateDiags(), [uri, line, rs, lspDiags.get(uri)])
+    React.useEffect(() => { void updateDiags() }, [uri, line, rs, lspDiags.get(uri)])
     return diags;
 }

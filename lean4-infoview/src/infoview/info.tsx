@@ -409,7 +409,7 @@ function InfoAux(props: InfoProps) {
         setDisplayProps(newProps)
     });
 
-    React.useEffect(() => void triggerUpdate(), [pos.uri, pos.line, pos.character, lspDiags, serverIsProcessing]);
+    React.useEffect(() => { void triggerUpdate() }, [pos.uri, pos.line, pos.character, lspDiags, serverIsProcessing]);
 
     return (
         <InfoDisplay {...props} {...displayProps} triggerUpdate={triggerUpdate} />

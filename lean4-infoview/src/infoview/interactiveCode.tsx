@@ -76,7 +76,7 @@ function TypePopupContents({ info, redrawTooltip }: TypePopupContentsProps) {
     [rs, info.info, info.subexprPos])
 
   // We let the tooltip know to redo its layout whenever our contents change.
-  React.useEffect(() => redrawTooltip(), [interactive.state, (interactive as any)?.value, (interactive as any)?.error, redrawTooltip])
+  React.useEffect(() => { void redrawTooltip() }, [interactive.state, (interactive as any)?.value, (interactive as any)?.error, redrawTooltip])
 
   return <div className="tooltip-code-content">
     {interactive.state === 'resolved' ? <>
