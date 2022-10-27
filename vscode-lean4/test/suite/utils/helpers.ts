@@ -94,16 +94,24 @@ export async function initLean4Untitled(contents: string) : Promise<vscode.Exten
     return lean;
 }
 
-export async function waitForActiveClientRunning(clientProvider: LeanClientProvider | undefined, retries=60, delay=1000){
+export async function waitForActiveClientRunning(clientProvider: LeanClientProvider | undefined, retries=60, delay=1000, retryHandler=nullHandler){
     let count = 0;
+    let tally = 0;
     logger.log('Waiting for active client to enter running state...');
     while (count < retries){
         const client = clientProvider?.getActiveClient();
         if (client && client.isRunning()) {
             return;
         }
-        await sleep(delay);
-        count += 1;
+        await sleep(1000);
+        tally += 1000;
+        if (tally >= delay) {
+            count += 1;
+            tally = 0;
+            if (retryHandler) {
+                retryHandler();
+            }
+        }
     }
 
     assert(false, 'active client is not reaching the running state');
@@ -234,7 +242,7 @@ function nullHandler() {
 export async function waitForInfoviewHtml(infoView: InfoProvider, toFind : string, retries=60, delay=1000, expand=true, retryHandler=nullHandler): Promise<string> {
     let count = 0;
     let html = '';
-    let total = 0;
+    let tally = 0;
     while (count < retries){
         html = await infoView.getHtmlContents();
         if (html.indexOf(toFind) > 0){
@@ -244,10 +252,10 @@ export async function waitForInfoviewHtml(infoView: InfoProvider, toFind : strin
             await infoView.toggleAllMessages();
         }
         await sleep(1000);
-        total += 1000;
-        count += 1;
-        if (total > delay) {
-            total = 0;
+        tally += 1000;
+        if (tally >= delay) {
+            count += 1;
+            tally = 0;
             if (retryHandler) {
                 retryHandler();
             }

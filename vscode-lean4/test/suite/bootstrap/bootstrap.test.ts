@@ -25,8 +25,11 @@ suite('Lean4 Bootstrap Test Suite', () => {
 
         // give it a extra long timeout in case test machine is really slow.
         logger.log('Wait for elan install of Lean nightly build...')
-        await waitForActiveClientRunning(lean.exports.clientProvider, 500);
+        await waitForActiveClientRunning(lean.exports.clientProvider, 5, 60000, () => restartLeanServer(client));
         const client = assertActiveClient(lean.exports.clientProvider);
+
+        // This is a hack, we shouldn't need to do this, but there seems to be some sort of bootstrapping
+        // bug on a newly installed lean server, the first time info view appears it sometimes gets stuck.
         // wait 60 seconds, if nothing then kick it with a restart server command, and try that up to 5 times
         // and if it times out at 300 seconds then waitForInfoviewHtml prints the contents of the InfoView so we can see what happened.
 		await waitForInfoviewHtml(info, '4.0.0-nightly-', 5, 60000, false, () => restartLeanServer(client));

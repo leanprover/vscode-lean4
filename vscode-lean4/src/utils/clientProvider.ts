@@ -20,7 +20,8 @@ export class LeanClientProvider implements Disposable {
     private versions: Map<string, LeanVersion> = new Map();
     private clients: Map<string, LeanClient> = new Map();
     private pending: Map<string, boolean> = new Map();
-    private testing: Map<string, boolean> = new Map();
+    private pendingInstallChanged: Uri[] = [];
+    private processingInstallChanged: boolean = false;
     private activeClient: LeanClient | undefined = undefined;
 
     private progressChangedEmitter = new EventEmitter<[string, LeanFileProgressProcessingInfo[]]>()
@@ -83,34 +84,39 @@ export class LeanClientProvider implements Disposable {
         // or it could be a document Uri in the case of a command from
         // selectToolchainForActiveEditor.
         logger.log(`[ClientProvider] installChanged for ${uri}`);
-        const key = this.getKeyFromUri(uri);
-        const path = uri.toString();
-        if (this.testing.has(key)) {
-            logger.log(`[ClientProvider] Blocking re-entrancy on ${path}`);
+        this.pendingInstallChanged.push(uri);
+        if (this.processingInstallChanged){
+            // avoid re-entrancy.
             return;
         }
-        // avoid re-entrancy since testLeanVersion can take a while.
-        this.testing.set(key, true);
-        try {
-            // have to check again here in case elan install had --default-toolchain none.
-            const [workspaceFolder, folder, packageFileUri] = await findLeanPackageRoot(uri);
-            const packageUri = folder ? folder : Uri.from({scheme: 'untitled'});
-            logger.log('[ClientProvider] testLeanVersion');
-            const version = await this.installer.testLeanVersion(packageUri);
-            if (version.version === '4') {
-                logger.log('[ClientProvider] got lean version 4');
-                const [cached, client] = await this.ensureClient(uri, version);
-                if (cached && client) {
-                    await client.restart();
-                    logger.log('[ClientProvider] restart complete');
+        this.processingInstallChanged = true;
+
+        while (this.pendingInstallChanged.length > 0)
+        {
+            try {
+                const uri = this.pendingInstallChanged.pop();
+                if (uri){
+                    // have to check again here in case elan install had --default-toolchain none.
+                    const [workspaceFolder, folder, packageFileUri] = await findLeanPackageRoot(uri);
+                    const packageUri = folder ? folder : Uri.from({scheme: 'untitled'});
+                    logger.log('[ClientProvider] testLeanVersion');
+                    const version = await this.installer.testLeanVersion(packageUri);
+                    if (version.version === '4') {
+                        logger.log('[ClientProvider] got lean version 4');
+                        const [cached, client] = await this.ensureClient(uri, version);
+                        if (cached && client) {
+                            await client.restart();
+                            logger.log('[ClientProvider] restart complete');
+                        }
+                    } else if (version.error) {
+                        logger.log(`[ClientProvider] Lean version not ok: ${version.error}`);
+                    }
                 }
-            } else if (version.error) {
-                logger.log(`[ClientProvider] Lean version not ok: ${version.error}`);
+            } catch (e) {
+                logger.log(`[ClientProvider] Exception checking lean version: ${e}`);
             }
-        } catch (e) {
-            logger.log(`[ClientProvider] Exception checking lean version: ${e}`);
         }
-        this.testing.delete(key);
+        this.processingInstallChanged = false;
     }
 
     private async onPromptingInstall(uri: Uri) : Promise<void> {
@@ -208,7 +214,7 @@ export class LeanClientProvider implements Disposable {
         return Array.from(this.clients.values());
     }
 
-    // Return a string that can be used as a key in the clients, versions, testing, and pending
+    // Return a string that can be used as a key in the clients, versions, pendingInstallChanged, and pending
     // maps.  This is not just uri.toString() because on some platforms the file system is
     // case insensitive.
     getKeyFromUri(uri: Uri | null) : string{

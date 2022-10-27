@@ -17,7 +17,7 @@ the packages in tandem using Lerna.
 
 ### Testing
 - Make sure you have executed the above build steps
-- Run `npm run test`
+- Run `npm run test`.  If you want to see incremental output run this in the `vscode-lean4` folder.
 - See [test readme](vscode-lean4/test/readme.md) for more information.
 
 ### Debugging
@@ -51,3 +51,10 @@ On Windows the build can fail if the path in your Terminal window has the wrong 
 For example, if your terminal was started in `d:\git\leanprover\vscode-lean4` and you get this error then
 try and start your terminal using an upper case driver letter like this: `D:\git\leanprover\vscode-lean4`.
 Then the build should succeed.  This is an open [bug in Rollup](https://github.com/rollup/rollup/issues/4439).
+
+**Tests failing**
+
+Try wiping your `.elan` folder and start over running all tests in order using `npm run tests`. This
+could fix some things, for example, if you have an incompatible default lean toolchain.  The
+bootstrapping test needs to be run first then all other tests should be fine.  Once you've done this
+then you can run and debug random tests from VS Code.

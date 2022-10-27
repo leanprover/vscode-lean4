@@ -500,8 +500,10 @@ export class LeanInstaller implements Disposable {
             // We register a listener, to restart the Lean extension once elan has finished.
             const result = new Promise<boolean>(function(resolve, reject) {
                 window.onDidCloseTerminal(async (t) => {
-                if (t.name === terminalName) {
+                if (t === terminal) {
                     resolve(true);
+                } else {
+                    logger.log('[LeanInstaller] ignoring terminal closed: ' + t.name + ', waiting for: ' + terminalName);
                 }});
             });
 
