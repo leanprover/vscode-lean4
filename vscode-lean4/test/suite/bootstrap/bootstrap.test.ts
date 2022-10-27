@@ -22,7 +22,7 @@ suite('Lean4 Bootstrap Test Suite', () => {
 
         // give it a extra long timeout in case test machine is really slow.
         logger.log('Wait for elan install of Lean nightly build...')
-        const client = await waitForActiveClient(lean.exports.clientProvider);
+        const client = await waitForActiveClient(lean.exports.clientProvider, 120);
         await waitForActiveClientRunning(lean.exports.clientProvider, 5, 60000, () => restartLeanServer(client));
 
         // This is a hack, we shouldn't need to do this, but there seems to be some sort of bootstrapping
@@ -53,7 +53,7 @@ suite('Lean4 Bootstrap Test Suite', () => {
         assert(info, 'No InfoProvider export');
 
         logger.log('Wait for Lean nightly build server to start...')
-		await waitForInfoviewHtml(info, '4.0.0-nightly-', 60);
+		await waitForInfoviewHtml(info, '4.0.0-nightly-', 120);
         logger.log('Lean nightly build server is running.')
 
         // install table build which is also needed by subsequent tests.
