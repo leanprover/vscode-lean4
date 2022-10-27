@@ -20,6 +20,11 @@ the packages in tandem using Lerna.
 - Run `npm run test`.  If you want to see incremental output run this in the `vscode-lean4` folder.
 - See [test readme](vscode-lean4/test/readme.md) for more information.
 
+Note that the tests use 2 versions of lean in order to test version switching using Select Toolchain.
+These versions are controlled by the `test/test-fixtures/simple/lean-toolchain` and
+`test/test-fixtures/multi/foo/lean-toolchain` files respectively.  Updating those will move the tests
+to newer versions of lean.
+
 ### Debugging
 - Open VS Code on this folder.
 - Press <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>B</kbd> to compile the extension. This step is needed for a working development setup.

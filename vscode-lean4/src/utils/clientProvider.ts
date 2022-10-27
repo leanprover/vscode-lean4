@@ -3,7 +3,7 @@ import { LocalStorageService} from './localStorage'
 import { LeanInstaller, LeanVersion } from './leanInstaller'
 import { LeanpkgService } from './leanpkg';
 import { LeanClient } from '../leanclient'
-import { LeanFileProgressProcessingInfo, RpcConnectParams, RpcKeepAliveParams, ServerStoppedReason } from '@leanprover/infoview-api';
+import { LeanFileProgressProcessingInfo, ServerStoppedReason } from '@leanprover/infoview-api';
 import * as path from 'path';
 import { findLeanPackageRoot } from './projectInfo';
 import { isFileInFolder } from './fsHelper';
@@ -122,7 +122,8 @@ export class LeanClientProvider implements Disposable {
     private async onPromptingInstall(uri: Uri) : Promise<void> {
         if (isRunningTest()){
             // no prompt, just do it!
-            logger.log('[ClientProvider] Installing Lean via Elan during testing')
+            const version = this.installer.getDefaultToolchain();
+            logger.log(`[ClientProvider] Installing ${version} via Elan during testing`);
             await this.installer.installElan();
             if (isElanDisabled()) {
                 addToolchainBinPath(getDefaultElanPath());

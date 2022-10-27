@@ -12,6 +12,13 @@ function clearUserWorkspaceData(vscodeTest: string) {
     });
 }
 
+function getLeanTestVersion(){
+    const testsRoot = path.join(__dirname, '..', '..', '..', 'test');
+    const simple = path.join(testsRoot, 'test-fixtures', 'simple');
+    const toolchain = fs.readFileSync(path.join(simple, 'lean-toolchain'), 'utf8').toString();
+    return toolchain.trim();
+}
+
 async function main() {
     try {
         // The folder containing the Extension Manifest package.json
@@ -49,7 +56,7 @@ async function main() {
 			vscodeExecutablePath,
 			extensionDevelopmentPath,
             extensionTestsPath:path.resolve(__dirname, 'index'),
-            extensionTestsEnv: {'TEST_FOLDER': 'bootstrap'},
+            extensionTestsEnv: {'TEST_FOLDER': 'bootstrap', 'TEST_VERSION': getLeanTestVersion()},
 			launchArgs: ['--new-window', '--disable-gpu'] });
 
         clearUserWorkspaceData(vscodeTestPath);
@@ -162,6 +169,7 @@ async function main() {
 
     } catch (err) {
         console.error('Failed to run tests');
+        console.error(err.message);
         process.exit(1);
     }
 }

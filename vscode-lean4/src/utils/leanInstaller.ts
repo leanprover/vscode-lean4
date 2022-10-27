@@ -420,6 +420,10 @@ export class LeanInstaller implements Disposable {
         return stdout;
     }
 
+    getDefaultToolchain() : string {
+        return this.defaultToolchain;
+    }
+
     async getElanDefaultToolchain(packageUri: Uri): Promise<string> {
         if (this.elanDefaultToolchain){
             return this.elanDefaultToolchain;
