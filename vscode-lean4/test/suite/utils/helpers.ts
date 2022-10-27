@@ -97,9 +97,10 @@ export async function initLean4Untitled(contents: string) : Promise<vscode.Exten
 export async function waitForActiveClientRunning(clientProvider: LeanClientProvider | undefined, retries=60, delay=1000, retryHandler=nullHandler){
     let count = 0;
     let tally = 0;
+    assert(clientProvider, 'missing LeanClientProvider');
     logger.log('Waiting for active client to enter running state...');
     while (count < retries){
-        const client = clientProvider?.getActiveClient();
+        const client = clientProvider.getActiveClient();
         if (client && client.isRunning()) {
             return;
         }
@@ -122,7 +123,7 @@ export async function waitForActiveClient(clientProvider: LeanClientProvider | u
     assert(clientProvider, 'missing LeanClientProvider');
     logger.log('Waiting for active client ...');
     while (count < retries){
-        const client = clientProvider?.getActiveClient();
+        const client = clientProvider.getActiveClient();
         if (client) {
             return client;
         }
