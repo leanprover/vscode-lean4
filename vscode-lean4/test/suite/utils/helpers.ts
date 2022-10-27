@@ -117,9 +117,8 @@ export async function waitForActiveClientRunning(clientProvider: LeanClientProvi
     assert(false, 'active client is not reaching the running state');
 }
 
-export async function waitForActiveClient(clientProvider: LeanClientProvider | undefined, retries=60, delay=1000, retryHandler=nullHandler) : Promise<LeanClient>{
+export async function waitForActiveClient(clientProvider: LeanClientProvider | undefined, retries=60, delay=1000) : Promise<LeanClient>{
     let count = 0;
-    let tally = 0;
     assert(clientProvider, 'missing LeanClientProvider');
     logger.log('Waiting for active client ...');
     while (count < retries){
@@ -127,15 +126,8 @@ export async function waitForActiveClient(clientProvider: LeanClientProvider | u
         if (client) {
             return client;
         }
-        await sleep(1000);
-        tally += 1000;
-        if (tally >= delay) {
-            count += 1;
-            tally = 0;
-            if (retryHandler) {
-                retryHandler();
-            }
-        }
+        await sleep(delay);
+        count += 1;
     }
 
     assert(false, 'Missing active LeanClient');

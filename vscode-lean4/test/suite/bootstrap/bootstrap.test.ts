@@ -22,7 +22,7 @@ suite('Lean4 Bootstrap Test Suite', () => {
 
         // give it a extra long timeout in case test machine is really slow.
         logger.log('Wait for elan install of Lean nightly build...')
-        const client : LeanClient = await waitForActiveClient(lean.exports.clientProvider, 5, 60000, () => restartLeanServer(client));
+        const client = await waitForActiveClient(lean.exports.clientProvider);
         await waitForActiveClientRunning(lean.exports.clientProvider, 5, 60000, () => restartLeanServer(client));
 
         // This is a hack, we shouldn't need to do this, but there seems to be some sort of bootstrapping
