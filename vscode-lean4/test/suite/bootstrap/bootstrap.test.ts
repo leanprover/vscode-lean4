@@ -1,9 +1,9 @@
 import * as assert from 'assert';
-import * as os from 'os';
+import { join, sep } from 'path';
 import { suite } from 'mocha';
 import * as vscode from 'vscode';
 import { initLean4Untitled, waitForInfoviewHtml, closeAllEditors, waitForActiveClientRunning, waitForActiveClient,
-         getAltBuildVersion } from '../utils/helpers';
+         getAltBuildVersion, deleteAllText, insertText, cleanTempFolder } from '../utils/helpers';
 import { logger } from '../../../src/utils/logger'
 
 suite('Lean4 Bootstrap Test Suite', () => {
@@ -13,10 +13,13 @@ suite('Lean4 Bootstrap Test Suite', () => {
         logger.log('=================== Install elan on demand ===================');
         void vscode.window.showInformationMessage('Running tests: ' + __dirname);
 
+        cleanTempFolder('elan');
+
         // this will wait up to 60 seconds to do full elan lean install, so test machines better
         // be able to do that.
         const lean = await initLean4Untitled('#eval Lean.versionString');
         const info = lean.exports.infoProvider;
+        const  expected = '4.0.0-nightly-';
         assert(info, 'No InfoProvider export');
 
         // give it a extra long timeout in case test machine is really slow.
@@ -25,7 +28,12 @@ suite('Lean4 Bootstrap Test Suite', () => {
         await waitForActiveClientRunning(lean.exports.clientProvider, 120);
 
         // if it times out at 300 seconds then waitForInfoviewHtml prints the contents of the InfoView so we can see what happened.
-		await waitForInfoviewHtml(info, '4.0.0-nightly-', 300);
+		await waitForInfoviewHtml(info, expected, 10, 10000, true, async () => {
+            // 60 seconds elapsed, and infoview is not updating, try and re-edit
+            // the file to force the LSP to update.
+            await deleteAllText();
+            await insertText('#eval Lean.versionString');
+        });
 
         logger.log('Lean installation is complete.')
 

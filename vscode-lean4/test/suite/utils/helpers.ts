@@ -2,6 +2,8 @@ import * as assert from 'assert';
 import { basename } from 'path';
 import * as vscode from 'vscode';
 import * as fs from 'fs';
+import * as os from 'os';
+import { join, sep } from 'path';
 import { InfoProvider } from '../../../src/infoview';
 import { LeanClient} from '../../../src/leanclient';
 import { DocViewProvider } from '../../../src/docview';
@@ -248,6 +250,13 @@ export async function waitForInfoViewOpen(infoView: InfoProvider, retries=60, de
 
 function nullHandler() {
     return;
+}
+
+export function cleanTempFolder(name: string) {
+    const path = join(os.tmpdir(), name);
+    if (fs.existsSync(path)){
+        fs.rmdirSync(path, {recursive: true});
+    }
 }
 
 export async function waitForInfoviewHtml(infoView: InfoProvider, toFind : string, retries=60, delay=1000, expand=true, retryHandler=nullHandler): Promise<string> {

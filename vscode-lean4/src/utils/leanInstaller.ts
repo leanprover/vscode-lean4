@@ -26,15 +26,12 @@ export class LeanInstaller implements Disposable {
     private defaultSuffix : string = '(default)'
     private versionCache: Map<string,LeanVersion> = new Map();
     private promptUser : boolean = true;
+    private promptInstallCallback: (uri: Uri) => Promise<void> = async (_) => {};
 
     // This event is raised whenever a version change happens.
     // The event provides the workspace Uri where the change happened.
     private installChangedEmitter = new EventEmitter<Uri>();
     installChanged = this.installChangedEmitter.event
-
-    // this event is raised if showInstallOptions is prompting the user.
-    private promptingInstallEmitter = new EventEmitter<Uri>();
-    promptingInstall = this.promptingInstallEmitter.event
 
     constructor(outputChannel: OutputChannel, localStorage : LocalStorageService, defaultToolchain : string) {
         this.outputChannel = outputChannel;
@@ -45,6 +42,10 @@ export class LeanInstaller implements Disposable {
 
     setPromptUser(show: boolean) {
         this.promptUser = show;
+    }
+
+    setPromptInstallCallback(handler: (uri: Uri) => Promise<void>){
+        this.promptInstallCallback = handler;
     }
 
     async testLeanVersion(packageUri: Uri) : Promise<LeanVersion> {
@@ -161,16 +162,9 @@ export class LeanInstaller implements Disposable {
             prompt += ` from ${path}`
         }
 
-        this.promptingInstallEmitter.fire(uri);
+        await this.promptInstallCallback(uri);
         if (shouldAutofocusOutput()) {
             this.outputChannel.show(true);
-        } else {
-            const outputItem = 'Go to output';
-            const outPrompt = 'See output window for more information';
-            const outItem = await window.showErrorMessage(outPrompt, outputItem)
-            if (outItem === outputItem) {
-                this.outputChannel.show(true);
-            }
         }
         const item = await window.showErrorMessage(prompt, installItem, selectItem)
         if (item === installItem) {

@@ -44,7 +44,7 @@ export class LeanClientProvider implements Disposable {
 
         // we must setup the installChanged event handler first before any didOpenEditor calls.
         installer.installChanged(async (uri: Uri) => await this.onInstallChanged(uri));
-        installer.promptingInstall(async (uri: Uri) => await this.onPromptingInstall(uri));
+        installer.setPromptInstallCallback(async (uri: Uri) => await this.onPromptingInstall(uri));
         // Only change the document language for *visible* documents,
         // because this closes and then reopens the document.
         window.visibleTextEditors.forEach((e) => this.didOpenEditor(e.document));
