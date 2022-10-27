@@ -201,8 +201,8 @@ export function getTestFolder() : string {
     return typeof(process.env.TEST_FOLDER) === 'string' ? process.env.TEST_FOLDER : '';
 }
 
-export function getTestVersion(): string {
-    return typeof(process.env.TEST_VERSION) === 'string' ? process.env.TEST_VERSION : '';
+export function getTestVersion(): string | undefined {
+    return typeof(process.env.TEST_VERSION) === 'string' ? process.env.TEST_VERSION : undefined;
 }
 
 export function isElanDisabled() : boolean {

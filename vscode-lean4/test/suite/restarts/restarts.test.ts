@@ -4,8 +4,8 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import { logger } from '../../../src/utils/logger'
-import { initLean4Untitled, initLean4, waitForInfoviewHtml, closeAllEditors, assertActiveClient, getAltBuildVersion,
-	extractPhrase, restartLeanServer, restartFile, assertStringInInfoview, resetToolchain, insertText, deleteAllText } from '../utils/helpers';
+import { initLean4Untitled, initLean4, waitForInfoviewHtml, closeAllEditors, waitForActiveClient,
+	extractPhrase, restartLeanServer, restartFile, assertStringInInfoview, insertText, deleteAllText } from '../utils/helpers';
 
 // Expects to be launched with folder: ${workspaceFolder}/vscode-lean4/test/suite/simple
 suite('Lean Server Restart Test Suite', () => {
@@ -33,7 +33,7 @@ suite('Lean Server Restart Test Suite', () => {
 		await assertStringInInfoview(info, expectedMessage);
 
 		logger.log('restart the server (without modifying the file, so it should crash again)')
-		let client = assertActiveClient(clients);
+		let client = await waitForActiveClient(clients);
 		await restartLeanServer(client);
 
 		logger.log('Checking that it crashed again.')
@@ -43,7 +43,7 @@ suite('Lean Server Restart Test Suite', () => {
 		await deleteAllText();
 		await insertText(`#eval "${hello}"`);
 		logger.log('Now invoke the restart server command')
-		client = assertActiveClient(clients);
+		client = await waitForActiveClient(clients);
 		await restartLeanServer(client);
 
 		logger.log('checking that Hello World comes back after restart')
@@ -77,7 +77,7 @@ suite('Lean Server Restart Test Suite', () => {
 		await assertStringInInfoview(info, expectedMessage);
 
 		logger.log('restart the server (without modifying the file, so it should crash again)')
-		let client = assertActiveClient(clients);
+		let client = await waitForActiveClient(clients);
 		await restartFile();
 
 		logger.log('Checking that it crashed again.')
@@ -87,7 +87,7 @@ suite('Lean Server Restart Test Suite', () => {
 		await deleteAllText();
 		await insertText(`#eval "${hello}"`);
 		logger.log('Now invoke the restart server command')
-		client = assertActiveClient(clients);
+		client = await waitForActiveClient(clients);
 		await restartFile();
 
 		logger.log('checking that Hello World comes back after restart')

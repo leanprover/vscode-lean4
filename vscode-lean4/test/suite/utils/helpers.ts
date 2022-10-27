@@ -117,16 +117,34 @@ export async function waitForActiveClientRunning(clientProvider: LeanClientProvi
     assert(false, 'active client is not reaching the running state');
 }
 
-export function assertActiveClient(clientProvider: LeanClientProvider | undefined) : LeanClient{
+export async function waitForActiveClient(clientProvider: LeanClientProvider | undefined, retries=60, delay=1000, retryHandler=nullHandler) : Promise<LeanClient>{
+    let count = 0;
+    let tally = 0;
     assert(clientProvider, 'missing LeanClientProvider');
-    const client = clientProvider.getActiveClient();
-    assert(client, 'Missing active LeanClient');
-    return client;
+    logger.log('Waiting for active client ...');
+    while (count < retries){
+        const client = clientProvider?.getActiveClient();
+        if (client) {
+            return client;
+        }
+        await sleep(1000);
+        tally += 1000;
+        if (tally >= delay) {
+            count += 1;
+            tally = 0;
+            if (retryHandler) {
+                retryHandler();
+            }
+        }
+    }
+
+    assert(false, 'Missing active LeanClient');
 }
 
 export async function resetToolchain(clientProvider: LeanClientProvider | undefined, retries=10, delay=1000) : Promise<void>{
 
-    const client = assertActiveClient(clientProvider);
+    const client = clientProvider?.getActiveClient();
+    assert(client, 'no active client');
 
     let stopped = false;
     let restarted = false;

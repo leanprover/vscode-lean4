@@ -1,14 +1,11 @@
 import * as assert from 'assert';
 import * as os from 'os';
 import { suite } from 'mocha';
-import * as path from 'path';
 import * as vscode from 'vscode';
-import { initLean4Untitled, waitForInfoviewHtml, closeAllEditors, waitForActiveClientRunning, assertActiveClient,
+import { initLean4Untitled, waitForInfoviewHtml, closeAllEditors, waitForActiveClientRunning, waitForActiveClient,
          getAltBuildVersion, assertStringInInfoview, copyFolder, extractPhrase, restartLeanServer } from '../utils/helpers';
-import { getDefaultElanPath } from '../../../src/config'
-import { batchExecute } from '../../../src/utils/batch'
 import { logger } from '../../../src/utils/logger'
-import * as fs from 'fs';
+import { LeanClient} from '../../../src/leanclient';
 
 suite('Lean4 Bootstrap Test Suite', () => {
 
@@ -25,7 +22,7 @@ suite('Lean4 Bootstrap Test Suite', () => {
 
         // give it a extra long timeout in case test machine is really slow.
         logger.log('Wait for elan install of Lean nightly build...')
-        const client = assertActiveClient(lean.exports.clientProvider);
+        const client : LeanClient = await waitForActiveClient(lean.exports.clientProvider, 5, 60000, () => restartLeanServer(client));
         await waitForActiveClientRunning(lean.exports.clientProvider, 5, 60000, () => restartLeanServer(client));
 
         // This is a hack, we shouldn't need to do this, but there seems to be some sort of bootstrapping
