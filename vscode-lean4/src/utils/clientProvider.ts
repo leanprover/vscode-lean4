@@ -279,8 +279,13 @@ export class LeanClientProvider implements Disposable {
             }
 
             this.pending.set(key, true);
-            logger.log('[ClientProvider] Creating LeanClient for ' + folderUri.toString());
+            if (!versionInfo) {
+                // this can go all the way to installing elan (in the test scenario)
+                // so it has to be done BEFORE we attempt to create any LeanClient.
+                versionInfo = await this.getLeanVersion(folderUri);
+            }
 
+            logger.log('[ClientProvider] Creating LeanClient for ' + folderUri.toString());
             const elanDefaultToolchain = await this.installer.getElanDefaultToolchain(folderUri);
 
             // We must create a Client before doing the long running testLeanVersion
@@ -293,9 +298,6 @@ export class LeanClientProvider implements Disposable {
             this.subscriptions.push(client);
             this.clients.set(key, client);
 
-            if (!versionInfo) {
-                versionInfo = await this.getLeanVersion(folderUri);
-            }
             if (versionInfo && versionInfo.version && versionInfo.version !== '4') {
                 // ignore workspaces that belong to a different version of Lean.
                 logger.log(`[ClientProvider] Lean4 extension ignoring workspace '${folderUri}' because it is not a Lean 4 workspace.`);

@@ -397,7 +397,7 @@ export class LeanInstaller implements Disposable {
                     if (realThis.outputChannel){
                         // add the output here in case user wants to go look for it.
                         const msg = value.trim();
-                        logger.log(`[LeanInstaller] check lean version error ${msg}`);
+                        logger.log(`[LeanInstaller] ${cmd} returned: ${msg}`);
                         realThis.outputChannel.appendLine(msg);
                     }
                     if (inc < 100) {
