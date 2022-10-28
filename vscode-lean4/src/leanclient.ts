@@ -99,6 +99,8 @@ export class LeanClient implements Disposable {
         this.workspaceFolder = workspaceFolder; // can be null when opening adhoc files.
         this.folderUri = folderUri;
         this.elanDefaultToolchain = elanDefaultToolchain;
+        this.toolchainPath = this.storageManager.getLeanPath();
+        if (!this.toolchainPath) this.toolchainPath = toolchainPath();
         this.subscriptions.push(workspace.onDidChangeConfiguration((e) => this.configChanged(e)));
     }
 
@@ -480,10 +482,7 @@ export class LeanClient implements Disposable {
     configChanged(e : ConfigurationChangeEvent): void {
         let newToolchainPath = this.storageManager.getLeanPath();
         if (!newToolchainPath) newToolchainPath = toolchainPath();
-        if (this.toolchainPath === undefined){
-            this.toolchainPath = newToolchainPath;
-        }
-        else if (this.toolchainPath !== newToolchainPath){
+        if (this.toolchainPath !== newToolchainPath){
             void this.restart();
         }
     }

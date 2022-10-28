@@ -201,8 +201,8 @@ export function getTestFolder() : string {
     return typeof(process.env.TEST_FOLDER) === 'string' ? process.env.TEST_FOLDER : '';
 }
 
-export function getTestVersion(): string | undefined {
-    return typeof(process.env.TEST_VERSION) === 'string' ? process.env.TEST_VERSION : undefined;
+export function getDefaultLeanVersion(): string {
+    return typeof(process.env.TEST_VERSION) === 'string' ? process.env.TEST_VERSION : 'leanprover/lean4:nightly';
 }
 
 export function isElanDisabled() : boolean {

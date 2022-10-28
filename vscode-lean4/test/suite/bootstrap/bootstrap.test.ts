@@ -27,13 +27,20 @@ suite('Lean4 Bootstrap Test Suite', () => {
         await waitForActiveClient(lean.exports.clientProvider, 120);
         await waitForActiveClientRunning(lean.exports.clientProvider, 300);
 
-        // if it times out at 300 seconds then waitForInfoviewHtml prints the contents of the InfoView so we can see what happened.
-		await waitForInfoviewHtml(info, expected, 10, 10000, true, async () => {
-            // 60 seconds elapsed, and infoview is not updating, try and re-edit
-            // the file to force the LSP to update.
-            await deleteAllText();
-            await insertText('#eval Lean.versionString');
-        });
+        const hackNeeded = false;
+        if (hackNeeded) {
+            // this is a hack we can do if it turns out this bootstrap test is unreliable.
+            // The hack would be covering a product bug, which is why we'd prefer not to use it.
+            // if it times out at 600 seconds then waitForInfoviewHtml prints the contents of the InfoView so we can see what happened.
+            // await waitForInfoviewHtml(info, expected, 10, 60000, true, async () => {
+            //     // 60 seconds elapsed, and infoview is not updating, try and re-edit
+            //     // the file to force the LSP to update.
+            //     await deleteAllText();
+            //     await insertText('#eval Lean.versionString');
+            // });
+        } else {
+            await waitForInfoviewHtml(info, expected, 600);
+        }
 
         logger.log('Lean installation is complete.')
 
