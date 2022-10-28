@@ -172,7 +172,9 @@ export class LeanInstaller implements Disposable {
                 const result = await this.installElan();
                 this.installChangedEmitter.fire(uri);
             } catch (err) {
-                this.outputChannel.appendLine('' + err);
+                const msg = '' + err;
+                logger.log(`[LeanInstaller] restart error ${msg}`);
+                this.outputChannel.appendLine(msg);
             }
         } else if (item === selectItem){
             void this.selectToolchain(uri);
@@ -368,7 +370,9 @@ export class LeanInstaller implements Disposable {
                 result.version = major
             }
         } catch (err) {
-            if (this.outputChannel) this.outputChannel.appendLine('' + err);
+            const msg = '' + err;
+            logger.log(`[LeanInstaller] check lean version error ${msg}`);
+            if (this.outputChannel) this.outputChannel.appendLine(msg);
             result.error = err
         }
         this.versionCache.set(cacheKey, result);
@@ -392,7 +396,9 @@ export class LeanInstaller implements Disposable {
                     stdout += value;
                     if (realThis.outputChannel){
                         // add the output here in case user wants to go look for it.
-                        realThis.outputChannel.appendLine(value.trim());
+                        const msg = value.trim();
+                        logger.log(`[LeanInstaller] check lean version error ${msg}`);
+                        realThis.outputChannel.appendLine(msg);
                     }
                     if (inc < 100) {
                         inc += 10;
