@@ -273,6 +273,7 @@ The `start` state is when you have opened a folder in VS Code and opened a .lean
 If the extension finds that elan is not in your path and is not installed in the default location then it will prompt
 you to install lean via elan.  If the folder contains a `lean-toolchain` version it will install that version
 otherwise it will install `leanprover/lean4:nightly`.
+You can override this default version by setting an `DEFAULT_LEAN_TOOLCHAIN` environment variable.
 
 If elan is installed and there is a workspace override in place created by the `Select Toolchain`
 command then this version takes precedence until you remove that override.

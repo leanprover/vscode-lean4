@@ -202,7 +202,7 @@ export function getTestFolder() : string {
 }
 
 export function getDefaultLeanVersion(): string {
-    return typeof(process.env.TEST_VERSION) === 'string' ? process.env.TEST_VERSION : 'leanprover/lean4:nightly';
+    return typeof(process.env.DEFAULT_LEAN_TOOLCHAIN) === 'string' ? process.env.DEFAULT_LEAN_TOOLCHAIN : 'leanprover/lean4:nightly';
 }
 
 export function isElanDisabled() : boolean {
