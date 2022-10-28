@@ -480,7 +480,10 @@ export class LeanClient implements Disposable {
     configChanged(e : ConfigurationChangeEvent): void {
         let newToolchainPath = this.storageManager.getLeanPath();
         if (!newToolchainPath) newToolchainPath = toolchainPath();
-        if (this.toolchainPath !== newToolchainPath){
+        if (this.toolchainPath === undefined){
+            this.toolchainPath = newToolchainPath;
+        }
+        else if (this.toolchainPath !== newToolchainPath){
             void this.restart();
         }
     }

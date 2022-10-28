@@ -44,7 +44,6 @@ export class LeanClientProvider implements Disposable {
 
         // we must setup the installChanged event handler first before any didOpenEditor calls.
         installer.installChanged(async (uri: Uri) => await this.onInstallChanged(uri));
-        installer.setPromptInstallCallback(async (uri: Uri) => await this.onPromptingInstall(uri));
         // Only change the document language for *visible* documents,
         // because this closes and then reopens the document.
         window.visibleTextEditors.forEach((e) => this.didOpenEditor(e.document));
@@ -119,7 +118,7 @@ export class LeanClientProvider implements Disposable {
         this.processingInstallChanged = false;
     }
 
-    private async onPromptingInstall(uri: Uri) : Promise<void> {
+    private async checkTestInstall(uri: Uri) : Promise<void> {
         if (isRunningTest()){
             // no prompt, just do it!
             const version = this.installer.getDefaultToolchain();
@@ -130,7 +129,6 @@ export class LeanClientProvider implements Disposable {
             } else {
                 addDefaultElanPath();
             }
-            await this.onInstallChanged(uri);
         }
     }
 
@@ -249,16 +247,28 @@ export class LeanClientProvider implements Disposable {
         return null;
     }
 
-    async getLeanVersion(uri: Uri) : Promise<LeanVersion | undefined> {
+    private async getLeanVersion(uri: Uri) : Promise<LeanVersion | undefined> {
         const [workspaceFolder, folder, packageFileUri] = await findLeanPackageRoot(uri);
         const folderUri = folder ?? Uri.from({scheme: 'untitled'});
         const key = this.getKeyFromUri(folderUri);
         if (this.versions.has(key)){
             return this.versions.get(key);
         }
-        const versionInfo = await this.installer.testLeanVersion(folderUri);
+        let versionInfo : LeanVersion | undefined = await this.installer.testLeanVersion(folderUri);
         if (!versionInfo.error){
             this.versions.set(key, versionInfo);
+        } else if (versionInfo.error === 'no elan installed') {
+            if (isRunningTest()){
+                await this.checkTestInstall(uri);
+                versionInfo = await this.installer.testLeanVersion(folderUri);
+                if (!versionInfo.error){
+                    this.versions.set(key, versionInfo);
+                }
+            } else {
+                // Ah, then we need to prompt the user, this waits for answer,
+                // but does not wait for the install to complete.
+                await this.installer.showInstallOptions(uri);
+            }
         }
         return versionInfo;
     }
@@ -332,10 +342,14 @@ export class LeanClientProvider implements Disposable {
             logger.log('[ClientProvider] firing clientAddedEmitter event');
             this.clientAddedEmitter.fire(client);
 
-            if (versionInfo && !versionInfo.error) {
-                // we are ready to start, otherwise some sort of install might be happening
-                // as a result of UI options shown by testLeanVersion.
-                await client.start();
+            if (versionInfo) {
+                if (!versionInfo.error) {
+                    // we are ready to start, otherwise some sort of install might be happening
+                    // as a result of UI options shown by testLeanVersion.
+                    await client.start();
+                } else {
+                    logger.log(`[ClientProvider] skipping client.start because of versionInfo error: ${versionInfo?.error}`);
+                }
             }
         }
 

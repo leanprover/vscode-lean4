@@ -1,5 +1,5 @@
 import { window, TerminalOptions, OutputChannel, commands, Disposable, EventEmitter, ProgressLocation, Uri } from 'vscode'
-import { toolchainPath, addServerEnvPaths, getLeanExecutableName, getPowerShellPath, shouldAutofocusOutput } from '../config'
+import { toolchainPath, addServerEnvPaths, getLeanExecutableName, getPowerShellPath, shouldAutofocusOutput, isRunningTest} from '../config'
 import { batchExecute } from './batch'
 import { LocalStorageService} from './localStorage'
 import { readLeanVersion, findLeanPackageRoot, isCoreLean4Directory } from './projectInfo';
@@ -26,7 +26,6 @@ export class LeanInstaller implements Disposable {
     private defaultSuffix : string = '(default)'
     private versionCache: Map<string,LeanVersion> = new Map();
     private promptUser : boolean = true;
-    private promptInstallCallback: (uri: Uri) => Promise<void> = async (_) => {};
 
     // This event is raised whenever a version change happens.
     // The event provides the workspace Uri where the change happened.
@@ -44,10 +43,6 @@ export class LeanInstaller implements Disposable {
         this.promptUser = show;
     }
 
-    setPromptInstallCallback(handler: (uri: Uri) => Promise<void>){
-        this.promptInstallCallback = handler;
-    }
-
     async testLeanVersion(packageUri: Uri) : Promise<LeanVersion> {
 
         // see if there is a lean-toolchain file and use that version info.
@@ -63,9 +58,6 @@ export class LeanInstaller implements Disposable {
                 // Ah, there is no elan, but what if Lean is in the PATH due to custom install?
                 const found = await this.checkLeanVersion(packageUri, leanVersion);
                 if (found.error) {
-                    // Ah, then we need to install elan so prompt the user, but don't wait
-                    // here for the answer because that could be forever.
-                    void this.showInstallOptions(packageUri);
                     return { version: '4', error: 'no elan installed' }
                 }
             } else if (! await isCoreLean4Directory(packageUri)) {
@@ -87,8 +79,6 @@ export class LeanInstaller implements Disposable {
             }
             if (found.error === 'no default toolchain') {
                 await this.showToolchainOptions(packageUri)
-            } else {
-                void this.showInstallOptions(packageUri);
             }
         }
         return found;
@@ -150,6 +140,10 @@ export class LeanInstaller implements Disposable {
     }
 
     async showInstallOptions(uri: Uri) : Promise<void> {
+        if (isRunningTest()){
+            // no need to prompt when there is no user.
+            return;
+        }
         let path  = this.localStorage.getLeanPath();
         if (!path ) path  = toolchainPath();
 
@@ -162,7 +156,6 @@ export class LeanInstaller implements Disposable {
             prompt += ` from ${path}`
         }
 
-        await this.promptInstallCallback(uri);
         if (shouldAutofocusOutput()) {
             this.outputChannel.show(true);
         }
@@ -305,6 +298,10 @@ export class LeanInstaller implements Disposable {
     }
 
     async showToolchainOptions(uri: Uri) : Promise<void> {
+        if (isRunningTest()){
+            // no need to prompt when there is no user.
+            return;
+        }
         // note; we keep the LeanClient alive so that it can be restarted if the
         // user changes the Lean: Executable Path.
         const selectToolchain = 'Select lean toolchain';

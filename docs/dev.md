@@ -9,6 +9,9 @@ the packages in tandem using Lerna.
 
 ![overview](images/overview.png)
 
+See the following design topics:
+- [bootstrapping](bootstrapping.md)
+
 ### Building
 - Make sure you have an up to date installation of `npm` and `node.js`.  For example `npm` version 8.1.3 and `node.js` version v16.13.0.
 - Run `npm install` in this folder. This installs the Lerna package manager.
