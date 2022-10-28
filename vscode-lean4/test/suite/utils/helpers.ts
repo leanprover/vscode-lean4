@@ -25,6 +25,14 @@ export function closeActiveEditor(): Thenable<any> {
     return vscode.commands.executeCommand('workbench.action.closeActiveEditor');
 }
 
+export function assertAndLog(value: unknown, message: string) : asserts value
+{
+    if (!value) {
+        logger.log(message);
+    }
+    assert(value, message);
+}
+
 export async function initLean4(fileName: string) : Promise<vscode.Extension<Exports>>{
 
     await closeAllEditors();
@@ -34,22 +42,22 @@ export async function initLean4(fileName: string) : Promise<vscode.Extension<Exp
     await vscode.window.showTextDocument(doc, options);
 
     const lean = await waitForActiveExtension('leanprover.lean4', 60);
-    assert(lean, 'Lean extension not loaded');
-    assert(lean.exports.isLean4Project);
-    assert(lean.isActive);
+
+    assertAndLog(lean, 'Lean extension not loaded');
+    assertAndLog(lean.exports.isLean4Project, 'Lean extension is not a lean4 project');
+    assertAndLog(lean.isActive, 'Lean extension is not active');
     logger.log(`Found lean package version: ${lean.packageJSON.version}`);
     await waitForActiveEditor(basename(fileName));
-
     const info = lean.exports.infoProvider;
-	assert(info, 'No InfoProvider export');
-    assert(await waitForInfoViewOpen(info, 60),
+	assertAndLog(info, 'No InfoProvider export');
+    assertAndLog(await waitForInfoViewOpen(info, 60),
         'Info view did not open after 20 seconds');
     return lean;
 }
 
 export async function insertText(text: string) : Promise<void> {
     const editor = vscode.window.activeTextEditor;
-    assert(editor !== undefined, 'no active editor');
+    assertAndLog(editor !== undefined, 'no active editor');
     await editor.edit((builder) => {
         builder.delete(editor.selection);
         const cursorPos = editor.selection.end;
@@ -61,7 +69,7 @@ export async function insertText(text: string) : Promise<void> {
 
 export async function deleteAllText() : Promise<void> {
     const editor = vscode.window.activeTextEditor;
-    assert(editor !== undefined, 'no active editor');
+    assertAndLog(editor !== undefined, 'no active editor');
     await editor.edit((builder) => {
         builder.delete(new vscode.Range(new vscode.Position(0, 0), editor.document.lineAt(editor.document.lineCount-1).range.end));
     })
@@ -83,15 +91,15 @@ export async function initLean4Untitled(contents: string) : Promise<vscode.Exten
     });
 
     const lean = await waitForActiveExtension('leanprover.lean4', 60);
-    assert(lean, 'Lean extension not loaded');
+    assertAndLog(lean, 'Lean extension not loaded');
 
     logger.log(`Found lean package version: ${lean.packageJSON.version}`);
     const info = lean.exports.infoProvider;
-	assert(info, 'No InfoProvider export');
+	assertAndLog(info, 'No InfoProvider export');
 
     // If info view opens too quickly there is no LeanClient ready yet and
     // it's initialization gets messed up.
-    assert(await waitForInfoViewOpen(info, 60),
+    assertAndLog(await waitForInfoViewOpen(info, 60),
         'Info view did not open after 60 seconds');
     return lean;
 }
@@ -99,7 +107,7 @@ export async function initLean4Untitled(contents: string) : Promise<vscode.Exten
 export async function waitForActiveClientRunning(clientProvider: LeanClientProvider | undefined, retries=60, delay=1000, retryHandler=nullHandler){
     let count = 0;
     let tally = 0;
-    assert(clientProvider, 'missing LeanClientProvider');
+    assertAndLog(clientProvider, 'missing LeanClientProvider');
     logger.log('Waiting for active client to enter running state...');
     while (count < retries){
         const client = clientProvider.getActiveClient();
@@ -117,12 +125,13 @@ export async function waitForActiveClientRunning(clientProvider: LeanClientProvi
         }
     }
 
-    assert(false, 'active client is not reaching the running state');
+    const timeout = (retries * delay) / 1000
+    assertAndLog(false, `active client is not reaching the running state after ${timeout} seconds`);
 }
 
 export async function waitForActiveClient(clientProvider: LeanClientProvider | undefined, retries=60, delay=1000) : Promise<LeanClient>{
     let count = 0;
-    assert(clientProvider, 'missing LeanClientProvider');
+    assertAndLog(clientProvider, 'missing LeanClientProvider');
     logger.log('Waiting for active client ...');
     while (count < retries){
         const client = clientProvider.getActiveClient();
@@ -133,13 +142,14 @@ export async function waitForActiveClient(clientProvider: LeanClientProvider | u
         count += 1;
     }
 
-    assert(false, 'Missing active LeanClient');
+    const timeout = (retries * delay) / 1000
+    assertAndLog(false, `Missing active LeanClient after ${timeout} seconds`);
 }
 
 export async function resetToolchain(clientProvider: LeanClientProvider | undefined, retries=10, delay=1000) : Promise<void>{
 
     const client = clientProvider?.getActiveClient();
-    assert(client, 'no active client');
+    assertAndLog(client, 'no active client');
 
     let stopped = false;
     let restarted = false;
@@ -210,7 +220,7 @@ export async function waitForActiveEditor(filename='', retries=60, delay=1000) :
         count += 1;
     }
     let editor = vscode.window.activeTextEditor
-    assert(editor, 'Missing active text editor');
+    assertAndLog(editor, 'Missing active text editor');
 
     logger.log(`Loaded document ${editor.document.uri}`);
 
@@ -221,7 +231,7 @@ export async function waitForActiveEditor(filename='', retries=60, delay=1000) :
             count += 1;
             editor = vscode.window.activeTextEditor
         }
-        assert(editor && editor.document.uri.fsPath.toLowerCase().endsWith(filename.toLowerCase()), `Active text editor does not match ${filename}`);
+        assertAndLog(editor && editor.document.uri.fsPath.toLowerCase().endsWith(filename.toLowerCase()), `Active text editor does not match ${filename}`);
     }
 
     return editor;
@@ -282,12 +292,12 @@ export async function waitForInfoviewHtml(infoView: InfoProvider, toFind : strin
         }
     }
 
-    logger.log(`>>> infoview missing "${toFind}"`);
+    const timeout = (retries * delay) / 1000
     logger.log('>>> infoview contains:');
     logger.log(html);
     logger.log('>>> end of infoview contents');
 
-    assert(false, `Missing "${toFind}" in infoview`);
+    assertAndLog(false, `Missing "${toFind}" in infoview after ${timeout} seconds`);
 }
 
 export async function waitForInfoviewNotHtml(infoView: InfoProvider, toFind : string, retries=60, delay=1000, collapse=true): Promise<void> {
@@ -305,9 +315,11 @@ export async function waitForInfoviewNotHtml(infoView: InfoProvider, toFind : st
         count += 1;
     }
 
-    logger.log(`>>> infoview still contains "${toFind}"`);
+    const timeout = (retries * delay) / 1000
+    logger.log('>>> infoview contains:');
     logger.log(html);
-    assert(false, `Text "${toFind}" in infoview is not going away`);
+    logger.log('>>> end of infoview contents');
+    assertAndLog(false, `infoview still contains "${toFind}" after ${timeout} seconds`);
 }
 
 export async function waitForDocViewHtml(docView: DocViewProvider, toFind : string, retries=60, delay=1000): Promise<string> {
@@ -322,9 +334,11 @@ export async function waitForDocViewHtml(docView: DocViewProvider, toFind : stri
         count += 1;
     }
 
+    const timeout = (retries * delay) / 1000
     logger.log('>>> docview contents:')
     logger.log(html);
-    assert(false, `Missing "${toFind}" in docview`);
+    logger.log('>>> end of infoview contents');
+    assertAndLog(false, `Missing "${toFind}" in docview after ${timeout} seconds`);
     return html;
 }
 
@@ -354,7 +368,8 @@ export async function findWord(editor: vscode.TextEditor, word: string, retries=
         }
     }
 
-    assert(false, `word ${word} not found in editor`);
+    const timeout = (retries * delay) / 1000
+    assertAndLog(false, `word ${word} not found in editor after ${timeout} seconds`);
 }
 
 export async function gotoDefinition(editor: vscode.TextEditor, word: string, retries=60, delay=1000) : Promise<void> {
@@ -393,16 +408,13 @@ export async function restartLeanServer(client: LeanClient, retries=60, delay=10
         count += 1;
     }
 
+    const timeout = (retries * delay) / 1000
+
     // check we have no errors.
-    if (stateChanges.length === 0){
-        assert(false, 'restartServer did not fire any events')
-    }
+    assertAndLog(stateChanges.length !== 0, `restartServer did not fire any events after ${timeout} seconds`)
     const actual = stateChanges[stateChanges.length - 1];
     const expected = 'restarted'
-    if (actual !== expected) {
-        logger.log(`restartServer did not produce expected result: ${actual}`);
-    }
-    assert(actual === expected);
+    assertAndLog(actual === expected, `restartServer did not produce expected result "${actual}" after ${timeout} seconds`);
     return false;
 }
 
@@ -414,12 +426,12 @@ export async function invokeHrefCommand(html: string, selector: string) : Promis
 
     const $ = cheerio.load(html);
     const link = $(selector);
-    assert(link, 'openExample link not found')
+    assertAndLog(link, 'openExample link not found')
     if (link) {
         const href = link.attr('href');
         if (href) {
             const prefix = 'command:'
-            assert(href.startsWith(prefix), `expecting the href to start with ${prefix}`);
+            assertAndLog(href.startsWith(prefix), `expecting the href to start with ${prefix}`);
             const cmd = href.slice(prefix.length);
             const uri = vscode.Uri.parse(cmd);
             const query = decodeURIComponent(uri.query);

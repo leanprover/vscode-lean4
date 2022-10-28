@@ -132,8 +132,8 @@ export class LeanClientProvider implements Disposable {
             }
             await this.onInstallChanged(uri);
         }
-
     }
+
     private getVisibleEditor(uri: Uri) : TextEditor | null {
         const path = uri.toString();
         for (const editor of window.visibleTextEditors) {

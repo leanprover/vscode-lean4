@@ -25,7 +25,7 @@ suite('Lean4 Bootstrap Test Suite', () => {
         // give it a extra long timeout in case test machine is really slow.
         logger.log('Wait for elan install of Lean nightly build...')
         await waitForActiveClient(lean.exports.clientProvider, 120);
-        await waitForActiveClientRunning(lean.exports.clientProvider, 120);
+        await waitForActiveClientRunning(lean.exports.clientProvider, 300);
 
         // if it times out at 300 seconds then waitForInfoviewHtml prints the contents of the InfoView so we can see what happened.
 		await waitForInfoviewHtml(info, expected, 10, 10000, true, async () => {
