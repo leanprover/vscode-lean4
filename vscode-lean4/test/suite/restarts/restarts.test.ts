@@ -4,14 +4,14 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import { logger } from '../../../src/utils/logger'
-import { initLean4Untitled, initLean4, waitForInfoviewHtml, closeAllEditors, assertActiveClient, getAltBuildVersion,
-	extractPhrase, restartLeanServer, restartFile, assertStringInInfoview, resetToolchain, insertText, deleteAllText } from '../utils/helpers';
+import { initLean4Untitled, initLean4, waitForInfoviewHtml, closeAllEditors, waitForActiveClient,
+	extractPhrase, restartLeanServer, restartFile, assertStringInInfoview, insertText, deleteAllText } from '../utils/helpers';
 
 // Expects to be launched with folder: ${workspaceFolder}/vscode-lean4/test/suite/simple
 suite('Lean Server Restart Test Suite', () => {
 
 	test('Worker crashed and client running - Restarting Lean Server', async () => {
-		logger.log('=================== Test worker crashed and client running ===================');
+		logger.log('=================== Test worker crashed and client running - Restarting Lean Server ===================');
 		void vscode.window.showInformationMessage('Running tests: ' + __dirname);
 
 		// add normal values to initialize lean4 file
@@ -33,7 +33,7 @@ suite('Lean Server Restart Test Suite', () => {
 		await assertStringInInfoview(info, expectedMessage);
 
 		logger.log('restart the server (without modifying the file, so it should crash again)')
-		let client = assertActiveClient(clients);
+		let client = await waitForActiveClient(clients);
 		await restartLeanServer(client);
 
 		logger.log('Checking that it crashed again.')
@@ -43,7 +43,7 @@ suite('Lean Server Restart Test Suite', () => {
 		await deleteAllText();
 		await insertText(`#eval "${hello}"`);
 		logger.log('Now invoke the restart server command')
-		client = assertActiveClient(clients);
+		client = await waitForActiveClient(clients);
 		await restartLeanServer(client);
 
 		logger.log('checking that Hello World comes back after restart')
@@ -52,10 +52,10 @@ suite('Lean Server Restart Test Suite', () => {
 		// make sure test is always run in predictable state, which is no file or folder open
 		await closeAllEditors();
 
-	}).timeout(60000);
+	}).timeout(120000);
 
 	test('Worker crashed and client running - Restarting File (Refreshing dependencies)', async () => {
-		logger.log('=================== Test worker crashed and client running ===================');
+		logger.log('=================== Test worker crashed and client running (Refreshing dependencies) ===================');
 		void vscode.window.showInformationMessage('Running tests: ' + __dirname);
 
 		// add normal values to initialize lean4 file
@@ -77,7 +77,7 @@ suite('Lean Server Restart Test Suite', () => {
 		await assertStringInInfoview(info, expectedMessage);
 
 		logger.log('restart the server (without modifying the file, so it should crash again)')
-		let client = assertActiveClient(clients);
+		let client = await waitForActiveClient(clients);
 		await restartFile();
 
 		logger.log('Checking that it crashed again.')
@@ -87,7 +87,7 @@ suite('Lean Server Restart Test Suite', () => {
 		await deleteAllText();
 		await insertText(`#eval "${hello}"`);
 		logger.log('Now invoke the restart server command')
-		client = assertActiveClient(clients);
+		client = await waitForActiveClient(clients);
 		await restartFile();
 
 		logger.log('checking that Hello World comes back after restart')
@@ -96,7 +96,7 @@ suite('Lean Server Restart Test Suite', () => {
 		// make sure test is always run in predictable state, which is no file or folder open
 		await closeAllEditors();
 
-	}).timeout(60000);
+	}).timeout(120000);
 
 	test('Restart Server', async () => {
 
@@ -131,6 +131,6 @@ suite('Lean Server Restart Test Suite', () => {
 			// make sure test is always run in predictable state, which is no file or folder open
 			await closeAllEditors();
 		}
-	}).timeout(60000);
+	}).timeout(120000);
 
 }).timeout(120000);

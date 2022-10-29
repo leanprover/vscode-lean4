@@ -1,0 +1,59 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<DirectedGraph xmlns="http://schemas.microsoft.com/vs/2009/dgml">
+  <Nodes>
+    <Node Id="CheckLeanVersion" Bounds="-954.985168197401,-608.006719549751,113.9,25.96" Label="checkLeanVersion" UseManualLocation="True" />
+    <Node Id="CheckTestInstall" Bounds="-1449.11054911716,-473.469243370782,101.733333333334,25.96" Label="checkTestInstall" UseManualLocation="True" />
+    <Node Id="ClientProvider" Bounds="-1469.10746620608,-652.386353896961,283.659713872483,224.876580895387" Group="Expanded" UseManualLocation="True" />
+    <Node Id="DidOpenEditor" Bounds="-1445.37862682927,-612.389443370782,97.52,25.96" Label="didOpenEditor" UseManualLocation="True" />
+    <Node Id="EnsureClient" Bounds="-1366.59554911295,-556.429343370782,85.7766666666666,25.96" Label="ensureClient" />
+    <Node Id="GetLeanVersion" Bounds="-1308.37721578391,-481.509385211081,101.193333333334,25.96" Label="getLeanVersion" UseManualLocation="True" />
+    <Node Id="HandleLakeFileChanged" Bounds="-1111.56240330482,-417.006780584907,145.41,25.96" Label="handleLakeFileChanged" UseManualLocation="True" />
+    <Node Id="HandleVersionChanged" Bounds="-965.717629541802,-552.04660602436,142.423333333333,25.96" Label="handleVersionChanged" UseManualLocation="True" />
+    <Node Id="LeanInstaller" Bounds="-1136.35059056739,-648.004062234461,356.408432364266,276.959616778485" Group="Expanded" UseManualLocation="True" />
+    <Node Id="OnInstallChanged" Bounds="-1317.85862682927,-612.389443370782,112.41,25.96" Label="onInstallChanged" UseManualLocation="True" />
+    <Node Id="SelectToolchain" Bounds="-1111.36886367266,-472.967138250923,100.383333333333,25.96" Label="selectToolchain" UseManualLocation="True" />
+    <Node Id="SelectToolchainForActiveEditor" Bounds="-980.985466048963,-492.086584051704,181.04,25.96" Label="selectToolchainForActiveEditor" UseManualLocation="True" />
+    <Node Id="ShowInstallOptions" Bounds="-1116.35392877683,-548.046667059517,120.636666666667,25.96" Label="showInstallOptions" UseManualLocation="True" />
+    <Node Id="TestLeanVersion" Bounds="-1108.67914239987,-604.006750067329,103.286666666667,25.96" Label="testLeanVersion" UseManualLocation="True" />
+  </Nodes>
+  <Links>
+    <Link Source="ClientProvider" Target="CheckTestInstall" Category="Contains" />
+    <Link Source="ClientProvider" Target="DidOpenEditor" Category="Contains" />
+    <Link Source="ClientProvider" Target="EnsureClient" Category="Contains" />
+    <Link Source="ClientProvider" Target="GetLeanVersion" Category="Contains" />
+    <Link Source="ClientProvider" Target="OnInstallChanged" Category="Contains" Bounds="-1256.54376148943,-550.08,49.3889965032363,96.2869187148408" />
+    <Link Source="DidOpenEditor" Target="EnsureClient" Bounds="-1379.70608197435,-586.426253896961,31.9476721308938,24.5203918625464" />
+    <Link Source="EnsureClient" Target="CheckTestInstall" Bounds="-1380.56366694819,-530.466153896961,45.1943334029249,50.3015369385107" />
+    <Link Source="EnsureClient" Target="GetLeanVersion" Bounds="-1312.28459667136,-530.464614824094,37.1357131165591,42.1988645234784" />
+    <Link Source="GetLeanVersion" Target="TestLeanVersion" Bounds="-1236.50936706299,-573.358730589264,150.51975834362,91.8493269027403" />
+    <Link Source="HandleLakeFileChanged" Target="OnInstallChanged" Bounds="-1240.08586833183,-580.495388361601,186.427284461966,163.488593928007" />
+    <Link Source="HandleVersionChanged" Target="OnInstallChanged" Bounds="-1196.56783550164,-588.712195725823,231.340405553512,38.0221053982439" />
+    <Link Source="LeanInstaller" Target="CheckLeanVersion" Category="Contains" />
+    <Link Source="LeanInstaller" Target="HandleLakeFileChanged" Category="Contains" />
+    <Link Source="LeanInstaller" Target="HandleVersionChanged" Category="Contains" />
+    <Link Source="LeanInstaller" Target="SelectToolchain" Category="Contains" />
+    <Link Source="LeanInstaller" Target="SelectToolchainForActiveEditor" Category="Contains" />
+    <Link Source="LeanInstaller" Target="ShowInstallOptions" Category="Contains" />
+    <Link Source="LeanInstaller" Target="TestLeanVersion" Category="Contains" Bounds="-992.553222687335,-565.193046516972,8.80950444699602,21.6630892415815" />
+    <Link Source="OnInstallChanged" Target="EnsureClient" Bounds="-1302.62992730675,-586.426253896961,26.5835814032814,23.9728101908374" />
+    <Link Source="OnInstallChanged" Target="TestLeanVersion" Bounds="-1205.44868652344,-597.106851937995,87.7770990475644,3.59599823617282" />
+    <Link Source="SelectToolchain" Target="OnInstallChanged" Bounds="-1235.60080415415,-581.290827316656,155.75956788501,108.323705734625" />
+    <Link Source="SelectToolchainForActiveEditor" Target="OnInstallChanged" Bounds="-1213.04299138096,-583.654604562988,282.528436649816,91.5680066625972" />
+    <Link Source="TestLeanVersion" Target="CheckLeanVersion" Bounds="-1005.39246378581,-593.36769477392,41.4101845981374,1.04174867444249" />
+    <Link Source="TestLeanVersion" Target="ShowInstallOptions" Bounds="-1056.80384646391,-578.046763916015,0.375295100319818,21.0015806908559" />
+  </Links>
+  <Categories>
+    <Category Id="Contains" Label="Contains" Description="Whether the source of the link contains the target object" CanBeDataDriven="False" CanLinkedNodesBeDataDriven="True" IncomingActionLabel="Contained By" IsContainment="True" OutgoingActionLabel="Contains" />
+  </Categories>
+  <Properties>
+    <Property Id="Bounds" DataType="System.Windows.Rect" />
+    <Property Id="CanBeDataDriven" Label="CanBeDataDriven" Description="CanBeDataDriven" DataType="System.Boolean" />
+    <Property Id="CanLinkedNodesBeDataDriven" Label="CanLinkedNodesBeDataDriven" Description="CanLinkedNodesBeDataDriven" DataType="System.Boolean" />
+    <Property Id="Group" Label="Group" Description="Display the node as a group" DataType="Microsoft.VisualStudio.GraphModel.GraphGroupStyle" />
+    <Property Id="IncomingActionLabel" Label="IncomingActionLabel" Description="IncomingActionLabel" DataType="System.String" />
+    <Property Id="IsContainment" DataType="System.Boolean" />
+    <Property Id="Label" Label="Label" Description="Displayable label of an Annotatable object" DataType="System.String" />
+    <Property Id="OutgoingActionLabel" Label="OutgoingActionLabel" Description="OutgoingActionLabel" DataType="System.String" />
+    <Property Id="UseManualLocation" DataType="System.Boolean" />
+  </Properties>
+</DirectedGraph>

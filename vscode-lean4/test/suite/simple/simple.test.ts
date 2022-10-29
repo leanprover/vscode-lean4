@@ -38,11 +38,14 @@ suite('Lean4 Basics Test Suite', () => {
         // for the versionString function we just jumped to.
         const html = await waitForInfoviewHtml(info, 'Expected type');
 
-        const expected = path.join('.elan', 'toolchains', 'leanprover--lean4---nightly', 'src', 'lean');
         editor = vscode.window.activeTextEditor;
         assert(editor !== undefined, 'no active editor');
-        assert(editor.document.uri.fsPath.indexOf(expected) > 0,
-            `Active text editor is not located in ${expected}`);
+        const actual = editor.document.uri.fsPath.replaceAll('\\', '/');
+        const expected = /\.elan\/toolchains\/.*\/src\/lean/
+        if (!expected.test(actual)) {
+            console.log('Path does not match');
+        }
+        assert(expected.test(actual), `Active text editor is not located in ${expected}`);
 
         // make sure lean client is started in the right place.
         const clients = lean.exports.clientProvider;

@@ -99,6 +99,8 @@ export class LeanClient implements Disposable {
         this.workspaceFolder = workspaceFolder; // can be null when opening adhoc files.
         this.folderUri = folderUri;
         this.elanDefaultToolchain = elanDefaultToolchain;
+        this.toolchainPath = this.storageManager.getLeanPath();
+        if (!this.toolchainPath) this.toolchainPath = toolchainPath();
         this.subscriptions.push(workspace.onDidChangeConfiguration((e) => this.configChanged(e)));
     }
 
@@ -344,8 +346,10 @@ export class LeanClient implements Disposable {
             // if we got this far then the client is happy so we are running!
             this.running = true;
         } catch (error) {
-            this.outputChannel.appendLine('' + error);
-            this.serverFailedEmitter.fire('' + error);
+            const msg = '' + error;
+            logger.log(`[LeanClient] restart error ${msg}`);
+            this.outputChannel.appendLine(msg);
+            this.serverFailedEmitter.fire(msg);
             insideRestart = false;
             return;
         }

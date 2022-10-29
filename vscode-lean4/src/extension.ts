@@ -7,7 +7,7 @@ import { LocalStorageService} from './utils/localStorage'
 import { LeanInstaller } from './utils/leanInstaller'
 import { LeanpkgService } from './utils/leanpkg';
 import { LeanClientProvider } from './utils/clientProvider';
-import { addDefaultElanPath, removeElanPath, addToolchainBinPath, isElanDisabled} from './config';
+import { addDefaultElanPath, removeElanPath, addToolchainBinPath, isElanDisabled, getDefaultLeanVersion} from './config';
 import { dirname, basename } from 'path';
 import { findLeanPackageVersionInfo } from './utils/projectInfo';
 import { Exports } from './exports';
@@ -50,7 +50,7 @@ export async function activate(context: ExtensionContext): Promise<Exports> {
         addDefaultElanPath();
     }
 
-    const defaultToolchain = 'leanprover/lean4:nightly';
+    const defaultToolchain = getDefaultLeanVersion();
 
     // note: workspace.rootPath can be undefined in the untitled or adhoc case
     // where the user ran "code lean_filename".

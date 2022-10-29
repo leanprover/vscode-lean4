@@ -4,7 +4,7 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import { logger } from '../../../src/utils/logger'
-import { initLean4Untitled, initLean4, waitForInfoviewHtml, closeAllEditors, assertActiveClient, getAltBuildVersion,
+import { initLean4Untitled, initLean4, waitForInfoviewHtml, closeAllEditors, waitForActiveClient, getAltBuildVersion,
 	extractPhrase, restartLeanServer, restartFile, assertStringInInfoview, resetToolchain, insertText, deleteAllText } from '../utils/helpers';
 
 // Expects to be launched with folder: ${workspaceFolder}/vscode-lean4/test/suite/simple
@@ -101,7 +101,7 @@ suite('Toolchain Test Suite', () => {
 		// Now edit the lean-toolchain file.
 		const toolchainFile = path.join(testsRoot, 'lean-toolchain');
 		const originalContents = fs.readFileSync(toolchainFile, 'utf8').toString();
-		assert(originalContents.trim() === 'leanprover/lean4:nightly');
+		assert(originalContents.trim().startsWith('leanprover/lean4:nightly'));
 
 		const version = getAltBuildVersion()
 		logger.log(`Switch to a alternate version ${version} by editing the toolchain file`);

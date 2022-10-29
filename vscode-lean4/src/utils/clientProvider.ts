@@ -3,7 +3,7 @@ import { LocalStorageService} from './localStorage'
 import { LeanInstaller, LeanVersion } from './leanInstaller'
 import { LeanpkgService } from './leanpkg';
 import { LeanClient } from '../leanclient'
-import { LeanFileProgressProcessingInfo, RpcConnectParams, RpcKeepAliveParams, ServerStoppedReason } from '@leanprover/infoview-api';
+import { LeanFileProgressProcessingInfo, ServerStoppedReason } from '@leanprover/infoview-api';
 import * as path from 'path';
 import { findLeanPackageRoot } from './projectInfo';
 import { isFileInFolder } from './fsHelper';
@@ -20,7 +20,8 @@ export class LeanClientProvider implements Disposable {
     private versions: Map<string, LeanVersion> = new Map();
     private clients: Map<string, LeanClient> = new Map();
     private pending: Map<string, boolean> = new Map();
-    private testing: Map<string, boolean> = new Map();
+    private pendingInstallChanged: Uri[] = [];
+    private processingInstallChanged: boolean = false;
     private activeClient: LeanClient | undefined = undefined;
 
     private progressChangedEmitter = new EventEmitter<[string, LeanFileProgressProcessingInfo[]]>()
@@ -43,7 +44,6 @@ export class LeanClientProvider implements Disposable {
 
         // we must setup the installChanged event handler first before any didOpenEditor calls.
         installer.installChanged(async (uri: Uri) => await this.onInstallChanged(uri));
-        installer.promptingInstall(async (uri: Uri) => await this.onPromptingInstall(uri));
         // Only change the document language for *visible* documents,
         // because this closes and then reopens the document.
         window.visibleTextEditors.forEach((e) => this.didOpenEditor(e.document));
@@ -83,50 +83,55 @@ export class LeanClientProvider implements Disposable {
         // or it could be a document Uri in the case of a command from
         // selectToolchainForActiveEditor.
         logger.log(`[ClientProvider] installChanged for ${uri}`);
-        const key = this.getKeyFromUri(uri);
-        const path = uri.toString();
-        if (this.testing.has(key)) {
-            logger.log(`[ClientProvider] Blocking re-entrancy on ${path}`);
+        this.pendingInstallChanged.push(uri);
+        if (this.processingInstallChanged){
+            // avoid re-entrancy.
             return;
         }
-        // avoid re-entrancy since testLeanVersion can take a while.
-        this.testing.set(key, true);
-        try {
-            // have to check again here in case elan install had --default-toolchain none.
-            const [workspaceFolder, folder, packageFileUri] = await findLeanPackageRoot(uri);
-            const packageUri = folder ? folder : Uri.from({scheme: 'untitled'});
-            logger.log('[ClientProvider] testLeanVersion');
-            const version = await this.installer.testLeanVersion(packageUri);
-            if (version.version === '4') {
-                logger.log('[ClientProvider] got lean version 4');
-                const [cached, client] = await this.ensureClient(uri, version);
-                if (cached && client) {
-                    await client.restart();
-                    logger.log('[ClientProvider] restart complete');
+        this.processingInstallChanged = true;
+
+        while (this.pendingInstallChanged.length > 0)
+        {
+            try {
+                const uri = this.pendingInstallChanged.pop();
+                if (uri){
+                    // have to check again here in case elan install had --default-toolchain none.
+                    const [workspaceFolder, folder, packageFileUri] = await findLeanPackageRoot(uri);
+                    const packageUri = folder ? folder : Uri.from({scheme: 'untitled'});
+                    logger.log('[ClientProvider] testLeanVersion');
+                    const version = await this.installer.testLeanVersion(packageUri);
+                    if (version.version === '4') {
+                        logger.log('[ClientProvider] got lean version 4');
+                        const [cached, client] = await this.ensureClient(uri, version);
+                        if (cached && client) {
+                            await client.restart();
+                            logger.log('[ClientProvider] restart complete');
+                        }
+                    } else if (version.error) {
+                        logger.log(`[ClientProvider] Lean version not ok: ${version.error}`);
+                    }
                 }
-            } else if (version.error) {
-                logger.log(`[ClientProvider] Lean version not ok: ${version.error}`);
+            } catch (e) {
+                logger.log(`[ClientProvider] Exception checking lean version: ${e}`);
             }
-        } catch (e) {
-            logger.log(`[ClientProvider] Exception checking lean version: ${e}`);
         }
-        this.testing.delete(key);
+        this.processingInstallChanged = false;
     }
 
-    private async onPromptingInstall(uri: Uri) : Promise<void> {
+    private async checkTestInstall(uri: Uri) : Promise<void> {
         if (isRunningTest()){
             // no prompt, just do it!
-            logger.log('[ClientProvider] Installing Lean via Elan during testing')
+            const version = this.installer.getDefaultToolchain();
+            logger.log(`[ClientProvider] Installing ${version} via Elan during testing`);
             await this.installer.installElan();
             if (isElanDisabled()) {
                 addToolchainBinPath(getDefaultElanPath());
             } else {
                 addDefaultElanPath();
             }
-            await this.onInstallChanged(uri);
         }
-
     }
+
     private getVisibleEditor(uri: Uri) : TextEditor | null {
         const path = uri.toString();
         for (const editor of window.visibleTextEditors) {
@@ -208,7 +213,7 @@ export class LeanClientProvider implements Disposable {
         return Array.from(this.clients.values());
     }
 
-    // Return a string that can be used as a key in the clients, versions, testing, and pending
+    // Return a string that can be used as a key in the clients, versions, pendingInstallChanged, and pending
     // maps.  This is not just uri.toString() because on some platforms the file system is
     // case insensitive.
     getKeyFromUri(uri: Uri | null) : string{
@@ -242,16 +247,28 @@ export class LeanClientProvider implements Disposable {
         return null;
     }
 
-    async getLeanVersion(uri: Uri) : Promise<LeanVersion | undefined> {
+    private async getLeanVersion(uri: Uri) : Promise<LeanVersion | undefined> {
         const [workspaceFolder, folder, packageFileUri] = await findLeanPackageRoot(uri);
         const folderUri = folder ?? Uri.from({scheme: 'untitled'});
         const key = this.getKeyFromUri(folderUri);
         if (this.versions.has(key)){
             return this.versions.get(key);
         }
-        const versionInfo = await this.installer.testLeanVersion(folderUri);
+        let versionInfo : LeanVersion | undefined = await this.installer.testLeanVersion(folderUri);
         if (!versionInfo.error){
             this.versions.set(key, versionInfo);
+        } else if (versionInfo.error === 'no elan installed') {
+            if (isRunningTest()){
+                await this.checkTestInstall(uri);
+                versionInfo = await this.installer.testLeanVersion(folderUri);
+                if (!versionInfo.error){
+                    this.versions.set(key, versionInfo);
+                }
+            } else {
+                // Ah, then we need to prompt the user, this waits for answer,
+                // but does not wait for the install to complete.
+                await this.installer.showInstallOptions(uri);
+            }
         }
         return versionInfo;
     }
@@ -272,8 +289,13 @@ export class LeanClientProvider implements Disposable {
             }
 
             this.pending.set(key, true);
-            logger.log('[ClientProvider] Creating LeanClient for ' + folderUri.toString());
+            if (!versionInfo) {
+                // this can go all the way to installing elan (in the test scenario)
+                // so it has to be done BEFORE we attempt to create any LeanClient.
+                versionInfo = await this.getLeanVersion(folderUri);
+            }
 
+            logger.log('[ClientProvider] Creating LeanClient for ' + folderUri.toString());
             const elanDefaultToolchain = await this.installer.getElanDefaultToolchain(folderUri);
 
             // We must create a Client before doing the long running testLeanVersion
@@ -286,9 +308,6 @@ export class LeanClientProvider implements Disposable {
             this.subscriptions.push(client);
             this.clients.set(key, client);
 
-            if (!versionInfo) {
-                versionInfo = await this.getLeanVersion(folderUri);
-            }
             if (versionInfo && versionInfo.version && versionInfo.version !== '4') {
                 // ignore workspaces that belong to a different version of Lean.
                 logger.log(`[ClientProvider] Lean4 extension ignoring workspace '${folderUri}' because it is not a Lean 4 workspace.`);
@@ -323,10 +342,14 @@ export class LeanClientProvider implements Disposable {
             logger.log('[ClientProvider] firing clientAddedEmitter event');
             this.clientAddedEmitter.fire(client);
 
-            if (versionInfo && !versionInfo.error) {
-                // we are ready to start, otherwise some sort of install might be happening
-                // as a result of UI options shown by testLeanVersion.
-                await client.start();
+            if (versionInfo) {
+                if (!versionInfo.error) {
+                    // we are ready to start, otherwise some sort of install might be happening
+                    // as a result of UI options shown by testLeanVersion.
+                    await client.start();
+                } else {
+                    logger.log(`[ClientProvider] skipping client.start because of versionInfo error: ${versionInfo?.error}`);
+                }
             }
         }
 

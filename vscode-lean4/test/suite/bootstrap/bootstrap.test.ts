@@ -1,14 +1,10 @@
 import * as assert from 'assert';
-import * as os from 'os';
+import { join, sep } from 'path';
 import { suite } from 'mocha';
-import * as path from 'path';
 import * as vscode from 'vscode';
-import { initLean4Untitled, waitForInfoviewHtml, closeAllEditors, waitForActiveClientRunning, assertActiveClient,
-         getAltBuildVersion, assertStringInInfoview, copyFolder, extractPhrase, restartLeanServer } from '../utils/helpers';
-import { getDefaultElanPath } from '../../../src/config'
-import { batchExecute } from '../../../src/utils/batch'
+import { initLean4Untitled, waitForInfoviewHtml, closeAllEditors, waitForActiveClientRunning, waitForActiveClient,
+         getAltBuildVersion, deleteAllText, insertText, cleanTempFolder } from '../utils/helpers';
 import { logger } from '../../../src/utils/logger'
-import * as fs from 'fs';
 
 suite('Lean4 Bootstrap Test Suite', () => {
 
@@ -17,19 +13,34 @@ suite('Lean4 Bootstrap Test Suite', () => {
         logger.log('=================== Install elan on demand ===================');
         void vscode.window.showInformationMessage('Running tests: ' + __dirname);
 
+        cleanTempFolder('elan');
+
         // this will wait up to 60 seconds to do full elan lean install, so test machines better
         // be able to do that.
         const lean = await initLean4Untitled('#eval Lean.versionString');
         const info = lean.exports.infoProvider;
+        const  expected = '4.0.0-nightly-';
         assert(info, 'No InfoProvider export');
 
         // give it a extra long timeout in case test machine is really slow.
         logger.log('Wait for elan install of Lean nightly build...')
-        await waitForActiveClientRunning(lean.exports.clientProvider, 500);
-        const client = assertActiveClient(lean.exports.clientProvider);
-        // wait 60 seconds, if nothing then kick it with a restart server command, and try that up to 5 times
-        // and if it times out at 300 seconds then waitForInfoviewHtml prints the contents of the InfoView so we can see what happened.
-		await waitForInfoviewHtml(info, '4.0.0-nightly-', 5, 60000, false, () => restartLeanServer(client));
+        await waitForActiveClient(lean.exports.clientProvider, 120);
+        await waitForActiveClientRunning(lean.exports.clientProvider, 300);
+
+        const hackNeeded = false;
+        if (hackNeeded) {
+            // this is a hack we can do if it turns out this bootstrap test is unreliable.
+            // The hack would be covering a product bug, which is why we'd prefer not to use it.
+            // if it times out at 600 seconds then waitForInfoviewHtml prints the contents of the InfoView so we can see what happened.
+            // await waitForInfoviewHtml(info, expected, 10, 60000, true, async () => {
+            //     // 60 seconds elapsed, and infoview is not updating, try and re-edit
+            //     // the file to force the LSP to update.
+            //     await deleteAllText();
+            //     await insertText('#eval Lean.versionString');
+            // });
+        } else {
+            await waitForInfoviewHtml(info, expected, 600);
+        }
 
         logger.log('Lean installation is complete.')
 
@@ -53,10 +64,10 @@ suite('Lean4 Bootstrap Test Suite', () => {
         assert(info, 'No InfoProvider export');
 
         logger.log('Wait for Lean nightly build server to start...')
-		await waitForInfoviewHtml(info, '4.0.0-nightly-', 60);
+		await waitForInfoviewHtml(info, '4.0.0-nightly-', 120);
         logger.log('Lean nightly build server is running.')
 
-        // install table build which is also needed by subsequent tests.
+        // install the alternate build
         logger.log(`Wait for lean4:${version} build to be installed...`)
 		await vscode.commands.executeCommand('lean4.selectToolchain', `leanprover/lean4:${version}`);
 
@@ -69,44 +80,5 @@ suite('Lean4 Bootstrap Test Suite', () => {
         await closeAllEditors();
 
     }).timeout(600000);
-
-    test('Create linked toolchain named master', async () => {
-
-        logger.log('=================== Create linked toolchain named master ===================');
-        void vscode.window.showInformationMessage('Running tests: ' + __dirname);
-        const version = getAltBuildVersion()
-
-        logger.log('Create copy of nightly build in a temp master folder...')
-        const elanRoot = getDefaultElanPath()
-        const nightly = path.join(elanRoot, '..', 'toolchains', 'leanprover--lean4---nightly')
-        const master = path.join(os.tmpdir(), 'lean4', 'toolchains', 'master')
-        copyFolder(nightly, master);
-
-        logger.log('Use elan to link the master toolchain...')
-        await batchExecute('elan', ['toolchain', 'link', 'master', master], null, undefined);
-
-        // this will wait up to 60 seconds to do full elan lean install, so test machines better
-        // be able to do that.
-        const lean = await initLean4Untitled('#eval Lean.versionString');
-        const info = lean.exports.infoProvider;
-        assert(info, 'No InfoProvider export');
-		const expectedVersion = '4.0.0-nightly-';
-		const html = await waitForInfoviewHtml(info, expectedVersion);
-        const foundVersion = extractPhrase(html, expectedVersion, '"')
-
-        logger.log(`Wait for leanprover/lean4:${version} lean server to start...`)
-		await vscode.commands.executeCommand('lean4.selectToolchain', `leanprover/lean4:${version}`);
-		await assertStringInInfoview(info, version);
-        logger.log('Wait for master lean server to start...')
-		await vscode.commands.executeCommand('lean4.selectToolchain', 'master');
-        // sometimes a copy of lean launches more slowly (especially on Windows).
-        await waitForInfoviewHtml(info, foundVersion, 300);
-        logger.log('Linked master toolchain is running.')
-		await vscode.commands.executeCommand('lean4.selectToolchain', 'reset');
-
-        // make sure test is always run in predictable state, which is no file or folder open
-        await closeAllEditors();
-
-    }).timeout(300000);
 
 }).timeout(60000);

@@ -1,5 +1,5 @@
 import { window, TerminalOptions, OutputChannel, commands, Disposable, EventEmitter, ProgressLocation, Uri } from 'vscode'
-import { toolchainPath, addServerEnvPaths, getLeanExecutableName, getPowerShellPath, shouldAutofocusOutput } from '../config'
+import { toolchainPath, addServerEnvPaths, getLeanExecutableName, getPowerShellPath, shouldAutofocusOutput, isRunningTest} from '../config'
 import { batchExecute } from './batch'
 import { LocalStorageService} from './localStorage'
 import { readLeanVersion, findLeanPackageRoot, isCoreLean4Directory } from './projectInfo';
@@ -32,10 +32,6 @@ export class LeanInstaller implements Disposable {
     private installChangedEmitter = new EventEmitter<Uri>();
     installChanged = this.installChangedEmitter.event
 
-    // this event is raised if showInstallOptions is prompting the user.
-    private promptingInstallEmitter = new EventEmitter<Uri>();
-    promptingInstall = this.promptingInstallEmitter.event
-
     constructor(outputChannel: OutputChannel, localStorage : LocalStorageService, defaultToolchain : string) {
         this.outputChannel = outputChannel;
         this.defaultToolchain = defaultToolchain;
@@ -62,9 +58,6 @@ export class LeanInstaller implements Disposable {
                 // Ah, there is no elan, but what if Lean is in the PATH due to custom install?
                 const found = await this.checkLeanVersion(packageUri, leanVersion);
                 if (found.error) {
-                    // Ah, then we need to install elan so prompt the user, but don't wait
-                    // here for the answer because that could be forever.
-                    void this.showInstallOptions(packageUri);
                     return { version: '4', error: 'no elan installed' }
                 }
             } else if (! await isCoreLean4Directory(packageUri)) {
@@ -86,8 +79,6 @@ export class LeanInstaller implements Disposable {
             }
             if (found.error === 'no default toolchain') {
                 await this.showToolchainOptions(packageUri)
-            } else {
-                void this.showInstallOptions(packageUri);
             }
         }
         return found;
@@ -149,6 +140,10 @@ export class LeanInstaller implements Disposable {
     }
 
     async showInstallOptions(uri: Uri) : Promise<void> {
+        if (isRunningTest()){
+            // no need to prompt when there is no user.
+            return;
+        }
         let path  = this.localStorage.getLeanPath();
         if (!path ) path  = toolchainPath();
 
@@ -161,16 +156,8 @@ export class LeanInstaller implements Disposable {
             prompt += ` from ${path}`
         }
 
-        this.promptingInstallEmitter.fire(uri);
         if (shouldAutofocusOutput()) {
             this.outputChannel.show(true);
-        } else {
-            const outputItem = 'Go to output';
-            const outPrompt = 'See output window for more information';
-            const outItem = await window.showErrorMessage(outPrompt, outputItem)
-            if (outItem === outputItem) {
-                this.outputChannel.show(true);
-            }
         }
         const item = await window.showErrorMessage(prompt, installItem, selectItem)
         if (item === installItem) {
@@ -178,7 +165,9 @@ export class LeanInstaller implements Disposable {
                 const result = await this.installElan();
                 this.installChangedEmitter.fire(uri);
             } catch (err) {
-                this.outputChannel.appendLine('' + err);
+                const msg = '' + err;
+                logger.log(`[LeanInstaller] restart error ${msg}`);
+                this.outputChannel.appendLine(msg);
             }
         } else if (item === selectItem){
             void this.selectToolchain(uri);
@@ -309,6 +298,10 @@ export class LeanInstaller implements Disposable {
     }
 
     async showToolchainOptions(uri: Uri) : Promise<void> {
+        if (isRunningTest()){
+            // no need to prompt when there is no user.
+            return;
+        }
         // note; we keep the LeanClient alive so that it can be restarted if the
         // user changes the Lean: Executable Path.
         const selectToolchain = 'Select lean toolchain';
@@ -374,7 +367,9 @@ export class LeanInstaller implements Disposable {
                 result.version = major
             }
         } catch (err) {
-            if (this.outputChannel) this.outputChannel.appendLine('' + err);
+            const msg = '' + err;
+            logger.log(`[LeanInstaller] check lean version error ${msg}`);
+            if (this.outputChannel) this.outputChannel.appendLine(msg);
             result.error = err
         }
         this.versionCache.set(cacheKey, result);
@@ -398,7 +393,9 @@ export class LeanInstaller implements Disposable {
                     stdout += value;
                     if (realThis.outputChannel){
                         // add the output here in case user wants to go look for it.
-                        realThis.outputChannel.appendLine(value.trim());
+                        const msg = value.trim();
+                        logger.log(`[LeanInstaller] ${cmd} returned: ${msg}`);
+                        realThis.outputChannel.appendLine(msg);
                     }
                     if (inc < 100) {
                         inc += 10;
@@ -418,6 +415,10 @@ export class LeanInstaller implements Disposable {
             return batchExecute(cmd, options, workingDirectory, progressChannel);
         });
         return stdout;
+    }
+
+    getDefaultToolchain() : string {
+        return this.defaultToolchain;
     }
 
     async getElanDefaultToolchain(packageUri: Uri): Promise<string> {
@@ -500,8 +501,10 @@ export class LeanInstaller implements Disposable {
             // We register a listener, to restart the Lean extension once elan has finished.
             const result = new Promise<boolean>(function(resolve, reject) {
                 window.onDidCloseTerminal(async (t) => {
-                if (t.name === terminalName) {
+                if (t === terminal) {
                     resolve(true);
+                } else {
+                    logger.log('[LeanInstaller] ignoring terminal closed: ' + t.name + ', waiting for: ' + terminalName);
                 }});
             });
 
