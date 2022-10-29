@@ -167,19 +167,32 @@ export function shouldAutofocusOutput(): boolean {
 }
 
 export function getInfoViewStyle(): string {
-    return workspace.getConfiguration('lean4').get('infoViewStyle', '');
+    const val = workspace.getConfiguration('lean4.infoview').get<string>('style')
+    if (val !== undefined) return val
+    // Try deprecated name of the same setting if not found
+    return workspace.getConfiguration('lean4').get('infoViewStyle', '')
 }
 
 export function getInfoViewAutoOpen(): boolean {
-    return workspace.getConfiguration('lean4').get('infoViewAutoOpen', true);
+    const val = workspace.getConfiguration('lean4.infoview').get<boolean>('autoOpen')
+    if (val !== undefined) return val
+    return workspace.getConfiguration('lean4').get('infoViewAutoOpen', true)
 }
 
-export function getInfoViewAutoOpenShowGoal(): boolean {
-    return workspace.getConfiguration('lean4').get('infoViewAutoOpenShowGoal', true);
+export function getInfoViewAutoOpenShowsGoal(): boolean {
+    const val = workspace.getConfiguration('lean4.infoview').get<boolean>('autoOpenShowsGoal')
+    if (val !== undefined) return val
+    return workspace.getConfiguration('lean4').get('infoViewAutoOpenShowGoal', true)
 }
 
 export function getInfoViewAllErrorsOnLine(): boolean {
-    return workspace.getConfiguration('lean4').get('infoViewAllErrorsOnLine', true);
+    const val = workspace.getConfiguration('lean4.infoview').get<boolean>('allErrorsOnLine')
+    if (val !== undefined) return val
+    return workspace.getConfiguration('lean4').get('infoViewAllErrorsOnLine', true)
+}
+
+export function getInfoViewDebounceTime(): number {
+    return workspace.getConfiguration('lean4.infoview').get('debounceTime', 50);
 }
 
 export function getElaborationDelay(): number {

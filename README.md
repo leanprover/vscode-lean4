@@ -175,6 +175,8 @@ name of the relative path to the store the logs.
 
 * `lean4.autofocusOutput`: if `true`, automatically show the Output panel when the Lean 4 server prints a new message.
 
+* `lean4.elaborationDelay`: Time (in milliseconds) which must pass since latest edit until elaboration begins. Lower values may make editing feel faster at the cost of higher CPU usage. The default is 200.
+
 ### Input / editing settings
 
 * `lean4.input.enabled`: enables abbreviation input completion mode.  For example, it allows  you to type `\alpha` and have that be replaced with the greek letter (α).
@@ -191,14 +193,13 @@ name of the relative path to the store the logs.
 
 ### Infoview settings
 
-* `lean4.infoViewAutoOpen`: controls whether the Infoview is automatically displayed when the Lean extension is activated for the first time in a given VS Code workspace(`true` by default).  If you manually close the Infoview it will stay closed for that workspace until.  You can then open it again using the <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> `Lean 4: Infoview: Display Goal` command.
+* `lean4.infoview.autoOpen`: controls whether the Infoview is automatically displayed when the Lean extension is activated for the first time in a given VS Code workspace(`true` by default).  If you manually close the Infoview it will stay closed for that workspace until.  You can then open it again using the <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> `Lean 4: Infoview: Display Goal` command.
 
-* `lean4.infoViewAutoOpenShowGoal`: auto open shows goal and messages for the current line (instead of all messages for the whole file).  In this mode the Infoview updates often every time you move the cursor to a different position so it can show context sensitive information.  Default is `true`.
+* `lean4.infoview.autoOpenShowsGoal`: auto open shows goal and messages for the current line (instead of all messages for the whole file).  In this mode the Infoview updates often every time you move the cursor to a different position so it can show context sensitive information.  Default is `true`.
 
-* `lean4.infoViewAllErrorsOnLine`: show all errors on the current line, instead of just the ones on the right of the cursor, default `true`.
+* `lean4.infoview.allErrorsOnLine`: show all errors on the current line, instead of just the ones to the right of the cursor, default `true`.
 
-* `lean4.elaborationDelay`: Time (in milliseconds) which must pass since latest edit until elaboration begins. Lower values may make editing feel faster at the cost of higher CPU usage.  The default is 200.
-
+* `lean4.infoview.debounceTime`: how long (in milliseconds) the infoview waits before displaying new information after the cursor has stopped moving. The optimal value depends on your machine - try experimenting. The default is `50`.
 
 ## Extension commands
 

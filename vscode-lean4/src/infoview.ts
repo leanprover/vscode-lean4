@@ -3,12 +3,13 @@ import {
     commands, Disposable, DocumentSelector,
     ExtensionContext, languages, Range,
     Selection, TextEditor, TextEditorRevealType,
-    Uri, ViewColumn, WebviewPanel, window, workspace, env, Position, WorkspaceEdit,
+    Uri, ViewColumn, WebviewPanel, window, workspace, env, Position,
 } from 'vscode';
 import { EditorApi, InfoviewApi, LeanFileProgressParams, TextInsertKind,
     RpcConnectParams, RpcConnected, RpcKeepAliveParams, ServerStoppedReason, RpcErrorCode } from '@leanprover/infoview-api';
 import { LeanClient } from './leanclient';
-import { getEditorLineHeight, getInfoViewAllErrorsOnLine, getInfoViewAutoOpen, getInfoViewAutoOpenShowGoal,
+import { getEditorLineHeight, getInfoViewAllErrorsOnLine, getInfoViewAutoOpen, getInfoViewAutoOpenShowsGoal,
+    getInfoViewDebounceTime,
     getInfoViewStyle, minIfProd, prodOrDev } from './config';
 import { Rpc } from './rpc';
 import { LeanClientProvider } from './utils/clientProvider'
@@ -571,8 +572,9 @@ export class InfoProvider implements Disposable {
 
     private async sendConfig() {
        await this.webviewPanel?.api.changedInfoviewConfig({
-           infoViewAllErrorsOnLine: getInfoViewAllErrorsOnLine(),
-           infoViewAutoOpenShowGoal: getInfoViewAutoOpenShowGoal(),
+           allErrorsOnLine: getInfoViewAllErrorsOnLine(),
+           autoOpenShowsGoal: getInfoViewAutoOpenShowsGoal(),
+           debounceTime: getInfoViewDebounceTime(),
        });
     }
 

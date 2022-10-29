@@ -55,6 +55,9 @@ class RpcSessionForFile {
     refsToRelease: RpcPtr<any>[] = [];
     finalizers: FinalizationRegistry<RpcPtr<any>>;
 
+    /** Essentially a cache for {@link at}. See {@link at} for why we need this. */
+    sessionsAtPos: Map<string, RpcSessionAtPos> = new Map();
+
     constructor(public uri: DocumentUri, public sessions: RpcSessions) {
         this.sessionId = (async () => {
             try {
@@ -155,8 +158,17 @@ class RpcSessionForFile {
         }
     }
 
+    /** Returns this session "specialized" to a specific position within its file. This is
+     * guaranteed to return the same (by reference) object if called multiple times with the same
+     * (by deep comparison) position, on the same `RpcSessionForFile`. It can therefore be used
+     * as a React dep. */
     at(pos: TextDocumentPositionParams): RpcSessionAtPos {
-        return { call: (method, params) => this.call(pos, method, params) };
+        // As JS tradition dictates, we use stringification for deep comparison of `Position`s in a `Map`.
+        const posStr = `${pos.position.line}:${pos.position.character}`
+        if (this.sessionsAtPos.has(posStr)) return this.sessionsAtPos.get(posStr) as RpcSessionAtPos
+        const atPos: RpcSessionAtPos = { call: (method, params) => this.call(pos, method, params) }
+        this.sessionsAtPos.set(posStr, atPos)
+        return atPos
     }
 }
 
