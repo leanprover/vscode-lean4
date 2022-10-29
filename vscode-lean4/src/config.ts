@@ -167,19 +167,28 @@ export function shouldAutofocusOutput(): boolean {
 }
 
 export function getInfoViewStyle(): string {
-    return workspace.getConfiguration('lean4.infoview').get('style', '');
+    const val = workspace.getConfiguration('lean4.infoview').get<string>('style')
+    if (val !== undefined) return val
+    // Try deprecated name of the same setting if not found
+    return workspace.getConfiguration('lean4').get('infoViewStyle', '')
 }
 
 export function getInfoViewAutoOpen(): boolean {
-    return workspace.getConfiguration('lean4.infoview').get('autoOpen', true);
+    const val = workspace.getConfiguration('lean4.infoview').get<boolean>('autoOpen')
+    if (val !== undefined) return val
+    return workspace.getConfiguration('lean4').get('infoViewAutoOpen', true)
 }
 
 export function getInfoViewAutoOpenShowsGoal(): boolean {
-    return workspace.getConfiguration('lean4.infoview').get('autoOpenShowsGoal', true);
+    const val = workspace.getConfiguration('lean4.infoview').get<boolean>('autoOpenShowsGoal')
+    if (val !== undefined) return val
+    return workspace.getConfiguration('lean4').get('infoViewAutoOpenShowGoal', true)
 }
 
 export function getInfoViewAllErrorsOnLine(): boolean {
-    return workspace.getConfiguration('lean4.infoview').get('allErrorsOnLine', true);
+    const val = workspace.getConfiguration('lean4.infoview').get<boolean>('allErrorsOnLine')
+    if (val !== undefined) return val
+    return workspace.getConfiguration('lean4').get('infoViewAllErrorsOnLine', true)
 }
 
 export function getInfoViewDebounceTime(): number {
