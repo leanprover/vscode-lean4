@@ -257,7 +257,7 @@ export class LeanClientProvider implements Disposable {
         let versionInfo : LeanVersion | undefined = await this.installer.testLeanVersion(folderUri);
         if (!versionInfo.error){
             this.versions.set(key, versionInfo);
-        } else if (versionInfo.error === 'no elan installed') {
+        } else if (versionInfo.error === 'no elan installed' || versionInfo.error === 'lean not found') {
             if (isRunningTest()){
                 await this.checkTestInstall(uri);
                 versionInfo = await this.installer.testLeanVersion(folderUri);
