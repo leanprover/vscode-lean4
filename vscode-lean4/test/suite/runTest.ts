@@ -53,6 +53,15 @@ async function main() {
 
         clearUserWorkspaceData(vscodeTestPath);
 
+		// run pre-bootstrap tests
+		await runTests({
+			vscodeExecutablePath,
+			extensionDevelopmentPath,
+            extensionTestsPath:path.resolve(__dirname, 'index'),
+            // test with no TEST_FOLDER to simulate real user bootstrap experience
+            extensionTestsEnv: {'DEFAULT_LEAN_TOOLCHAIN': test_version},
+			launchArgs: ['--new-window', '--disable-gpu'] });
+
 		// run bootstrap tests
 		await runTests({
 			vscodeExecutablePath,

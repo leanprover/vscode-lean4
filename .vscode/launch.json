@@ -18,6 +18,19 @@
             },
         },
         {
+            "name": "Extension Tests - pre-bootstrap tests",
+            "type": "extensionHost",
+            "request": "launch",
+            "runtimeExecutable": "${execPath}",
+            "args": [
+                "--extensionDevelopmentPath=${workspaceFolder}/vscode-lean4",
+                "--extensionTestsPath=${workspaceFolder}/vscode-lean4/out/test/suite/index"
+            ],
+            "cwd": "${workspaceFolder}/vscode-lean4/out/",
+            "outFiles": ["${workspaceFolder}/vscode-lean4/out/test/suite/**/*.js"],
+            "preLaunchTask": "watchTest"
+        },
+        {
             "name": "Extension Tests - bootstrap tests",
             "type": "extensionHost",
             "request": "launch",

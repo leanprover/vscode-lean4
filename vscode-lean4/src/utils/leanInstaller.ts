@@ -19,7 +19,7 @@ export class LeanInstaller implements Disposable {
     private outputChannel: OutputChannel;
     private localStorage: LocalStorageService;
     private subscriptions: Disposable[] = [];
-    private prompting : boolean = false;
+    private prompting : string = '';
     private defaultToolchain : string; // the default to use if there is no elan installed
     private elanDefaultToolchain : string = ''; // the default toolchain according to elan (toolchain marked with '(default)')
     private workspaceSuffix : string = '(workspace override)';
@@ -102,16 +102,25 @@ export class LeanInstaller implements Disposable {
             if (this.prompting) {
                 return;
             }
-            this.prompting = true;
             const restartItem = 'Restart Lean';
-            const item = await window.showErrorMessage('Lean version changed', restartItem);
+            const item = await this.showPrompt('Lean version changed', restartItem);
             if (item === restartItem) {
                 await this.checkAndFire(packageUri);
             }
-            this.prompting = false;
         } else {
             await this.checkAndFire(packageUri);
         }
+    }
+
+    getActivePrompt(){
+        return this.prompting;
+    }
+
+    private async showPrompt(message: string, ...items: string[]): Promise<string|undefined> {
+        this.prompting = message;
+        const item = await window.showErrorMessage(message, ...items);
+        this.prompting = '';
+        return item;
     }
 
     private async checkAndFire(packageUri : Uri) {
@@ -127,13 +136,11 @@ export class LeanInstaller implements Disposable {
             if (this.prompting) {
                 return;
             }
-            this.prompting = true;
             const restartItem = 'Restart Lean';
-            const item = await window.showErrorMessage('Lake file configuration changed', restartItem);
+            const item = await this.showPrompt('Lake file configuration changed', restartItem);
             if (item === restartItem) {
                 this.installChangedEmitter.fire(uri);
             }
-            this.prompting = false;
         } else {
             this.installChangedEmitter.fire(uri);
         }
@@ -159,7 +166,8 @@ export class LeanInstaller implements Disposable {
         if (shouldAutofocusOutput()) {
             this.outputChannel.show(true);
         }
-        const item = await window.showErrorMessage(prompt, installItem, selectItem)
+
+        const item = await this.showPrompt(prompt, installItem, selectItem)
         if (item === installItem) {
             try {
                 const result = await this.installElan();
