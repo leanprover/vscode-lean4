@@ -3,7 +3,7 @@ import { join, sep } from 'path';
 import { suite } from 'mocha';
 import * as vscode from 'vscode';
 import { initLean4Untitled, waitForInfoviewHtml, closeAllEditors, waitForActiveClientRunning, waitForActiveClient,
-         getAltBuildVersion, deleteAllText, insertText, cleanTempFolder } from '../utils/helpers';
+         getAltBuildVersion, getTestLeanVersion, cleanTempFolder } from '../utils/helpers';
 import { logger } from '../../../src/utils/logger'
 
 suite('Lean4 Bootstrap Test Suite', () => {
@@ -52,8 +52,12 @@ suite('Lean4 Bootstrap Test Suite', () => {
     test('Install alternate build on demand', async () => {
 
         // this must match the 'test/test-fixtures/multi/foo/lean-toolchain'
-        // currently should be: leanprover/lean4:nightly-2022-07-03
         const version = getAltBuildVersion()
+        const original = getTestLeanVersion()
+
+        assert(version !== original, 'Test is not configured correctly, alternate build version must be different from original build version. ' +
+            'Please edit the "test/test-fixtures/multi/foo/lean-toolchain" and "test/test-fixtures/simple/lean-toolchain" files so they point to ' +
+            'different Lean versions. The whole point of the test is that we can switch between different version of Lean.');
 
         logger.log(`=================== Install leanprover/lean4:${version} build on demand ===================`);
         void vscode.window.showInformationMessage('Running tests: ' + __dirname);

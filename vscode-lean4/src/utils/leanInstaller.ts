@@ -1,5 +1,5 @@
 import { window, TerminalOptions, OutputChannel, commands, Disposable, EventEmitter, ProgressLocation, Uri } from 'vscode'
-import { toolchainPath, addServerEnvPaths, getLeanExecutableName, getPowerShellPath, shouldAutofocusOutput, isRunningTest} from '../config'
+import { toolchainPath, addServerEnvPaths, getLeanExecutableName, getPowerShellPath, shouldAutofocusOutput, isRunningTest } from '../config'
 import { batchExecute } from './batch'
 import { LocalStorageService} from './localStorage'
 import { readLeanVersion, findLeanPackageRoot, isCoreLean4Directory } from './projectInfo';
@@ -37,10 +37,16 @@ export class LeanInstaller implements Disposable {
         this.defaultToolchain = defaultToolchain;
         this.localStorage = localStorage;
         this.subscriptions.push(commands.registerCommand('lean4.selectToolchain', (args) => this.selectToolchainForActiveEditor(args)));
+        if (isRunningTest()) {
+            this.promptUser = false;
+            if (process.env.LEAN4_PROMPT_USER === 'true'){
+                this.promptUser = true;
+            }
+        }
     }
 
-    setPromptUser(show: boolean) {
-        this.promptUser = show;
+    getPromptUser() : boolean {
+        return this.promptUser;
     }
 
     async testLeanVersion(packageUri: Uri) : Promise<LeanVersion> {
@@ -102,16 +108,25 @@ export class LeanInstaller implements Disposable {
             if (this.prompting) {
                 return;
             }
-            this.prompting = true;
             const restartItem = 'Restart Lean';
-            const item = await window.showErrorMessage('Lean version changed', restartItem);
+            const item = await this.showPrompt('Lean version changed', restartItem);
             if (item === restartItem) {
                 await this.checkAndFire(packageUri);
             }
-            this.prompting = false;
         } else {
             await this.checkAndFire(packageUri);
         }
+    }
+
+    isPromptVisible(){
+        return this.prompting;
+    }
+
+    private async showPrompt(message: string, ...items: string[]): Promise<string|undefined> {
+        this.prompting = true;
+        const item = await window.showErrorMessage(message, ...items);
+        this.prompting = false;
+        return item;
     }
 
     private async checkAndFire(packageUri : Uri) {
@@ -127,20 +142,18 @@ export class LeanInstaller implements Disposable {
             if (this.prompting) {
                 return;
             }
-            this.prompting = true;
             const restartItem = 'Restart Lean';
-            const item = await window.showErrorMessage('Lake file configuration changed', restartItem);
+            const item = await this.showPrompt('Lake file configuration changed', restartItem);
             if (item === restartItem) {
                 this.installChangedEmitter.fire(uri);
             }
-            this.prompting = false;
         } else {
             this.installChangedEmitter.fire(uri);
         }
     }
 
     async showInstallOptions(uri: Uri) : Promise<void> {
-        if (isRunningTest()){
+        if (!this.promptUser){
             // no need to prompt when there is no user.
             return;
         }
@@ -159,7 +172,8 @@ export class LeanInstaller implements Disposable {
         if (shouldAutofocusOutput()) {
             this.outputChannel.show(true);
         }
-        const item = await window.showErrorMessage(prompt, installItem, selectItem)
+
+        const item = await this.showPrompt(prompt, installItem, selectItem)
         if (item === installItem) {
             try {
                 const result = await this.installElan();
@@ -298,7 +312,7 @@ export class LeanInstaller implements Disposable {
     }
 
     async showToolchainOptions(uri: Uri) : Promise<void> {
-        if (isRunningTest()){
+        if (!this.promptUser){
             // no need to prompt when there is no user.
             return;
         }

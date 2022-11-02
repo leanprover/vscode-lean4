@@ -207,11 +207,11 @@ export function getLeanExecutableName(): string {
 }
 
 export function isRunningTest() : boolean {
-    return typeof(process.env.TEST_FOLDER) === 'string';
+    return typeof(process.env.LEAN4_TEST_FOLDER) === 'string';
 }
 
 export function getTestFolder() : string {
-    return typeof(process.env.TEST_FOLDER) === 'string' ? process.env.TEST_FOLDER : '';
+    return typeof(process.env.LEAN4_TEST_FOLDER) === 'string' ? process.env.LEAN4_TEST_FOLDER : '';
 }
 
 export function getDefaultLeanVersion(): string {

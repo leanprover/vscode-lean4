@@ -118,17 +118,15 @@ export class LeanClientProvider implements Disposable {
         this.processingInstallChanged = false;
     }
 
-    private async checkTestInstall(uri: Uri) : Promise<void> {
-        if (isRunningTest()){
-            // no prompt, just do it!
-            const version = this.installer.getDefaultToolchain();
-            logger.log(`[ClientProvider] Installing ${version} via Elan during testing`);
-            await this.installer.installElan();
-            if (isElanDisabled()) {
-                addToolchainBinPath(getDefaultElanPath());
-            } else {
-                addDefaultElanPath();
-            }
+    private async autoInstall() : Promise<void> {
+        // no prompt, just do it!
+        const version = this.installer.getDefaultToolchain();
+        logger.log(`[ClientProvider] Installing ${version} via Elan during testing`);
+        await this.installer.installElan();
+        if (isElanDisabled()) {
+            addToolchainBinPath(getDefaultElanPath());
+        } else {
+            addDefaultElanPath();
         }
     }
 
@@ -257,9 +255,9 @@ export class LeanClientProvider implements Disposable {
         let versionInfo : LeanVersion | undefined = await this.installer.testLeanVersion(folderUri);
         if (!versionInfo.error){
             this.versions.set(key, versionInfo);
-        } else if (versionInfo.error === 'no elan installed') {
-            if (isRunningTest()){
-                await this.checkTestInstall(uri);
+        } else if (versionInfo.error === 'no elan installed' || versionInfo.error === 'lean not found') {
+            if (!this.installer.getPromptUser()){
+                await this.autoInstall();
                 versionInfo = await this.installer.testLeanVersion(folderUri);
                 if (!versionInfo.error){
                     this.versions.set(key, versionInfo);

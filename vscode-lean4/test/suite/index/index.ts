@@ -18,6 +18,7 @@ export function run(testsRoot: string, cb: (error: any, failures?: number) => vo
     if (folder) {
         testsRoot = path.resolve(testsRoot, '..', folder)
     }
+
     logger.log('>>>>>>>>> testsRoot=' + testsRoot);
 
     if (isElanDisabled()) {
