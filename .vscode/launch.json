@@ -24,8 +24,13 @@
             "runtimeExecutable": "${execPath}",
             "args": [
                 "--extensionDevelopmentPath=${workspaceFolder}/vscode-lean4",
-                "--extensionTestsPath=${workspaceFolder}/vscode-lean4/out/test/suite/index"
+                "--extensionTestsPath=${workspaceFolder}/vscode-lean4/out/test/suite/index",
+                "${workspaceFolder}/vscode-lean4/test/test-fixtures/simple"
             ],
+            "env": {
+                "LEAN4_TEST_FOLDER": "pre-bootstrap",
+                "LEAN4_PROMPT_USER": "true"
+            },
             "cwd": "${workspaceFolder}/vscode-lean4/out/",
             "outFiles": ["${workspaceFolder}/vscode-lean4/out/test/suite/**/*.js"],
             "preLaunchTask": "watchTest"
@@ -40,7 +45,7 @@
                 "--extensionTestsPath=${workspaceFolder}/vscode-lean4/out/test/suite/index"
             ],
             "env": {
-                "TEST_FOLDER": "bootstrap"
+                "LEAN4_TEST_FOLDER": "bootstrap"
             },
             "cwd": "${workspaceFolder}/vscode-lean4/out/",
             "outFiles": ["${workspaceFolder}/vscode-lean4/out/test/suite/**/*.js"],
@@ -56,7 +61,7 @@
                 "--extensionTestsPath=${workspaceFolder}/vscode-lean4/out/test/suite/index"
             ],
             "env": {
-                "TEST_FOLDER": "lean3"
+                "LEAN4_TEST_FOLDER": "lean3"
             },
             "cwd": "${workspaceFolder}/vscode-lean4/out/",
             "outFiles": ["${workspaceFolder}/vscode-lean4/out/test/suite/**/*.js"],
@@ -72,7 +77,7 @@
                 "--extensionTestsPath=${workspaceFolder}/vscode-lean4/out/test/suite/index"
             ],
             "env": {
-                "TEST_FOLDER": "simple",
+                "LEAN4_TEST_FOLDER": "simple",
                 "DISABLE_ELAN": "1"
             },
             "cwd": "${workspaceFolder}/vscode-lean4/out/",
@@ -89,7 +94,7 @@
                 "--extensionTestsPath=${workspaceFolder}/vscode-lean4/out/test/suite/index"
             ],
             "env": {
-                "TEST_FOLDER": "info"
+                "LEAN4_TEST_FOLDER": "info"
             },
             "cwd": "${workspaceFolder}/vscode-lean4/out/",
             "outFiles": ["${workspaceFolder}/vscode-lean4/out/test/suite/**/*.js"],
@@ -105,7 +110,7 @@
                 "--extensionTestsPath=${workspaceFolder}/vscode-lean4/out/test/suite/index"
             ],
             "env": {
-                "TEST_FOLDER": "simple"
+                "LEAN4_TEST_FOLDER": "simple"
             },
             "cwd": "${workspaceFolder}/vscode-lean4/out/",
             "outFiles": ["${workspaceFolder}/vscode-lean4/out/test/suite/**/*.js"],
@@ -122,7 +127,7 @@
                 "${workspaceFolder}/vscode-lean4/test/test-fixtures/simple"
             ],
             "env": {
-                "TEST_FOLDER": "simple"
+                "LEAN4_TEST_FOLDER": "simple"
             },
             "cwd": "${workspaceFolder}/vscode-lean4/out/",
             "outFiles": ["${workspaceFolder}/vscode-lean4/out/test/suite/**/*.js"],
@@ -139,7 +144,7 @@
                 "${workspaceFolder}/vscode-lean4/test/test-fixtures/simple"
             ],
             "env": {
-                "TEST_FOLDER": "toolchains"
+                "LEAN4_TEST_FOLDER": "toolchains"
             },
             "cwd": "${workspaceFolder}/vscode-lean4/out/",
             "outFiles": ["${workspaceFolder}/vscode-lean4/out/test/suite/**/*.js"],
@@ -156,7 +161,7 @@
                 "${workspaceFolder}/vscode-lean4/test/test-fixtures/simple"
             ],
             "env": {
-                "TEST_FOLDER": "restarts"
+                "LEAN4_TEST_FOLDER": "restarts"
             },
             "cwd": "${workspaceFolder}/vscode-lean4/out/",
             "outFiles": ["${workspaceFolder}/vscode-lean4/out/test/suite/**/*.js"],
@@ -173,7 +178,7 @@
                 "${workspaceFolder}/vscode-lean4/test/test-fixtures/multi/multi.code-workspace"
             ],
             "env": {
-                "TEST_FOLDER": "multi"
+                "LEAN4_TEST_FOLDER": "multi"
             },
             "cwd": "${workspaceFolder}/vscode-lean4/out/",
             "outFiles": ["${workspaceFolder}/vscode-lean4/out/test/suite/**/*.js"],
@@ -190,7 +195,7 @@
                 "${workspaceFolder}/vscode-lean4/test/test-fixtures/simple"
             ],
             "env": {
-                "TEST_FOLDER": "docview"
+                "LEAN4_TEST_FOLDER": "docview"
             },
             "cwd": "${workspaceFolder}/vscode-lean4/out/",
             "outFiles": ["${workspaceFolder}/vscode-lean4/out/test/suite/**/*.js"],

@@ -1,5 +1,5 @@
 import { window, TerminalOptions, OutputChannel, commands, Disposable, EventEmitter, ProgressLocation, Uri } from 'vscode'
-import { toolchainPath, addServerEnvPaths, getLeanExecutableName, getPowerShellPath, shouldAutofocusOutput, isRunningTest} from '../config'
+import { toolchainPath, addServerEnvPaths, getLeanExecutableName, getPowerShellPath, shouldAutofocusOutput, isRunningTest } from '../config'
 import { batchExecute } from './batch'
 import { LocalStorageService} from './localStorage'
 import { readLeanVersion, findLeanPackageRoot, isCoreLean4Directory } from './projectInfo';
@@ -19,7 +19,7 @@ export class LeanInstaller implements Disposable {
     private outputChannel: OutputChannel;
     private localStorage: LocalStorageService;
     private subscriptions: Disposable[] = [];
-    private prompting : string = '';
+    private prompting : boolean = false;
     private defaultToolchain : string; // the default to use if there is no elan installed
     private elanDefaultToolchain : string = ''; // the default toolchain according to elan (toolchain marked with '(default)')
     private workspaceSuffix : string = '(workspace override)';
@@ -37,10 +37,16 @@ export class LeanInstaller implements Disposable {
         this.defaultToolchain = defaultToolchain;
         this.localStorage = localStorage;
         this.subscriptions.push(commands.registerCommand('lean4.selectToolchain', (args) => this.selectToolchainForActiveEditor(args)));
+        if (isRunningTest()) {
+            this.promptUser = false;
+            if (process.env.LEAN4_PROMPT_USER === 'true'){
+                this.promptUser = true;
+            }
+        }
     }
 
-    setPromptUser(show: boolean) {
-        this.promptUser = show;
+    getPromptUser() : boolean {
+        return this.promptUser;
     }
 
     async testLeanVersion(packageUri: Uri) : Promise<LeanVersion> {
@@ -112,14 +118,14 @@ export class LeanInstaller implements Disposable {
         }
     }
 
-    getActivePrompt(){
+    isPromptVisible(){
         return this.prompting;
     }
 
     private async showPrompt(message: string, ...items: string[]): Promise<string|undefined> {
-        this.prompting = message;
+        this.prompting = true;
         const item = await window.showErrorMessage(message, ...items);
-        this.prompting = '';
+        this.prompting = false;
         return item;
     }
 
@@ -147,7 +153,7 @@ export class LeanInstaller implements Disposable {
     }
 
     async showInstallOptions(uri: Uri) : Promise<void> {
-        if (isRunningTest()){
+        if (!this.promptUser){
             // no need to prompt when there is no user.
             return;
         }
@@ -306,7 +312,7 @@ export class LeanInstaller implements Disposable {
     }
 
     async showToolchainOptions(uri: Uri) : Promise<void> {
-        if (isRunningTest()){
+        if (!this.promptUser){
             // no need to prompt when there is no user.
             return;
         }

@@ -46,6 +46,7 @@ export async function initLean4(fileName: string) : Promise<vscode.Extension<Exp
     assertAndLog(lean, 'Lean extension not loaded');
     assertAndLog(lean.exports.isLean4Project, 'Lean extension is not a lean4 project');
     assertAndLog(lean.isActive, 'Lean extension is not active');
+
     logger.log(`Found lean package version: ${lean.packageJSON.version}`);
     await waitForActiveEditor(basename(fileName));
     const info = lean.exports.infoProvider;
@@ -92,7 +93,6 @@ export async function initLean4Untitled(contents: string) : Promise<vscode.Exten
 
     const lean = await waitForActiveExtension('leanprover.lean4', 60);
     assertAndLog(lean, 'Lean extension not loaded');
-
     logger.log(`Found lean package version: ${lean.packageJSON.version}`);
     const info = lean.exports.infoProvider;
 	assertAndLog(info, 'No InfoProvider export');
@@ -269,13 +269,15 @@ export function cleanTempFolder(name: string) {
     }
 }
 
-export async function waitForInfoviewHtml(infoView: InfoProvider, toFind : string, retries=60, delay=1000, expand=true, retryHandler=nullHandler): Promise<string> {
+
+export async function waitForInfoviewLambda(infoView: InfoProvider, matchString : (s:string) => boolean,
+                                            retries=60, delay=1000, expand=true, retryHandler=nullHandler): Promise<string> {
     let count = 0;
     let html = '';
     let tally = 0;
     while (count < retries){
         html = await infoView.getHtmlContents();
-        if (html.indexOf(toFind) > 0){
+        if (matchString(html)) {
             return html;
         }
         if (expand && html.indexOf('<details>') >= 0) { // we want '<details open>' instead...
@@ -290,6 +292,16 @@ export async function waitForInfoviewHtml(infoView: InfoProvider, toFind : strin
                 retryHandler();
             }
         }
+    }
+
+    return html;
+}
+
+
+export async function waitForInfoviewHtml(infoView: InfoProvider, toFind : string, retries=60, delay=1000, expand=true, retryHandler=nullHandler): Promise<string> {
+    const html = await waitForInfoviewLambda(infoView, (s) => s.indexOf(toFind) > 0, retries, delay, expand, retryHandler);
+    if (html.indexOf(toFind) > 0) {
+        return html;
     }
 
     const timeout = (retries * delay) / 1000
@@ -501,6 +513,13 @@ export function copyFolder(source: string, target: string) {
             copyFolder(sourceFile, targetFile);
         }
     }
+}
+
+export function getTestLeanVersion(){
+    const testsRoot = path.join(__dirname, '..', '..', '..', '..', 'test');
+    const multiFoo = path.join(testsRoot, 'test-fixtures', 'simple');
+    const toolchain = fs.readFileSync(path.join(multiFoo, 'lean-toolchain'), 'utf8').toString();
+    return toolchain.trim().split(':')[1];
 }
 
 export function getAltBuildVersion(){

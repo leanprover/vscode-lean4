@@ -17,9 +17,8 @@ export function run(testsRoot: string, cb: (error: any, failures?: number) => vo
     const folder = getTestFolder();
     if (folder) {
         testsRoot = path.resolve(testsRoot, '..', folder)
-    } else {
-        testsRoot = path.resolve(testsRoot, '..', "pre-bootstrap")
     }
+
     logger.log('>>>>>>>>> testsRoot=' + testsRoot);
 
     if (isElanDisabled()) {

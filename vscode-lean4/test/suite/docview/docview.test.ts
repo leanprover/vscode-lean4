@@ -21,7 +21,6 @@ suite('Documentation View Test Suite', () => {
         const testsRoot = path.join(__dirname, '..', '..', '..', '..', 'test', 'test-fixtures', 'simple');
         const mainFile = path.join(testsRoot, 'Main.lean');
         const lean = await initLean4(mainFile);
-
         const info = lean.exports.infoProvider;
         assert(info, 'No InfoProvider export');
         const expectedVersion = 'Hello:';

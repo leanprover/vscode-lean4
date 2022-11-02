@@ -88,7 +88,6 @@ suite('Toolchain Test Suite', () => {
 		assert(info, 'No InfoProvider export');
 		const installer = lean.exports.installer;
         assert(installer, 'No LeanInstaller export');
-		installer.setPromptUser(false);
 
 		// wait for info view to show up.
 		await assertStringInInfoview(info, 'Hello');

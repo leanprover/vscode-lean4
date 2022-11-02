@@ -1,7 +1,8 @@
 import * as assert from 'assert';
 import { suite } from 'mocha';
 import * as vscode from 'vscode';
-import { initLean4Untitled, waitForInfoviewHtml, closeAllEditors, cleanTempFolder, waitForActiveClient,} from '../utils/helpers';
+import * as path from 'path';
+import { initLean4, waitForInfoviewLambda, closeAllEditors, cleanTempFolder, } from '../utils/helpers';
 import { logger } from '../../../src/utils/logger'
 
 suite('Lean4 Pre-bootstrap Test Suite', () => {
@@ -15,18 +16,41 @@ suite('Lean4 Pre-bootstrap Test Suite', () => {
 
         // this will wait up to 60 seconds to do full elan lean install, so test machines better
         // be able to do that.
-        const lean = await initLean4Untitled('#eval Lean.versionString');
+        const promptUser = true;
+        const projectRoot = path.join(__dirname, '..', '..', '..', '..', 'test', 'test-fixtures', 'simple');
+        const lean = await initLean4(path.join(projectRoot, 'Main.lean'));
         const info = lean.exports.infoProvider;
-        const  expected = 'Waiting for Lean server to start...';
+        const  expected1 = 'Waiting for Lean server to start...';
+        const  expected2 = 'nightly'; // lean was already installed before this test started!
         assert(info, 'No InfoProvider export');
 
         // give it a extra long timeout in case test machine is really slow.
-        logger.log(expected)
+        logger.log(expected1)
 
-        await waitForInfoviewHtml(info, expected, 600);
+        const lambda = (s : string) => {
+            return s.indexOf(expected1) > 0 || s.indexOf(expected2) > 0;
+        }
 
-        const installer = lean.exports.installer;
-        assert(installer?.getActivePrompt())
+        let html = await waitForInfoviewLambda(info, lambda, 60);
+
+        let retries = 10;
+        while (html.indexOf(expected1) > 0) {
+            const installer = lean.exports.installer;
+            if (!installer?.isPromptVisible()){
+                html = await waitForInfoviewLambda(info, lambda, 10);
+                retries--;
+                if (retries === 0) {
+                    logger.log('>>> infoview contains:');
+                    logger.log(html);
+                    logger.log('>>> end of infoview contents');
+                    assert.fail('Infoview is in a weird state');
+                }
+                logger.log('Continuing...');
+            } else {
+                logger.log('Great, it is prompting the user!');
+                break; // great, it is prompting the user
+            }
+        }
 
         // make sure test is always run in predictable state, which is no file or folder open
         await closeAllEditors();

@@ -53,21 +53,24 @@ async function main() {
 
         clearUserWorkspaceData(vscodeTestPath);
 
-		// run pre-bootstrap tests
+		// run pre-bootstrap tests on a lean project that has a lean-toolchain (bug #265)
 		await runTests({
 			vscodeExecutablePath,
 			extensionDevelopmentPath,
             extensionTestsPath:path.resolve(__dirname, 'index'),
-            // test with no TEST_FOLDER to simulate real user bootstrap experience
-            extensionTestsEnv: {'DEFAULT_LEAN_TOOLCHAIN': test_version},
+            extensionTestsEnv: {'LEAN4_TEST_FOLDER': 'pre-bootstrap', 'DEFAULT_LEAN_TOOLCHAIN': test_version, 'LEAN4_PROMPT_USER': 'true'},
 			launchArgs: ['--new-window', '--disable-gpu'] });
+
+        // The '--new-window' doesn't see to be working, so this hack
+        // ensures the following test does not re-open the previous folder
+        clearUserWorkspaceData(vscodeTestPath);
 
 		// run bootstrap tests
 		await runTests({
 			vscodeExecutablePath,
 			extensionDevelopmentPath,
             extensionTestsPath:path.resolve(__dirname, 'index'),
-            extensionTestsEnv: {'TEST_FOLDER': 'bootstrap', 'DEFAULT_LEAN_TOOLCHAIN': test_version},
+            extensionTestsEnv: {'LEAN4_TEST_FOLDER': 'bootstrap', 'DEFAULT_LEAN_TOOLCHAIN': test_version},
 			launchArgs: ['--new-window', '--disable-gpu'] });
 
         clearUserWorkspaceData(vscodeTestPath);
@@ -80,7 +83,7 @@ async function main() {
         //     vscodeExecutablePath,
         //     extensionDevelopmentPath,
         //     extensionTestsPath: path.resolve(__dirname, 'index'),
-        //     extensionTestsEnv: {'TEST_FOLDER': 'lean3'},
+        //     extensionTestsEnv: {'LEAN4_TEST_FOLDER': 'lean3'},
         //     launchArgs: ['--new-window', '--disable-gpu'] });
         // // The '--new-window' doesn't see to be working, so this hack
         // // ensures the following test does not re-open the lean3 folder
@@ -91,7 +94,7 @@ async function main() {
 			vscodeExecutablePath,
 			extensionDevelopmentPath,
             extensionTestsPath:path.resolve(__dirname, 'index'),
-            extensionTestsEnv: {'TEST_FOLDER': 'simple', 'DISABLE_ELAN': '1', 'DEFAULT_LEAN_TOOLCHAIN': test_version},
+            extensionTestsEnv: {'LEAN4_TEST_FOLDER': 'simple', 'DISABLE_ELAN': '1', 'DEFAULT_LEAN_TOOLCHAIN': test_version},
 			launchArgs: ['--new-window', '--disable-gpu'] });
 
         clearUserWorkspaceData(vscodeTestPath);
@@ -101,7 +104,7 @@ async function main() {
 			vscodeExecutablePath,
 			extensionDevelopmentPath,
             extensionTestsPath:path.resolve(__dirname, 'index'),
-            extensionTestsEnv: {'TEST_FOLDER': 'info', 'DISABLE_ELAN': '1', 'DEFAULT_LEAN_TOOLCHAIN': test_version},
+            extensionTestsEnv: {'LEAN4_TEST_FOLDER': 'info', 'DISABLE_ELAN': '1', 'DEFAULT_LEAN_TOOLCHAIN': test_version},
 			launchArgs: ['--new-window', '--disable-gpu'] });
 
 		// The '--new-window' doesn't see to be working, so this hack
@@ -113,7 +116,7 @@ async function main() {
 			vscodeExecutablePath,
 			extensionDevelopmentPath,
             extensionTestsPath:path.resolve(__dirname, 'index'),
-            extensionTestsEnv: {'TEST_FOLDER': 'simple', 'DEFAULT_LEAN_TOOLCHAIN': test_version},
+            extensionTestsEnv: {'LEAN4_TEST_FOLDER': 'simple', 'DEFAULT_LEAN_TOOLCHAIN': test_version},
 			launchArgs: ['--new-window', '--disable-gpu'] });
 
 
@@ -128,7 +131,7 @@ async function main() {
             vscodeExecutablePath,
             extensionDevelopmentPath,
             extensionTestsPath:path.resolve(__dirname, 'index'),
-            extensionTestsEnv: {'TEST_FOLDER': 'simple', 'DEFAULT_LEAN_TOOLCHAIN': test_version},
+            extensionTestsEnv: {'LEAN4_TEST_FOLDER': 'simple', 'DEFAULT_LEAN_TOOLCHAIN': test_version},
             launchArgs: ['--new-window', '--disable-gpu', lean4TestFolder] });
 
         // The '--new-window' doesn't see to be working, so this hack
@@ -140,7 +143,7 @@ async function main() {
             vscodeExecutablePath,
             extensionDevelopmentPath,
             extensionTestsPath:path.resolve(__dirname, 'index'),
-            extensionTestsEnv: {'TEST_FOLDER': 'toolchains', 'DEFAULT_LEAN_TOOLCHAIN': test_version},
+            extensionTestsEnv: {'LEAN4_TEST_FOLDER': 'toolchains', 'DEFAULT_LEAN_TOOLCHAIN': test_version},
             launchArgs: ['--new-window', '--disable-gpu', lean4TestFolder] });
 
         // The '--new-window' doesn't see to be working, so this hack
@@ -152,7 +155,7 @@ async function main() {
             vscodeExecutablePath,
             extensionDevelopmentPath,
             extensionTestsPath:path.resolve(__dirname, 'index'),
-            extensionTestsEnv: {'TEST_FOLDER': 'restarts', 'DEFAULT_LEAN_TOOLCHAIN': test_version},
+            extensionTestsEnv: {'LEAN4_TEST_FOLDER': 'restarts', 'DEFAULT_LEAN_TOOLCHAIN': test_version},
             launchArgs: ['--new-window', '--disable-gpu', lean4TestFolder] });
 
         // The '--new-window' doesn't see to be working, so this hack
@@ -166,7 +169,7 @@ async function main() {
             vscodeExecutablePath,
             extensionDevelopmentPath,
             extensionTestsPath:path.resolve(__dirname, 'index'),
-            extensionTestsEnv: {'TEST_FOLDER': 'multi', 'DEFAULT_LEAN_TOOLCHAIN': test_version},
+            extensionTestsEnv: {'LEAN4_TEST_FOLDER': 'multi', 'DEFAULT_LEAN_TOOLCHAIN': test_version},
             launchArgs: ['--new-window', '--disable-gpu', workspacePath] });
 
         // Test documentation view.
@@ -174,7 +177,7 @@ async function main() {
             vscodeExecutablePath,
             extensionDevelopmentPath,
             extensionTestsPath:path.resolve(__dirname, 'index'),
-            extensionTestsEnv: {'TEST_FOLDER': 'docview', 'DEFAULT_LEAN_TOOLCHAIN': test_version},
+            extensionTestsEnv: {'LEAN4_TEST_FOLDER': 'docview', 'DEFAULT_LEAN_TOOLCHAIN': test_version},
             launchArgs: ['--new-window', '--disable-gpu', lean4TestFolder] });
 
 
