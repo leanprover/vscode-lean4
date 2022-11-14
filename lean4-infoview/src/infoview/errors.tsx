@@ -1,8 +1,8 @@
-import React from 'react';
+import * as React from 'react';
 
 
 /** Error boundary as described in https://reactjs.org/docs/error-boundaries.html */
-export class ErrorBoundary extends React.Component<{}, {error: string | undefined}> {
+export class ErrorBoundary extends React.Component<{children?: React.ReactNode}, {error: string | undefined}> {
   constructor(props: {}) {
     super(props);
     this.state = { error: undefined };

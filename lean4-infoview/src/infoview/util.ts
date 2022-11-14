@@ -201,7 +201,7 @@ export function addUniqueKeys<T>(elems: T[], getId: (el: T) => string): Keyed<T>
 
 /** Like `React.forwardRef`, but also allows using the ref inside the forwarding component.
  * Adapted from https://itnext.io/reusing-the-ref-from-forwardref-with-react-hooks-4ce9df693dd */
-export function forwardAndUseRef<T, P = {}>(render: (props: React.PropsWithChildren<P>, ref: React.RefObject<T>, setRef: (_: T | null) => void)
+export function forwardAndUseRef<T, P extends {children? : React.ReactNode} = {}>(render: (props: React.PropsWithChildren<P>, ref: React.RefObject<T>, setRef: (_: T | null) => void)
     => React.ReactElement | null): React.ForwardRefExoticComponent<React.PropsWithoutRef<P> & React.RefAttributes<T>> {
   return React.forwardRef<T, P>((props, ref) => {
     const thisRef = React.useRef<T | null>(null)

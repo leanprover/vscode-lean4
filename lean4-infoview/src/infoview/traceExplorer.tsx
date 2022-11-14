@@ -96,9 +96,9 @@ function CollapsibleTraceNode(traceEmbed: TraceEmbed) {
         <div className='pointer' onClick={onClick}><TraceLine {...traceEmbed} icon={icon} /></div>
         <div style={{display: open ? 'block' : 'none'}}>
             <TraceClassContext.Provider value={cls}>
-                {children.state === 'resolved' &&
-                    children.value.map((tt, i) => <InteractiveMessage fmt={tt} key={i}/>)}
-                {children.state === 'rejected' && mapRpcError(children.error)}
+                { children.state === 'resolved' ? children.value.map((tt, i) => <InteractiveMessage fmt={tt} key={i}/>)
+                  : children.state === 'rejected' ? mapRpcError(children.error).toString()
+                  : <></> }
             </TraceClassContext.Provider>
         </div>
     </div>
