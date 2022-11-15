@@ -1,5 +1,4 @@
 import * as React from 'react'
-import { DocumentPosition } from './util'
 import { InteractiveCode } from './interactiveCode'
 import { InteractiveGoal, InteractiveGoals, InteractiveHypothesisBundle, InteractiveHypothesisBundle_accessibleNames, TaggedText_stripTags } from '@leanprover/infoview-api'
 
@@ -67,10 +66,14 @@ export interface GoalFilterState {
 }
 
 function getFilteredHypotheses(hyps: InteractiveHypothesisBundle[], filter: GoalFilterState): InteractiveHypothesisBundle[] {
-    return hyps.filter(h =>
-        (!h.isInstance || filter.isInstance) &&
-        (!h.isType || filter.isType) &&
-        (filter.isHiddenAssumption || !h.names.every(isInaccessibleName)));
+    return hyps.reduce((acc: InteractiveHypothesisBundle[], h) => {
+        if (h.isInstance && !filter.isInstance) return acc
+        if (h.isType && !filter.isType) return acc
+        const names = filter.isHiddenAssumption ? h.names : h.names.filter(n => !isInaccessibleName(n))
+        const hNew: InteractiveHypothesisBundle = { ...h, names }
+        if (names.length !== 0) acc.push(hNew)
+        return acc
+    }, [])
 }
 
 interface GoalProps {
