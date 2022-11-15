@@ -1,5 +1,5 @@
 import * as React from 'react';
-import * as ReactDOM from 'react-dom';
+import * as ReactDOM from 'react-dom/client';
 import type { DidCloseTextDocumentParams, Location, DocumentUri } from 'vscode-languageserver-protocol';
 
 import 'tachyons/css/tachyons.css';
@@ -129,11 +129,12 @@ export function renderInfoview(editorApi: EditorApi, uiElement: HTMLElement): In
 
     editorEvents.initialize.on((loc: Location) => ec.events.changedCursorLocation.fire(loc))
 
-    ReactDOM.render(<React.StrictMode>
+    const root = ReactDOM.createRoot(uiElement)
+    root.render(<React.StrictMode>
         <EditorContext.Provider value={ec}>
             <Main/>
         </EditorContext.Provider>
-    </React.StrictMode>, uiElement)
+    </React.StrictMode>)
 
     return infoviewApi;
 }

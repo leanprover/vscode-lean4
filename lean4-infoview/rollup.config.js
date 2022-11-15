@@ -2,10 +2,11 @@ import commonjs from '@rollup/plugin-commonjs';
 import typescript from '@rollup/plugin-typescript';
 import nodeResolve from '@rollup/plugin-node-resolve';
 import replace from '@rollup/plugin-replace';
+import terser from '@rollup/plugin-terser';
 import url from '@rollup/plugin-url';
 import css from 'rollup-plugin-css-only';
-import { terser } from 'rollup-plugin-terser';
 
+/** @type {import('rollup').OutputOptions} */
 const output = process.env.NODE_ENV && process.env.NODE_ENV === 'production' ?  {
         dir: 'dist',
         sourcemap: false,
@@ -24,38 +25,67 @@ const output = process.env.NODE_ENV && process.env.NODE_ENV === 'production' ?  
         chunkFileNames: '[name]-[hash].development.js'
     }
 
-export default {
-    input: {
-        'index': 'src/index.ts',
-        'react-popper': 'src/react-popper.ts'
+/** @type {import('rollup').InputPluginOption} */
+const plugins = [
+    url({
+        include: ['**/*.ttf'],
+        fileName: '[name][extname]'
+    }),
+    typescript({
+        tsconfig: "./tsconfig.json",
+        outputToFilesystem: false,
+        // https://stackoverflow.com/a/63235210
+        sourceMap: false
+    }),
+    nodeResolve({
+        browser: true
+    }),
+    replace({
+        'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV),
+        preventAssignment: true // TODO delete when `true` becomes the default
+    }),
+    commonjs()
+]
+
+/**
+ * Note that besides building the infoview single-page application, we build a bunch of esm-shims.
+ * This is a way of compiling our dependencies into single-file ES modules which can be shared
+ * as imports between the infoview app and dynamically loaded widget modules. While projects such
+ * as jspm.io do exist, they tend to chunk modules into a bunch of files which are not easy to
+ * bundle, and requiring them dynamically would make the infoview depend on an internet connection.
+ *
+ * @type {import('rollup').RollupOptions[]}
+*/
+const configs = [ {
+        output,
+        plugins: plugins.concat([
+            css({
+                output: 'index.css'
+            }),
+        ]),
+        input: 'src/index.ts',
+        external: [
+            'react',
+            'react-dom',
+            'react/jsx-runtime',
+            'react-popper'
+        ],
+    }, {
+        output, plugins,
+        input: 'src/esm-shims/react.ts'
+    }, {
+        output, plugins,
+        input: 'src/esm-shims/react-dom.ts',
+        external: [ 'react' ]
+    }, {
+        output, plugins,
+        input: 'src/esm-shims/react-jsx-runtime.ts',
+        external: [ 'react' ]
+    }, {
+        output, plugins,
+        input: 'src/esm-shims/react-popper.ts',
+        external: [ 'react', 'react-dom' ]
     },
-    output,
-    external: [
-        'react',
-        'react-dom'
-        // TODO externalize react-popper when it gets an @esm-bundle
-    ],
-    plugins: [
-        css({
-            output: 'index.css'
-        }),
-        url({
-            include: ['**/*.ttf'],
-            fileName: '[name][extname]'
-        }),
-        typescript({
-            tsconfig: "./tsconfig.json",
-            outputToFilesystem: false,
-            // https://stackoverflow.com/a/63235210
-            sourceMap: false        
-        }),
-        nodeResolve({
-            browser: true
-        }),
-        replace({
-            'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV),
-            preventAssignment: true // TODO delete when `true` becomes the default
-        }),
-        commonjs()
-    ]
-};
+]
+
+export default configs;
