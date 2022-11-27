@@ -100,7 +100,7 @@ const InfoDisplayContent = React.memo((props: InfoDisplayContentProps) => {
     const hasMessages = messages.length !== 0;
 
     const [goalFilters, setGoalFilters] = React.useState<GoalFilterState>(
-        { reverse: false, isType: true, isInstance: true, isHiddenAssumption: true});
+        { reverse: false, showType: true, showInstance: true, showHiddenAssumption: true, showLetValue: true });
     const sortClasses = 'link pointer mh2 dim codicon fr ' + (goalFilters.reverse ? 'codicon-arrow-up ' : 'codicon-arrow-down ');
     const sortButton = <a className={sortClasses} title="reverse list" onClick={e => {
         setGoalFilters(s => {
@@ -108,34 +108,24 @@ const InfoDisplayContent = React.memo((props: InfoDisplayContentProps) => {
         } ); }
     } />
 
+    const mkFilterButton = (filterFn: React.SetStateAction<GoalFilterState>, filledFn: (_: GoalFilterState) => boolean, name: string) =>
+        <a className='link pointer tooltip-menu-content' onClick={_ => { setGoalFilters(filterFn) }}>
+            <span className={'tooltip-menu-icon codicon ' + (filledFn(goalFilters) ? 'codicon-check ' : 'codicon-blank ')}>&nbsp;</span>
+            <span className='tooltip-menu-text '>{name}</span>
+        </a>
     const filterMenu = <span>
-        <a className='link pointer tooltip-menu-content' onClick={e => {
-            setGoalFilters(s => {
-                return { ...s, isType: !s.isType }
-            } ); }}>
-                <span className={'tooltip-menu-icon codicon ' + (goalFilters.isType ? 'codicon-check ' : 'codicon-blank ')}>&nbsp;</span>
-                <span className='tooltip-menu-text '>types</span>
-        </a>
+        {mkFilterButton(s => ({ ...s, showType: !s.showType }), gf => gf.showType, 'types')}
         <br/>
-        <a className='link pointer tooltip-menu-content' onClick={e => {
-            setGoalFilters(s => {
-                return { ...s, isInstance: !s.isInstance }
-            } ); }}>
-                <span className={'tooltip-menu-icon codicon ' + (goalFilters.isInstance ? 'codicon-check ' : 'codicon-blank ')}>&nbsp;</span>
-                <span className='tooltip-menu-text '>instances</span>
-        </a>
+        {mkFilterButton(s => ({ ...s, showInstance: !s.showInstance }), gf => gf.showInstance, 'instances')}
         <br/>
-        <a className='link pointer tooltip-menu-content' onClick={e => {
-            setGoalFilters(s => {
-                return { ...s, isHiddenAssumption: !s.isHiddenAssumption }
-            } ); }}>
-                <span className={'tooltip-menu-icon codicon ' + (goalFilters.isHiddenAssumption ? 'codicon-check ' : 'codicon-blank ')}>&nbsp;</span>
-                <span className='tooltip-menu-text '>hidden assumptions</span>
-        </a>
+        {mkFilterButton(s => ({ ...s, showHiddenAssumption: !s.showHiddenAssumption }), gf => gf.showHiddenAssumption, 'hidden assumptions')}
+        <br/>
+        {mkFilterButton(s => ({ ...s, showLetValue: !s.showLetValue }), gf => gf.showLetValue, 'let-values')}
     </span>
+    const isFiltered = !goalFilters.showInstance || !goalFilters.showType || !goalFilters.showHiddenAssumption || !goalFilters.showLetValue
     const filterButton = <span className='fr'>
         <WithTooltipOnHover mkTooltipContent={() => {return filterMenu}}>
-            <a className={'link pointer mh2 dim codicon ' + ((!goalFilters.isInstance || !goalFilters.isType || !goalFilters.isHiddenAssumption) ? 'codicon-filter-filled ': 'codicon-filter ')}/>
+            <a className={'link pointer mh2 dim codicon ' + (isFiltered ? 'codicon-filter-filled ': 'codicon-filter ')}/>
         </WithTooltipOnHover></span>
 
     /* Adding {' '} to manage string literals properly: https://reactjs.org/docs/jsx-in-depth.html#string-literals-1 */

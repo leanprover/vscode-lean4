@@ -55,22 +55,24 @@ export function goalsToString(goals: InteractiveGoals): string {
 }
 
 export interface GoalFilterState {
-    /** If true reverse the list of hypotheses, if false present the order received from LSP */
+    /** If true reverse the list of hypotheses, if false present the order received from LSP. */
     reverse: boolean,
-    /** If true show hypotheses that have isType=True, if false, hide hypotheses that have isType=True. */
-    isType: boolean,
-    /** If true show hypotheses that have isInstance=True, if false, hide hypotheses that have isInstance=True. */
-    isInstance: boolean,
-    /** If true show hypotheses that contain a dagger in the name, if false, hide hypotheses that contain a dagger in the name. */
-    isHiddenAssumption: boolean
+    /** If true show hypotheses that have isType=True, otherwise hide them. */
+    showType: boolean,
+    /** If true show hypotheses that have isInstance=True, otherwise hide them. */
+    showInstance: boolean,
+    /** If true show hypotheses that contain a dagger in the name, otherwise hide them. */
+    showHiddenAssumption: boolean
+    /** If true show the bodies of let-values, otherwise hide them. */
+    showLetValue: boolean;
 }
 
 function getFilteredHypotheses(hyps: InteractiveHypothesisBundle[], filter: GoalFilterState): InteractiveHypothesisBundle[] {
     return hyps.reduce((acc: InteractiveHypothesisBundle[], h) => {
-        if (h.isInstance && !filter.isInstance) return acc
-        if (h.isType && !filter.isType) return acc
-        const names = filter.isHiddenAssumption ? h.names : h.names.filter(n => !isInaccessibleName(n))
-        const hNew: InteractiveHypothesisBundle = { ...h, names }
+        if (h.isInstance && !filter.showInstance) return acc
+        if (h.isType && !filter.showType) return acc
+        const names = filter.showHiddenAssumption ? h.names : h.names.filter(n => !isInaccessibleName(n))
+        const hNew: InteractiveHypothesisBundle = filter.showLetValue ? { ...h, names } : { ...h, names, val: undefined }
         if (names.length !== 0) acc.push(hNew)
         return acc
     }, [])
