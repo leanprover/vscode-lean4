@@ -2,26 +2,31 @@ export class Rpc {
     private seqNum = 0
     private methods: {[name: string]: (...args: any[]) => Promise<any>} = {}
     private pending: {[seqNum: number]: {resolve: (_: any) => void, reject: (_: string) => void}} = {}
-    /** Resolves when the other side send us the init message. */
+    /** Resolves when both sides of the channel are ready to receive procedure calls. */
     private initPromise: Promise<void>
-    private resolveInit?: () => void
+    private resolveInit: () => void
+    private initialized: boolean = false
 
     constructor(readonly sendMessage: (msg: any) => void) {
-        this.initPromise = new Promise((resolve) => {
-            const interval = setInterval(() => {
-                sendMessage({kind: 'initialize'})
-            }, 50)
-            this.resolveInit = () => {
-                // @types/node bug: https://github.com/DefinitelyTyped/DefinitelyTyped/issues/43236
-                // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-                clearInterval(interval as any)
-                resolve()
-            }
+        this.resolveInit = () => {} // pacify the typechecker; the real initializer is below
+        this.initPromise = new Promise(resolve => {
+            this.resolveInit = resolve
         })
     }
 
+    /** Register procedures that the other side of the channel can invoke. Must be called exactly once. */
     register<T>(methods: T): void {
-        this.methods = {...this.methods, ...methods}
+        if (this.initialized) throw new Error('RPC methods already registered')
+        this.methods = {...methods} as any
+        const interval = setInterval(() => {
+            this.sendMessage({kind: 'initialize'})
+        }, 50)
+        const prevResolveInit = this.resolveInit
+        this.resolveInit = () => {
+            clearInterval(interval)
+            prevResolveInit()
+        }
+        this.initialized = true
     }
 
     // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
@@ -29,7 +34,7 @@ export class Rpc {
         if (msg.kind) {
             if (msg.kind === 'initialize') {
                 this.sendMessage({kind: 'initialized'})
-            } else if (msg.kind === 'initialized' && this.resolveInit) {
+            } else if (msg.kind === 'initialized' && this.initialized) {
                 this.resolveInit()
             }
             return
@@ -37,14 +42,16 @@ export class Rpc {
         const {seqNum, name, args, result, exception}: any = msg
         if (seqNum === undefined) return
         if (name !== undefined) {
-            return void (async () => {
+            return void this.initPromise.then(async () => {
                 try {
+                    const fn = this.methods[name]
+                    if (fn === undefined) throw new Error(`unknown RPC method ${name}`)
                     // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-                    this.sendMessage({ seqNum, result: await this.methods[name](...args) })
+                    this.sendMessage({ seqNum, result: await fn(...args) })
                 } catch (ex: any) {
                     this.sendMessage({ seqNum, exception: prepareExceptionForSerialization(ex) })
                 }
-            })()
+            })
         }
         if (exception !== undefined) {
             this.pending[seqNum].reject(exception as string)
