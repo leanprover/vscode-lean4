@@ -42,6 +42,8 @@ export class Rpc {
         const {seqNum, name, args, result, exception}: any = msg
         if (seqNum === undefined) return
         if (name !== undefined) {
+            // It's important that we wait on `initPromise` here. Otherwise we may try to invoke
+            // a method before `register` is called.
             return void this.initPromise.then(async () => {
                 try {
                     const fn = this.methods[name]
