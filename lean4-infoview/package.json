@@ -7,8 +7,21 @@
     "watchTest": "npm run watch",
     "build": "rollup --config --environment NODE_ENV:production"
   },
-  "browser": "dist/index.production.min.js",
-  "types": "dist/index",
+  "exports": {
+    ".": "./dist/index.development.js",
+    "./loader": "./dist/loader.production.min.js",
+    "./package.json": "./package.json"
+  },
+  "typesVersions": {
+    "*": {
+      "*": [
+        "dist/index.d.ts"
+      ],
+      "loader": [
+        "dist/loader.d.ts"
+      ]
+    }
+  },
   "files": [
     "dist/*"
   ],
@@ -34,6 +47,7 @@
   "dependencies": {
     "@leanprover/infoview-api": "~0.2.0",
     "@vscode/codicons": "^0.0.32",
+    "es-module-shims": "^1.6.2",
     "react-fast-compare": "^3.2.0",
     "tachyons": "^4.12.0",
     "vscode-languageserver-protocol": "^3.17.2",

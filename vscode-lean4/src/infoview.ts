@@ -747,21 +747,13 @@ export class InfoProvider implements Disposable {
             </head>
             <body>
                 <div id="react_root"></div>
-                <!-- We use guybedford/es-module-shims to polyfill importmaps in browsers
-                which don't support them (i.e. most browsers). -->
-                <script async src="${this.getLocalPath('dist/es-module-shims.js')}"></script>
-                <script type="importmap-shim">
-                    {
-                        "imports": {
-                            "@leanprover/infoview": "${this.getLocalPath(`dist/lean4-infoview/index${libPostfix}`)}",
-                            "react": "${this.getLocalPath(`dist/lean4-infoview/react${libPostfix}`)}",
-                            "react/jsx-runtime": "${this.getLocalPath(`dist/lean4-infoview/react-jsx-runtime${libPostfix}`)}",
-                            "react-dom": "${this.getLocalPath(`dist/lean4-infoview/react-dom${libPostfix}`)}",
-                            "react-popper": "${this.getLocalPath(`dist/lean4-infoview/react-popper${libPostfix}`)}"
-                        }
-                    }
-                </script>
-                <script type="module-shim" src="${this.getLocalPath('dist/webview.js')}"></script>
+                <script
+                    data-importmap-leanprover-infoview="${this.getLocalPath(`dist/lean4-infoview/index${libPostfix}`)}"
+                    data-importmap-react="${this.getLocalPath(`dist/lean4-infoview/react${libPostfix}`)}"
+                    data-importmap-react-jsx-runtime="${this.getLocalPath(`dist/lean4-infoview/react-jsx-runtime${libPostfix}`)}"
+                    data-importmap-react-dom="${this.getLocalPath(`dist/lean4-infoview/react-dom${libPostfix}`)}"
+                    data-importmap-react-popper="${this.getLocalPath(`dist/lean4-infoview/react-popper${libPostfix}`)}"
+                    src="${this.getLocalPath('dist/webview.js')}"></script>
             </body>
             </html>`
     }

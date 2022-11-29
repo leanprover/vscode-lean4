@@ -86,10 +86,12 @@ function Main(props: {}) {
 }
 
 /**
- * Renders the Lean infoview into the webpage.
- * @param editorApi
- * @param uiElement the HTML element (e.g. a `<div>`) to render into
- */
+  * Render the Lean infoview into the DOM element `uiElement`.
+  *
+  * @param editorApi is a collection of methods which the infoview needs to be able to invoke
+  * on the editor in order to function correctly (such as inserting text or moving the cursor).
+  * @returns a collection of methods which must be invoked when the relevant editor events occur.
+  */
 export function renderInfoview(editorApi: EditorApi, uiElement: HTMLElement): InfoviewApi {
     const editorEvents: EditorEvents = {
         initialize: new Event(),

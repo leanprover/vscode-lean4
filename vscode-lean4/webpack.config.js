@@ -3,7 +3,6 @@
 const path = require('path');
 const webpack = require('webpack');
 const CopyPlugin = require('copy-webpack-plugin');
-const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
 
 /**
  * @typedef Env
@@ -36,19 +35,10 @@ const getWebviewConfig = (env) => ({
         extensions: ['.tsx', '.ts', '.js']
     },
     devtool: env.production ? undefined : 'inline-source-map',
-    experiments: {
-        outputModule: true
-    },
     output: {
         filename: 'webview.js',
         path: path.resolve(__dirname, 'dist'),
-        library: {
-            type: 'module'
-        }
     },
-    externals: [
-        '@leanprover/infoview'
-    ],
     plugins: [
         new webpack.IgnorePlugin({
             resourceRegExp: /^\.\/locale$/,
@@ -59,9 +49,6 @@ const getWebviewConfig = (env) => ({
                 // See https://github.com/webpack-contrib/copy-webpack-plugin/tree/e2274daad21baae3020819aa29ab903bd9992cce#yarn-workspaces-and-monorepos
                 from : `${path.dirname(require.resolve('@leanprover/infoview/package.json'))}/dist`,
                 to: path.resolve(__dirname, 'dist', 'lean4-infoview')
-            }, {
-                from: path.resolve(__dirname, 'node_modules', 'es-module-shims', 'dist', 'es-module-shims.js'),
-                to: path.resolve(__dirname, 'dist')
             }]
         }),
     ]
@@ -84,9 +71,6 @@ const getExtensionConfig = (env) => ({
     },
     resolve: {
         extensions: ['.tsx', '.ts', '.js'],
-        alias: {
-            'node-fetch': path.resolve(__dirname, 'node_modules/node-fetch/lib/index.js'),
-        }
     },
     devtool: env.production ? undefined : 'source-map',
     output: {

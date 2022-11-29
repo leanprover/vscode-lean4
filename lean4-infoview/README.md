@@ -1,25 +1,24 @@
 # Lean 4 Infoview
 
-The Lean 4 infoview is a React app providing an interactive display of messages, errors, proof states, and other outputs of Lean elaboration. Its contents can be customized using extensions we call *widgets*. Widgets are written in Lean itself, and in TypeScript.
-
-The package here — `@leanprover/infoview` — provides both the React app with its single `renderInfoview` entry point, as well as React components and other utilities for implementing widgets.
-
-## Components
-
-A TypeScript API for use in widgets is exported in [`components.ts`](src/components.ts).
-
-⚠️ WARNING: The API is experimental and subject to breaking changes at any point.
+The Lean 4 infoview is a React app providing an interactive display of messages, errors, proof states, and other outputs of Lean elaboration. Its capabilities can be extended using *user widgets* which may import `@leanprover/infoview` to access builtin functionality. This page contains technical information about how to embed the infoview in an editor plugin. For a friendly guide to user widgets, go [here](https://leanprover.github.io/lean4/doc/examples/widgets.lean.html) instead.
 
 ## Hosting
 
-The infoview can be hosted within any LSP-compatible editor capable of displaying web content (e.g. via a WebKit panel, or in an external browser) and communicating with its context (e.g. via something like [`Window.postMessage`](https://developer.mozilla.org/en-US/docs/Web/API/Window/postMessage)). The hosting editor must also be able to send duplicates of received and emitted LSP notifications to the infoview, as well as relay requests between the infoview and the LSP server.
+The infoview can be hosted within any LSP-compatible editor capable of displaying a webpage (e.g. a web-based editor, or via a WebKit panel, or in an external browser) and communicating with said webpage (e.g. via [`Window.postMessage`](https://developer.mozilla.org/en-US/docs/Web/API/Window/postMessage)). The hosting editor must also be capable of sending duplicates of received and emitted LSP notifications to the infoview, as well as of relaying LSP requests between the infoview and the LSP server. There are specific requirements on how the infoview code is loaded — see below.
 
-Hosting the infoview boils down to displaying the webview, and then executing a script there to set up editor<->infoview communication via [`InfoviewApi`/`EditorApi`](../lean4-infoview-api/src/infoviewApi.ts). The APIs detail a number of methods which the editor must implement, for example to provide the infoview with cursor positions. Finally the [`renderInfoview`](src/index.ts) entry point can be invoked.
+⚠️ WARNING: Note that we have not tested the infoview outside of VSCode, so it is likely that a port to any other environment will need to generalize VSCode-specific parts.
 
-The `lean4-infoview` library is distributed as an ECMAScript module. For widget extensions to work, it *must* be loaded as an ECMAScript module using either `<script type="module" ..>` or a loader such as System.js, with external dependencies specified in the [configuration](rollup.config.js) provided under their expected names (probably via an [`importmap`](https://github.com/WICG/import-maps)).
+## Loading the infoview
 
-⚠️ WARNING: Note that we have not tested the infoview outside of VSCode, so it is likely that a port to any other environment will need to remove VSCode-specific leftovers.
+Making user widgets dynamically loadable requires going through some contortions. The package exposes two entrypoints — `@leanprover/infoview` itself and `@leanprover/infoview/loader`. The former contains the React app. It is an ECMAScript module which *must* be loaded as a module into a runtime environment with:
+- support for [dynamic `import`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/import); and
+- a properly set up [`importmap`](https://github.com/WICG/import-maps).
 
-### Editor support
+In particular, `@leanprover/infoview` should not be transpiled into something like UMD by a bundler. To make this a bit easier, we provide the [`@leanprover/infoview/loader`](./src/loader.ts) entrypoint which creates such an environment and loads the infoview into it. To use it, `import` it as usual (the loader *can* be bundled) and see documentation on the code.
+
+(The alternative to using `/loader` is to embed the infoview in a webpage using `<script type="module" ..>` or to use a dynamic loader such as [SystemJS](https://github.com/systemjs/systemjs).)
+
+## Editor support
 
 - VSCode via [`vscode-lean4`](https://github.com/leanprover-community/vscode-lean4)
+- Web playground via [`lean4web`](https://github.com/hhu-adam/lean4web)

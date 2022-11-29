@@ -48,11 +48,12 @@ const plugins = [
 ]
 
 /**
- * Note that besides building the infoview single-page application, we build a bunch of esm-shims.
- * This is a way of compiling our dependencies into single-file ES modules which can be shared
- * as imports between the infoview app and dynamically loaded widget modules. While projects such
- * as jspm.io do exist, they tend to chunk modules into a bunch of files which are not easy to
- * bundle, and requiring them dynamically would make the infoview depend on an internet connection.
+ * Note that besides building the infoview single-page application, we build a loader and a bunch
+ * of esm-shims. This is a way of compiling our dependencies into single-file ES modules which can
+ * be shared as imports between the infoview app and dynamically loaded widget modules. Although
+ * projects such * as jspm.io do exist, they tend to chunk modules into a bunch of files which are
+ * not easy to * bundle, and requiring them dynamically would make the infoview depend on an internet
+ * connection. See also `README.md`.
  *
  * @type {import('rollup').RollupOptions[]}
 */
@@ -63,13 +64,21 @@ const configs = [ {
                 output: 'index.css'
             }),
         ]),
-        input: 'src/index.ts',
+        input: 'src/index.tsx',
         external: [
             'react',
             'react-dom',
             'react/jsx-runtime',
             'react-popper'
         ],
+    }, {
+        output: {
+            ...output,
+            // Put `es-module-shims` in shim mode with support for dynamic `import`
+            intro: 'window.esmsInitOptions = { shimMode: true }',
+        },
+        plugins,
+        input: 'src/loader.ts',
     }, {
         output, plugins,
         input: 'src/esm-shims/react.ts'
