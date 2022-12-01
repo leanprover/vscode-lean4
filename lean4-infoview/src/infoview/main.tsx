@@ -15,7 +15,7 @@ import { useClientNotificationEffect, useEventResult, useServerNotificationState
 import { EditorContext, ConfigContext, ProgressContext, VersionContext } from './contexts';
 import { WithRpcSessions } from './rpcSessions';
 import { EditorConnection, EditorEvents } from './editorConnection';
-import { Event } from './event';
+import { EventEmitter } from './event';
 import { ServerVersion } from './serverVersion';
 
 
@@ -23,7 +23,7 @@ function Main(props: {}) {
     const ec = React.useContext(EditorContext);
 
     /* Set up updates to the global infoview state on editor events. */
-    const config = useEventResult(ec.events.changedInfoviewConfig) || defaultInfoviewConfig;
+    const config = useEventResult(ec.events.changedInfoviewConfig) ?? defaultInfoviewConfig;
 
     const [allProgress, _1] = useServerNotificationState(
         '$/lean/fileProgress',
@@ -48,16 +48,14 @@ function Main(props: {}) {
         []
     );
 
-    const serverInitializeResult = useEventResult(ec.events.serverRestarted);
-    const sv = serverInitializeResult ? new ServerVersion(serverInitializeResult.serverInfo?.version ?? '') : undefined;
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+    const serverVersion =
+        useEventResult(ec.events.serverRestarted, result => new ServerVersion(result.serverInfo?.version ?? ''))
     const serverStoppedResult = useEventResult(ec.events.serverStopped);
-    //
     // NB: the cursor may temporarily become `undefined` when a file is closed. In this case
     // it's important not to reconstruct the `WithBlah` wrappers below since they contain state
     // that we want to persist.
     let ret
-    if (!serverInitializeResult) {
+    if (!serverVersion) {
         ret = <p>Waiting for Lean server to start...</p>
     } else if (serverStoppedResult){
         ret = <div><p>{serverStoppedResult.message}</p><p className="error">{serverStoppedResult.reason}</p></div>
@@ -72,7 +70,7 @@ function Main(props: {}) {
 
     return (
     <ConfigContext.Provider value={config}>
-        <VersionContext.Provider value={sv}>
+        <VersionContext.Provider value={serverVersion}>
             <WithRpcSessions>
                 <WithLspDiagnosticsContext>
                     <ProgressContext.Provider value={allProgress}>
@@ -94,15 +92,15 @@ function Main(props: {}) {
   */
 export function renderInfoview(editorApi: EditorApi, uiElement: HTMLElement): InfoviewApi {
     const editorEvents: EditorEvents = {
-        initialize: new Event(),
-        gotServerNotification: new Event(),
-        sentClientNotification: new Event(),
-        serverRestarted: new Event(),
-        serverStopped: new Event(),
-        changedCursorLocation: new Event(),
-        changedInfoviewConfig: new Event(),
-        runTestScript: new Event(),
-        requestedAction: new Event(),
+        initialize: new EventEmitter(),
+        gotServerNotification: new EventEmitter(),
+        sentClientNotification: new EventEmitter(),
+        serverRestarted: new EventEmitter(),
+        serverStopped: new EventEmitter(),
+        changedCursorLocation: new EventEmitter(),
+        changedInfoviewConfig: new EventEmitter(),
+        runTestScript: new EventEmitter(),
+        requestedAction: new EventEmitter(),
     };
 
     // Challenge: write a type-correct fn from `Eventify<T>` to `T` without using `any`

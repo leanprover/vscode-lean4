@@ -83,8 +83,8 @@ export function Infos() {
         []
     );
 
-    const curLoc = useEventResult(ec.events.changedCursorLocation)
-    const curPos: DocumentPosition | undefined = curLoc ? { uri: curLoc.uri, ...curLoc.range.start } : undefined
+    const curPos: DocumentPosition | undefined =
+        useEventResult(ec.events.changedCursorLocation, loc => loc ? { uri: loc.uri, ...loc.range.start } : undefined)
 
     // Update pins on UI actions
     const pinKey = React.useRef<number>(0);

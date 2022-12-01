@@ -1,7 +1,9 @@
 import type { Disposable } from 'vscode-languageserver-protocol';
 
-/** An `Event` propagates a value it's `fire`d with to all handlers registered using `on`. */
-export class Event<E> {
+/**
+ * When `fire(...args)` is invoked on an `EventEmitter`, the provided `args` are propagated
+ * to all registered handlers. Handlers can be registered using `on`. */
+export class EventEmitter<E> {
     private handlers: ((_: E) => void)[] = [];
     current?: E;
 
@@ -27,11 +29,10 @@ export class Event<E> {
 type ExcludeNonEvent<T, U> = T extends (...args: any) => Promise<void> ? U : never
 
 /**
- * Turn any response-less async callback field, that is a field `f` extending
- * `(...args: As) => Promise<void>`, into an event field `f: Event<As>`.
- * Other fields are removed.
- */
+ * Turn all fields in `T` which extend `(...args: As) => Promise<void>` into event emitter fields
+ * `f: EventEmitter<As>`. Other fields are removed. */
 export type Eventify<T> = {
-  [P in keyof T as ExcludeNonEvent<T[P], P>]: T[P] extends (arg: infer A) => Promise<void> ? Event<A> :
-                                              (T[P] extends (...args: infer As) => Promise<void> ? Event<As> : never);
-};
+    [P in keyof T as ExcludeNonEvent<T[P], P>]:
+        T[P] extends (arg: infer A) => Promise<void> ? EventEmitter<A> :
+            T[P] extends (...args: infer As) => Promise<void> ? EventEmitter<As> : never
+}

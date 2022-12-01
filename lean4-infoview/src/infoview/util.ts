@@ -4,7 +4,7 @@ import type { DocumentUri, Position, Range, TextDocumentPositionParams } from 'v
 
 import { isRpcError, RpcErrorCode } from '@leanprover/infoview-api';
 
-import { Event } from './event';
+import { EventEmitter } from './event';
 import { EditorContext } from './contexts';
 
 /** A document URI and a position in that document. */
@@ -69,21 +69,27 @@ export function basename(path: string): string {
   else return '';
 }
 
-/** Like {@link React.useEffect} but subscribes to `ev` firing. */
-export function useEvent<T>(ev: Event<T>, f: (_: T) => void, dependencies?: React.DependencyList): void {
+/**
+ * A specialization of {@link React.useEffect} which executes `f` with the event data whenever
+ * `ev` fires. */
+export function useEvent<E>(ev: EventEmitter<E>, f: (_: E) => void,
+    dependencies?: React.DependencyList): void {
   React.useEffect(() => {
     const h = ev.on(f);
     return () => h.dispose();
   }, dependencies)
 }
 
-export function useEventResult<T>(ev: Event<T>): T | undefined;
-export function useEventResult<T, S>(ev: Event<S>, map: (newVal: S | undefined, prev : T | undefined) => T): T;
-export function useEventResult(ev: Event<unknown>, map?: any): any {
-  map = map ?? ((x : any) => x)
-  const [t, setT] = React.useState(() => map(ev.current, undefined));
-  useEvent(ev, newT => setT(map(newT, t)));
-  return t;
+/**
+ * A piece of React {@link React.useState} which returns the data that `ev` most recently fired with.
+ * If `f` is provided, the data is mapped through `f` first. */
+export function useEventResult<E>(ev: EventEmitter<E>): E | undefined;
+export function useEventResult<E, T>(ev: EventEmitter<E>, f: (newVal: E) => T): T | undefined;
+export function useEventResult<E, T>(ev: EventEmitter<E>, f?: (_: E) => T): T | undefined {
+  const fn: (_: E) => T = f ?? (x => x as any)
+  const [s, setS] = React.useState<T | undefined>(ev.current ? fn(ev.current) : undefined)
+  useEvent(ev, newV => setS(newV ? fn(newV) : undefined))
+  return s
 }
 
 export function useServerNotificationEffect<T>(method: string, f: (params: T) => void, deps?: React.DependencyList): void {
