@@ -4,8 +4,9 @@
   "description": "An interactive display for the Lean 4 theorem prover.",
   "scripts": {
     "watch": "rollup --config --environment NODE_ENV:development --watch",
+    "build": "rollup --config --environment NODE_ENV:production",
     "watchTest": "npm run watch",
-    "build": "rollup --config --environment NODE_ENV:production"
+    "test": "tsc -p test/tsconfig.json"
   },
   "exports": {
     ".": "./dist/index.development.js",
@@ -37,20 +38,21 @@
     "@types/marked": "^4.0.7",
     "@types/react": "^18.0.25",
     "@types/react-dom": "^18.0.9",
+    "current-release": "npm:@leanprover/infoview@^0.3.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
     "react-popper": "^2.3.0",
     "rollup": "^3.3.0",
     "rollup-plugin-css-only": "^4.3.0",
-    "typescript": "^4.8.4",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "typescript": "^4.8.4"
   },
   "dependencies": {
     "@leanprover/infoview-api": "~0.2.0",
     "@vscode/codicons": "^0.0.32",
     "es-module-shims": "^1.6.2",
+    "marked": "^4.2.2",
     "react-fast-compare": "^3.2.0",
     "tachyons": "^4.12.0",
-    "vscode-languageserver-protocol": "^3.17.2",
-    "marked": "^4.2.2"
+    "vscode-languageserver-protocol": "^3.17.2"
   }
 }
