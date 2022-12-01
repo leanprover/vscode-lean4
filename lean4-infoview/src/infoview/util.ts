@@ -173,23 +173,6 @@ export function usePausableState<T>(startPaused: boolean, t: T): [PausableProps,
   return [{ isPaused, setPaused }, old.current, old];
 }
 
-
-/**
- * Returns a stateful log string and a function to update it.
- */
-export function useLogState(): [string, (...msg: any[]) => void] {
-  const [log, setLog] = React.useState('');
-
-  function outputLog(...msg: any[]) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-    console.log(...msg);
-    const fmt = msg.reduce((acc, val) => acc + ' ' + val.toString(), '');
-    setLog(oldLog => oldLog + fmt + '\n');
-  }
-
-  return [log, outputLog];
-}
-
 export type Keyed<T> = T & { key: string };
 
 /**

@@ -1,5 +1,3 @@
-/// <reference types='es-module-shims' />
-
 import 'es-module-shims';
 
 import type { renderInfoview } from './index';

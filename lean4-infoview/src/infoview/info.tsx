@@ -9,7 +9,7 @@ import { lspDiagToInteractive, MessagesList } from './messages';
 import { getInteractiveGoals, getInteractiveTermGoal, InteractiveDiagnostic, InteractiveGoal,
     InteractiveGoals, UserWidgets, Widget_getWidgets, RpcSessionAtPos, isRpcError, RpcErrorCode, getInteractiveDiagnostics } from '@leanprover/infoview-api';
 import { WithTooltipOnHover } from './tooltips'
-import { UserWidget } from './userWidget'
+import { UserWidgetDisplay } from './userWidget'
 import { RpcContext, useRpcSessionAtPos } from './rpcSessions';
 
 type InfoStatus = 'updating' | 'error' | 'ready';
@@ -164,7 +164,7 @@ const InfoDisplayContent = React.memo((props: InfoDisplayContentProps) => {
                             {widget.name}
                         </summary>
                         <div className="ml1">
-                             <UserWidget pos={pos} widget={widget}/>
+                             <UserWidgetDisplay pos={pos} widget={widget}/>
                         </div>
                     </Details>
                 </div>

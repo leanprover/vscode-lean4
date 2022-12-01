@@ -404,7 +404,7 @@
 		"test": "node ./out/test/suite/runTest.js"
 	},
 	"dependencies": {
-		"@leanprover/infoview": "~0.3.0",
+		"@leanprover/infoview": "~0.4.0",
 		"@leanprover/infoview-api": "~0.2.0",
 		"axios": "~0.24.0",
 		"cheerio": "^1.0.0-rc.10",

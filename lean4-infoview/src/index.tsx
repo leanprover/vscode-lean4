@@ -1,19 +1,22 @@
 import * as React from 'react';
-
 import { InteractiveDiagnostics_msgToInteractive, MessageData } from '@leanprover/infoview-api';
-import { InteractiveMessage } from './infoview/traceExplorer';
-import { useAsync, mapRpcError } from './infoview/util';
 import { RpcContext } from './infoview/rpcSessions';
+import { mapRpcError, useAsync } from './infoview/util';
+import { InteractiveMessage } from './infoview/traceExplorer';
 
 export * from '@leanprover/infoview-api';
-export * from './infoview/util';
+export { useAsync, useAsyncWithTrigger, useEvent, useEventResult, useServerNotificationEffect,
+useServerNotificationState, useClientNotificationEffect, useClientNotificationState } from './infoview/util';
 export { EditorContext, VersionContext } from './infoview/contexts';
 export { EditorConnection } from './infoview/editorConnection';
 export { RpcContext } from './infoview/rpcSessions';
 export { ServerVersion } from './infoview/serverVersion';
+export { UserWidgetProps } from './infoview/userWidget';
 
 export { InteractiveCode, InteractiveCodeProps } from './infoview/interactiveCode';
+export { renderInfoview } from './infoview/main';
 
+export { MessageData };
 
 /** Display the given message data as interactive, pretty-printed text. */
 export function InteractiveMessageData({ msg }: { msg: MessageData }) {
