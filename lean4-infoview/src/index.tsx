@@ -6,7 +6,7 @@ import { InteractiveMessage } from './infoview/traceExplorer';
 
 export * from '@leanprover/infoview-api';
 export { useAsync, useAsyncWithTrigger, useEvent, useEventResult, useServerNotificationEffect,
-useServerNotificationState, useClientNotificationEffect, useClientNotificationState } from './infoview/util';
+useServerNotificationState, useClientNotificationEffect, useClientNotificationState, mapRpcError } from './infoview/util';
 export { EditorContext, VersionContext } from './infoview/contexts';
 export { EditorConnection } from './infoview/editorConnection';
 export { RpcContext } from './infoview/rpcSessions';
