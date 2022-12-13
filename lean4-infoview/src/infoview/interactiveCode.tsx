@@ -1,7 +1,7 @@
 import * as React from 'react'
 
 import { EditorContext } from './contexts'
-import { DocumentPosition, useAsync, mapRpcError } from './util'
+import { useAsync, mapRpcError } from './util'
 import { SubexprInfo, CodeWithInfos, InteractiveDiagnostics_infoToInteractive, getGoToLocation, TaggedText, DiffTag } from '@leanprover/infoview-api'
 import { DetectHoverSpan, HoverState, WithTooltipOnHover } from './tooltips'
 import { Location } from 'vscode-languageserver-protocol'
@@ -21,8 +21,8 @@ export interface InteractiveTaggedTextProps<T> extends InteractiveTextComponentP
 }
 
 /**
- * Core loop to display `TaggedText` objects. Invokes `InnerTagUi` on `tag` nodes in order to support
- * various embedded information such as `InfoTree`s and `Expr`s.
+ * Core loop to display {@link TaggedText} objects. Invokes `InnerTagUi` on `tag` nodes in order to support
+ * various embedded information, for example subexpression information stored in {@link CodeWithInfos}.
  * */
 export function InteractiveTaggedText<T>({fmt, InnerTagUi}: InteractiveTaggedTextProps<T>) {
   if ('text' in fmt) return <>{fmt.text}</>
@@ -73,10 +73,11 @@ function TypePopupContents({ info, redrawTooltip }: TypePopupContentsProps) {
   // otherwise a 'loading' message.
   const interactive = useAsync(
     () => InteractiveDiagnostics_infoToInteractive(rs, info.info),
-    [rs, info.info, info.subexprPos])
+    [rs, info.info])
 
-  // We let the tooltip know to redo its layout whenever our contents change.
-  React.useEffect(() => { void redrawTooltip() }, [interactive.state, (interactive as any)?.value, (interactive as any)?.error, redrawTooltip])
+  // We ask the tooltip parent component to relayout whenever our contents change.
+  React.useEffect(() => { void redrawTooltip() },
+    [interactive.state, (interactive as any)?.value, (interactive as any)?.error, redrawTooltip])
 
   return <div className="tooltip-code-content">
     {interactive.state === 'resolved' ? <>
@@ -170,11 +171,9 @@ function InteractiveCodeTag({tag: ct, fmt}: InteractiveTagProps<SubexprInfo>) {
   )
 }
 
-export interface InteractiveCodeProps {
-  fmt: CodeWithInfos
-}
+export type InteractiveCodeProps = InteractiveTextComponentProps<SubexprInfo>
 
 /** Displays a {@link CodeWithInfos} obtained via RPC from the Lean server. */
-export function InteractiveCode({fmt}: InteractiveCodeProps) {
-  return <InteractiveTaggedText InnerTagUi={InteractiveCodeTag} fmt={fmt} />
+export function InteractiveCode(props: InteractiveCodeProps) {
+  return InteractiveTaggedText({...props, InnerTagUi: InteractiveCodeTag})
 }

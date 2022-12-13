@@ -1,5 +1,6 @@
 import { InteractiveHypothesisBundle, TaggedText } from './rpcApi'
 
+/** Reduce a `TaggedText` into its text contents without tags. */
 export function TaggedText_stripTags<T>(tt: TaggedText<T>): string {
     const go = (t: TaggedText<T>): string => {
         if ('append' in t)
@@ -13,7 +14,7 @@ export function TaggedText_stripTags<T>(tt: TaggedText<T>): string {
     return go(tt)
 }
 
-/** Filter out inaccessible / anonymous pretty names from the names list. */
-export function InteractiveHypothesisBundle_accessibleNames(ih : InteractiveHypothesisBundle) : string[] {
+/** Filter out anonymous pretty names from the names list. */
+export function InteractiveHypothesisBundle_nonAnonymousNames(ih : InteractiveHypothesisBundle) : string[] {
     return ih.names.filter(x => !x.includes('[anonymous]'))
 }

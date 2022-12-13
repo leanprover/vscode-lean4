@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { InteractiveCode } from './interactiveCode'
-import { InteractiveGoal, InteractiveGoals, InteractiveHypothesisBundle, InteractiveHypothesisBundle_accessibleNames, TaggedText_stripTags } from '@leanprover/infoview-api'
+import { InteractiveGoal, InteractiveGoals, InteractiveHypothesisBundle, InteractiveHypothesisBundle_nonAnonymousNames, TaggedText_stripTags } from '@leanprover/infoview-api'
 
 interface HypProps {
     hyp: InteractiveHypothesisBundle
@@ -18,7 +18,7 @@ export function Hyp({ hyp: h }: HypProps) {
     } else if (h.isRemoved) {
         namecls += 'removed-text '
     }
-    const names = InteractiveHypothesisBundle_accessibleNames(h).map((n, i) =>
+    const names = InteractiveHypothesisBundle_nonAnonymousNames(h).map((n, i) =>
         <span className={ 'mr1 ' + (isInaccessibleName(n) ? 'goal-inaccessible ' : '') + namecls} key={i}>{n}</span>
     )
     return <div>
@@ -37,7 +37,7 @@ function goalToString(g: InteractiveGoal): string {
     }
 
     for (const h of g.hyps) {
-        const names = InteractiveHypothesisBundle_accessibleNames(h).join(' ')
+        const names = InteractiveHypothesisBundle_nonAnonymousNames(h).join(' ')
         ret += `${names} : ${TaggedText_stripTags(h.type)}`
         if (h.val) {
             ret += ` := ${TaggedText_stripTags(h.val)}`

@@ -38,16 +38,18 @@ export interface InfoPopup {
     doc?: string
 }
 
+export type FVarId = string
+export type MVarId = string
+
 export interface InteractiveHypothesisBundle {
     isInstance?: boolean,
     isType?: boolean,
-    /** The pretty names of the variables in the bundle.
-     * If the name is inaccessible this will be `"[anonymous]"`.
-     * Use `InteractiveHypothesis_accessibleNames` to filter these out.
-     */
+    /** The pretty names of the variables in the bundle. Anonymous names are rendered
+     * as `"[anonymous]"` whereas inaccessible ones have a `✝` appended at the end.
+     * Use `InteractiveHypothesisBundle_nonAnonymousNames` to filter these out. */
     names: string[]
     /** The free variable id associated with each of the vars listed in `names`. */
-    fvarIds?: string[]
+    fvarIds?: FVarId[]
     type: CodeWithInfos
     val?: CodeWithInfos
     /** If true, the hypothesis was not present on the previous tactic state. */
@@ -64,7 +66,7 @@ export interface InteractiveGoal {
     /** metavariable id associated with the goal.
      * This is undefined when the goal is a term goal
      * or if we are using an older version of lean. */
-    mvarId?: string
+    mvarId?: MVarId
     /** If true, the goal was not present on the previous tactic state. */
     isInserted?: boolean;
     /** If true, the goal will be deleted on the next tactic state. */
