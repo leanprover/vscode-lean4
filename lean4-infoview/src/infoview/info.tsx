@@ -1,14 +1,15 @@
 import * as React from 'react';
 import type { Location, Diagnostic } from 'vscode-languageserver-protocol';
 
-import { Goals as GoalsUi, Goal as GoalUi, goalsToString, GoalFilterState } from './goals';
-import { basename, DocumentPosition, RangeHelpers, useEvent, usePausableState, discardMethodNotFound, mapRpcError, useAsyncWithTrigger, PausableProps } from './util';
-import { Details } from './collapsing';
+import { FilteredGoals, goalsToString } from './goals';
+import { basename, DocumentPosition, RangeHelpers, useEvent, usePausableState, discardMethodNotFound,
+    mapRpcError, useAsyncWithTrigger, PausableProps } from './util';
+import { Collapsible, Details } from './collapsing';
 import { ConfigContext, EditorContext, LspDiagnosticsContext, ProgressContext } from './contexts';
 import { lspDiagToInteractive, MessagesList } from './messages';
 import { getInteractiveGoals, getInteractiveTermGoal, InteractiveDiagnostic, InteractiveGoal,
-    InteractiveGoals, UserWidgets, Widget_getWidgets, RpcSessionAtPos, isRpcError, RpcErrorCode, getInteractiveDiagnostics } from '@leanprover/infoview-api';
-import { WithTooltipOnHover } from './tooltips'
+    InteractiveGoals, UserWidgetInstance, Widget_getWidgets, RpcSessionAtPos, isRpcError,
+    RpcErrorCode, getInteractiveDiagnostics } from '@leanprover/infoview-api';
 import { UserWidgetDisplay } from './userWidget'
 import { RpcContext, useRpcSessionAtPos } from './rpcSessions';
 
@@ -24,12 +25,11 @@ interface InfoPinnable {
 interface InfoStatusBarProps extends InfoPinnable, PausableProps {
     pos: DocumentPosition;
     status: InfoStatus;
-    copyGoalToComment?: () => void;
     triggerUpdate: () => Promise<void>;
 }
 
 const InfoStatusBar = React.memo((props: InfoStatusBarProps) => {
-    const { kind, onPin, status, pos, isPaused, copyGoalToComment, setPaused, triggerUpdate } = props;
+    const { kind, onPin, status, pos, isPaused, setPaused, triggerUpdate } = props;
 
     const ec = React.useContext(EditorContext);
 
@@ -49,11 +49,6 @@ const InfoStatusBar = React.memo((props: InfoStatusBarProps) => {
         {!isPinned && isPaused && ' (paused)'}
         {isPinned && isPaused && ' (pinned and paused)'}
         <span className="fr">
-            {copyGoalToComment &&
-                <a className="link pointer mh2 dim codicon codicon-quote"
-                   data-id="copy-goal-to-comment"
-                   onClick={e => { e.preventDefault(); copyGoalToComment(); }}
-                   title="copy state to comment" />}
             {isPinned &&
                 <a className="link pointer mh2 dim codicon codicon-go-to-file"
                    data-id="reveal-file-location"
@@ -82,51 +77,18 @@ interface InfoDisplayContentProps extends PausableProps {
     goals?: InteractiveGoals;
     termGoal?: InteractiveGoal;
     error?: string;
-    userWidgets?: UserWidgets;
+    userWidgets: UserWidgetInstance[];
     triggerUpdate: () => Promise<void>;
 }
 
 const InfoDisplayContent = React.memo((props: InfoDisplayContentProps) => {
     const {pos, messages, goals, termGoal, error, userWidgets, triggerUpdate, isPaused, setPaused} = props;
 
-    const widgets = userWidgets && userWidgets.widgets
-    const hasWidget = (widgets !== undefined) && (widgets.length > 0)
-
-    const nothingToShow = !error && !goals && !termGoal && messages.length === 0 && !hasWidget;
-
+    const hasWidget = userWidgets.length > 0;
     const hasError = !!error;
-    const hasGoals = !!goals;
-    const hasTermGoal = !!termGoal;
     const hasMessages = messages.length !== 0;
 
-    const [goalFilters, setGoalFilters] = React.useState<GoalFilterState>(
-        { reverse: false, showType: true, showInstance: true, showHiddenAssumption: true, showLetValue: true });
-    const sortClasses = 'link pointer mh2 dim codicon fr ' + (goalFilters.reverse ? 'codicon-arrow-up ' : 'codicon-arrow-down ');
-    const sortButton = <a className={sortClasses} title="reverse list" onClick={e => {
-        setGoalFilters(s => {
-            return { ...s, reverse: !s.reverse }
-        } ); }
-    } />
-
-    const mkFilterButton = (filterFn: React.SetStateAction<GoalFilterState>, filledFn: (_: GoalFilterState) => boolean, name: string) =>
-        <a className='link pointer tooltip-menu-content' onClick={_ => { setGoalFilters(filterFn) }}>
-            <span className={'tooltip-menu-icon codicon ' + (filledFn(goalFilters) ? 'codicon-check ' : 'codicon-blank ')}>&nbsp;</span>
-            <span className='tooltip-menu-text '>{name}</span>
-        </a>
-    const filterMenu = <span>
-        {mkFilterButton(s => ({ ...s, showType: !s.showType }), gf => gf.showType, 'types')}
-        <br/>
-        {mkFilterButton(s => ({ ...s, showInstance: !s.showInstance }), gf => gf.showInstance, 'instances')}
-        <br/>
-        {mkFilterButton(s => ({ ...s, showHiddenAssumption: !s.showHiddenAssumption }), gf => gf.showHiddenAssumption, 'hidden assumptions')}
-        <br/>
-        {mkFilterButton(s => ({ ...s, showLetValue: !s.showLetValue }), gf => gf.showLetValue, 'let-values')}
-    </span>
-    const isFiltered = !goalFilters.showInstance || !goalFilters.showType || !goalFilters.showHiddenAssumption || !goalFilters.showLetValue
-    const filterButton = <span className='fr'>
-        <WithTooltipOnHover mkTooltipContent={() => {return filterMenu}}>
-            <a className={'link pointer mh2 dim codicon ' + (isFiltered ? 'codicon-filter-filled ': 'codicon-filter ')}/>
-        </WithTooltipOnHover></span>
+    const nothingToShow = !hasError && !goals && !termGoal && !hasMessages && !hasWidget;
 
     /* Adding {' '} to manage string literals properly: https://reactjs.org/docs/jsx-in-depth.html#string-literals-1 */
     return <>
@@ -136,48 +98,20 @@ const InfoDisplayContent = React.memo((props: InfoDisplayContentProps) => {
                     Error updating:{' '}{error}.
                     <a className="link pointer dim" onClick={e => { e.preventDefault(); void triggerUpdate(); }}>{' '}Try again.</a>
                 </div>}
-            <div style={{display: hasGoals ? 'block' : 'none'}} key="goals">
-                <Details initiallyOpen>
-                    <summary className="mv2 pointer">
-                        Tactic state {sortButton} {filterButton}
-                    </summary>
-                    <div className='ml1'>
-                        {hasGoals && <GoalsUi goals={goals} filter={goalFilters} />}
-                    </div>
-                </Details>
-            </div>
-            <div style={{display: hasTermGoal ? 'block' : 'none'}} key="term-goal">
-                <Details initiallyOpen>
-                    <summary className="mv2 pointer">
-                        Expected type {sortButton} {filterButton}
-                    </summary>
-                    <div className='ml1'>
-                        {hasTermGoal && <GoalUi goal={termGoal} filter={goalFilters} />}
-                    </div>
-                </Details>
-            </div>
-            {widgets && widgets.map(widget =>
-                <div style={{display: hasWidget ? 'block' : 'none'}}
-                     key={`widget::${widget.id}::${widget.range?.toString()}`}>
-                    <Details initiallyOpen>
-                        <summary className="mv2 pointer">
-                            {widget.name}
-                        </summary>
-                        <div className="ml1">
-                             <UserWidgetDisplay pos={pos} widget={widget}/>
-                        </div>
-                    </Details>
-                </div>
+            <FilteredGoals header={"Tactic state"} key="goals" goals={goals} />
+            <FilteredGoals header={"Expected type"} key="term-goal"
+                goals={termGoal !== undefined ? {goals: [termGoal]} : undefined} />
+            {userWidgets.map(widget =>
+                <Collapsible key={`widget::${widget.id}::${widget.range?.toString()}`}>
+                    <>{widget.name}</>
+                    <UserWidgetDisplay pos={pos} widget={widget}/>
+                </Collapsible>
             )}
             <div style={{display: hasMessages ? 'block' : 'none'}} key="messages">
-                <Details initiallyOpen>
-                    <summary className="mv2 pointer">
-                        Messages ({messages.length})
-                    </summary>
-                    <div className="ml1">
-                        <MessagesList uri={pos.uri} messages={messages} />
-                    </div>
-                </Details>
+                <Collapsible key="messages">
+                    <>Messages ({messages.length})</>
+                    <MessagesList uri={pos.uri} messages={messages} />
+                </Collapsible>
             </div>
             {nothingToShow && (
                 isPaused ?
@@ -199,7 +133,7 @@ interface InfoDisplayProps {
     goals?: InteractiveGoals;
     termGoal?: InteractiveGoal;
     error?: string;
-    userWidgets?: UserWidgets;
+    userWidgets: UserWidgetInstance[];
     rpcSess: RpcSessionAtPos;
     triggerUpdate: () => Promise<void>;
 }
@@ -222,8 +156,6 @@ function InfoDisplay(props0: InfoDisplayProps & InfoPinnable) {
     const {kind, goals, rpcSess} = props;
 
     const ec = React.useContext(EditorContext);
-    let copyGoalToComment: (() => void) | undefined
-    if (goals) copyGoalToComment = () => void ec.copyToComment(goalsToString(goals));
 
     // If we are the cursor infoview, then we should subscribe to
     // some commands from the editor extension
@@ -231,7 +163,7 @@ function InfoDisplay(props0: InfoDisplayProps & InfoPinnable) {
     useEvent(ec.events.requestedAction, act => {
         if (!isCursor) return;
         if (act.kind !== 'copyToComment') return;
-        if (copyGoalToComment) copyGoalToComment();
+        if (goals) void ec.copyToComment(goalsToString(goals));
     }, [goals]);
     useEvent(ec.events.requestedAction, act => {
         if (!isCursor) return;
@@ -242,7 +174,7 @@ function InfoDisplay(props0: InfoDisplayProps & InfoPinnable) {
     return (
     <RpcContext.Provider value={rpcSess}>
     <Details initiallyOpen>
-        <InfoStatusBar {...props} triggerUpdate={triggerDisplayUpdate} isPaused={isPaused} setPaused={setPaused} copyGoalToComment={copyGoalToComment} />
+        <InfoStatusBar {...props} triggerUpdate={triggerDisplayUpdate} isPaused={isPaused} setPaused={setPaused} />
         <InfoDisplayContent {...props} triggerUpdate={triggerDisplayUpdate} isPaused={isPaused} setPaused={setPaused} />
     </Details>
     </RpcContext.Provider>
@@ -336,7 +268,7 @@ function InfoAux(props: InfoProps) {
                 goals: undefined,
                 termGoal: undefined,
                 error: undefined,
-                userWidgets: undefined,
+                userWidgets: [],
                 rpcSess
             }), 500)
         }
@@ -351,7 +283,7 @@ function InfoAux(props: InfoProps) {
                 goals,
                 termGoal,
                 error: undefined,
-                userWidgets,
+                userWidgets: userWidgets?.widgets ?? [],
                 rpcSess
             }),
             ex => {
@@ -381,7 +313,7 @@ function InfoAux(props: InfoProps) {
                     goals: undefined,
                     termGoal: undefined,
                     error: `Error fetching goals: ${errorString}`,
-                    userWidgets: undefined,
+                    userWidgets: [],
                     rpcSess
                 })
             }
@@ -417,7 +349,7 @@ function InfoAux(props: InfoProps) {
         goals: undefined,
         termGoal: undefined,
         error: undefined,
-        userWidgets: undefined,
+        userWidgets: [],
         rpcSess,
         triggerUpdate
     })
