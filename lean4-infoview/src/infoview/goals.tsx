@@ -2,7 +2,6 @@ import * as React from 'react'
 import { InteractiveCode } from './interactiveCode'
 import { InteractiveGoal, InteractiveGoals, InteractiveHypothesisBundle, InteractiveHypothesisBundle_nonAnonymousNames, TaggedText_stripTags } from '@leanprover/infoview-api'
 import { WithTooltipOnHover } from './tooltips';
-import { Collapsible } from './collapsing';
 import { EditorContext } from './contexts';
 
 /** Returns true if `h` is inaccessible according to Lean's default name rendering. */
@@ -98,15 +97,20 @@ export const Goal = React.memo((props: GoalProps) => {
         <strong className="goal-vdash">{prefix}</strong>
         <InteractiveCode fmt={goal.type} />
     </div>
-    let cn = 'font-code tl pre-wrap mv1 bl bw1 pl1 b--transparent '
-    if (props.goal.isInserted) {
-        cn += 'b--inserted '
-    }
-    if (props.goal.isRemoved) {
-        cn += 'b--removed '
-    }
-    return <div className={cn}>
-        {goal.userName && <div key={'case'}><strong className="goal-case">case </strong>{goal.userName}</div>}
+    let cn = 'font-code tl pre-wrap bl bw1 pl1 b--transparent '
+    if (props.goal.isInserted) cn += 'b--inserted '
+    if (props.goal.isRemoved) cn += 'b--removed '
+
+    if (goal.userName) {
+        return <details open className={cn}>
+            <summary className='mv1 pointer'>
+                <strong className="goal-case">case </strong>{goal.userName}
+            </summary>
+            {filter.reverse && goalLi}
+            {hyps.map((h, i) => <Hyp hyp={h} key={i} />)}
+            {!filter.reverse && goalLi}
+        </details>
+    } else return <div className={cn}>
         {filter.reverse && goalLi}
         {hyps.map((h, i) => <Hyp hyp={h} key={i} />)}
         {!filter.reverse && goalLi}
@@ -129,7 +133,7 @@ function Goals({ goals, filter }: GoalsProps) {
 }
 
 interface FilteredGoalsProps {
-    header: React.ReactNode
+    headerChildren: React.ReactNode
     /**
      * When this is `undefined`, the component will not appear at all but will remember its state
      * by virtue of still being mounted in the React tree. When it does appear again, the filter
@@ -138,10 +142,10 @@ interface FilteredGoalsProps {
 }
 
 /**
- * Display goals together with a header containing custom contents as well as buttons to control
- * how the goals are displayed.
+ * Display goals together with a header containing the provided children as well as buttons
+ * to control how the goals are displayed.
  */
-export function FilteredGoals({ header, goals }: FilteredGoalsProps) {
+export function FilteredGoals({ headerChildren, goals }: FilteredGoalsProps) {
     const ec = React.useContext(EditorContext)
 
     const copyToCommentButton =
@@ -183,9 +187,14 @@ export function FilteredGoals({ header, goals }: FilteredGoalsProps) {
         </WithTooltipOnHover>
 
     return <div style={{display: goals !== undefined ? 'block' : 'none'}}>
-        <Collapsible>
-            <>{header} <span className='fr'>{copyToCommentButton}{sortButton}{filterButton}</span></>
-            {goals && <Goals goals={goals} filter={goalFilters}></Goals>}
-        </Collapsible>
+        <details open>
+            <summary className='mv2 pointer'>
+                {headerChildren}
+                <span className='fr'>{copyToCommentButton}{sortButton}{filterButton}</span>
+            </summary>
+            <div className='ml1'>
+                {goals && <Goals goals={goals} filter={goalFilters}></Goals>}
+            </div>
+        </details>
     </div>
 }

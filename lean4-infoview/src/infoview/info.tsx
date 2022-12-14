@@ -4,7 +4,6 @@ import type { Location, Diagnostic } from 'vscode-languageserver-protocol';
 import { FilteredGoals, goalsToString } from './goals';
 import { basename, DocumentPosition, RangeHelpers, useEvent, usePausableState, discardMethodNotFound,
     mapRpcError, useAsyncWithTrigger, PausableProps } from './util';
-import { Collapsible, Details } from './collapsing';
 import { ConfigContext, EditorContext, LspDiagnosticsContext, ProgressContext } from './contexts';
 import { lspDiagToInteractive, MessagesList } from './messages';
 import { getInteractiveGoals, getInteractiveTermGoal, InteractiveDiagnostic, InteractiveGoal,
@@ -92,37 +91,37 @@ const InfoDisplayContent = React.memo((props: InfoDisplayContentProps) => {
 
     /* Adding {' '} to manage string literals properly: https://reactjs.org/docs/jsx-in-depth.html#string-literals-1 */
     return <>
-        <div className="ml1">
-            {hasError &&
-                <div className="error" key="errors">
-                    Error updating:{' '}{error}.
-                    <a className="link pointer dim" onClick={e => { e.preventDefault(); void triggerUpdate(); }}>{' '}Try again.</a>
-                </div>}
-            <FilteredGoals header={"Tactic state"} key="goals" goals={goals} />
-            <FilteredGoals header={"Expected type"} key="term-goal"
-                goals={termGoal !== undefined ? {goals: [termGoal]} : undefined} />
-            {userWidgets.map(widget =>
-                <Collapsible key={`widget::${widget.id}::${widget.range?.toString()}`}>
-                    <>{widget.name}</>
-                    <UserWidgetDisplay pos={pos} widget={widget}/>
-                </Collapsible>
-            )}
-            <div style={{display: hasMessages ? 'block' : 'none'}} key="messages">
-                <Collapsible key="messages">
-                    <>Messages ({messages.length})</>
+        {hasError &&
+            <div className="error" key="errors">
+                Error updating:{' '}{error}.
+                <a className="link pointer dim" onClick={e => { e.preventDefault(); void triggerUpdate(); }}>{' '}Try again.</a>
+            </div>}
+        <FilteredGoals headerChildren={"Tactic state"} key="goals" goals={goals} />
+        <FilteredGoals headerChildren={"Expected type"} key="term-goal"
+            goals={termGoal !== undefined ? {goals: [termGoal]} : undefined} />
+        {userWidgets.map(widget =>
+            <details key={`widget::${widget.id}::${widget.range?.toString()}`} open>
+                <summary className='mv2 pointer'>{widget.name}</summary>
+                <UserWidgetDisplay pos={pos} widget={widget}/>
+            </details>
+        )}
+        <div style={{display: hasMessages ? 'block' : 'none'}} key="messages">
+            <details key="messages" open>
+                <summary className='mv2 pointer'>Messages ({messages.length})</summary>
+                <div className='ml1'>
                     <MessagesList uri={pos.uri} messages={messages} />
-                </Collapsible>
-            </div>
-            {nothingToShow && (
-                isPaused ?
-                    /* Adding {' '} to manage string literals properly: https://reactjs.org/docs/jsx-in-depth.html#string-literals-1 */
-                    <span>Updating is paused.{' '}
-                        <a className="link pointer dim" onClick={e => { e.preventDefault(); void triggerUpdate(); }}>Refresh</a>
-                        {' '}or <a className="link pointer dim" onClick={e => { e.preventDefault(); setPaused(false); }}>resume updating</a>
-                        {' '}to see information.
-                    </span> :
-                    'No info found.')}
+                </div>
+            </details>
         </div>
+        {nothingToShow && (
+            isPaused ?
+                /* Adding {' '} to manage string literals properly: https://reactjs.org/docs/jsx-in-depth.html#string-literals-1 */
+                <span>Updating is paused.{' '}
+                    <a className="link pointer dim" onClick={e => { e.preventDefault(); void triggerUpdate(); }}>Refresh</a>
+                    {' '}or <a className="link pointer dim" onClick={e => { e.preventDefault(); setPaused(false); }}>resume updating</a>
+                    {' '}to see information.
+                </span> :
+                'No info found.')}
     </>
 })
 
@@ -173,10 +172,12 @@ function InfoDisplay(props0: InfoDisplayProps & InfoPinnable) {
 
     return (
     <RpcContext.Provider value={rpcSess}>
-    <Details initiallyOpen>
+    <details open>
         <InfoStatusBar {...props} triggerUpdate={triggerDisplayUpdate} isPaused={isPaused} setPaused={setPaused} />
-        <InfoDisplayContent {...props} triggerUpdate={triggerDisplayUpdate} isPaused={isPaused} setPaused={setPaused} />
-    </Details>
+        <div className='ml1'>
+            <InfoDisplayContent {...props} triggerUpdate={triggerDisplayUpdate} isPaused={isPaused} setPaused={setPaused} />
+        </div>
+    </details>
     </RpcContext.Provider>
     );
 }

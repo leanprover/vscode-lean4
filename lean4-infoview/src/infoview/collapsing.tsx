@@ -44,21 +44,3 @@ export function Details({initiallyOpen, children: [summary, ...children], setOpe
         { isOpen && children }
     </details>;
 }
-
-interface CollapsibleProps {
-    children: [React.ReactNode, ...React.ReactNode[]]
-}
-
-/**
- * A header with collapsible contents component that we use everywhere in the infoview.
- * The first child is the header. The other children are contents. */
-export function Collapsible({children: [header, ...children]}: CollapsibleProps): JSX.Element {
-    return <details open>
-        <summary className='mv2 pointer'>
-            {header}
-        </summary>
-        <div className='ml1'>
-            {children}
-        </div>
-    </details>
-}
