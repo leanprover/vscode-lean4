@@ -7,6 +7,7 @@ import { DetectHoverSpan, HoverState, WithTooltipOnHover } from './tooltips'
 import { Location } from 'vscode-languageserver-protocol'
 import { marked } from 'marked'
 import { RpcContext } from './rpcSessions'
+import { GoalsLocation, LocationsContext } from './exprContext'
 
 export interface InteractiveTextComponentProps<T> {
   fmt: TaggedText<T>
@@ -111,17 +112,21 @@ const DIFF_TAG_TO_EXPLANATION : {[K in DiffTag] : string} = {
   'willDelete': 'This subexpression will be deleted.',
 }
 
-/** Tagged spans can be hovered over to display extra info stored in the associated `SubexprInfo`. */
+/**
+ * Tagged spans can be hovered over to display extra info stored in the associated `SubexprInfo`.
+ * Moreover if this component is rendered in a context where locations can be selected, the span
+ * can be shift-clicked to select it.
+ */
 function InteractiveCodeTag({tag: ct, fmt}: InteractiveTagProps<SubexprInfo>) {
   const mkTooltip = React.useCallback((redrawTooltip: () => void) =>
     <TypePopupContents info={ct} redrawTooltip={redrawTooltip} />,
     [ct.info])
 
-  // We mimick the VSCode ctrl-hover and ctrl-click UI for go-to-definition
   const rs = React.useContext(RpcContext)
   const ec = React.useContext(EditorContext)
   const [hoverState, setHoverState] = React.useState<HoverState>('off')
 
+  // We mimick the VSCode ctrl-hover and ctrl-click UI for go-to-definition
   const [goToLoc, setGoToLoc] = React.useState<Location | undefined>(undefined)
   const fetchGoToLoc = React.useCallback(async () => {
     if (goToLoc !== undefined) return goToLoc
@@ -137,10 +142,20 @@ function InteractiveCodeTag({tag: ct, fmt}: InteractiveTagProps<SubexprInfo>) {
     }
     return undefined
   }, [rs, ct.info, goToLoc])
+  // Eagerly fetch the location as soon as the pointer enters this area so that we can show
+  // an underline if a jump target is available.
   React.useEffect(() => { if (hoverState === 'ctrlOver') void fetchGoToLoc() }, [hoverState])
 
-  let spanClassName : any = 'highlightable '
-    + (hoverState !== 'off' ? 'highlight ' : '')
+  const locs = React.useContext(LocationsContext)
+  const ourLoc = locs && locs.subexprTemplate && ct.subexprPos ?
+    GoalsLocation.withSubexprPos(locs.subexprTemplate, ct.subexprPos) :
+    undefined
+  const [isSelected, setSelected] = React.useState<boolean>(false)
+  const innerSpanClassName: string = 'highlightable ' +
+    (isSelected ? 'highlight-selected ' : '')
+
+  let spanClassName: string = 'highlightable '
+    + (hoverState != 'off' ? 'highlight ' : '')
     + (hoverState === 'ctrlOver' && goToLoc !== undefined ? 'underline ' : '')
   if (ct.diffStatus) {
     spanClassName += DIFF_TAG_TO_CLASS[ct.diffStatus] + ' '
@@ -150,22 +165,34 @@ function InteractiveCodeTag({tag: ct, fmt}: InteractiveTagProps<SubexprInfo>) {
     <WithTooltipOnHover
       mkTooltipContent={mkTooltip}
       onClick={(e, next) => {
-        // On ctrl-click, if location is known, go to it in the editor
+        // On ctrl-click or ⌘-click, if location is known, go to it in the editor
         if (e.ctrlKey || e.metaKey) {
           setHoverState(st => st === 'over' ? 'ctrlOver' : st)
           void fetchGoToLoc().then(loc => {
             if (loc === undefined) return
             void ec.revealPosition({ uri: loc.uri, ...loc.range.start })
           })
-        }
-        if (!e.ctrlKey) next(e)
+        // On shift-click, if we are in a context where selecting subexpressions makes sense,
+        // (un)select the current subexpression.
+        } else if (e.shiftKey) {
+          if (ourLoc) {
+            setSelected(on => {
+              locs!.setSelected(ourLoc, !on)
+              return !on
+            })
+          }
+        } else next(e)
       }}
     >
       <DetectHoverSpan
         setHoverState={setHoverState}
         className={spanClassName}
       >
-        <InteractiveCode fmt={fmt} />
+        {/* Note: we use two spans so that if the outer one already has a background-color,
+        the inner color still shows (with transparency). */}
+        <span className={innerSpanClassName}>
+          <InteractiveCode fmt={fmt} />
+        </span>
       </DetectHoverSpan>
     </WithTooltipOnHover>
   )

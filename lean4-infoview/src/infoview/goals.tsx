@@ -1,8 +1,9 @@
 import * as React from 'react'
 import { InteractiveCode } from './interactiveCode'
-import { InteractiveGoal, InteractiveGoals, InteractiveHypothesisBundle, InteractiveHypothesisBundle_nonAnonymousNames, TaggedText_stripTags } from '@leanprover/infoview-api'
+import { InteractiveGoal, InteractiveGoals, InteractiveHypothesisBundle, InteractiveHypothesisBundle_nonAnonymousNames, MVarId, TaggedText_stripTags } from '@leanprover/infoview-api'
 import { WithTooltipOnHover } from './tooltips';
 import { EditorContext } from './contexts';
+import { LocationsContext, SelectableLocation } from './exprContext';
 
 /** Returns true if `h` is inaccessible according to Lean's default name rendering. */
 function isInaccessibleName(h: string): boolean {
@@ -60,23 +61,45 @@ function getFilteredHypotheses(hyps: InteractiveHypothesisBundle[], filter: Goal
 
 interface HypProps {
     hyp: InteractiveHypothesisBundle
+    mvarId?: MVarId
 }
 
-function Hyp({ hyp: h }: HypProps) {
-    let namecls : string = ''
-    if (h.isInserted) {
-        namecls += 'inserted-text '
-    } else if (h.isRemoved) {
-        namecls += 'removed-text '
-    }
+function Hyp({ hyp: h, mvarId }: HypProps) {
+    const locs = React.useContext(LocationsContext)
+    const hasLoc = locs && mvarId && h.fvarIds && h.fvarIds.length > 0
+
+    const namecls: string = 'mr1 ' +
+        (h.isInserted ? 'inserted-text ' : '') +
+        (h.isRemoved ? 'removed-text ' : '')
+
     const names = InteractiveHypothesisBundle_nonAnonymousNames(h).map((n, i) =>
-        <span className={ 'mr1 ' + (isInaccessibleName(n) ? 'goal-inaccessible ' : '') + namecls} key={i}>{n}</span>
-    )
+        <span className={namecls + (isInaccessibleName(n) ? 'goal-inaccessible ' : '')} key={i}>
+            {hasLoc ?
+                <SelectableLocation
+                    locs={locs}
+                    loc={{ mvarId, loc: { hyp: h.fvarIds![i] }}}
+                >
+                    {n}
+                </SelectableLocation> :
+                n}
+        </span>)
+
     return <div>
         <strong className="goal-hyp">{names}</strong>
         :&nbsp;
-        <InteractiveCode fmt={h.type} />
-        {h.val && <>&nbsp;:=&nbsp;<InteractiveCode fmt={h.val} /></>}
+        <LocationsContext.Provider value={hasLoc ?
+            { ...locs, subexprTemplate: { mvarId, loc: { hypType: [h.fvarIds![0], ''] }}} :
+            undefined
+        }>
+            <InteractiveCode fmt={h.type} />
+        </LocationsContext.Provider>
+        {h.val &&
+            <LocationsContext.Provider value={hasLoc ?
+                { ...locs, subexprTemplate: { mvarId, loc: { hypValue: [h.fvarIds![0], ''] }}} :
+                undefined
+            }>
+                &nbsp;:=&nbsp;<InteractiveCode fmt={h.val} />
+            </LocationsContext.Provider>}
     </div>
 }
 
@@ -93,9 +116,16 @@ export const Goal = React.memo((props: GoalProps) => {
     const prefix = goal.goalPrefix ?? '⊢ '
     const filteredList = getFilteredHypotheses(goal.hyps, filter);
     const hyps = filter.reverse ? filteredList.slice().reverse() : filteredList;
+    const locs = React.useContext(LocationsContext)
     const goalLi = <div key={'goal'}>
         <strong className="goal-vdash">{prefix}</strong>
-        <InteractiveCode fmt={goal.type} />
+        <LocationsContext.Provider value={
+            locs && goal.mvarId ?
+                { ...locs, subexprTemplate: { mvarId: goal.mvarId, loc: { target: '' }}} :
+                undefined
+        }>
+            <InteractiveCode fmt={goal.type} />
+        </LocationsContext.Provider>
     </div>
     let cn = 'font-code tl pre-wrap bl bw1 pl1 b--transparent '
     if (props.goal.isInserted) cn += 'b--inserted '
@@ -107,12 +137,12 @@ export const Goal = React.memo((props: GoalProps) => {
                 <strong className="goal-case">case </strong>{goal.userName}
             </summary>
             {filter.reverse && goalLi}
-            {hyps.map((h, i) => <Hyp hyp={h} key={i} />)}
+            {hyps.map((h, i) => <Hyp hyp={h} mvarId={goal.mvarId} key={i} />)}
             {!filter.reverse && goalLi}
         </details>
     } else return <div className={cn}>
         {filter.reverse && goalLi}
-        {hyps.map((h, i) => <Hyp hyp={h} key={i} />)}
+        {hyps.map((h, i) => <Hyp hyp={h} mvarId={goal.mvarId} key={i} />)}
         {!filter.reverse && goalLi}
     </div>
 })
@@ -133,6 +163,7 @@ function Goals({ goals, filter }: GoalsProps) {
 }
 
 interface FilteredGoalsProps {
+    /** Components to render in the header. */
     headerChildren: React.ReactNode
     /**
      * When this is `undefined`, the component will not appear at all but will remember its state
@@ -145,7 +176,7 @@ interface FilteredGoalsProps {
  * Display goals together with a header containing the provided children as well as buttons
  * to control how the goals are displayed.
  */
-export function FilteredGoals({ headerChildren, goals }: FilteredGoalsProps) {
+export const FilteredGoals = React.memo(({ headerChildren, goals }: FilteredGoalsProps) => {
     const ec = React.useContext(EditorContext)
 
     const copyToCommentButton =
@@ -197,4 +228,4 @@ export function FilteredGoals({ headerChildren, goals }: FilteredGoalsProps) {
             </div>
         </details>
     </div>
-}
+})

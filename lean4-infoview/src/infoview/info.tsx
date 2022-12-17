@@ -11,6 +11,7 @@ import { getInteractiveGoals, getInteractiveTermGoal, InteractiveDiagnostic, Int
     RpcErrorCode, getInteractiveDiagnostics } from '@leanprover/infoview-api';
 import { UserWidgetDisplay } from './userWidget'
 import { RpcContext, useRpcSessionAtPos } from './rpcSessions';
+import { GoalsLocation, LocationsContext } from './exprContext';
 
 type InfoStatus = 'updating' | 'error' | 'ready';
 type InfoKind = 'cursor' | 'pin';
@@ -89,6 +90,8 @@ const InfoDisplayContent = React.memo((props: InfoDisplayContentProps) => {
 
     const nothingToShow = !hasError && !goals && !termGoal && !hasMessages && !hasWidget;
 
+    const [selectedLocs, setSelectedLocs] = React.useState<GoalsLocation[]>([])
+
     /* Adding {' '} to manage string literals properly: https://reactjs.org/docs/jsx-in-depth.html#string-literals-1 */
     return <>
         {hasError &&
@@ -96,13 +99,23 @@ const InfoDisplayContent = React.memo((props: InfoDisplayContentProps) => {
                 Error updating:{' '}{error}.
                 <a className="link pointer dim" onClick={e => { e.preventDefault(); void triggerUpdate(); }}>{' '}Try again.</a>
             </div>}
-        <FilteredGoals headerChildren={"Tactic state"} key="goals" goals={goals} />
+
+        <LocationsContext.Provider value ={{
+            isSelected: l => selectedLocs.some(v => GoalsLocation.isEqual(v, l)),
+            setSelected: (l, on) => {
+                if (on) setSelectedLocs(ls => ls.filter(v => !GoalsLocation.isEqual(v, l)).concat([l]))
+                else setSelectedLocs(ls => ls.filter(v => !GoalsLocation.isEqual(v, l)))
+            },
+            subexprTemplate: undefined
+        }}>
+            <FilteredGoals headerChildren={"Tactic state"} key="goals" goals={goals} />
+        </LocationsContext.Provider>
         <FilteredGoals headerChildren={"Expected type"} key="term-goal"
             goals={termGoal !== undefined ? {goals: [termGoal]} : undefined} />
         {userWidgets.map(widget =>
             <details key={`widget::${widget.id}::${widget.range?.toString()}`} open>
                 <summary className='mv2 pointer'>{widget.name}</summary>
-                <UserWidgetDisplay pos={pos} widget={widget}/>
+                <UserWidgetDisplay pos={pos} selectedLocations={selectedLocs} widget={widget}/>
             </details>
         )}
         <div style={{display: hasMessages ? 'block' : 'none'}} key="messages">

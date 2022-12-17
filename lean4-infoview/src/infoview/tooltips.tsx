@@ -4,7 +4,7 @@ import * as ReactDOM from 'react-dom'
 import * as Popper from '@popperjs/core'
 import { usePopper } from 'react-popper'
 
-import { forwardAndUseRef, LogicalDomContext, useLogicalDom } from './util'
+import { forwardAndUseRef, LogicalDomContext, useLogicalDom, useOnClickOutside } from './util'
 
 /** Tooltip contents should call `redrawTooltip` whenever their layout changes. */
 export type MkTooltipContentFn = (redrawTooltip: () => void) => React.ReactNode
@@ -83,11 +83,12 @@ export type HoverState = 'off' | 'over' | 'ctrlOver'
  * only the smallest (deepest in the DOM tree) {@link DetectHoverSpan} has an enabled hover state. */
 export const DetectHoverSpan =
   forwardAndUseRef<HTMLSpanElement,
-    React.HTMLProps<HTMLSpanElement> & {setHoverState: React.Dispatch<React.SetStateAction<HoverState>>}>((props_, ref, setRef) => {
+    React.DetailedHTMLProps<React.HTMLAttributes<HTMLSpanElement>, HTMLSpanElement> &
+    {setHoverState: React.Dispatch<React.SetStateAction<HoverState>>}>((props_, ref, setRef) => {
   const {setHoverState, ...props} = props_;
 
   const onPointerEvent = (b: boolean) => (e: React.PointerEvent<HTMLSpanElement>) => {
-    // It's more composable to let pointer events bubble up rather than to `stopPropagating`,
+    // It's more composable to let pointer events bubble up rather than to call `stopPropagation`,
     // but we only want to handle hovers in the innermost component. So we record that the
     // event was handled with a property.
     // The `contains` check ensures that the node hovered over is a child in the DOM
@@ -147,7 +148,7 @@ const TipChainContext = React.createContext<TipChainContext>({pinParent: () => {
  *
  * An `onClick` middleware can optionally be given in order to control what happens when the
  * hoverable area is clicked. The middleware can invoke `next` to execute the default action
- * (show the tooltip). */
+ * which is to pin the tooltip open. */
 export const WithTooltipOnHover =
   forwardAndUseRef<HTMLSpanElement,
     Omit<React.HTMLProps<HTMLSpanElement>, 'onClick'> & {
@@ -176,7 +177,7 @@ export const WithTooltipOnHover =
   // hoverable area in the DOM tree, and the `contains` check fails for elements within tooltip
   // contents. We can use this to distinguish these elements.
   const isWithinHoverable = (el: EventTarget) => ref.current && el instanceof Node && ref.current.contains(el)
-  const [logicalDom, logicalDomStorage] = useLogicalDom(ref)
+  const [logicalElt, logicalDomStorage] = useLogicalDom(ref)
 
   // We use timeouts for debouncing hover events.
   const timeout = React.useRef<number>()
@@ -189,29 +190,18 @@ export const WithTooltipOnHover =
   const showDelay = 500
   const hideDelay = 300
 
+  const isModifierHeld = (e: React.MouseEvent) => (e.altKey || e.ctrlKey || e.shiftKey || e.metaKey)
+
   const onClick = (e: React.MouseEvent<HTMLSpanElement>) => {
     clearTimeout()
     setState(state => state === 'pin' ? 'hide' : 'pin')
   }
 
-  React.useEffect(() => {
-    const onClickAnywhere = (e: Event) => {
-      if (e.target instanceof Node && !logicalDom.contains(e.target)) {
-        if (e.target instanceof Element && e.target.tagName === 'HTML'){
-          // then user might be clicking in a scrollbar, otherwise
-          // e.target would be a tag other than 'HTML' so we do not want to hide the popup
-          // so user can scroll and read it all otherwise popup disappears
-          // when you click on the scrollbar!
-        } else {
-          clearTimeout()
-          setState('hide')
-        }
-      }
-    }
-
-    document.addEventListener('pointerdown', onClickAnywhere)
-    return () => document.removeEventListener('pointerdown', onClickAnywhere)
-  }, [ref, logicalDom])
+  const onClickOutside = React.useCallback(() => {
+    clearTimeout()
+    setState('hide')
+  }, [])
+  useOnClickOutside(logicalElt, onClickOutside)
 
   const isPointerOverTooltip = React.useRef<boolean>(false)
   const startShowTimeout = () => {
@@ -257,8 +247,13 @@ export const WithTooltipOnHover =
         if (props.onClick !== undefined) props.onClick(e, onClick)
         else onClick(e)
       }}
+      onPointerDown={e => {
+        // We have special handling for some modifier+click events, so prevent default browser
+        // events from interfering when a modifier is held.
+        if (isModifierHeld(e)) e.preventDefault()
+      }}
       onPointerOver={e => {
-        onPointerEvent(startShowTimeout, e)
+        if (!isModifierHeld(e)) onPointerEvent(startShowTimeout, e)
         if (props.onPointerOver !== undefined) props.onPointerOver(e)
       }}
       onPointerOut={e => {

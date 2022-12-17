@@ -22,9 +22,12 @@ export type DiffTag =
   | 'wasDeleted'  | 'willDelete'
   | 'wasInserted' | 'willInsert'
 
+// This is an arbitrary-size `Nat` in Lean which in JS we represent as `string`
+export type SubexprPos = string
+
 export interface SubexprInfo {
     info: InfoWithCtx
-    subexprPos?: number
+    subexprPos?: SubexprPos
     diffStatus?: DiffTag
 }
 

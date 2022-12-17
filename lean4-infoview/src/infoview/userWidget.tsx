@@ -4,6 +4,7 @@ import { Widget_getWidgetSource, UserWidgetInstance } from '@leanprover/infoview
 import { RpcContext } from './rpcSessions';
 import { DocumentPosition, mapRpcError, useAsync } from './util';
 import { ErrorBoundary } from './errors';
+import { GoalsLocation } from './exprContext';
 
 function dynamicallyLoadComponent(hash: string, code: string) {
     return React.lazy(async () => {
@@ -17,6 +18,7 @@ const componentCache = new Map<string, React.LazyExoticComponent<React.Component
 
 interface UserWidgetDisplayProps {
     pos: DocumentPosition
+    selectedLocations: GoalsLocation[]
     widget: UserWidgetInstance
 }
 
@@ -24,9 +26,11 @@ interface UserWidgetDisplayProps {
 export interface UserWidgetProps {
     /** Cursor position in the file at which the widget is being displayed. */
     pos: DocumentPosition
+    /** Locations currently selected in the goal state. */
+    selectedLocations: GoalsLocation[]
 }
 
-export function UserWidgetDisplay({ pos, widget }: UserWidgetDisplayProps) {
+export function UserWidgetDisplay({ pos, selectedLocations, widget }: UserWidgetDisplayProps) {
     const rs = React.useContext(RpcContext);
     const hash = widget.javascriptHash
     const component = useAsync(
@@ -42,7 +46,7 @@ export function UserWidgetDisplay({ pos, widget }: UserWidgetDisplayProps) {
         },
         [hash])
 
-    const componentProps: UserWidgetProps = { pos, ...widget.props }
+    const componentProps: UserWidgetProps = { pos, selectedLocations, ...widget.props }
 
     return (
         <React.Suspense fallback={`Loading widget: ${widget.id} ${component.state}.`}>
