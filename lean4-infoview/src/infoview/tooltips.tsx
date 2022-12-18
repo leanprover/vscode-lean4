@@ -87,7 +87,7 @@ export const DetectHoverSpan =
     {setHoverState: React.Dispatch<React.SetStateAction<HoverState>>}>((props_, ref, setRef) => {
   const {setHoverState, ...props} = props_;
 
-  const onPointerEvent = (b: boolean) => (e: React.PointerEvent<HTMLSpanElement>) => {
+  const onPointerEvent = (b: boolean, e: React.PointerEvent<HTMLSpanElement>) => {
     // It's more composable to let pointer events bubble up rather than to call `stopPropagation`,
     // but we only want to handle hovers in the innermost component. So we record that the
     // event was handled with a property.
@@ -125,13 +125,20 @@ export const DetectHoverSpan =
   return <span
       {...props}
       ref={setRef}
-      onPointerOver={onPointerEvent(true)}
-      onPointerOut={onPointerEvent(false)}
+      onPointerOver={e => {
+        onPointerEvent(true, e)
+        if (props.onPointerOver) props.onPointerOver(e)
+      }}
+      onPointerOut={e => {
+        onPointerEvent(false, e)
+        if (props.onPointerOut) props.onPointerOut(e)
+      }}
       onPointerMove={e => {
         if (e.ctrlKey || e.metaKey)
           setHoverState(st => st === 'over' ? 'ctrlOver' : st)
         else
           setHoverState(st => st === 'ctrlOver' ? 'over' : st)
+        if (props.onPointerMove) props.onPointerMove(e)
       }}
     >
       {props.children}

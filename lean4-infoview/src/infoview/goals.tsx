@@ -78,6 +78,7 @@ function Hyp({ hyp: h, mvarId }: HypProps) {
                 <SelectableLocation
                     locs={locs}
                     loc={{ mvarId, loc: { hyp: h.fvarIds![i] }}}
+                    alwaysHighlight={false}
                 >
                     {n}
                 </SelectableLocation> :

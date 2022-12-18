@@ -3,11 +3,11 @@ import * as React from 'react'
 import { EditorContext } from './contexts'
 import { useAsync, mapRpcError } from './util'
 import { SubexprInfo, CodeWithInfos, InteractiveDiagnostics_infoToInteractive, getGoToLocation, TaggedText, DiffTag } from '@leanprover/infoview-api'
-import { DetectHoverSpan, HoverState, WithTooltipOnHover } from './tooltips'
+import { HoverState, WithTooltipOnHover } from './tooltips'
 import { Location } from 'vscode-languageserver-protocol'
 import { marked } from 'marked'
 import { RpcContext } from './rpcSessions'
-import { GoalsLocation, LocationsContext } from './exprContext'
+import { GoalsLocation, LocationsContext, SelectableLocation } from './exprContext'
 
 export interface InteractiveTextComponentProps<T> {
   fmt: TaggedText<T>
@@ -156,13 +156,8 @@ function InteractiveCodeTag({tag: ct, fmt}: InteractiveTagProps<SubexprInfo>) {
   const ourLoc = locs && locs.subexprTemplate && ct.subexprPos ?
     GoalsLocation.withSubexprPos(locs.subexprTemplate, ct.subexprPos) :
     undefined
-  const [isSelected, setSelected] = React.useState<boolean>(false)
-  const innerSpanClassName: string = 'highlightable ' +
-    (isSelected ? 'highlight-selected ' : '')
 
-  let spanClassName: string = 'highlightable '
-    + (hoverState != 'off' ? 'highlight ' : '')
-    + (hoverState === 'ctrlOver' && goToLoc !== undefined ? 'underline ' : '')
+  let spanClassName: string = hoverState === 'ctrlOver' && goToLoc !== undefined ? 'underline ' : ''
   if (ct.diffStatus) {
     spanClassName += DIFF_TAG_TO_CLASS[ct.diffStatus] + ' '
   }
@@ -178,28 +173,18 @@ function InteractiveCodeTag({tag: ct, fmt}: InteractiveTagProps<SubexprInfo>) {
             if (loc === undefined) return
             void ec.revealPosition({ uri: loc.uri, ...loc.range.start })
           })
-        // On shift-click, if we are in a context where selecting subexpressions makes sense,
-        // (un)select the current subexpression.
-        } else if (e.shiftKey) {
-          if (ourLoc) {
-            setSelected(on => {
-              locs!.setSelected(ourLoc, !on)
-              return !on
-            })
-          }
-        } else next(e)
+        } else if (!e.shiftKey) next(e)
       }}
     >
-      <DetectHoverSpan
+      <SelectableLocation
         setHoverState={setHoverState}
         className={spanClassName}
+        locs={locs}
+        loc={ourLoc}
+        alwaysHighlight={true}
       >
-        {/* Note: we use two spans so that if the outer one already has a background-color,
-        the inner color still shows (with transparency). */}
-        <span className={innerSpanClassName}>
-          <InteractiveCode fmt={fmt} />
-        </span>
-      </DetectHoverSpan>
+        <InteractiveCode fmt={fmt} />
+      </SelectableLocation>
     </WithTooltipOnHover>
   )
 }
