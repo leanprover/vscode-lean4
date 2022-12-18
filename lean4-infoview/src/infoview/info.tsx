@@ -48,24 +48,24 @@ const InfoStatusBar = React.memo((props: InfoStatusBarProps) => {
         {isPinned && !isPaused && ' (pinned)'}
         {!isPinned && isPaused && ' (paused)'}
         {isPinned && isPaused && ' (pinned and paused)'}
-        <span className="fr">
+        <span className='fr'>
             {isPinned &&
-                <a className="link pointer mh2 dim codicon codicon-go-to-file"
-                   data-id="reveal-file-location"
+                <a className='link pointer mh2 dim codicon codicon-go-to-file'
+                   data-id='reveal-file-location'
                    onClick={e => { e.preventDefault(); void ec.revealPosition(pos); }}
-                   title="reveal file location" />}
+                   title='reveal file location' />}
             <a className={'link pointer mh2 dim codicon ' + (isPinned ? 'codicon-pinned ' : 'codicon-pin ')}
-                data-id="toggle-pinned"
+                data-id='toggle-pinned'
                 onClick={e => { e.preventDefault(); onPin(pos); }}
                 title={isPinned ? 'unpin' : 'pin'} />
             <a className={'link pointer mh2 dim codicon ' + (isPaused ? 'codicon-debug-continue ' : 'codicon-debug-pause ')}
-               data-id="toggle-paused"
+               data-id='toggle-paused'
                onClick={e => { e.preventDefault(); setPaused(!isPaused); }}
                title={isPaused ? 'continue updating' : 'pause updating'} />
-            <a className="link pointer mh2 dim codicon codicon-refresh"
-               data-id="update"
+            <a className='link pointer mh2 dim codicon codicon-refresh'
+               data-id='update'
                onClick={e => { e.preventDefault(); void triggerUpdate(); }}
-               title="update"/>
+               title='update'/>
         </span>
     </summary>
     );
@@ -96,9 +96,9 @@ const InfoDisplayContent = React.memo((props: InfoDisplayContentProps) => {
     /* Adding {' '} to manage string literals properly: https://reactjs.org/docs/jsx-in-depth.html#string-literals-1 */
     return <>
         {hasError &&
-            <div className="error" key="errors">
+            <div className='error' key='errors'>
                 Error updating:{' '}{error}.
-                <a className="link pointer dim" onClick={e => { e.preventDefault(); void triggerUpdate(); }}>{' '}Try again.</a>
+                <a className='link pointer dim' onClick={e => { e.preventDefault(); void triggerUpdate(); }}>{' '}Try again.</a>
             </div>}
 
         <LocationsContext.Provider value ={{
@@ -109,9 +109,9 @@ const InfoDisplayContent = React.memo((props: InfoDisplayContentProps) => {
             },
             subexprTemplate: undefined
         }}>
-            <FilteredGoals headerChildren={"Tactic state"} key="goals" goals={goals} />
+            <FilteredGoals headerChildren='Tactic state' key='goals' goals={goals} />
         </LocationsContext.Provider>
-        <FilteredGoals headerChildren={"Expected type"} key="term-goal"
+        <FilteredGoals headerChildren='Expected type' key='term-goal'
             goals={termGoal !== undefined ? {goals: [termGoal]} : undefined} />
         {userWidgets.map(widget =>
             <details key={`widget::${widget.id}::${widget.range?.toString()}`} open>
@@ -120,8 +120,8 @@ const InfoDisplayContent = React.memo((props: InfoDisplayContentProps) => {
                     selectedLocations={selectedLocs} widget={widget}/>
             </details>
         )}
-        <div style={{display: hasMessages ? 'block' : 'none'}} key="messages">
-            <details key="messages" open>
+        <div style={{display: hasMessages ? 'block' : 'none'}} key='messages'>
+            <details key='messages' open>
                 <summary className='mv2 pointer'>Messages ({messages.length})</summary>
                 <div className='ml1'>
                     <MessagesList uri={pos.uri} messages={messages} />
@@ -132,8 +132,8 @@ const InfoDisplayContent = React.memo((props: InfoDisplayContentProps) => {
             isPaused ?
                 /* Adding {' '} to manage string literals properly: https://reactjs.org/docs/jsx-in-depth.html#string-literals-1 */
                 <span>Updating is paused.{' '}
-                    <a className="link pointer dim" onClick={e => { e.preventDefault(); void triggerUpdate(); }}>Refresh</a>
-                    {' '}or <a className="link pointer dim" onClick={e => { e.preventDefault(); setPaused(false); }}>resume updating</a>
+                    <a className='link pointer dim' onClick={e => { e.preventDefault(); void triggerUpdate(); }}>Refresh</a>
+                    {' '}or <a className='link pointer dim' onClick={e => { e.preventDefault(); setPaused(false); }}>resume updating</a>
                     {' '}to see information.
                 </span> :
                 'No info found.')}

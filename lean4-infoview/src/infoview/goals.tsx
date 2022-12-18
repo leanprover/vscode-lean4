@@ -66,7 +66,6 @@ interface HypProps {
 
 function Hyp({ hyp: h, mvarId }: HypProps) {
     const locs = React.useContext(LocationsContext)
-    const hasLoc = locs && mvarId && h.fvarIds && h.fvarIds.length > 0
 
     const namecls: string = 'mr1 ' +
         (h.isInserted ? 'inserted-text ' : '') +
@@ -74,29 +73,28 @@ function Hyp({ hyp: h, mvarId }: HypProps) {
 
     const names = InteractiveHypothesisBundle_nonAnonymousNames(h).map((n, i) =>
         <span className={namecls + (isInaccessibleName(n) ? 'goal-inaccessible ' : '')} key={i}>
-            {hasLoc ?
-                <SelectableLocation
-                    locs={locs}
-                    loc={{ mvarId, loc: { hyp: h.fvarIds![i] }}}
-                    alwaysHighlight={false}
-                >
-                    {n}
-                </SelectableLocation> :
-                n}
+            <SelectableLocation
+                locs={locs}
+                loc={mvarId && h.fvarIds && h.fvarIds.length > i ?
+                    { mvarId, loc: { hyp: h.fvarIds[i] }} :
+                    undefined
+                }
+                alwaysHighlight={false}
+            >{n}</SelectableLocation>
         </span>)
 
     return <div>
         <strong className="goal-hyp">{names}</strong>
         :&nbsp;
-        <LocationsContext.Provider value={hasLoc ?
-            { ...locs, subexprTemplate: { mvarId, loc: { hypType: [h.fvarIds![0], ''] }}} :
+        <LocationsContext.Provider value={locs && mvarId && h.fvarIds && h.fvarIds.length > 0 ?
+            { ...locs, subexprTemplate: { mvarId, loc: { hypType: [h.fvarIds[0], ''] }}} :
             undefined
         }>
             <InteractiveCode fmt={h.type} />
         </LocationsContext.Provider>
         {h.val &&
-            <LocationsContext.Provider value={hasLoc ?
-                { ...locs, subexprTemplate: { mvarId, loc: { hypValue: [h.fvarIds![0], ''] }}} :
+            <LocationsContext.Provider value={locs && mvarId && h.fvarIds && h.fvarIds.length > 0 ?
+                { ...locs, subexprTemplate: { mvarId, loc: { hypValue: [h.fvarIds[0], ''] }}} :
                 undefined
             }>
                 &nbsp;:=&nbsp;<InteractiveCode fmt={h.val} />
@@ -185,7 +183,7 @@ export const FilteredGoals = React.memo(({ headerChildren, goals }: FilteredGoal
             data-id="copy-goal-to-comment"
             onClick={e => {
                 e.preventDefault();
-                if (goals) ec.copyToComment(goalsToString(goals))
+                if (goals) void ec.copyToComment(goalsToString(goals))
             }}
             title="copy state to comment" />
 

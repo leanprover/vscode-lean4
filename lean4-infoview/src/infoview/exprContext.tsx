@@ -3,9 +3,9 @@ Copyright (c) 2022 E.W.Ayers. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: E.W.Ayers, Wojciech Nawrocki
 */
-import { FVarId, MVarId, SubexprPos } from "@leanprover/infoview-api";
+import { FVarId, MVarId, SubexprPos } from '@leanprover/infoview-api';
 import * as React from 'react';
-import { DetectHoverSpan, HoverState } from "./tooltips";
+import { DetectHoverSpan, HoverState } from './tooltips';
 
 /**
  * A location within a goal. It is either:
@@ -19,6 +19,7 @@ export type GoalLocation =
   | { hypValue: [FVarId, SubexprPos] }
   | { target: SubexprPos }
 
+// eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace GoalLocation {
   export function isEqual(l1: GoalLocation, l2: GoalLocation): boolean {
     if ('hyp' in l1) return 'hyp' in l2 ? l1.hyp === l2.hyp : false
@@ -46,6 +47,7 @@ export interface GoalsLocation {
     loc: GoalLocation;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace GoalsLocation {
   export function isEqual(l1: GoalsLocation, l2: GoalsLocation): boolean {
     return l1.mvarId === l2.mvarId && GoalLocation.isEqual(l1.loc, l2.loc)
@@ -90,7 +92,7 @@ export function SelectableLocation(props: SelectableLocationProps): JSX.Element 
   let spanClassName: string = ''
   if (shouldHighlight) {
     spanClassName += 'highlightable '
-    if (hoverState != 'off') spanClassName += 'highlight '
+    if (hoverState !== 'off') spanClassName += 'highlight '
     if (props.className) spanClassName += props.className
   }
 
