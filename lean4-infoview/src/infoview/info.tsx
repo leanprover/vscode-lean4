@@ -8,7 +8,7 @@ import { ConfigContext, EditorContext, LspDiagnosticsContext, ProgressContext } 
 import { lspDiagToInteractive, MessagesList } from './messages';
 import { getInteractiveGoals, getInteractiveTermGoal, InteractiveDiagnostic, InteractiveGoal,
     InteractiveGoals, UserWidgetInstance, Widget_getWidgets, RpcSessionAtPos, isRpcError,
-    RpcErrorCode, getInteractiveDiagnostics } from '@leanprover/infoview-api';
+    RpcErrorCode, getInteractiveDiagnostics, InteractiveTermGoal } from '@leanprover/infoview-api';
 import { UserWidgetDisplay } from './userWidget'
 import { RpcContext, useRpcSessionAtPos } from './rpcSessions';
 import { GoalsLocation, LocationsContext } from './exprContext';
@@ -75,7 +75,7 @@ interface InfoDisplayContentProps extends PausableProps {
     pos: DocumentPosition;
     messages: InteractiveDiagnostic[];
     goals?: InteractiveGoals;
-    termGoal?: InteractiveGoal;
+    termGoal?: InteractiveTermGoal;
     error?: string;
     userWidgets: UserWidgetInstance[];
     triggerUpdate: () => Promise<void>;
@@ -116,7 +116,8 @@ const InfoDisplayContent = React.memo((props: InfoDisplayContentProps) => {
         {userWidgets.map(widget =>
             <details key={`widget::${widget.id}::${widget.range?.toString()}`} open>
                 <summary className='mv2 pointer'>{widget.name}</summary>
-                <UserWidgetDisplay pos={pos} selectedLocations={selectedLocs} widget={widget}/>
+                <UserWidgetDisplay pos={pos} goals={goals ? goals.goals : []} termGoal={termGoal}
+                    selectedLocations={selectedLocs} widget={widget}/>
             </details>
         )}
         <div style={{display: hasMessages ? 'block' : 'none'}} key="messages">
@@ -144,7 +145,7 @@ interface InfoDisplayProps {
     status: InfoStatus;
     messages: InteractiveDiagnostic[];
     goals?: InteractiveGoals;
-    termGoal?: InteractiveGoal;
+    termGoal?: InteractiveTermGoal;
     error?: string;
     userWidgets: UserWidgetInstance[];
     rpcSess: RpcSessionAtPos;

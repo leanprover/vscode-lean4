@@ -1,6 +1,6 @@
 import * as React from 'react';
 
-import { Widget_getWidgetSource, UserWidgetInstance } from '@leanprover/infoview-api';
+import { Widget_getWidgetSource, UserWidgetInstance, InteractiveGoal, InteractiveTermGoal } from '@leanprover/infoview-api';
 import { RpcContext } from './rpcSessions';
 import { DocumentPosition, mapRpcError, useAsync } from './util';
 import { ErrorBoundary } from './errors';
@@ -18,6 +18,8 @@ const componentCache = new Map<string, React.LazyExoticComponent<React.Component
 
 interface UserWidgetDisplayProps {
     pos: DocumentPosition
+    goals: InteractiveGoal[]
+    termGoal?: InteractiveTermGoal
     selectedLocations: GoalsLocation[]
     widget: UserWidgetInstance
 }
@@ -26,11 +28,15 @@ interface UserWidgetDisplayProps {
 export interface UserWidgetProps {
     /** Cursor position in the file at which the widget is being displayed. */
     pos: DocumentPosition
+    /** The current tactic-mode goals. */
+    goals: InteractiveGoal[]
+    /** The current term-mode goal, if any. */
+    termGoal?: InteractiveTermGoal
     /** Locations currently selected in the goal state. */
     selectedLocations: GoalsLocation[]
 }
 
-export function UserWidgetDisplay({ pos, selectedLocations, widget }: UserWidgetDisplayProps) {
+export function UserWidgetDisplay({ pos, goals, termGoal, selectedLocations, widget }: UserWidgetDisplayProps) {
     const rs = React.useContext(RpcContext);
     const hash = widget.javascriptHash
     const component = useAsync(
@@ -46,7 +52,7 @@ export function UserWidgetDisplay({ pos, selectedLocations, widget }: UserWidget
         },
         [hash])
 
-    const componentProps: UserWidgetProps = { pos, selectedLocations, ...widget.props }
+    const componentProps: UserWidgetProps = { pos, goals, termGoal, selectedLocations, ...widget.props }
 
     return (
         <React.Suspense fallback={`Loading widget: ${widget.id} ${component.state}.`}>
