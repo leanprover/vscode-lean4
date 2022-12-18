@@ -57,8 +57,8 @@ export namespace GoalsLocation {
 
 /**
  * An interface available through a React context in components where selecting subexpressions
- * makes sense. Currently this is only the goal state display in which {@link GoalLocation}s
- * can be selected. */
+ * makes sense. Currently this is only the goal state display. There, {@link GoalLocation}s can be
+ * selected. */
 export interface Locations {
   isSelected: (l: GoalsLocation) => void
   setSelected: (l: GoalsLocation, on: boolean) => void

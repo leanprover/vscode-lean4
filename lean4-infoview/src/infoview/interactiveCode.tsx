@@ -80,18 +80,24 @@ function TypePopupContents({ info, redrawTooltip }: TypePopupContentsProps) {
   React.useEffect(() => { void redrawTooltip() },
     [interactive.state, (interactive as any)?.value, (interactive as any)?.error, redrawTooltip])
 
-  return <div className="tooltip-code-content">
-    {interactive.state === 'resolved' ? <>
-      <div className="font-code tl pre-wrap">
-      {interactive.value.exprExplicit && <InteractiveCode fmt={interactive.value.exprExplicit} />} : {
-        interactive.value.type && <InteractiveCode fmt={interactive.value.type} />}
-      </div>
-      {interactive.value.doc && <><hr /><Markdown contents={interactive.value.doc}/></>}
-      {info.diffStatus && <><hr/><div>{DIFF_TAG_TO_EXPLANATION[info.diffStatus]}</div></>}
-    </> :
-    interactive.state === 'rejected' ? <>Error: {mapRpcError(interactive.error).message}</> :
-    <>Loading..</>}
-  </div>
+  // Even when subexpressions are selectable in our parent component, it doesn't make sense
+  // to select things inside the *type* of the parent, so we clear the context.
+  // NOTE: selecting in the explicit term does make sense but it complicates the implementation
+  // so let's not add it until someone really wants it.
+  return <LocationsContext.Provider value={undefined}>
+    <div className="tooltip-code-content">
+      {interactive.state === 'resolved' ? <>
+        <div className="font-code tl pre-wrap">
+        {interactive.value.exprExplicit && <InteractiveCode fmt={interactive.value.exprExplicit} />} : {
+          interactive.value.type && <InteractiveCode fmt={interactive.value.type} />}
+        </div>
+        {interactive.value.doc && <><hr /><Markdown contents={interactive.value.doc}/></>}
+        {info.diffStatus && <><hr/><div>{DIFF_TAG_TO_EXPLANATION[info.diffStatus]}</div></>}
+      </> :
+      interactive.state === 'rejected' ? <>Error: {mapRpcError(interactive.error).message}</> :
+      <>Loading..</>}
+    </div>
+  </LocationsContext.Provider>
 }
 
 const DIFF_TAG_TO_CLASS : {[K in DiffTag] : string} = {

@@ -91,6 +91,7 @@ const InfoDisplayContent = React.memo((props: InfoDisplayContentProps) => {
     const nothingToShow = !hasError && !goals && !termGoal && !hasMessages && !hasWidget;
 
     const [selectedLocs, setSelectedLocs] = React.useState<GoalsLocation[]>([])
+    React.useEffect(() => setSelectedLocs([]), [pos.uri, pos.line, pos.character])
 
     /* Adding {' '} to manage string literals properly: https://reactjs.org/docs/jsx-in-depth.html#string-literals-1 */
     return <>
