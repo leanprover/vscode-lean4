@@ -84,8 +84,8 @@ type SelectableLocationProps =
  * If `locs` or `loc` is `undefined`, selection functionality is turned off. The element is also
  * highlighted when hovered over if `alwaysHighlight` is `true` or `locs` and `loc` are both defined.
  * `setHoverState` is passed through to {@link DetectHoverSpan}. */
-export function SelectableLocation(props: SelectableLocationProps): JSX.Element {
-  const {locs, loc, alwaysHighlight, setHoverState: setParentHoverState} = props
+export function SelectableLocation(props_: SelectableLocationProps): JSX.Element {
+  const {locs, loc, alwaysHighlight, setHoverState: setParentHoverState, ...props} = props_
 
   const shouldHighlight: boolean = alwaysHighlight || (!!locs && !!loc)
   const [hoverState, setHoverState] = React.useState<HoverState>('off')
