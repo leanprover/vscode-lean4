@@ -3,7 +3,7 @@ import { InteractiveCode } from './interactiveCode'
 import { InteractiveGoal, InteractiveGoals, InteractiveHypothesisBundle, InteractiveHypothesisBundle_nonAnonymousNames, MVarId, TaggedText_stripTags } from '@leanprover/infoview-api'
 import { WithTooltipOnHover } from './tooltips';
 import { EditorContext } from './contexts';
-import { LocationsContext, SelectableLocation } from './exprContext';
+import { Locations, LocationsContext, SelectableLocation } from './goalLocation';
 
 /** Returns true if `h` is inaccessible according to Lean's default name rendering. */
 function isInaccessibleName(h: string): boolean {
@@ -83,20 +83,26 @@ function Hyp({ hyp: h, mvarId }: HypProps) {
             >{n}</SelectableLocation>
         </span>)
 
+    const typeLocs: Locations | undefined = React.useMemo(() =>
+        locs && mvarId && h.fvarIds && h.fvarIds.length > 0 ?
+            { ...locs, subexprTemplate: { mvarId, loc: { hypType: [h.fvarIds[0], ''] }}} :
+            undefined,
+        [locs, mvarId, h.fvarIds])
+
+    const valLocs: Locations | undefined = React.useMemo(() =>
+        h.val && locs && mvarId && h.fvarIds && h.fvarIds.length > 0 ?
+            { ...locs, subexprTemplate: { mvarId, loc: { hypValue: [h.fvarIds[0], ''] }}} :
+            undefined,
+        [h.val, locs, mvarId, h.fvarIds])
+
     return <div>
         <strong className="goal-hyp">{names}</strong>
         :&nbsp;
-        <LocationsContext.Provider value={locs && mvarId && h.fvarIds && h.fvarIds.length > 0 ?
-            { ...locs, subexprTemplate: { mvarId, loc: { hypType: [h.fvarIds[0], ''] }}} :
-            undefined
-        }>
+        <LocationsContext.Provider value={typeLocs}>
             <InteractiveCode fmt={h.type} />
         </LocationsContext.Provider>
         {h.val &&
-            <LocationsContext.Provider value={locs && mvarId && h.fvarIds && h.fvarIds.length > 0 ?
-                { ...locs, subexprTemplate: { mvarId, loc: { hypValue: [h.fvarIds[0], ''] }}} :
-                undefined
-            }>
+            <LocationsContext.Provider value={valLocs}>
                 &nbsp;:=&nbsp;<InteractiveCode fmt={h.val} />
             </LocationsContext.Provider>}
     </div>
@@ -112,20 +118,23 @@ interface GoalProps {
  * provided `filter`. */
 export const Goal = React.memo((props: GoalProps) => {
     const { goal, filter } = props
+
     const prefix = goal.goalPrefix ?? '⊢ '
     const filteredList = getFilteredHypotheses(goal.hyps, filter);
     const hyps = filter.reverse ? filteredList.slice().reverse() : filteredList;
     const locs = React.useContext(LocationsContext)
+    const goalLocs = React.useMemo(() =>
+        locs && goal.mvarId ?
+            { ...locs, subexprTemplate: { mvarId: goal.mvarId, loc: { target: '' }}} :
+            undefined,
+        [locs, goal.mvarId])
     const goalLi = <div key={'goal'}>
         <strong className="goal-vdash">{prefix}</strong>
-        <LocationsContext.Provider value={
-            locs && goal.mvarId ?
-                { ...locs, subexprTemplate: { mvarId: goal.mvarId, loc: { target: '' }}} :
-                undefined
-        }>
+        <LocationsContext.Provider value={goalLocs}>
             <InteractiveCode fmt={goal.type} />
         </LocationsContext.Provider>
     </div>
+
     let cn = 'font-code tl pre-wrap bl bw1 pl1 b--transparent '
     if (props.goal.isInserted) cn += 'b--inserted '
     if (props.goal.isRemoved) cn += 'b--removed '

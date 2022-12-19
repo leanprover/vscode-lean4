@@ -63,8 +63,8 @@ export namespace GoalsLocation {
  * makes sense. Currently this is only the goal state display. There, {@link GoalLocation}s can be
  * selected. */
 export interface Locations {
-  isSelected: (l: GoalsLocation) => void
-  setSelected: (l: GoalsLocation, on: boolean) => void
+  isSelected: (l: GoalsLocation) => boolean
+  setSelected: (l: GoalsLocation, fn: React.SetStateAction<boolean>) => void
   /**
    * A template for the location of the current component. It is defined if and only if the current
    * component is a subexpression of a selectable expression. We use
@@ -96,9 +96,8 @@ export function SelectableLocation(props: SelectableLocationProps): JSX.Element 
     if (props.className) spanClassName += props.className
   }
 
-  const [isSelected, setSelected] = React.useState<boolean>(false)
   const innerSpanClassName: string = 'highlightable '
-    + (isSelected ? 'highlight-selected ' : '')
+    + (locs && loc && locs.isSelected(loc) ? 'highlight-selected ' : '')
 
   return <DetectHoverSpan {...props}
       setHoverState={st => {
@@ -110,10 +109,7 @@ export function SelectableLocation(props: SelectableLocationProps): JSX.Element 
           // On shift-click, if we are in a context where selecting subexpressions makes sense,
           // (un)select the current subexpression.
           if (e.shiftKey && locs && loc) {
-            setSelected(on => {
-              locs.setSelected(loc, !on)
-              return !on
-            })
+            locs.setSelected(loc, on => !on)
             e.stopPropagation()
           }
           if (props.onClick) props.onClick(e)

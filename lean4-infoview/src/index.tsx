@@ -11,6 +11,7 @@ export { EditorContext, VersionContext } from './infoview/contexts';
 export { EditorConnection } from './infoview/editorConnection';
 export { RpcContext } from './infoview/rpcSessions';
 export { ServerVersion } from './infoview/serverVersion';
+export { GoalLocation, GoalsLocation } from './infoview/goalLocation';
 export { UserWidgetProps } from './infoview/userWidget';
 
 export { InteractiveCode, InteractiveCodeProps } from './infoview/interactiveCode';

@@ -23,7 +23,7 @@ export class ErrorBoundary extends React.Component<{children?: React.ReactNode},
       // You can render any custom fallback UI
       return <div>
           <h1>Error:</h1>{this.state.error}<br/><br/>
-          <a className='pointer dim '
+          <a className='link pointer dim '
             onClick={() => this.setState({ error: undefined })}>Click to reload.</a>
         </div>;
     }

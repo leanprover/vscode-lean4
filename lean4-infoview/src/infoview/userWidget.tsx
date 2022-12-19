@@ -4,7 +4,7 @@ import { Widget_getWidgetSource, UserWidgetInstance, InteractiveGoal, Interactiv
 import { RpcContext } from './rpcSessions';
 import { DocumentPosition, mapRpcError, useAsync } from './util';
 import { ErrorBoundary } from './errors';
-import { GoalsLocation } from './exprContext';
+import { GoalsLocation } from './goalLocation';
 
 function dynamicallyLoadComponent(hash: string, code: string) {
     return React.lazy(async () => {

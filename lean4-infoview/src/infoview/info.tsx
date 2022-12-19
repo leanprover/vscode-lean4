@@ -11,7 +11,7 @@ import { getInteractiveGoals, getInteractiveTermGoal, InteractiveDiagnostic, Int
     RpcErrorCode, getInteractiveDiagnostics, InteractiveTermGoal } from '@leanprover/infoview-api';
 import { UserWidgetDisplay } from './userWidget'
 import { RpcContext, useRpcSessionAtPos } from './rpcSessions';
-import { GoalsLocation, LocationsContext } from './exprContext';
+import { GoalsLocation, Locations, LocationsContext } from './goalLocation';
 
 type InfoStatus = 'updating' | 'error' | 'ready';
 type InfoKind = 'cursor' | 'pin';
@@ -93,6 +93,20 @@ const InfoDisplayContent = React.memo((props: InfoDisplayContentProps) => {
     const [selectedLocs, setSelectedLocs] = React.useState<GoalsLocation[]>([])
     React.useEffect(() => setSelectedLocs([]), [pos.uri, pos.line, pos.character])
 
+    const locs: Locations = React.useMemo(() => ({
+        isSelected: (l: GoalsLocation) => selectedLocs.some(v => GoalsLocation.isEqual(v, l)),
+        setSelected: (l, act) => setSelectedLocs(ls => {
+            // We ensure that `selectedLocs` maintains its reference identity if the selection
+            // status of `l` didn't change.
+            const newLocs = ls.filter(v => !GoalsLocation.isEqual(v, l))
+            const wasSelected = newLocs.length !== ls.length
+            const isSelected = typeof act === 'function' ? act(wasSelected) : act
+            if (isSelected) newLocs.push(l)
+            return wasSelected === isSelected ? ls : newLocs
+        }),
+        subexprTemplate: undefined
+    }), [selectedLocs])
+
     /* Adding {' '} to manage string literals properly: https://reactjs.org/docs/jsx-in-depth.html#string-literals-1 */
     return <>
         {hasError &&
@@ -100,15 +114,7 @@ const InfoDisplayContent = React.memo((props: InfoDisplayContentProps) => {
                 Error updating:{' '}{error}.
                 <a className='link pointer dim' onClick={e => { e.preventDefault(); void triggerUpdate(); }}>{' '}Try again.</a>
             </div>}
-
-        <LocationsContext.Provider value ={{
-            isSelected: l => selectedLocs.some(v => GoalsLocation.isEqual(v, l)),
-            setSelected: (l, on) => {
-                if (on) setSelectedLocs(ls => ls.filter(v => !GoalsLocation.isEqual(v, l)).concat([l]))
-                else setSelectedLocs(ls => ls.filter(v => !GoalsLocation.isEqual(v, l)))
-            },
-            subexprTemplate: undefined
-        }}>
+        <LocationsContext.Provider value={locs}>
             <FilteredGoals headerChildren='Tactic state' key='goals' goals={goals} />
         </LocationsContext.Provider>
         <FilteredGoals headerChildren='Expected type' key='term-goal'

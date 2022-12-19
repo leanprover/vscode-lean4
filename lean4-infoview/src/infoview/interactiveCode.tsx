@@ -7,7 +7,7 @@ import { HoverState, WithTooltipOnHover } from './tooltips'
 import { Location } from 'vscode-languageserver-protocol'
 import { marked } from 'marked'
 import { RpcContext } from './rpcSessions'
-import { GoalsLocation, LocationsContext, SelectableLocation } from './exprContext'
+import { GoalsLocation, LocationsContext, SelectableLocation } from './goalLocation'
 
 export interface InteractiveTextComponentProps<T> {
   fmt: TaggedText<T>
