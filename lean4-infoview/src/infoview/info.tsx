@@ -6,10 +6,10 @@ import { basename, DocumentPosition, RangeHelpers, useEvent, usePausableState, d
     mapRpcError, useAsyncWithTrigger, PausableProps } from './util';
 import { ConfigContext, EditorContext, LspDiagnosticsContext, ProgressContext } from './contexts';
 import { lspDiagToInteractive, MessagesList } from './messages';
-import { getInteractiveGoals, getInteractiveTermGoal, InteractiveDiagnostic, InteractiveGoal,
+import { getInteractiveGoals, getInteractiveTermGoal, InteractiveDiagnostic,
     InteractiveGoals, UserWidgetInstance, Widget_getWidgets, RpcSessionAtPos, isRpcError,
     RpcErrorCode, getInteractiveDiagnostics, InteractiveTermGoal } from '@leanprover/infoview-api';
-import { UserWidgetDisplay } from './userWidget'
+import { PanelWidgetDisplay } from './userWidget'
 import { RpcContext, useRpcSessionAtPos } from './rpcSessions';
 import { GoalsLocation, Locations, LocationsContext } from './goalLocation';
 
@@ -122,7 +122,7 @@ const InfoDisplayContent = React.memo((props: InfoDisplayContentProps) => {
         {userWidgets.map(widget =>
             <details key={`widget::${widget.id}::${widget.range?.toString()}`} open>
                 <summary className='mv2 pointer'>{widget.name}</summary>
-                <UserWidgetDisplay pos={pos} goals={goals ? goals.goals : []} termGoal={termGoal}
+                <PanelWidgetDisplay pos={pos} goals={goals ? goals.goals : []} termGoal={termGoal}
                     selectedLocations={selectedLocs} widget={widget}/>
             </details>
         )}
