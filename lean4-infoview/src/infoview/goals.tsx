@@ -116,7 +116,7 @@ interface GoalsProps {
 
 export function Goals({ goals, filter }: GoalsProps) {
     if (goals.goals.length === 0) {
-        return <>Goals accomplished 🎉</>
+        return <>No goals</>
     } else {
         return <>
             {goals.goals.map((g, i) => <Goal key={i} goal={g} filter={filter} index={i} />)}
