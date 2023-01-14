@@ -193,5 +193,7 @@ export type InteractiveCodeProps = InteractiveTextComponentProps<SubexprInfo>
 
 /** Displays a {@link CodeWithInfos} obtained via RPC from the Lean server. */
 export function InteractiveCode(props: InteractiveCodeProps) {
-  return InteractiveTaggedText({...props, InnerTagUi: InteractiveCodeTag})
+  return <span className='font-code'>
+    <InteractiveTaggedText {...props} InnerTagUi={InteractiveCodeTag} />
+  </span>
 }
