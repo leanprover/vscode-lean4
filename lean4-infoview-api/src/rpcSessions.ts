@@ -148,6 +148,8 @@ class RpcSessionForFile {
         try {
             const result = await this.sessions.iface.call({ method, params, sessionId, ... pos });
             this.registerRefs(result);
+            // HACK: most of our types are `T | undefined` so try to return something matching that interface
+            if (result === null) return undefined;
             return result;
         } catch (ex: any) {
             if (ex?.code === RpcErrorCode.WorkerCrashed || ex?.code === RpcErrorCode.WorkerExited ||

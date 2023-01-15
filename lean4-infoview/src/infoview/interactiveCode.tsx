@@ -1,12 +1,13 @@
 import * as React from 'react'
 
 import { EditorContext } from './contexts'
-import { DocumentPosition, useAsync, mapRpcError } from './util'
+import { useAsync, mapRpcError } from './util'
 import { SubexprInfo, CodeWithInfos, InteractiveDiagnostics_infoToInteractive, getGoToLocation, TaggedText, DiffTag } from '@leanprover/infoview-api'
-import { DetectHoverSpan, HoverState, WithTooltipOnHover } from './tooltips'
+import { HoverState, WithTooltipOnHover } from './tooltips'
 import { Location } from 'vscode-languageserver-protocol'
 import { marked } from 'marked'
 import { RpcContext } from './rpcSessions'
+import { GoalsLocation, LocationsContext, SelectableLocation } from './goalLocation'
 
 export interface InteractiveTextComponentProps<T> {
   fmt: TaggedText<T>
@@ -21,8 +22,8 @@ export interface InteractiveTaggedTextProps<T> extends InteractiveTextComponentP
 }
 
 /**
- * Core loop to display `TaggedText` objects. Invokes `InnerTagUi` on `tag` nodes in order to support
- * various embedded information such as `InfoTree`s and `Expr`s.
+ * Core loop to display {@link TaggedText} objects. Invokes `InnerTagUi` on `tag` nodes in order to support
+ * various embedded information, for example subexpression information stored in {@link CodeWithInfos}.
  * */
 export function InteractiveTaggedText<T>({fmt, InnerTagUi}: InteractiveTaggedTextProps<T>) {
   if ('text' in fmt) return <>{fmt.text}</>
@@ -73,23 +74,30 @@ function TypePopupContents({ info, redrawTooltip }: TypePopupContentsProps) {
   // otherwise a 'loading' message.
   const interactive = useAsync(
     () => InteractiveDiagnostics_infoToInteractive(rs, info.info),
-    [rs, info.info, info.subexprPos])
+    [rs, info.info])
 
-  // We let the tooltip know to redo its layout whenever our contents change.
-  React.useEffect(() => { void redrawTooltip() }, [interactive.state, (interactive as any)?.value, (interactive as any)?.error, redrawTooltip])
+  // We ask the tooltip parent component to relayout whenever our contents change.
+  React.useEffect(() => { void redrawTooltip() },
+    [interactive.state, (interactive as any)?.value, (interactive as any)?.error, redrawTooltip])
 
-  return <div className="tooltip-code-content">
-    {interactive.state === 'resolved' ? <>
-      <div className="font-code tl pre-wrap">
-      {interactive.value.exprExplicit && <InteractiveCode fmt={interactive.value.exprExplicit} />} : {
-        interactive.value.type && <InteractiveCode fmt={interactive.value.type} />}
-      </div>
-      {interactive.value.doc && <><hr /><Markdown contents={interactive.value.doc}/></>}
-      {info.diffStatus && <><hr/><div>{DIFF_TAG_TO_EXPLANATION[info.diffStatus]}</div></>}
-    </> :
-    interactive.state === 'rejected' ? <>Error: {mapRpcError(interactive.error).message}</> :
-    <>Loading..</>}
-  </div>
+  // Even when subexpressions are selectable in our parent component, it doesn't make sense
+  // to select things inside the *type* of the parent, so we clear the context.
+  // NOTE: selecting in the explicit term does make sense but it complicates the implementation
+  // so let's not add it until someone really wants it.
+  return <LocationsContext.Provider value={undefined}>
+    <div className="tooltip-code-content">
+      {interactive.state === 'resolved' ? <>
+        <div className="font-code tl pre-wrap">
+        {interactive.value.exprExplicit && <InteractiveCode fmt={interactive.value.exprExplicit} />} : {
+          interactive.value.type && <InteractiveCode fmt={interactive.value.type} />}
+        </div>
+        {interactive.value.doc && <><hr /><Markdown contents={interactive.value.doc}/></>}
+        {info.diffStatus && <><hr/><div>{DIFF_TAG_TO_EXPLANATION[info.diffStatus]}</div></>}
+      </> :
+      interactive.state === 'rejected' ? <>Error: {mapRpcError(interactive.error).message}</> :
+      <>Loading..</>}
+    </div>
+  </LocationsContext.Provider>
 }
 
 const DIFF_TAG_TO_CLASS : {[K in DiffTag] : string} = {
@@ -110,17 +118,21 @@ const DIFF_TAG_TO_EXPLANATION : {[K in DiffTag] : string} = {
   'willDelete': 'This subexpression will be deleted.',
 }
 
-/** Tagged spans can be hovered over to display extra info stored in the associated `SubexprInfo`. */
+/**
+ * Tagged spans can be hovered over to display extra info stored in the associated `SubexprInfo`.
+ * Moreover if this component is rendered in a context where locations can be selected, the span
+ * can be shift-clicked to select it.
+ */
 function InteractiveCodeTag({tag: ct, fmt}: InteractiveTagProps<SubexprInfo>) {
   const mkTooltip = React.useCallback((redrawTooltip: () => void) =>
     <TypePopupContents info={ct} redrawTooltip={redrawTooltip} />,
     [ct.info])
 
-  // We mimick the VSCode ctrl-hover and ctrl-click UI for go-to-definition
   const rs = React.useContext(RpcContext)
   const ec = React.useContext(EditorContext)
   const [hoverState, setHoverState] = React.useState<HoverState>('off')
 
+  // We mimick the VSCode ctrl-hover and ctrl-click UI for go-to-definition
   const [goToLoc, setGoToLoc] = React.useState<Location | undefined>(undefined)
   const fetchGoToLoc = React.useCallback(async () => {
     if (goToLoc !== undefined) return goToLoc
@@ -136,11 +148,16 @@ function InteractiveCodeTag({tag: ct, fmt}: InteractiveTagProps<SubexprInfo>) {
     }
     return undefined
   }, [rs, ct.info, goToLoc])
+  // Eagerly fetch the location as soon as the pointer enters this area so that we can show
+  // an underline if a jump target is available.
   React.useEffect(() => { if (hoverState === 'ctrlOver') void fetchGoToLoc() }, [hoverState])
 
-  let spanClassName : any = 'highlightable '
-    + (hoverState !== 'off' ? 'highlight ' : '')
-    + (hoverState === 'ctrlOver' && goToLoc !== undefined ? 'underline ' : '')
+  const locs = React.useContext(LocationsContext)
+  const ourLoc = locs && locs.subexprTemplate && ct.subexprPos ?
+    GoalsLocation.withSubexprPos(locs.subexprTemplate, ct.subexprPos) :
+    undefined
+
+  let spanClassName: string = hoverState === 'ctrlOver' && goToLoc !== undefined ? 'underline ' : ''
   if (ct.diffStatus) {
     spanClassName += DIFF_TAG_TO_CLASS[ct.diffStatus] + ' '
   }
@@ -149,32 +166,34 @@ function InteractiveCodeTag({tag: ct, fmt}: InteractiveTagProps<SubexprInfo>) {
     <WithTooltipOnHover
       mkTooltipContent={mkTooltip}
       onClick={(e, next) => {
-        // On ctrl-click, if location is known, go to it in the editor
+        // On ctrl-click or ⌘-click, if location is known, go to it in the editor
         if (e.ctrlKey || e.metaKey) {
           setHoverState(st => st === 'over' ? 'ctrlOver' : st)
           void fetchGoToLoc().then(loc => {
             if (loc === undefined) return
             void ec.revealPosition({ uri: loc.uri, ...loc.range.start })
           })
-        }
-        if (!e.ctrlKey) next(e)
+        } else if (!e.shiftKey) next(e)
       }}
     >
-      <DetectHoverSpan
+      <SelectableLocation
         setHoverState={setHoverState}
         className={spanClassName}
+        locs={locs}
+        loc={ourLoc}
+        alwaysHighlight={true}
       >
         <InteractiveCode fmt={fmt} />
-      </DetectHoverSpan>
+      </SelectableLocation>
     </WithTooltipOnHover>
   )
 }
 
-export interface InteractiveCodeProps {
-  fmt: CodeWithInfos
-}
+export type InteractiveCodeProps = InteractiveTextComponentProps<SubexprInfo>
 
 /** Displays a {@link CodeWithInfos} obtained via RPC from the Lean server. */
-export function InteractiveCode({fmt}: InteractiveCodeProps) {
-  return <InteractiveTaggedText InnerTagUi={InteractiveCodeTag} fmt={fmt} />
+export function InteractiveCode(props: InteractiveCodeProps) {
+  return <span className='font-code'>
+    <InteractiveTaggedText {...props} InnerTagUi={InteractiveCodeTag} />
+  </span>
 }

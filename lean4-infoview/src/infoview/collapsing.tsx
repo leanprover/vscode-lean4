@@ -25,10 +25,11 @@ export function useIsVisible(): [(element: HTMLElement) => void, boolean] {
 
 interface DetailsProps {
     initiallyOpen?: boolean;
-    children: [JSX.Element, ...JSX.Element[]];
+    children: [React.ReactNode, ...React.ReactNode[]];
     setOpenRef?: React.MutableRefObject<React.Dispatch<React.SetStateAction<boolean>>>;
 }
 
+/** Like `<details>` but can be programatically revealed using `setOpenRef`. */
 export function Details({initiallyOpen, children: [summary, ...children], setOpenRef}: DetailsProps): JSX.Element {
     const [isOpen, setOpen] = React.useState<boolean>(initiallyOpen === undefined ? false : initiallyOpen);
     const setupEventListener = React.useCallback((node: HTMLDetailsElement | null) => {

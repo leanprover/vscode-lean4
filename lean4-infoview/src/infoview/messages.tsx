@@ -68,7 +68,7 @@ function mkMessageViewProps(uri: DocumentUri, messages: InteractiveDiagnostic[])
 }
 
 /** Shows the given messages assuming they are for the given file. */
-export function MessagesList({uri, messages}: {uri: DocumentUri, messages: InteractiveDiagnostic[]}) {
+export const MessagesList = React.memo(({uri, messages}: {uri: DocumentUri, messages: InteractiveDiagnostic[]}) => {
     const should_hide = messages.length === 0;
     if (should_hide) { return <>No messages.</> }
 
@@ -77,7 +77,7 @@ export function MessagesList({uri, messages}: {uri: DocumentUri, messages: Inter
         {mkMessageViewProps(uri, messages).map(m => <MessageView {...m} />)}
     </div>
     );
-}
+})
 
 function lazy<T>(f: () => T): () => T {
     let state: {t: T} | undefined

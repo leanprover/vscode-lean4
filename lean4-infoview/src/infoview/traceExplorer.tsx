@@ -10,7 +10,7 @@
 import * as React from 'react'
 import { Goal } from './goals'
 import { InteractiveCode, InteractiveTaggedText, InteractiveTagProps, InteractiveTextComponentProps } from './interactiveCode'
-import { InteractiveDiagnostics_msgToInteractive, lazyTraceChildrenToInteractive, MessageData, MsgEmbed, TaggedText, TraceEmbed } from '@leanprover/infoview-api'
+import { InteractiveDiagnostics_msgToInteractive, lazyTraceChildrenToInteractive, MessageData, MsgEmbed, TraceEmbed } from '@leanprover/infoview-api'
 import { mapRpcError, useAsyncWithTrigger } from './util'
 import { RpcContext } from './rpcSessions'
 

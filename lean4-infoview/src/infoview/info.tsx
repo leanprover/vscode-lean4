@@ -1,16 +1,17 @@
 import * as React from 'react';
 import type { Location, Diagnostic } from 'vscode-languageserver-protocol';
 
-import { Goals as GoalsUi, Goal as GoalUi, goalsToString, GoalFilterState } from './goals';
-import { basename, DocumentPosition, RangeHelpers, useEvent, usePausableState, discardMethodNotFound, mapRpcError, useAsyncWithTrigger, PausableProps } from './util';
-import { Details } from './collapsing';
+import { FilteredGoals, goalsToString } from './goals';
+import { basename, DocumentPosition, RangeHelpers, useEvent, usePausableState, discardMethodNotFound,
+    mapRpcError, useAsyncWithTrigger, PausableProps } from './util';
 import { ConfigContext, EditorContext, LspDiagnosticsContext, ProgressContext } from './contexts';
 import { lspDiagToInteractive, MessagesList } from './messages';
-import { getInteractiveGoals, getInteractiveTermGoal, InteractiveDiagnostic, InteractiveGoal,
-    InteractiveGoals, UserWidgets, Widget_getWidgets, RpcSessionAtPos, isRpcError, RpcErrorCode, getInteractiveDiagnostics } from '@leanprover/infoview-api';
-import { WithTooltipOnHover } from './tooltips'
-import { UserWidgetDisplay } from './userWidget'
+import { getInteractiveGoals, getInteractiveTermGoal, InteractiveDiagnostic,
+    InteractiveGoals, UserWidgetInstance, Widget_getWidgets, RpcSessionAtPos, isRpcError,
+    RpcErrorCode, getInteractiveDiagnostics, InteractiveTermGoal } from '@leanprover/infoview-api';
+import { PanelWidgetDisplay } from './userWidget'
 import { RpcContext, useRpcSessionAtPos } from './rpcSessions';
+import { GoalsLocation, Locations, LocationsContext } from './goalLocation';
 
 type InfoStatus = 'updating' | 'error' | 'ready';
 type InfoKind = 'cursor' | 'pin';
@@ -24,12 +25,11 @@ interface InfoPinnable {
 interface InfoStatusBarProps extends InfoPinnable, PausableProps {
     pos: DocumentPosition;
     status: InfoStatus;
-    copyGoalToComment?: () => void;
     triggerUpdate: () => Promise<void>;
 }
 
 const InfoStatusBar = React.memo((props: InfoStatusBarProps) => {
-    const { kind, onPin, status, pos, isPaused, copyGoalToComment, setPaused, triggerUpdate } = props;
+    const { kind, onPin, status, pos, isPaused, setPaused, triggerUpdate } = props;
 
     const ec = React.useContext(EditorContext);
 
@@ -48,29 +48,24 @@ const InfoStatusBar = React.memo((props: InfoStatusBarProps) => {
         {isPinned && !isPaused && ' (pinned)'}
         {!isPinned && isPaused && ' (paused)'}
         {isPinned && isPaused && ' (pinned and paused)'}
-        <span className="fr">
-            {copyGoalToComment &&
-                <a className="link pointer mh2 dim codicon codicon-quote"
-                   data-id="copy-goal-to-comment"
-                   onClick={e => { e.preventDefault(); copyGoalToComment(); }}
-                   title="copy state to comment" />}
+        <span className='fr'>
             {isPinned &&
-                <a className="link pointer mh2 dim codicon codicon-go-to-file"
-                   data-id="reveal-file-location"
+                <a className='link pointer mh2 dim codicon codicon-go-to-file'
+                   data-id='reveal-file-location'
                    onClick={e => { e.preventDefault(); void ec.revealPosition(pos); }}
-                   title="reveal file location" />}
+                   title='reveal file location' />}
             <a className={'link pointer mh2 dim codicon ' + (isPinned ? 'codicon-pinned ' : 'codicon-pin ')}
-                data-id="toggle-pinned"
+                data-id='toggle-pinned'
                 onClick={e => { e.preventDefault(); onPin(pos); }}
                 title={isPinned ? 'unpin' : 'pin'} />
             <a className={'link pointer mh2 dim codicon ' + (isPaused ? 'codicon-debug-continue ' : 'codicon-debug-pause ')}
-               data-id="toggle-paused"
+               data-id='toggle-paused'
                onClick={e => { e.preventDefault(); setPaused(!isPaused); }}
                title={isPaused ? 'continue updating' : 'pause updating'} />
-            <a className="link pointer mh2 dim codicon codicon-refresh"
-               data-id="update"
+            <a className='link pointer mh2 dim codicon codicon-refresh'
+               data-id='update'
                onClick={e => { e.preventDefault(); void triggerUpdate(); }}
-               title="update"/>
+               title='update'/>
         </span>
     </summary>
     );
@@ -80,115 +75,74 @@ interface InfoDisplayContentProps extends PausableProps {
     pos: DocumentPosition;
     messages: InteractiveDiagnostic[];
     goals?: InteractiveGoals;
-    termGoal?: InteractiveGoal;
+    termGoal?: InteractiveTermGoal;
     error?: string;
-    userWidgets?: UserWidgets;
+    userWidgets: UserWidgetInstance[];
     triggerUpdate: () => Promise<void>;
 }
 
 const InfoDisplayContent = React.memo((props: InfoDisplayContentProps) => {
     const {pos, messages, goals, termGoal, error, userWidgets, triggerUpdate, isPaused, setPaused} = props;
 
-    const widgets = userWidgets && userWidgets.widgets
-    const hasWidget = (widgets !== undefined) && (widgets.length > 0)
-
-    const nothingToShow = !error && !goals && !termGoal && messages.length === 0 && !hasWidget;
-
+    const hasWidget = userWidgets.length > 0;
     const hasError = !!error;
-    const hasGoals = !!goals;
-    const hasTermGoal = !!termGoal;
     const hasMessages = messages.length !== 0;
 
-    const [goalFilters, setGoalFilters] = React.useState<GoalFilterState>(
-        { reverse: false, showType: true, showInstance: true, showHiddenAssumption: true, showLetValue: true });
-    const sortClasses = 'link pointer mh2 dim codicon fr ' + (goalFilters.reverse ? 'codicon-arrow-up ' : 'codicon-arrow-down ');
-    const sortButton = <a className={sortClasses} title="reverse list" onClick={e => {
-        setGoalFilters(s => {
-            return { ...s, reverse: !s.reverse }
-        } ); }
-    } />
+    const nothingToShow = !hasError && !goals && !termGoal && !hasMessages && !hasWidget;
 
-    const mkFilterButton = (filterFn: React.SetStateAction<GoalFilterState>, filledFn: (_: GoalFilterState) => boolean, name: string) =>
-        <a className='link pointer tooltip-menu-content' onClick={_ => { setGoalFilters(filterFn) }}>
-            <span className={'tooltip-menu-icon codicon ' + (filledFn(goalFilters) ? 'codicon-check ' : 'codicon-blank ')}>&nbsp;</span>
-            <span className='tooltip-menu-text '>{name}</span>
-        </a>
-    const filterMenu = <span>
-        {mkFilterButton(s => ({ ...s, showType: !s.showType }), gf => gf.showType, 'types')}
-        <br/>
-        {mkFilterButton(s => ({ ...s, showInstance: !s.showInstance }), gf => gf.showInstance, 'instances')}
-        <br/>
-        {mkFilterButton(s => ({ ...s, showHiddenAssumption: !s.showHiddenAssumption }), gf => gf.showHiddenAssumption, 'hidden assumptions')}
-        <br/>
-        {mkFilterButton(s => ({ ...s, showLetValue: !s.showLetValue }), gf => gf.showLetValue, 'let-values')}
-    </span>
-    const isFiltered = !goalFilters.showInstance || !goalFilters.showType || !goalFilters.showHiddenAssumption || !goalFilters.showLetValue
-    const filterButton = <span className='fr'>
-        <WithTooltipOnHover mkTooltipContent={() => {return filterMenu}}>
-            <a className={'link pointer mh2 dim codicon ' + (isFiltered ? 'codicon-filter-filled ': 'codicon-filter ')}/>
-        </WithTooltipOnHover></span>
+    const [selectedLocs, setSelectedLocs] = React.useState<GoalsLocation[]>([])
+    React.useEffect(() => setSelectedLocs([]), [pos.uri, pos.line, pos.character])
+
+    const locs: Locations = React.useMemo(() => ({
+        isSelected: (l: GoalsLocation) => selectedLocs.some(v => GoalsLocation.isEqual(v, l)),
+        setSelected: (l, act) => setSelectedLocs(ls => {
+            // We ensure that `selectedLocs` maintains its reference identity if the selection
+            // status of `l` didn't change.
+            const newLocs = ls.filter(v => !GoalsLocation.isEqual(v, l))
+            const wasSelected = newLocs.length !== ls.length
+            const isSelected = typeof act === 'function' ? act(wasSelected) : act
+            if (isSelected) newLocs.push(l)
+            return wasSelected === isSelected ? ls : newLocs
+        }),
+        subexprTemplate: undefined
+    }), [selectedLocs])
 
     /* Adding {' '} to manage string literals properly: https://reactjs.org/docs/jsx-in-depth.html#string-literals-1 */
     return <>
-        <div className="ml1">
-            {hasError &&
-                <div className="error" key="errors">
-                    Error updating:{' '}{error}.
-                    <a className="link pointer dim" onClick={e => { e.preventDefault(); void triggerUpdate(); }}>{' '}Try again.</a>
-                </div>}
-            <div style={{display: hasGoals ? 'block' : 'none'}} key="goals">
-                <Details initiallyOpen>
-                    <summary className="mv2 pointer">
-                        Tactic state {sortButton} {filterButton}
-                    </summary>
-                    <div className='ml1'>
-                        {hasGoals && <GoalsUi goals={goals} filter={goalFilters} />}
-                    </div>
-                </Details>
-            </div>
-            <div style={{display: hasTermGoal ? 'block' : 'none'}} key="term-goal">
-                <Details initiallyOpen>
-                    <summary className="mv2 pointer">
-                        Expected type {sortButton} {filterButton}
-                    </summary>
-                    <div className='ml1'>
-                        {hasTermGoal && <GoalUi goal={termGoal} filter={goalFilters} />}
-                    </div>
-                </Details>
-            </div>
-            {widgets && widgets.map(widget =>
-                <div style={{display: hasWidget ? 'block' : 'none'}}
-                     key={`widget::${widget.id}::${widget.range?.toString()}`}>
-                    <Details initiallyOpen>
-                        <summary className="mv2 pointer">
-                            {widget.name}
-                        </summary>
-                        <div className="ml1">
-                             <UserWidgetDisplay pos={pos} widget={widget}/>
-                        </div>
-                    </Details>
+        {hasError &&
+            <div className='error' key='errors'>
+                Error updating:{' '}{error}.
+                <a className='link pointer dim' onClick={e => { e.preventDefault(); void triggerUpdate(); }}>{' '}Try again.</a>
+            </div>}
+        <LocationsContext.Provider value={locs}>
+            <FilteredGoals headerChildren='Tactic state' key='goals' goals={goals} />
+        </LocationsContext.Provider>
+        <FilteredGoals headerChildren='Expected type' key='term-goal'
+            goals={termGoal !== undefined ? {goals: [termGoal]} : undefined} />
+        {userWidgets.map(widget =>
+            <details key={`widget::${widget.id}::${widget.range?.toString()}`} open>
+                <summary className='mv2 pointer'>{widget.name}</summary>
+                <PanelWidgetDisplay pos={pos} goals={goals ? goals.goals : []} termGoal={termGoal}
+                    selectedLocations={selectedLocs} widget={widget}/>
+            </details>
+        )}
+        <div style={{display: hasMessages ? 'block' : 'none'}} key='messages'>
+            <details key='messages' open>
+                <summary className='mv2 pointer'>Messages ({messages.length})</summary>
+                <div className='ml1'>
+                    <MessagesList uri={pos.uri} messages={messages} />
                 </div>
-            )}
-            <div style={{display: hasMessages ? 'block' : 'none'}} key="messages">
-                <Details initiallyOpen>
-                    <summary className="mv2 pointer">
-                        Messages ({messages.length})
-                    </summary>
-                    <div className="ml1">
-                        <MessagesList uri={pos.uri} messages={messages} />
-                    </div>
-                </Details>
-            </div>
-            {nothingToShow && (
-                isPaused ?
-                    /* Adding {' '} to manage string literals properly: https://reactjs.org/docs/jsx-in-depth.html#string-literals-1 */
-                    <span>Updating is paused.{' '}
-                        <a className="link pointer dim" onClick={e => { e.preventDefault(); void triggerUpdate(); }}>Refresh</a>
-                        {' '}or <a className="link pointer dim" onClick={e => { e.preventDefault(); setPaused(false); }}>resume updating</a>
-                        {' '}to see information.
-                    </span> :
-                    'No info found.')}
+            </details>
         </div>
+        {nothingToShow && (
+            isPaused ?
+                /* Adding {' '} to manage string literals properly: https://reactjs.org/docs/jsx-in-depth.html#string-literals-1 */
+                <span>Updating is paused.{' '}
+                    <a className='link pointer dim' onClick={e => { e.preventDefault(); void triggerUpdate(); }}>Refresh</a>
+                    {' '}or <a className='link pointer dim' onClick={e => { e.preventDefault(); setPaused(false); }}>resume updating</a>
+                    {' '}to see information.
+                </span> :
+                'No info found.')}
     </>
 })
 
@@ -197,9 +151,9 @@ interface InfoDisplayProps {
     status: InfoStatus;
     messages: InteractiveDiagnostic[];
     goals?: InteractiveGoals;
-    termGoal?: InteractiveGoal;
+    termGoal?: InteractiveTermGoal;
     error?: string;
-    userWidgets?: UserWidgets;
+    userWidgets: UserWidgetInstance[];
     rpcSess: RpcSessionAtPos;
     triggerUpdate: () => Promise<void>;
 }
@@ -222,8 +176,6 @@ function InfoDisplay(props0: InfoDisplayProps & InfoPinnable) {
     const {kind, goals, rpcSess} = props;
 
     const ec = React.useContext(EditorContext);
-    let copyGoalToComment: (() => void) | undefined
-    if (goals) copyGoalToComment = () => void ec.copyToComment(goalsToString(goals));
 
     // If we are the cursor infoview, then we should subscribe to
     // some commands from the editor extension
@@ -231,7 +183,7 @@ function InfoDisplay(props0: InfoDisplayProps & InfoPinnable) {
     useEvent(ec.events.requestedAction, act => {
         if (!isCursor) return;
         if (act.kind !== 'copyToComment') return;
-        if (copyGoalToComment) copyGoalToComment();
+        if (goals) void ec.copyToComment(goalsToString(goals));
     }, [goals]);
     useEvent(ec.events.requestedAction, act => {
         if (!isCursor) return;
@@ -241,10 +193,12 @@ function InfoDisplay(props0: InfoDisplayProps & InfoPinnable) {
 
     return (
     <RpcContext.Provider value={rpcSess}>
-    <Details initiallyOpen>
-        <InfoStatusBar {...props} triggerUpdate={triggerDisplayUpdate} isPaused={isPaused} setPaused={setPaused} copyGoalToComment={copyGoalToComment} />
-        <InfoDisplayContent {...props} triggerUpdate={triggerDisplayUpdate} isPaused={isPaused} setPaused={setPaused} />
-    </Details>
+    <details open>
+        <InfoStatusBar {...props} triggerUpdate={triggerDisplayUpdate} isPaused={isPaused} setPaused={setPaused} />
+        <div className='ml1'>
+            <InfoDisplayContent {...props} triggerUpdate={triggerDisplayUpdate} isPaused={isPaused} setPaused={setPaused} />
+        </div>
+    </details>
     </RpcContext.Provider>
     );
 }
@@ -336,7 +290,7 @@ function InfoAux(props: InfoProps) {
                 goals: undefined,
                 termGoal: undefined,
                 error: undefined,
-                userWidgets: undefined,
+                userWidgets: [],
                 rpcSess
             }), 500)
         }
@@ -351,7 +305,7 @@ function InfoAux(props: InfoProps) {
                 goals,
                 termGoal,
                 error: undefined,
-                userWidgets,
+                userWidgets: userWidgets?.widgets ?? [],
                 rpcSess
             }),
             ex => {
@@ -381,7 +335,7 @@ function InfoAux(props: InfoProps) {
                     goals: undefined,
                     termGoal: undefined,
                     error: `Error fetching goals: ${errorString}`,
-                    userWidgets: undefined,
+                    userWidgets: [],
                     rpcSess
                 })
             }
@@ -417,7 +371,7 @@ function InfoAux(props: InfoProps) {
         goals: undefined,
         termGoal: undefined,
         error: undefined,
-        userWidgets: undefined,
+        userWidgets: [],
         rpcSess,
         triggerUpdate
     })

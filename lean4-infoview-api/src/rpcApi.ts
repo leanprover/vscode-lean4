@@ -22,9 +22,12 @@ export type DiffTag =
   | 'wasDeleted'  | 'willDelete'
   | 'wasInserted' | 'willInsert'
 
+// This is an arbitrary-size `Nat` in Lean which in JS we represent as `string`
+export type SubexprPos = string
+
 export interface SubexprInfo {
     info: InfoWithCtx
-    subexprPos?: number
+    subexprPos?: SubexprPos
     diffStatus?: DiffTag
 }
 
@@ -38,37 +41,47 @@ export interface InfoPopup {
     doc?: string
 }
 
+export type FVarId = string
+export type MVarId = string
+
 export interface InteractiveHypothesisBundle {
-    isInstance?: boolean,
-    isType?: boolean,
-    /** The pretty names of the variables in the bundle.
-     * If the name is inaccessible this will be `"[anonymous]"`.
-     * Use `InteractiveHypothesis_accessibleNames` to filter these out.
-     */
+    /** The pretty names of the variables in the bundle. Anonymous names are rendered
+     * as `"[anonymous]"` whereas inaccessible ones have a `✝` appended at the end.
+     * Use `InteractiveHypothesisBundle_nonAnonymousNames` to filter anonymouse ones out. */
     names: string[]
-    /** The free variable id associated with each of the vars listed in `names`. */
-    fvarIds?: string[]
+    /** Present since server version 1.1.2. */
+    fvarIds?: FVarId[]
     type: CodeWithInfos
     val?: CodeWithInfos
-    /** If true, the hypothesis was not present on the previous tactic state. */
-    isInserted?: boolean;
-    /** If true, the hypothesis will be deleted on the next tactic state. */
-    isRemoved?: boolean;
+    isInstance?: boolean
+    isType?: boolean
+    isInserted?: boolean
+    isRemoved?: boolean
 }
 
-export interface InteractiveGoal {
+export type ContextInfo = RpcPtr<'Lean.Elab.ContextInfo'>
+export type TermInfo = RpcPtr<'Lean.Elab.TermInfo'>
+
+export interface InteractiveGoalCore {
     hyps: InteractiveHypothesisBundle[]
     type: CodeWithInfos
+    /** Present since server version 1.1.2. */
+    ctx?: ContextInfo
+}
+
+export interface InteractiveGoal extends InteractiveGoalCore {
     userName?: string
     goalPrefix?: string
-    /** metavariable id associated with the goal.
-     * This is undefined when the goal is a term goal
-     * or if we are using an older version of lean. */
-    mvarId?: string
-    /** If true, the goal was not present on the previous tactic state. */
-    isInserted?: boolean;
-    /** If true, the goal will be deleted on the next tactic state. */
-    isRemoved?: boolean;
+    /** Present since server version 1.1.2. */
+    mvarId?: MVarId
+    isInserted?: boolean
+    isRemoved?: boolean
+}
+
+export interface InteractiveTermGoal extends InteractiveGoalCore {
+    range?: Range
+    /** Present since server version 1.1.2. */
+    term?: TermInfo
 }
 
 export interface InteractiveGoals {
@@ -79,7 +92,7 @@ export function getInteractiveGoals(rs: RpcSessionAtPos, pos: TextDocumentPositi
     return rs.call('Lean.Widget.getInteractiveGoals', pos);
 }
 
-export function getInteractiveTermGoal(rs: RpcSessionAtPos, pos: TextDocumentPositionParams): Promise<InteractiveGoal | undefined> {
+export function getInteractiveTermGoal(rs: RpcSessionAtPos, pos: TextDocumentPositionParams): Promise<InteractiveTermGoal | undefined> {
     return rs.call('Lean.Widget.getInteractiveTermGoal', pos);
 }
 

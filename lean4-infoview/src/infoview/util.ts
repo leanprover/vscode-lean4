@@ -190,7 +190,7 @@ export function addUniqueKeys<T>(elems: T[], getId: (el: T) => string): Keyed<T>
 
 /** Like `React.forwardRef`, but also allows using the ref inside the forwarding component.
  * Adapted from https://itnext.io/reusing-the-ref-from-forwardref-with-react-hooks-4ce9df693dd */
-export function forwardAndUseRef<T, P extends {children? : React.ReactNode} = {}>(render: (props: React.PropsWithChildren<P>, ref: React.RefObject<T>, setRef: (_: T | null) => void)
+export function forwardAndUseRef<T, P>(render: (props: P, ref: React.RefObject<T>, setRef: (_: T | null) => void)
     => React.ReactElement | null): React.ForwardRefExoticComponent<React.PropsWithoutRef<P> & React.RefAttributes<T>> {
   return React.forwardRef<T, P>((props, ref) => {
     const thisRef = React.useRef<T | null>(null)
@@ -206,7 +206,7 @@ export function forwardAndUseRef<T, P extends {children? : React.ReactNode} = {}
   })
 }
 
-export interface LogicalDomTraverser {
+export interface LogicalDomElement {
   contains(el: Node): boolean
 }
 
@@ -220,16 +220,17 @@ export const LogicalDomContext = React.createContext<LogicalDomStorage>({registe
 /** Suppose a component B appears as a React child of the component A. For layout reasons,
  * we sometimes don't want B to appear as an actual child of A in the DOM. We may still however
  * want to carry out `contains` checks as if B were there, i.e. according to the React tree
- * structure rather than the DOM structure. Logical DOM nodes make this work. Note this is not
- * shadow DOM, although it is similar.
+ * structure rather than the DOM structure. While React already correctly propagates DOM events
+ * up this logical tree, other functionality such as `contains` is not provided.
  *
- * For the method to work, each component introducing a *logical* (React-but-not-DOM) child must
- * register it in the `LogicalDomContext`.
+ * This method creates a {@link LogicalDomElement} corresponding to the given {@link HTMLElement}
+ * which provides the missing functionality for that element. For this to work, the element
+ * must be wrapped in a {@link LogicalDomContext} set to the {@link LogicalDomStorage} returned
+ * from this call.
  *
- * To carry out checks, call `useLogicalDom` with a ref to the node for which you want to carry
- * out `contains` checks and wrap that node in a `LogicalDomContext` using the resulting
- * `LogicalDomStorage`. */
-export function useLogicalDom(ref: React.RefObject<HTMLElement>): [LogicalDomTraverser, LogicalDomStorage] {
+ * Additionally, any component which actually introduces React-but-not-DOM children must
+ * call `registerDescendant` in the {@link LogicalDomContext}. */
+export function useLogicalDom(ref: React.RefObject<HTMLElement>): [LogicalDomElement, LogicalDomStorage] {
   const parentCtx = React.useContext(LogicalDomContext)
   React.useEffect(() => {
     if (ref.current) {
@@ -257,9 +258,29 @@ export function useLogicalDom(ref: React.RefObject<HTMLElement>): [LogicalDomTra
   }
 
   return [
-    React.useMemo(() => ({contains}), [ref]),
-    React.useMemo(() => ({registerDescendant}), [parentCtx])
+    React.useMemo(() => ({ contains }), [ref]),
+    React.useMemo(() => ({ registerDescendant }), [parentCtx])
   ]
+}
+
+/**
+ * An effect which calls `onClickOutside` whenever an element not logically descending from `ld`
+ * (see {@link useLogicalDom}) is clicked. Note that `onClickOutside` is not called on clicks
+ * on the scrollbar since these should usually not impact the app's state. */
+export function useOnClickOutside(ld: LogicalDomElement, onClickOutside: (_: PointerEvent) => void) {
+  React.useEffect(() => {
+    const onClickAnywhere = (e: PointerEvent) => {
+      if (e.target instanceof Node && !ld.contains(e.target)) {
+        if (e.target instanceof Element && e.target.tagName === 'HTML') {
+          // then user might be clicking in a scrollbar, otherwise
+          // e.target would be a tag other than 'HTML'
+        } else onClickOutside(e)
+      }
+    }
+
+    document.addEventListener('pointerdown', onClickAnywhere)
+    return () => document.removeEventListener('pointerdown', onClickAnywhere)
+  }, [ld, onClickOutside])
 }
 
 /** Sends an exception object to a throwable error.

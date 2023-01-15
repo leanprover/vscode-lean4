@@ -51,8 +51,13 @@ html,body {
     border-radius: 2pt;
     transition: background-color 100ms ease-in-out;
 }
+
 .highlight {
     background-color: var(--vscode-editor-selectionBackground) !important;
+}
+
+.highlight-selected {
+    background-color: var(--vscode-editorOverviewRuler-rangeHighlightForeground);
 }
 
 /* Interactive traces */
