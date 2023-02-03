@@ -226,12 +226,6 @@
 				"description": "Pause / Continue live updating of the main tactic state widget."
 			},
 			{
-				"command": "lean4.selectToolchain",
-				"category": "Lean 4",
-				"title": "Select Lean Toolchain",
-				"description": "Select version of the Lean toolchain to use for this project."
-			},
-			{
 				"command": "lean4.docView.showAllAbbreviations",
 				"category": "Lean 4",
 				"title": "Show all abbreviations",
@@ -348,10 +342,6 @@
 				},
 				{
 					"command": "lean4.refreshFileDependencies",
-					"when": "editorLangId == lean4"
-				},
-				{
-					"command": "lean4.selectToolchain",
 					"when": "editorLangId == lean4"
 				},
 				{

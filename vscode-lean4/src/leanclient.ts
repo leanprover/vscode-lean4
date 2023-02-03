@@ -20,7 +20,6 @@ import * as ls from 'vscode-languageserver-protocol'
 import { toolchainPath, lakePath, addServerEnvPaths, serverArgs, serverLoggingEnabled, serverLoggingPath, shouldAutofocusOutput, getElaborationDelay, lakeEnabled } from './config'
 import { assert } from './utils/assert'
 import { LeanFileProgressParams, LeanFileProgressProcessingInfo, ServerStoppedReason } from '@leanprover/infoview-api';
-import { LocalStorageService} from './utils/localStorage'
 import { batchExecute } from './utils/batch'
 import { readLeanVersion } from './utils/projectInfo';
 import * as fs from 'fs';
@@ -45,7 +44,6 @@ export class LeanClient implements Disposable {
 	private client: LanguageClient | undefined
     private toolchainPath: string
     private outputChannel: OutputChannel;
-    private storageManager : LocalStorageService;
     private workspaceFolder: WorkspaceFolder | undefined;
     private folderUri: Uri;
     private subscriptions: Disposable[] = []
@@ -93,13 +91,11 @@ export class LeanClient implements Disposable {
     /** Files which are open. */
     private isOpen: Map<string, TextDocument> = new Map()
 
-    constructor(workspaceFolder: WorkspaceFolder | undefined, folderUri: Uri, storageManager : LocalStorageService, outputChannel : OutputChannel, elanDefaultToolchain: string) {
-        this.storageManager = storageManager;
+    constructor(workspaceFolder: WorkspaceFolder | undefined, folderUri: Uri, outputChannel : OutputChannel, elanDefaultToolchain: string) {
         this.outputChannel = outputChannel;
         this.workspaceFolder = workspaceFolder; // can be null when opening adhoc files.
         this.folderUri = folderUri;
         this.elanDefaultToolchain = elanDefaultToolchain;
-        this.toolchainPath = this.storageManager.getLeanPath();
         if (!this.toolchainPath) this.toolchainPath = toolchainPath();
         this.subscriptions.push(workspace.onDidChangeConfiguration((e) => this.configChanged(e)));
     }
@@ -142,9 +138,8 @@ export class LeanClient implements Disposable {
         }
 
         this.restartingEmitter.fire(undefined)
-        this.toolchainPath = this.storageManager.getLeanPath();
-        if (!this.toolchainPath) this.toolchainPath = toolchainPath();
-        let version = this.storageManager.getLeanVersion();
+        this.toolchainPath = toolchainPath();
+        let version: string | null = null;
         const env = addServerEnvPaths(process.env);
         if (serverLoggingEnabled()) {
             env.LEAN_SERVER_LOG_DIR = serverLoggingPath()
@@ -480,8 +475,7 @@ export class LeanClient implements Disposable {
     }
 
     configChanged(e : ConfigurationChangeEvent): void {
-        let newToolchainPath = this.storageManager.getLeanPath();
-        if (!newToolchainPath) newToolchainPath = toolchainPath();
+        const newToolchainPath = toolchainPath();
         if (this.toolchainPath !== newToolchainPath){
             void this.restart();
         }
@@ -564,7 +558,7 @@ export class LeanClient implements Disposable {
         return undefined;
     }
 
-    async checkLakeVersion(executable: string, version: string) : Promise<boolean> {
+    async checkLakeVersion(executable: string, version: string | null) : Promise<boolean> {
         // Check that the Lake version is high enough to support "lake serve" option.
         const versionOptions = version ? ['+' + version, '--version'] : ['--version']
         const start = Date.now()

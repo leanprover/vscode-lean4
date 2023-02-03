@@ -1,5 +1,4 @@
 import { Disposable, OutputChannel, workspace, TextDocument, commands, window, EventEmitter, Uri, languages, TextEditor } from 'vscode';
-import { LocalStorageService} from './localStorage'
 import { LeanInstaller, LeanVersion } from './leanInstaller'
 import { LeanpkgService } from './leanpkg';
 import { LeanClient } from '../leanclient'
@@ -13,7 +12,6 @@ import { addDefaultElanPath, getDefaultElanPath, addToolchainBinPath, isElanDisa
 // This class ensures we have one LeanClient per workspace folder.
 export class LeanClientProvider implements Disposable {
     private subscriptions: Disposable[] = [];
-    private localStorage: LocalStorageService;
     private outputChannel: OutputChannel;
     private installer : LeanInstaller;
     private pkgService : LeanpkgService;
@@ -36,8 +34,7 @@ export class LeanClientProvider implements Disposable {
     private clientStoppedEmitter = new EventEmitter<[LeanClient, boolean, ServerStoppedReason]>()
     clientStopped = this.clientStoppedEmitter.event
 
-    constructor(localStorage : LocalStorageService, installer : LeanInstaller, pkgService : LeanpkgService, outputChannel : OutputChannel) {
-        this.localStorage = localStorage;
+    constructor(installer : LeanInstaller, pkgService : LeanpkgService, outputChannel : OutputChannel) {
         this.outputChannel = outputChannel;
         this.installer = installer;
         this.pkgService = pkgService;
@@ -78,10 +75,7 @@ export class LeanClientProvider implements Disposable {
     }
 
     private async onInstallChanged(uri: Uri){
-        // This Uri could be 'undefined' in the case of a selectToolChain "reset"
-        // Or it could be a package Uri in the case a lean package file was changed
-        // or it could be a document Uri in the case of a command from
-        // selectToolchainForActiveEditor.
+        // Uri is a package Uri in the case a lean package file was changed.
         logger.log(`[ClientProvider] installChanged for ${uri}`);
         this.pendingInstallChanged.push(uri);
         if (this.processingInstallChanged){
@@ -302,7 +296,7 @@ export class LeanClientProvider implements Disposable {
             // every open file.  A workspace could have multiple files open and we want
             // to remember all those open files are associated with this client before
             // testLeanVersion has completed.
-            client = new LeanClient(workspaceFolder, folderUri, this.localStorage, this.outputChannel, elanDefaultToolchain);
+            client = new LeanClient(workspaceFolder, folderUri, this.outputChannel, elanDefaultToolchain);
             this.subscriptions.push(client);
             this.clients.set(key, client);
 
