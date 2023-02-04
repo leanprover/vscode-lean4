@@ -71,15 +71,6 @@ suite('Lean4 Bootstrap Test Suite', () => {
 		await waitForInfoviewHtml(info, '4.0.0-nightly-', 120);
         logger.log('Lean nightly build server is running.')
 
-        // install the alternate build
-        logger.log(`Wait for lean4:${version} build to be installed...`)
-		await vscode.commands.executeCommand('lean4.selectToolchain', `leanprover/lean4:${version}`);
-
-        // give it a extra long timeout in case test machine is really slow.
-		await waitForInfoviewHtml(info, version, 600);
-        logger.log(`Lean ${version} build is running.`)
-		await vscode.commands.executeCommand('lean4.selectToolchain', 'reset');
-
         // make sure test is always run in predictable state, which is no file or folder open
         await closeAllEditors();
 

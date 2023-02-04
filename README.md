@@ -222,25 +222,6 @@ The Lean server does not automatically update a file when one of its dependencie
 So after changing a dependency,
 the server for the file needs to be restarted to pick up the changed dependency.
 
-* `lean4.selectToolchain` (Lean 4: Select Lean Toolchain) Select version of the Lean toolchain to use for the current workspace.  This shows the list of available toolchains returned from `elan toolchain list` and allows you to easily switch. The Lean 4 language server will automatically be restarted using the selected toolchain.  This command also provides a choice labelled `Other...` where you can enter the full path to a Lean 4 toolchain to use instead.  This choice is remembered in your [Workspace Settings](https://code.visualstudio.com/docs/getstarted/settings) and you can reset any custom choice by selecting `Reset workspace override...` from the list (if it is shown).
-
-    ![select-toolchain](vscode-lean4/media/select-toolchain.png)
-
-    You can test the latest [Lean 4 master branch](https://github.com/leanprover/lean4) with this VS Code extension.  First you build Lean, then run the following commands:
-    ```
-    cd <lean4-repo>
-    elan toolchain link master ./build/release/stage1
-    ```
-    Now the `Lean4: Select Toolchain` will show `master` as one of the toolchains you can select.
-    You will then see a prompt to restart the Lean Language Server and if you click `Restart Lean`, the
-    server will be restarted automatically using the your brand new locally built version of Lean.
-    This is useful if you are adding features to Lean 4 that you want to test in the VS Code
-    extension before an official Lean4 nightly build is published.
-
-    Alternatively, you can use the `Other...` option and just provide the full path containing
-    your build output at `.../build/release/stage1/`.
-
-
 ### Editing commands
 
 * `lean4.input.convert` (Lean 4: Input: Convert Current Abbreviation): converts the current abbreviation (bound to <kbd>tab</kbd> by default)

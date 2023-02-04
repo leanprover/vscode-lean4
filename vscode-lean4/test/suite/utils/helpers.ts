@@ -146,41 +146,6 @@ export async function waitForActiveClient(clientProvider: LeanClientProvider | u
     assertAndLog(false, `Missing active LeanClient after ${timeout} seconds`);
 }
 
-export async function resetToolchain(clientProvider: LeanClientProvider | undefined, retries=10, delay=1000) : Promise<void>{
-
-    const client = clientProvider?.getActiveClient();
-    assertAndLog(client, 'no active client');
-
-    let stopped = false;
-    let restarted = false;
-    client.stopped(() => { stopped = true });
-    client.restarted(() => { restarted = true });
-
-    await vscode.commands.executeCommand('lean4.selectToolchain', 'reset');
-
-    // wait a second to see if we've been stopped..
-    let count = 0;
-    while (count < retries){
-        if (stopped) {
-            break;
-        }
-        await sleep(100);
-        count += 1;
-    }
-
-    if (stopped){
-        // then we need to wait for restart.
-        count = 0;
-        while (count < retries){
-            if (restarted) {
-                break;
-            }
-            await sleep(delay);
-            count += 1;
-        }
-    }
-}
-
 export async function waitForActiveExtension(extensionId: string, retries=60, delay=1000) : Promise<vscode.Extension<Exports> | null> {
 
     logger.log(`Waiting for extension ${extensionId} to be loaded...`);
