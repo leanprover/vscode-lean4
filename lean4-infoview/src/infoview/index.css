@@ -127,6 +127,9 @@ select {
 /* Style for tooltips shown in the widget view. This should *not* style the tooltip contents.
 For that, we can use more specific classes. */
 .tooltip {
+    position: absolute;
+    top: 0;
+    left: 0;
     background-color: var(--vscode-editorHoverWidget-background);
     padding: 4px 8px;
     border-radius: 4px;
@@ -134,14 +137,8 @@ For that, we can use more specific classes. */
     border-color: var(--vscode-editorHoverWidget-border);
     border-width: 1px;
     border-style: solid;
-    max-width: calc(70%);
+    max-width: 70%;
     box-sizing: border-box;
-}
-
-@media (max-width: 500px) {
-    .tooltip {
-        max-width: 100vw;
-    }
 }
 
 .tooltip-arrow,
@@ -200,10 +197,13 @@ For that, we can use more specific classes. */
 
 /* Contents of a code tooltip showing a value, type, documentation, etc. */
 .tooltip-code-content {
-   color: var(--vscode-editorHoverWidget-foreground);
-   background: var(--vscode-editorHoverWidget-background);
-   line-height: var(--vscode-editor-line-height);
-   overflow: hidden;
+    color: var(--vscode-editorHoverWidget-foreground);
+    background: var(--vscode-editorHoverWidget-background);
+    line-height: var(--vscode-editor-line-height);
+    height: 100%;
+    max-height: 300px;
+    overflow-y: scroll;
+    overflow-x: hidden;
 }
 
 .tooltip-code-content a:hover {

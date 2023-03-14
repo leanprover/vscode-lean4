@@ -1,73 +1,167 @@
 import * as React from 'react'
 import * as ReactDOM from 'react-dom'
 
-import * as Popper from '@popperjs/core'
-import { usePopper } from 'react-popper'
+import {
+  detectOverflow, useFloating, MiddlewareState, Side, Coords, SideObject,
+} from '@floating-ui/react';
 
 import { forwardAndUseRef, LogicalDomContext, useLogicalDom, useOnClickOutside } from './util'
 
 /** Tooltip contents should call `redrawTooltip` whenever their layout changes. */
 export type MkTooltipContentFn = (redrawTooltip: () => void) => React.ReactNode
 
-const TooltipPlacementContext = React.createContext<Popper.Placement>('top')
+// Pointer coordinates used for tooltip placement.
+type PointerCoords = {pageX: number, pageY: number, clientX: number, clientY: number}
+
+/**
+* Custom floating-ui middleware to place tooltip near pointer. Pointer coordinates
+* are based on the `pageX` and `pageY` propertes of the MouseEvent interface.
+* Pointer coordinates are recorded - as a `pointerPos` state - everytime a
+* `onPointerOver` event is triggered when hovering over a selectable element.
+* Default tooltip position is above and to the right of the pointer. If the tooltip
+* is outside of the viewport i.e. overflowing, we flip the tooltip to keep it inside the
+* viewport. Flip logic is based on the quadrant - within the viewport - in which the
+* the pointer was located when the hover event was triggered.
+*/
+const pointer = (pointerPos: PointerCoords) => ({
+  name: 'pointer',
+  async fn(state: MiddlewareState) {
+    const { rects, elements } = state;
+
+    const floatingEl = elements.floating
+    const floatingRect = rects.floating
+
+    const findPositives = (obj: SideObject) : number[] => {
+      return Object.values(obj).filter((d) => d > 0)
+    }
+
+    const containsPositive = (obj : SideObject) : boolean => {
+      return findPositives(obj).length > 0
+    }
+
+    const roundByDPR = (value: number) => {
+      const dpr = window.devicePixelRatio || 1;
+      return Math.round(value * dpr) / dpr;
+    }
+
+    const flip = (coords: Coords, side: Side): Coords => {
+      switch(side) {
+        case 'top': coords.y = coords.y + floatingRect.height + 20; break;
+        case 'right': coords.x = coords.x - floatingRect.width; break
+      }
+      return coords
+    }
+
+    const partial = (fn: (coords: Coords, side: Side) => Coords, side: Side) => {
+      return (coords: Coords) => { return fn(coords, side) }
+    }
+
+    type QuadTransforms = {
+      [k in string]: { [k: string]: (coords: Coords) => Coords }
+    }
+    const quadTransforms: QuadTransforms = {
+      'top-left': {'top': partial(flip, 'top'),},
+      'top-right': {'top': partial(flip, 'top'), 'right': partial(flip, 'right')},
+      'bottom-right': {'right': partial(flip, 'right')},
+      'bottom-left' : {},
+    }
+
+    // Split viewport into four quadrants.
+    type Quadrants = 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left'
+    const getQuadrant = (x: number, y: number) : Quadrants => {
+      const vw = document.documentElement.clientWidth
+      const vh = document.documentElement.clientHeight
+      const hvw = vw / 2
+      const hvh = vh / 2
+
+      if (x <= hvw && y <= hvh) { return 'top-left' }
+      else if (x <= hvw && y > hvh) { return 'bottom-left' }
+      else if (x > hvw && y > hvh) { return 'bottom-right' }
+      else { return 'top-right' }
+    }
+
+    // Preferred position of tooltip is top-right relative to pointer.
+    let coords: Coords = {
+      x: pointerPos.pageX,
+      y: pointerPos.pageY - floatingRect.height - 10
+    }
+    state.x = coords.x
+    state.y = coords.y
+    let overflow : SideObject = await detectOverflow(state);
+    const quadrant = getQuadrant(pointerPos.clientX, pointerPos.clientY)
+
+    // Apply transformations if tooltip is overflowing. Transformations to
+    // be applied depend on where the pointer is located in the viewport.
+    if (containsPositive(overflow)) {
+      const transforms = quadTransforms[quadrant]
+      Object.entries(transforms).forEach(([side, transform]) => {
+        if (overflow[side as Side] > 1) { coords = transform(coords) }
+      })
+      state.x = coords.x
+      state.y = coords.y
+      overflow = await detectOverflow(state)
+
+      // If tooltip is still overflowing, make small adjustments.
+      if (containsPositive(overflow)) {
+        Object.entries(overflow)
+          .filter(([_, overflowAmount]) => overflowAmount > 1)
+          .forEach(([side, overflowAmount]) => {
+            switch(side as Side) {
+              case 'top': coords.y = document.documentElement.scrollTop + 1; break;
+              // case 'bottom': coords.y = coords.y + overflowAmount + 1; break;
+              case 'left': coords.x = coords.x + overflowAmount + 1; break;
+              case 'right': coords.x = coords.x - overflowAmount - 1; break;
+            }
+          })
+      }
+    }
+
+    // [subpixel accelerated positioning]
+    // (https://floating-ui.com/docs/misc#subpixel-and-accelerated-positioning).
+    Object.assign(floatingEl.style, {
+      top: '0',
+      left: '0',
+      transform: `translate(${roundByDPR(coords.x)}px,${roundByDPR(coords.y)}px)`,
+    });
+
+    return {}
+  }
+});
 
 export const Tooltip = forwardAndUseRef<HTMLDivElement,
-  React.HTMLProps<HTMLDivElement> &
+      React.HTMLProps<HTMLDivElement> &
     { reference: HTMLElement | null,
+      pointerPos: PointerCoords,
       mkTooltipContent: MkTooltipContentFn,
-      placement?: Popper.Placement,
-      onFirstUpdate?: (_: Partial<Popper.State>) => void
-    }>((props_, divRef, setDivRef) => {
-  const {reference, mkTooltipContent, placement: preferPlacement, onFirstUpdate, ...props} = props_
+    }>((props_, _, setDivRef) => {
+  const {reference, pointerPos, mkTooltipContent, ...props} = props_
 
-  // We remember the global trend in placement (as `globalPlacement`) so tooltip chains can bounce
-  // off the top and continue downwards or vice versa and initialize to that, but then update
-  // the trend (as `ourPlacement`).
-  const globalPlacement = React.useContext(TooltipPlacementContext)
-  const placement = preferPlacement ? preferPlacement : globalPlacement
-  const [ourPlacement, setOurPlacement] = React.useState<Popper.Placement>(placement)
-
-  // https://popper.js.org/react-popper/v2/faq/#why-i-get-render-loop-whenever-i-put-a-function-inside-the-popper-configuration
-  const onFirstUpdate_ = React.useCallback((state: Partial<Popper.State>) => {
-    if (state.placement) setOurPlacement(state.placement)
-    if (onFirstUpdate) onFirstUpdate(state)
-  }, [onFirstUpdate])
-
-  const [arrowElement, setArrowElement] = React.useState<HTMLDivElement | null>(null)
-  const { styles, attributes, update } = usePopper(reference, divRef.current, {
-    modifiers: [
-      { name: 'arrow', options: { element: arrowElement } },
-      { name: 'offset', options: { offset: [0, 8] } },
-    ],
-    placement,
-    onFirstUpdate: onFirstUpdate_
+  const { strategy, refs, update } = useFloating({
+    strategy: 'absolute',
+    middleware: [ pointer(pointerPos), ]
   })
   const update_ = React.useCallback(() => update?.(), [update])
 
   const logicalDom = React.useContext(LogicalDomContext)
-
-  const popper = <div
+  const floating = (
+    <div
       ref={node => {
+        refs.setReference(reference)
+        refs.setFloating(node)
         setDivRef(node)
         logicalDom.registerDescendant(node)
       }}
-      style={styles.popper}
+      style={{ position: strategy, top: 0, left: 0}}
       className='tooltip'
       {...props}
-      {...attributes.popper}
     >
-      <TooltipPlacementContext.Provider value={ourPlacement}>
-        {mkTooltipContent(update_)}
-      </TooltipPlacementContext.Provider>
-      <div ref={setArrowElement}
-        style={styles.arrow}
-        className='tooltip-arrow'
-      />
+      {mkTooltipContent(update_)}
     </div>
+  )
 
   // Append the tooltip to the end of document body to avoid layout issues.
   // (https://github.com/leanprover/vscode-lean4/issues/51)
-  return ReactDOM.createPortal(popper, document.body)
+  return ReactDOM.createPortal(floating, document.body)
 })
 
 /** Hover state of an element. The pointer can be
@@ -163,6 +257,11 @@ export const WithTooltipOnHover =
       onClick?: (event: React.MouseEvent<HTMLSpanElement>, next: React.MouseEventHandler<HTMLSpanElement>) => void
     }>((props_, ref, setRef) => {
   const {mkTooltipContent, ...props} = props_
+
+  // Pointer state used to position tooltip.
+  const [pointerPos, setPointerPos] = React.useState<PointerCoords>(
+    {pageX: 0, pageY: 0, clientX: 0, clientY: 0}
+  )
 
   // We are pinned when clicked, shown when hovered over, and otherwise hidden.
   type TooltipState = 'pin' | 'show' | 'hide'
@@ -260,7 +359,10 @@ export const WithTooltipOnHover =
         if (isModifierHeld(e)) e.preventDefault()
       }}
       onPointerOver={e => {
-        if (!isModifierHeld(e)) onPointerEvent(startShowTimeout, e)
+        if (!isModifierHeld(e)) {
+          setPointerPos({pageX: e.pageX, pageY: e.pageY, clientX: e.clientX, clientY: e.clientY})
+          onPointerEvent(startShowTimeout, e)
+        }
         if (props.onPointerOver !== undefined) props.onPointerOver(e)
       }}
       onPointerOut={e => {
@@ -272,6 +374,7 @@ export const WithTooltipOnHover =
         <TipChainContext.Provider value={newTipChainCtx}>
           <Tooltip
             reference={ref.current}
+            pointerPos={pointerPos}
             onPointerEnter={onPointerEnter}
             onPointerLeave={onPointerLeave}
             mkTooltipContent={mkTooltipContent}

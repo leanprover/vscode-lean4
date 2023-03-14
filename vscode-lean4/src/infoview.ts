@@ -762,7 +762,6 @@ export class InfoProvider implements Disposable {
                     data-importmap-react="${this.getLocalPath(`dist/lean4-infoview/react${libPostfix}`)}"
                     data-importmap-react-jsx-runtime="${this.getLocalPath(`dist/lean4-infoview/react-jsx-runtime${libPostfix}`)}"
                     data-importmap-react-dom="${this.getLocalPath(`dist/lean4-infoview/react-dom${libPostfix}`)}"
-                    data-importmap-react-popper="${this.getLocalPath(`dist/lean4-infoview/react-popper${libPostfix}`)}"
                     src="${this.getLocalPath('dist/webview.js')}"></script>
             </body>
             </html>`

@@ -69,7 +69,6 @@ const configs = [ {
             'react',
             'react-dom',
             'react/jsx-runtime',
-            'react-popper'
         ],
     }, {
         output: {
@@ -90,10 +89,6 @@ const configs = [ {
         output, plugins,
         input: 'src/esm-shims/react-jsx-runtime.ts',
         external: [ 'react' ]
-    }, {
-        output, plugins,
-        input: 'src/esm-shims/react-popper.ts',
-        external: [ 'react', 'react-dom' ]
     },
 ]
 

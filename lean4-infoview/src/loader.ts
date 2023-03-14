@@ -8,7 +8,7 @@ import type { renderInfoview } from './index';
  *
  * @param imports is the `imports` section of an [`importmap`](https://github.com/WICG/import-maps).
  * It must contain URLs for `@leanprover/infoview`, `react`, `react/jsx-runtime`, `react-dom`,
- * `react-popper`. It may include additional URLs. The listed libraries become `import`able
+ * It may include additional URLs. The listed libraries become `import`able
  * from user widgets. Note that `dist/` already includes these files, so the following works:
  * ```js
  * {
@@ -16,7 +16,6 @@ import type { renderInfoview } from './index';
  * 'react': 'https://unpkg.com/@leanprover/infoview/dist/react.production.min.js',
  * 'react/jsx-runtime': 'https://unpkg.com/@leanprover/infoview/dist/react-jsx-runtime.production.min.js',
  * 'react-dom': 'https://unpkg.com/@leanprover/infoview/dist/react-dom.production.min.js',
- * 'react-popper': 'https://unpkg.com/@leanprover/infoview/dist/react-popper.production.min.js'
  * }
  * ```
  */

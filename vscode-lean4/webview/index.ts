@@ -16,7 +16,6 @@ if (div && script) {
         'react': script.getAttribute('data-importmap-react')!,
         'react/jsx-runtime': script.getAttribute('data-importmap-react-jsx-runtime')!,
         'react-dom': script.getAttribute('data-importmap-react-dom')!,
-        'react-popper': script.getAttribute('data-importmap-react-popper')!,
     }
     loadRenderInfoview(imports, [editorApi, div], api => rpc.register(api));
 }
