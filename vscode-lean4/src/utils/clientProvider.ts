@@ -50,7 +50,8 @@ export class LeanClientProvider implements Disposable {
         this.subscriptions.push(
             commands.registerCommand('lean4.restartFile', () => this.restartFile()),
             commands.registerCommand('lean4.refreshFileDependencies', () => this.restartFile()),
-            commands.registerCommand('lean4.restartServer', () => this.restartActiveClient())
+            commands.registerCommand('lean4.restartServer', () => this.restartActiveClient()),
+            commands.registerCommand('lean4.stopServer', () => this.stopActiveClient())
         );
 
         workspace.onDidOpenTextDocument((document) => this.didOpenEditor(document));
@@ -138,6 +139,10 @@ export class LeanClientProvider implements Disposable {
         if (window.activeTextEditor && this.activeClient && window.activeTextEditor.document.languageId ==='lean4') {
             void this.activeClient.restartFile(window.activeTextEditor.document);
         }
+    }
+
+    private stopActiveClient() {
+        void this.activeClient?.stop();
     }
 
     private restartActiveClient() {
