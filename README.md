@@ -212,6 +212,8 @@ The format below is: "`lean4.commandName` (command name): description", where `l
 * `lean4.restartServer` (Lean 4: Restart Server): restart the Lean 4 Language Server.
 Useful if you built new `.olean` files in your workspace.
 
+* `lean4.stopServer` (Lean 4: Stop Server): stop the Lean 4 Language Server.
+
 * `lean4.restartFile` (Lean 4: Restart File): restarts the Lean server for a single file.
 Useful if the server crashes.
 As a side-effect this command will also recompile all dependencies.
