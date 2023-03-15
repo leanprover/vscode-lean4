@@ -29,8 +29,9 @@ These versions are controlled by the `test/test-fixtures/simple/lean-toolchain` 
 to newer versions of lean.
 
 ### Debugging
+- Complete the 'Building' instructions above.
 - Open VS Code on this folder.
-- Press <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>B</kbd> to compile the extension. This step is needed for a working development setup.
+- Press <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>B</kbd> to compile the extension. (<kbd>Cmd</kbd>+<kbd>Shift</kbd>+<kbd>B</kbd> on macos.) This step is needed for a working development setup.
 - Press F5 to launch the extension in the VS Code debugger, (the correct launch.json configuration is already checked into this repo.)
 
 To debug the tests use the launch configuration named `Extension Tests - SuiteName`.
