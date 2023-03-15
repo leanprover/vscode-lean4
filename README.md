@@ -13,7 +13,7 @@ containing the following:
 
     ```lean
     import Lake
-    #eval Lake.leanVersionString
+    #eval Lake.versionString
     ```
 1. Open this folder in VS Code using `File/Open Folder`.
 1. Open your file `hello.lean`.
