@@ -113,7 +113,7 @@ function InteractiveMessageTag({tag: embed}: InteractiveTagProps<MsgEmbed>): JSX
     if ('expr' in embed)
         return <InteractiveCode fmt={embed.expr} />
     else if ('goal' in embed)
-        return <Goal goal={embed.goal} filter={{reverse: false, showType: false, showInstance: false, showHiddenAssumption: false, showLetValue: false}} />
+        return <Goal goal={embed.goal} filter={{reverse: false, showType: true, showInstance: true, showHiddenAssumption: true, showLetValue: true}} />
     else if ('lazyTrace' in embed)
         return <LazyTrace col={embed.lazyTrace[0]} cls={embed.lazyTrace[1]} msg={embed.lazyTrace[2]} />
     else if ('trace' in embed)
