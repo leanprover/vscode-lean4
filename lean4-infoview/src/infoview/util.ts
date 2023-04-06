@@ -382,3 +382,21 @@ export function useAsync<T>(fn: () => Promise<T>, deps: React.DependencyList = [
     return state
   }
 }
+
+/** Like {@link useAsync} but never transitions from `resolved` to `loading` by internally storing
+ * the latest `resolved` state and continuing to return it while an update is in flight. The lower
+ * amount of re-renders tends to be less visually jarring.
+ */
+export function useAsyncPersistent<T>(fn: () => Promise<T>, deps: React.DependencyList = []):
+    AsyncState<T> {
+  const [latestState, setLatestState] = React.useState<T | undefined>(undefined)
+  const state = useAsync(async () => {
+      const newState = await fn()
+      setLatestState(newState)
+      return newState
+    }, deps)
+  if (state.state === 'loading' && latestState !== undefined) {
+    return {state: 'resolved', value: latestState}
+  }
+  return state
+}
