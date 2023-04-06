@@ -44,17 +44,17 @@ export interface DynamicComponentProps {
 export function DynamicComponent(props_: React.PropsWithChildren<DynamicComponentProps>) {
     const { pos, hash, props, children } = props_
     const rs = React.useContext(RpcContext)
-    const state = useAsyncPersistent(async () => {
-            const mod = await importWidgetModule(rs, pos, hash)
-            return React.createElement(mod.default, props, children)
-        }, [rs, pos, hash, props, children])
-
-    return <ErrorBoundary>
-        {state.state === 'resolved' && state.value}
-        {state.state === 'rejected' &&
-            <span className='red'>Error: {mapRpcError(state.error).message}</span>}
-        {state.state === 'loading' && <>Loading component '{hash}'...</>}
-    </ErrorBoundary>
+    const state = useAsyncPersistent(() => importWidgetModule(rs, pos, hash), [rs, pos, hash])
+    return (
+        <React.Suspense fallback={`Loading component '${hash}'..`}>
+            <ErrorBoundary>
+                {state.state === 'resolved' &&
+                    React.createElement(state.value.default, props, children)}
+                {state.state === 'rejected' &&
+                    <span className='red'>Error: {mapRpcError(state.error).message}</span>}
+            </ErrorBoundary>
+        </React.Suspense>
+    )
 }
 
 interface PanelWidgetDisplayProps {
