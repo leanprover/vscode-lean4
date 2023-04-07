@@ -5,14 +5,16 @@ import { mapRpcError, useAsync } from './infoview/util';
 import { InteractiveMessage } from './infoview/traceExplorer';
 
 export * from '@leanprover/infoview-api';
-export { useAsync, useAsyncWithTrigger, useEvent, useEventResult, useServerNotificationEffect,
-useServerNotificationState, useClientNotificationEffect, useClientNotificationState, mapRpcError, DocumentPosition } from './infoview/util';
+export { useAsync, useAsyncWithTrigger, useAsyncPersistent, useEvent, useEventResult,
+    useServerNotificationEffect, useServerNotificationState, useClientNotificationEffect,
+    useClientNotificationState, mapRpcError, DocumentPosition } from './infoview/util';
 export { EditorContext, VersionContext } from './infoview/contexts';
 export { EditorConnection } from './infoview/editorConnection';
 export { RpcContext } from './infoview/rpcSessions';
 export { ServerVersion } from './infoview/serverVersion';
 export { GoalLocation, GoalsLocation } from './infoview/goalLocation';
-export { importWidgetModule, DynamicComponent, DynamicComponentProps, PanelWidgetProps  } from './infoview/userWidget';
+export { importWidgetModule, DynamicComponent, DynamicComponentProps,
+    PanelWidgetProps } from './infoview/userWidget';
 
 export { InteractiveCode, InteractiveCodeProps } from './infoview/interactiveCode';
 export { renderInfoview } from './infoview/main';
