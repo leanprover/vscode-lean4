@@ -158,13 +158,15 @@ export const Goal = React.memo((props: GoalProps) => {
 interface GoalsProps {
     goals: InteractiveGoals
     filter: GoalFilterState
+    displayCount: boolean
 }
 
-function Goals({ goals, filter }: GoalsProps) {
+function Goals({ goals, filter, displayCount}: GoalsProps) {
     if (goals.goals.length === 0) {
         return <>No goals</>
     } else {
         return <>
+            {displayCount && <strong className="goal-goals">{goals.goals.length} goals</strong>}
             {goals.goals.map((g, i) => <Goal key={i} goal={g} filter={filter} />)}
         </>
     }
@@ -178,13 +180,15 @@ interface FilteredGoalsProps {
      * by virtue of still being mounted in the React tree. When it does appear again, the filter
      * settings and collapsed state will be as before. */
     goals?: InteractiveGoals
+    /** Whether or not to display the number of goals. */
+    displayCount?: boolean
 }
 
 /**
  * Display goals together with a header containing the provided children as well as buttons
  * to control how the goals are displayed.
  */
-export const FilteredGoals = React.memo(({ headerChildren, goals }: FilteredGoalsProps) => {
+export const FilteredGoals = React.memo(({ headerChildren, goals, displayCount }: FilteredGoalsProps) => {
     const ec = React.useContext(EditorContext)
 
     const copyToCommentButton =
@@ -232,7 +236,7 @@ export const FilteredGoals = React.memo(({ headerChildren, goals }: FilteredGoal
                 <span className='fr'>{copyToCommentButton}{sortButton}{filterButton}</span>
             </summary>
             <div className='ml1'>
-                {goals && <Goals goals={goals} filter={goalFilters}></Goals>}
+                {goals && <Goals goals={goals} filter={goalFilters} displayCount={displayCount||false}></Goals>}
             </div>
         </details>
     </div>
