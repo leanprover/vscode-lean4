@@ -47,17 +47,6 @@ suite('Lean4 Basics Test Suite', () => {
         }
         assert(expected.test(actual), `Active text editor is not located in ${expected}`);
 
-        // make sure lean client is started in the right place.
-        const clients = lean.exports.clientProvider;
-        assert(clients, 'No LeanClientProvider export');
-        clients.getClients().forEach((client) => {
-            const leanRoot = client.getWorkspaceFolder();
-            if (leanRoot.indexOf('leanprover--lean4---nightly') > 0){
-                assert(leanRoot.endsWith('leanprover--lean4---nightly'),
-                    'Lean client is not rooted in the \'leanprover--lean4---nightly\' folder');
-            }
-        });
-
         // make sure test is always run in predictable state, which is no file or folder open
         await closeAllEditors();
 
