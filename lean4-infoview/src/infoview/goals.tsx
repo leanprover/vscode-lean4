@@ -162,11 +162,14 @@ interface GoalsProps {
 }
 
 function Goals({ goals, filter, displayCount}: GoalsProps) {
-    if (goals.goals.length === 0) {
+    const nGoals = goals.goals.length
+    if (nGoals === 0) {
         return <>No goals</>
     } else {
         return <>
-            {displayCount && <strong className="goal-goals">{goals.goals.length} goals</strong>}
+            {displayCount &&
+                <strong className="goal-goals">{nGoals} {1 < nGoals ? 'goals' : 'goal'}</strong>}
+
             {goals.goals.map((g, i) => <Goal key={i} goal={g} filter={filter} />)}
         </>
     }
