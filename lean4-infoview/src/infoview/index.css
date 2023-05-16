@@ -25,12 +25,7 @@ html,body {
 }
 
 /* These are syntax highlights for the string goal view. */
-.goal-goals {
-    display: block;
-    color: #569cd6;
-    margin-bottom: 0.8rem;
-    margin-top: 0.5rem;
- }
+.goal-goals { color: #569cd6; }
 .goal-vdash { color: #569cd6; }
 .goal-case { color: #a1df90; }
 .goal-hyp { color: #ffcc00; }
