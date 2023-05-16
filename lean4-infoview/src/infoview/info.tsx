@@ -115,7 +115,7 @@ const InfoDisplayContent = React.memo((props: InfoDisplayContentProps) => {
                 <a className='link pointer dim' onClick={e => { e.preventDefault(); void triggerUpdate(); }}>{' '}Try again.</a>
             </div>}
         <LocationsContext.Provider value={locs}>
-            <FilteredGoals headerChildren='Tactic state' key='goals' goals={goals} />
+            <FilteredGoals headerChildren='Tactic state' key='goals' goals={goals} displayCount={true} />
         </LocationsContext.Provider>
         <FilteredGoals headerChildren='Expected type' key='term-goal'
             goals={termGoal !== undefined ? {goals: [termGoal]} : undefined} />
