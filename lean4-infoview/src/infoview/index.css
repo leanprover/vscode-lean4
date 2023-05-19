@@ -127,9 +127,6 @@ select {
 /* Style for tooltips shown in the widget view. This should *not* style the tooltip contents.
 For that, we can use more specific classes. */
 .tooltip {
-    position: absolute;
-    top: 0;
-    left: 0;
     background-color: var(--vscode-editorHoverWidget-background);
     padding: 4px 8px;
     border-radius: 4px;
@@ -141,8 +138,10 @@ For that, we can use more specific classes. */
     box-sizing: border-box;
 }
 
-.tooltip-arrow,
-.tooltip-arrow::before {
+.tooltip-arrow {
+    background: var(--vscode-editorHoverWidget-background);
+}
+/* .tooltip-arrow::before {
     position: absolute;
     width: 8px;
     height: 8px;
@@ -169,7 +168,7 @@ For that, we can use more specific classes. */
 
 .tooltip[data-popper-placement^='right'] > .tooltip-arrow {
     left: -4px;
-}
+} */
 
 /* Contents of a list of selections shown as a tooltip. */
 .tooltip-menu-content {

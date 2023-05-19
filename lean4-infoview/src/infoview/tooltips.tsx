@@ -3,6 +3,7 @@ import * as ReactDOM from 'react-dom'
 
 import {
   detectOverflow, useFloating, MiddlewareState, Side, Coords, SideObject,
+  flip, shift, offset, arrow, FloatingArrow
 } from '@floating-ui/react';
 
 import { forwardAndUseRef, LogicalDomContext, useLogicalDom, useOnClickOutside } from './util'
@@ -135,10 +136,11 @@ export const Tooltip = forwardAndUseRef<HTMLDivElement,
       mkTooltipContent: MkTooltipContentFn,
     }>((props_, _, setDivRef) => {
   const {reference, pointerPos, mkTooltipContent, ...props} = props_
+  const arrowRef = React.useRef(null);
 
-  const { strategy, refs, update } = useFloating({
-    strategy: 'absolute',
-    middleware: [ pointer(pointerPos), ]
+  const { refs, update, floatingStyles, context } = useFloating({
+    placement: 'top',
+    middleware: [offset(8), flip(), shift(), arrow({ element: arrowRef, })]
   })
   const update_ = React.useCallback(() => update?.(), [update])
 
@@ -151,10 +153,17 @@ export const Tooltip = forwardAndUseRef<HTMLDivElement,
         setDivRef(node)
         logicalDom.registerDescendant(node)
       }}
-      style={{ position: strategy, top: 0, left: 0}}
+      style={floatingStyles}
       className='tooltip'
       {...props}
     >
+      <FloatingArrow
+        ref={arrowRef}
+        context={context}
+        fill="var(--vscode-editorHoverWidget-background)"
+        strokeWidth={1}
+        stroke="var(--vscode-editorHoverWidget-border)"
+      />
       {mkTooltipContent(update_)}
     </div>
   )
