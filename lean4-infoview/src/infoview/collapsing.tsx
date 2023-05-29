@@ -26,7 +26,7 @@ export function useIsVisible(): [(element: HTMLElement) => void, boolean] {
 interface DetailsProps {
     initiallyOpen?: boolean;
     children: [React.ReactNode, ...React.ReactNode[]];
-    setOpenRef?: React.MutableRefObject<React.Dispatch<React.SetStateAction<boolean>>>;
+    setOpenRef?: (_: React.Dispatch<React.SetStateAction<boolean>>) => void;
 }
 
 /** Like `<details>` but can be programatically revealed using `setOpenRef`. */
@@ -37,9 +37,8 @@ export function Details({initiallyOpen, children: [summary, ...children], setOpe
             node.addEventListener('toggle', () => setOpen(node.open));
         }
     }, []);
-    if (setOpenRef) setOpenRef.current = setOpen;
-    /* HACK: `as any` works around a bug in `@types/react` */
-    return <details ref={setupEventListener as any} open={isOpen}>
+    if (setOpenRef) setOpenRef(setOpen);
+    return <details ref={setupEventListener} open={isOpen}>
         {summary}
         { isOpen && children }
     </details>;

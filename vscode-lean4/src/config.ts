@@ -195,6 +195,22 @@ export function getInfoViewDebounceTime(): number {
     return workspace.getConfiguration('lean4.infoview').get('debounceTime', 50);
 }
 
+export function getInfoViewShowExpectedType(): boolean {
+    return workspace.getConfiguration('lean4.infoview').get('showExpectedType', true);
+}
+
+export function getInfoViewShowGoalNames(): boolean {
+    return workspace.getConfiguration('lean4.infoview').get('showGoalNames', true);
+}
+
+export function getInfoViewEmphasizeFirstGoal(): boolean {
+    return workspace.getConfiguration('lean4.infoview').get('emphasizeFirstGoal', false);
+}
+
+export function getInfoViewReverseTacticState(): boolean {
+    return workspace.getConfiguration('lean4.infoview').get('reverseTacticState', false);
+}
+
 export function getElaborationDelay(): number {
     return workspace.getConfiguration('lean4').get('elaborationDelay', 200);
 }

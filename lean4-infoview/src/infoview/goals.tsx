@@ -1,9 +1,13 @@
 import * as React from 'react'
 import { InteractiveCode } from './interactiveCode'
-import { InteractiveGoal, InteractiveGoals, InteractiveHypothesisBundle, InteractiveHypothesisBundle_nonAnonymousNames, MVarId, TaggedText_stripTags } from '@leanprover/infoview-api'
+import { InfoviewActionKind, InteractiveGoal, InteractiveGoals, InteractiveHypothesisBundle,
+    InteractiveHypothesisBundle_nonAnonymousNames, MVarId, TaggedText_stripTags }
+    from '@leanprover/infoview-api'
 import { WithTooltipOnHover } from './tooltips';
-import { EditorContext } from './contexts';
+import { EditorContext, ConfigContext } from './contexts';
 import { Locations, LocationsContext, SelectableLocation } from './goalLocation';
+import { Details } from './collapsing';
+import { useEvent } from './util';
 
 /** Returns true if `h` is inaccessible according to Lean's default name rendering. */
 function isInaccessibleName(h: string): boolean {
@@ -111,13 +115,15 @@ function Hyp({ hyp: h, mvarId }: HypProps) {
 interface GoalProps {
     goal: InteractiveGoal
     filter: GoalFilterState
+    additionalClassNames: string
 }
 
 /**
  * Displays the hypotheses, target type and optional case label of a goal according to the
  * provided `filter`. */
 export const Goal = React.memo((props: GoalProps) => {
-    const { goal, filter } = props
+    const { goal, filter, additionalClassNames } = props
+    const config = React.useContext(ConfigContext)
 
     const prefix = goal.goalPrefix ?? '⊢ '
     const filteredList = getFilteredHypotheses(goal.hyps, filter);
@@ -135,41 +141,51 @@ export const Goal = React.memo((props: GoalProps) => {
         </LocationsContext.Provider>
     </div>
 
-    let cn = 'font-code tl pre-wrap bl bw1 pl1 b--transparent '
-    if (props.goal.isInserted) cn += 'b--inserted '
-    if (props.goal.isRemoved) cn += 'b--removed '
+    let cn = 'font-code tl pre-wrap bl bw1 pl1 b--transparent mb3 ' + additionalClassNames
+    if (props.goal.isInserted) cn += ' b--inserted '
+    if (props.goal.isRemoved) cn += ' b--removed '
 
-    if (goal.userName) {
+    const children: React.ReactNode[] = [
+        filter.reverse && goalLi,
+        hyps.map((h, i) => <Hyp hyp={h} mvarId={goal.mvarId} key={i} />),
+        !filter.reverse && goalLi
+    ]
+
+    if (goal.userName && config.showGoalNames) {
         return <details open className={cn}>
             <summary className='mv1 pointer'>
                 <strong className="goal-case">case </strong>{goal.userName}
             </summary>
-            {filter.reverse && goalLi}
-            {hyps.map((h, i) => <Hyp hyp={h} mvarId={goal.mvarId} key={i} />)}
-            {!filter.reverse && goalLi}
+            {children}
         </details>
     } else return <div className={cn}>
-        {filter.reverse && goalLi}
-        {hyps.map((h, i) => <Hyp hyp={h} mvarId={goal.mvarId} key={i} />)}
-        {!filter.reverse && goalLi}
+        {children}
     </div>
 })
 
 interface GoalsProps {
     goals: InteractiveGoals
     filter: GoalFilterState
+    /** Whether or not to display the number of goals. */
     displayCount: boolean
 }
 
-function Goals({ goals, filter, displayCount}: GoalsProps) {
+function Goals({ goals, filter, displayCount }: GoalsProps) {
     const nGoals = goals.goals.length
     if (nGoals === 0) {
         return <strong className="db2 mb2 goal-goals">No goals</strong>
     } else {
+        const config = React.useContext(ConfigContext)
+        const unemphasizeCn = 'o-70 font-size-code-smaller'
         return <>
             {displayCount &&
                 <strong className="db mb2 goal-goals">{nGoals} {1 < nGoals ? 'goals' : 'goal'}</strong>}
-            {goals.goals.map((g, i) => <Goal key={i} goal={g} filter={filter} />)}
+            {goals.goals.map((g, i) =>
+                <Goal
+                    key={i}
+                    goal={g}
+                    filter={filter}
+                    additionalClassNames={(i !== 0 && config.emphasizeFirstGoal) ? unemphasizeCn : ''}/>)}
         </>
     }
 }
@@ -183,15 +199,21 @@ interface FilteredGoalsProps {
      * settings and collapsed state will be as before. */
     goals?: InteractiveGoals
     /** Whether or not to display the number of goals. */
-    displayCount?: boolean
+    displayCount: boolean
+    /** Whether the list of goals should be expanded on first render. */
+    initiallyOpen: boolean
+    /** If specified, the display will be toggled (collapsed/expanded) when this action is requested
+     * by the user. */
+    togglingAction?: InfoviewActionKind
 }
 
 /**
  * Display goals together with a header containing the provided children as well as buttons
  * to control how the goals are displayed.
  */
-export const FilteredGoals = React.memo(({ headerChildren, goals, displayCount }: FilteredGoalsProps) => {
+export const FilteredGoals = React.memo(({ headerChildren, goals, displayCount, initiallyOpen, togglingAction }: FilteredGoalsProps) => {
     const ec = React.useContext(EditorContext)
+    const config = React.useContext(ConfigContext)
 
     const copyToCommentButton =
         <a className="link pointer mh2 dim codicon codicon-quote"
@@ -203,8 +225,7 @@ export const FilteredGoals = React.memo(({ headerChildren, goals, displayCount }
             title="copy state to comment" />
 
     const [goalFilters, setGoalFilters] = React.useState<GoalFilterState>(
-        { reverse: false, showType: true, showInstance: true, showHiddenAssumption: true, showLetValue: true });
-
+        { reverse: config.reverseTacticState, showType: true, showInstance: true, showHiddenAssumption: true, showLetValue: true });
     const sortClasses = 'link pointer mh2 dim codicon ' + (goalFilters.reverse ? 'codicon-arrow-up ' : 'codicon-arrow-down ');
     const sortButton =
         <a className={sortClasses} title="reverse list"
@@ -231,15 +252,22 @@ export const FilteredGoals = React.memo(({ headerChildren, goals, displayCount }
             <a className={'link pointer mh2 dim codicon ' + (isFiltered ? 'codicon-filter-filled ': 'codicon-filter ')}/>
         </WithTooltipOnHover>
 
+    const setOpenRef = React.useRef<React.Dispatch<React.SetStateAction<boolean>>>()
+    useEvent(ec.events.requestedAction, act => {
+        if (act.kind === togglingAction && setOpenRef.current !== undefined) {
+            setOpenRef.current(t => !t)
+        }
+    })
+
     return <div style={{display: goals !== undefined ? 'block' : 'none'}}>
-        <details open>
+        <Details setOpenRef={r => setOpenRef.current = r} initiallyOpen={initiallyOpen}>
             <summary className='mv2 pointer'>
                 {headerChildren}
                 <span className='fr'>{copyToCommentButton}{sortButton}{filterButton}</span>
             </summary>
             <div className='ml1'>
-                {goals && <Goals goals={goals} filter={goalFilters} displayCount={displayCount||false}></Goals>}
+                {goals && <Goals goals={goals} filter={goalFilters} displayCount={displayCount}></Goals>}
             </div>
-        </details>
+        </Details>
     </div>
 })

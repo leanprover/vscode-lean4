@@ -13,6 +13,11 @@ html,body {
     line-height: var(--vscode-editor-line-height);
 }
 
+.font-size-code-smaller {
+    font-size: calc(.8*var(--vscode-editor-font-size));
+    line-height: calc(.8*var(--vscode-editor-line-height));
+}
+
 .font-normal {
     font-family: var(--vscode-font-family);
     font-weight: var(--vscode-font-weight);

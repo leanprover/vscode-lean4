@@ -201,6 +201,14 @@ name of the relative path to the store the logs.
 
 * `lean4.infoview.debounceTime`: how long (in milliseconds) the infoview waits before displaying new information after the cursor has stopped moving. The optimal value depends on your machine - try experimenting. The default is `50`.
 
+* `lean4.infoview.showExpectedType`: show the expected type by default. This display can then be toggled by clicking on the title or using the <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>e</kbd> `Lean 4: Infoview: Show Expected Type` command. The default is `true`.
+
+* `lean4.infoview.showGoalNames`: show goal names (e.g. `case inl` in the infoview). The default is `true`.
+
+* `lean4.infoview.emphasizeFirstGoal`: emphasize the first goal by displaying the other goals with reduced size and opacity. The default is `false`.
+
+* `lean4.infoview.reverseTacticState`: show each goal above its local context by default. This can also be toggled by clicking a button (see the Infoview panel description above). The default is `false`.
+
 ## Extension commands
 
 This extension also contributes the following commands, which can be bound to keys if desired using the [VS Code keyboard bindings](https://code.visualstudio.com/docs/getstarted/keybindings).
@@ -239,6 +247,8 @@ the server for the file needs to be restarted to pick up the changed dependency.
 * `lean4.infoView.toggleStickyPosition` (Lean 4: Infoview: Toggle Pin): enable / disable "sticky" mode. On enable, a tactic state widget will be created and pinned to this position, reporting the goal from this point even as the cursor moves and edits are made to the file. On disable the pinned widget will be removed. (same as clicking on the <img height="16" src="vscode-lean4/media/pin.png"/> or <img height="16" src="vscode-lean4/media/unpin.png"/> icon on the tactic state widget closest to the cursor.)
 
 * `lean4.infoView.toggleUpdating` (Lean 4: Infoview: Toggle Updating): pause / continue live updates of the main (unpinned) tactic state widget (same as clicking on the <img height="16" src="vscode-lean4/media/pause.png"/> or <img height="16" src="vscode-lean4/media/continue.png"/> icon on the main tactic state widget.)
+
+* `lean4.infoView.toggleExpectedType` (Lean 4: Infoview: Toggle Expected Type): toggles the "Expected Type" widget in the Infoview (bound to <kbd>ctrl</kbd>+<kbd>alt</kbd>+<kbd>e</kbd> by default)
 
 ### Documentation commands
 

@@ -87,6 +87,7 @@ const InfoDisplayContent = React.memo((props: InfoDisplayContentProps) => {
     const hasWidget = userWidgets.length > 0;
     const hasError = !!error;
     const hasMessages = messages.length !== 0;
+    const config = React.useContext(ConfigContext)
 
     const nothingToShow = !hasError && !goals && !termGoal && !hasMessages && !hasWidget;
 
@@ -115,10 +116,20 @@ const InfoDisplayContent = React.memo((props: InfoDisplayContentProps) => {
                 <a className='link pointer dim' onClick={e => { e.preventDefault(); void triggerUpdate(); }}>{' '}Try again.</a>
             </div>}
         <LocationsContext.Provider value={locs}>
-            <FilteredGoals headerChildren='Tactic state' key='goals' goals={goals} displayCount={true} />
+            <FilteredGoals
+                key='goals'
+                headerChildren='Tactic state'
+                initiallyOpen
+                goals={goals}
+                displayCount />
         </LocationsContext.Provider>
-        <FilteredGoals headerChildren='Expected type' key='term-goal'
-            goals={termGoal !== undefined ? {goals: [termGoal]} : undefined} />
+        <FilteredGoals
+            key='term-goal'
+            headerChildren='Expected type'
+            goals={termGoal !== undefined ? {goals: [termGoal]} : undefined}
+            initiallyOpen={config.showExpectedType}
+            displayCount={false}
+            togglingAction='toggleExpectedType' />
         {userWidgets.map(widget =>
             <details key={`widget::${widget.id}::${widget.range?.toString()}`} open>
                 <summary className='mv2 pointer'>{widget.name}</summary>

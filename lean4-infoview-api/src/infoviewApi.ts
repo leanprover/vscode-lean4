@@ -79,19 +79,26 @@ export interface InfoviewConfig {
     allErrorsOnLine: boolean;
     autoOpenShowsGoal: boolean;
     debounceTime: number;
+    showExpectedType: boolean;
+    showGoalNames: boolean;
+    emphasizeFirstGoal: boolean;
+    reverseTacticState: boolean;
 }
 
 export const defaultInfoviewConfig: InfoviewConfig = {
     allErrorsOnLine: true,
     autoOpenShowsGoal: true,
     debounceTime: 50,
+    showExpectedType: true,
+    showGoalNames: true,
+    emphasizeFirstGoal: false,
+    reverseTacticState: false,
 }
 
-export type InfoviewAction =
-  { kind: 'toggleAllMessages'} |
-  { kind: 'togglePaused' } |
-  { kind: 'togglePin'} |
-  { kind: 'copyToComment'}
+export type InfoviewActionKind =
+  'toggleAllMessages' | 'togglePaused' | 'togglePin' | 'copyToComment' | 'toggleExpectedType'
+
+export type InfoviewAction = { kind: InfoviewActionKind }
 
 /** Interface the hosting editor uses to talk to the InfoView WebView. */
 export interface InfoviewApi {
