@@ -563,12 +563,12 @@ export class InfoProvider implements Disposable {
         // so that it has up-to-date information.
         if (client?.initializeResult) {
             logger.log('[InfoProvider] initInfoView!')
+            await this.sendConfig();
             await this.webviewPanel?.api.serverStopped(undefined); // clear any server stopped state
             await this.webviewPanel?.api.serverRestarted(client.initializeResult);
             await this.sendDiagnostics(client);
             await this.sendProgress(client);
             await this.sendPosition();
-            await this.sendConfig();
         } else if (client == null) {
             logger.log('[InfoProvider] initInfoView got null client.')
         } else {
