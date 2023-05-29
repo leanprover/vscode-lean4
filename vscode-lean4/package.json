@@ -145,6 +145,26 @@
 					"default": "",
 					"markdownDescription": "Add an additional CSS snippet to the infoview."
 				},
+				"lean4.infoview.showExpectedType": {
+					"type": "boolean",
+					"default": true,
+					"markdownDescription": "Show the expected type by default."
+				},
+				"lean4.infoview.showGoalNames": {
+					"type": "boolean",
+					"default": true,
+					"markdownDescription": "Show goal names (e.g. `case inl`) in the infoview."
+				},
+				"lean4.infoview.emphasizeFirstGoal": {
+					"type": "boolean",
+					"default": false,
+					"markdownDescription": "Display goals other than the main goal in a smaller font size."
+				},
+				"lean4.infoview.reverseTacticState": {
+					"type": "boolean",
+					"default": false,
+					"markdownDescription": "Default to showing the goal type first and then the local context."
+				},
 				"lean4.elaborationDelay": {
 					"type": "number",
 					"default": 200,
@@ -203,13 +223,13 @@
 				"command": "lean4.displayList",
 				"category": "Lean 4",
 				"title": "Infoview: Toggle \"All Messages\"",
-				"description": "Toggles the \"All Messages\" widget in the infoview."
+				"description": "Toggles the \"All Messages\" panel in the infoview."
 			},
 			{
 				"command": "lean4.infoView.copyToComment",
 				"category": "Lean 4",
 				"title": "Infoview: Copy Contents to Comment",
-				"description": "Copy the contents of the currently active tactic state widget to a new comment on the previous line.",
+				"description": "Copy the contents of the currently active tactic state panel to a new comment on the previous line.",
 				"icon": {
 					"dark": "./media/copy-to-comment-dark.svg",
 					"light": "./media/copy-to-comment-light.svg"
@@ -219,17 +239,19 @@
 				"command": "lean4.infoView.toggleStickyPosition",
 				"category": "Lean 4",
 				"title": "Infoview: Toggle Pin",
-				"description": "Create or remove a tactic state widget pinned to show the goal at the current position.",
-				"icon": {
-					"dark": "./media/toggle-sticky-position-dark.svg",
-					"light": "./media/toggle-sticky-position-light.svg"
-				}
+				"description": "Create or remove a tactic state panel pinned to show the goal at the current position."
 			},
 			{
 				"command": "lean4.infoView.toggleUpdating",
 				"category": "Lean 4",
 				"title": "Infoview: Toggle Updating",
 				"description": "Pause / Continue live updating of the main tactic state widget."
+			},
+			{
+				"command": "lean4.infoView.toggleExpectedType",
+				"category": "Lean 4",
+				"title": "Infoview: Toggle Expected Type",
+				"description": "Toggle the display of expected type."
 			},
 			{
 				"command": "lean4.docView.showAllAbbreviations",
@@ -241,7 +263,7 @@
 				"command": "lean4.docView.open",
 				"category": "Lean 4",
 				"title": "Open Documentation View",
-				"description": "Open documentation found in local 'html' folder in a separate web view panel"
+				"description": "Open documentation found in local 'html' folder in a separate web view panel."
 			}
 		],
 		"languages": [

@@ -10,6 +10,10 @@ import { EditorApi, InfoviewApi, LeanFileProgressParams, TextInsertKind,
 import { LeanClient } from './leanclient';
 import { getEditorLineHeight, getInfoViewAllErrorsOnLine, getInfoViewAutoOpen, getInfoViewAutoOpenShowsGoal,
     getInfoViewDebounceTime,
+    getInfoViewEmphasizeFirstGoal,
+    getInfoViewReverseTacticState,
+    getInfoViewShowExpectedType,
+    getInfoViewShowGoalNames,
     getInfoViewStyle, minIfProd, prodOrDev } from './config';
 import { Rpc } from './rpc';
 import { LeanClientProvider } from './utils/clientProvider'
@@ -285,6 +289,8 @@ export class InfoProvider implements Disposable {
                 () => this.webviewPanel?.api.requestedAction({kind: 'copyToComment'})),
             commands.registerCommand('lean4.infoView.toggleUpdating', () =>
                 this.webviewPanel?.api.requestedAction({kind: 'togglePaused'})),
+            commands.registerCommand('lean4.infoView.toggleExpectedType', () =>
+                this.webviewPanel?.api.requestedAction({kind: 'toggleExpectedType'})),
             commands.registerTextEditorCommand('lean4.infoView.toggleStickyPosition',
                 () => this.webviewPanel?.api.requestedAction({kind: 'togglePin'})),
         );
@@ -575,6 +581,10 @@ export class InfoProvider implements Disposable {
            allErrorsOnLine: getInfoViewAllErrorsOnLine(),
            autoOpenShowsGoal: getInfoViewAutoOpenShowsGoal(),
            debounceTime: getInfoViewDebounceTime(),
+           showExpectedType: getInfoViewShowExpectedType(),
+           showGoalNames: getInfoViewShowGoalNames(),
+           emphasizeFirstGoal: getInfoViewEmphasizeFirstGoal(),
+           reverseTacticState: getInfoViewReverseTacticState()
        });
     }
 
@@ -604,8 +614,8 @@ export class InfoProvider implements Disposable {
 
     private onLanguageChanged() {
         this.autoOpen().then(async () => {
-            await this.sendPosition();
             await this.sendConfig();
+            await this.sendPosition();
         }).catch(() => {});
     }
 
