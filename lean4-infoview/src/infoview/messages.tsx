@@ -21,7 +21,8 @@ const MessageView = React.memo(({uri, diag}: MessageViewProps) => {
     const fname = escapeHtml(basename(uri));
     const {line, character} = diag.range.start;
     const loc: Location = { uri, range: diag.range };
-    const text = TaggedText_stripTags(diag.message);
+    /* We grab the text contents of the message from `node.innerText`. */
+    const node = React.useRef<HTMLDivElement>(null);
     const severityClass = diag.severity ? {
         [DiagnosticSeverity.Error]: 'error',
         [DiagnosticSeverity.Warning]: 'warning',
@@ -33,19 +34,27 @@ const MessageView = React.memo(({uri, diag}: MessageViewProps) => {
     <details open>
         <summary className={severityClass + ' mv2 pointer'}>{title}
             <span className="fr">
-                <a className="link pointer mh2 dim codicon codicon-go-to-file"
-                   onClick={e => { e.preventDefault(); void ec.revealLocation(loc); }}
-                   title="reveal file location"></a>
-                <a className="link pointer mh2 dim codicon codicon-quote"
-                   data-id="copy-to-comment"
-                   onClick={e => {e.preventDefault(); void ec.copyToComment(text)}}
-                   title="copy message to comment"></a>
-                <a className="link pointer mh2 dim codicon codicon-clippy"
-                   onClick={e => {e.preventDefault(); void ec.api.copyToClipboard(text)}}
-                   title="copy message to clipboard"></a>
+                <a  className="link pointer mh2 dim codicon codicon-go-to-file"
+                    onClick={e => { e.preventDefault(); void ec.revealLocation(loc); }}
+                    title="reveal file location"></a>
+                <a  className="link pointer mh2 dim codicon codicon-quote"
+                    data-id="copy-to-comment"
+                    onClick={e => {
+                        e.preventDefault()
+                        if (node.current)
+                            void ec.copyToComment(node.current.innerText)
+                    }}
+                    title="copy message to comment"></a>
+                <a  className="link pointer mh2 dim codicon codicon-clippy"
+                    onClick={e => {
+                        e.preventDefault()
+                        if (node.current)
+                            void ec.api.copyToClipboard(node.current.innerText)
+                    }}
+                    title="copy message to clipboard"></a>
             </span>
         </summary>
-        <div className="ml1">
+        <div className="ml1" ref={node}>
             <pre className="font-code pre-wrap">
                 <InteractiveMessage fmt={diag.message} />
             </pre>
