@@ -1,6 +1,6 @@
 # Development
 
-This page is designed for software developers who are helping to develop this Lean VS Code exension.
+This page is designed for software developers who are helping to develop this Lean VS Code extension.
 
 The repository contains NPM packages implementing editor integration for the Lean 4 programming language. The VS Code
 extension proper is in [`vscode-lean4`](vscode-lean4/), while [`lean4-infoview`](lean4-infoview/) implements the

@@ -148,7 +148,7 @@ You can also disable auto-opening behavior using the setting `lean4.infoViewAuto
 
   ![inspect-term-example](vscode-lean4/media/inspect-term-example.png)
 
-(8). The "All Messages" widget can be expanded by clicking on it (or hitting the keybind for `lean4.displayList`, which is <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Alt</kbd> by default
+(8). The "All Messages" widget can be expanded by clicking on it (or hitting the keybind for `lean4.displayList`, which is <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Alt</kbd> by default)
 
 
 ## Extension Settings
