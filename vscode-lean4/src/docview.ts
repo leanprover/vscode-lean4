@@ -2,7 +2,7 @@
 import axios from 'axios';
 import cheerio = require('cheerio');
 import { URL } from 'url';
-import { commands, Disposable, Uri, ViewColumn, WebviewPanel, window, ColorThemeKind,
+import { commands, Disposable, Uri, ViewColumn, WebviewPanel, window,
      workspace, WebviewOptions, WebviewPanelOptions, TextDocument, languages,
      Range, Position } from 'vscode';
 import { join, extname } from 'path';
@@ -225,17 +225,15 @@ export class DocViewProvider implements Disposable {
 
             const books : any = {
                 'Theorem Proving in Lean': mkCommandUri('lean4.docView.open', 'https://leanprover.github.io/theorem_proving_in_lean4/introduction.html'),
+                'Mathematics in Lean': mkCommandUri('lean4.docView.open', 'https://leanprover-community.github.io/mathematics_in_lean/'),
                 'Reference Manual': mkCommandUri('lean4.docView.open', 'https://leanprover.github.io/lean4/doc/'),
-                'Abbreviations cheat sheet': mkCommandUri('lean4.docView.showAllAbbreviations'),
+                'Abbreviations Cheatsheet': mkCommandUri('lean4.docView.showAllAbbreviations'),
                 'Example': mkCommandUri('lean4.openExample', 'https://github.com/leanprover/lean4-samples/raw/main/HelloWorld/Main.lean'),
 
                 // These are handy for testing that the bad file logic is working.
                 //'Test bad file': mkCommandUri('lean4.docView.open', Uri.joinPath(this.extensionUri, 'media', 'webview.js')),
                 //'Test bad Uri': mkCommandUri('lean4.docView.open', 'https://leanprover.github.io/lean4/doc/images/code-success.png'),
             };
-
-            // TODO: add mathlib4 when we have a book about it
-            // 'Mathematics in Lean': 'https://github.com/leanprover-community/mathlib4/',
 
             for (const book of Object.getOwnPropertyNames(books)) {
                 body.append($('<p>').append($('<a>').attr('href', books[book] as string).text(book)));
