@@ -6,7 +6,7 @@ import {
   flip, shift, offset, arrow, FloatingArrow
 } from '@floating-ui/react';
 
-import { forwardAndUseRef, LogicalDomContext, useLogicalDom, useOnClickOutside } from './util'
+import { forwardAndUseRef, forwardAndUseStateRef, LogicalDomContext, useLogicalDomObserver, useOnClickOutside } from './util'
 
 /** Tooltip contents should call `redrawTooltip` whenever their layout changes. */
 export type MkTooltipContentFn = (redrawTooltip: () => void) => React.ReactNode
@@ -129,14 +129,15 @@ const pointer = (pointerPos: PointerCoords) => ({
   }
 });
 
-export const Tooltip = forwardAndUseRef<HTMLDivElement,
+export type TooltipProps =
       React.HTMLProps<HTMLDivElement> &
     { reference: HTMLElement | null,
       pointerPos: PointerCoords,
-      mkTooltipContent: MkTooltipContentFn,
-    }>((props_, _, setDivRef) => {
+    mkTooltipContent: MkTooltipContentFn }
+
+export function Tooltip(props_: TooltipProps) {
   const {reference, pointerPos, mkTooltipContent, ...props} = props_
-  const arrowRef = React.useRef(null);
+  const arrowRef = React.useRef(null)
 
   const { refs, update, floatingStyles, context } = useFloating({
     placement: 'top',
@@ -145,13 +146,15 @@ export const Tooltip = forwardAndUseRef<HTMLDivElement,
   const update_ = React.useCallback(() => update?.(), [update])
 
   const logicalDom = React.useContext(LogicalDomContext)
+  const logicalDomCleanupFn = React.useRef<() => void>(() => {})
   const floating = (
     <div
       ref={node => {
         refs.setReference(reference)
         refs.setFloating(node)
-        setDivRef(node)
-        logicalDom.registerDescendant(node)
+        logicalDomCleanupFn.current()
+        if (node) logicalDomCleanupFn.current = logicalDom.registerDescendant(node)
+        else logicalDomCleanupFn.current = () => {}
       }}
       style={floatingStyles}
       className='tooltip'
@@ -171,7 +174,7 @@ export const Tooltip = forwardAndUseRef<HTMLDivElement,
   // Append the tooltip to the end of document body to avoid layout issues.
   // (https://github.com/leanprover/vscode-lean4/issues/51)
   return ReactDOM.createPortal(floating, document.body)
-})
+}
 
 /** Hover state of an element. The pointer can be
  * - elsewhere (`off`)
@@ -248,6 +251,7 @@ export const DetectHoverSpan =
     </span>
 })
 
+/** Pinning a child tooltip has to also pin all ancestors. This context supports that. */
 interface TipChainContext {
   pinParent(): void
 }
@@ -260,7 +264,7 @@ const TipChainContext = React.createContext<TipChainContext>({pinParent: () => {
  * hoverable area is clicked. The middleware can invoke `next` to execute the default action
  * which is to pin the tooltip open. */
 export const WithTooltipOnHover =
-  forwardAndUseRef<HTMLSpanElement,
+  forwardAndUseStateRef<HTMLSpanElement,
     Omit<React.HTMLProps<HTMLSpanElement>, 'onClick'> & {
       mkTooltipContent: MkTooltipContentFn,
       onClick?: (event: React.MouseEvent<HTMLSpanElement>, next: React.MouseEventHandler<HTMLSpanElement>) => void
@@ -289,10 +293,10 @@ export const WithTooltipOnHover =
   }), [tipChainCtx])
 
   // Note: because tooltips are attached to `document.body`, they are not descendants of the
-  // hoverable area in the DOM tree, and the `contains` check fails for elements within tooltip
-  // contents. We can use this to distinguish these elements.
-  const isWithinHoverable = (el: EventTarget) => ref.current && el instanceof Node && ref.current.contains(el)
-  const [logicalElt, logicalDomStorage] = useLogicalDom(ref)
+  // hoverable area in the DOM tree. Thus the `contains` check fails for elements within tooltip
+  // contents and succeeds for elements within the hoverable. We can use this to distinguish them.
+  const isWithinHoverable = (el: EventTarget) => ref && el instanceof Node && ref.contains(el)
+  const [logicalSpanElt, logicalDomStorage] = useLogicalDomObserver({current: ref})
 
   // We use timeouts for debouncing hover events.
   const timeout = React.useRef<number>()
@@ -316,7 +320,7 @@ export const WithTooltipOnHover =
     clearTimeout()
     setState('hide')
   }, [])
-  useOnClickOutside(logicalElt, onClickOutside)
+  useOnClickOutside(logicalSpanElt, onClickOutside)
 
   const isPointerOverTooltip = React.useRef<boolean>(false)
   const startShowTimeout = () => {
@@ -382,7 +386,7 @@ export const WithTooltipOnHover =
       {shouldShow &&
         <TipChainContext.Provider value={newTipChainCtx}>
           <Tooltip
-            reference={ref.current}
+            reference={ref}
             pointerPos={pointerPos}
             onPointerEnter={onPointerEnter}
             onPointerLeave={onPointerLeave}

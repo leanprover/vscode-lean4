@@ -172,10 +172,10 @@ interface GoalsProps {
 
 function Goals({ goals, filter, displayCount }: GoalsProps) {
     const nGoals = goals.goals.length
+    const config = React.useContext(ConfigContext)
     if (nGoals === 0) {
         return <strong className="db2 mb2 goal-goals">No goals</strong>
     } else {
-        const config = React.useContext(ConfigContext)
         const unemphasizeCn = 'o-70 font-size-code-smaller'
         return <>
             {displayCount &&
