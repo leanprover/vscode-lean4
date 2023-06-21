@@ -167,7 +167,9 @@ export function Tooltip(props_: TooltipProps) {
         strokeWidth={1}
         stroke="var(--vscode-editorHoverWidget-border)"
       />
+      <div className='tooltip-content'>
       {mkTooltipContent(update_)}
+      </div>
     </div>
   )
 
