@@ -3,13 +3,10 @@ import * as ReactDOM from 'react-dom'
 
 import {
   detectOverflow, useFloating, MiddlewareState, Side, Coords, SideObject,
-  flip, shift, offset, arrow, FloatingArrow
+  shift, offset, arrow, autoPlacement, autoUpdate, size, FloatingArrow
 } from '@floating-ui/react';
 
 import { forwardAndUseRef, forwardAndUseStateRef, LogicalDomContext, useLogicalDomObserver, useOnClickOutside } from './util'
-
-/** Tooltip contents should call `redrawTooltip` whenever their layout changes. */
-export type MkTooltipContentFn = (redrawTooltip: () => void) => React.ReactNode
 
 // Pointer coordinates used for tooltip placement.
 type PointerCoords = {pageX: number, pageY: number, clientX: number, clientY: number}
@@ -130,27 +127,39 @@ const pointer = (pointerPos: PointerCoords) => ({
 });
 
 export type TooltipProps =
-      React.HTMLProps<HTMLDivElement> &
+  React.PropsWithChildren<React.HTMLProps<HTMLDivElement>> &
     { reference: HTMLElement | null,
-      pointerPos: PointerCoords,
-    mkTooltipContent: MkTooltipContentFn }
+    pointerPos: PointerCoords }
 
 export function Tooltip(props_: TooltipProps) {
-  const {reference, pointerPos, mkTooltipContent, ...props} = props_
+  const {reference, pointerPos, children, ...props} = props_
   const arrowRef = React.useRef(null)
 
-  const { refs, update, floatingStyles, context } = useFloating({
+  const { refs, floatingStyles, context } = useFloating({
+    elements: { reference },
     placement: 'top',
-    middleware: [offset(8), flip(), shift(), arrow({ element: arrowRef, })]
+    middleware: [
+      offset(8),
+      shift(),
+      autoPlacement(),
+      size({
+        apply({availableHeight, elements}) {
+          const availHeight = Math.max(availableHeight - 10, 0)
+          elements.floating.style.maxHeight = `${Math.min(availHeight, 300)}px`
+        }
+      }),
+      // NOTE: `padding` should be `tooltip.borderRadius` or more so that the arrow
+      // doesn't overflow the rounded corner.
+      arrow({ element: arrowRef, padding: 6 }),
+    ],
+    whileElementsMounted: autoUpdate,
   })
-  const update_ = React.useCallback(() => update?.(), [update])
 
   const logicalDom = React.useContext(LogicalDomContext)
   const logicalDomCleanupFn = React.useRef<() => void>(() => {})
   const floating = (
     <div
       ref={node => {
-        refs.setReference(reference)
         refs.setFloating(node)
         logicalDomCleanupFn.current()
         if (node) logicalDomCleanupFn.current = logicalDom.registerDescendant(node)
@@ -168,7 +177,7 @@ export function Tooltip(props_: TooltipProps) {
         stroke="var(--vscode-editorHoverWidget-border)"
       />
       <div className='tooltip-content'>
-      {mkTooltipContent(update_)}
+        {children}
       </div>
     </div>
   )
@@ -268,10 +277,10 @@ const TipChainContext = React.createContext<TipChainContext>({pinParent: () => {
 export const WithTooltipOnHover =
   forwardAndUseStateRef<HTMLSpanElement,
     Omit<React.HTMLProps<HTMLSpanElement>, 'onClick'> & {
-      mkTooltipContent: MkTooltipContentFn,
+      tooltipChildren: React.ReactNode,
       onClick?: (event: React.MouseEvent<HTMLSpanElement>, next: React.MouseEventHandler<HTMLSpanElement>) => void
     }>((props_, ref, setRef) => {
-  const {mkTooltipContent, ...props} = props_
+  const { tooltipChildren, ...props } = props_
 
   // Pointer state used to position tooltip.
   const [pointerPos, setPointerPos] = React.useState<PointerCoords>(
@@ -392,8 +401,9 @@ export const WithTooltipOnHover =
             pointerPos={pointerPos}
             onPointerEnter={onPointerEnter}
             onPointerLeave={onPointerLeave}
-            mkTooltipContent={mkTooltipContent}
-          />
+          >
+            {tooltipChildren}
+          </Tooltip>
         </TipChainContext.Provider>}
       {props.children}
     </span>

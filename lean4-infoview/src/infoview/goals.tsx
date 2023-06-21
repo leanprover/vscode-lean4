@@ -248,7 +248,7 @@ export const FilteredGoals = React.memo(({ headerChildren, goals, displayCount, 
 
     const isFiltered = !goalFilters.showInstance || !goalFilters.showType || !goalFilters.showHiddenAssumption || !goalFilters.showLetValue
     const filterButton =
-        <WithTooltipOnHover mkTooltipContent={() => filterMenu}>
+        <WithTooltipOnHover tooltipChildren={filterMenu}>
             <a className={'link pointer mh2 dim codicon ' + (isFiltered ? 'codicon-filter-filled ': 'codicon-filter ')}/>
         </WithTooltipOnHover>
 

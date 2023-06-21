@@ -36,7 +36,6 @@ export function InteractiveTaggedText<T>({fmt, InnerTagUi}: InteractiveTaggedTex
 
 interface TypePopupContentsProps {
   info: SubexprInfo
-  redrawTooltip: () => void
 }
 
 function Markdown({contents}: {contents: string}): JSX.Element {
@@ -67,7 +66,7 @@ function Markdown({contents}: {contents: string}): JSX.Element {
 }
 
 /** Shows `explicitValue : itsType` and a docstring if there is one. */
-function TypePopupContents({ info, redrawTooltip }: TypePopupContentsProps) {
+function TypePopupContents({ info }: TypePopupContentsProps) {
   const rs = React.useContext(RpcContext)
   // When `err` is defined we show the error,
   // otherwise if `ip` is defined we show its contents,
@@ -75,10 +74,6 @@ function TypePopupContents({ info, redrawTooltip }: TypePopupContentsProps) {
   const interactive = useAsync(
     () => InteractiveDiagnostics_infoToInteractive(rs, info.info),
     [rs, info.info])
-
-  // We ask the tooltip parent component to relayout whenever our contents change.
-  React.useEffect(() => { void redrawTooltip() },
-    [interactive.state, (interactive as any)?.value, (interactive as any)?.error, redrawTooltip])
 
   // Even when subexpressions are selectable in our parent component, it doesn't make sense
   // to select things inside the *type* of the parent, so we clear the context.
@@ -124,10 +119,6 @@ const DIFF_TAG_TO_EXPLANATION : {[K in DiffTag] : string} = {
  * can be shift-clicked to select it.
  */
 function InteractiveCodeTag({tag: ct, fmt}: InteractiveTagProps<SubexprInfo>) {
-  const mkTooltip = React.useCallback((redrawTooltip: () => void) =>
-    <TypePopupContents info={ct} redrawTooltip={redrawTooltip} />,
-    [ct.info])
-
   const rs = React.useContext(RpcContext)
   const ec = React.useContext(EditorContext)
   const [hoverState, setHoverState] = React.useState<HoverState>('off')
@@ -164,7 +155,7 @@ function InteractiveCodeTag({tag: ct, fmt}: InteractiveTagProps<SubexprInfo>) {
 
   return (
     <WithTooltipOnHover
-      mkTooltipContent={mkTooltip}
+      tooltipChildren={<TypePopupContents info={ct} />}
       onClick={(e, next) => {
         // On ctrl-click or ⌘-click, if location is known, go to it in the editor
         if (e.ctrlKey || e.metaKey) {
