@@ -141,12 +141,14 @@ export function Tooltip(props_: TooltipProps) {
     middleware: [
       offset(8),
       shift(),
-      autoPlacement(),
+      autoPlacement({
+        padding: 10,
+      }),
       size({
         apply({availableHeight, elements}) {
-          const availHeight = Math.max(availableHeight - 10, 0)
-          elements.floating.style.maxHeight = `${Math.min(availHeight, 300)}px`
-        }
+          elements.floating.style.maxHeight = `${Math.min(availableHeight, 300)}px`
+        },
+        padding: 10
       }),
       // NOTE: `padding` should be `tooltip.borderRadius` or more so that the arrow
       // doesn't overflow the rounded corner.
