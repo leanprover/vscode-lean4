@@ -445,6 +445,8 @@
     "to_s": "→ₛ",
     "r_s": "→ₛ",
     "simplefunc": "→ₛ",
+    "heyting": "⇨",
+    "himp": "⇨",
 
     "covers": "⋖",
     "covby": "⋖",
