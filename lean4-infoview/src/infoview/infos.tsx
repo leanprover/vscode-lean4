@@ -97,13 +97,13 @@ export function Infos() {
             pinKey.current += 1;
             return [ ...pinnedPositions, { ...pos, key: pinKey.current.toString() } ];
         });
-    }, []);
+    }, [setPinnedPositions]);
     const unpin = React.useCallback((pos: DocumentPosition) => {
         setPinnedPositions(pinnedPositions => {
             if (!isPinned(pinnedPositions, pos)) return pinnedPositions;
             return pinnedPositions.filter(p => !DocumentPosition.isEqual(p, pos));
         });
-    }, []);
+    }, [setPinnedPositions]);
 
     // Toggle pin at current position when the editor requests it
     useEvent(ec.events.requestedAction, act => {

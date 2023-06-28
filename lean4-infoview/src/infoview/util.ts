@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-namespace */
+/* eslint-disable react-hooks/exhaustive-deps */
 import * as React from 'react';
 import type { DocumentUri, Position, Range, TextDocumentPositionParams } from 'vscode-languageserver-protocol';
 

@@ -90,7 +90,7 @@ function CollapsibleTraceNode(traceEmbed: TraceEmbed) {
         ev.stopPropagation()
         if (!open) void fetchChildren();
         setOpen(o => !o)
-    }, [open])
+    }, [open, fetchChildren])
 
     return <div>
         <div className='pointer' onClick={onClick}><TraceLine {...traceEmbed} icon={icon} /></div>

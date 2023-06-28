@@ -141,7 +141,7 @@ function InteractiveCodeTag({tag: ct, fmt}: InteractiveTagProps<SubexprInfo>) {
   }, [rs, ct.info, goToLoc])
   // Eagerly fetch the location as soon as the pointer enters this area so that we can show
   // an underline if a jump target is available.
-  React.useEffect(() => { if (hoverState === 'ctrlOver') void fetchGoToLoc() }, [hoverState])
+  React.useEffect(() => { if (hoverState === 'ctrlOver') void fetchGoToLoc() }, [hoverState, fetchGoToLoc])
 
   const locs = React.useContext(LocationsContext)
   const ourLoc = locs && locs.subexprTemplate && ct.subexprPos ?

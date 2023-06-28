@@ -18,14 +18,14 @@ export function WithRpcSessions({ children }: { children: React.ReactNode }) {
     React.useEffect(() => {
         // Clean up the sessions on unmount
         return () => sessions.dispose()
-    }, [])
+    }, [sessions])
 
     useClientNotificationEffect(
         'textDocument/didClose',
         (params: DidCloseTextDocumentParams) => {
             sessions.closeSessionForFile(params.textDocument.uri)
         },
-        []
+        [sessions]
     )
 
     // TODO: only restart files for the server that stopped

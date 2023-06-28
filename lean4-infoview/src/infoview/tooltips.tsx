@@ -119,7 +119,7 @@ export const DetectHoverSpan =
       document.removeEventListener('keydown', onKeyDown)
       document.removeEventListener('keyup', onKeyUp)
     }
-  }, [])
+  }, [setHoverState])
 
   return <span
       {...props}
