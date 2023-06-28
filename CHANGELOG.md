@@ -8,7 +8,7 @@
 ### 0.0.40 (Oct 21, 2021): c387eab150b988a47956192b0fc48e950f6c1fca
 
 - Improved error handling when Lean language server fails to start.
-- Fix InfoView stops updating afer "Lean 4: Resstart Server" command.
+- Fix InfoView stops updating afer "Lean 4: Restart Server" command.
 - Update project to npm version 8.1.0.
 
 ### 0.0.39 (Oct 20, 2021): 6510b32473fe589f0a1c36d7fc12d77a6956ea05
@@ -28,7 +28,7 @@
 ### 0.0.36 (Oct 5, 2021): b88795134ba938d285bd896c33225f366fa46eed
 
 - Remove begin / end from the brackets section of the language config.
-- Add logging to abreviation rewriter so we can catch any future flakiness...
+- Add logging to abbreviation rewriter so we can catch any future flakiness...
 - Infoview should not be so aggressive about reopening all the time, and should not open on markdown files.
 - Fix data loss in RPC.
 - Show language server errors in popup
