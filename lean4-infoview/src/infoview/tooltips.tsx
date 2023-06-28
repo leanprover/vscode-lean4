@@ -2,137 +2,17 @@ import * as React from 'react'
 import * as ReactDOM from 'react-dom'
 
 import {
-  detectOverflow, useFloating, MiddlewareState, Side, Coords, SideObject,
-  shift, offset, arrow, autoPlacement, autoUpdate, size, FloatingArrow
+  useFloating, shift, offset, arrow, autoPlacement, autoUpdate, size, FloatingArrow
 } from '@floating-ui/react';
 
 import { forwardAndUseRef, forwardAndUseStateRef, LogicalDomContext, useLogicalDomObserver, useOnClickOutside } from './util'
 
-// Pointer coordinates used for tooltip placement.
-type PointerCoords = {pageX: number, pageY: number, clientX: number, clientY: number}
-
-/**
-* Custom floating-ui middleware to place tooltip near pointer. Pointer coordinates
-* are based on the `pageX` and `pageY` propertes of the MouseEvent interface.
-* Pointer coordinates are recorded - as a `pointerPos` state - everytime a
-* `onPointerOver` event is triggered when hovering over a selectable element.
-* Default tooltip position is above and to the right of the pointer. If the tooltip
-* is outside of the viewport i.e. overflowing, we flip the tooltip to keep it inside the
-* viewport. Flip logic is based on the quadrant - within the viewport - in which the
-* the pointer was located when the hover event was triggered.
-*/
-const pointer = (pointerPos: PointerCoords) => ({
-  name: 'pointer',
-  async fn(state: MiddlewareState) {
-    const { rects, elements } = state;
-
-    const floatingEl = elements.floating
-    const floatingRect = rects.floating
-
-    const findPositives = (obj: SideObject) : number[] => {
-      return Object.values(obj).filter((d) => d > 0)
-    }
-
-    const containsPositive = (obj : SideObject) : boolean => {
-      return findPositives(obj).length > 0
-    }
-
-    const roundByDPR = (value: number) => {
-      const dpr = window.devicePixelRatio || 1;
-      return Math.round(value * dpr) / dpr;
-    }
-
-    const flip = (coords: Coords, side: Side): Coords => {
-      switch(side) {
-        case 'top': coords.y = coords.y + floatingRect.height + 20; break;
-        case 'right': coords.x = coords.x - floatingRect.width; break
-      }
-      return coords
-    }
-
-    const partial = (fn: (coords: Coords, side: Side) => Coords, side: Side) => {
-      return (coords: Coords) => { return fn(coords, side) }
-    }
-
-    type QuadTransforms = {
-      [k in string]: { [k: string]: (coords: Coords) => Coords }
-    }
-    const quadTransforms: QuadTransforms = {
-      'top-left': {'top': partial(flip, 'top'),},
-      'top-right': {'top': partial(flip, 'top'), 'right': partial(flip, 'right')},
-      'bottom-right': {'right': partial(flip, 'right')},
-      'bottom-left' : {},
-    }
-
-    // Split viewport into four quadrants.
-    type Quadrants = 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left'
-    const getQuadrant = (x: number, y: number) : Quadrants => {
-      const vw = document.documentElement.clientWidth
-      const vh = document.documentElement.clientHeight
-      const hvw = vw / 2
-      const hvh = vh / 2
-
-      if (x <= hvw && y <= hvh) { return 'top-left' }
-      else if (x <= hvw && y > hvh) { return 'bottom-left' }
-      else if (x > hvw && y > hvh) { return 'bottom-right' }
-      else { return 'top-right' }
-    }
-
-    // Preferred position of tooltip is top-right relative to pointer.
-    let coords: Coords = {
-      x: pointerPos.pageX,
-      y: pointerPos.pageY - floatingRect.height - 10
-    }
-    state.x = coords.x
-    state.y = coords.y
-    let overflow : SideObject = await detectOverflow(state);
-    const quadrant = getQuadrant(pointerPos.clientX, pointerPos.clientY)
-
-    // Apply transformations if tooltip is overflowing. Transformations to
-    // be applied depend on where the pointer is located in the viewport.
-    if (containsPositive(overflow)) {
-      const transforms = quadTransforms[quadrant]
-      Object.entries(transforms).forEach(([side, transform]) => {
-        if (overflow[side as Side] > 1) { coords = transform(coords) }
-      })
-      state.x = coords.x
-      state.y = coords.y
-      overflow = await detectOverflow(state)
-
-      // If tooltip is still overflowing, make small adjustments.
-      if (containsPositive(overflow)) {
-        Object.entries(overflow)
-          .filter(([_, overflowAmount]) => overflowAmount > 1)
-          .forEach(([side, overflowAmount]) => {
-            switch(side as Side) {
-              case 'top': coords.y = document.documentElement.scrollTop + 1; break;
-              // case 'bottom': coords.y = coords.y + overflowAmount + 1; break;
-              case 'left': coords.x = coords.x + overflowAmount + 1; break;
-              case 'right': coords.x = coords.x - overflowAmount - 1; break;
-            }
-          })
-      }
-    }
-
-    // [subpixel accelerated positioning]
-    // (https://floating-ui.com/docs/misc#subpixel-and-accelerated-positioning).
-    Object.assign(floatingEl.style, {
-      top: '0',
-      left: '0',
-      transform: `translate(${roundByDPR(coords.x)}px,${roundByDPR(coords.y)}px)`,
-    });
-
-    return {}
-  }
-});
-
 export type TooltipProps =
   React.PropsWithChildren<React.HTMLProps<HTMLDivElement>> &
-    { reference: HTMLElement | null,
-    pointerPos: PointerCoords }
+  { reference: HTMLElement | null }
 
 export function Tooltip(props_: TooltipProps) {
-  const {reference, pointerPos, children, ...props} = props_
+  const {reference, children, ...props} = props_
   const arrowRef = React.useRef(null)
 
   const { refs, floatingStyles, context } = useFloating({
@@ -284,11 +164,6 @@ export const WithTooltipOnHover =
     }>((props_, ref, setRef) => {
   const { tooltipChildren, ...props } = props_
 
-  // Pointer state used to position tooltip.
-  const [pointerPos, setPointerPos] = React.useState<PointerCoords>(
-    {pageX: 0, pageY: 0, clientX: 0, clientY: 0}
-  )
-
   // We are pinned when clicked, shown when hovered over, and otherwise hidden.
   type TooltipState = 'pin' | 'show' | 'hide'
   const [state, setState] = React.useState<TooltipState>('hide')
@@ -386,7 +261,6 @@ export const WithTooltipOnHover =
       }}
       onPointerOver={e => {
         if (!isModifierHeld(e)) {
-          setPointerPos({pageX: e.pageX, pageY: e.pageY, clientX: e.clientX, clientY: e.clientY})
           onPointerEvent(startShowTimeout, e)
         }
         if (props.onPointerOver !== undefined) props.onPointerOver(e)
@@ -400,7 +274,6 @@ export const WithTooltipOnHover =
         <TipChainContext.Provider value={newTipChainCtx}>
           <Tooltip
             reference={ref}
-            pointerPos={pointerPos}
             onPointerEnter={onPointerEnter}
             onPointerLeave={onPointerLeave}
           >
