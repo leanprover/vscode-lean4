@@ -1,74 +1,73 @@
 import * as React from 'react'
 import * as ReactDOM from 'react-dom'
 
-import * as Popper from '@popperjs/core'
-import { usePopper } from 'react-popper'
+import {
+  useFloating, shift, offset, arrow, autoPlacement, autoUpdate, size, FloatingArrow
+} from '@floating-ui/react';
 
-import { forwardAndUseRef, LogicalDomContext, useLogicalDom, useOnClickOutside } from './util'
+import { forwardAndUseRef, forwardAndUseStateRef, LogicalDomContext, useLogicalDomObserver, useOnClickOutside } from './util'
 
-/** Tooltip contents should call `redrawTooltip` whenever their layout changes. */
-export type MkTooltipContentFn = (redrawTooltip: () => void) => React.ReactNode
+export type TooltipProps =
+  React.PropsWithChildren<React.HTMLProps<HTMLDivElement>> &
+  { reference: HTMLElement | null }
 
-const TooltipPlacementContext = React.createContext<Popper.Placement>('top')
+export function Tooltip(props_: TooltipProps) {
+  const {reference, children, ...props} = props_
+  const arrowRef = React.useRef(null)
 
-export const Tooltip = forwardAndUseRef<HTMLDivElement,
-  React.HTMLProps<HTMLDivElement> &
-    { reference: HTMLElement | null,
-      mkTooltipContent: MkTooltipContentFn,
-      placement?: Popper.Placement,
-      onFirstUpdate?: (_: Partial<Popper.State>) => void
-    }>((props_, divRef, setDivRef) => {
-  const {reference, mkTooltipContent, placement: preferPlacement, onFirstUpdate, ...props} = props_
-
-  // We remember the global trend in placement (as `globalPlacement`) so tooltip chains can bounce
-  // off the top and continue downwards or vice versa and initialize to that, but then update
-  // the trend (as `ourPlacement`).
-  const globalPlacement = React.useContext(TooltipPlacementContext)
-  const placement = preferPlacement ? preferPlacement : globalPlacement
-  const [ourPlacement, setOurPlacement] = React.useState<Popper.Placement>(placement)
-
-  // https://popper.js.org/react-popper/v2/faq/#why-i-get-render-loop-whenever-i-put-a-function-inside-the-popper-configuration
-  const onFirstUpdate_ = React.useCallback((state: Partial<Popper.State>) => {
-    if (state.placement) setOurPlacement(state.placement)
-    if (onFirstUpdate) onFirstUpdate(state)
-  }, [onFirstUpdate])
-
-  const [arrowElement, setArrowElement] = React.useState<HTMLDivElement | null>(null)
-  const { styles, attributes, update } = usePopper(reference, divRef.current, {
-    modifiers: [
-      { name: 'arrow', options: { element: arrowElement } },
-      { name: 'offset', options: { offset: [0, 8] } },
+  const { refs, floatingStyles, context } = useFloating({
+    elements: { reference },
+    placement: 'top',
+    middleware: [
+      offset(8),
+      shift(),
+      autoPlacement({
+        padding: 10,
+      }),
+      size({
+        apply({availableHeight, elements}) {
+          elements.floating.style.maxHeight = `${Math.min(availableHeight, 300)}px`
+        },
+        padding: 10
+      }),
+      // NOTE: `padding` should be `tooltip.borderRadius` or more so that the arrow
+      // doesn't overflow the rounded corner.
+      arrow({ element: arrowRef, padding: 6 }),
     ],
-    placement,
-    onFirstUpdate: onFirstUpdate_
+    whileElementsMounted: autoUpdate,
   })
-  const update_ = React.useCallback(() => update?.(), [update])
 
   const logicalDom = React.useContext(LogicalDomContext)
-
-  const popper = <div
+  const logicalDomCleanupFn = React.useRef<() => void>(() => {})
+  const floating = (
+    <div
       ref={node => {
-        setDivRef(node)
-        logicalDom.registerDescendant(node)
+        refs.setFloating(node)
+        logicalDomCleanupFn.current()
+        if (node) logicalDomCleanupFn.current = logicalDom.registerDescendant(node)
+        else logicalDomCleanupFn.current = () => {}
       }}
-      style={styles.popper}
+      style={floatingStyles}
       className='tooltip'
       {...props}
-      {...attributes.popper}
     >
-      <TooltipPlacementContext.Provider value={ourPlacement}>
-        {mkTooltipContent(update_)}
-      </TooltipPlacementContext.Provider>
-      <div ref={setArrowElement}
-        style={styles.arrow}
-        className='tooltip-arrow'
+      <FloatingArrow
+        ref={arrowRef}
+        context={context}
+        fill="var(--vscode-editorHoverWidget-background)"
+        strokeWidth={1}
+        stroke="var(--vscode-editorHoverWidget-border)"
       />
+      <div className='tooltip-content'>
+        {children}
+      </div>
     </div>
+  )
 
   // Append the tooltip to the end of document body to avoid layout issues.
   // (https://github.com/leanprover/vscode-lean4/issues/51)
-  return ReactDOM.createPortal(popper, document.body)
-})
+  return ReactDOM.createPortal(floating, document.body)
+}
 
 /** Hover state of an element. The pointer can be
  * - elsewhere (`off`)
@@ -120,7 +119,7 @@ export const DetectHoverSpan =
       document.removeEventListener('keydown', onKeyDown)
       document.removeEventListener('keyup', onKeyUp)
     }
-  }, [])
+  }, [setHoverState])
 
   return <span
       {...props}
@@ -145,6 +144,7 @@ export const DetectHoverSpan =
     </span>
 })
 
+/** Pinning a child tooltip has to also pin all ancestors. This context supports that. */
 interface TipChainContext {
   pinParent(): void
 }
@@ -157,12 +157,12 @@ const TipChainContext = React.createContext<TipChainContext>({pinParent: () => {
  * hoverable area is clicked. The middleware can invoke `next` to execute the default action
  * which is to pin the tooltip open. */
 export const WithTooltipOnHover =
-  forwardAndUseRef<HTMLSpanElement,
+  forwardAndUseStateRef<HTMLSpanElement,
     Omit<React.HTMLProps<HTMLSpanElement>, 'onClick'> & {
-      mkTooltipContent: MkTooltipContentFn,
+      tooltipChildren: React.ReactNode,
       onClick?: (event: React.MouseEvent<HTMLSpanElement>, next: React.MouseEventHandler<HTMLSpanElement>) => void
     }>((props_, ref, setRef) => {
-  const {mkTooltipContent, ...props} = props_
+  const { tooltipChildren, ...props } = props_
 
   // We are pinned when clicked, shown when hovered over, and otherwise hidden.
   type TooltipState = 'pin' | 'show' | 'hide'
@@ -181,10 +181,10 @@ export const WithTooltipOnHover =
   }), [tipChainCtx])
 
   // Note: because tooltips are attached to `document.body`, they are not descendants of the
-  // hoverable area in the DOM tree, and the `contains` check fails for elements within tooltip
-  // contents. We can use this to distinguish these elements.
-  const isWithinHoverable = (el: EventTarget) => ref.current && el instanceof Node && ref.current.contains(el)
-  const [logicalElt, logicalDomStorage] = useLogicalDom(ref)
+  // hoverable area in the DOM tree. Thus the `contains` check fails for elements within tooltip
+  // contents and succeeds for elements within the hoverable. We can use this to distinguish them.
+  const isWithinHoverable = (el: EventTarget) => ref && el instanceof Node && ref.contains(el)
+  const [logicalSpanElt, logicalDomStorage] = useLogicalDomObserver({current: ref})
 
   // We use timeouts for debouncing hover events.
   const timeout = React.useRef<number>()
@@ -208,7 +208,7 @@ export const WithTooltipOnHover =
     clearTimeout()
     setState('hide')
   }, [])
-  useOnClickOutside(logicalElt, onClickOutside)
+  useOnClickOutside(logicalSpanElt, onClickOutside)
 
   const isPointerOverTooltip = React.useRef<boolean>(false)
   const startShowTimeout = () => {
@@ -260,7 +260,9 @@ export const WithTooltipOnHover =
         if (isModifierHeld(e)) e.preventDefault()
       }}
       onPointerOver={e => {
-        if (!isModifierHeld(e)) onPointerEvent(startShowTimeout, e)
+        if (!isModifierHeld(e)) {
+          onPointerEvent(startShowTimeout, e)
+        }
         if (props.onPointerOver !== undefined) props.onPointerOver(e)
       }}
       onPointerOut={e => {
@@ -271,11 +273,12 @@ export const WithTooltipOnHover =
       {shouldShow &&
         <TipChainContext.Provider value={newTipChainCtx}>
           <Tooltip
-            reference={ref.current}
+            reference={ref}
             onPointerEnter={onPointerEnter}
             onPointerLeave={onPointerLeave}
-            mkTooltipContent={mkTooltipContent}
-          />
+          >
+            {tooltipChildren}
+          </Tooltip>
         </TipChainContext.Provider>}
       {props.children}
     </span>

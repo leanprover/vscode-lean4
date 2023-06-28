@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-namespace */
+/* eslint-disable react-hooks/exhaustive-deps */
 import * as React from 'react';
 import type { DocumentUri, Position, Range, TextDocumentPositionParams } from 'vscode-languageserver-protocol';
 
@@ -188,7 +189,7 @@ export function addUniqueKeys<T>(elems: T[], getId: (el: T) => string): Keyed<T>
   });
 }
 
-/** Like `React.forwardRef`, but also allows using the ref inside the forwarding component.
+/** Like `React.forwardRef`, but also allows reading the ref inside the forwarding component.
  * Adapted from https://itnext.io/reusing-the-ref-from-forwardref-with-react-hooks-4ce9df693dd */
 export function forwardAndUseRef<T, P>(render: (props: P, ref: React.RefObject<T>, setRef: (_: T | null) => void)
     => React.ReactElement | null): React.ForwardRefExoticComponent<React.PropsWithoutRef<P> & React.RefAttributes<T>> {
@@ -206,60 +207,86 @@ export function forwardAndUseRef<T, P>(render: (props: P, ref: React.RefObject<T
   })
 }
 
+/** Like `forwardAndUseRef`, but the ref is stored in state so that setting it triggers a render.
+ * Should only be used if re-rendering is necessary. */
+export function forwardAndUseStateRef<T, P>(render: (props: P, ref: T | null, setRef: (_: T | null) => void)
+    => React.ReactElement | null): React.ForwardRefExoticComponent<React.PropsWithoutRef<P> & React.RefAttributes<T>> {
+  return React.forwardRef<T, P>((props, ref) => {
+    const [thisRef, setThisRef] = React.useState<T | null>(null)
+    return render(props, thisRef, v => {
+      setThisRef(v)
+      if (!ref) return
+      if (typeof ref === 'function') {
+        ref(v)
+      } else {
+        ref.current = v
+      }
+    })
+  })
+}
+
 export interface LogicalDomElement {
   contains(el: Node): boolean
 }
 
 export interface LogicalDomStorage {
-  // Returns a function which disposes of the registration.
-  registerDescendant(el: HTMLElement | null): () => void
+  /** Registers a descendant in the logical DOM.
+   * Returns a function which disposes of the registration. */
+  registerDescendant(el: LogicalDomElement): () => void
 }
 
 export const LogicalDomContext = React.createContext<LogicalDomStorage>({registerDescendant: () => () => {}})
 
-/** Suppose a component B appears as a React child of the component A. For layout reasons,
- * we sometimes don't want B to appear as an actual child of A in the DOM. We may still however
- * want to carry out `contains` checks as if B were there, i.e. according to the React tree
- * structure rather than the DOM structure. While React already correctly propagates DOM events
- * up this logical tree, other functionality such as `contains` is not provided.
+/** Suppose a component B appears as a React descendant of the component A. For layout reasons,
+ * we sometimes don't want B to appear as a descendant of A in the DOM, so we use `createPortal`.
+ * We may still however want to carry out `contains` checks as if B were there, i.e. according to
+ * the React tree structure rather than the DOM structure. While React already correctly propagates
+ * DOM events up the React tree, other functionality such as `contains` is not provided. We provide
+ * it in this hook.
  *
- * This method creates a {@link LogicalDomElement} corresponding to the given {@link HTMLElement}
- * which provides the missing functionality for that element. For this to work, the element
- * must be wrapped in a {@link LogicalDomContext} set to the {@link LogicalDomStorage} returned
- * from this call.
+ * Accepts a ref to the observed {@link HTMLElement} (A in the example). Returns:
+ * - a {@link LogicalDomElement} which provides `contains` checks for that {@link HTMLElement}; and
+ * - a {@link LogicalDomStorage} which MUST be passed to a {@link LogicalDomContext} enclosing
+ *   the observed {@link HTMLElement}.
  *
- * Additionally, any component which actually introduces React-but-not-DOM children must
- * call `registerDescendant` in the {@link LogicalDomContext}. */
-export function useLogicalDom(ref: React.RefObject<HTMLElement>): [LogicalDomElement, LogicalDomStorage] {
+ * Additionally, any component which introduces a portal MUST call `registerDescendant` in the
+ * {@link LogicalDomContext} with a ref to the portalled component (B in the example). */
+export function useLogicalDomObserver(elt: React.RefObject<HTMLElement>): [LogicalDomElement, LogicalDomStorage] {
   const parentCtx = React.useContext(LogicalDomContext)
-  React.useEffect(() => {
-    if (ref.current) {
-      const h = parentCtx.registerDescendant(ref.current)
-      return () => h()
-    }
-  }, [ref, parentCtx])
-  const descendants = React.useRef<Set<Node>>(new Set())
+  const descendants = React.useRef<Set<LogicalDomElement>>(new Set())
 
-  const contains = (el: Node) => {
-    if (ref.current && ref.current.contains(el)) return true
+  // Provides a `contains` check for the children only, but not the observed element.
+  // We pass this to the parent context under the assumption that its own DOM-based
+  // `contains` check already includes the observed element.
+  const logicalChildrenElt = React.useMemo(() => ({
+    contains: (e: Node) => {
     for (const d of descendants.current) {
-      if (d.contains(el)) return true
+        if (d.contains(e)) return true
     }
     return false
   }
+  }), [])
 
-  const registerDescendant = (el: HTMLElement | null) => {
-    const h = parentCtx.registerDescendant(el)
-    if (el) descendants.current.add(el)
-    return () => {
-      if (el) descendants.current.delete(el)
-      h()
+  React.useEffect(() => parentCtx.registerDescendant(logicalChildrenElt), [parentCtx, logicalChildrenElt])
+
+  const logicalElt = React.useMemo(() => ({
+    contains: (e: Node) => {
+      if (!elt.current) return false
+      if (elt.current.contains(e)) return true
+      return logicalChildrenElt.contains(e)
     }
-  }
+  }), [elt, logicalChildrenElt])
+
+  const registerDescendant = React.useCallback((el: LogicalDomElement) => {
+    descendants.current.add(el)
+    return () => {
+      descendants.current.delete(el)
+    }
+  }, [])
 
   return [
-    React.useMemo(() => ({ contains }), [ref]),
-    React.useMemo(() => ({ registerDescendant }), [parentCtx])
+    logicalElt,
+    React.useMemo(() => ({ registerDescendant }), [registerDescendant])
   ]
 }
 

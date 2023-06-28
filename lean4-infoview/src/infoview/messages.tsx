@@ -99,11 +99,10 @@ function lazy<T>(f: () => T): () => T {
 /** Displays all messages for the specified file. Can be paused. */
 export function AllMessages({uri: uri0}: { uri: DocumentUri }) {
     const ec = React.useContext(EditorContext);
-    const sv = React.useContext(VersionContext);
     const rs0 = useRpcSessionAtPos({ uri: uri0, line: 0, character: 0 });
     const dc = React.useContext(LspDiagnosticsContext);
     const config = React.useContext(ConfigContext);
-    const diags0 = dc.get(uri0) || [];
+    const diags0 = React.useMemo(() => dc.get(uri0) || [], [dc, uri0]);
 
     const iDiags0 = React.useMemo(() => lazy(async () => {
         try {
@@ -122,7 +121,7 @@ export function AllMessages({uri: uri0}: { uri: DocumentUri }) {
             }
         }
         return diags0.map(d => ({ ...(d as LeanDiagnostic), message: { text: d.message } }));
-    }), [sv, rs0, uri0, diags0]);
+    }), [rs0, diags0]);
     const [{ isPaused, setPaused }, [uri, rs, diags, iDiags], _] = usePausableState(false, [uri0, rs0, diags0, iDiags0]);
 
     // Fetch interactive diagnostics when we're entering the paused state
