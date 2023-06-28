@@ -32,7 +32,7 @@ suite('Documentation View Test Suite', () => {
 
         const docView = lean.exports.docView;
         assert(docView, 'No docView export');
-        const expectedMenuItem = 'Abbreviations cheat sheet';
+        const expectedMenuItem = 'Abbreviations Cheatsheet';
         html = await waitForDocViewHtml(docView, expectedMenuItem);
 
         // invoke the TPIL link
