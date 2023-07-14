@@ -113,6 +113,7 @@ export const DetectHoverSpan =
         setHoverState(st => st === 'ctrlOver' ? 'over' : st)
     }
 
+    // Note: In VSCode these events do not fire when the webview is not in focus.
     document.addEventListener('keydown', onKeyDown)
     document.addEventListener('keyup', onKeyUp)
     return () => {

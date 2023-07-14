@@ -99,11 +99,13 @@ export function SelectableLocation(props_: SelectableLocationProps): JSX.Element
   const innerSpanClassName: string = 'highlightable '
     + (locs && loc && locs.isSelected(loc) ? 'highlight-selected ' : '')
 
+  const setHoverStateAll: React.Dispatch<React.SetStateAction<HoverState>> = React.useCallback(val => {
+    setHoverState(val)
+    if (setParentHoverState) setParentHoverState(val)
+  }, [setParentHoverState])
+
   return <DetectHoverSpan {...props}
-      setHoverState={st => {
-        setHoverState(st)
-        if (setParentHoverState) setParentHoverState(st)
-      }}
+      setHoverState={setHoverStateAll}
       className={spanClassName}
       onClick={e => {
           // On shift-click, if we are in a context where selecting subexpressions makes sense,
