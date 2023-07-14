@@ -14,6 +14,7 @@ import { getEditorLineHeight, getInfoViewAllErrorsOnLine, getInfoViewAutoOpen, g
     getInfoViewReverseTacticState,
     getInfoViewShowExpectedType,
     getInfoViewShowGoalNames,
+    getInfoViewShowTooltipOnHover,
     getInfoViewStyle, minIfProd, prodOrDev } from './config';
 import { Rpc } from './rpc';
 import { LeanClientProvider } from './utils/clientProvider'
@@ -584,8 +585,9 @@ export class InfoProvider implements Disposable {
            showExpectedType: getInfoViewShowExpectedType(),
            showGoalNames: getInfoViewShowGoalNames(),
            emphasizeFirstGoal: getInfoViewEmphasizeFirstGoal(),
-           reverseTacticState: getInfoViewReverseTacticState()
-       });
+           reverseTacticState: getInfoViewReverseTacticState(),
+           showTooltipOnHover: getInfoViewShowTooltipOnHover(),
+       })
     }
 
     private async sendDiagnostics(client: LeanClient) {

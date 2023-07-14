@@ -33,21 +33,19 @@ const MessageView = React.memo(({uri, diag}: MessageViewProps) => {
     return (
     <details open>
         <summary className={severityClass + ' mv2 pointer'}>{title}
-            <span className="fr">
+            <span className="fr" onClick={ e => e.preventDefault() }>
                 <a  className="link pointer mh2 dim codicon codicon-go-to-file"
-                    onClick={e => { e.preventDefault(); void ec.revealLocation(loc); }}
+                    onClick={_ => {void ec.revealLocation(loc); }}
                     title="reveal file location"></a>
                 <a  className="link pointer mh2 dim codicon codicon-quote"
                     data-id="copy-to-comment"
-                    onClick={e => {
-                        e.preventDefault()
+                    onClick={_ => {
                         if (node.current)
                             void ec.copyToComment(node.current.innerText)
                     }}
                     title="copy message to comment"></a>
                 <a  className="link pointer mh2 dim codicon codicon-clippy"
-                    onClick={e => {
-                        e.preventDefault()
+                    onClick={_ => {
                         if (node.current)
                             void ec.api.copyToClipboard(node.current.innerText)
                     }}
@@ -140,9 +138,9 @@ export function AllMessages({uri: uri0}: { uri: DocumentUri }) {
     <Details setOpenRef={r => setOpenRef.current = r} initiallyOpen={!config.autoOpenShowsGoal}>
         <summary className="mv2 pointer">
             All Messages ({diags.length})
-            <span className="fr">
+            <span className="fr" onClick={e => { e.preventDefault() }}>
                 <a className={'link pointer mh2 dim codicon ' + (isPaused ? 'codicon-debug-continue' : 'codicon-debug-pause')}
-                   onClick={e => { e.preventDefault(); setPaused(p => !p); }}
+                   onClick={_ => { setPaused(p => !p) }}
                    title={isPaused ? 'continue updating' : 'pause updating'}>
                 </a>
             </span>

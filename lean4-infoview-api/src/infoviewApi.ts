@@ -83,6 +83,7 @@ export interface InfoviewConfig {
     showGoalNames: boolean;
     emphasizeFirstGoal: boolean;
     reverseTacticState: boolean;
+    showTooltipOnHover: boolean;
 }
 
 export const defaultInfoviewConfig: InfoviewConfig = {
@@ -93,6 +94,7 @@ export const defaultInfoviewConfig: InfoviewConfig = {
     showGoalNames: true,
     emphasizeFirstGoal: false,
     reverseTacticState: false,
+    showTooltipOnHover: true,
 }
 
 export type InfoviewActionKind =

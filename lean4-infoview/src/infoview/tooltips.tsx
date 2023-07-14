@@ -6,6 +6,7 @@ import {
 } from '@floating-ui/react';
 
 import { forwardAndUseRef, forwardAndUseStateRef, LogicalDomContext, useLogicalDomObserver, useOnClickOutside } from './util'
+import { ConfigContext } from './contexts';
 
 export type TooltipProps =
   React.PropsWithChildren<React.HTMLProps<HTMLDivElement>> &
@@ -113,6 +114,7 @@ export const DetectHoverSpan =
         setHoverState(st => st === 'ctrlOver' ? 'over' : st)
     }
 
+    // Note: In VSCode these events do not fire when the webview is not in focus.
     document.addEventListener('keydown', onKeyDown)
     document.addEventListener('keyup', onKeyUp)
     return () => {
@@ -162,7 +164,9 @@ export const WithTooltipOnHover =
       tooltipChildren: React.ReactNode,
       onClick?: (event: React.MouseEvent<HTMLSpanElement>, next: React.MouseEventHandler<HTMLSpanElement>) => void
     }>((props_, ref, setRef) => {
-  const { tooltipChildren, ...props } = props_
+  const { tooltipChildren, onClick: onClickProp, ...props } = props_
+
+  const config = React.useContext(ConfigContext)
 
   // We are pinned when clicked, shown when hovered over, and otherwise hidden.
   type TooltipState = 'pin' | 'show' | 'hide'
@@ -213,6 +217,7 @@ export const WithTooltipOnHover =
   const isPointerOverTooltip = React.useRef<boolean>(false)
   const startShowTimeout = () => {
     clearTimeout()
+    if (!config.showTooltipOnHover) return
     timeout.current = window.setTimeout(() => {
       setState(state => state === 'hide' ? 'show' : state)
       timeout.current = undefined
@@ -237,11 +242,11 @@ export const WithTooltipOnHover =
     startHideTimeout()
   }
 
-  const onPointerEvent = (act: () => void, e: React.PointerEvent<HTMLSpanElement>) => {
+  function guardMouseEvent(act: (_: React.MouseEvent<HTMLSpanElement>) => void, e: React.MouseEvent<HTMLSpanElement>) {
     if ('_WithTooltipOnHoverSeen' in e) return
     if (!isWithinHoverable(e.target)) return
     (e as any)._WithTooltipOnHoverSeen = {}
-    act()
+    act(e)
   }
 
   return <LogicalDomContext.Provider value={logicalDomStorage}>
@@ -249,10 +254,10 @@ export const WithTooltipOnHover =
       {...props}
       ref={setRef}
       onClick={e => {
-        if (!isWithinHoverable(e.target)) return
-        e.stopPropagation()
-        if (props.onClick !== undefined) props.onClick(e, onClick)
-        else onClick(e)
+        guardMouseEvent(e => {
+          if (onClickProp !== undefined) onClickProp(e, onClick)
+          else onClick(e)
+        }, e)
       }}
       onPointerDown={e => {
         // We have special handling for some modifier+click events, so prevent default browser
@@ -261,12 +266,12 @@ export const WithTooltipOnHover =
       }}
       onPointerOver={e => {
         if (!isModifierHeld(e)) {
-          onPointerEvent(startShowTimeout, e)
+          guardMouseEvent(_ => startShowTimeout(), e)
         }
         if (props.onPointerOver !== undefined) props.onPointerOver(e)
       }}
       onPointerOut={e => {
-        onPointerEvent(startHideTimeout, e)
+        guardMouseEvent(_ => startHideTimeout(), e)
         if (props.onPointerOut !== undefined) props.onPointerOut(e)
       }}
     >

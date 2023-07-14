@@ -165,6 +165,11 @@
 					"default": false,
 					"markdownDescription": "Default to showing the goal type first and then the local context."
 				},
+				"lean4.infoview.showTooltipOnHover": {
+					"type": "boolean",
+					"default": true,
+					"markdownDescription": "Show the tooltip for an interactive element (e.g. a subexpression) when the pointer hovers over that element. When disabled, the element must be clicked for the tooltip to show up."
+				},
 				"lean4.elaborationDelay": {
 					"type": "number",
 					"default": 200,

@@ -218,10 +218,7 @@ export const FilteredGoals = React.memo(({ headerChildren, goals, displayCount, 
     const copyToCommentButton =
         <a className="link pointer mh2 dim codicon codicon-quote"
             data-id="copy-goal-to-comment"
-            onClick={e => {
-                e.preventDefault();
-                if (goals) void ec.copyToComment(goalsToString(goals))
-            }}
+            onClick={_ => { if (goals) void ec.copyToComment(goalsToString(goals)) }}
             title="copy state to comment" />
 
     const [goalFilters, setGoalFilters] = React.useState<GoalFilterState>(
@@ -229,7 +226,7 @@ export const FilteredGoals = React.memo(({ headerChildren, goals, displayCount, 
     const sortClasses = 'link pointer mh2 dim codicon ' + (goalFilters.reverse ? 'codicon-arrow-up ' : 'codicon-arrow-down ');
     const sortButton =
         <a className={sortClasses} title="reverse list"
-            onClick={_ => setGoalFilters(s => ({ ...s, reverse: !s.reverse }))} />
+            onClick={_ => { setGoalFilters(s => ({ ...s, reverse: !s.reverse })) }} />
 
     const mkFilterButton = (filterFn: React.SetStateAction<GoalFilterState>, filledFn: (_: GoalFilterState) => boolean, name: string) =>
         <a className='link pointer tooltip-menu-content' onClick={_ => { setGoalFilters(filterFn) }}>
@@ -248,8 +245,8 @@ export const FilteredGoals = React.memo(({ headerChildren, goals, displayCount, 
 
     const isFiltered = !goalFilters.showInstance || !goalFilters.showType || !goalFilters.showHiddenAssumption || !goalFilters.showLetValue
     const filterButton =
-        <WithTooltipOnHover tooltipChildren={filterMenu}>
-            <a className={'link pointer mh2 dim codicon ' + (isFiltered ? 'codicon-filter-filled ': 'codicon-filter ')}/>
+        <WithTooltipOnHover tooltipChildren={filterMenu} className='dim '>
+            <a className={'link pointer mh2 codicon ' + (isFiltered ? 'codicon-filter-filled ': 'codicon-filter ')}/>
         </WithTooltipOnHover>
 
     const setOpenRef = React.useRef<React.Dispatch<React.SetStateAction<boolean>>>()
@@ -263,7 +260,9 @@ export const FilteredGoals = React.memo(({ headerChildren, goals, displayCount, 
         <Details setOpenRef={r => setOpenRef.current = r} initiallyOpen={initiallyOpen}>
             <summary className='mv2 pointer'>
                 {headerChildren}
-                <span className='fr'>{copyToCommentButton}{sortButton}{filterButton}</span>
+                <span className='fr' onClick={e => { e.preventDefault() }}>
+                    {copyToCommentButton}{sortButton}{filterButton}
+                </span>
             </summary>
             <div className='ml1'>
                 {goals && <Goals goals={goals} filter={goalFilters} displayCount={displayCount}></Goals>}
