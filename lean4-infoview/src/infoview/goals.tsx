@@ -229,7 +229,11 @@ export const FilteredGoals = React.memo(({ headerChildren, goals, displayCount, 
     const sortClasses = 'link pointer mh2 dim codicon ' + (goalFilters.reverse ? 'codicon-arrow-up ' : 'codicon-arrow-down ');
     const sortButton =
         <a className={sortClasses} title="reverse list"
-            onClick={_ => setGoalFilters(s => ({ ...s, reverse: !s.reverse }))} />
+            onClick={e => {
+                e.preventDefault()
+                setGoalFilters(s => ({ ...s, reverse: !s.reverse }))
+            }}
+        />
 
     const mkFilterButton = (filterFn: React.SetStateAction<GoalFilterState>, filledFn: (_: GoalFilterState) => boolean, name: string) =>
         <a className='link pointer tooltip-menu-content' onClick={_ => { setGoalFilters(filterFn) }}>
@@ -248,7 +252,12 @@ export const FilteredGoals = React.memo(({ headerChildren, goals, displayCount, 
 
     const isFiltered = !goalFilters.showInstance || !goalFilters.showType || !goalFilters.showHiddenAssumption || !goalFilters.showLetValue
     const filterButton =
-        <WithTooltipOnHover tooltipChildren={filterMenu}>
+        <WithTooltipOnHover tooltipChildren={filterMenu}
+            onClick={(e, next) => {
+                e.preventDefault()
+                next(e)
+            }}
+        >
             <a className={'link pointer mh2 dim codicon ' + (isFiltered ? 'codicon-filter-filled ': 'codicon-filter ')}/>
         </WithTooltipOnHover>
 
