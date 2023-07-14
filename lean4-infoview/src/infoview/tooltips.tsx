@@ -6,6 +6,7 @@ import {
 } from '@floating-ui/react';
 
 import { forwardAndUseRef, forwardAndUseStateRef, LogicalDomContext, useLogicalDomObserver, useOnClickOutside } from './util'
+import { ConfigContext } from './contexts';
 
 export type TooltipProps =
   React.PropsWithChildren<React.HTMLProps<HTMLDivElement>> &
@@ -165,6 +166,8 @@ export const WithTooltipOnHover =
     }>((props_, ref, setRef) => {
   const { tooltipChildren, ...props } = props_
 
+  const config = React.useContext(ConfigContext)
+
   // We are pinned when clicked, shown when hovered over, and otherwise hidden.
   type TooltipState = 'pin' | 'show' | 'hide'
   const [state, setState] = React.useState<TooltipState>('hide')
@@ -214,6 +217,7 @@ export const WithTooltipOnHover =
   const isPointerOverTooltip = React.useRef<boolean>(false)
   const startShowTimeout = () => {
     clearTimeout()
+    if (!config.showTooltipOnHover) return
     timeout.current = window.setTimeout(() => {
       setState(state => state === 'hide' ? 'show' : state)
       timeout.current = undefined
