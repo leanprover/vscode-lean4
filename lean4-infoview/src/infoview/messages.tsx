@@ -103,8 +103,12 @@ export function AllMessages({uri: uri0}: { uri: DocumentUri }) {
     const diags0 = React.useMemo(() => dc.get(uri0) || [], [dc, uri0]);
 
     const iDiags0 = React.useMemo(() => lazy(async () => {
+        // The last line for which we have received diagnostics so far.
+        // Providing a line range to `getInteractiveDiagnostics`
+        // ensures that the call doesn't block until the whole file is elaborated.
+        const maxLine = diags0.reduce((ln, d) => Math.max(ln, d.range.end.line), 0)
         try {
-            const diags = await getInteractiveDiagnostics(rs0);
+            const diags = await getInteractiveDiagnostics(rs0, {start: 0, end: maxLine});
             if (diags.length > 0) {
                 return diags
             }
@@ -120,7 +124,7 @@ export function AllMessages({uri: uri0}: { uri: DocumentUri }) {
         }
         return diags0.map(d => ({ ...(d as LeanDiagnostic), message: { text: d.message } }));
     }), [rs0, diags0]);
-    const [{ isPaused, setPaused }, [uri, rs, diags, iDiags], _] = usePausableState(false, [uri0, rs0, diags0, iDiags0]);
+    const [{ isPaused, setPaused }, [uri, rs, iDiags], _] = usePausableState(false, [uri0, rs0, iDiags0]);
 
     // Fetch interactive diagnostics when we're entering the paused state
     // (if they haven't already been fetched before)
@@ -133,11 +137,13 @@ export function AllMessages({uri: uri0}: { uri: DocumentUri }) {
         }
     });
 
+    const [numDiags, setNumDiags] = React.useState<number>(0)
+
     return (
     <RpcContext.Provider value={rs}>
     <Details setOpenRef={r => setOpenRef.current = r} initiallyOpen={!config.autoOpenShowsGoal}>
         <summary className="mv2 pointer">
-            All Messages ({diags.length})
+            All Messages ({numDiags})
             <span className="fr" onClick={e => { e.preventDefault() }}>
                 <a className={'link pointer mh2 dim codicon ' + (isPaused ? 'codicon-debug-continue' : 'codicon-debug-pause')}
                    onClick={_ => { setPaused(p => !p) }}
@@ -145,16 +151,29 @@ export function AllMessages({uri: uri0}: { uri: DocumentUri }) {
                 </a>
             </span>
         </summary>
-        <AllMessagesBody uri={uri} messages={iDiags} />
+        <AllMessagesBody uri={uri} messages={iDiags} setNumDiags={setNumDiags} />
     </Details>
     </RpcContext.Provider>
     )
 }
 
+interface AllMessagesBodyProps {
+    uri: DocumentUri
+    messages: () => Promise<InteractiveDiagnostic[]>
+    setNumDiags: React.Dispatch<React.SetStateAction<number>>
+}
+
 /** We factor out the body of {@link AllMessages} which lazily fetches its contents only when expanded. */
-function AllMessagesBody({uri, messages}: {uri: DocumentUri, messages: () => Promise<InteractiveDiagnostic[]>}) {
+function AllMessagesBody({uri, messages, setNumDiags}: AllMessagesBodyProps) {
     const [msgs, setMsgs] = React.useState<InteractiveDiagnostic[] | undefined>(undefined)
-    React.useEffect(() => { void messages().then(setMsgs) }, [messages])
+    React.useEffect(() => {
+        const fn = async () => {
+            const msgs = await messages()
+            setMsgs(msgs)
+            setNumDiags(msgs.length)
+        }
+        void fn()
+    }, [messages])
     if (msgs === undefined) return <>Loading messages...</>
     else return <MessagesList uri={uri} messages={msgs}/>
 }
