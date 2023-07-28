@@ -106,7 +106,7 @@ export function AllMessages({uri: uri0}: { uri: DocumentUri }) {
         // The last line for which we have received diagnostics so far.
         // Providing a line range to `getInteractiveDiagnostics`
         // ensures that the call doesn't block until the whole file is elaborated.
-        const maxLine = diags0.reduce((ln, d) => Math.max(ln, d.range.end.line), 0)
+        const maxLine = diags0.reduce((ln, d) => Math.max(ln, d.range.end.line), 0) + 1
         try {
             const diags = await getInteractiveDiagnostics(rs0, {start: 0, end: maxLine});
             if (diags.length > 0) {
