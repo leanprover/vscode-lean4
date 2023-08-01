@@ -24,41 +24,68 @@ jobs:
             artifact: build-Windows
     name: ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
+
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+
       - name: Setup Node.js
         uses: actions/setup-node@v2
         with:
           node-version: '16'
         if: matrix.os == 'windows-latest'
+
       - name: Build
         run: |
           npm ci
           npx lerna bootstrap --ci
           npm run build
           npx lerna run --scope=lean4 package
+
       - name: Upload artifact
         uses: actions/upload-artifact@v2
         if: matrix.os == 'ubuntu-latest'
         with:
           name: vscode-lean4
           path: 'vscode-lean4/lean4-*.vsix'
+
+      - name: Publish packaged extension
+        if: startsWith(github.ref, 'refs/tags/v') && matrix.os == 'ubuntu-latest'
+        run: |
+          npx lerna exec --scope=lean4 npx -- vsce -i vscode-lean4/lean4-*.vsix publish
+          npx lerna exec --scope=lean4 npx -- ovsx publish vscode-lean4/lean4-*.vsix
+        env:
+          OVSX_PAT: ${{ secrets.OVSX_PAT }}
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+
+      - name: Upload extension as release
+        if: startsWith(github.ref, 'refs/tags/v') && matrix.os == 'ubuntu-latest'
+        uses: softprops/action-gh-release@v1
+        with:
+          files: artifacts/*/*
+          fail_on_unmatched_files: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Lint
         run: npm run lint
+
       - name: Install Brew Packages
         run: |
           brew install ccache tree zstd coreutils
         if: matrix.os == 'macos-latest'
+
       - name: Set path to elan on Linux or macOS
         if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest'
         run: |
           echo "$HOME/.elan/bin" >> $GITHUB_PATH
+
       - name: Set path to elan on Windows
         shell: pwsh
         if: matrix.os == 'windows-latest'
         run: |
           echo "$HOME\.elan\bin" >> $env:GITHUB_PATH
+
       - name: Run tests
         uses: GabrielBB/xvfb-action@v1.0
         with:
