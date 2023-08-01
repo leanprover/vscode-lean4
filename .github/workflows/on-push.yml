@@ -11,6 +11,7 @@ on:
 jobs:
   build-and-test:
     strategy:
+      fail-fast: false
       matrix:
         include:
           - name: Linux
