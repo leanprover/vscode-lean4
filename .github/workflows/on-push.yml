@@ -55,8 +55,9 @@ jobs:
       - name: Publish packaged extension
         if: startsWith(github.ref, 'refs/tags/v') && matrix.os == 'ubuntu-latest'
         run: |
-          npx lerna exec --scope=lean4 npx -- vsce publish -i vscode-lean4/lean4-*.vsix
-          npx lerna exec --scope=lean4 npx -- ovsx publish vscode-lean4/lean4-*.vsix
+          cd vscode-lean4
+          npx vsce publish -i lean4-*.vsix
+          npx ovsx publish lean4-*.vsix
         env:
           OVSX_PAT: ${{ secrets.OVSX_PAT }}
           VSCE_PAT: ${{ secrets.VSCE_PAT }}
@@ -65,7 +66,7 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/v') && matrix.os == 'ubuntu-latest'
         uses: softprops/action-gh-release@v1
         with:
-          files: artifacts/*/*
+          files: 'vscode-lean4/lean4-*.vsix'
           fail_on_unmatched_files: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
