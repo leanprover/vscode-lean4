@@ -6,7 +6,9 @@ on:
     - '*'
   push:
     branches:
-    - '*'
+      - '*'
+    tags:
+      - '*'
 
 jobs:
   build-and-test:
