@@ -170,7 +170,7 @@ function InteractiveCodeTag({tag: ct, fmt}: InteractiveTagProps<SubexprInfo>) {
         // Mark the event as seen so that parent handlers skip it.
         // We cannot use `stopPropagation` as that prevents the VSC context menu from showing up.
         if ('_InteractiveCodeTagSeen' in e) return
-        (e as any)['_InteractiveCodeTagSeen'] = {}
+        (e as any)._InteractiveCodeTagSeen = {}
         if (!(e.target instanceof Node)) return
         if (!e.currentTarget.contains(e.target)) return
         // Select the pretty-printed code.
