@@ -206,6 +206,7 @@ export const WithTooltipOnHover =
   const onClick = (e: React.MouseEvent<HTMLSpanElement>) => {
     clearTimeout()
     setState(state => state === 'pin' ? 'hide' : 'pin')
+    e.stopPropagation()
   }
 
   const onClickOutside = React.useCallback(() => {

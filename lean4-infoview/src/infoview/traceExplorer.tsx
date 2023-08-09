@@ -87,6 +87,10 @@ function CollapsibleTraceNode(traceEmbed: TraceEmbed) {
     if (children.state === 'loading') icon += ' ⋯'
 
     const onClick = React.useCallback((ev: React.MouseEvent) => {
+        if (!(ev.target instanceof Node)) return
+        if (!ev.currentTarget || !ev.target) return
+        // Don't handle clicks within React portals nested in this div (notably, tooltips).
+        if (!ev.currentTarget.contains(ev.target)) return
         ev.stopPropagation()
         if (!open) void fetchChildren();
         setOpen(o => !o)
