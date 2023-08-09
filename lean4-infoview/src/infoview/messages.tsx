@@ -124,7 +124,7 @@ export function AllMessages({uri: uri0}: { uri: DocumentUri }) {
         }
         return diags0.map(d => ({ ...(d as LeanDiagnostic), message: { text: d.message } }));
     }), [rs0, diags0]);
-    const [{ isPaused, setPaused }, [uri, rs, iDiags], _] = usePausableState(false, [uri0, rs0, iDiags0]);
+    const [{ isPaused, setPaused }, [uri, rs, diags, iDiags], _] = usePausableState(false, [uri0, rs0, diags0, iDiags0]);
 
     // Fetch interactive diagnostics when we're entering the paused state
     // (if they haven't already been fetched before)
@@ -137,13 +137,15 @@ export function AllMessages({uri: uri0}: { uri: DocumentUri }) {
         }
     });
 
-    const [numDiags, setNumDiags] = React.useState<number>(0)
+    // The number of actually displayed messages, or `undefined` if the panel is collapsed.
+    // When `undefined`, we can approximate it by `diags.length`.
+    const [numDiags, setNumDiags] = React.useState<number | undefined>(undefined)
 
     return (
     <RpcContext.Provider value={rs}>
     <Details setOpenRef={r => setOpenRef.current = r} initiallyOpen={!config.autoOpenShowsGoal}>
         <summary className="mv2 pointer">
-            All Messages ({numDiags})
+            All Messages ({numDiags ?? diags.length})
             <span className="fr" onClick={e => { e.preventDefault() }}>
                 <a className={'link pointer mh2 dim codicon ' + (isPaused ? 'codicon-debug-continue' : 'codicon-debug-pause')}
                    onClick={_ => { setPaused(p => !p) }}
@@ -160,7 +162,7 @@ export function AllMessages({uri: uri0}: { uri: DocumentUri }) {
 interface AllMessagesBodyProps {
     uri: DocumentUri
     messages: () => Promise<InteractiveDiagnostic[]>
-    setNumDiags: React.Dispatch<React.SetStateAction<number>>
+    setNumDiags: React.Dispatch<React.SetStateAction<number | undefined>>
 }
 
 /** We factor out the body of {@link AllMessages} which lazily fetches its contents only when expanded. */
@@ -174,6 +176,7 @@ function AllMessagesBody({uri, messages, setNumDiags}: AllMessagesBodyProps) {
         }
         void fn()
     }, [messages])
+    React.useEffect(() => () => /* Called on unmount. */ setNumDiags(undefined), [])
     if (msgs === undefined) return <>Loading messages...</>
     else return <MessagesList uri={uri} messages={msgs}/>
 }
