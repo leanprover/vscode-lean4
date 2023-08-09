@@ -166,6 +166,19 @@ function InteractiveCodeTag({tag: ct, fmt}: InteractiveTagProps<SubexprInfo>) {
           })
         } else if (!e.shiftKey) next(e)
       }}
+      onContextMenu={e => {
+        // Mark the event as seen so that parent handlers skip it.
+        // We cannot use `stopPropagation` as that prevents the VSC context menu from showing up.
+        if ('_InteractiveCodeTagSeen' in e) return
+        (e as any)._InteractiveCodeTagSeen = {}
+        if (!(e.target instanceof Node)) return
+        if (!e.currentTarget.contains(e.target)) return
+        // Select the pretty-printed code.
+        const sel = window.getSelection()
+        if (!sel) return
+        sel.removeAllRanges()
+        sel.selectAllChildren(e.currentTarget)
+      }}
     >
       <SelectableLocation
         setHoverState={setHoverState}
