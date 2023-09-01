@@ -30,7 +30,7 @@ and you should see something like this in the `Lean: Editor` output panel:
     Lean (version 4.0.0-nightly-2021-10-18, commit e843fb7ca5b5, Release)
     ```
 
-See [Complete Setup](#complete_setup) for more information
+See [Complete Setup](#complete-setup) for more information
 on how the lean version is determined for your VS Code workspace.
 
 This version of the VS Code extension only works on Lean 4 source files and not
