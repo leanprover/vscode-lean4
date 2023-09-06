@@ -542,14 +542,17 @@ export class LeanClient implements Disposable {
     }
 
     private async checkToolchainVersion(folderUri: Uri) : Promise<Date | undefined> {
-
         // see if we have a well known toolchain label that corresponds
         // to a known date like 'leanprover/lean4:nightly-2022-02-01'
         const toolchainVersion = await readLeanVersion(folderUri);
         if (toolchainVersion) {
-            const match = /^leanprover\/lean4:nightly-(\d+)-(\d+)-(\d+)$/.exec(toolchainVersion);
-            if (match) {
-                return new Date(parseInt(match[1]), parseInt(match[2]) - 1, parseInt(match[3]));
+            const nightly_match = /^leanprover\/lean4:nightly-(\d+)-(\d+)-(\d+)$/.exec(toolchainVersion);
+            if (nightly_match) {
+                return new Date(parseInt(nightly_match[1]), parseInt(nightly_match[2]) - 1, parseInt(nightly_match[3]));
+            }
+            const release_match = /^leanprover\/lean4:v(\d+)-(\d+)-(\d+)$/.exec(toolchainVersion);
+            if (release_match) {
+                return new Date(2023, 8, 30);
             }
             if (toolchainVersion === 'leanprover/lean4:stable') {
                 return new Date(2022, 2, 1);

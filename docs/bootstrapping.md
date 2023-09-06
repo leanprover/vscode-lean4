@@ -17,7 +17,7 @@ yet and in that case `getLeanVersion` calls `testLeanVersion` on the
 ![prompt](images/InstallPrompt.png)
 
 If the user clicks `Install Lean using Elan` then this will happen
-and elan will be installed in the default location and a nightly build
+and elan will be installed in the default location and a stable build
 of Lean will also be installed.
 
 When the install finishes an `installChanged` event is raised which is

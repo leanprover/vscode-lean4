@@ -27,7 +27,7 @@ and you should see something like this in the `Lean: Editor` output panel:
     ```
     info: downloading component 'lean'
     info: installing component 'lean'
-    Lean (version 4.0.0-nightly-2021-10-18, commit e843fb7ca5b5, Release)
+    Lean (version 4.0.0, commit a7efe5b60e86, Release)
     ```
 
 See [Complete Setup](#complete-setup) for more information
@@ -266,7 +266,7 @@ The `start` state is when you have opened a folder in VS Code and opened a .lean
 
 If the extension finds that elan is not in your path and is not installed in the default location then it will prompt
 you to install lean via elan.  If the folder contains a `lean-toolchain` version it will install that version
-otherwise it will install `leanprover/lean4:nightly`.
+otherwise it will install `leanprover/lean4:stable`.
 You can override this default version by setting an `DEFAULT_LEAN_TOOLCHAIN` environment variable.
 
 Otherwise, if there is a `lean-toolchain` (or `leanpkg.toml`) in the workspace folder or in a parent
