@@ -550,9 +550,9 @@ export class LeanClient implements Disposable {
             if (nightly_match) {
                 return new Date(parseInt(nightly_match[1]), parseInt(nightly_match[2]) - 1, parseInt(nightly_match[3]));
             }
-            const release_match = /^leanprover\/lean4:v(\d+)-(\d+)-(\d+)$/.exec(toolchainVersion);
+            const release_match = /^leanprover\/lean4:(\d+)-(\d+)-(\d+)$/.exec(toolchainVersion);
             if (release_match) {
-                return new Date(2023, 8, 30);
+                return new Date(2023, 9, 8);
             }
             if (toolchainVersion === 'leanprover/lean4:stable') {
                 return new Date(2022, 2, 1);
