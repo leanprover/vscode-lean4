@@ -27,7 +27,7 @@ and you should see something like this in the `Lean: Editor` output panel:
     ```
     info: downloading component 'lean'
     info: installing component 'lean'
-    Lean (version 4.0.0, commit a7efe5b60e86, Release)
+    Lean (version 4.0.0, commit ec941735c80d, Release)
     ```
 
 See [Complete Setup](#complete_setup) for more information
