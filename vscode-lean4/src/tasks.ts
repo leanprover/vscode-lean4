@@ -8,12 +8,19 @@ export interface LeanTask {
 }
 
 export function createExecutableTask(task: LeanTask, reveal: TaskRevealKind = TaskRevealKind.Always, cwd?: string | undefined): Task {
+    const env = Object.entries(process.env)
+        .filter(([_, value]) => value !== undefined)
+        .reduce((obj, [key, value]) => {
+            obj[key] = value as string;
+            return obj;
+        }, {} as {[key: string]: string});
+
     const t = new Task(
         leanTaskDefinition,
         TaskScope.Workspace,
         task.description,
         'Lean 4',
-        new ShellExecution(task.command, { cwd }),
+        new ShellExecution(task.command, { cwd, env }),
         ''
     )
     t.presentationOptions.reveal = reveal
