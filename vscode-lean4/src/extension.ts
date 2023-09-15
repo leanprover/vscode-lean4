@@ -1,4 +1,4 @@
-import { window, Uri, workspace, ExtensionContext, TextDocument } from 'vscode'
+import { window, ExtensionContext, TextDocument, tasks } from 'vscode'
 import { AbbreviationFeature } from './abbreviation'
 import { InfoProvider } from './infoview'
 import { DocViewProvider } from './docview';
@@ -9,7 +9,9 @@ import { LeanClientProvider } from './utils/clientProvider';
 import { addDefaultElanPath, removeElanPath, addToolchainBinPath, isElanDisabled, getDefaultLeanVersion} from './config';
 import { findLeanPackageVersionInfo } from './utils/projectInfo';
 import { Exports } from './exports';
+import { LeanTaskProvider, leanTaskDefinition } from './tasks';
 import { logger } from './utils/logger'
+import { ProjectOperationProvider } from './project';
 
 function isLean(languageId : string) : boolean {
     return languageId === 'lean' || languageId === 'lean4';
@@ -21,8 +23,7 @@ function getLeanDocument() : TextDocument | undefined {
     if (window.activeTextEditor && isLean(window.activeTextEditor.document.languageId))
     {
         document = window.activeTextEditor.document
-    }
-    else {
+    } else {
         // This happens if vscode starts with a lean file open
         // but the "Getting Started" page is active.
         for (const editor of window.visibleTextEditors) {
@@ -60,7 +61,7 @@ export async function activate(context: ExtensionContext): Promise<Exports> {
         if (toolchainVersion && toolchainVersion.indexOf('lean:3') > 0) {
             logger.log(`Lean4 skipping lean 3 project: ${toolchainVersion}`);
             return { isLean4Project: false, version: toolchainVersion,
-                infoProvider: undefined, clientProvider: undefined, installer: undefined, docView: undefined };
+                infoProvider: undefined, clientProvider: undefined, installer: undefined, docView: undefined, taskProvider: undefined, projectOperationProvider: undefined };
         }
     }
 
@@ -76,7 +77,7 @@ export async function activate(context: ExtensionContext): Promise<Exports> {
         // We need to terminate before registering the LeanClientProvider,
         // because that class changes the document id to `lean4`.
         return { isLean4Project: false, version: '3',
-            infoProvider: undefined, clientProvider: undefined, installer: undefined, docView: undefined };
+            infoProvider: undefined, clientProvider: undefined, installer: undefined, docView: undefined, taskProvider: undefined, projectOperationProvider: undefined };
     }
 
     const pkgService = new LeanpkgService()
@@ -102,6 +103,12 @@ export async function activate(context: ExtensionContext): Promise<Exports> {
     pkgService.versionChanged((uri) => installer.handleVersionChanged(uri));
     pkgService.lakeFileChanged((uri) => installer.handleLakeFileChanged(uri));
 
+    const taskProvider = new LeanTaskProvider()
+    context.subscriptions.push(tasks.registerTaskProvider(leanTaskDefinition.type, taskProvider))
+
+    const projectOperationProvider = new ProjectOperationProvider()
+    context.subscriptions.push(projectOperationProvider)
+
     return { isLean4Project: true, version: '4',
-        infoProvider: info, clientProvider: leanClientProvider, installer, docView};
+        infoProvider: info, clientProvider: leanClientProvider, installer, docView, taskProvider, projectOperationProvider};
 }

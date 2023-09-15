@@ -203,6 +203,12 @@
 				"description": "Restarts the Lean server for the file that is currently focused to refresh the dependencies."
 			},
 			{
+				"command": "lean4.mathlib.fetchCache",
+				"category": "Lean 4",
+				"title": "Mathlib: Fetch Build Artifact Cache",
+				"description": "Downloads cached Mathlib build artifacts to avoid full elaboration"
+			},
+			{
 				"command": "lean4.input.convert",
 				"category": "Lean 4",
 				"title": "Input: Convert Current Abbreviation",
@@ -261,14 +267,62 @@
 			{
 				"command": "lean4.docView.showAllAbbreviations",
 				"category": "Lean 4",
-				"title": "Show all abbreviations",
+				"title": "Docview: Show All Abbreviations",
 				"description": "Show help page containing all abbreviations and the Unicode characters they map to."
 			},
 			{
 				"command": "lean4.docView.open",
 				"category": "Lean 4",
-				"title": "Open Documentation View",
+				"title": "Docview: Open",
 				"description": "Open documentation found in local 'html' folder in a separate web view panel."
+			},
+			{
+				"command": "lean4.docView.back",
+				"category": "Lean 4",
+				"title": "Docview: Back",
+				"description": "Go to previous page in documentation view"
+			},
+			{
+				"command": "lean4.docView.forward",
+				"category": "Lean 4",
+				"title": "Docview: Forward",
+				"description": "Go to next page in documentation view"
+			},
+			{
+				"command": "lean4.createLibraryProject",
+				"category": "Lean 4",
+				"title": "Lake: Create Library Project",
+				"description": "Create a new Lean library project"
+			},
+			{
+				"command": "lean4.createProgramProject",
+				"category": "Lean 4",
+				"title": "Lake: Create Program Project",
+				"description": "Create a new Lean program project"
+			},
+			{
+				"command": "lean4.createMathlibProject",
+				"category": "Lean 4",
+				"title": "Lake: Create Math Formalization Project",
+				"description": "Create a new Lean math formalization project"
+			},
+			{
+				"command": "lean4.cloneProject",
+				"category": "Lean 4",
+				"title": "Git: Download Project",
+				"description": "Download an existing Lean project using `git clone`"
+			},
+			{
+				"command": "lean4.buildProject",
+				"category": "Lean 4",
+				"title": "Lake: Build Project",
+				"description": "Build the current project"
+			},
+			{
+				"command": "lean4.cleanProject",
+				"category": "Lean 4",
+				"title": "Lake: Clean Project",
+				"description": "Clean the current project, removing all build artifacts"
 			}
 		],
 		"languages": [
@@ -346,26 +400,6 @@
 		"menus": {
 			"commandPalette": [
 				{
-					"command": "lean4.input.convert",
-					"when": "editorLangId == lean4 && lean4.input.isActive"
-				},
-				{
-					"command": "lean4.restartFile",
-					"when": "editorLangId == lean4"
-				},
-				{
-					"command": "lean4.displayGoal",
-					"when": "editorLangId == lean4"
-				},
-				{
-					"command": "lean4.infoView.copyToComment",
-					"when": "editorLangId == lean4"
-				},
-				{
-					"command": "lean4.infoView.toggleStickyPosition",
-					"when": "editorLangId == lean4"
-				},
-				{
 					"command": "lean4.restartServer",
 					"when": "editorLangId == lean4"
 				},
@@ -382,18 +416,160 @@
 					"when": "editorLangId == lean4"
 				},
 				{
+					"command": "lean4.mathlib.fetchCache",
+					"when": "editorLangId == lean4"
+				},
+				{
+					"command": "lean4.input.convert",
+					"when": "editorLangId == lean4 && lean4.input.isActive"
+				},
+				{
+					"command": "lean4.displayGoal",
+					"when": "editorLangId == lean4"
+				},
+				{
+					"command": "lean4.toggleInfoview",
+					"when": "editorLangId == lean4"
+				},
+				{
+					"command": "lean4.displayList",
+					"when": "editorLangId == lean4"
+				},
+				{
+					"command": "lean4.infoView.copyToComment",
+					"when": "editorLangId == lean4"
+				},
+				{
+					"command": "lean4.infoView.toggleStickyPosition",
+					"when": "editorLangId == lean4"
+				},
+				{
+					"command": "lean4.infoView.toggleUpdating",
+					"when": "editorLangId == lean4"
+				},
+				{
+					"command": "lean4.infoView.toggleExpectedType",
+					"when": "editorLangId == lean4"
+				},
+				{
 					"command": "lean4.docView.showAllAbbreviations",
 					"when": "editorLangId == lean4"
+				},
+				{
+					"command": "lean4.docView.open"
+				},
+				{
+					"command": "lean4.docView.back"
+				},
+				{
+					"command": "lean4.docView.forward"
+				},
+				{
+					"command": "lean4.createLibraryProject"
+				},
+				{
+					"command": "lean4.createProgramProject"
+				},
+				{
+					"command": "lean4.createMathlibProject"
+				},
+				{
+					"command": "lean4.cloneProject"
+				},
+				{
+					"command": "lean4.buildProject"
+				},
+				{
+					"command": "lean4.cleanProject"
 				}
 			],
 			"editor/title": [
 				{
-					"command": "lean4.displayGoal",
+					"submenu": "lean4.titlebar",
 					"when": "editorLangId == lean4",
-					"group": "navigation@2"
+					"group": "navigation@0"
+				}
+			],
+			"lean4.titlebar": [
+				{
+					"command": "lean4.restartFile",
+					"when": "editorLangId == lean4",
+					"group": "1_server@1"
+				},
+				{
+					"command": "lean4.restartServer",
+					"when": "editorLangId == lean4",
+					"group": "1_server@2"
+				},
+				{
+					"command": "lean4.toggleInfoview",
+					"when": "editorLangId == lean4",
+					"group": "2_infoview@1"
+				},
+				{
+					"command": "lean4.docView.open",
+					"when": "editorLangId == lean4",
+					"group": "3_docview@1"
+				},
+				{
+					"command": "lean4.docView.showAllAbbreviations",
+					"when": "editorLangId == lean4",
+					"group": "3_docview@2"
+				},
+				{
+					"command": "lean4.buildProject",
+					"when": "editorLangId == lean4",
+					"group": "4_project@1"
+				},
+				{
+					"command": "lean4.cleanProject",
+					"when": "editorLangId == lean4",
+					"group": "4_project@2"
+				},
+				{
+					"command": "lean4.mathlib.fetchCache",
+					"when": "editorLangId == lean4",
+					"group": "5_mathlib@1"
+				},
+				{
+					"command": "lean4.createLibraryProject",
+					"when": "editorLangId == lean4",
+					"group": "6_setup@1"
+				},
+				{
+					"command": "lean4.createProgramProject",
+					"when": "editorLangId == lean4",
+					"group": "6_setup@2"
+				},
+				{
+					"command": "lean4.createMathlibProject",
+					"when": "editorLangId == lean4",
+					"group": "6_setup@3"
+				},
+				{
+					"command": "lean4.cloneProject",
+					"when": "editorLangId == lean4",
+					"group": "6_setup@4"
+				}
+			],
+			"editor/context": [
+				{
+					"command": "lean4.restartFile",
+					"when": "editorLangId == lean4",
+					"group": "z_commands"
 				}
 			]
 		},
+		"submenus": [
+			{
+			  "id": "lean4.titlebar",
+			  "label": "Lean 4",
+			  "icon": {
+				"dark": "./media/lean-mini-dark.svg",
+				"light": "./media/lean-mini-light.svg"
+				}
+			}
+		],
 		"semanticTokenScopes": [
 			{
 				"scopes": {
@@ -409,7 +585,12 @@
 				"editor.tabSize": 2,
 				"editor.wordSeparators": "`~@$%^&*()-=+[{]}⟨⟩⦃⦄⟦⟧⟮⟯‹›\\|;:\",.<>/"
 			}
-		}
+		},
+		"taskDefinitions": [
+			{
+				"type": "lean4"
+			}
+		]
 	},
 	"extensionKind": [
 		"workspace"
@@ -418,7 +599,8 @@
 		"onLanguage:lean",
 		"onLanguage:lean4",
 		"onLanguage:markdown",
-		"onCommand:lean4.restartServer"
+		"onCommand:lean4.restartServer",
+		"onCommand:workbench.action.tasks.runTask"
 	],
 	"main": "./dist/extension",
 	"scripts": {

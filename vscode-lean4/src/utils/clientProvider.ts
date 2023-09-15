@@ -145,8 +145,14 @@ export class LeanClientProvider implements Disposable {
         void this.activeClient?.stop();
     }
 
-    private restartActiveClient() {
-        void this.activeClient?.restart();
+    private async restartActiveClient() {
+        const result: string | undefined = await window.showWarningMessage(
+            'Restart Lean 4 server to re-elaborate all open files?',
+            { modal: true },
+            'Restart server')
+        if (result === 'Restart server') {
+            void this.activeClient?.restart();
+        }
     }
 
     clientIsStarted() {
