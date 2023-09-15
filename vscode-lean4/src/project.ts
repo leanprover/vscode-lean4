@@ -129,7 +129,7 @@ export class ProjectOperationProvider implements Disposable {
             Project initialized. Open new project folder '${path.basename(projectFolder.fsPath)}'?
             Unsaved file contents will be lost.
         `
-        const choice: string | undefined = await window.showWarningMessage(message, { modal: true }, 'Open project folder')
+        const choice: string | undefined = await window.showInformationMessage(message, { modal: true }, 'Open project folder')
         if (choice === 'Open project folder') {
             // this kills the extension host, so it has to be the last command
             await commands.executeCommand('vscode.openFolder', projectFolder)
@@ -141,7 +141,7 @@ export class ProjectOperationProvider implements Disposable {
     }
 
     private async cleanProject() {
-        const choice: string | undefined = await window.showWarningMessage('Delete all build artifacts?', { modal: true }, 'Proceed')
+        const choice: string | undefined = await window.showInformationMessage('Delete all build artifacts?', { modal: true }, 'Proceed')
 
         if (choice === 'Proceed') {
             await vscode.tasks.executeTask(createExecutableTask(cleanTask))

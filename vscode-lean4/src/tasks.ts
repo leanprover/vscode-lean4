@@ -8,6 +8,8 @@ export interface LeanTask {
 }
 
 export function createExecutableTask(task: LeanTask, reveal: TaskRevealKind = TaskRevealKind.Always, cwd?: string | undefined): Task {
+    // use `process.env` because if users just installed elan, the default parent process env
+    // of the task will not contain the elan executables, while `process.env` does
     const env = Object.entries(process.env)
         .filter(([_, value]) => value !== undefined)
         .reduce((obj, [key, value]) => {
