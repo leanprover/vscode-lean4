@@ -224,9 +224,11 @@ export class DocViewProvider implements Disposable {
             }
 
             const books : any = {
-                'Theorem Proving in Lean': mkCommandUri('lean4.docView.open', 'https://leanprover.github.io/theorem_proving_in_lean4/introduction.html'),
+                'Theorem Proving in Lean': mkCommandUri('lean4.docView.open', 'https://lean-lang.org/theorem_proving_in_lean4/introduction.html'),
+                'Functional Programming in Lean': mkCommandUri('lean4.docView.open', 'https://lean-lang.org/functional_programming_in_lean/'),
                 'Mathematics in Lean': mkCommandUri('lean4.docView.open', 'https://leanprover-community.github.io/mathematics_in_lean/'),
-                'Reference Manual': mkCommandUri('lean4.docView.open', 'https://leanprover.github.io/lean4/doc/'),
+                'The Mechanics of Proof': mkCommandUri('lean4.docView.open', 'https://hrmacbeth.github.io/math2001/'),
+                'Reference Manual': mkCommandUri('lean4.docView.open', 'https://lean-lang.org/lean4/doc/'),
                 'Abbreviations Cheatsheet': mkCommandUri('lean4.docView.showAllAbbreviations'),
                 'Example': mkCommandUri('lean4.openExample', 'https://github.com/leanprover/lean4-samples/raw/main/HelloWorld/Main.lean'),
 
