@@ -150,6 +150,16 @@
             "action" : { "indent" : "indent" }
         },
         {
+            // Indent thrice after EOL `:` at the start of a focus block
+            "beforeText": "^\\s*(·|\\.)\\s(.*\\s)?:\\s*$",
+            "action" : { "indent" : "indent", "appendText": "\t\t" }
+        },
+        {
+            // Indent twice after EOL `:`
+            "beforeText": "^.*\\s:\\s*$",
+            "action" : { "indent" : "indent", "appendText": "\t" }
+        },
+        {
             // Indent focus blocks
             "beforeText" : "^\\s*(·|\\.)\\s.*$",
             "action" : { "indent" : "indent" }
