@@ -140,6 +140,11 @@
                 :=, =>, <|
         */
         {
+            // Indent focus blocks followed by a postindented EOL token twice
+            "beforeText": "^\\s*(·|\\.)\\s(.*\\s)?(by|do|try|finally|where|\\:=|=>|<\\|)\\s*$",
+            "action" : { "indent" : "indent", "appendText": "\t" }
+        },
+        {
             // Postindented EOL tokens
             "beforeText": "^(.*\\s)?(by|do|try|finally|where|\\:=|=>|<\\|)\\s*$",
             "action" : { "indent" : "indent" }
