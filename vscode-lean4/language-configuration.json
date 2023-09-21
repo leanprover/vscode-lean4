@@ -132,6 +132,18 @@
     ],
     "wordPattern" : "([^`~@$%^&*()\\-=+\\[{\\]}⟨⟩⦃⦄⟦⟧⟮⟯‹›<>\\\\|;:\",./\\s]+)",
     "onEnterRules" : [
+        /*
+            Postindented End-Of-Line tokens:
+            The list of English-language EOL tokens which cause indentation on the next line are:
+                by, do, try, finally, where
+            The list of symbolic EOL tokens which cause indentation on the next line are:
+                :=, =>, <|
+        */
+        {
+            // Postindented EOL tokens
+            "beforeText": "^(.*\\s)?(by|do|try|finally|where|\\:=|=>|<\\|)\\s*$",
+            "action" : { "indent" : "indent" }
+        },
         {
             // Indent focus blocks
             "beforeText" : "^\\s*(·|\\.)\\s.*$",
