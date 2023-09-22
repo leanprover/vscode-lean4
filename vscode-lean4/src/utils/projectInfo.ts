@@ -1,8 +1,9 @@
 import * as fs from 'fs';
 import { URL } from 'url';
-import { Uri, workspace, WorkspaceFolder } from 'vscode';
+import { FileType, Uri, workspace, WorkspaceFolder } from 'vscode';
 import { fileExists } from './fsHelper';
 import { logger } from './logger'
+import path = require('path');
 
 // Detect lean4 root directory (works for both lean4 repo and nightly distribution)
 
@@ -143,4 +144,34 @@ async function readLeanVersionFile(packageFileUri : Uri) : Promise<string> {
     }
     return '';
 
+}
+
+export async function isValidLeanProject(projectFolder: Uri): Promise<boolean> {
+    try {
+        const leanToolchainPath = Uri.joinPath(projectFolder, 'lean-toolchain').fsPath
+        const licensePath = Uri.joinPath(projectFolder, 'LICENSE').fsPath
+        const licensesPath = Uri.joinPath(projectFolder, 'LICENSES').fsPath
+        const srcPath = Uri.joinPath(projectFolder, 'src').fsPath
+
+        const isLeanProject: boolean = await fileExists(leanToolchainPath)
+        const isLeanItself: boolean =
+            await fileExists(licensePath) &&
+            await fileExists(licensesPath) &&
+            await fileExists(srcPath)
+        return isLeanProject || isLeanItself
+    } catch {
+        return false
+    }
+}
+
+export async function checkParentFoldersForLeanProject(folder: Uri): Promise<Uri | undefined> {
+    let childFolder: Uri
+    do {
+        childFolder = folder
+        folder = Uri.file(path.dirname(folder.fsPath))
+        if (await isValidLeanProject(folder)) {
+            return folder
+        }
+    } while (childFolder.fsPath !== folder.fsPath)
+    return undefined
 }

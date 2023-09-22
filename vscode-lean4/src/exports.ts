@@ -7,7 +7,7 @@ import { ProjectOperationProvider } from './project';
 
 export interface Exports {
     isLean4Project: boolean
-    version: string
+    version: string | undefined
     infoProvider: InfoProvider | undefined
     clientProvider: LeanClientProvider | undefined
     installer: LeanInstaller | undefined

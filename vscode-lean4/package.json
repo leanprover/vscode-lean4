@@ -5,7 +5,7 @@
 	"version": "0.0.110",
 	"publisher": "leanprover",
 	"engines": {
-		"vscode": "^1.70.0"
+		"vscode": "^1.75.0"
 	},
 	"categories": [
 		"Programming Languages"
@@ -25,7 +25,7 @@
 				"lean4.toolchainPath": {
 					"type": "string",
 					"default": "",
-					"markdownDescription": "Path to your Lean toolchain. Leave this blank to get the default location from your PATH environment or from the default elan install location.",
+					"markdownDescription": "**DO NOT CHANGE** unless you know what you are doing. Path to your Lean toolchain. Leave this blank to get the default location from your PATH environment or from the default elan install location.",
 					"scope": "machine-overridable"
 				},
 				"lean4.input.enabled": {
@@ -174,6 +174,16 @@
 					"type": "number",
 					"default": 200,
 					"description": "Time (in milliseconds) which must pass since latest edit until elaboration begins. Lower values may make editing feel faster at the cost of higher CPU usage."
+				},
+				"lean4.showInvalidProjectWarnings": {
+					"type": "boolean",
+					"default": true,
+					"markdownDescription": "Show warnings whenever a .lean-file is opened in a folder that does not contain a 'lean-toolchain' file."
+				},
+				"lean4.alwaysShowTitleBarMenu": {
+					"type": "boolean",
+					"default": true,
+					"markdownDescription": "Always display the Lean extension title bar menu in the top right. This helps beginners create and open Lean projects after launching an empty instance of VS Code, but may not be desirable for anyone who uses VS Code for things other than Lean."
 				}
 			}
 		},
@@ -181,32 +191,26 @@
 			{
 				"command": "lean4.restartServer",
 				"category": "Lean 4",
-				"title": "Restart Server",
+				"title": "Server: Restart Server",
 				"description": "Restart the Lean server (for all files)."
 			},
 			{
 				"command": "lean4.stopServer",
 				"category": "Lean 4",
-				"title": "Stop Server",
+				"title": "Server: Stop Server",
 				"description": "Stop the Lean server (for all files)."
 			},
 			{
 				"command": "lean4.restartFile",
 				"category": "Lean 4",
-				"title": "Restart File",
+				"title": "Server: Restart File",
 				"description": "Restarts the Lean server for the file that is currently focused, refreshing the dependencies."
 			},
 			{
 				"command": "lean4.refreshFileDependencies",
 				"category": "Lean 4",
-				"title": "Refresh File Dependencies",
+				"title": "Server: Refresh File Dependencies",
 				"description": "Restarts the Lean server for the file that is currently focused to refresh the dependencies."
-			},
-			{
-				"command": "lean4.mathlib.fetchCache",
-				"category": "Lean 4",
-				"title": "Mathlib: Fetch Build Artifact Cache",
-				"description": "Downloads cached Mathlib build artifacts to avoid full elaboration"
 			},
 			{
 				"command": "lean4.input.convert",
@@ -227,7 +231,7 @@
 			{
 				"command": "lean4.toggleInfoview",
 				"category": "Lean 4",
-				"title": "Infoview: Toggle",
+				"title": "Infoview: Toggle Infoview",
 				"description": "Toggle whether the infoview is displayed."
 			},
 			{
@@ -273,7 +277,7 @@
 			{
 				"command": "lean4.docView.open",
 				"category": "Lean 4",
-				"title": "Docview: Open",
+				"title": "Docview: Open Docview",
 				"description": "Open documentation found in local 'html' folder in a separate web view panel."
 			},
 			{
@@ -289,40 +293,64 @@
 				"description": "Go to next page in documentation view"
 			},
 			{
-				"command": "lean4.createLibraryProject",
+				"command": "lean4.setup.showSetupGuide",
 				"category": "Lean 4",
-				"title": "Lake: Create Library Project",
+				"title": "Setup: Show Setup Guide",
+				"description": "Show 'Welcome' page containing a checklist of steps to install Lean 4."
+			},
+			{
+				"command": "lean4.setup.installElan",
+				"category": "Lean 4",
+				"title": "Setup: Install Elan",
+				"description": "Install Lean's version manager 'Elan'"
+			},
+			{
+				"command": "lean4.project.createLibraryProject",
+				"category": "Lean 4",
+				"title": "Project: Create Library Project…",
 				"description": "Create a new Lean library project"
 			},
 			{
-				"command": "lean4.createProgramProject",
+				"command": "lean4.project.createProgramProject",
 				"category": "Lean 4",
-				"title": "Lake: Create Program Project",
+				"title": "Project: Create Program Project…",
 				"description": "Create a new Lean program project"
 			},
 			{
-				"command": "lean4.createMathlibProject",
+				"command": "lean4.project.createMathlibProject",
 				"category": "Lean 4",
-				"title": "Lake: Create Math Formalization Project",
+				"title": "Project: Create Math Formalization Project…",
 				"description": "Create a new Lean math formalization project"
 			},
 			{
-				"command": "lean4.cloneProject",
+				"command": "lean4.project.open",
 				"category": "Lean 4",
-				"title": "Git: Download Project",
+				"title": "Project: Open Local Project…",
+				"description": "Opens a local Lean project"
+			},
+			{
+				"command": "lean4.project.clone",
+				"category": "Lean 4",
+				"title": "Project: Download Project…",
 				"description": "Download an existing Lean project using `git clone`"
 			},
 			{
-				"command": "lean4.buildProject",
+				"command": "lean4.project.build",
 				"category": "Lean 4",
-				"title": "Lake: Build Project",
+				"title": "Project: Build Project",
 				"description": "Build the current project"
 			},
 			{
-				"command": "lean4.cleanProject",
+				"command": "lean4.project.clean",
 				"category": "Lean 4",
-				"title": "Lake: Clean Project",
+				"title": "Project: Clean Project",
 				"description": "Clean the current project, removing all build artifacts"
+			},
+			{
+				"command": "lean4.project.fetchCache",
+				"category": "Lean 4",
+				"title": "Project: Fetch Mathlib Build Cache",
+				"description": "Downloads cached Mathlib build artifacts to avoid full elaboration"
 			}
 		],
 		"languages": [
@@ -416,10 +444,6 @@
 					"when": "editorLangId == lean4"
 				},
 				{
-					"command": "lean4.mathlib.fetchCache",
-					"when": "editorLangId == lean4"
-				},
-				{
 					"command": "lean4.input.convert",
 					"when": "editorLangId == lean4 && lean4.input.isActive"
 				},
@@ -465,91 +489,142 @@
 					"command": "lean4.docView.forward"
 				},
 				{
-					"command": "lean4.createLibraryProject"
+					"command": "lean4.setup.showSetupGuide"
 				},
 				{
-					"command": "lean4.createProgramProject"
+					"command": "lean4.setup.installElan"
 				},
 				{
-					"command": "lean4.createMathlibProject"
+					"command": "lean4.project.createLibraryProject"
 				},
 				{
-					"command": "lean4.cloneProject"
+					"command": "lean4.project.createProgramProject"
 				},
 				{
-					"command": "lean4.buildProject"
+					"command": "lean4.project.createMathlibProject"
 				},
 				{
-					"command": "lean4.cleanProject"
+					"command": "lean4.project.open"
+				},
+				{
+					"command": "lean4.project.clone"
+				},
+				{
+					"command": "lean4.project.build"
+				},
+				{
+					"command": "lean4.project.clean"
+				},
+				{
+					"command": "lean4.project.fetchCache",
+					"when": "editorLangId == lean4"
 				}
 			],
 			"editor/title": [
 				{
 					"submenu": "lean4.titlebar",
-					"when": "editorLangId == lean4",
+					"when": "config.lean4.alwaysShowTitleBarMenu || editorLangId == lean4",
 					"group": "navigation@0"
 				}
 			],
 			"lean4.titlebar": [
 				{
+					"submenu": "lean4.titlebar.newProject",
+					"when": "config.lean4.alwaysShowTitleBarMenu || editorLangId == lean4",
+					"group": "1_setup@1"
+				},
+				{
+					"submenu": "lean4.titlebar.openProject",
+					"when": "config.lean4.alwaysShowTitleBarMenu || editorLangId == lean4",
+					"group": "1_setup@1"
+				},
+				{
 					"command": "lean4.restartFile",
 					"when": "editorLangId == lean4",
-					"group": "1_server@1"
+					"group": "2_server@1"
 				},
 				{
 					"command": "lean4.restartServer",
 					"when": "editorLangId == lean4",
-					"group": "1_server@2"
+					"group": "2_server@2"
 				},
 				{
 					"command": "lean4.toggleInfoview",
 					"when": "editorLangId == lean4",
-					"group": "2_infoview@1"
+					"group": "3_infoview@1"
 				},
 				{
-					"command": "lean4.docView.open",
+					"submenu": "lean4.titlebar.projectActions",
 					"when": "editorLangId == lean4",
-					"group": "3_docview@1"
+					"group": "4_projectActions@1"
 				},
 				{
-					"command": "lean4.docView.showAllAbbreviations",
-					"when": "editorLangId == lean4",
-					"group": "3_docview@2"
+					"submenu": "lean4.titlebar.documentation",
+					"when": "config.lean4.alwaysShowTitleBarMenu || editorLangId == lean4",
+					"group": "5_documentation@1"
+				}
+			],
+			"lean4.titlebar.newProject": [
+				{
+					"command": "lean4.project.createLibraryProject",
+					"when": "config.lean4.alwaysShowTitleBarMenu || editorLangId == lean4",
+					"group": "1_newProject@1"
 				},
 				{
-					"command": "lean4.buildProject",
+					"command": "lean4.project.createProgramProject",
+					"when": "config.lean4.alwaysShowTitleBarMenu || editorLangId == lean4",
+					"group": "1_newProject@2"
+				},
+				{
+					"command": "lean4.project.createMathlibProject",
+					"when": "config.lean4.alwaysShowTitleBarMenu || editorLangId == lean4",
+					"group": "1_newProject@2"
+				}
+			],
+			"lean4.titlebar.openProject": [
+				{
+					"command": "lean4.project.open",
+					"when": "config.lean4.alwaysShowTitleBarMenu || editorLangId == lean4",
+					"group": "1_openProject@1"
+				},
+				{
+					"command": "lean4.project.clone",
+					"when": "config.lean4.alwaysShowTitleBarMenu || editorLangId == lean4",
+					"group": "1_openProject@2"
+				}
+			],
+			"lean4.titlebar.projectActions": [
+				{
+					"command": "lean4.project.build",
 					"when": "editorLangId == lean4",
 					"group": "4_project@1"
 				},
 				{
-					"command": "lean4.cleanProject",
+					"command": "lean4.project.clean",
 					"when": "editorLangId == lean4",
 					"group": "4_project@2"
 				},
 				{
-					"command": "lean4.mathlib.fetchCache",
+					"command": "lean4.project.fetchCache",
 					"when": "editorLangId == lean4",
 					"group": "5_mathlib@1"
+				}
+			],
+			"lean4.titlebar.documentation": [
+				{
+					"command": "lean4.setup.showSetupGuide",
+					"when": "config.lean4.alwaysShowTitleBarMenu || editorLangId == lean4",
+					"group": "1_installation@1"
 				},
 				{
-					"command": "lean4.createLibraryProject",
-					"when": "editorLangId == lean4",
-					"group": "6_setup@1"
+					"command": "lean4.docView.open",
+					"when": "config.lean4.alwaysShowTitleBarMenu || editorLangId == lean4",
+					"group": "2_docview@1"
 				},
 				{
-					"command": "lean4.createProgramProject",
-					"when": "editorLangId == lean4",
-					"group": "6_setup@2"
-				},
-				{
-					"command": "lean4.createMathlibProject",
-					"when": "editorLangId == lean4",
-					"group": "6_setup@3"
-				},
-				{
-					"command": "lean4.cloneProject",
-					"when": "editorLangId == lean4",
-					"group": "6_setup@4"
+					"command": "lean4.docView.showAllAbbreviations",
+					"when": "config.lean4.alwaysShowTitleBarMenu || editorLangId == lean4",
+					"group": "2_docview@2"
 				}
 			],
 			"editor/context": [
@@ -568,6 +643,22 @@
 				"dark": "./media/lean-mini-dark.svg",
 				"light": "./media/lean-mini-light.svg"
 				}
+			},
+			{
+				"id": "lean4.titlebar.newProject",
+				"label": "New Project…"
+			},
+			{
+				"id": "lean4.titlebar.openProject",
+				"label": "Open Project…"
+			},
+			{
+				"id": "lean4.titlebar.projectActions",
+				"label": "Project Actions…"
+			},
+			{
+				"id": "lean4.titlebar.documentation",
+				"label": "Show Documentation…"
 			}
 		],
 		"semanticTokenScopes": [
@@ -590,6 +681,149 @@
 			{
 				"type": "lean4"
 			}
+		],
+		"walkthroughs": [
+			{
+				"id": "guide.linux",
+				"title": "Lean 4 Setup",
+				"description": "Getting started with Lean 4 on Linux\n",
+				"when": "isLinux",
+				"steps": [
+					{
+						"id": "guide.linux.openSetupGuide",
+						"title": "Re-Open Setup Guide",
+						"description": "This guide can always be re-opened by clicking on the ∀-symbol in the top right and selecting 'Show Documentation…' > 'Setup: Show Setup Guide'.",
+						"media": {
+							"image": "media/open-setup-guide.png",
+							"altText": "Click on the ∀-symbol in the top right and select 'Show Documentation…' > 'Setup: Show Setup Guide'."
+						}
+					},
+					{
+						"id": "guide.linux.documentation",
+						"title": "Books and Documentation",
+						"description": "Learn using Lean 4 with the resources on the right.",
+						"media": { "markdown": "./media/guide-documentation.md" }
+					},
+					{
+						"id": "guide.linux.installDeps",
+						"title": "Install Required Dependencies",
+						"description": "Install Git and curl using your package manager.",
+						"media": { "markdown": "./media/guide-installDeps-linux.md" }
+					},
+					{
+						"id": "guide.linux.installElan",
+						"title": "Install Lean Version Manager",
+						"description": "Install Lean's version manager Elan.\n[Click to install](command:lean4.setup.installElan)",
+						"media": { "markdown": "./media/guide-installElan-unix.md" }
+					},
+					{
+						"id": "guide.linux.setupProject",
+						"title": "Set Up Lean 4 Project",
+						"description": "Set up a Lean 4 project by clicking on one of the options on the right.",
+						"media": { "markdown": "./media/guide-setupProject.md" }
+					},
+					{
+						"id": "guide.linux.help",
+						"title": "Questions and Troubleshooting",
+						"description": "If you have any questions or are having trouble with any of the previous steps, please visit us on the [Lean Zulip chat](https://leanprover.zulipchat.com/) so that we can help you.",
+						"media": { "markdown": "./media/guide-help.md" }
+					}
+				]
+			},
+			{
+				"id": "guide.mac",
+				"title": "Lean 4 Setup",
+				"description": "Getting started with Lean 4 on Mac\n",
+				"when": "isMac",
+				"steps": [
+					{
+						"id": "guide.mac.openSetupGuide",
+						"title": "Re-Open Setup Guide",
+						"description": "This guide can always be re-opened by clicking on the ∀-symbol in the top right and selecting 'Show Documentation…' > 'Setup: Show Setup Guide'.",
+						"media": {
+							"image": "media/open-setup-guide.png",
+							"altText": "Click on the ∀-symbol in the top right and select 'Show Documentation…' > 'Setup: Show Setup Guide'."
+						}
+					},
+					{
+						"id": "guide.mac.documentation",
+						"title": "Books and Documentation",
+						"description": "Learn using Lean 4 with the resources on the right.",
+						"media": { "markdown": "./media/guide-documentation.md" }
+					},
+					{
+						"id": "guide.mac.installDeps",
+						"title": "Install Required Dependencies",
+						"description": "Install Homebrew, Git and curl.",
+						"media": { "markdown": "./media/guide-installDeps-mac.md" }
+					},
+					{
+						"id": "guide.mac.installElan",
+						"title": "Install Lean Version Manager",
+						"description": "Install Lean's version manager Elan.\n[Click to install](command:lean4.setup.installElan)",
+						"media": { "markdown": "./media/guide-installElan-unix.md" }
+					},
+					{
+						"id": "guide.mac.setupProject",
+						"title": "Set Up Lean 4 Project",
+						"description": "Set up a Lean 4 project by clicking on one of the options on the right.",
+						"media": { "markdown": "./media/guide-setupProject.md" }
+					},
+					{
+						"id": "guide.mac.help",
+						"title": "Questions and Troubleshooting",
+						"description": "If you have any questions or are having trouble with any of the previous steps, please visit us on the [Lean Zulip chat](https://leanprover.zulipchat.com/) so that we can help you.",
+						"media": { "markdown": "./media/guide-help.md" }
+					}
+				]
+			},
+			{
+				"id": "guide.windows",
+				"title": "Lean 4 Setup",
+				"description": "Getting started with Lean 4 on Windows\n",
+				"when": "isWindows",
+				"steps": [
+					{
+						"id": "guide.windows.openSetupGuide",
+						"title": "Re-Open Setup Guide",
+						"description": "This guide can always be re-opened by clicking on the ∀-symbol in the top right and selecting 'Show Documentation…' > 'Setup: Show Setup Guide'.",
+						"media": {
+							"image": "media/open-setup-guide.png",
+							"altText": "Click on the ∀-symbol in the top right and select 'Show Documentation…' > 'Setup: Show Setup Guide'."
+						}
+					},
+					{
+						"id": "guide.windows.documentation",
+						"title": "Books and Documentation",
+						"description": "Learn using Lean 4 with the resources on the right.",
+						"media": { "markdown": "./media/guide-documentation.md" }
+					},
+					{
+						"id": "guide.windows.installDeps",
+						"title": "Install Required Dependencies",
+						"description": "Install Git.",
+						"media": { "markdown": "./media/guide-installDeps-windows.md" }
+					},
+					{
+						"id": "guide.windows.installElan",
+						"title": "Install Lean Version Manager",
+						"description": "Install Lean's version manager Elan.\n[Click to install](command:lean4.setup.installElan)",
+						"media": { "markdown": "./media/guide-installElan-windows.md" }
+					},
+					{
+						"id": "guide.windows.setupProject",
+						"title": "Set Up Lean 4 Project",
+						"description": "Set up a Lean 4 project by clicking on one of the options on the right.",
+						"media": { "markdown": "./media/guide-setupProject.md" }
+					},
+					{
+						"id": "guide.windows.help",
+						"title": "Questions and Troubleshooting",
+						"description": "If you have any questions or are having trouble with any of the previous steps, please visit us on the [Lean Zulip chat](https://leanprover.zulipchat.com/) so that we can help you.",
+						"media": { "markdown": "./media/guide-help.md" }
+					}
+				]
+			}
 		]
 	},
 	"extensionKind": [
@@ -597,10 +831,9 @@
 	],
 	"activationEvents": [
 		"onLanguage:lean",
-		"onLanguage:lean4",
 		"onLanguage:markdown",
-		"onCommand:lean4.restartServer",
-		"onCommand:workbench.action.tasks.runTask"
+		"onCommand:workbench.action.tasks.runTask",
+		"onStartupFinished"
 	],
 	"main": "./dist/extension",
 	"scripts": {

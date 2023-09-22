@@ -45,7 +45,7 @@ export class LeanClient implements Disposable {
     private toolchainPath: string
     private outputChannel: OutputChannel;
     private workspaceFolder: WorkspaceFolder | undefined;
-    private folderUri: Uri;
+    folderUri: Uri;
     private subscriptions: Disposable[] = []
     private noPrompt : boolean = false;
     private showingRestartMessage : boolean = false;

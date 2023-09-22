@@ -8,7 +8,7 @@ export interface LeanTask {
 }
 
 export function createExecutableTask(task: LeanTask, reveal: TaskRevealKind = TaskRevealKind.Always, cwd?: string | undefined): Task {
-    // use `process.env` because if users just installed elan, the default parent process env
+    // Use `process.env` because if users just installed elan, the default parent process env
     // of the task will not contain the elan executables, while `process.env` does
     const env = Object.entries(process.env)
         .filter(([_, value]) => value !== undefined)
@@ -46,12 +46,16 @@ export async function runTaskUntilCompletion(task: Task, subscriptions: Disposab
     })
 }
 
+export const updateElanTask: LeanTask = {
+    command: 'elan self update',
+    description: 'Update Lean\'s version manager Elan'
+}
 export const initLibraryProjectTask: LeanTask = {
-    command: 'lake init ${workspaceFolderBasename} lib',
+    command: 'lake +stable init ${workspaceFolderBasename} lib',
     description: 'Initialize Lean 4 library project in current folder'
 }
 export const initProgramProjectTask: LeanTask = {
-    command: 'lake init ${workspaceFolderBasename} exe',
+    command: 'lake +stable init ${workspaceFolderBasename} exe',
     description: 'Initialize Lean 4 program project in current folder'
 }
 export const initMathlibProjectTask: LeanTask = {
@@ -70,6 +74,10 @@ export const cacheGetTask: LeanTask = {
     command: 'lake exe cache get',
     description: '⚠ Mathlib command ⚠: Download cached Mathlib build artifacts'
 }
+export const cachePackTask: LeanTask = {
+    command: 'lake exe cache pack',
+    description: '⚠ Mathlib command ⚠: Compress and cache local build artifacts'
+}
 export const updateTask: LeanTask = {
     command: 'lake update',
     description: '⚠ Project maintenance command ⚠: Upgrade all project dependencies'
@@ -79,12 +87,14 @@ export class LeanTaskProvider implements TaskProvider {
 
     provideTasks(token: CancellationToken): ProviderResult<Task[]> {
         return [
+            createExecutableTask(updateElanTask),
             createExecutableTask(initLibraryProjectTask, TaskRevealKind.Silent),
             createExecutableTask(initProgramProjectTask, TaskRevealKind.Silent),
             createExecutableTask(initMathlibProjectTask, TaskRevealKind.Silent),
             createExecutableTask(buildTask),
             createExecutableTask(cleanTask),
             createExecutableTask(cacheGetTask),
+            createExecutableTask(cachePackTask),
             createExecutableTask(updateTask)
         ]
     }

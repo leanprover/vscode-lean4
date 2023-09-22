@@ -4,10 +4,10 @@ import { LeanpkgService } from './leanpkg';
 import { LeanClient } from '../leanclient'
 import { LeanFileProgressProcessingInfo, ServerStoppedReason } from '@leanprover/infoview-api';
 import * as path from 'path';
-import { findLeanPackageRoot } from './projectInfo';
+import { checkParentFoldersForLeanProject, findLeanPackageRoot, isValidLeanProject } from './projectInfo';
 import { isFileInFolder } from './fsHelper';
 import { logger } from './logger'
-import { addDefaultElanPath, getDefaultElanPath, addToolchainBinPath, isElanDisabled, isRunningTest } from '../config'
+import { addDefaultElanPath, getDefaultElanPath, addToolchainBinPath, isElanDisabled, isRunningTest, shouldShowInvalidProjectWarnings } from '../config'
 
 // This class ensures we have one LeanClient per workspace folder.
 export class LeanClientProvider implements Disposable {
@@ -51,7 +51,8 @@ export class LeanClientProvider implements Disposable {
             commands.registerCommand('lean4.restartFile', () => this.restartFile()),
             commands.registerCommand('lean4.refreshFileDependencies', () => this.restartFile()),
             commands.registerCommand('lean4.restartServer', () => this.restartActiveClient()),
-            commands.registerCommand('lean4.stopServer', () => this.stopActiveClient())
+            commands.registerCommand('lean4.stopServer', () => this.stopActiveClient()),
+            commands.registerCommand('lean4.setup.installElan', () => this.autoInstall())
         );
 
         workspace.onDidOpenTextDocument((document) => this.didOpenEditor(document));
@@ -115,8 +116,6 @@ export class LeanClientProvider implements Disposable {
 
     private async autoInstall() : Promise<void> {
         // no prompt, just do it!
-        const version = this.installer.getDefaultToolchain();
-        logger.log(`[ClientProvider] Installing ${version} via Elan during testing`);
         await this.installer.installElan();
         if (isElanDisabled()) {
             addToolchainBinPath(getDefaultElanPath());
@@ -192,9 +191,13 @@ export class LeanClientProvider implements Disposable {
 
         try {
             const [cached, client] = await this.ensureClient(document.uri, undefined);
-            if (client) {
-                await client.openLean4Document(document)
+            if (!client) {
+                return
             }
+
+            await this.checkIsValidProjectFolder(client.folderUri)
+
+            await client.openLean4Document(document)
         } catch (e) {
             logger.log(`[ClientProvider] ### Error opening document: ${e}`);
         }
@@ -360,6 +363,37 @@ export class LeanClientProvider implements Disposable {
         this.activeClient = client;
 
         return [cachedClient, client];
+    }
+
+    private async checkIsValidProjectFolder(folderUri: Uri) {
+        if (!shouldShowInvalidProjectWarnings()) {
+            return
+        }
+
+        if (folderUri.scheme !== 'file') {
+            void window.showWarningMessage('Lean 4 server operating in restricted single file mode. Please open a valid Lean 4 project containing a \'lean-toolchain\' file for full functionality.')
+            return
+        }
+
+        if (await isValidLeanProject(folderUri)) {
+            return
+        }
+
+        const parentProjectFolder: Uri | undefined = await checkParentFoldersForLeanProject(folderUri)
+        if (parentProjectFolder === undefined) {
+            void window.showWarningMessage('Opened folder is not a valid Lean 4 project. Please open a valid Lean 4 project containing a \'lean-toolchain\' file for full functionality.')
+            return
+        }
+
+        const message = `Opened folder is not a valid Lean 4 project folder because it does not contain a 'lean-toolchain' file.
+However, a valid Lean 4 project folder was found in one of the parent directories at ${parentProjectFolder.fsPath}.
+Open this project instead?`
+        const input = 'Open parent directory project'
+        const choice: string | undefined = await window.showWarningMessage(message, input)
+        if (choice === input) {
+            // this kills the extension host
+            await commands.executeCommand('vscode.openFolder', parentProjectFolder)
+        }
     }
 
     dispose(): void {

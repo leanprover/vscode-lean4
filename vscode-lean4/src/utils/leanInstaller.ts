@@ -10,12 +10,11 @@ export class LeanVersion {
     error: string | undefined;
 }
 
-export class LeanInstaller implements Disposable {
+export class LeanInstaller {
 
     private leanInstallerLinux = 'https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh'
     private leanInstallerWindows = 'https://raw.githubusercontent.com/leanprover/elan/master/elan-init.ps1'
     private outputChannel: OutputChannel;
-    private subscriptions: Disposable[] = [];
     private prompting : boolean = false;
     private defaultToolchain : string; // the default to use if there is no elan installed
     private elanDefaultToolchain : string = ''; // the default toolchain according to elan (toolchain marked with '(default)')
@@ -42,6 +41,10 @@ export class LeanInstaller implements Disposable {
 
     getPromptUser() : boolean {
         return this.promptUser;
+    }
+
+    getOutputChannel(): OutputChannel {
+        return this.outputChannel
     }
 
     async testLeanVersion(packageUri: Uri) : Promise<LeanVersion> {
@@ -159,7 +162,7 @@ export class LeanInstaller implements Disposable {
         const item = await this.showPrompt(prompt, installItem)
         if (item === installItem) {
             try {
-                const result = await this.installElan();
+                await this.installElan();
                 this.installChangedEmitter.fire(uri);
             } catch (err) {
                 const msg = '' + err;
@@ -206,7 +209,7 @@ export class LeanInstaller implements Disposable {
             }
         }
 
-        const env = addServerEnvPaths(process.env);
+        addServerEnvPaths(process.env);
 
         let options = ['--version']
         if (version) {
@@ -354,60 +357,54 @@ export class LeanInstaller implements Disposable {
     }
 
     async installElan() : Promise<boolean> {
-
         if (toolchainPath()) {
             void window.showErrorMessage('It looks like you\'ve modified the `lean.toolchainPath` user setting.' +
             'Please clear this setting before installing elan.');
             return false;
-        } else {
-            const terminalName = 'Lean installation via elan';
-
-            let terminalOptions: TerminalOptions = { name: terminalName };
-            if (process.platform === 'win32') {
-                terminalOptions = { name: terminalName, shellPath: getPowerShellPath() };
-            }
-            const terminal = window.createTerminal(terminalOptions);
-            terminal.show();
-
-            // We register a listener, to restart the Lean extension once elan has finished.
-            const result = new Promise<boolean>(function(resolve, reject) {
-                window.onDidCloseTerminal(async (t) => {
-                if (t === terminal) {
-                    resolve(true);
-                } else {
-                    logger.log('[LeanInstaller] ignoring terminal closed: ' + t.name + ', waiting for: ' + terminalName);
-                }});
-            });
-
-            if (process.platform === 'win32') {
-                terminal.sendText(
-                    `Start-BitsTransfer -Source "${this.leanInstallerWindows}" -Destination "elan-init.ps1"\r\n` +
-                    'Set-ExecutionPolicy -ExecutionPolicy Unrestricted -Scope Process\r\n' +
-                    `$rc = .\\elan-init.ps1 -NoPrompt 1 -DefaultToolchain ${this.defaultToolchain}\r\n` +
-                    'Write-Host "elan-init returned [$rc]"\r\n' +
-                    'del .\\elan-init.ps1\r\n' +
-                    'if ($rc -ne 0) {\r\n' +
-                    '    Read-Host -Prompt "Press ENTER to continue"\r\n' +
-                    '}\r\n' +
-                    'exit\r\n'
-                    );
-            }
-            else {
-                const elanArgs = `-y --default-toolchain ${this.defaultToolchain}`;
-                const prompt = '(echo && read -n 1 -s -r -p "Install failed, press ENTER to continue...")';
-
-                terminal.sendText(`bash -c 'curl ${this.leanInstallerLinux} -sSf | sh -s -- ${elanArgs} || ${prompt}' && exit `);
-            }
-
-            // clear any previous lean version errors.
-            this.versionCache.clear();
-            this.elanDefaultToolchain = this.defaultToolchain;
-
-            return result;
         }
-    }
 
-    dispose(): void {
-        for (const s of this.subscriptions) { s.dispose(); }
+        const terminalName = 'Lean installation via elan';
+
+        let terminalOptions: TerminalOptions = { name: terminalName };
+        if (process.platform === 'win32') {
+            terminalOptions = { name: terminalName, shellPath: getPowerShellPath() };
+        }
+        const terminal = window.createTerminal(terminalOptions);
+        terminal.show();
+
+        // We register a listener, to restart the Lean extension once elan has finished.
+        const result = new Promise<boolean>(function(resolve, reject) {
+            window.onDidCloseTerminal(async (t) => {
+            if (t === terminal) {
+                resolve(true);
+            } else {
+                logger.log('[LeanInstaller] ignoring terminal closed: ' + t.name + ', waiting for: ' + terminalName);
+            }});
+        });
+
+        if (process.platform === 'win32') {
+            terminal.sendText(
+                `Start-BitsTransfer -Source "${this.leanInstallerWindows}" -Destination "elan-init.ps1"\r\n` +
+                'Set-ExecutionPolicy -ExecutionPolicy Unrestricted -Scope Process\r\n' +
+                `$rc = .\\elan-init.ps1 -NoPrompt 1 -DefaultToolchain ${this.defaultToolchain}\r\n` +
+                'Write-Host "elan-init returned [$rc]"\r\n' +
+                'del .\\elan-init.ps1\r\n' +
+                'if ($rc -ne 0) {\r\n' +
+                '    Read-Host -Prompt "Press ENTER to continue"\r\n' +
+                '}\r\n' +
+                'exit\r\n'
+                );
+        } else {
+            const elanArgs = `-y --default-toolchain ${this.defaultToolchain}`;
+            const prompt = '(echo && read -n 1 -s -r -p "Install failed, press ENTER to continue...")';
+
+            terminal.sendText(`bash -c 'curl ${this.leanInstallerLinux} -sSf | sh -s -- ${elanArgs} || ${prompt}' && exit `);
+        }
+
+        // clear any previous lean version errors.
+        this.versionCache.clear();
+        this.elanDefaultToolchain = this.defaultToolchain;
+
+        return result;
     }
 }
