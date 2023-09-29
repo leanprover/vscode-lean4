@@ -1,12 +1,16 @@
-import * as vscode from 'vscode';
-import { Disposable, TaskRevealKind, Uri, commands, window, workspace, SaveDialogOptions, FileType } from 'vscode';
-import { LeanTask, buildTask, cacheGetTask, cleanTask, createExecutableTask, runTaskUntilCompletion, updateElanTask, updateTask } from './tasks';
+import { Disposable, Uri, commands, window, workspace, SaveDialogOptions } from 'vscode';
 import path = require('path');
 import { checkParentFoldersForLeanProject, isValidLeanProject } from './utils/projectInfo';
+import { elanSelfUpdate } from './utils/elan';
+import { LakeRunner, cacheNotFoundError, lake, lakeInActiveFolder } from './utils/lake';
+import { ExecutionExitCode, ExecutionResult, batchExecute, batchExecuteWithProgress, displayError } from './utils/batch';
+import { LeanClientProvider } from './utils/clientProvider';
+import { LeanClient } from './leanclient';
 
 export class ProjectOperationProvider implements Disposable {
 
     private subscriptions: Disposable[] = [];
+    clientProvider: LeanClientProvider | undefined = undefined // set when the lean 4 client loads
 
     constructor() {
         this.subscriptions.push(
@@ -22,55 +26,69 @@ export class ProjectOperationProvider implements Disposable {
     }
 
     private async createLibraryProject() {
-        await this.createProject('lib', 'library', 'stable')
+        const projectFolder: Uri | 'DidNotComplete' = await this.createProject('lib', 'library', 'stable')
+
+        if (projectFolder !== 'DidNotComplete') {
+            await ProjectOperationProvider.openNewFolder(projectFolder)
+        }
     }
 
     private async createProgramProject() {
-        await this.createProject('exe', 'program', 'stable')
+        const projectFolder: Uri | 'DidNotComplete' = await this.createProject('exe', 'program', 'stable')
+
+        if (projectFolder !== 'DidNotComplete') {
+            await ProjectOperationProvider.openNewFolder(projectFolder)
+        }
     }
 
     private async createMathlibProject() {
-        await this.createProject('math', 'math formalization',
-            'leanprover-community/mathlib4:lean-toolchain',
-            [updateTask, cacheGetTask])
+        const mathlibToolchain = 'leanprover-community/mathlib4:lean-toolchain'
+        const projectFolder: Uri | 'DidNotComplete' = await this.createProject('math', 'math formalization', mathlibToolchain)
+
+        if (projectFolder === 'DidNotComplete') {
+            return
+        }
+
+        const updateResult: ExecutionResult = await lake(projectFolder, mathlibToolchain).updateDependencies()
+        if (updateResult.exitCode !== ExecutionExitCode.Success) {
+            await displayError(updateResult, 'Cannot update dependencies.')
+            return
+        }
+
+        const cacheGetResult: ExecutionResult = await lake(projectFolder, mathlibToolchain).fetchMathlibCache()
+        if (cacheGetResult.exitCode !== ExecutionExitCode.Success) {
+            await displayError(cacheGetResult, 'Cannot fetch Mathlib build artifact cache.')
+            return
+        }
+
+        await ProjectOperationProvider.openNewFolder(projectFolder)
     }
 
     private async createProject(
         kind: string,
         kindName: string,
-        toolchain?: string | undefined,
-        postProcessingTasks: LeanTask[] = []) {
+        toolchain?: string | undefined): Promise<Uri | 'DidNotComplete'>  {
 
         const projectFolder: Uri | undefined = await ProjectOperationProvider.askForNewProjectFolderLocation({
             saveLabel: 'Create project folder',
             title: `Create a new ${kindName} project folder`
         })
         if (projectFolder === undefined) {
-            return
+            return 'DidNotComplete'
         }
 
         await workspace.fs.createDirectory(projectFolder)
 
+        await elanSelfUpdate()
+
         const projectName: string = path.basename(projectFolder.fsPath)
-        const initCommand: string =
-            toolchain === undefined
-                ? 'init'
-                : `+${toolchain} init`
-        const createProjectTask: LeanTask = {
-            command: `lake ${initCommand} "${projectName}" ${kind}`,
-            description: `Create new Lean 4 ${kindName} project`
+        const result: ExecutionResult = await lake(projectFolder, toolchain).initProject(projectName, kind)
+        if (result.exitCode !== ExecutionExitCode.Success) {
+            await displayError(result, 'Cannot initialize project.')
+            return 'DidNotComplete'
         }
 
-        const tasks = [updateElanTask, createProjectTask].concat(postProcessingTasks)
-        for (const task of tasks) {
-            try {
-                await runTaskUntilCompletion(createExecutableTask(task, TaskRevealKind.Always, projectFolder.fsPath), this.subscriptions)
-            } catch (e) {
-                return // Error will already be displayed in terminal
-            }
-        }
-
-        await ProjectOperationProvider.openNewFolder(projectFolder)
+        return projectFolder
     }
 
     private async openProject() {
@@ -105,7 +123,7 @@ export class ProjectOperationProvider implements Disposable {
     private static async attemptFindingLeanProjectInParentFolder(projectFolder: Uri): Promise<Uri | undefined> {
         const parentProjectFolder: Uri | undefined = await checkParentFoldersForLeanProject(projectFolder)
         if (parentProjectFolder === undefined) {
-            await window.showErrorMessage('The selected folder is not a valid Lean 4 project folder. Please make sure to select a folder containing a \'lean-toolchain\' file.')
+            void window.showErrorMessage('The selected folder is not a valid Lean 4 project folder. Please make sure to select a folder containing a \'lean-toolchain\' file.')
             return undefined
         }
 
@@ -148,14 +166,14 @@ Open this project instead?`
             return
         }
 
-        try {
-            await runTaskUntilCompletion(createExecutableTask({
-                command: `git clone "${existingProjectUri}" "${projectFolder.fsPath}"`,
-                description: 'Download existing Lean 4 project using `git clone`'
-            }), this.subscriptions)
-        } catch (e) {
-            return // Error will already be displayed in terminal
+        const result: ExecutionResult = await batchExecuteWithProgress('git', ['clone', existingProjectUri.toString(), projectFolder.fsPath], 'Cloning project ...')
+        if (result.exitCode !== ExecutionExitCode.Success) {
+            await displayError(result, 'Cannot download project.')
+            return
         }
+
+        // Try it. If this is not a mathlib project, it will fail silently. Otherwise, it will grab the cache.
+        await lake(projectFolder).fetchMathlibCache(true)
 
         await ProjectOperationProvider.openNewFolder(projectFolder)
     }
@@ -172,7 +190,7 @@ Open this project instead?`
         if (projectFolder.scheme === 'file') {
             return true
         } else {
-            await window.showErrorMessage('Project folder must be created in a file system.')
+            void window.showErrorMessage('Project folder must be created in a file system.')
             return false
         }
     }
@@ -188,20 +206,98 @@ Open this project instead?`
     }
 
     private async buildProject() {
-        await vscode.tasks.executeTask(createExecutableTask(buildTask))
+        await this.inActiveFolderWithoutServer(async lakeRunner => {
+            // Try it. If this is not a mathlib project, it will fail silently. Otherwise, it will grab the cache.
+            await lakeRunner.fetchMathlibCache(true)
+
+            const result: ExecutionResult = await lakeRunner.build()
+            if (result.exitCode !== ExecutionExitCode.Success) {
+                void displayError(result, 'Cannot build project.')
+                return
+            }
+
+            void window.showInformationMessage('Project built successfully.')
+            return
+        })
     }
 
     private async cleanProject() {
-        const input = 'Proceed'
-        const choice: string | undefined = await window.showInformationMessage('Delete all build artifacts?', { modal: true }, input)
-
-        if (choice === input) {
-            await vscode.tasks.executeTask(createExecutableTask(cleanTask))
+        const deleteInput = 'Proceed'
+        const deleteChoice: string | undefined = await window.showInformationMessage('Delete all build artifacts?', { modal: true }, deleteInput)
+        if (deleteChoice !== deleteInput) {
+            return
         }
+
+        await this.inActiveFolderWithoutServer(async lakeRunner => {
+            const cleanResult: ExecutionResult = await lakeRunner.clean()
+            if (cleanResult.exitCode !== ExecutionExitCode.Success) {
+                void displayError(cleanResult, 'Cannot delete build artifacts.')
+                return
+            }
+
+            if (!await lakeRunner.isMathlibCacheGetAvailable()) {
+                void window.showInformationMessage('Project cleaned successfully.')
+                return
+            }
+
+            const fetchMessage = 'Project cleaned successfully. Do you want to fetch Mathlib\'s build artifact cache?'
+            const fetchInput = 'Fetch Cache'
+            const fetchChoice: string | undefined = await window.showInformationMessage(fetchMessage, { modal: true }, fetchInput)
+            if (fetchChoice !== fetchInput) {
+                return
+            }
+
+            const fetchResult: ExecutionResult = await lakeRunner.fetchMathlibCache()
+            if (fetchResult.exitCode !== ExecutionExitCode.Success) {
+                void displayError(fetchResult, 'Cannot fetch Mathlib build artifact cache.')
+                return
+            }
+            void window.showInformationMessage('Mathlib build artifact cache fetched successfully.')
+        })
     }
 
     private async fetchMathlibCache() {
-        await vscode.tasks.executeTask(createExecutableTask(cacheGetTask))
+        await this.inActiveFolderWithoutServer(async lakeRunner => {
+            const result: ExecutionResult = await lakeRunner.fetchMathlibCache()
+            if (result.exitCode !== ExecutionExitCode.Success) {
+                if (result.stderr.includes(cacheNotFoundError)) {
+                    void window.showErrorMessage('This command cannot be used in non-Mathlib projects.')
+                    return
+                }
+                void displayError(result, 'Cannot fetch Mathlib build artifact cache.')
+                return
+            }
+
+            void window.showInformationMessage('Mathlib build artifact cache fetched successfully.')
+        })
+    }
+
+    private async inActiveFolderWithoutServer(command: (lakeRunner: LakeRunner) => Promise<void>) {
+        if (!this.clientProvider) {
+            void window.showErrorMessage('Lean client has not been loaded yet.')
+            return
+        }
+
+        const lakeRunner: LakeRunner | 'NoActiveFolder' = await lakeInActiveFolder()
+        if (lakeRunner === 'NoActiveFolder') {
+            return
+        }
+
+        const activeClient: LeanClient | undefined = this.clientProvider.getActiveClient()
+        if (!activeClient) {
+            void window.showErrorMessage('No active client.')
+            return
+        }
+
+        if (activeClient.isRunning()) {
+            await activeClient.stop()
+        }
+
+        await command(lakeRunner)
+
+        if (!activeClient.isRunning()) {
+            await activeClient.start()
+        }
     }
 
     dispose() {

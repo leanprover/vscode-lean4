@@ -1,4 +1,4 @@
-import { Disposable, OutputChannel, workspace, TextDocument, commands, window, EventEmitter, Uri, languages, TextEditor } from 'vscode';
+import { Disposable, OutputChannel, workspace, TextDocument, commands, window, EventEmitter, Uri, languages, TextEditor, WorkspaceFolder } from 'vscode';
 import { LeanInstaller, LeanVersion } from './leanInstaller'
 import { LeanpkgService } from './leanpkg';
 import { LeanClient } from '../leanclient'
@@ -90,7 +90,7 @@ export class LeanClientProvider implements Disposable {
         {
             try {
                 const uri = this.pendingInstallChanged.pop();
-                if (uri){
+                if (uri) {
                     // have to check again here in case elan install had --default-toolchain none.
                     const [workspaceFolder, folder, packageFileUri] = await findLeanPackageRoot(uri);
                     const packageUri = folder ? folder : Uri.from({scheme: 'untitled'});
@@ -121,6 +121,10 @@ export class LeanClientProvider implements Disposable {
             addToolchainBinPath(getDefaultElanPath());
         } else {
             addDefaultElanPath();
+        }
+
+        for (const [_, client] of this.clients) {
+            await this.onInstallChanged(client.folderUri)
         }
     }
 
@@ -232,7 +236,7 @@ export class LeanClientProvider implements Disposable {
     }
 
     getClientForFolder(folder: Uri) : LeanClient | undefined {
-        let  client: LeanClient | undefined;
+        let client: LeanClient | undefined;
         const key = this.getKeyFromUri(folder);
         const cachedClient = this.clients.has(key);
         if (cachedClient) {

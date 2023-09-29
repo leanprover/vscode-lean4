@@ -3,12 +3,12 @@ If you want to learn Lean 4, choose one of the following introductory books base
 
 - [Functional Programming in Lean](https://lean-lang.org/functional_programming_in_lean/)  
   The standard introduction for using Lean 4 as a general-purpose programming language.
-- [Theorem Proving in Lean 4](https://lean-lang.org/theorem_proving_in_lean4/)  
-  The standard reference for using Lean 4 as an interactive theorem prover. Suited as an introduction for users with a computer science background, advanced users and for general use as a reference manual.
-- [Mathematics in Lean](https://leanprover-community.github.io/mathematics_in_lean/)  
-  The standard introduction to Lean 4 as an interactive theorem prover for users with a mathematics background.
 - [The Mechanics of Proof](https://hrmacbeth.github.io/math2001/)  
   An introduction to Lean 4 as an interactive theorem prover for anyone who also wants to learn how to write rigorous mathematical proofs.
+- [Mathematics in Lean](https://leanprover-community.github.io/mathematics_in_lean/)  
+  The standard introduction to Lean 4 as an interactive theorem prover for users with a mathematics background.
+- [Theorem Proving in Lean 4](https://lean-lang.org/theorem_proving_in_lean4/)  
+  The standard reference for using Lean 4 as an interactive theorem prover. Suited as an introduction for users with a computer science background, advanced users and for general use as a reference manual.
 
 Once you have completed one of these books and its exercises, you are ready to use Lean 4 for your own projects. If you want to use Lean 4 both as a general-purpose programming language and an interactive theorem prover, it is recommended to read both [Functional Programming in Lean](https://lean-lang.org/functional_programming_in_lean/) and [Theorem Proving in Lean 4](https://lean-lang.org/theorem_proving_in_lean4/).
 

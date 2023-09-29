@@ -692,7 +692,7 @@
 					{
 						"id": "guide.linux.openSetupGuide",
 						"title": "Re-Open Setup Guide",
-						"description": "This guide can always be re-opened by clicking on the ∀-symbol in the top right and selecting 'Show Documentation…' > 'Setup: Show Setup Guide'.",
+						"description": "This guide can always be re-opened by opening an empty file, clicking on the ∀-symbol in the top right and selecting 'Show Documentation…' > 'Setup: Show Setup Guide'.",
 						"media": {
 							"image": "media/open-setup-guide.png",
 							"altText": "Click on the ∀-symbol in the top right and select 'Show Documentation…' > 'Setup: Show Setup Guide'."
@@ -739,7 +739,7 @@
 					{
 						"id": "guide.mac.openSetupGuide",
 						"title": "Re-Open Setup Guide",
-						"description": "This guide can always be re-opened by clicking on the ∀-symbol in the top right and selecting 'Show Documentation…' > 'Setup: Show Setup Guide'.",
+						"description": "This guide can always be re-opened by opening an empty file, clicking on the ∀-symbol in the top right and selecting 'Show Documentation…' > 'Setup: Show Setup Guide'.",
 						"media": {
 							"image": "media/open-setup-guide.png",
 							"altText": "Click on the ∀-symbol in the top right and select 'Show Documentation…' > 'Setup: Show Setup Guide'."
@@ -786,7 +786,7 @@
 					{
 						"id": "guide.windows.openSetupGuide",
 						"title": "Re-Open Setup Guide",
-						"description": "This guide can always be re-opened by clicking on the ∀-symbol in the top right and selecting 'Show Documentation…' > 'Setup: Show Setup Guide'.",
+						"description": "This guide can always be re-opened by opening an empty file, clicking on the ∀-symbol in the top right and selecting 'Show Documentation…' > 'Setup: Show Setup Guide'.",
 						"media": {
 							"image": "media/open-setup-guide.png",
 							"altText": "Click on the ∀-symbol in the top right and select 'Show Documentation…' > 'Setup: Show Setup Guide'."

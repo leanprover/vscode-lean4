@@ -1,6 +1,6 @@
 import { window, TerminalOptions, OutputChannel, Disposable, EventEmitter, ProgressLocation, Uri } from 'vscode'
 import { toolchainPath, addServerEnvPaths, getPowerShellPath, shouldAutofocusOutput, isRunningTest } from '../config'
-import { batchExecute } from './batch'
+import { ExecutionExitCode, ExecutionResult, batchExecute, batchExecuteWithProgress } from './batch'
 import { readLeanVersion, isCoreLean4Directory } from './projectInfo';
 import { join } from 'path';
 import { logger } from './logger'
@@ -224,18 +224,16 @@ export class LeanInstaller {
             // looks for a global (default) installation of Lean. This way, we can support
             // single file editing.
             logger.log(`executeWithProgress ${cmd} ${options}`)
-            const stdout = await this.executeWithProgress('Checking Lean setup...', cmd, options, folderPath)
-            if (!stdout) {
+            const checkingResult: ExecutionResult = await batchExecuteWithProgress(cmd, options, 'Checking Lean setup...', folderPath, this.outputChannel)
+            if (checkingResult.exitCode === ExecutionExitCode.CannotLaunch) {
                 result.error = 'lean not found'
-            }
-            else if (stdout.indexOf('no default toolchain') > 0) {
+            } else if (checkingResult.stderr.indexOf('no default toolchain') > 0) {
                 result.error = 'no default toolchain'
-            }
-            else {
+            } else {
                 const filterVersion = /version (\d+)\.\d+\..+/
-                const match = filterVersion.exec(stdout)
+                const match = filterVersion.exec(checkingResult.stdout)
                 if (!match) {
-                    return { version: '', error: `lean4: '${cmd} ${options}' returned incorrect version string '${stdout}'.` }
+                    return { version: '', error: `lean4: '${cmd} ${options}' returned incorrect version string '${checkingResult.stdout}'.` }
                 }
                 const major = match[1];
                 result.version = major
@@ -248,47 +246,6 @@ export class LeanInstaller {
         }
         this.versionCache.set(cacheKey, result);
         return result
-    }
-
-    private async executeWithProgress(prompt: string, cmd: string, options: string[], workingDirectory: string | null): Promise<string>{
-        let inc = 0;
-        let stdout = ''
-        /* eslint-disable  @typescript-eslint/no-this-alias */
-        const realThis = this;
-        await window.withProgress({
-            location: ProgressLocation.Notification,
-            title: '',
-            cancellable: false
-        }, (progress) => {
-            const progressChannel : OutputChannel = {
-                name : 'ProgressChannel',
-                append(value: string)
-                {
-                    stdout += value;
-                    if (realThis.outputChannel){
-                        // add the output here in case user wants to go look for it.
-                        const msg = value.trim();
-                        logger.log(`[LeanInstaller] ${cmd} returned: ${msg}`);
-                        realThis.outputChannel.appendLine(msg);
-                    }
-                    if (inc < 100) {
-                        inc += 10;
-                    }
-                    progress.report({ increment: inc, message: value });
-                },
-                appendLine(value: string) {
-                    this.append(value + '\n');
-                },
-                replace(value: string) { /* empty */ },
-                clear() { /* empty */ },
-                show() { /* empty */ },
-                hide() { /* empty */ },
-                dispose() { /* empty */ }
-            }
-            progress.report({increment:0, message: prompt});
-            return batchExecute(cmd, options, workingDirectory, progressChannel);
-        });
-        return stdout;
     }
 
     getDefaultToolchain() : string {
@@ -322,7 +279,7 @@ export class LeanInstaller {
         try {
             const cmd = 'elan';
             const options = ['toolchain', 'list'];
-            const stdout = await batchExecute(cmd, options, folderPath, undefined);
+            const stdout = (await batchExecute(cmd, options, folderPath, undefined)).stdout
             if (!stdout){
                 throw new Error('elan toolchain list returned no output.');
             }
@@ -340,20 +297,15 @@ export class LeanInstaller {
     }
 
     async hasElan() : Promise<boolean> {
-        let elanInstalled = false;
-        // See if we have elan already.
         try {
             const options = ['--version']
-            const stdout = await this.executeWithProgress('Checking Elan setup...', 'elan', options, null)
+            const result = await batchExecuteWithProgress('elan', options, 'Checking Elan setup...')
             const filterVersion = /elan (\d+)\.\d+\..+/
-            const match = filterVersion.exec(stdout)
-            if (match) {
-                elanInstalled = true;
-            }
+            const match = filterVersion.exec(result.stdout)
+            return match !== null
         } catch (err) {
-            elanInstalled = false;
+            return false
         }
-        return elanInstalled;
     }
 
     async installElan() : Promise<boolean> {

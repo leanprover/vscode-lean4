@@ -8,10 +8,16 @@ import path = require('path');
 // Detect lean4 root directory (works for both lean4 repo and nightly distribution)
 
 export async function isCoreLean4Directory(path: Uri): Promise<boolean> {
-    if (path.scheme === 'file'){
-        return await fileExists(Uri.joinPath(path, 'LICENSE').fsPath) && await fileExists(Uri.joinPath(path, 'LICENSES').fsPath);
+    if (path.scheme !== 'file') {
+        return false
     }
-    return false;
+
+    const licensePath = Uri.joinPath(path, 'LICENSE').fsPath
+    const licensesPath = Uri.joinPath(path, 'LICENSES').fsPath
+    const srcPath = Uri.joinPath(path, 'src').fsPath
+    return await fileExists(licensePath)
+        && await fileExists(licensesPath)
+        && await fileExists(srcPath)
 }
 
 // Find the root of a Lean project and return an optional WorkspaceFolder for it,
@@ -149,15 +155,9 @@ async function readLeanVersionFile(packageFileUri : Uri) : Promise<string> {
 export async function isValidLeanProject(projectFolder: Uri): Promise<boolean> {
     try {
         const leanToolchainPath = Uri.joinPath(projectFolder, 'lean-toolchain').fsPath
-        const licensePath = Uri.joinPath(projectFolder, 'LICENSE').fsPath
-        const licensesPath = Uri.joinPath(projectFolder, 'LICENSES').fsPath
-        const srcPath = Uri.joinPath(projectFolder, 'src').fsPath
 
         const isLeanProject: boolean = await fileExists(leanToolchainPath)
-        const isLeanItself: boolean =
-            await fileExists(licensePath) &&
-            await fileExists(licensesPath) &&
-            await fileExists(srcPath)
+        const isLeanItself: boolean = await isCoreLean4Directory(projectFolder)
         return isLeanProject || isLeanItself
     } catch {
         return false

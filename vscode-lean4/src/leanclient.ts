@@ -20,7 +20,7 @@ import * as ls from 'vscode-languageserver-protocol'
 import { toolchainPath, lakePath, addServerEnvPaths, serverArgs, serverLoggingEnabled, serverLoggingPath, shouldAutofocusOutput, getElaborationDelay, lakeEnabled } from './config'
 import { assert } from './utils/assert'
 import { LeanFileProgressParams, LeanFileProgressProcessingInfo, ServerStoppedReason } from '@leanprover/infoview-api';
-import { batchExecute } from './utils/batch'
+import { ExecutionExitCode, ExecutionResult, batchExecute } from './utils/batch'
 import { readLeanVersion } from './utils/projectInfo';
 import * as fs from 'fs';
 import { URL } from 'url';
@@ -106,25 +106,26 @@ export class LeanClient implements Disposable {
     }
 
     async showRestartMessage(restartFile: boolean = false): Promise<void> {
-        if (!this.showingRestartMessage) {
-            this.showingRestartMessage = true;
-            let restartItem :string;
-            let messageTitle :string;
-            if (!restartFile) {
-                restartItem = 'Restart Lean Server';
-                messageTitle = 'Lean Server has stopped unexpectedly.'
+        if (this.showingRestartMessage) {
+            return
+        }
+        this.showingRestartMessage = true;
+        let restartItem: string;
+        let messageTitle: string;
+        if (!restartFile) {
+            restartItem = 'Restart Lean Server';
+            messageTitle = 'Lean Server has stopped unexpectedly.'
+        } else {
+            restartItem = 'Restart Lean Server on this file';
+            messageTitle = 'The Lean Server has stopped processing this file.'
+        }
+        const item = await window.showErrorMessage(messageTitle, restartItem)
+        this.showingRestartMessage = false;
+        if (item === restartItem) {
+            if (restartFile && window.activeTextEditor) {
+                await this.restartFile(window.activeTextEditor.document);
             } else {
-                restartItem = 'Restart Lean Server on this file';
-                messageTitle = 'The Lean Server has stopped processing this file.'
-            }
-            const item = await window.showErrorMessage(messageTitle, restartItem)
-            this.showingRestartMessage = false;
-            if (item === restartItem) {
-                if (restartFile && window.activeTextEditor){
-                    await this.restartFile(window.activeTextEditor.document);
-                } else {
-                    void this.start();
-                }
+                void this.start();
             }
         }
     }
@@ -433,7 +434,6 @@ export class LeanClient implements Disposable {
         else {
             return uri.scheme === 'untitled'
         }
-        return false;
     }
 
     getWorkspaceFolder() : string {
@@ -562,8 +562,12 @@ export class LeanClient implements Disposable {
         // Check that the Lake version is high enough to support "lake serve" option.
         const versionOptions = version ? ['+' + version, '--version'] : ['--version']
         const start = Date.now()
-        const lakeVersion = await batchExecute(executable, versionOptions, this.folderUri?.fsPath, undefined);
+        const result: ExecutionResult = await batchExecute(executable, versionOptions, this.folderUri?.fsPath, undefined);
+        if (result.exitCode !== ExecutionExitCode.Success) {
+            return false
+        }
         logger.log(`[LeanClient] Ran '${executable} ${versionOptions.join(' ')}' in ${Date.now() - start} ms`);
+        const lakeVersion = result.stdout
         const actual = this.extractVersion(lakeVersion)
         if (actual.compare('3.0.0') > 0) {
             return true;

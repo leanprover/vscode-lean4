@@ -1,21 +1,19 @@
-import { window, ExtensionContext, TextDocument, tasks, commands } from 'vscode'
+import { window, ExtensionContext, TextDocument, tasks, commands, Disposable } from 'vscode'
 import { AbbreviationFeature } from './abbreviation'
 import { InfoProvider } from './infoview'
-import { DocViewProvider } from './docview';
+import { DocViewProvider } from './docview'
 import { LeanTaskGutter } from './taskgutter'
 import { LeanInstaller } from './utils/leanInstaller'
-import { LeanpkgService } from './utils/leanpkg';
-import { LeanClientProvider } from './utils/clientProvider';
-import { addDefaultElanPath, removeElanPath, addToolchainBinPath, isElanDisabled, getDefaultLeanVersion} from './config';
-import { findLeanPackageVersionInfo } from './utils/projectInfo';
+import { LeanpkgService } from './utils/leanpkg'
+import { LeanClientProvider } from './utils/clientProvider'
+import { addDefaultElanPath, removeElanPath, addToolchainBinPath, isElanDisabled, getDefaultLeanVersion} from './config'
+import { findLeanPackageVersionInfo } from './utils/projectInfo'
 import { Exports } from './exports';
-import { LeanTaskProvider, leanTaskDefinition } from './tasks';
 import { logger } from './utils/logger'
-import { ProjectOperationProvider } from './project';
+import { ProjectOperationProvider } from './project'
 
 interface AlwaysEnabledFeatures {
     docView: DocViewProvider
-    taskProvider: LeanTaskProvider
     projectOperationProvider: ProjectOperationProvider
     installer: LeanInstaller
 }
@@ -74,11 +72,6 @@ function activateAlwaysEnabledFeatures(context: ExtensionContext): AlwaysEnabled
     const docView = new DocViewProvider(context.extensionUri);
     context.subscriptions.push(docView);
 
-    // safe
-    const taskProvider = new LeanTaskProvider()
-    context.subscriptions.push(tasks.registerTaskProvider(leanTaskDefinition.type, taskProvider))
-
-    // safe
     const projectOperationProvider = new ProjectOperationProvider()
     context.subscriptions.push(projectOperationProvider)
 
@@ -86,7 +79,7 @@ function activateAlwaysEnabledFeatures(context: ExtensionContext): AlwaysEnabled
     const defaultToolchain = getDefaultLeanVersion();
     const installer = new LeanInstaller(outputChannel, defaultToolchain)
 
-    return { docView, taskProvider, projectOperationProvider, installer }
+    return { docView, projectOperationProvider, installer }
 }
 
 async function isLean3Project(installer: LeanInstaller): Promise<boolean> {
@@ -117,18 +110,16 @@ function activateAbbreviationFeature(context: ExtensionContext, docView: DocView
     return abbrev
 }
 
-function activateLean4Features(context: ExtensionContext, installer: LeanInstaller): Lean4EnabledFeatures {
-    // unsafe
+function activateLean4Features(context: ExtensionContext, installer: LeanInstaller, projectOperationProvider: ProjectOperationProvider): Lean4EnabledFeatures {
     const pkgService = new LeanpkgService()
     pkgService.versionChanged((uri) => installer.handleVersionChanged(uri));
     pkgService.lakeFileChanged((uri) => installer.handleLakeFileChanged(uri));
     context.subscriptions.push(pkgService);
 
-    // unsafe
     const clientProvider = new LeanClientProvider(installer, pkgService, installer.getOutputChannel());
+    projectOperationProvider.clientProvider = clientProvider
     context.subscriptions.push(clientProvider)
 
-    // unsafe
     const infoProvider = new InfoProvider(clientProvider, {language: 'lean4'}, context);
     context.subscriptions.push(infoProvider)
 
@@ -148,7 +139,6 @@ export async function activate(context: ExtensionContext): Promise<Exports> {
             clientProvider: undefined,
             installer: alwaysEnabledFeatures.installer,
             docView: alwaysEnabledFeatures.docView,
-            taskProvider: alwaysEnabledFeatures.taskProvider,
             projectOperationProvider: alwaysEnabledFeatures.projectOperationProvider
         }
     }
@@ -156,7 +146,7 @@ export async function activate(context: ExtensionContext): Promise<Exports> {
     activateAbbreviationFeature(context, alwaysEnabledFeatures.docView)
 
     if (findOpenLeanDocument()) {
-        const lean4EnabledFeatures: Lean4EnabledFeatures = activateLean4Features(context, alwaysEnabledFeatures.installer)
+        const lean4EnabledFeatures: Lean4EnabledFeatures = activateLean4Features(context, alwaysEnabledFeatures.installer, alwaysEnabledFeatures.projectOperationProvider)
         return {
             isLean4Project: true,
             version: '4',
@@ -164,17 +154,17 @@ export async function activate(context: ExtensionContext): Promise<Exports> {
             clientProvider: lean4EnabledFeatures.clientProvider,
             installer: alwaysEnabledFeatures.installer,
             docView: alwaysEnabledFeatures.docView,
-            taskProvider: alwaysEnabledFeatures.taskProvider,
             projectOperationProvider: alwaysEnabledFeatures.projectOperationProvider
         }
     }
 
     // No Lean 4 document yet => Load remaining features when one is open
-    window.onDidChangeVisibleTextEditors(_ => {
+    const disposeActivationListener: Disposable = window.onDidChangeVisibleTextEditors(_ => {
         if (findOpenLeanDocument()) {
-            activateLean4Features(context, alwaysEnabledFeatures.installer)
+            activateLean4Features(context, alwaysEnabledFeatures.installer, alwaysEnabledFeatures.projectOperationProvider)
         }
-    })
+        disposeActivationListener.dispose()
+    }, context.subscriptions)
 
     return {
         isLean4Project: false,
@@ -183,7 +173,6 @@ export async function activate(context: ExtensionContext): Promise<Exports> {
         clientProvider: undefined,
         installer: alwaysEnabledFeatures.installer,
         docView: alwaysEnabledFeatures.docView,
-        taskProvider: alwaysEnabledFeatures.taskProvider,
         projectOperationProvider: alwaysEnabledFeatures.projectOperationProvider
     }
 }
