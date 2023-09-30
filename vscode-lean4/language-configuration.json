@@ -132,31 +132,20 @@
     ],
     "wordPattern" : "([^`~@$%^&*()\\-=+\\[{\\]}⟨⟩⦃⦄⟦⟧⟮⟯‹›<>\\\\|;:\",./\\s]+)",
     "onEnterRules" : [
-        /*
-            Postindented End-Of-Line tokens:
-            The list of English-language EOL tokens which cause indentation on the next line are:
-                by, do, try, finally, then, else, where
-            The list of symbolic EOL tokens which cause indentation on the next line are:
-                :=, =>, <|
-        */
         {
-            // Indent focus blocks followed by a postindented EOL token twice
-            "beforeText": "^\\s*(·|\\.)\\s(.*\\s)?(by|do|try|finally|then|else|where|\\:=|=>|<\\|)\\s*$",
+            "beforeText" : "^\\s*(·|\\.)\\s(.*\\s)?(by|do|try|finally|then|else|where|\\:=|=>|<\\|)\\s*$",
             "action" : { "indent" : "indent", "appendText": "\t" }
         },
         {
-            // Postindented EOL tokens
-            "beforeText": "^(.*\\s)?(by|do|try|finally|then|else|where|\\:=|=>|<\\|)\\s*$",
+            "beforeText" : "^(.*\\s)?(by|do|try|finally|then|else|where|\\:=|=>|<\\|)\\s*$",
             "action" : { "indent" : "indent" }
         },
         {
-            // Indent thrice after EOL `:` at the start of a focus block
-            "beforeText": "^\\s*(·|\\.)\\s(.*\\s)?:\\s*$",
+            "beforeText" : "^\\s*(·|\\.)\\s(.*\\s)?:\\s*$",
             "action" : { "indent" : "indent", "appendText": "\t\t" }
         },
         {
-            // Indent twice after EOL `:`
-            "beforeText": "^.*\\s:\\s*$",
+            "beforeText" : "^.*\\s:\\s*$",
             "action" : { "indent" : "indent", "appendText": "\t" }
         },
         {

@@ -8,6 +8,46 @@ Section titles here are top-level fields in the JSON file, and link to their cor
 
 This field specifies a list of rules which determine how lines should be indented when the user presses <kbd>Enter</kbd>. When the text in a line before the cursor is matched by the regex specified in a rule's `beforeText`, that rule's `action` is applied on <kbd>Enter</kbd>.
 
+### Postindented EOL tokens
+
+Certain end-of-line (EOL) tokens require increased indentation on subsequent lines. Hence, we call them "postindented" here for brevity; this is not standard terminology.
+
+The list of English-language postindented EOL tokens is:
+
+* `by`, `do`, `try`, `finally`, `then`, `else`, `where`
+
+The list of symbolic postindented EOL tokens is:
+
+* `:=`, `=>`, `<|`
+
+However, since `onEnterRules` applies the rule that first matches, we first need to account for indentation after postindented EOL tokens which occur on the same line as focus blocks. In that case, we need one indentation for the focus block (see the [focus blocks](#focus-blocks) section), and another for the EOL token; VS Code currently only allows one indentation action, so we must use `appendText` to append an extra tab. Note that this is appropriately converted to spaces by VS code before insertion.
+
+```json
+{
+    "beforeText" : "^\\s*(·|\\.)\\s(.*\\s)?(by|do|try|finally|then|else|where|\\:=|=>|<\\|)\\s*$",
+    "action" : { "indent" : "indent", "appendText": "\t" }
+}
+```
+
+We can then account for postindented EOL tokens in the ordinary case.
+
+```json
+{
+    "beforeText" : "^(.*\\s)?(by|do|try|finally|then|else|where|\\:=|=>|<\\|)\\s*$",
+    "action" : { "indent" : "indent" }
+}
+```
+
+### Type signatures
+
+Multi-line type signatures in Lean are supposed to have non-initial lines indented twice. We can't account for all of these with `beforeText` regexes (which would at least require matching over multiple lines and balancing parentheses), but we can at least account for the following case:
+```
+theorem foo (h : LongHypothesisList) ... :| <-- hit enter here
+    | <-- cursor ends up here
+```
+
+First, however, we indent *three* times when starting a focus block; see the [focus blocks](#focus-blocks) section for more info. We use `appendText` to accomplish this; note that tabs are appropriately converted into spaces by VS code before insertion.
+
 ### Focus blocks
 
 ```json
@@ -24,3 +64,5 @@ This rule ensures that hitting enter after starting a focus block during a tacti
   · intro x| <-- hit enter here
     | <-- cursor ends up here
 ```
+
+We also make sure we indent twice after encountering a postindented EOL token, and three times after starting a type signature; see [postindented EOL tokens](#postindented-eol-tokens) and [type signatures](#type-signatures).
