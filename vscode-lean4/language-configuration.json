@@ -141,11 +141,11 @@
             "action" : { "indent" : "indent" }
         },
         {
-            "beforeText" : "^\\s*(·|\\.)\\s(.*\\s)?:\\s*$",
+            "beforeText" : "^\\s*(·|\\.)\\s.*\\s:\\s*$",
             "action" : { "indent" : "indent", "appendText": "\t\t" }
         },
         {
-            "beforeText" : "^.*\\s:\\s*$",
+            "beforeText" : "^(?!\\s*(\\(|{|\\[|⦃)).*\\s:\\s*$",
             "action" : { "indent" : "indent", "appendText": "\t" }
         },
         {

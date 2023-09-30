@@ -45,8 +45,31 @@ Multi-line type signatures in Lean are supposed to have non-initial lines indent
 theorem foo (h : LongHypothesisList) ... :| <-- hit enter here
     | <-- cursor ends up here
 ```
+We want to make sure we don't apply this rule when already in a multi-line type signature:
+```
+theorem foo (h1 : LongHypothesisList) ...
+    (h2 : LongHypothesisList2) ... :| <-- hit enter here
+    | <-- cursor ends up here
+```
+To accomplish this we only match on lines which do not start with a binder bracket. (This doesn't account for cases where the type of a hypothesis itself spans multiple lines, but those cases typically require careful manual formatting anyway.)
 
 First, however, we indent *three* times when starting a focus block; see the [focus blocks](#focus-blocks) section for more info. We use `appendText` to accomplish this; note that tabs are appropriately converted into spaces by VS code before insertion.
+
+```json
+{
+    "beforeText" : "^\\s*(·|\\.)\\s.*\\s:\\s*$",
+    "action" : { "indent" : "indent", "appendText": "\t\t" }
+}
+```
+
+We then apply our standard rule:
+
+```json
+{
+    "beforeText" : "^(?!\\s*(\\(|{|\\[|⦃)).*\\s:\\s*$",
+    "action" : { "indent" : "indent", "appendText": "\t" }
+}
+```
 
 ### Focus blocks
 
