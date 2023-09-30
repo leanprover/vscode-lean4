@@ -160,7 +160,6 @@
             "action" : { "indent" : "indent", "appendText": "\t" }
         },
         {
-            // Indent focus blocks
             "beforeText" : "^\\s*(·|\\.)\\s.*$",
             "action" : { "indent" : "indent" }
         }
