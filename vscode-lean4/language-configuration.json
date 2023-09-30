@@ -133,7 +133,6 @@
     "wordPattern" : "([^`~@$%^&*()\\-=+\\[{\\]}⟨⟩⦃⦄⟦⟧⟮⟯‹›<>\\\\|;:\",./\\s]+)",
     "onEnterRules" : [
         {
-            // Indent focus blocks
             "beforeText" : "^\\s*(·|\\.)\\s.*$",
             "action" : { "indent" : "indent" }
         }
