@@ -133,11 +133,11 @@
     "wordPattern" : "([^`~@$%^&*()\\-=+\\[{\\]}⟨⟩⦃⦄⟦⟧⟮⟯‹›<>\\\\|;:\",./\\s]+)",
     "onEnterRules" : [
         {
-            "beforeText" : "^\\s*(·|\\.)\\s(.*\\s)?(by|do|try|finally|then|else|where|extends|deriving|:=|=>|<\\|)\\s*$",
+            "beforeText" : "^\\s*(·|\\.)\\s(((.*[^a-zA-Z0-9_\\.#])?(by|do|try|finally|then|else|where|extends|deriving))|((.*\\s)?(:=|=>|<\\|)))\\s*$",
             "action" : { "indent" : "indent", "appendText": "\t" }
         },
         {
-            "beforeText" : "^(.*\\s)?(by|do|try|finally|then|else|where|extends|deriving|:=|=>|<\\|)\\s*$",
+            "beforeText" : "^(((.*[^a-zA-Z0-9_\\.#])?(by|do|try|finally|then|else|where|extends|deriving))|((.*\\s)?(:=|=>|<\\|)))\\s*$",
             "action" : { "indent" : "indent" }
         },
         {

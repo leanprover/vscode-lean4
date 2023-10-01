@@ -20,11 +20,15 @@ The list of symbolic postindented EOL tokens is:
 
 * `:=`, `=>`, `<|`
 
+We want to avoid misidentification of the English-language tokens as part of a name (e.g. `foo.try` or `entry`), so we make sure the character preceding any of the English-language tokens (if there is one) is not `a-zA-Z0-9_\\.`. We also exclude `#`, since at least `#where` appears as a temporary command in std4. We do, however, still want to recognize these tokens in cases like `... (by`. (TODO: this should be expanded to cover all valid identifiers. Note, however, that this regex at least currently suffices for lean4, std4, and mathlib4.)
+
+Likewise, we demand that each symbolic token is preceded by a space to avoid clashes with other symbols.
+
 However, since `onEnterRules` applies the rule that first matches, we first need to account for indentation after postindented EOL tokens which occur on the same line as focus blocks. In that case, we need one indentation for the focus block (see the [focus blocks](#focus-blocks) section), and another for the EOL token; VS Code currently only allows one indentation action, so we must use `appendText` to append an extra tab. Note that this is appropriately converted to spaces by VS code before insertion.
 
 ```json
 {
-    "beforeText" : "^\\s*(·|\\.)\\s(.*\\s)?(by|do|try|finally|then|else|where|extends|deriving|:=|=>|<\\|)\\s*$",
+    "beforeText" : "^\\s*(·|\\.)\\s(((.*[^a-zA-Z0-9_\\.#])?(by|do|try|finally|then|else|where|extends|deriving))|((.*\\s)?(:=|=>|<\\|)))\\s*$",
     "action" : { "indent" : "indent", "appendText": "\t" }
 }
 ```
@@ -33,7 +37,7 @@ We can then account for postindented EOL tokens in the ordinary case.
 
 ```json
 {
-    "beforeText" : "^(.*\\s)?(by|do|try|finally|then|else|where|extends|deriving|:=|=>|<\\|)\\s*$",
+    "beforeText" : "^(((.*[^a-zA-Z0-9_\\.#])?(by|do|try|finally|then|else|where|extends|deriving))|((.*\\s)?(:=|=>|<\\|)))\\s*$",
     "action" : { "indent" : "indent" }
 }
 ```
