@@ -42,6 +42,17 @@ We can then account for postindented EOL tokens in the ordinary case.
 }
 ```
 
+Caveat: this produces incorrect indentation in the following case:
+
+```
+theorem foo (h : LongHypothesisList) :
+    FooType :=| <-- hit enter here
+  |   | <-- cursor winds up here
+  ^-- cursor should be here
+```
+
+However, without access to the parser or multi-line matching (VS code limits the match to the line the cursor is on), there's no way to fix this.
+
 ### Type signatures
 
 Multi-line type signatures in Lean are supposed to have non-initial lines indented twice. We can't account for all of these with `beforeText` regexes (which would at least require matching over multiple lines and balancing parentheses), but we can at least account for the following case:
