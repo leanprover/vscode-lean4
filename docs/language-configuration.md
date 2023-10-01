@@ -14,7 +14,7 @@ Certain end-of-line (EOL) tokens require increased indentation on subsequent lin
 
 The list of English-language postindented EOL tokens is:
 
-* `by`, `do`, `try`, `finally`, `then`, `else`, `where`, `extends`, `deriving`
+* `by`, `do`, `try`, `finally`, `then`, `else`, `where`, `extends`, `deriving`, `termination_by`(`'`), `decreasing_by`
 
 The list of symbolic postindented EOL tokens is:
 
@@ -28,7 +28,7 @@ However, since `onEnterRules` applies the rule that first matches, we first need
 
 ```json
 {
-    "beforeText" : "^\\s*(·|\\.)\\s(((.*[^a-zA-Z0-9_\\.#])?(by|do|try|finally|then|else|where|extends|deriving))|((.*\\s)?(:=|=>|<\\|)))\\s*$",
+    "beforeText" : "^\\s*(·|\\.)\\s(((.*[^a-zA-Z0-9_\\.#])?(by|do|try|finally|then|else|where|extends|deriving|termination_by(')?|decreasing_by))|((.*\\s)?(:=|=>|<\\|)))\\s*$",
     "action" : { "indent" : "indent", "appendText": "\t" }
 }
 ```
@@ -37,7 +37,7 @@ We can then account for postindented EOL tokens in the ordinary case.
 
 ```json
 {
-    "beforeText" : "^(((.*[^a-zA-Z0-9_\\.#])?(by|do|try|finally|then|else|where|extends|deriving))|((.*\\s)?(:=|=>|<\\|)))\\s*$",
+    "beforeText" : "^(((.*[^a-zA-Z0-9_\\.#])?(by|do|try|finally|then|else|where|extends|deriving|termination_by(')?|decreasing_by))|((.*\\s)?(:=|=>|<\\|)))\\s*$",
     "action" : { "indent" : "indent" }
 }
 ```
