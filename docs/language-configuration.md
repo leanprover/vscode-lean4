@@ -20,7 +20,7 @@ The list of symbolic postindented EOL tokens is:
 
 * `:=`, `=>`, `<|`
 
-We want to avoid misidentification of the English-language tokens as part of a name (e.g. `foo.try` or `entry`), so we make sure the character preceding any of the English-language tokens (if there is one) is not `a-zA-Z0-9_\\.`. We also exclude `#`, since at least `#where` appears as a temporary command in std4. We do, however, still want to recognize these tokens in cases like `... (by`. (TODO: this should be expanded to cover all valid identifiers. Note, however, that this regex at least currently suffices for lean4, std4, and mathlib4.)
+We want to avoid misidentification of the English-language tokens as part of a name (e.g. `foo.try` or `entry`); we do, however, still want to recognize these tokens in cases like `... (by`. So, we make sure the English-language tokens are preceded by a word boundary and not by `.`. We also exclude `#`, since at least `#where` appears as a temporary command in std4. (`\b(?<!(\.|#))`)
 
 Likewise, we demand that each symbolic token is preceded by a space to avoid clashes with other symbols.
 
@@ -30,7 +30,7 @@ Note that not all of these tokens can actually be used after starting a focus bl
 
 ```json
 {
-    "beforeText" : "^\\s*(·|\\.)\\s(((.*[^a-zA-Z0-9_\\.#])?(by|do|try|finally|then|else|where|extends|deriving|termination_by(')?|decreasing_by))|((.*\\s)?(:=|=>|<\\|)))\\s*$",
+    "beforeText" : "^\\s*(·|\\.)\\s((.*\\b(?<!(\\.|#))(by|do|try|finally|then|else|where|extends|deriving|termination_by(')?|decreasing_by))|((.*\\s)?(:=|=>|<\\|)))\\s*$",
     "action" : { "indent" : "indent", "appendText": "\t" }
 }
 ```
@@ -39,7 +39,7 @@ We can then account for postindented EOL tokens in the ordinary case.
 
 ```json
 {
-    "beforeText" : "^(((.*[^a-zA-Z0-9_\\.#])?(by|do|try|finally|then|else|where|extends|deriving|termination_by(')?|decreasing_by))|((.*\\s)?(:=|=>|<\\|)))\\s*$",
+    "beforeText" : "^((.*\\b(?<!(\\.|#))(by|do|try|finally|then|else|where|extends|deriving|termination_by(')?|decreasing_by))|((.*\\s)?(:=|=>|<\\|)))\\s*$",
     "action" : { "indent" : "indent" }
 }
 ```
