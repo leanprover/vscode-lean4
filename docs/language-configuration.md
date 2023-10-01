@@ -26,6 +26,8 @@ Likewise, we demand that each symbolic token is preceded by a space to avoid cla
 
 However, since `onEnterRules` applies the rule that first matches, we first need to account for indentation after postindented EOL tokens which occur on the same line as focus blocks. In that case, we need one indentation for the focus block (see the [focus blocks](#focus-blocks) section), and another for the EOL token; VS Code currently only allows one indentation action, so we must use `appendText` to append an extra tab. Note that this is appropriately converted to spaces by VS code before insertion.
 
+Note that not all of these tokens can actually be used after starting a focus block, but it's simpler to have one regex which appears in two places instead of two different ones.
+
 ```json
 {
     "beforeText" : "^\\s*(·|\\.)\\s(((.*[^a-zA-Z0-9_\\.#])?(by|do|try|finally|then|else|where|extends|deriving|termination_by(')?|decreasing_by))|((.*\\s)?(:=|=>|<\\|)))\\s*$",
