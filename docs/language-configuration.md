@@ -14,7 +14,9 @@ Certain end-of-line (EOL) tokens require increased indentation on subsequent lin
 
 The list of English-language postindented EOL tokens is:
 
-* `by`, `do`, `try`, `finally`, `then`, `else`, `where`, `from`, `extends`, `deriving`, `termination_by`(`'`), `decreasing_by`
+* `by`, `do`, `try`, `finally`, `then`, `else`, `where`, `from`, `extends`, `deriving`, `termination_by`(`'`), `decreasing_by`, `calc`
+
+Note that `calc` does not actually need to occur at the end of a line; we allow an arbitrary argument. We include it here nonetheless.
 
 The list of symbolic postindented EOL tokens is:
 
@@ -30,7 +32,7 @@ Note that not all of these tokens can actually be used after starting a focus bl
 
 ```json
 {
-    "beforeText" : "^\\s*(·|\\.)\\s((.*\\b(?<!(\\.|#))(by|do|try|finally|then|else|where|from|extends|deriving|termination_by(')?|decreasing_by))|((.*\\s)?(:=|←|=>|::|<\\|)))\\s*$",
+    "beforeText" : "^\\s*(·|\\.)\\s((.*\\b(?<!(\\.|#))(by|do|try|finally|then|else|where|from|extends|deriving|termination_by(')?|decreasing_by|calc(\\b.*)?))|((.*\\s)?(:=|←|=>|::|<\\|)))\\s*$",
     "action" : { "indent" : "indent", "appendText": "\t" }
 }
 ```
@@ -39,7 +41,7 @@ We can then account for postindented EOL tokens in the ordinary case.
 
 ```json
 {
-    "beforeText" : "^((.*\\b(?<!(\\.|#))(by|do|try|finally|then|else|where|from|extends|deriving|termination_by(')?|decreasing_by))|((.*\\s)?(:=|←|=>|::|<\\|)))\\s*$",
+    "beforeText" : "^((.*\\b(?<!(\\.|#))(by|do|try|finally|then|else|where|from|extends|deriving|termination_by(')?|decreasing_by|calc(\\b.*)?))|((.*\\s)?(:=|←|=>|::|<\\|)))\\s*$",
     "action" : { "indent" : "indent" }
 }
 ```
