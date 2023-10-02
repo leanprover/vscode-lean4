@@ -30,6 +30,8 @@ However, since `onEnterRules` applies the rule that first matches, we first need
 
 Note that not all of these tokens can actually be used after starting a focus block, but it's simpler to have one regex which appears in two places instead of two different ones.
 
+We allow `--` comments after EOL tokens (`(--.*)?`) and prohibit them before EOL tokens (`((?!--).)*`).
+
 ```json
 {
     "beforeText" : "^\\s*(·|\\.)\\s((.*\\b(?<!(\\.|#))(by|do|try|finally|then|else|where|from|extends|deriving|termination_by(')?|decreasing_by|calc(\\b.*)?))|((.*\\s)?(:=|←|=>|::|<\\|)))\\s*$",
