@@ -14,11 +14,11 @@ Certain end-of-line (EOL) tokens require increased indentation on subsequent lin
 
 The list of English-language postindented EOL tokens is:
 
-* `by`, `do`, `try`, `finally`, `then`, `else`, `where`, `extends`, `deriving`, `termination_by`(`'`), `decreasing_by`
+* `by`, `do`, `try`, `finally`, `then`, `else`, `where`, `from`, `extends`, `deriving`, `termination_by`(`'`), `decreasing_by`
 
 The list of symbolic postindented EOL tokens is:
 
-* `:=`, `←`, `=>`, `<|`
+* `:=`, `←`, `=>`, `::`, `<|`
 
 We want to avoid misidentification of the English-language tokens as part of a name (e.g. `foo.try` or `entry`); we do, however, still want to recognize these tokens in cases like `... (by`. So, we make sure the English-language tokens are preceded by a word boundary and not by `.`. We also exclude `#`, since at least `#where` appears as a temporary command in std4. (`\b(?<!(\.|#))`)
 
@@ -30,7 +30,7 @@ Note that not all of these tokens can actually be used after starting a focus bl
 
 ```json
 {
-    "beforeText" : "^\\s*(·|\\.)\\s((.*\\b(?<!(\\.|#))(by|do|try|finally|then|else|where|extends|deriving|termination_by(')?|decreasing_by))|((.*\\s)?(:=|←|=>|<\\|)))\\s*$",
+    "beforeText" : "^\\s*(·|\\.)\\s((.*\\b(?<!(\\.|#))(by|do|try|finally|then|else|where|from|extends|deriving|termination_by(')?|decreasing_by))|((.*\\s)?(:=|←|=>|::|<\\|)))\\s*$",
     "action" : { "indent" : "indent", "appendText": "\t" }
 }
 ```
@@ -39,7 +39,7 @@ We can then account for postindented EOL tokens in the ordinary case.
 
 ```json
 {
-    "beforeText" : "^((.*\\b(?<!(\\.|#))(by|do|try|finally|then|else|where|extends|deriving|termination_by(')?|decreasing_by))|((.*\\s)?(:=|←|=>|<\\|)))\\s*$",
+    "beforeText" : "^((.*\\b(?<!(\\.|#))(by|do|try|finally|then|else|where|from|extends|deriving|termination_by(')?|decreasing_by))|((.*\\s)?(:=|←|=>|::|<\\|)))\\s*$",
     "action" : { "indent" : "indent" }
 }
 ```
