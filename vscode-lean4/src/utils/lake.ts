@@ -23,6 +23,10 @@ export class LakeRunner {
         return this.runLakeCommandWithProgress('update', [], 'Updating dependencies ...')
     }
 
+    async updateDependency(dependencyName: string): Promise<ExecutionResult> {
+        return this.runLakeCommandWithProgress('update', [dependencyName], `Updating '${dependencyName}' dependency ...`)
+    }
+
     async build(): Promise<ExecutionResult> {
         return this.runLakeCommandWithProgress('build', [], 'Building Lean project ...')
     }

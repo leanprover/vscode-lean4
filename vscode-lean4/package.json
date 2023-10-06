@@ -353,6 +353,12 @@
 				"description": "Clean the current project, removing all build artifacts"
 			},
 			{
+				"command": "lean4.project.updateDependency",
+				"category": "Lean 4",
+				"title": "Project: Update Dependency",
+				"description": "Updates a dependency of the current project to the most recent version available for the branch pinned in 'lakefile.lean'."
+			},
+			{
 				"command": "lean4.project.fetchCache",
 				"category": "Lean 4",
 				"title": "Project: Fetch Mathlib Build Cache",
@@ -519,10 +525,16 @@
 					"command": "lean4.project.clone"
 				},
 				{
-					"command": "lean4.project.build"
+					"command": "lean4.project.build",
+					"when": "editorLangId == lean4"
 				},
 				{
-					"command": "lean4.project.clean"
+					"command": "lean4.project.clean",
+					"when": "editorLangId == lean4"
+				},
+				{
+					"command": "lean4.project.updateDependency",
+					"when": "editorLangId == lean4"
 				},
 				{
 					"command": "lean4.project.fetchCache",
@@ -612,6 +624,11 @@
 					"command": "lean4.project.clean",
 					"when": "editorLangId == lean4",
 					"group": "1_projectActions@2"
+				},
+				{
+					"command": "lean4.project.updateDependency",
+					"when": "editorLangId == lean4",
+					"group": "1_projectActions@3"
 				},
 				{
 					"command": "lean4.project.fetchCache",
@@ -861,7 +878,8 @@
 		"cheerio": "^1.0.0-rc.10",
 		"mobx": "5.15.7",
 		"semver": "=7.3.5",
-		"vscode-languageclient": "=8.0.2"
+		"vscode-languageclient": "=8.0.2",
+		"zod": "^3.22.4"
 	},
 	"devDependencies": {
 		"@types/cheerio": "~0.22.30",

@@ -148,7 +148,7 @@ export async function batchExecuteWithProgress(
                     value = translatedValue
                 }
                 if (options.channel) {
-                    options.channel.appendLine(value)
+                    options.channel.appendLine(value.trimEnd())
                 }
                 if (inc < 90) {
                     inc += 2
