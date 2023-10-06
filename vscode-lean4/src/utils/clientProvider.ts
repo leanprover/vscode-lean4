@@ -145,7 +145,9 @@ export class LeanClientProvider implements Disposable {
     }
 
     private stopActiveClient() {
-        void this.activeClient?.stop();
+        if (this.activeClient && this.activeClient.isStarted()) {
+            void this.activeClient?.stop();
+        }
     }
 
     private async restartActiveClient() {

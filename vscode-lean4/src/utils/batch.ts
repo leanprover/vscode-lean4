@@ -1,4 +1,4 @@
-import { OutputChannel, ProgressLocation, ProgressOptions, window } from 'vscode'
+import { CancellationToken, Disposable, OutputChannel, ProgressLocation, ProgressOptions, window } from 'vscode'
 import { spawn } from 'child_process';
 import { findProgramInPath, isRunningTest } from '../config'
 import { logger } from './logger'
@@ -12,7 +12,8 @@ export interface ExecutionChannel {
 export enum ExecutionExitCode {
     Success,
     CannotLaunch,
-    ExecutionError
+    ExecutionError,
+    Cancelled
 }
 
 export interface ExecutionResult {
@@ -33,7 +34,8 @@ export async function batchExecute(
     executablePath: string,
     args: string[],
     workingDirectory?: string | undefined,
-    channel?: ExecutionChannel | undefined): Promise<ExecutionResult> {
+    channel?: ExecutionChannel | undefined,
+    token?: CancellationToken | undefined): Promise<ExecutionResult> {
 
     return new Promise(function(resolve, reject) {
         let stdout: string = ''
@@ -58,7 +60,10 @@ export async function batchExecute(
             }
             const proc = spawn(executablePath, args, options);
 
+            const disposeKill: Disposable | undefined = token?.onCancellationRequested(_ => proc.kill())
+
             proc.on('error', err => {
+                disposeKill?.dispose()
                 resolve(createCannotLaunchExecutionResult(err.message))
             });
 
@@ -76,8 +81,17 @@ export async function batchExecute(
                 stderr += s + '\n';
             });
 
-            proc.on('close', (code) => {
+            proc.on('close', (code, signal) => {
+                disposeKill?.dispose()
                 logger.log(`child process exited with code ${code}`);
+                if (signal === 'SIGTERM') {
+                    resolve({
+                        exitCode: ExecutionExitCode.Cancelled,
+                        stdout,
+                        stderr
+                    })
+                    return
+                }
                 if (code !== 0) {
                     resolve({
                         exitCode: ExecutionExitCode.ExecutionError,
@@ -93,46 +107,53 @@ export async function batchExecute(
                 })
             });
 
-        } catch (e){
+        } catch (e) {
             logger.log(`error running ${executablePath} : ${e}`);
             resolve(createCannotLaunchExecutionResult(''));
         }
     });
 }
 
+interface ProgressExecutionOptions {
+    cwd?: string | undefined
+    channel?: OutputChannel | undefined
+    translator?: ((line: string) => string | undefined) | undefined
+    allowCancellation?: boolean
+}
+
 export async function batchExecuteWithProgress(
     executablePath: string,
     args: string[],
     prompt: string,
-    workingDirectory?: string | undefined,
-    channel?: OutputChannel | undefined,
-    translator?: ((line: string) => string | undefined) | undefined): Promise<ExecutionResult> {
+    options: ProgressExecutionOptions = {}): Promise<ExecutionResult> {
+
+    const messagePrefix = options.channel ? '[(Details)](command:lean4.showOutput) ' : ''
 
     const progressOptions: ProgressOptions = {
         location: ProgressLocation.Notification,
         title: '',
-        cancellable: false
+        cancellable: options.allowCancellation === true
     }
     let inc = 0
 
-    const result: ExecutionResult = await window.withProgress(progressOptions, progress => {
+    const result: ExecutionResult = await window.withProgress(progressOptions, (progress, token) => {
         const progressChannel: OutputChannel = {
             name : 'ProgressChannel',
             append(value: string) {
-                if (translator) {
-                    const translatedValue: string | undefined = translator(value)
+                if (options.translator) {
+                    const translatedValue: string | undefined = options.translator(value)
                     if (translatedValue === undefined) {
                         return
                     }
                     value = translatedValue
                 }
-                if (channel) {
-                    channel.appendLine(value)
+                if (options.channel) {
+                    options.channel.appendLine(value)
                 }
                 if (inc < 90) {
                     inc += 2
                 }
-                progress.report({ increment: inc, message: value })
+                progress.report({ increment: inc, message: messagePrefix + value })
             },
             appendLine(value: string) {
                 this.append(value + '\n')
@@ -144,7 +165,7 @@ export async function batchExecuteWithProgress(
             dispose() { /* empty */ }
         }
         progress.report({ increment: 0, message: prompt });
-        return batchExecute(executablePath, args, workingDirectory, { combined: progressChannel });
+        return batchExecute(executablePath, args, options.cwd, { combined: progressChannel }, token);
     });
     return result;
 }

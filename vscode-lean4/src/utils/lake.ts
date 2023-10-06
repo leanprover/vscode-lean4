@@ -1,14 +1,16 @@
-import { Uri, window } from 'vscode';
+import { OutputChannel, Uri, window } from 'vscode';
 import { ExecutionExitCode, ExecutionResult, batchExecute, batchExecuteWithProgress } from './batch';
 import { findLeanPackageRoot } from './projectInfo';
 
 export const cacheNotFoundError = 'unknown executable `cache`'
 
 export class LakeRunner {
+    channel: OutputChannel
     cwdUri: Uri | undefined
     toolchain: string | undefined
 
-    constructor(cwdUri: Uri | undefined, toolchain?: string | undefined) {
+    constructor(channel: OutputChannel, cwdUri: Uri | undefined, toolchain?: string | undefined) {
+        this.channel = channel
         this.cwdUri = cwdUri
         this.toolchain = toolchain
     }
@@ -39,9 +41,15 @@ export class LakeRunner {
         })
     }
 
-    async isMathlibCacheGetAvailable(): Promise<boolean> {
-        const result: ExecutionResult = await this.runLakeCommandSilently('exe', ['cache'])
-        return result.exitCode === ExecutionExitCode.Success
+    async isMathlibCacheGetAvailable(): Promise<'Yes' | 'No' | 'Cancelled'> {
+        const result: ExecutionResult = await this.runLakeCommandWithProgress('exe', ['cache'], 'Checking whether this is a Mathlib project ...')
+        if (result.exitCode === ExecutionExitCode.Cancelled) {
+            return 'Cancelled'
+        }
+        if (result.exitCode === ExecutionExitCode.Success) {
+            return 'Yes'
+        }
+        return 'No'
     }
 
     private async runLakeCommandSilently(subCommand: string, args: string[]): Promise<ExecutionResult> {
@@ -63,15 +71,20 @@ export class LakeRunner {
         if (this.toolchain) {
             args.unshift(`+${this.toolchain}`)
         }
-        return await batchExecuteWithProgress('lake', args, waitingPrompt, this.cwdUri?.fsPath, undefined, translator)
+        return await batchExecuteWithProgress('lake', args, waitingPrompt, {
+            cwd: this.cwdUri?.fsPath,
+            channel: this.channel,
+            translator,
+            allowCancellation: true
+        })
     }
 }
 
-export function lake(cwdUri: Uri | undefined, toolchain?: string | undefined): LakeRunner {
-    return new LakeRunner(cwdUri, toolchain)
+export function lake(channel: OutputChannel, cwdUri: Uri | undefined, toolchain?: string | undefined): LakeRunner {
+    return new LakeRunner(channel, cwdUri, toolchain)
 }
 
-export async function lakeInActiveFolder(toolchain?: string | undefined): Promise<LakeRunner | 'NoActiveFolder'> {
+export async function lakeInActiveFolder(channel: OutputChannel, toolchain?: string | undefined): Promise<LakeRunner | 'NoActiveFolder'> {
     if (!window.activeTextEditor) {
         return 'NoActiveFolder'
     }
@@ -81,5 +94,5 @@ export async function lakeInActiveFolder(toolchain?: string | undefined): Promis
         return 'NoActiveFolder'
     }
 
-    return lake(folderUri, toolchain)
+    return lake(channel, folderUri, toolchain)
 }

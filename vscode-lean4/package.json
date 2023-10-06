@@ -293,6 +293,12 @@
 				"description": "Go to next page in documentation view"
 			},
 			{
+				"command": "lean4.showOutput",
+				"category": "Lean 4",
+				"title": "Show Output",
+				"description": "Show output channel containing all progress updates and errors of commands"
+			},
+			{
 				"command": "lean4.setup.showSetupGuide",
 				"category": "Lean 4",
 				"title": "Setup: Show Setup Guide",
@@ -489,6 +495,9 @@
 					"command": "lean4.docView.forward"
 				},
 				{
+					"command": "lean4.showOutput"
+				},
+				{
 					"command": "lean4.setup.showSetupGuide"
 				},
 				{
@@ -597,17 +606,17 @@
 				{
 					"command": "lean4.project.build",
 					"when": "editorLangId == lean4",
-					"group": "4_project@1"
+					"group": "1_projectActions@1"
 				},
 				{
 					"command": "lean4.project.clean",
 					"when": "editorLangId == lean4",
-					"group": "4_project@2"
+					"group": "1_projectActions@2"
 				},
 				{
 					"command": "lean4.project.fetchCache",
 					"when": "editorLangId == lean4",
-					"group": "5_mathlib@1"
+					"group": "2_mathlibActions@1"
 				}
 			],
 			"lean4.titlebar.documentation": [

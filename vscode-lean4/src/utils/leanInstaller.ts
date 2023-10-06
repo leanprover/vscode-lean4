@@ -224,7 +224,10 @@ export class LeanInstaller {
             // looks for a global (default) installation of Lean. This way, we can support
             // single file editing.
             logger.log(`executeWithProgress ${cmd} ${options}`)
-            const checkingResult: ExecutionResult = await batchExecuteWithProgress(cmd, options, 'Checking Lean setup...', folderPath, this.outputChannel)
+            const checkingResult: ExecutionResult = await batchExecuteWithProgress(cmd, options, 'Checking Lean setup...', {
+                cwd: folderPath,
+                channel: this.outputChannel
+            })
             if (checkingResult.exitCode === ExecutionExitCode.CannotLaunch) {
                 result.error = 'lean not found'
             } else if (checkingResult.stderr.indexOf('no default toolchain') > 0) {
@@ -279,7 +282,7 @@ export class LeanInstaller {
         try {
             const cmd = 'elan';
             const options = ['toolchain', 'list'];
-            const stdout = (await batchExecute(cmd, options, folderPath, undefined)).stdout
+            const stdout = (await batchExecute(cmd, options, folderPath)).stdout
             if (!stdout){
                 throw new Error('elan toolchain list returned no output.');
             }
