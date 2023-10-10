@@ -12,6 +12,7 @@ import { Exports } from './exports';
 import { logger } from './utils/logger'
 import { ProjectInitializationProvider } from './projectinit'
 import { ProjectOperationProvider } from './projectoperations'
+import { LeanClient } from './leanclient'
 
 interface AlwaysEnabledFeatures {
     docView: DocViewProvider
@@ -76,7 +77,7 @@ function activateAlwaysEnabledFeatures(context: ExtensionContext): AlwaysEnabled
     context.subscriptions.push(docView);
 
     const outputChannel = window.createOutputChannel('Lean: Editor');
-    context.subscriptions.push(commands.registerCommand('lean4.showOutput', () => outputChannel.show(true)))
+    context.subscriptions.push(commands.registerCommand('lean4.troubleshooting.showOutput', () => outputChannel.show(true)))
 
     const projectInitializationProvider = new ProjectInitializationProvider(outputChannel)
     context.subscriptions.push(projectInitializationProvider)
@@ -116,13 +117,22 @@ function activateAbbreviationFeature(context: ExtensionContext, docView: DocView
 }
 
 function activateLean4Features(context: ExtensionContext, installer: LeanInstaller): Lean4EnabledFeatures {
+    const clientProvider = new LeanClientProvider(installer, installer.getOutputChannel());
+    context.subscriptions.push(clientProvider)
+
     const pkgService = new LeanpkgService()
-    pkgService.versionChanged((uri) => installer.handleVersionChanged(uri));
+    pkgService.versionChanged(async uri => {
+        const client: LeanClient | undefined = clientProvider.getClientForFolder(uri)
+        if (client && !client.isRunning()) {
+            // This can naturally happen when we update the Lean version using the "Update Dependency" command
+            // because the Lean server is stopped while doing so. We want to avoid triggering the "Version changed"
+            // message in this case.
+            return
+        }
+        await installer.handleVersionChanged(uri)
+    });
     pkgService.lakeFileChanged((uri) => installer.handleLakeFileChanged(uri));
     context.subscriptions.push(pkgService);
-
-    const clientProvider = new LeanClientProvider(installer, pkgService, installer.getOutputChannel());
-    context.subscriptions.push(clientProvider)
 
     const infoProvider = new InfoProvider(clientProvider, {language: 'lean4'}, context);
     context.subscriptions.push(infoProvider)

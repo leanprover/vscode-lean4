@@ -1,7 +1,7 @@
 import { TextDocument, EventEmitter, Diagnostic,
     DocumentHighlight, Range, DocumentHighlightKind, workspace,
     Disposable, Uri, ConfigurationChangeEvent, OutputChannel, DiagnosticCollection,
-    WorkspaceFolder, window } from 'vscode'
+    WorkspaceFolder, window, ProgressLocation, ProgressOptions, Progress } from 'vscode'
 import {
     DidChangeTextDocumentParams,
     DidCloseTextDocumentParams,
@@ -31,6 +31,7 @@ import { SemVer } from 'semver';
 import { fileExists, isFileInFolder } from './utils/fsHelper';
 import { c2pConverter, p2cConverter, patchConverters } from './utils/converters'
 import { Server } from 'http'
+import { displayErrorWithOutput } from './utils/errors'
 
 const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
@@ -138,16 +139,33 @@ export class LeanClient implements Disposable {
             return
         }
         this.isRestarting = true
-        const startTime = Date.now()
+        try {
+            logger.log('[LeanClient] Restarting Lean Server')
+            if (this.isStarted()) {
+                await this.stop()
+            }
 
-        logger.log('[LeanClient] Restarting Lean Server')
-        if (this.isStarted()) {
-            await this.stop()
+            this.restartingEmitter.fire(undefined)
+            this.toolchainPath = toolchainPath();
+
+            const progressOptions: ProgressOptions = {
+                location: ProgressLocation.Notification,
+                title: '',
+                cancellable: false
+            }
+            await window.withProgress(progressOptions, async progress =>
+                await this.startClient(progress))
+        } finally {
+            this.isRestarting = false
         }
+    }
 
-        this.restartingEmitter.fire(undefined)
-        this.toolchainPath = toolchainPath();
+    private async startClient(progress: Progress<{ message?: string; increment?: number }>) {
+        // Should only be called from `restart`
 
+        const startTime = Date.now()
+        const message = 'Starting Lean language client ...'
+        progress.report({ message, increment: 0 })
         this.client = await this.setupClient()
 
         let insideRestart = true;
@@ -174,6 +192,7 @@ export class LeanClient implements Disposable {
                     }
                 }
             })
+            progress.report({ message, increment: 80 })
             await this.client.start()
             // tell the new client about the documents that are already open!
             for (const key of this.isOpen.keys()) {
@@ -188,7 +207,6 @@ export class LeanClient implements Disposable {
             this.outputChannel.appendLine(msg);
             this.serverFailedEmitter.fire(msg);
             insideRestart = false;
-            this.isRestarting = false
             return;
         }
 
@@ -219,18 +237,13 @@ export class LeanClient implements Disposable {
                 this.client?.outputChannel.show(true);
             } else if (!stderrMsgBoxVisible) {
                 stderrMsgBoxVisible = true;
-                const outputItem = 'Show stderr output';
-                const outPrompt = `Lean server printed an error:\n${chunk.toString()}`;
-                if (await window.showErrorMessage(outPrompt, outputItem) === outputItem) {
-                    this.outputChannel.show(false);
-                }
+                await displayErrorWithOutput(`Lean server printed an error:\n${chunk.toString()}`)
                 stderrMsgBoxVisible = false;
             }
         });
 
         this.restartedEmitter.fire(undefined)
         insideRestart = false;
-        this.isRestarting = false
     }
 
     async withStoppedClient(action: () => Promise<void>): Promise<'Success' | 'IsRestarting'> {

@@ -14,7 +14,6 @@ export class LeanClientProvider implements Disposable {
     private subscriptions: Disposable[] = [];
     private outputChannel: OutputChannel;
     private installer : LeanInstaller;
-    private pkgService : LeanpkgService;
     private versions: Map<string, LeanVersion> = new Map();
     private clients: Map<string, LeanClient> = new Map();
     private pending: Map<string, boolean> = new Map();
@@ -34,18 +33,17 @@ export class LeanClientProvider implements Disposable {
     private clientStoppedEmitter = new EventEmitter<[LeanClient, boolean, ServerStoppedReason]>()
     clientStopped = this.clientStoppedEmitter.event
 
-    constructor(installer : LeanInstaller, pkgService : LeanpkgService, outputChannel : OutputChannel) {
+    constructor(installer: LeanInstaller, outputChannel: OutputChannel) {
         this.outputChannel = outputChannel;
         this.installer = installer;
-        this.pkgService = pkgService;
 
         // we must setup the installChanged event handler first before any didOpenEditor calls.
         installer.installChanged(async (uri: Uri) => await this.onInstallChanged(uri));
         // Only change the document language for *visible* documents,
         // because this closes and then reopens the document.
-        window.visibleTextEditors.forEach((e) => this.didOpenEditor(e.document));
-        this.subscriptions.push(window.onDidChangeVisibleTextEditors((es) =>
-            es.forEach((e) => this.didOpenEditor(e.document))));
+        window.visibleTextEditors.forEach(e => this.didOpenEditor(e.document));
+        this.subscriptions.push(window.onDidChangeVisibleTextEditors(es =>
+            es.forEach(e => this.didOpenEditor(e.document))));
 
         this.subscriptions.push(
             commands.registerCommand('lean4.restartFile', () => this.restartFile()),
@@ -55,7 +53,7 @@ export class LeanClientProvider implements Disposable {
             commands.registerCommand('lean4.setup.installElan', () => this.autoInstall())
         );
 
-        workspace.onDidOpenTextDocument((document) => this.didOpenEditor(document));
+        workspace.onDidOpenTextDocument(document => this.didOpenEditor(document));
 
         workspace.onDidChangeWorkspaceFolders((event) => {
             for (const folder of event.removed) {
@@ -165,8 +163,6 @@ export class LeanClientProvider implements Disposable {
     }
 
     async didOpenEditor(document: TextDocument) {
-        this.pkgService.didOpen(document.uri);
-
         // bail as quickly as possible on non-lean files.
         if (document.languageId !== 'lean' && document.languageId !== 'lean4') {
             return;

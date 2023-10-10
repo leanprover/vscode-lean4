@@ -6,7 +6,7 @@ import { LeanClient } from './leanclient';
 import { findLeanPackageRoot } from './utils/projectInfo';
 import { join } from 'path';
 import * as fs from 'fs'
-import { DirectGitDependency, Manifest, parseAsManifest } from './utils/manifest';
+import { DirectGitDependency, Manifest, ManifestReadError, parseAsManifest, parseManifestInFolder } from './utils/manifest';
 
 export class ProjectOperationProvider implements Disposable {
 
@@ -24,9 +24,8 @@ export class ProjectOperationProvider implements Disposable {
 
     private async buildProject() {
         await this.runOperation(async lakeRunner => {
-            // Try it. If this is not a mathlib project, it will fail silently. Otherwise, it will grab the cache.
-            const fetchResult: ExecutionResult = await lakeRunner.fetchMathlibCache(true)
-            if (fetchResult.exitCode === ExecutionExitCode.Cancelled) {
+            const fetchResult: 'Success' | 'CacheNotAvailable' | 'Cancelled' = await this.tryFetchingCache(lakeRunner)
+            if (fetchResult === 'Cancelled') {
                 return
             }
 
@@ -118,24 +117,14 @@ export class ProjectOperationProvider implements Disposable {
             return
         }
 
-        const manifestPath: string = join(folderUri.fsPath, 'lake-manifest.json')
-
-        let jsonString: string
-        try {
-            jsonString = fs.readFileSync(manifestPath, 'utf8') // TODO: is this slow?
-        } catch (e) {
-            void window.showErrorMessage(`Cannot read 'lake-manifest.json' file at ${manifestPath} to determine dependencies.`)
-            return
-        }
-
-        const manifest: Manifest | undefined = parseAsManifest(jsonString)
-        if (!manifest) {
-            void window.showErrorMessage(`Cannot parse 'lake-manifest.json' file at ${manifestPath} to determine dependencies.`)
+        const manifestResult: Manifest | ManifestReadError = await parseManifestInFolder(folderUri)
+        if (typeof manifestResult === 'string') {
+            void window.showErrorMessage(manifestResult)
             return
         }
 
         const dependencies: (DirectGitDependency & { remoteRevision?: string | undefined })[] =
-            await this.findUpdateableDependencies(manifest.directGitDependencies)
+            await this.findUpdateableDependencies(manifestResult.directGitDependencies)
         if (dependencies.length === 0) {
             void window.showInformationMessage('Nothing to update - all dependencies are up-to-date.')
             return
@@ -165,17 +154,17 @@ export class ProjectOperationProvider implements Disposable {
             return
         }
 
-        const toolchainPathResult: [string, Uri] | 'DoNotUpdate' | 'Cancelled' = await this.determineToolchainPathsToUpdate(folderUri, dependencyChoice)
-        if (toolchainPathResult === 'Cancelled') {
+        const localToolchainPath: string = join(folderUri.fsPath, 'lean-toolchain')
+        const dependencyToolchainResult: string | 'DoNotUpdate' | 'Cancelled' = await this.determineDependencyToolchain(localToolchainPath, dependencyChoice)
+        if (dependencyToolchainResult === 'Cancelled') {
             return
         }
 
         await this.runOperation(async lakeRunner => {
-            if (toolchainPathResult !== 'DoNotUpdate') {
-                const [localToolchainPath, dependencyToolchainUri] = toolchainPathResult
-
-                const curlResult: ExecutionResult = await batchExecute('curl', ['-f', '-L', dependencyToolchainUri.toString(), '-o', localToolchainPath])
-                if (curlResult.exitCode !== ExecutionExitCode.Success) {
+            if (dependencyToolchainResult !== 'DoNotUpdate') {
+                try {
+                    fs.writeFileSync(localToolchainPath, dependencyToolchainResult)
+                } catch {
                     void window.showErrorMessage('Cannot update Lean version.')
                     return
                 }
@@ -186,9 +175,11 @@ export class ProjectOperationProvider implements Disposable {
                 return
             }
             if (result.exitCode !== ExecutionExitCode.Success) {
-                void window.showErrorMessage('Cannot update dependency.')
+                void displayError(result, 'Cannot update dependency.')
                 return
             }
+
+            await this.tryFetchingCache(lakeRunner)
         })
     }
 
@@ -220,16 +211,24 @@ export class ProjectOperationProvider implements Disposable {
         return augmented
     }
 
-    private async determineToolchainPathsToUpdate(rootFolderUri: Uri, dependency: DirectGitDependency): Promise<[string, Uri] | 'DoNotUpdate' | 'Cancelled'> {
-        const localToolchainPath: string = join(rootFolderUri.fsPath, 'lean-toolchain')
+    private async determineDependencyToolchain(localToolchainPath: string, dependency: DirectGitDependency): Promise<string | 'DoNotUpdate' | 'Cancelled'> {
         const dependencyToolchainUri: Uri | undefined = this.determineDependencyToolchainUri(dependency.uri, dependency.inputRevision)
         if (!dependencyToolchainUri) {
-            return 'DoNotUpdate'
+            const message = `Could not determine Lean version of ${dependency.name} at ${dependency.uri}, as doing so is currently only supported for GitHub projects. Do you want to update ${dependency.name} without updating the local Lean version to that of ${dependency.name} regardless?`
+            const input = 'Proceed'
+            const choice: string | undefined = await window.showInformationMessage(message, { modal: true}, input)
+            return choice === 'input' ? 'DoNotUpdate' : 'Cancelled'
         }
 
         const toolchainResult = await this.fetchToolchains(localToolchainPath, dependencyToolchainUri)
-        if (toolchainResult === undefined) {
-            return 'DoNotUpdate'
+        if (!(toolchainResult instanceof Array)) {
+            const errorFlavor = toolchainResult === 'CannotReadLocalToolchain'
+                ? `Could not read local Lean version at '${localToolchainPath}'`
+                : `Could not fetch Lean version of ${dependency.name} at ${dependency.uri}`
+            const message = `${errorFlavor}. Do you want to update ${dependency.name} without updating the local Lean version to that of ${dependency.name} regardless?`
+            const input = 'Proceed'
+            const choice: string | undefined = await window.showInformationMessage(message, { modal: true}, input)
+            return choice === 'input' ? 'DoNotUpdate' : 'Cancelled'
         }
         const [localToolchain, dependencyToolchain]: [string, string] = toolchainResult
 
@@ -237,7 +236,7 @@ export class ProjectOperationProvider implements Disposable {
             return 'DoNotUpdate'
         }
 
-        const message = `Local Lean version '${localToolchain}' differs from Lean version of ${dependency.name} '${dependencyToolchain}'. Do you want to update the local Lean version to the version of ${dependency.name}?`
+        const message = `'${localToolchain}' (local Lean version) differs from '${dependencyToolchain}' (${dependency.name} Lean version). Do you want to update the local Lean version to the Lean version of ${dependency.name}?`
         const input1 = 'Update Local Version'
         const input2 = 'Keep Local Version'
         const choice = await window.showInformationMessage(message, { modal: true }, input1, input2)
@@ -248,7 +247,7 @@ export class ProjectOperationProvider implements Disposable {
             return 'DoNotUpdate'
         }
 
-        return [localToolchainPath, dependencyToolchainUri]
+        return dependencyToolchain
     }
 
     private determineDependencyToolchainUri(dependencyUri: Uri, inputRevision: string): Uri | undefined {
@@ -272,21 +271,33 @@ export class ProjectOperationProvider implements Disposable {
         })
     }
 
-    private async fetchToolchains(localToolchainPath: string, dependencyToolchainUri: Uri): Promise<[string, string] | undefined> {
+    private async fetchToolchains(localToolchainPath: string, dependencyToolchainUri: Uri): Promise<[string, string] | 'CannotReadLocalToolchain' | 'CannotReadDependencyToolchain'> {
         let localToolchain: string
         try {
             localToolchain = fs.readFileSync(localToolchainPath, 'utf8').trim()
         } catch (e) {
-            return undefined
+            return 'CannotReadLocalToolchain'
         }
 
         const curlResult: ExecutionResult = await batchExecute('curl', ['-f', '-L', dependencyToolchainUri.toString()])
         if (curlResult.exitCode !== ExecutionExitCode.Success) {
-            return undefined
+            return 'CannotReadDependencyToolchain'
         }
         const dependencyToolchain: string = curlResult.stdout.trim()
 
         return [localToolchain, dependencyToolchain]
+    }
+
+    private async tryFetchingCache(lakeRunner: LakeRunner): Promise<'Success' | 'CacheNotAvailable' | 'Cancelled'> {
+        const fetchResult: ExecutionResult = await lakeRunner.fetchMathlibCache(true)
+        switch (fetchResult.exitCode) {
+            case ExecutionExitCode.Success:
+                return 'Success'
+            case ExecutionExitCode.Cancelled:
+                return 'Cancelled'
+            default:
+                return 'CacheNotAvailable'
+        }
     }
 
     private async runOperation(command: (lakeRunner: LakeRunner) => Promise<void>) {

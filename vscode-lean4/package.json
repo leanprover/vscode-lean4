@@ -293,16 +293,16 @@
 				"description": "Go to next page in documentation view"
 			},
 			{
-				"command": "lean4.showOutput",
+				"command": "lean4.troubleshooting.showOutput",
 				"category": "Lean 4",
-				"title": "Show Output",
+				"title": "Troubleshooting: Show Output",
 				"description": "Show output channel containing all progress updates and errors of commands"
 			},
 			{
 				"command": "lean4.setup.showSetupGuide",
 				"category": "Lean 4",
 				"title": "Setup: Show Setup Guide",
-				"description": "Show 'Welcome' page containing a checklist of steps to install Lean 4."
+				"description": "Show 'Welcome' page containing a checklist of steps to install Lean 4"
 			},
 			{
 				"command": "lean4.setup.installElan",
@@ -311,22 +311,16 @@
 				"description": "Install Lean's version manager 'Elan'"
 			},
 			{
-				"command": "lean4.project.createLibraryProject",
+				"command": "lean4.project.createStandaloneProject",
 				"category": "Lean 4",
-				"title": "Project: Create Library Project…",
-				"description": "Create a new Lean library project"
-			},
-			{
-				"command": "lean4.project.createProgramProject",
-				"category": "Lean 4",
-				"title": "Project: Create Program Project…",
-				"description": "Create a new Lean program project"
+				"title": "Project: Create Standalone Project…",
+				"description": "Create a new Lean project that does not depend on any other projects"
 			},
 			{
 				"command": "lean4.project.createMathlibProject",
 				"category": "Lean 4",
-				"title": "Project: Create Math Formalization Project…",
-				"description": "Create a new Lean math formalization project"
+				"title": "Project: Create Mathlib Project…",
+				"description": "Create a new Lean math formalization project using Mathlib"
 			},
 			{
 				"command": "lean4.project.open",
@@ -355,7 +349,7 @@
 			{
 				"command": "lean4.project.updateDependency",
 				"category": "Lean 4",
-				"title": "Project: Update Dependency",
+				"title": "Project: Update Dependency…",
 				"description": "Updates a dependency of the current project to the most recent version available for the branch pinned in 'lakefile.lean'."
 			},
 			{
@@ -501,7 +495,7 @@
 					"command": "lean4.docView.forward"
 				},
 				{
-					"command": "lean4.showOutput"
+					"command": "lean4.troubleshooting.showOutput"
 				},
 				{
 					"command": "lean4.setup.showSetupGuide"
@@ -510,10 +504,7 @@
 					"command": "lean4.setup.installElan"
 				},
 				{
-					"command": "lean4.project.createLibraryProject"
-				},
-				{
-					"command": "lean4.project.createProgramProject"
+					"command": "lean4.project.createStandaloneProject"
 				},
 				{
 					"command": "lean4.project.createMathlibProject"
@@ -575,26 +566,31 @@
 					"group": "3_infoview@1"
 				},
 				{
+					"command": "lean4.troubleshooting.showOutput",
+					"when": "config.lean4.alwaysShowTitleBarMenu || editorLangId == lean4",
+					"group": "4_troubleshooting"
+				},
+				{
+					"submenu": "lean4.titlebar.versions",
+					"when": "config.lean4.alwaysShowTitleBarMenu || editorLangId == lean4",
+					"group": "5_versions"
+				},
+				{
 					"submenu": "lean4.titlebar.projectActions",
 					"when": "editorLangId == lean4",
-					"group": "4_projectActions@1"
+					"group": "6_projectActions@1"
 				},
 				{
 					"submenu": "lean4.titlebar.documentation",
 					"when": "config.lean4.alwaysShowTitleBarMenu || editorLangId == lean4",
-					"group": "5_documentation@1"
+					"group": "7_documentation@1"
 				}
 			],
 			"lean4.titlebar.newProject": [
 				{
-					"command": "lean4.project.createLibraryProject",
+					"command": "lean4.project.createStandaloneProject",
 					"when": "config.lean4.alwaysShowTitleBarMenu || editorLangId == lean4",
 					"group": "1_newProject@1"
-				},
-				{
-					"command": "lean4.project.createProgramProject",
-					"when": "config.lean4.alwaysShowTitleBarMenu || editorLangId == lean4",
-					"group": "1_newProject@2"
 				},
 				{
 					"command": "lean4.project.createMathlibProject",
@@ -612,6 +608,13 @@
 					"command": "lean4.project.clone",
 					"when": "config.lean4.alwaysShowTitleBarMenu || editorLangId == lean4",
 					"group": "1_openProject@2"
+				}
+			],
+			"lean4.titlebar.versions": [
+				{
+					"command": "lean4.setup.installElan",
+					"when": "config.lean4.alwaysShowTitleBarMenu || editorLangId == lean4",
+					"group": "1_setup@1"
 				}
 			],
 			"lean4.titlebar.projectActions": [
@@ -679,12 +682,16 @@
 				"label": "Open Project…"
 			},
 			{
+				"id": "lean4.titlebar.versions",
+				"label": "Version Management…"
+			},
+			{
 				"id": "lean4.titlebar.projectActions",
 				"label": "Project Actions…"
 			},
 			{
 				"id": "lean4.titlebar.documentation",
-				"label": "Show Documentation…"
+				"label": "Documentation…"
 			}
 		],
 		"semanticTokenScopes": [
@@ -718,10 +725,10 @@
 					{
 						"id": "guide.linux.openSetupGuide",
 						"title": "Re-Open Setup Guide",
-						"description": "This guide can always be re-opened by opening an empty file, clicking on the ∀-symbol in the top right and selecting 'Show Documentation…' > 'Setup: Show Setup Guide'.",
+						"description": "This guide can always be re-opened by opening an empty file, clicking on the ∀-symbol in the top right and selecting 'Documentation…' > 'Setup: Show Setup Guide'.",
 						"media": {
 							"image": "media/open-setup-guide.png",
-							"altText": "Click on the ∀-symbol in the top right and select 'Show Documentation…' > 'Setup: Show Setup Guide'."
+							"altText": "Click on the ∀-symbol in the top right and select 'Documentation…' > 'Setup: Show Setup Guide'."
 						}
 					},
 					{
@@ -765,10 +772,10 @@
 					{
 						"id": "guide.mac.openSetupGuide",
 						"title": "Re-Open Setup Guide",
-						"description": "This guide can always be re-opened by opening an empty file, clicking on the ∀-symbol in the top right and selecting 'Show Documentation…' > 'Setup: Show Setup Guide'.",
+						"description": "This guide can always be re-opened by opening an empty file, clicking on the ∀-symbol in the top right and selecting 'Documentation…' > 'Setup: Show Setup Guide'.",
 						"media": {
 							"image": "media/open-setup-guide.png",
-							"altText": "Click on the ∀-symbol in the top right and select 'Show Documentation…' > 'Setup: Show Setup Guide'."
+							"altText": "Click on the ∀-symbol in the top right and select 'Documentation…' > 'Setup: Show Setup Guide'."
 						}
 					},
 					{
@@ -812,10 +819,10 @@
 					{
 						"id": "guide.windows.openSetupGuide",
 						"title": "Re-Open Setup Guide",
-						"description": "This guide can always be re-opened by opening an empty file, clicking on the ∀-symbol in the top right and selecting 'Show Documentation…' > 'Setup: Show Setup Guide'.",
+						"description": "This guide can always be re-opened by opening an empty file, clicking on the ∀-symbol in the top right and selecting 'Documentation…' > 'Setup: Show Setup Guide'.",
 						"media": {
 							"image": "media/open-setup-guide.png",
-							"altText": "Click on the ∀-symbol in the top right and select 'Show Documentation…' > 'Setup: Show Setup Guide'."
+							"altText": "Click on the ∀-symbol in the top right and select 'Documentation…' > 'Setup: Show Setup Guide'."
 						}
 					},
 					{

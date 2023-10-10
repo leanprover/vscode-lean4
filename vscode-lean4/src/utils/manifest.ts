@@ -1,5 +1,7 @@
+import { join } from 'path'
 import { Uri } from 'vscode'
-import { z } from 'zod';
+import { z } from 'zod'
+import * as fs from 'fs'
 
 export interface DirectGitDependency {
     name: string
@@ -61,6 +63,26 @@ export function parseAsManifest(jsonString: string): Manifest | undefined {
             revision: pkg.git.rev,
             inputRevision: inputRev ? inputRev : 'master' // Lake also always falls back to master
         })
+    }
+
+    return manifest
+}
+
+export type ManifestReadError = string
+
+export async function parseManifestInFolder(folderUri: Uri): Promise<Manifest | ManifestReadError> {
+    const manifestPath: string = join(folderUri.fsPath, 'lake-manifest.json')
+
+    let jsonString: string
+    try {
+        jsonString = fs.readFileSync(manifestPath, 'utf8')
+    } catch (e) {
+        return `Cannot read 'lake-manifest.json' file at ${manifestPath} to determine dependencies.`
+    }
+
+    const manifest: Manifest | undefined = parseAsManifest(jsonString)
+    if (!manifest) {
+        return `Cannot parse 'lake-manifest.json' file at ${manifestPath} to determine dependencies.`
     }
 
     return manifest

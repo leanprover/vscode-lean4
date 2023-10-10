@@ -85,23 +85,25 @@ export class LeanInstaller {
     }
 
     async handleVersionChanged(packageUri : Uri) :  Promise<void> {
-        if (packageUri && packageUri.scheme === 'file'){
+        if (packageUri && packageUri.scheme === 'file') {
             const key = packageUri.fsPath;
             if (this.versionCache.has(key)) {
                 this.versionCache.delete(key);
             }
         }
 
-        if (this.promptUser){
-            if (this.prompting) {
-                return;
-            }
-            const restartItem = 'Restart Lean';
-            const item = await this.showPrompt('Lean version changed', restartItem);
-            if (item === restartItem) {
-                await this.checkAndFire(packageUri);
-            }
-        } else {
+        if (!this.promptUser) {
+            await this.checkAndFire(packageUri);
+            return
+        }
+
+        if (this.prompting) {
+            return;
+        }
+
+        const restartItem = 'Restart Lean';
+        const item = await this.showPrompt('Lean version changed', restartItem);
+        if (item === restartItem) {
             await this.checkAndFire(packageUri);
         }
     }
@@ -126,16 +128,18 @@ export class LeanInstaller {
     }
 
     async handleLakeFileChanged(uri: Uri) :  Promise<void> {
-        if (this.promptUser){
-            if (this.prompting) {
-                return;
-            }
-            const restartItem = 'Restart Lean';
-            const item = await this.showPrompt('Lake file configuration changed', restartItem);
-            if (item === restartItem) {
-                this.installChangedEmitter.fire(uri);
-            }
-        } else {
+        if (!this.promptUser) {
+            this.installChangedEmitter.fire(uri);
+            return
+        }
+
+        if (this.prompting) {
+            return;
+        }
+
+        const restartItem = 'Restart Lean';
+        const item = await this.showPrompt('Lake file configuration changed', restartItem);
+        if (item === restartItem) {
             this.installChangedEmitter.fire(uri);
         }
     }
@@ -224,7 +228,7 @@ export class LeanInstaller {
             // looks for a global (default) installation of Lean. This way, we can support
             // single file editing.
             logger.log(`executeWithProgress ${cmd} ${options}`)
-            const checkingResult: ExecutionResult = await batchExecuteWithProgress(cmd, options, 'Checking Lean setup...', {
+            const checkingResult: ExecutionResult = await batchExecuteWithProgress(cmd, options, 'Checking Lean setup ...', {
                 cwd: folderPath,
                 channel: this.outputChannel
             })
@@ -302,7 +306,7 @@ export class LeanInstaller {
     async hasElan() : Promise<boolean> {
         try {
             const options = ['--version']
-            const result = await batchExecuteWithProgress('elan', options, 'Checking Elan setup...')
+            const result = await batchExecuteWithProgress('elan', options, 'Checking Elan setup ...')
             const filterVersion = /elan (\d+)\.\d+\..+/
             const match = filterVersion.exec(result.stdout)
             return match !== null

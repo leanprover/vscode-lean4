@@ -15,8 +15,9 @@ export class LakeRunner {
         this.toolchain = toolchain
     }
 
-    async initProject(name: string, kind: string): Promise<ExecutionResult> {
-        return this.runLakeCommandSilently('init', [name, kind])
+    async initProject(name: string, kind?: string | undefined): Promise<ExecutionResult> {
+        const args = kind ? [name, kind] : [name]
+        return this.runLakeCommandSilently('init', args)
     }
 
     async updateDependencies(): Promise<ExecutionResult> {

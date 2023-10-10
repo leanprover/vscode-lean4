@@ -11,24 +11,15 @@ export class ProjectInitializationProvider implements Disposable {
 
     constructor(private channel: OutputChannel) {
         this.subscriptions.push(
-            commands.registerCommand('lean4.project.createLibraryProject', () => this.createLibraryProject()),
-            commands.registerCommand('lean4.project.createProgramProject', () => this.createProgramProject()),
+            commands.registerCommand('lean4.project.createStandaloneProject', () => this.createStandaloneProject()),
             commands.registerCommand('lean4.project.createMathlibProject', () => this.createMathlibProject()),
             commands.registerCommand('lean4.project.open', () => this.openProject()),
             commands.registerCommand('lean4.project.clone', () => this.cloneProject())
         )
     }
 
-    private async createLibraryProject() {
-        const projectFolder: Uri | 'DidNotComplete' = await this.createProject('lib', 'library', 'stable')
-
-        if (projectFolder !== 'DidNotComplete') {
-            await ProjectInitializationProvider.openNewFolder(projectFolder)
-        }
-    }
-
-    private async createProgramProject() {
-        const projectFolder: Uri | 'DidNotComplete' = await this.createProject('exe', 'program', 'stable')
+    private async createStandaloneProject() {
+        const projectFolder: Uri | 'DidNotComplete' = await this.createProject()
 
         if (projectFolder !== 'DidNotComplete') {
             await ProjectInitializationProvider.openNewFolder(projectFolder)
@@ -37,7 +28,7 @@ export class ProjectInitializationProvider implements Disposable {
 
     private async createMathlibProject() {
         const mathlibToolchain = 'leanprover-community/mathlib4:lean-toolchain'
-        const projectFolder: Uri | 'DidNotComplete' = await this.createProject('math', 'math formalization', mathlibToolchain)
+        const projectFolder: Uri | 'DidNotComplete' = await this.createProject('math', mathlibToolchain)
 
         if (projectFolder === 'DidNotComplete') {
             return
@@ -65,13 +56,12 @@ export class ProjectInitializationProvider implements Disposable {
     }
 
     private async createProject(
-        kind: string,
-        kindName: string,
-        toolchain?: string | undefined): Promise<Uri | 'DidNotComplete'>  {
+        kind?: string | undefined,
+        toolchain: string = 'leanprover/lean4:stable'): Promise<Uri | 'DidNotComplete'>  {
 
         const projectFolder: Uri | undefined = await ProjectInitializationProvider.askForNewProjectFolderLocation({
             saveLabel: 'Create project folder',
-            title: `Create a new ${kindName} project folder`
+            title: 'Create a new project folder'
         })
         if (projectFolder === undefined) {
             return 'DidNotComplete'

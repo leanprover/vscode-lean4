@@ -2,6 +2,7 @@ import { CancellationToken, Disposable, OutputChannel, ProgressLocation, Progres
 import { spawn } from 'child_process';
 import { findProgramInPath, isRunningTest } from '../config'
 import { logger } from './logger'
+import { displayErrorWithOutput } from './errors';
 
 export interface ExecutionChannel {
     combined?: OutputChannel | undefined
@@ -46,8 +47,7 @@ export async function batchExecute(
         }
 
         try {
-            if (isRunningTest())
-            {
+            if (isRunningTest()) {
                 // The mocha test framework listens to process.on('uncaughtException')
                 // which is raised if spawn cannot find the command and the test automatically
                 // fails with "Uncaught Error: spawn elan ENOENT".  Therefore we manually
@@ -57,6 +57,11 @@ export async function batchExecute(
                     resolve(createCannotLaunchExecutionResult(''));
                     return;
                 }
+            }
+            if (channel?.combined) {
+                const formattedCwd = workingDirectory ? `${workingDirectory}` : ''
+                const formattedArgs = args.map(arg => arg.includes(' ') ? `"${arg}"` : arg).join(' ')
+                channel.combined.appendLine(`${formattedCwd}> ${executablePath} ${formattedArgs}`)
             }
             const proc = spawn(executablePath, args, options);
 
@@ -69,15 +74,15 @@ export async function batchExecute(
 
             proc.stdout.on('data', (line) => {
                 const s: string = line.toString();
-                if (channel && channel.combined) channel.combined.appendLine(s)
-                if (channel && channel.stdout) channel.stdout.appendLine(s)
+                if (channel?.combined) channel.combined.appendLine(s)
+                if (channel?.stdout) channel.stdout.appendLine(s)
                 stdout += s + '\n';
             });
 
             proc.stderr.on('data', (line) => {
                 const s: string = line.toString();
-                if (channel && channel.combined) channel.combined.appendLine(s)
-                if (channel && channel.stderr) channel.stderr.appendLine(s)
+                if (channel?.combined) channel.combined.appendLine(s)
+                if (channel?.stderr) channel.stderr.appendLine(s)
                 stderr += s + '\n';
             });
 
@@ -85,6 +90,9 @@ export async function batchExecute(
                 disposeKill?.dispose()
                 logger.log(`child process exited with code ${code}`);
                 if (signal === 'SIGTERM') {
+                    if (channel?.combined) {
+                        channel.combined.appendLine('=> Operation cancelled by user.')
+                    }
                     resolve({
                         exitCode: ExecutionExitCode.Cancelled,
                         stdout,
@@ -93,6 +101,11 @@ export async function batchExecute(
                     return
                 }
                 if (code !== 0) {
+                    if (channel?.combined) {
+                        const formattedCode = code ? `Exit code: ${code}.` : ''
+                        const formattedSignal = signal ? `Signal: ${signal}.` : ''
+                        channel.combined.appendLine(`=> Operation failed. ${formattedCode} ${formattedSignal}`.trim())
+                    }
                     resolve({
                         exitCode: ExecutionExitCode.ExecutionError,
                         stdout,
@@ -127,7 +140,7 @@ export async function batchExecuteWithProgress(
     prompt: string,
     options: ProgressExecutionOptions = {}): Promise<ExecutionResult> {
 
-    const messagePrefix = options.channel ? '[(Details)](command:lean4.showOutput) ' : ''
+    const messagePrefix = options.channel ? '[(Details)](command:lean4.troubleshooting.showOutput) ' : ''
 
     const progressOptions: ProgressOptions = {
         location: ProgressLocation.Notification,
@@ -189,20 +202,17 @@ export async function executeAll(executions: BatchExecution[]): Promise<Executio
     return results
 }
 
-export async function displayError(result: ExecutionResult, message: string, modal: boolean = false) {
+export async function displayError(result: ExecutionResult, message: string) {
     if (result.exitCode === ExecutionExitCode.Success) {
         throw Error()
     }
     const errorMessage: string = formatErrorMessage(result, message)
-    await window.showErrorMessage(errorMessage, { modal })
+    await displayErrorWithOutput(errorMessage)
 }
 
 function formatErrorMessage(error: ExecutionResult, message: string): string {
     if (error.stderr === '') {
         return `${message}`
     }
-    return `${message}
-
-Command error output:
-${error.stderr}`
+    return `${message} Command error output: ${error.stderr}`
 }
