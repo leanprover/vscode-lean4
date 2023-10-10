@@ -710,11 +710,6 @@
 				"editor.wordSeparators": "`~@$%^&*()-=+[{]}⟨⟩⦃⦄⟦⟧⟮⟯‹›\\|;:\",.<>/"
 			}
 		},
-		"taskDefinitions": [
-			{
-				"type": "lean4"
-			}
-		],
 		"walkthroughs": [
 			{
 				"id": "guide.linux",
@@ -865,7 +860,6 @@
 	"activationEvents": [
 		"onLanguage:lean",
 		"onLanguage:markdown",
-		"onCommand:workbench.action.tasks.runTask",
 		"onStartupFinished"
 	],
 	"main": "./dist/extension",
