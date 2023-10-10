@@ -19,7 +19,7 @@ suite('Lean4 Bootstrap Test Suite', () => {
         // be able to do that.
         const lean = await initLean4Untitled('#eval Lean.versionString');
         const info = lean.exports.infoProvider;
-        const  expected = '4.0.0-nightly-';
+        const expected = '4.0.0-nightly-';
         assert(info, 'No InfoProvider export');
 
         // give it a extra long timeout in case test machine is really slow.
