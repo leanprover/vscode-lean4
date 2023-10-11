@@ -150,7 +150,7 @@ export class LeanClient implements Disposable {
 
             const progressOptions: ProgressOptions = {
                 location: ProgressLocation.Notification,
-                title: '',
+                title: 'Starting Lean language client',
                 cancellable: false
             }
             await window.withProgress(progressOptions, async progress =>
@@ -164,8 +164,7 @@ export class LeanClient implements Disposable {
         // Should only be called from `restart`
 
         const startTime = Date.now()
-        const message = 'Starting Lean language client ...'
-        progress.report({ message, increment: 0 })
+        progress.report({ increment: 0 })
         this.client = await this.setupClient()
 
         let insideRestart = true;
@@ -192,7 +191,7 @@ export class LeanClient implements Disposable {
                     }
                 }
             })
-            progress.report({ message, increment: 80 })
+            progress.report({ increment: 80 })
             await this.client.start()
             // tell the new client about the documents that are already open!
             for (const key of this.isOpen.keys()) {

@@ -114,6 +114,7 @@ export class ProjectOperationProvider implements Disposable {
 
         const [_1, folderUri, _2] = await findLeanPackageRoot(window.activeTextEditor.document.uri)
         if (!folderUri) {
+            void window.showErrorMessage('Cannot determine active project from currently open file.')
             return
         }
 
@@ -315,6 +316,7 @@ export class ProjectOperationProvider implements Disposable {
 
         const lakeRunner: LakeRunner | 'NoActiveFolder' = await lakeInActiveFolder(this.channel)
         if (lakeRunner === 'NoActiveFolder') {
+            void window.showErrorMessage('Cannot determine active project from currently open file.')
             this.isRunningOperation = false
             return
         }

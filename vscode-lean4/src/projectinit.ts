@@ -84,7 +84,7 @@ export class ProjectInitializationProvider implements Disposable {
 
     private async openProject() {
         const projectFolders: Uri[] | undefined = await window.showOpenDialog({
-            title: 'Open Lean 4 project folder containing a `lean-toolchain` file',
+            title: 'Open Lean 4 project folder containing a \'lean-toolchain\' file',
             openLabel: 'Open project folder',
             canSelectFiles: false,
             canSelectFolders: true,
@@ -119,7 +119,7 @@ export class ProjectInitializationProvider implements Disposable {
         }
 
         const message = `The selected folder is not a valid Lean 4 project folder because it does not contain a 'lean-toolchain' file.
-However, a valid Lean 4 project folder was found in one of the parent directories at ${parentProjectFolder.fsPath}.
+However, a valid Lean 4 project folder was found in one of the parent directories at '${parentProjectFolder.fsPath}'.
 Open this project instead?`
         const input = 'Open parent directory project'
         const choice: string | undefined = await window.showInformationMessage(message, { modal: true }, input)
@@ -157,7 +157,7 @@ Open this project instead?`
             return
         }
 
-        const result: ExecutionResult = await batchExecuteWithProgress('git', ['clone', existingProjectUri.toString(), projectFolder.fsPath], 'Cloning project ...', { channel: this.channel, allowCancellation: true })
+        const result: ExecutionResult = await batchExecuteWithProgress('git', ['clone', existingProjectUri.toString(), projectFolder.fsPath], 'Cloning project', { channel: this.channel, allowCancellation: true })
         if (result.exitCode === ExecutionExitCode.Cancelled) {
             return
         }

@@ -137,14 +137,14 @@ interface ProgressExecutionOptions {
 export async function batchExecuteWithProgress(
     executablePath: string,
     args: string[],
-    prompt: string,
+    title: string,
     options: ProgressExecutionOptions = {}): Promise<ExecutionResult> {
 
-    const messagePrefix = options.channel ? '[(Details)](command:lean4.troubleshooting.showOutput) ' : ''
+    const titleSuffix = options.channel ? ' [(Details)](command:lean4.troubleshooting.showOutput)' : ''
 
     const progressOptions: ProgressOptions = {
         location: ProgressLocation.Notification,
-        title: '',
+        title: title + titleSuffix,
         cancellable: options.allowCancellation === true
     }
     let inc = 0
@@ -166,7 +166,7 @@ export async function batchExecuteWithProgress(
                 if (inc < 90) {
                     inc += 2
                 }
-                progress.report({ increment: inc, message: messagePrefix + value })
+                progress.report({ increment: inc, message: value })
             },
             appendLine(value: string) {
                 this.append(value + '\n')
@@ -177,7 +177,6 @@ export async function batchExecuteWithProgress(
             hide() { /* empty */ },
             dispose() { /* empty */ }
         }
-        progress.report({ increment: 0, message: prompt });
         return batchExecute(executablePath, args, options.cwd, { combined: progressChannel }, token);
     });
     return result;

@@ -91,7 +91,7 @@ export class LeanClientProvider implements Disposable {
                 if (uri) {
                     // have to check again here in case elan install had --default-toolchain none.
                     const [workspaceFolder, folder, packageFileUri] = await findLeanPackageRoot(uri);
-                    const packageUri = folder ? folder : Uri.from({scheme: 'untitled'});
+                    const packageUri = folder ?? Uri.from({scheme: 'untitled'});
                     logger.log('[ClientProvider] testLeanVersion');
                     const version = await this.installer.testLeanVersion(packageUri);
                     if (version.version === '4') {
@@ -286,7 +286,7 @@ export class LeanClientProvider implements Disposable {
     // Returns a null client if it turns out the new workspace is a lean3 workspace.
     async ensureClient(uri : Uri, versionInfo: LeanVersion | undefined) : Promise<[boolean,LeanClient | undefined]> {
         const [workspaceFolder, folder, packageFileUri] = await findLeanPackageRoot(uri);
-        const folderUri = folder ? folder : Uri.from({scheme: 'untitled'});
+        const folderUri = folder ?? Uri.from({scheme: 'untitled'});
         let client = this.getClientForFolder(folderUri);
         const key = this.getKeyFromUri(folder);
         const cachedClient = (client !== undefined);
@@ -388,7 +388,7 @@ export class LeanClientProvider implements Disposable {
         }
 
         const message = `Opened folder is not a valid Lean 4 project folder because it does not contain a 'lean-toolchain' file.
-However, a valid Lean 4 project folder was found in one of the parent directories at ${parentProjectFolder.fsPath}.
+However, a valid Lean 4 project folder was found in one of the parent directories at '${parentProjectFolder.fsPath}'.
 Open this project instead?`
         const input = 'Open parent directory project'
         const choice: string | undefined = await window.showWarningMessage(message, input)

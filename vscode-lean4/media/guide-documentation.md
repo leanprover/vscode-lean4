@@ -1,5 +1,5 @@
 ## Books
-If you want to learn Lean 4, choose one of the following introductory books based on your background. If you are getting stuck or have any questions, click on the 'Questions and Troubleshooting' step below.
+If you want to learn Lean 4, choose one of the following introductory books based on your background. If you are getting stuck or have any questions, click on the 'Questions and Troubleshooting' step at the bottom on the left side.
 
 - [Functional Programming in Lean](https://lean-lang.org/functional_programming_in_lean/)  
   The standard introduction for using Lean 4 as a general-purpose programming language.

@@ -1,4 +1,4 @@
-import { window, ExtensionContext, TextDocument, tasks, commands, Disposable } from 'vscode'
+import { window, ExtensionContext, TextDocument, tasks, commands, Disposable, workspace } from 'vscode'
 import { AbbreviationFeature } from './abbreviation'
 import { InfoProvider } from './infoview'
 import { DocViewProvider } from './docview'
@@ -177,8 +177,8 @@ export async function activate(context: ExtensionContext): Promise<Exports> {
     }
 
     // No Lean 4 document yet => Load remaining features when one is open
-    const disposeActivationListener: Disposable = window.onDidChangeVisibleTextEditors(_ => {
-        if (findOpenLeanDocument()) {
+    const disposeActivationListener: Disposable = workspace.onDidOpenTextDocument(doc => {
+        if (isLean(doc.languageId)) {
             activateLean4Features(context, alwaysEnabledFeatures.installer)
             disposeActivationListener.dispose()
         }

@@ -21,23 +21,23 @@ export class LakeRunner {
     }
 
     async updateDependencies(): Promise<ExecutionResult> {
-        return this.runLakeCommandWithProgress('update', [], 'Updating dependencies ...')
+        return this.runLakeCommandWithProgress('update', [], 'Updating dependencies')
     }
 
     async updateDependency(dependencyName: string): Promise<ExecutionResult> {
-        return this.runLakeCommandWithProgress('update', [dependencyName], `Updating '${dependencyName}' dependency ...`)
+        return this.runLakeCommandWithProgress('update', [dependencyName], `Updating '${dependencyName}' dependency`)
     }
 
     async build(): Promise<ExecutionResult> {
-        return this.runLakeCommandWithProgress('build', [], 'Building Lean project ...')
+        return this.runLakeCommandWithProgress('build', [], 'Building Lean project')
     }
 
     async clean(): Promise<ExecutionResult> {
-        return this.runLakeCommandWithProgress('clean', [], 'Cleaning Lean project ...')
+        return this.runLakeCommandWithProgress('clean', [], 'Cleaning Lean project')
     }
 
     async fetchMathlibCache(filterError: boolean = false): Promise<ExecutionResult> {
-        const prompt = 'Checking whether Mathlib build artifact cache needs to be downloaded ...'
+        const prompt = 'Checking Mathlib build artifact cache'
         return this.runLakeCommandWithProgress('exe', ['cache', 'get'], prompt, line => {
             if (filterError && line.includes(cacheNotFoundError)) {
                 return undefined
@@ -47,7 +47,7 @@ export class LakeRunner {
     }
 
     async isMathlibCacheGetAvailable(): Promise<'Yes' | 'No' | 'Cancelled'> {
-        const result: ExecutionResult = await this.runLakeCommandWithProgress('exe', ['cache'], 'Checking whether this is a Mathlib project ...')
+        const result: ExecutionResult = await this.runLakeCommandWithProgress('exe', ['cache'], 'Checking whether this is a Mathlib project')
         if (result.exitCode === ExecutionExitCode.Cancelled) {
             return 'Cancelled'
         }
@@ -93,7 +93,6 @@ export async function lakeInActiveFolder(channel: OutputChannel, toolchain?: str
     if (!window.activeTextEditor) {
         return 'NoActiveFolder'
     }
-
     const [_1, folderUri, _2] = await findLeanPackageRoot(window.activeTextEditor.document.uri)
     if (!folderUri) {
         return 'NoActiveFolder'
