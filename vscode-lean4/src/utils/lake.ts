@@ -3,6 +3,7 @@ import { ExecutionExitCode, ExecutionResult, batchExecute, batchExecuteWithProgr
 import { findLeanPackageRoot } from './projectInfo';
 
 export const cacheNotFoundError = 'unknown executable `cache`'
+export const cacheNotFoundExitError = '=> Operation failed. Exit Code: 1.'
 
 export class LakeRunner {
     channel: OutputChannel
@@ -17,7 +18,7 @@ export class LakeRunner {
 
     async initProject(name: string, kind?: string | undefined): Promise<ExecutionResult> {
         const args = kind ? [name, kind] : [name]
-        return this.runLakeCommandSilently('init', args)
+        return this.runLakeCommandWithProgress('init', args, 'Initializing project')
     }
 
     async updateDependencies(): Promise<ExecutionResult> {

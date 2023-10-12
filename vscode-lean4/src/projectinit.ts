@@ -29,17 +29,7 @@ export class ProjectInitializationProvider implements Disposable {
     private async createMathlibProject() {
         const mathlibToolchain = 'leanprover-community/mathlib4:lean-toolchain'
         const projectFolder: Uri | 'DidNotComplete' = await this.createProject('math', mathlibToolchain)
-
         if (projectFolder === 'DidNotComplete') {
-            return
-        }
-
-        const updateResult: ExecutionResult = await lake(this.channel, projectFolder, mathlibToolchain).updateDependencies()
-        if (updateResult.exitCode === ExecutionExitCode.Cancelled) {
-            return
-        }
-        if (updateResult.exitCode !== ExecutionExitCode.Success) {
-            await displayError(updateResult, 'Cannot update dependencies.')
             return
         }
 
@@ -76,6 +66,15 @@ export class ProjectInitializationProvider implements Disposable {
         const result: ExecutionResult = await lake(this.channel, projectFolder, toolchain).initProject(projectName, kind)
         if (result.exitCode !== ExecutionExitCode.Success) {
             await displayError(result, 'Cannot initialize project.')
+            return 'DidNotComplete'
+        }
+
+        const updateResult: ExecutionResult = await lake(this.channel, projectFolder, toolchain).updateDependencies()
+        if (updateResult.exitCode === ExecutionExitCode.Cancelled) {
+            return 'DidNotComplete'
+        }
+        if (updateResult.exitCode !== ExecutionExitCode.Success) {
+            await displayError(updateResult, 'Cannot update dependencies.')
             return 'DidNotComplete'
         }
 

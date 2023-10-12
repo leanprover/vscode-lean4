@@ -177,6 +177,7 @@ export async function batchExecuteWithProgress(
             hide() { /* empty */ },
             dispose() { /* empty */ }
         }
+        progress.report({ increment: 0 })
         return batchExecute(executablePath, args, options.cwd, { combined: progressChannel }, token);
     });
     return result;
