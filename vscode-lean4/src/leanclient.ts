@@ -415,7 +415,7 @@ export class LeanClient implements Disposable {
                 version: 1,
                 text: doc.getText(),
             },
-            extraPrintPathsFlags: automaticallyBuildDependencies() ? [] : ['--no-build']
+            dependencyBuildMode: automaticallyBuildDependencies() ? 'always' : 'never'
         });
     }
 
@@ -505,12 +505,13 @@ export class LeanClient implements Disposable {
             }
         })
         void this.client?.sendNotification('textDocument/didOpen', {
-            'textDocument': {
+            textDocument: {
                 uri,
-                'languageId': 'lean4',
-                'version': 1,
-                'text': doc.getText()
-            }
+                languageId: 'lean4',
+                version: 1,
+                text: doc.getText()
+            },
+            dependencyBuildMode: automaticallyBuildDependencies() ? 'always' : 'once'
         })
         this.restartedWorkerEmitter.fire(uri)
     }
