@@ -17,7 +17,7 @@ import {
 } from 'vscode-languageclient/node'
 import * as ls from 'vscode-languageserver-protocol'
 
-import { toolchainPath, lakePath, addServerEnvPaths, serverArgs, serverLoggingEnabled, serverLoggingPath, shouldAutofocusOutput, getElaborationDelay, lakeEnabled } from './config'
+import { toolchainPath, lakePath, addServerEnvPaths, serverArgs, serverLoggingEnabled, serverLoggingPath, shouldAutofocusOutput, getElaborationDelay, lakeEnabled, automaticallyBuildDependencies } from './config'
 import { assert } from './utils/assert'
 import { LeanFileProgressParams, LeanFileProgressProcessingInfo, ServerStoppedReason } from '@leanprover/infoview-api';
 import { batchExecute } from './utils/batch'
@@ -408,13 +408,14 @@ export class LeanClient implements Disposable {
     }
 
     notifyDidOpen(doc: TextDocument) {
-        void this.client?.sendNotification(DidOpenTextDocumentNotification.type, {
+        void this.client?.sendNotification('textDocument/didOpen', {
             textDocument: {
                 uri: doc.uri.toString(),
                 languageId: doc.languageId,
                 version: 1,
                 text: doc.getText(),
             },
+            extraPrintPathsFlags: automaticallyBuildDependencies() ? [] : ['--no-build']
         });
     }
 
