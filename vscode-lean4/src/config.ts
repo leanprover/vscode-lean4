@@ -146,6 +146,10 @@ export function serverEnv(): object {
     return workspace.getConfiguration('lean4').get('serverEnv', {})
 }
 
+export function automaticallyBuildDependencies(): boolean {
+    return workspace.getConfiguration('lean4').get('automaticallyBuildDependencies', false)
+}
+
 export function serverEnvPaths(): string[] {
     return workspace.getConfiguration('lean4').get('serverEnvPaths', [])
 }

@@ -64,6 +64,11 @@
 					"default": true,
 					"markdownDescription": "Enable eager replacement of abbreviations that uniquely identify a symbol."
 				},
+				"lean4.automaticallyBuildDependencies": {
+					"type": "boolean",
+					"default": false,
+					"markdownDescription": "Enable automatically building dependencies when opening a file."
+				},
 				"lean4.serverEnv": {
 					"type": "object",
 					"default": {},
