@@ -6,7 +6,7 @@ import { LeanTaskGutter } from './taskgutter'
 import { LeanInstaller } from './utils/leanInstaller'
 import { LeanpkgService } from './utils/leanpkg'
 import { LeanClientProvider } from './utils/clientProvider'
-import { addDefaultElanPath, removeElanPath, addToolchainBinPath, isElanDisabled, getDefaultLeanVersion} from './config'
+import { addDefaultElanPath, removeElanPath, addToolchainBinPath, isElanDisabled, getDefaultLeanVersion, getDefaultElanPath} from './config'
 import { findLeanPackageVersionInfo } from './utils/projectInfo'
 import { Exports } from './exports';
 import { logger } from './utils/logger'
@@ -84,6 +84,15 @@ function activateAlwaysEnabledFeatures(context: ExtensionContext): AlwaysEnabled
 
     const defaultToolchain = getDefaultLeanVersion();
     const installer = new LeanInstaller(outputChannel, defaultToolchain)
+
+    context.subscriptions.push(commands.registerCommand('lean4.setup.installElan', async () => {
+        await installer.installElan();
+        if (isElanDisabled()) {
+            addToolchainBinPath(getDefaultElanPath());
+        } else {
+            addDefaultElanPath();
+        }
+    }))
 
     return { docView, projectInitializationProvider, installer }
 }

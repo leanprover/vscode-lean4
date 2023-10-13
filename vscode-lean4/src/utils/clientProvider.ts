@@ -49,8 +49,7 @@ export class LeanClientProvider implements Disposable {
             commands.registerCommand('lean4.restartFile', () => this.restartFile()),
             commands.registerCommand('lean4.refreshFileDependencies', () => this.restartFile()),
             commands.registerCommand('lean4.restartServer', () => this.restartActiveClient()),
-            commands.registerCommand('lean4.stopServer', () => this.stopActiveClient()),
-            commands.registerCommand('lean4.setup.installElan', () => this.autoInstall())
+            commands.registerCommand('lean4.stopServer', () => this.stopActiveClient())
         );
 
         workspace.onDidOpenTextDocument(document => this.didOpenEditor(document));
