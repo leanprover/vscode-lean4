@@ -67,7 +67,7 @@
 				"lean4.automaticallyBuildDependencies": {
 					"type": "boolean",
 					"default": false,
-					"markdownDescription": "Enable automatically building dependencies when opening a file."
+					"markdownDescription": "Enable automatically building dependencies when opening a file. This is the default for Lean 4 versions before 4.2.0."
 				},
 				"lean4.serverEnv": {
 					"type": "object",
