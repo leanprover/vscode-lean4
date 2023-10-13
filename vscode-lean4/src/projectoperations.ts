@@ -1,5 +1,5 @@
 import { Disposable, commands, window, OutputChannel, QuickPickItem, Uri } from 'vscode';
-import { LakeRunner, cacheNotFoundError, lakeInActiveFolder } from './utils/lake';
+import { LakeRunner, cacheNotFoundError, lake, lakeInActiveFolder } from './utils/lake';
 import { ExecutionExitCode, ExecutionResult, batchExecute, displayError } from './utils/batch';
 import { LeanClientProvider } from './utils/clientProvider';
 import { LeanClient } from './leanclient';
@@ -112,13 +112,14 @@ export class ProjectOperationProvider implements Disposable {
             return
         }
 
-        const [_1, folderUri, _2] = await findLeanPackageRoot(window.activeTextEditor.document.uri)
-        if (!folderUri) {
-            void window.showErrorMessage('Cannot determine active project from currently open file.')
+        const activeClient: LeanClient | undefined = this.clientProvider.getActiveClient()
+        if (!activeClient) {
+            void window.showErrorMessage('No active client.')
+            this.isRunningOperation = false
             return
         }
 
-        const manifestResult: Manifest | ManifestReadError = await parseManifestInFolder(folderUri)
+        const manifestResult: Manifest | ManifestReadError = await parseManifestInFolder(activeClient.folderUri)
         if (typeof manifestResult === 'string') {
             void window.showErrorMessage(manifestResult)
             return
@@ -155,7 +156,7 @@ export class ProjectOperationProvider implements Disposable {
             return
         }
 
-        const localToolchainPath: string = join(folderUri.fsPath, 'lean-toolchain')
+        const localToolchainPath: string = join(activeClient.folderUri.fsPath, 'lean-toolchain')
         const dependencyToolchainResult: string | 'DoNotUpdate' | 'Cancelled' = await this.determineDependencyToolchain(localToolchainPath, dependencyChoice)
         if (dependencyToolchainResult === 'Cancelled') {
             return
@@ -314,19 +315,14 @@ export class ProjectOperationProvider implements Disposable {
             return
         }
 
-        const lakeRunner: LakeRunner | 'NoActiveFolder' = await lakeInActiveFolder(this.channel)
-        if (lakeRunner === 'NoActiveFolder') {
-            void window.showErrorMessage('Cannot determine active project from currently open file.')
-            this.isRunningOperation = false
-            return
-        }
-
         const activeClient: LeanClient | undefined = this.clientProvider.getActiveClient()
         if (!activeClient) {
             void window.showErrorMessage('No active client.')
             this.isRunningOperation = false
             return
         }
+
+        const lakeRunner: LakeRunner = lake(this.channel, activeClient.folderUri)
 
         const result: 'Success' | 'IsRestarting' = await activeClient.withStoppedClient(() => command(lakeRunner))
         if (result === 'IsRestarting') {

@@ -1,6 +1,5 @@
-import { OutputChannel, Uri, window } from 'vscode';
+import { OutputChannel, Uri } from 'vscode';
 import { ExecutionExitCode, ExecutionResult, batchExecute, batchExecuteWithProgress } from './batch';
-import { findLeanPackageRoot } from './projectInfo';
 
 export const cacheNotFoundError = 'unknown executable `cache`'
 export const cacheNotFoundExitError = '=> Operation failed. Exit Code: 1.'
@@ -88,16 +87,4 @@ export class LakeRunner {
 
 export function lake(channel: OutputChannel, cwdUri: Uri | undefined, toolchain?: string | undefined): LakeRunner {
     return new LakeRunner(channel, cwdUri, toolchain)
-}
-
-export async function lakeInActiveFolder(channel: OutputChannel, toolchain?: string | undefined): Promise<LakeRunner | 'NoActiveFolder'> {
-    if (!window.activeTextEditor) {
-        return 'NoActiveFolder'
-    }
-    const [_1, folderUri, _2] = await findLeanPackageRoot(window.activeTextEditor.document.uri)
-    if (!folderUri) {
-        return 'NoActiveFolder'
-    }
-
-    return lake(channel, folderUri, toolchain)
 }
