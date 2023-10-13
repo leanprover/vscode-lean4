@@ -1,9 +1,8 @@
 import { Disposable, commands, window, OutputChannel, QuickPickItem, Uri } from 'vscode';
-import { LakeRunner, cacheNotFoundError, lake, lakeInActiveFolder } from './utils/lake';
+import { LakeRunner, cacheNotFoundError, lake } from './utils/lake';
 import { ExecutionExitCode, ExecutionResult, batchExecute, displayError } from './utils/batch';
 import { LeanClientProvider } from './utils/clientProvider';
 import { LeanClient } from './leanclient';
-import { findLeanPackageRoot } from './utils/projectInfo';
 import { join } from 'path';
 import * as fs from 'fs'
 import { DirectGitDependency, Manifest, ManifestReadError, parseAsManifest, parseManifestInFolder } from './utils/manifest';
