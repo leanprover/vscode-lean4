@@ -17,7 +17,7 @@ import {
 } from 'vscode-languageclient/node'
 import * as ls from 'vscode-languageserver-protocol'
 
-import { toolchainPath, lakePath, addServerEnvPaths, serverArgs, serverLoggingEnabled, serverLoggingPath, shouldAutofocusOutput, getElaborationDelay, lakeEnabled } from './config'
+import { toolchainPath, lakePath, addServerEnvPaths, serverArgs, serverLoggingEnabled, serverLoggingPath, shouldAutofocusOutput, getElaborationDelay, lakeEnabled, automaticallyBuildDependencies } from './config'
 import { assert } from './utils/assert'
 import { LeanFileProgressParams, LeanFileProgressProcessingInfo, ServerStoppedReason } from '@leanprover/infoview-api';
 import { ExecutionExitCode, ExecutionResult, batchExecute } from './utils/batch'
@@ -282,13 +282,14 @@ export class LeanClient implements Disposable {
     }
 
     notifyDidOpen(doc: TextDocument) {
-        void this.client?.sendNotification(DidOpenTextDocumentNotification.type, {
+        void this.client?.sendNotification('textDocument/didOpen', {
             textDocument: {
                 uri: doc.uri.toString(),
                 languageId: doc.languageId,
                 version: 1,
                 text: doc.getText(),
             },
+            dependencyBuildMode: automaticallyBuildDependencies() ? 'always' : 'never'
         });
     }
 
@@ -377,12 +378,13 @@ export class LeanClient implements Disposable {
             }
         })
         void this.client?.sendNotification('textDocument/didOpen', {
-            'textDocument': {
+            textDocument: {
                 uri,
-                'languageId': 'lean4',
-                'version': 1,
-                'text': doc.getText()
-            }
+                languageId: 'lean4',
+                version: 1,
+                text: doc.getText()
+            },
+            dependencyBuildMode: automaticallyBuildDependencies() ? 'always' : 'once'
         })
         this.restartedWorkerEmitter.fire(uri)
     }

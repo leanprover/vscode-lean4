@@ -2,7 +2,7 @@
 	"name": "lean4",
 	"displayName": "lean4",
 	"description": "Lean 4 language support for VS Code",
-	"version": "0.0.111",
+	"version": "0.0.112",
 	"publisher": "leanprover",
 	"engines": {
 		"vscode": "^1.75.0"
@@ -63,6 +63,11 @@
 					"type": "boolean",
 					"default": true,
 					"markdownDescription": "Enable eager replacement of abbreviations that uniquely identify a symbol."
+				},
+				"lean4.automaticallyBuildDependencies": {
+					"type": "boolean",
+					"default": false,
+					"markdownDescription": "Enable automatically building dependencies when opening a file. In Lean versions pre-4.2.0, dependencies are always built automatically regardless of this setting."
 				},
 				"lean4.serverEnv": {
 					"type": "object",
