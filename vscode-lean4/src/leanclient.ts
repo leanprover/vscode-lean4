@@ -3,9 +3,9 @@ import { TextDocument, EventEmitter, Diagnostic,
     Disposable, Uri, ConfigurationChangeEvent, OutputChannel, DiagnosticCollection,
     WorkspaceFolder, window, ProgressLocation, ProgressOptions, Progress } from 'vscode'
 import {
+    DiagnosticSeverity,
     DidChangeTextDocumentParams,
     DidCloseTextDocumentParams,
-    DidOpenTextDocumentNotification,
     DocumentFilter,
     InitializeResult,
     LanguageClient,
@@ -30,8 +30,8 @@ import { logger } from './utils/logger'
 import { SemVer } from 'semver';
 import { fileExists, isFileInFolder } from './utils/fsHelper';
 import { c2pConverter, p2cConverter, patchConverters } from './utils/converters'
-import { Server } from 'http'
 import { displayErrorWithOutput } from './utils/errors'
+import path = require('path')
 
 const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
@@ -101,6 +101,39 @@ export class LeanClient implements Disposable {
         this.elanDefaultToolchain = elanDefaultToolchain;
         if (!this.toolchainPath) this.toolchainPath = toolchainPath();
         this.subscriptions.push(workspace.onDidChangeConfiguration((e) => this.configChanged(e)));
+
+        this.subscriptions.push(this.diagnostics(params => this.checkForImportsOutdatedError(params)))
+    }
+
+    private async checkForImportsOutdatedError(params: PublishDiagnosticsParams) {
+        const fileUri = Uri.parse(params.uri)
+        const fileName = path.basename(fileUri.fsPath)
+        const isImportsOutdatedError = params.diagnostics.some(d =>
+            d.severity === DiagnosticSeverity.Error
+                && d.message.includes('Imports are out of date and must be rebuilt')
+                && d.range.start.line === 0
+                && d.range.start.character === 0
+                && d.range.end.line === 0
+                && d.range.end.character === 0)
+        if (!isImportsOutdatedError) {
+            return
+        }
+
+        const message = `Imports of '${fileName}' are out of date and must be rebuilt.`
+        const input = 'Rebuild Imports'
+        const choice = await window.showInformationMessage(message, input)
+        if (choice !== input) {
+            return
+        }
+
+        const fileUriString = fileUri.toString()
+        const document = workspace.textDocuments.find(doc => doc.uri.toString() === fileUriString)
+        if (!document || document.isClosed) {
+            void window.showErrorMessage(`'${fileName}' was closed in the meantime. Imports will not be rebuilt.`)
+            return
+        }
+
+        await this.restartFile(document)
     }
 
     dispose(): void {
