@@ -540,124 +540,124 @@
 			"editor/title": [
 				{
 					"submenu": "lean4.titlebar",
-					"when": "config.lean4.alwaysShowTitleBarMenu || editorLangId == lean4",
+					"when": "config.lean4.alwaysShowTitleBarMenu || lean4.isLeanFeatureSetActive",
 					"group": "navigation@0"
 				}
 			],
 			"lean4.titlebar": [
 				{
 					"submenu": "lean4.titlebar.newProject",
-					"when": "config.lean4.alwaysShowTitleBarMenu || editorLangId == lean4",
+					"when": "config.lean4.alwaysShowTitleBarMenu || lean4.isLeanFeatureSetActive",
 					"group": "1_setup@1"
 				},
 				{
 					"submenu": "lean4.titlebar.openProject",
-					"when": "config.lean4.alwaysShowTitleBarMenu || editorLangId == lean4",
+					"when": "config.lean4.alwaysShowTitleBarMenu || lean4.isLeanFeatureSetActive",
 					"group": "1_setup@1"
 				},
 				{
 					"command": "lean4.restartFile",
-					"when": "editorLangId == lean4",
+					"when": "lean4.isLeanFeatureSetActive",
 					"group": "2_server@1"
 				},
 				{
 					"command": "lean4.restartServer",
-					"when": "editorLangId == lean4",
+					"when": "lean4.isLeanFeatureSetActive",
 					"group": "2_server@2"
 				},
 				{
 					"command": "lean4.toggleInfoview",
-					"when": "editorLangId == lean4",
+					"when": "lean4.isLeanFeatureSetActive",
 					"group": "3_infoview@1"
 				},
 				{
 					"command": "lean4.troubleshooting.showOutput",
-					"when": "config.lean4.alwaysShowTitleBarMenu || editorLangId == lean4",
+					"when": "config.lean4.alwaysShowTitleBarMenu || lean4.isLeanFeatureSetActive",
 					"group": "4_troubleshooting"
 				},
 				{
 					"submenu": "lean4.titlebar.versions",
-					"when": "config.lean4.alwaysShowTitleBarMenu || editorLangId == lean4",
+					"when": "config.lean4.alwaysShowTitleBarMenu || lean4.isLeanFeatureSetActive",
 					"group": "5_versions"
 				},
 				{
 					"submenu": "lean4.titlebar.projectActions",
-					"when": "editorLangId == lean4",
+					"when": "config.lean4.alwaysShowTitleBarMenu || lean4.isLeanFeatureSetActive",
 					"group": "6_projectActions@1"
 				},
 				{
 					"submenu": "lean4.titlebar.documentation",
-					"when": "config.lean4.alwaysShowTitleBarMenu || editorLangId == lean4",
+					"when": "config.lean4.alwaysShowTitleBarMenu || lean4.isLeanFeatureSetActive",
 					"group": "7_documentation@1"
 				}
 			],
 			"lean4.titlebar.newProject": [
 				{
 					"command": "lean4.project.createStandaloneProject",
-					"when": "config.lean4.alwaysShowTitleBarMenu || editorLangId == lean4",
+					"when": "config.lean4.alwaysShowTitleBarMenu || lean4.isLeanFeatureSetActive",
 					"group": "1_newProject@1"
 				},
 				{
 					"command": "lean4.project.createMathlibProject",
-					"when": "config.lean4.alwaysShowTitleBarMenu || editorLangId == lean4",
+					"when": "config.lean4.alwaysShowTitleBarMenu || lean4.isLeanFeatureSetActive",
 					"group": "1_newProject@2"
 				}
 			],
 			"lean4.titlebar.openProject": [
 				{
 					"command": "lean4.project.open",
-					"when": "config.lean4.alwaysShowTitleBarMenu || editorLangId == lean4",
+					"when": "config.lean4.alwaysShowTitleBarMenu || lean4.isLeanFeatureSetActive",
 					"group": "1_openProject@1"
 				},
 				{
 					"command": "lean4.project.clone",
-					"when": "config.lean4.alwaysShowTitleBarMenu || editorLangId == lean4",
+					"when": "config.lean4.alwaysShowTitleBarMenu || lean4.isLeanFeatureSetActive",
 					"group": "1_openProject@2"
 				}
 			],
 			"lean4.titlebar.versions": [
 				{
 					"command": "lean4.setup.installElan",
-					"when": "config.lean4.alwaysShowTitleBarMenu || editorLangId == lean4",
+					"when": "config.lean4.alwaysShowTitleBarMenu || lean4.isLeanFeatureSetActive",
 					"group": "1_setup@1"
 				}
 			],
 			"lean4.titlebar.projectActions": [
 				{
 					"command": "lean4.project.build",
-					"when": "editorLangId == lean4",
+					"when": "lean4.isLeanFeatureSetActive",
 					"group": "1_projectActions@1"
 				},
 				{
 					"command": "lean4.project.clean",
-					"when": "editorLangId == lean4",
+					"when": "lean4.isLeanFeatureSetActive",
 					"group": "1_projectActions@2"
 				},
 				{
 					"command": "lean4.project.updateDependency",
-					"when": "editorLangId == lean4",
+					"when": "lean4.isLeanFeatureSetActive",
 					"group": "1_projectActions@3"
 				},
 				{
 					"command": "lean4.project.fetchCache",
-					"when": "editorLangId == lean4",
+					"when": "lean4.isLeanFeatureSetActive",
 					"group": "2_mathlibActions@1"
 				}
 			],
 			"lean4.titlebar.documentation": [
 				{
 					"command": "lean4.setup.showSetupGuide",
-					"when": "config.lean4.alwaysShowTitleBarMenu || editorLangId == lean4",
+					"when": "config.lean4.alwaysShowTitleBarMenu || lean4.isLeanFeatureSetActive",
 					"group": "1_installation@1"
 				},
 				{
 					"command": "lean4.docView.open",
-					"when": "config.lean4.alwaysShowTitleBarMenu || editorLangId == lean4",
+					"when": "config.lean4.alwaysShowTitleBarMenu || lean4.isLeanFeatureSetActive",
 					"group": "2_docview@1"
 				},
 				{
 					"command": "lean4.docView.showAllAbbreviations",
-					"when": "config.lean4.alwaysShowTitleBarMenu || editorLangId == lean4",
+					"when": "config.lean4.alwaysShowTitleBarMenu || lean4.isLeanFeatureSetActive",
 					"group": "2_docview@2"
 				}
 			],

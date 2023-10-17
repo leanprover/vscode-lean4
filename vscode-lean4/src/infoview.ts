@@ -281,7 +281,7 @@ export class InfoProvider implements Disposable {
                 await this.sendPosition();
             }),
             commands.registerTextEditorCommand('lean4.displayGoal', (editor) => this.openPreview(editor)),
-            commands.registerTextEditorCommand('lean4.toggleInfoview', (editor) => this.toggleInfoview(editor)),
+            commands.registerCommand('lean4.toggleInfoview', () => this.toggleInfoview()),
             commands.registerTextEditorCommand('lean4.displayList', async (editor) => {
                 await this.openPreview(editor);
                 await this.webviewPanel?.api.requestedAction({kind: 'toggleAllMessages'});
@@ -491,12 +491,14 @@ export class InfoProvider implements Disposable {
         this.rpcSessions = remaining
     }
 
-    private async toggleInfoview(editor: TextEditor) {
+    private async toggleInfoview() {
         if (this.webviewPanel) {
             this.webviewPanel.dispose();
             // the onDispose handler sets this.webviewPanel = undefined
+        } else if (window.activeTextEditor && window.activeTextEditor.document.languageId === 'lean4') {
+            await this.openPreview(window.activeTextEditor);
         } else {
-            return this.openPreview(editor);
+            void window.showErrorMessage('No active Lean editor tab. Make sure to focus the Lean editor tab for which you want to open the infoview.')
         }
     }
 

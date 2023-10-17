@@ -215,7 +215,7 @@ export class ProjectOperationProvider implements Disposable {
     private async determineDependencyToolchain(localToolchainPath: string, dependency: DirectGitDependency): Promise<string | 'DoNotUpdate' | 'Cancelled'> {
         const dependencyToolchainUri: Uri | undefined = this.determineDependencyToolchainUri(dependency.uri, dependency.inputRevision)
         if (!dependencyToolchainUri) {
-            const message = `Could not determine Lean version of ${dependency.name} at ${dependency.uri}, as doing so is currently only supported for GitHub projects. Do you want to update ${dependency.name} without updating the local Lean version to that of ${dependency.name} regardless?`
+            const message = `Could not determine Lean version of ${dependency.name} at ${dependency.uri}, as doing so is currently only supported for GitHub projects. Do you want to update ${dependency.name} without updating the Lean version of the open project to that of ${dependency.name} regardless?`
             const input = 'Proceed'
             const choice: string | undefined = await window.showInformationMessage(message, { modal: true}, input)
             return choice === 'input' ? 'DoNotUpdate' : 'Cancelled'
@@ -224,9 +224,9 @@ export class ProjectOperationProvider implements Disposable {
         const toolchainResult = await this.fetchToolchains(localToolchainPath, dependencyToolchainUri)
         if (!(toolchainResult instanceof Array)) {
             const errorFlavor = toolchainResult === 'CannotReadLocalToolchain'
-                ? `Could not read local Lean version at '${localToolchainPath}'`
+                ? `Could not read Lean version of open project at '${localToolchainPath}'`
                 : `Could not fetch Lean version of ${dependency.name} at ${dependency.uri}`
-            const message = `${errorFlavor}. Do you want to update ${dependency.name} without updating the local Lean version to that of ${dependency.name} regardless?`
+            const message = `${errorFlavor}. Do you want to update ${dependency.name} without updating the Lean version of the open project to that of ${dependency.name} regardless?`
             const input = 'Proceed'
             const choice: string | undefined = await window.showInformationMessage(message, { modal: true}, input)
             return choice === 'input' ? 'DoNotUpdate' : 'Cancelled'
@@ -237,9 +237,9 @@ export class ProjectOperationProvider implements Disposable {
             return 'DoNotUpdate'
         }
 
-        const message = `'${localToolchain}' (local Lean version) differs from '${dependencyToolchain}' (${dependency.name} Lean version). Do you want to update the local Lean version to the Lean version of ${dependency.name}?`
-        const input1 = 'Update Local Version'
-        const input2 = 'Keep Local Version'
+        const message = `The Lean version '${localToolchain}' of the open project differs from the Lean version '${dependencyToolchain}' of ${dependency.name}. Do you want to update the Lean version of the open project to the Lean version of ${dependency.name}?`
+        const input1 = 'Update Lean Version'
+        const input2 = 'Keep Lean Version'
         const choice = await window.showInformationMessage(message, { modal: true }, input1, input2)
         if (choice === undefined) {
             return 'Cancelled'

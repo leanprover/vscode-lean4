@@ -136,9 +136,17 @@ export class LeanClientProvider implements Disposable {
     }
 
     private restartFile() {
-        if (window.activeTextEditor && this.activeClient && window.activeTextEditor.document.languageId ==='lean4') {
-            void this.activeClient.restartFile(window.activeTextEditor.document);
+        if (!this.activeClient || !this.activeClient.isRunning()) {
+            void window.showErrorMessage('No active client.')
+            return
         }
+
+        if (!window.activeTextEditor || window.activeTextEditor.document.languageId !== 'lean4') {
+            void window.showErrorMessage('No active Lean editor tab. Make sure to focus the Lean editor tab for which you want to issue a restart.')
+            return
+        }
+
+        void this.activeClient.restartFile(window.activeTextEditor.document);
     }
 
     private stopActiveClient() {
