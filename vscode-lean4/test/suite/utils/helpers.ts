@@ -49,6 +49,7 @@ export async function initLean4(fileName: string) : Promise<vscode.Extension<Exp
 
     logger.log(`Found lean package version: ${lean.packageJSON.version}`);
     await waitForActiveEditor(basename(fileName));
+    assertAndLog(await waitForActiveInfoProvider(lean.exports), 'Info view provider did not load after 60 seconds');
     const info = lean.exports.infoProvider;
 	assertAndLog(info, 'No InfoProvider export');
     assertAndLog(await waitForInfoViewOpen(info, 60),
@@ -200,6 +201,23 @@ export async function waitForActiveEditor(filename='', retries=60, delay=1000) :
     }
 
     return editor;
+}
+
+export async function waitForActiveInfoProvider(exports: Exports, retries=60, delay=1000) : Promise<boolean> {
+    logger.log('Waiting for info view provider to be loaded...');
+
+    let count = 0;
+    while (!exports.infoProvider) {
+        count += 1;
+        if (count >= retries){
+            logger.log('Info view provider did not load.')
+            return false;
+        }
+        await sleep(delay);
+    }
+
+    logger.log('Info view provider loaded.')
+    return true
 }
 
 export async function waitForInfoViewOpen(infoView: InfoProvider, retries=60, delay=1000) : Promise<boolean> {
