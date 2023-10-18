@@ -56,11 +56,12 @@ export class DocViewProvider implements Disposable {
     constructor(extensionUri: Uri) {
         this.extensionUri = extensionUri;
         this.subscriptions.push(
-            commands.registerCommand('lean4.docView.open', (url: string) => this.open(url)),
+            commands.registerCommand('lean4.docView.open', () => this.open()),
+            commands.registerCommand('lean4.docView.openUrl', (url: string) => this.open(url)),
             commands.registerCommand('lean4.docView.back', () => this.back()),
             commands.registerCommand('lean4.docView.forward', () => this.forward()),
-            commands.registerCommand('lean4.openTryIt', (code: string) => this.tryIt(code)),
-            commands.registerCommand('lean4.openExample', (file: string) => this.example(file)),
+            commands.registerCommand('lean4.docView.openTryIt', (code: string) => this.tryIt(code)),
+            commands.registerCommand('lean4.docView.openExample', (file: string) => this.example(file)),
             commands.registerCommand('lean4.docView.showAllAbbreviations', () => this.showAbbreviations())
         );
         this.subscriptions.push(workspace.onDidCloseTextDocument(doc => {
@@ -224,17 +225,17 @@ export class DocViewProvider implements Disposable {
             }
 
             const books : any = {
-                'Theorem Proving in Lean': mkCommandUri('lean4.docView.open', 'https://lean-lang.org/theorem_proving_in_lean4/introduction.html'),
-                'Functional Programming in Lean': mkCommandUri('lean4.docView.open', 'https://lean-lang.org/functional_programming_in_lean/'),
-                'Mathematics in Lean': mkCommandUri('lean4.docView.open', 'https://leanprover-community.github.io/mathematics_in_lean/'),
-                'The Mechanics of Proof': mkCommandUri('lean4.docView.open', 'https://hrmacbeth.github.io/math2001/'),
-                'Reference Manual': mkCommandUri('lean4.docView.open', 'https://lean-lang.org/lean4/doc/'),
+                'Theorem Proving in Lean': mkCommandUri('lean4.docView.openUrl', 'https://lean-lang.org/theorem_proving_in_lean4/introduction.html'),
+                'Functional Programming in Lean': mkCommandUri('lean4.docView.openUrl', 'https://lean-lang.org/functional_programming_in_lean/'),
+                'Mathematics in Lean': mkCommandUri('lean4.docView.openUrl', 'https://leanprover-community.github.io/mathematics_in_lean/'),
+                'The Mechanics of Proof': mkCommandUri('lean4.docView.openUrl', 'https://hrmacbeth.github.io/math2001/'),
+                'Reference Manual': mkCommandUri('lean4.docView.openUrl', 'https://lean-lang.org/lean4/doc/'),
                 'Abbreviations Cheatsheet': mkCommandUri('lean4.docView.showAllAbbreviations'),
-                'Example': mkCommandUri('lean4.openExample', 'https://github.com/leanprover/lean4-samples/raw/main/HelloWorld/Main.lean'),
+                'Example': mkCommandUri('lean4.docView.openExample', 'https://github.com/leanprover/lean4-samples/raw/main/HelloWorld/Main.lean'),
 
                 // These are handy for testing that the bad file logic is working.
-                //'Test bad file': mkCommandUri('lean4.docView.open', Uri.joinPath(this.extensionUri, 'media', 'webview.js')),
-                //'Test bad Uri': mkCommandUri('lean4.docView.open', 'https://leanprover.github.io/lean4/doc/images/code-success.png'),
+                //'Test bad file': mkCommandUri('lean4.docView.openUrl', Uri.joinPath(this.extensionUri, 'media', 'webview.js')),
+                //'Test bad Uri': mkCommandUri('lean4.docView.openUrl', 'https://leanprover.github.io/lean4/doc/images/code-success.png'),
             };
 
             for (const book of Object.getOwnPropertyNames(books)) {
@@ -319,17 +320,17 @@ var side_bar = false; // collapse the side bar menu by default.
                 // here when the html is round tripped through the cheerio parser.
             } else if (link.attribs.tryitfile) {
                 link.attribs.title = link.attribs.title || 'Open code block (in existing file)';
-                link.attribs.href = mkCommandUri('lean4.openExample', new URL(link.attribs.tryitfile as string, url).toString());
+                link.attribs.href = mkCommandUri('lean4.docView.openExample', new URL(link.attribs.tryitfile as string, url).toString());
             } else if (tryItMatch) {
                 const code = decodeURIComponent(tryItMatch[1] as string);
                 link.attribs.title = link.attribs.title || 'Open code block in new editor';
-                link.attribs.href = mkCommandUri('lean4.openTryIt', code);
+                link.attribs.href = mkCommandUri('lean4.docView.openTryIt', code);
             } else if (!link.attribs.href.startsWith('command:')) {
                 const hrefUrl = new URL(link.attribs.href as string, url);
                 const isExternal = !url || new URL(url).origin !== hrefUrl.origin;
                 if (!isExternal || hrefUrl.protocol === 'file:') {
                     link.attribs.title = link.attribs.title || link.attribs.href;
-                    link.attribs.href = mkCommandUri('lean4.docView.open', hrefUrl.toString());
+                    link.attribs.href = mkCommandUri('lean4.docView.openUrl', hrefUrl.toString());
                 }
             }
         }
@@ -380,7 +381,7 @@ var side_bar = false; // collapse the side bar menu by default.
     }
 
     /** Called by the user clicking a link. */
-    async open(url?: string): Promise<void> {
+    async open(url?: string | undefined): Promise<void> {
         if (this.currentURL) {
             this.backStack.push(this.currentURL);
             this.forwardStack = [];

@@ -24,7 +24,6 @@ export class LeanpkgService implements Disposable {
     lakeFileChanged = this.lakeFileChangedEmitter.event
 
     constructor() {
-
         // track changes in the version of lean specified in the lean-toolchain file
         // or the leanpkg.toml.  While this is looking for all files with these names
         // it ignores files that are not in the package root.
@@ -41,6 +40,11 @@ export class LeanpkgService implements Disposable {
             watcher2.onDidDelete((u) => this.handleLakeFileChanged(u, true));
             this.subscriptions.push(watcher);
         });
+
+        window.visibleTextEditors.forEach(e => this.didOpen(e.document.uri));
+        this.subscriptions.push(window.onDidChangeVisibleTextEditors(es =>
+            es.forEach(e => this.didOpen(e.document.uri))));
+        workspace.onDidOpenTextDocument(document => this.didOpen(document.uri));
     }
 
     dispose(): void {
@@ -49,7 +53,7 @@ export class LeanpkgService implements Disposable {
 
     // Must be called when every file is opened so it can track the current contents
     // of the files we care about.
-    didOpen(uri: Uri){
+    private didOpen(uri: Uri){
         const fileName = path.basename(uri.fsPath);
         if (fileName === this.lakeFileName){
             void this.handleLakeFileChanged(uri, false);
@@ -66,51 +70,61 @@ export class LeanpkgService implements Disposable {
         // Note: just opening the file fires this event sometimes which is annoying, so
         // we compare the contents just to be sure and normalize whitespace so that
         // just adding a new line doesn't trigger the prompt.
-        const [workspaceFolder, packageUri, packageFileUri] = await findLeanPackageRoot(uri);
-        if (packageUri) {
-            const fileUri = await this.findLakeFile(packageUri);
-            if (fileUri) {
-                const contents = await this.readWhitespaceNormalized(fileUri);
-                let existing : string | undefined;
-                const key = packageUri.toString();
-                if (this.normalizedLakeFileContents.get(key)){
-                    existing = this.normalizedLakeFileContents.get(key);
-                }
-                if (contents !== existing) {
-                    this.normalizedLakeFileContents.set(key, contents);
-                    if (raiseEvent) {
-                        // raise an event so the extension triggers handleLakeFileChanged.
-                        this.lakeFileChangedEmitter.fire(packageUri);
-                    }
-                }
-            }
+        const [_1, packageUri, _2] = await findLeanPackageRoot(uri)
+        if (!packageUri) {
+            return
+        }
+
+        const fileUri = await this.findLakeFile(packageUri)
+        if (!fileUri) {
+            return
+        }
+
+        const contents = await this.readWhitespaceNormalized(fileUri)
+        let existing : string | undefined
+        const key = packageUri.toString()
+        if (this.normalizedLakeFileContents.get(key)) {
+            existing = this.normalizedLakeFileContents.get(key)
+        }
+        if (contents === existing) {
+            return
+        }
+
+        this.normalizedLakeFileContents.set(key, contents)
+        if (raiseEvent) {
+            // raise an event so the extension triggers handleLakeFileChanged.
+            this.lakeFileChangedEmitter.fire(packageUri)
         }
     }
 
     private async handleFileChanged(uri: Uri, raiseEvent : boolean) {
         // note: apply the same rules here with findLeanPkgVersionInfo no matter
         // if a file is added or removed so we always match the elan behavior.
-        const [packageUri, version] = await findLeanPackageVersionInfo(uri);
-        if (packageUri && version) {
-            let existing : string | undefined;
-            const key = packageUri.toString();
-            if (this.currentVersion.has(key)){
-                existing = this.currentVersion.get(key);
-            }
-            if (existing !== version){
-                this.currentVersion.set(key, version);
-                if (raiseEvent) {
-                    // raise an event so the extension triggers handleVersionChanged.
-                    this.versionChangedEmitter.fire(packageUri);
-                }
-            }
+        const [packageUri, version] = await findLeanPackageVersionInfo(uri)
+        if (!packageUri || !version) {
+            return
+        }
+
+        let existing: string | undefined
+        const key = packageUri.toString()
+        if (this.currentVersion.has(key)){
+            existing = this.currentVersion.get(key)
+        }
+        if (existing === version) {
+            return
+        }
+
+        this.currentVersion.set(key, version)
+        if (raiseEvent) {
+            // raise an event so the extension triggers handleVersionChanged.
+            this.versionChangedEmitter.fire(packageUri)
         }
     }
 
     private async findLakeFile(packageUri: Uri) : Promise<Uri | null> {
         const fullPath = Uri.joinPath(packageUri, this.lakeFileName);
         const url = fullPath.fsPath;
-        if(await fileExists(url)) {
+        if (await fileExists(url)) {
             return fullPath;
         }
         return null;
