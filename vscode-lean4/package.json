@@ -874,6 +874,7 @@
 		"watch": "webpack --env development --watch",
 		"watchTest": "concurrently \"tsc -p . -w --outDir out\" \"npm run watch\"",
 		"package": "vsce package",
+		"packagePreRelease": "vsce package --pre-release",
 		"pretest": "tsc -p . --outDir out",
 		"test": "node ./out/test/suite/runTest.js"
 	},
