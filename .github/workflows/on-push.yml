@@ -85,6 +85,7 @@ jobs:
         with:
           files: 'vscode-lean4/lean4-*.vsix'
           fail_on_unmatched_files: true
+          prerelease: ${{ endsWith(github.ref, '-pre') }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
