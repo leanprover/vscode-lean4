@@ -712,7 +712,13 @@
 			"[lean4]": {
 				"editor.unicodeHighlight.ambiguousCharacters": false,
 				"editor.tabSize": 2,
-				"editor.wordSeparators": "`~@$%^&*()-=+[{]}⟨⟩⦃⦄⟦⟧⟮⟯‹›\\|;:\",.<>/"
+				"editor.insertSpaces": true,
+				"editor.wordSeparators": "`~@$%^&*()-=+[{]}⟨⟩⦃⦄⟦⟧⟮⟯‹›\\|;:\",.<>/",
+				"files.encoding": "utf8",
+				"files.eol": "\n",
+				"files.insertFinalNewline": true,
+				"files.trimFinalNewlines": true,
+				"files.trimTrailingWhitespace": true
 			}
 		},
 		"walkthroughs": [
