@@ -38,17 +38,17 @@ export async function initLean4(fileName: string) : Promise<vscode.Extension<Exp
     await closeAllEditors();
     const options : vscode.TextDocumentShowOptions = { preview: false };
 
-    const doc = await vscode.workspace.openTextDocument(fileName);
-    await vscode.window.showTextDocument(doc, options);
-
     const lean = await waitForActiveExtension('leanprover.lean4', 60);
-
     assertAndLog(lean, 'Lean extension not loaded');
     assertAndLog(lean.exports.isLean4Project, 'Lean extension is not a lean4 project');
     assertAndLog(lean.isActive, 'Lean extension is not active');
-
     logger.log(`Found lean package version: ${lean.packageJSON.version}`);
+
+    const doc = await vscode.workspace.openTextDocument(fileName);
+    await vscode.window.showTextDocument(doc, options);
+
     await waitForActiveEditor(basename(fileName));
+    assertAndLog(await waitForActiveInfoProvider(lean.exports), 'Info view provider did not load after 60 seconds');
     const info = lean.exports.infoProvider;
 	assertAndLog(info, 'No InfoProvider export');
     assertAndLog(await waitForInfoViewOpen(info, 60),
@@ -200,6 +200,23 @@ export async function waitForActiveEditor(filename='', retries=60, delay=1000) :
     }
 
     return editor;
+}
+
+export async function waitForActiveInfoProvider(exports: Exports, retries=60, delay=1000) : Promise<boolean> {
+    logger.log('Waiting for info view provider to be loaded...');
+
+    let count = 0;
+    while (!exports.infoProvider) {
+        count += 1;
+        if (count >= retries){
+            logger.log('Info view provider did not load.')
+            return false;
+        }
+        await sleep(delay);
+    }
+
+    logger.log('Info view provider loaded.')
+    return true
 }
 
 export async function waitForInfoViewOpen(infoView: InfoProvider, retries=60, delay=1000) : Promise<boolean> {
@@ -374,7 +391,7 @@ export async function restartLeanServer(client: LeanClient, retries=60, delay=10
     client.restarted(() => { stateChanges.push('restarted'); });
     client.serverFailed(() => { stateChanges.push('failed'); });
 
-    await vscode.commands.executeCommand('lean4.restartServer');
+    await vscode.commands.executeCommand('lean4.restartServer', false);
 
     while (count < retries){
         const index = stateChanges.indexOf('restarted');

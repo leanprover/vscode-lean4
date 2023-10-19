@@ -113,6 +113,16 @@ suite('Lean Server Restart Test Suite', () => {
 
 			const info = lean.exports.infoProvider;
 			assert(info, 'No InfoProvider export');
+
+			const activeEditor = vscode.window.activeTextEditor
+			assert(activeEditor, 'No active text editor')
+			const evalLine = '#eval main'
+			const startOffset = activeEditor.document.getText().indexOf(evalLine)
+			assert(startOffset !== -1, 'Cannot find #eval in Main.lean')
+			const endOffset = startOffset + evalLine.length
+			const endPos = activeEditor.document.positionAt(endOffset)
+			activeEditor.selection = new vscode.Selection(endPos, endPos)
+
 			const expectedVersion = 'Hello:';
 			const html = await waitForInfoviewHtml(info, expectedVersion);
 			const versionString = extractPhrase(html, 'Hello:', '<').trim();
