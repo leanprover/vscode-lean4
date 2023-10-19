@@ -38,16 +38,15 @@ export async function initLean4(fileName: string) : Promise<vscode.Extension<Exp
     await closeAllEditors();
     const options : vscode.TextDocumentShowOptions = { preview: false };
 
-    const doc = await vscode.workspace.openTextDocument(fileName);
-    await vscode.window.showTextDocument(doc, options);
-
     const lean = await waitForActiveExtension('leanprover.lean4', 60);
-
     assertAndLog(lean, 'Lean extension not loaded');
     assertAndLog(lean.exports.isLean4Project, 'Lean extension is not a lean4 project');
     assertAndLog(lean.isActive, 'Lean extension is not active');
-
     logger.log(`Found lean package version: ${lean.packageJSON.version}`);
+
+    const doc = await vscode.workspace.openTextDocument(fileName);
+    await vscode.window.showTextDocument(doc, options);
+
     await waitForActiveEditor(basename(fileName));
     assertAndLog(await waitForActiveInfoProvider(lean.exports), 'Info view provider did not load after 60 seconds');
     const info = lean.exports.infoProvider;
