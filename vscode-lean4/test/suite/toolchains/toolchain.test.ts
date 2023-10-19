@@ -13,6 +13,7 @@ suite('Toolchain Test Suite', () => {
 	test('Edit lean-toolchain version', async () => {
 
 		logger.log('=================== Edit lean-toolchain version ===================');
+		void vscode.window.showInformationMessage('Running tests: ' + __dirname);
 
         const testsRoot = path.join(__dirname, '..', '..', '..', '..', 'test', 'test-fixtures', 'simple');
 
