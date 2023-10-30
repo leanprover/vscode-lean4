@@ -48,7 +48,7 @@ export class LeanClientProvider implements Disposable {
         this.subscriptions.push(
             commands.registerCommand('lean4.restartFile', () => this.restartFile()),
             commands.registerCommand('lean4.refreshFileDependencies', () => this.restartFile()),
-            commands.registerCommand('lean4.restartServer', showDialog => this.restartActiveClient(showDialog ?? true)),
+            commands.registerCommand('lean4.restartServer', () => this.restartActiveClient()),
             commands.registerCommand('lean4.stopServer', () => this.stopActiveClient())
         );
 
@@ -155,19 +155,8 @@ export class LeanClientProvider implements Disposable {
         }
     }
 
-    private async restartActiveClient(showDialog: boolean = true) {
-        if (!showDialog) {
-            void this.activeClient?.restart();
-            return
-        }
-
-        const result: string | undefined = await window.showInformationMessage(
-            'Restart Lean 4 server to re-elaborate all open files?',
-            { modal: true },
-            'Restart server')
-        if (result === 'Restart server') {
-            void this.activeClient?.restart();
-        }
+    private async restartActiveClient() {
+        void this.activeClient?.restart();
     }
 
     clientIsStarted() {
