@@ -2,8 +2,8 @@
 If you want to create a new project, click on one of the following:
 - [Create a new standalone project](command:lean4.project.createStandaloneProject)  
   Standalone projects do not depend on any other Lean 4 projects. Dependencies can be added by modifying 'lakefile.lean' in the newly created project as described [here](https://github.com/leanprover/lean4/blob/master/src/lake/README.md#adding-dependencies).
-- [Create a new mathlib project](command:lean4.project.createMathlibProject)  
-  Mathlib projects depend on [mathlib](https://github.com/leanprover-community/mathlib4), the math library of Lean 4.
+- [Create a new project using Mathlib](command:lean4.project.createMathlibProject)  
+  The created project will depend on [Mathlib](https://github.com/leanprover-community/mathlib4), the math library of Lean 4.
 
 If you want to open an existing project, click on one of the following:
 - [Download an existing project](command:lean4.project.clone)

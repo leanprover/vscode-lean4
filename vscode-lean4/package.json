@@ -324,7 +324,7 @@
 			{
 				"command": "lean4.project.createMathlibProject",
 				"category": "Lean 4",
-				"title": "Project: Create Mathlib Project…",
+				"title": "Project: Create Project Using Mathlib…",
 				"description": "Create a new Lean math formalization project using Mathlib"
 			},
 			{
