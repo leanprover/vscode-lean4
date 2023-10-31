@@ -421,74 +421,74 @@
 				"command": "lean4.restartFile",
 				"key": "ctrl+shift+x",
 				"mac": "cmd+shift+x",
-				"when": "editorTextFocus && editorLangId == lean4"
+				"when": "lean4.isLeanFeatureSetActive"
 			},
 			{
 				"command": "lean4.toggleInfoview",
 				"key": "ctrl+shift+enter",
 				"mac": "cmd+shift+enter",
-				"when": "editorTextFocus && editorLangId == lean4"
+				"when": "lean4.isLeanFeatureSetActive"
 			},
 			{
 				"command": "lean4.displayList",
 				"key": "ctrl+shift+alt+enter",
 				"mac": "cmd+shift+alt+enter",
-				"when": "editorTextFocus && editorLangId == lean4"
+				"when": "lean4.isLeanFeatureSetActive"
 			}
 		],
 		"menus": {
 			"commandPalette": [
 				{
 					"command": "lean4.restartServer",
-					"when": "editorLangId == lean4"
+					"when": "lean4.isLeanFeatureSetActive"
 				},
 				{
 					"command": "lean4.stopServer",
-					"when": "editorLangId == lean4"
+					"when": "lean4.isLeanFeatureSetActive"
 				},
 				{
 					"command": "lean4.restartFile",
-					"when": "editorLangId == lean4"
+					"when": "lean4.isLeanFeatureSetActive"
 				},
 				{
 					"command": "lean4.refreshFileDependencies",
-					"when": "editorLangId == lean4"
+					"when": "lean4.isLeanFeatureSetActive"
 				},
 				{
 					"command": "lean4.input.convert",
-					"when": "editorLangId == lean4 && lean4.input.isActive"
+					"when": "lean4.isLeanFeatureSetActive && lean4.input.isActive"
 				},
 				{
 					"command": "lean4.displayGoal",
-					"when": "editorLangId == lean4"
+					"when": "lean4.isLeanFeatureSetActive"
 				},
 				{
 					"command": "lean4.toggleInfoview",
-					"when": "editorLangId == lean4"
+					"when": "lean4.isLeanFeatureSetActive"
 				},
 				{
 					"command": "lean4.displayList",
-					"when": "editorLangId == lean4"
+					"when": "lean4.isLeanFeatureSetActive"
 				},
 				{
 					"command": "lean4.infoView.copyToComment",
-					"when": "editorLangId == lean4"
+					"when": "lean4.isLeanFeatureSetActive"
 				},
 				{
 					"command": "lean4.infoView.toggleStickyPosition",
-					"when": "editorLangId == lean4"
+					"when": "lean4.isLeanFeatureSetActive"
 				},
 				{
 					"command": "lean4.infoView.toggleUpdating",
-					"when": "editorLangId == lean4"
+					"when": "lean4.isLeanFeatureSetActive"
 				},
 				{
 					"command": "lean4.infoView.toggleExpectedType",
-					"when": "editorLangId == lean4"
+					"when": "lean4.isLeanFeatureSetActive"
 				},
 				{
 					"command": "lean4.docView.showAllAbbreviations",
-					"when": "editorLangId == lean4"
+					"when": "lean4.isLeanFeatureSetActive"
 				},
 				{
 					"command": "lean4.docView.open"
@@ -522,19 +522,19 @@
 				},
 				{
 					"command": "lean4.project.build",
-					"when": "editorLangId == lean4"
+					"when": "lean4.isLeanFeatureSetActive"
 				},
 				{
 					"command": "lean4.project.clean",
-					"when": "editorLangId == lean4"
+					"when": "lean4.isLeanFeatureSetActive"
 				},
 				{
 					"command": "lean4.project.updateDependency",
-					"when": "editorLangId == lean4"
+					"when": "lean4.isLeanFeatureSetActive"
 				},
 				{
 					"command": "lean4.project.fetchCache",
-					"when": "editorLangId == lean4"
+					"when": "lean4.isLeanFeatureSetActive"
 				}
 			],
 			"editor/title": [
