@@ -58,28 +58,22 @@ export class LeanInstaller {
                 // Ah, there is no elan, but what if Lean is in the PATH due to custom install?
                 const found = await this.checkLeanVersion(packageUri, leanVersion);
                 if (found.error) {
-                    return { version: '4', error: 'no elan installed' }
+                    return { version: '', error: 'no elan installed' }
                 }
             } else if (! await isCoreLean4Directory(packageUri)) {
                 const defaultVersion = await this.getElanDefaultToolchain(packageUri);
                 if (!defaultVersion) {
-                    void this.showToolchainOptions(packageUri);
-                } else {
-                    leanVersion = defaultVersion;
+                    return { version: '', error: 'no default toolchain' }
                 }
+                leanVersion = defaultVersion;
             }
         }
 
         const found = await this.checkLeanVersion(packageUri, leanVersion);
-        if (found.error) {
-            if (leanVersion){
-                // if we have a lean-toolchain version or a workspace override then
-                // use that version during the installElan process.
-                this.defaultToolchain = leanVersion;
-            }
-            if (found.error === 'no default toolchain') {
-                await this.showToolchainOptions(packageUri)
-            }
+        if (found.error && leanVersion) {
+            // if we have a lean-toolchain version or a workspace override then
+            // use that version during the installElan process.
+            this.defaultToolchain = leanVersion;
         }
         return found;
     }
@@ -187,16 +181,7 @@ export class LeanInstaller {
         return s.trim();
     }
 
-    async showToolchainOptions(uri: Uri) : Promise<void> {
-        if (!this.promptUser){
-            // no need to prompt when there is no user.
-            return;
-        }
-        await window.showErrorMessage('You have no default "lean-toolchain" in this folder or any parent folder.')
-    }
-
     async checkLeanVersion(packageUri: Uri | null, version: string | null): Promise<LeanVersion> {
-
         let cmd = toolchainPath();
         if (!cmd) {
             cmd = 'lean'
@@ -206,7 +191,7 @@ export class LeanInstaller {
         const folderUri = packageUri ?? Uri.from({scheme: 'untitled'});
         const folderPath: string = folderUri.scheme === 'file' ? folderUri.fsPath : '';
         const cacheKey = folderUri.toString();
-        if (this.versionCache.has(cacheKey)) {
+        if (!version && this.versionCache.has(cacheKey)) {
             const result = this.versionCache.get(cacheKey);
             if (result){
                 return result;
@@ -231,6 +216,12 @@ export class LeanInstaller {
             const checkingResult: ExecutionResult = await batchExecute(cmd, options, folderPath, { combined: this.outputChannel })
             if (checkingResult.exitCode === ExecutionExitCode.CannotLaunch) {
                 result.error = 'lean not found'
+            } else if (checkingResult.exitCode === ExecutionExitCode.ExecutionError) {
+                if (checkingResult.stderr.match(/error: toolchain '.*' is not installed/)) {
+                    result.error = 'selected elan default toolchain not installed - please set a new default toolchain'
+                } else {
+                    result.error = 'lean version not found'
+                }
             } else if (checkingResult.stderr.indexOf('no default toolchain') > 0) {
                 result.error = 'no default toolchain'
             } else {
@@ -248,7 +239,9 @@ export class LeanInstaller {
             if (this.outputChannel) this.outputChannel.appendLine(msg);
             result.error = err
         }
-        this.versionCache.set(cacheKey, result);
+        if (!version) {
+            this.versionCache.set(cacheKey, result);
+        }
         return result
     }
 
