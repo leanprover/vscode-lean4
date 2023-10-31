@@ -1,13 +1,12 @@
-import { Disposable, OutputChannel, workspace, TextDocument, commands, window, EventEmitter, Uri, languages, TextEditor, WorkspaceFolder } from 'vscode';
+import { Disposable, OutputChannel, workspace, TextDocument, commands, window, EventEmitter, Uri, languages, TextEditor } from 'vscode';
 import { LeanInstaller, LeanVersion } from './leanInstaller'
-import { LeanpkgService } from './leanpkg';
 import { LeanClient } from '../leanclient'
 import { LeanFileProgressProcessingInfo, ServerStoppedReason } from '@leanprover/infoview-api';
 import * as path from 'path';
 import { checkParentFoldersForLeanProject, findLeanPackageRoot, isValidLeanProject } from './projectInfo';
 import { isFileInFolder } from './fsHelper';
 import { logger } from './logger'
-import { addDefaultElanPath, getDefaultElanPath, addToolchainBinPath, isElanDisabled, isRunningTest, shouldShowInvalidProjectWarnings } from '../config'
+import { addDefaultElanPath, getDefaultElanPath, addToolchainBinPath, isElanDisabled, shouldShowInvalidProjectWarnings } from '../config'
 import { displayErrorWithOutput } from './errors';
 
 // This class ensures we have one LeanClient per workspace folder.
@@ -279,6 +278,8 @@ export class LeanClientProvider implements Disposable {
                 // but does not wait for the install to complete.
                 await this.installer.showInstallOptions(uri);
             }
+        } else {
+            void displayErrorWithOutput('Cannot determine Lean version: ' + versionInfo.error)
         }
         return versionInfo;
     }
@@ -358,7 +359,6 @@ export class LeanClientProvider implements Disposable {
                     // as a result of UI options shown by testLeanVersion.
                     await client.start();
                 } else {
-                    void displayErrorWithOutput('Cannot determine Lean version: ' + versionInfo.error)
                     logger.log(`[ClientProvider] skipping client.start because of versionInfo error: ${versionInfo?.error}`);
                 }
             }
