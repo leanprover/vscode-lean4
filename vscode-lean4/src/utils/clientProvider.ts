@@ -8,6 +8,7 @@ import { checkParentFoldersForLeanProject, findLeanPackageRoot, isValidLeanProje
 import { isFileInFolder } from './fsHelper';
 import { logger } from './logger'
 import { addDefaultElanPath, getDefaultElanPath, addToolchainBinPath, isElanDisabled, isRunningTest, shouldShowInvalidProjectWarnings } from '../config'
+import { displayErrorWithOutput } from './errors';
 
 // This class ensures we have one LeanClient per workspace folder.
 export class LeanClientProvider implements Disposable {
@@ -357,6 +358,7 @@ export class LeanClientProvider implements Disposable {
                     // as a result of UI options shown by testLeanVersion.
                     await client.start();
                 } else {
+                    void displayErrorWithOutput('Cannot determine Lean version: ' + versionInfo.error)
                     logger.log(`[ClientProvider] skipping client.start because of versionInfo error: ${versionInfo?.error}`);
                 }
             }
