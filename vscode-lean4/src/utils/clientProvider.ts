@@ -198,9 +198,9 @@ export class LeanClientProvider implements Disposable {
                 return
             }
 
-            await this.checkIsValidProjectFolder(client.folderUri)
-
             await client.openLean4Document(document)
+
+            await this.checkIsValidProjectFolder(client.folderUri)
         } catch (e) {
             logger.log(`[ClientProvider] ### Error opening document: ${e}`);
         }
