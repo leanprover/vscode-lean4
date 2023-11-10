@@ -11,6 +11,7 @@ export interface DirectGitDependency {
 }
 
 export interface Manifest {
+    packagesDir: string
     directGitDependencies: DirectGitDependency[]
 }
 
@@ -23,6 +24,7 @@ export function parseAsManifest(jsonString: string): Manifest | undefined {
     }
 
     const schema = z.object({
+        packagesDir: z.string(),
         packages: z.array(
             z.union([
                 z.object({
@@ -45,7 +47,7 @@ export function parseAsManifest(jsonString: string): Manifest | undefined {
         return undefined
     }
 
-    const manifest: Manifest = { directGitDependencies: [] }
+    const manifest: Manifest = { packagesDir: result.data.packagesDir, directGitDependencies: [] }
 
     for (const pkg of result.data.packages) {
         if (!('git' in pkg)) {
