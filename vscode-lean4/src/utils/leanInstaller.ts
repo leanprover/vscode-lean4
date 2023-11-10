@@ -1,6 +1,6 @@
-import { window, TerminalOptions, OutputChannel, Disposable, EventEmitter, ProgressLocation, Uri } from 'vscode'
+import { window, TerminalOptions, OutputChannel, EventEmitter, Uri } from 'vscode'
 import { toolchainPath, addServerEnvPaths, getPowerShellPath, shouldAutofocusOutput, isRunningTest } from '../config'
-import { ExecutionExitCode, ExecutionResult, batchExecute, batchExecuteWithProgress } from './batch'
+import { ExecutionExitCode, ExecutionResult, batchExecute } from './batch'
 import { readLeanVersion, isCoreLean4Directory } from './projectInfo';
 import { join } from 'path';
 import { logger } from './logger'

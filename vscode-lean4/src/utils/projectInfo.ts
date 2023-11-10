@@ -15,9 +15,26 @@ export async function isCoreLean4Directory(path: Uri): Promise<boolean> {
     const licensePath = Uri.joinPath(path, 'LICENSE').fsPath
     const licensesPath = Uri.joinPath(path, 'LICENSES').fsPath
     const srcPath = Uri.joinPath(path, 'src').fsPath
-    return await fileExists(licensePath)
+
+    const isCoreLean4RootDirectory =
+        await fileExists(licensePath)
         && await fileExists(licensesPath)
         && await fileExists(srcPath)
+    if (isCoreLean4RootDirectory) {
+        return true
+    }
+
+    const initPath = Uri.joinPath(path, 'Init').fsPath
+    const leanPath = Uri.joinPath(path, 'Lean').fsPath
+    const kernelPath = Uri.joinPath(path, 'kernel').fsPath
+    const runtimePath = Uri.joinPath(path, 'runtime').fsPath
+
+    const isCoreLean4SrcDirectory =
+        await fileExists(initPath)
+        && await fileExists(leanPath)
+        && await fileExists(kernelPath)
+        && await fileExists(runtimePath)
+    return isCoreLean4SrcDirectory
 }
 
 // Find the root of a Lean project and return an optional WorkspaceFolder for it,
