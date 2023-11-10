@@ -19,9 +19,9 @@ containing the following:
 1. Open your file `hello.lean`.
 1. If `Lean` is not yet installed on your system you will see a prompt like this:
 
-    ![prompt](vscode-lean4/media/install-elan.png)
+    ![prompt](vscode-lean4/media/install-lean.png)
 
-1. Click the `Install Lean using Elan` option and enter any default options that appear in the terminal window.
+1. Click the `Install Lean` option and enter any default options that appear in the terminal window.
 1. After this succeeds the correct version of Lean will be installed by `elan`
 and you should see something like this in the `Lean: Editor` output panel:
     ```
