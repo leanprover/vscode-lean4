@@ -168,7 +168,7 @@ export class ProjectOperationProvider implements Disposable {
             await this.tryFetchingCache(lakeRunner)
 
             const localToolchainPath: string = join(activeClient.folderUri.fsPath, 'lean-toolchain')
-            const dependencyToolchainPath: string = join(activeClient.folderUri.fsPath, 'lake-packages', dependencyChoice.name, 'lean-toolchain')
+            const dependencyToolchainPath: string = join(activeClient.folderUri.fsPath, manifestResult.packagesDir, dependencyChoice.name, 'lean-toolchain')
             const dependencyToolchainResult: string | 'DoNotUpdate' | 'Cancelled' = await this.determineDependencyToolchain(localToolchainPath, dependencyToolchainPath, dependencyChoice.name)
             if (dependencyToolchainResult === 'Cancelled') {
                 return
