@@ -147,7 +147,7 @@ export class LeanInstaller {
 
         // note; we keep the LeanClient alive so that it can be restarted if the
         // user changes the Lean: Executable Path.
-        const installItem = 'Install Lean using Elan';
+        const installItem = 'Install Lean';
         let prompt = 'Failed to start \'lean\' language server'
         if (path){
             prompt += ` from ${path}`
