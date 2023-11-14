@@ -890,7 +890,7 @@
 		"axios": "~0.24.0",
 		"cheerio": "^1.0.0-rc.10",
 		"mobx": "5.15.7",
-		"semver": "=7.3.5",
+		"semver": "^7.5.4",
 		"vscode-languageclient": "=8.0.2",
 		"zod": "^3.22.4"
 	},
@@ -900,7 +900,7 @@
 		"@types/mocha": "^8.2.0",
 		"@types/node": "^18.11.9",
 		"@types/ps-node": "~0.1.1",
-		"@types/semver": "^5.3.30",
+		"@types/semver": "^7.5.4",
 		"@types/vscode": "^1.61.0",
 		"@types/vscode-webview": "^1.57.0",
 		"@vscode/test-electron": "^2.1.2",
