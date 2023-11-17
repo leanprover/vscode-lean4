@@ -671,11 +671,11 @@
 		},
 		"submenus": [
 			{
-			  "id": "lean4.titlebar",
-			  "label": "Lean 4",
-			  "icon": {
-				"dark": "./media/lean-mini-dark.svg",
-				"light": "./media/lean-mini-light.svg"
+				"id": "lean4.titlebar",
+				"label": "Lean 4",
+				"icon": {
+					"dark": "./media/lean-mini-dark.svg",
+					"light": "./media/lean-mini-light.svg"
 				}
 			},
 			{
@@ -887,7 +887,7 @@
 	"dependencies": {
 		"@leanprover/infoview": "~0.4.3",
 		"@leanprover/infoview-api": "~0.2.1",
-		"axios": "~0.24.0",
+		"axios": "^1.6.2",
 		"cheerio": "^1.0.0-rc.10",
 		"mobx": "5.15.7",
 		"semver": "^7.5.4",
@@ -904,15 +904,15 @@
 		"@types/vscode": "^1.61.0",
 		"@types/vscode-webview": "^1.57.0",
 		"@vscode/test-electron": "^2.1.2",
+		"@vscode/vsce": "~2.21.1",
 		"concurrently": "^7.0.0",
 		"copy-webpack-plugin": "^10.2.4",
 		"glob": "^7.1.6",
-		"mocha": "^8.2.1",
+		"mocha": "^10.2.0",
 		"ovsx": "~0.8.3",
 		"source-map-loader": "^3.0.1",
 		"ts-loader": "^9.2.6",
 		"typescript": "^4.9.4",
-		"@vscode/vsce": "~2.21.1",
 		"webpack-cli": "^4.10.0"
 	},
 	"icon": "images/lean_logo.png",
