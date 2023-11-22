@@ -62,27 +62,27 @@
       "begin": "--", "end": "$",
       "name": "comment.line.double-dash.lean4",
       "patterns": [
-        { "include": "source.lean.markdown" }
+        { "include": "source.lean4.markdown" }
       ]
     },
     "docComment": {
       "begin": "/--", "end": "-/", "name": "comment.block.documentation.lean4",
       "patterns": [
-        { "include": "source.lean.markdown" },
+        { "include": "source.lean4.markdown" },
         { "include": "#blockComment" }
       ]
     },
     "modDocComment": {
       "begin": "/-!", "end": "-/", "name": "comment.block.documentation.lean4",
       "patterns": [
-        { "include": "source.lean.markdown" },
+        { "include": "source.lean4.markdown" },
         { "include": "#blockComment" }
       ]
     },
     "blockComment": {
       "begin": "/-", "end": "-/", "name": "comment.block.lean4",
       "patterns": [
-        { "include": "source.lean.markdown" },
+        { "include": "source.lean4.markdown" },
         { "include": "#blockComment" }
       ]
     },
