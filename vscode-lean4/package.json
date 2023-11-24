@@ -762,6 +762,12 @@
 						"media": { "markdown": "./media/guide-setupProject.md" }
 					},
 					{
+						"id": "lean4.welcome.linux.manual",
+						"title": "Using Lean 4 in VS Code",
+						"description": "Learn how to use Lean 4 together with its VS Code extension.",
+						"media": { "markdown": "./media/guide-manual.md" }
+					},
+					{
 						"id": "lean4.welcome.linux.help",
 						"title": "Questions and Troubleshooting",
 						"description": "If you have any questions or are having trouble with any of the previous steps, please visit us on the [Lean Zulip chat](https://leanprover.zulipchat.com/) so that we can help you.",
@@ -809,6 +815,12 @@
 						"media": { "markdown": "./media/guide-setupProject.md" }
 					},
 					{
+						"id": "lean4.welcome.mac.manual",
+						"title": "Using Lean 4 in VS Code",
+						"description": "Learn how to use Lean 4 together with its VS Code extension.",
+						"media": { "markdown": "./media/guide-manual.md" }
+					},
+					{
 						"id": "lean4.welcome.mac.help",
 						"title": "Questions and Troubleshooting",
 						"description": "If you have any questions or are having trouble with any of the previous steps, please visit us on the [Lean Zulip chat](https://leanprover.zulipchat.com/) so that we can help you.",
@@ -854,6 +866,12 @@
 						"title": "Set Up Lean 4 Project",
 						"description": "Set up a Lean 4 project by clicking on one of the options on the right.",
 						"media": { "markdown": "./media/guide-setupProject.md" }
+					},
+					{
+						"id": "lean4.welcome.windows.manual",
+						"title": "Using Lean 4 in VS Code",
+						"description": "Learn how to use Lean 4 together with its VS Code extension.",
+						"media": { "markdown": "./media/guide-manual.md" }
 					},
 					{
 						"id": "lean4.welcome.windows.help",

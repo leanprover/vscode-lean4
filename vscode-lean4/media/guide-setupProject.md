@@ -1,5 +1,8 @@
-## Project Creation
-Below, you will find links that create new projects or download projects for you. After creating or downloading a project, you can re-open it in the future by clicking the ∀-symbol in the top right, choosing 'Open Project…' > 'Open Local Project…' and selecting the project you created.
+## Creating a Project
+Below, you will find links that create new projects or download projects for you. After creating or downloading a project, you can re-open the project in the future by clicking the ∀-symbol in the top right, choosing 'Open Project…' > 'Open Local Project…' and selecting the project you created.  
+Completing the project creation process and choosing to open the new project will close this guide. You can re-open it later by clicking the ∀-symbol in the top right and selecting 'Documentation…' > 'Setup: Show Setup Guide'.
+
+  ![∀-symbol buttons](open-local-project_show-setup_buttons.png)
 
 If you want to create a new project, click on one of the following:
 - [Create a new standalone project](command:lean4.project.createStandaloneProject)  
@@ -13,7 +16,7 @@ If you want to open an existing project, click on one of the following:
 - [Download an existing project](command:lean4.project.clone)  
   This option is suitable if you want to contribute to another Lean 4 project, like [Mathlib](https://github.com/leanprover-community/mathlib4).
 - [Open an existing local project](command:lean4.project.open)  
-  This option is suitable if you have been provided with a local Lean 4 project by someone else.
+  This option is suitable if you have been provided with a local Lean 4 project by someone else, like an instructor.
 
 ## Complex Project Setups
 Using its build system and package manager Lake, Lean 4 supports more complex project setups than the ones described above. You can find out more about Lake in the [Lean 4 GitHub repository](https://github.com/leanprover/lean4/blob/master/src/lake/README.md).
