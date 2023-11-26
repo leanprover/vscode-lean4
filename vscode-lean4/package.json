@@ -380,10 +380,10 @@
 				"configuration": "./language-configuration.json"
 			},
 			{
-				"id": "leanmarkdown",
+				"id": "lean4markdown",
 				"aliases": [],
 				"extensions": [
-					".leanmarkdown"
+					".lean4markdown"
 				],
 				"configuration": "./language-configuration.json"
 			}
@@ -395,9 +395,9 @@
 				"path": "./syntaxes/lean4.json"
 			},
 			{
-				"language": "leanmarkdown",
-				"scopeName": "source.lean.markdown",
-				"path": "./syntaxes/lean-markdown.json"
+				"language": "lean4markdown",
+				"scopeName": "source.lean4.markdown",
+				"path": "./syntaxes/lean4-markdown.json"
 			},
 			{
 				"scopeName": "markdown.lean4.codeblock",

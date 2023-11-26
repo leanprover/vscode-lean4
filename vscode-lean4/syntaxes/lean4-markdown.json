@@ -5,7 +5,7 @@
 	],
 	"version": "https://github.com/microsoft/vscode/blob/df3ae4adefbb780f5f686e58ac6a8d305a8c86dc/extensions/markdown-basics/syntaxes/markdown.tmLanguage.json",
 	"name": "Markdown",
-	"scopeName": "source.lean.markdown",
+	"scopeName": "source.lean4.markdown",
 	"patterns": [
 		{
 			"include": "#frontMatter"
