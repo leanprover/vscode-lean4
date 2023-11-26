@@ -19,11 +19,22 @@ export class ProjectInitializationProvider implements Disposable {
     }
 
     private async createStandaloneProject() {
-        const projectFolder: Uri | 'DidNotComplete' = await this.createProject()
-
-        if (projectFolder !== 'DidNotComplete') {
-            await ProjectInitializationProvider.openNewFolder(projectFolder)
+        const toolchain = 'leanprover/lean4:stable'
+        const projectFolder: Uri | 'DidNotComplete' = await this.createProject(undefined, toolchain)
+        if (projectFolder === 'DidNotComplete') {
+            return
         }
+
+        const buildResult: ExecutionResult = await lake(this.channel, projectFolder, toolchain).build()
+        if (buildResult.exitCode === ExecutionExitCode.Cancelled) {
+            return
+        }
+        if (buildResult.exitCode !== ExecutionExitCode.Success) {
+            await displayError(buildResult, 'Cannot build Lean project.')
+            return
+        }
+
+        await ProjectInitializationProvider.openNewFolder(projectFolder)
     }
 
     private async createMathlibProject() {
