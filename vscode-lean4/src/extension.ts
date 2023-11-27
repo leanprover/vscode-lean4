@@ -67,13 +67,13 @@ function activateAlwaysEnabledFeatures(context: ExtensionContext): AlwaysEnabled
 
     context.subscriptions.push(commands.registerCommand('lean4.setup.showSetupGuide', async () => {
         if (process.platform === 'win32') {
-            await commands.executeCommand('workbench.action.openWalkthrough', 'leanprover.lean4#guide.windows', false)
+            await commands.executeCommand('workbench.action.openWalkthrough', 'leanprover.lean4#lean4.welcome.windows', false)
         } else if (process.platform === 'darwin') {
-            await commands.executeCommand('workbench.action.openWalkthrough', 'leanprover.lean4#guide.mac', false)
+            await commands.executeCommand('workbench.action.openWalkthrough', 'leanprover.lean4#lean4.welcome.mac', false)
         } else if (process.platform === 'linux') {
-            await commands.executeCommand('workbench.action.openWalkthrough', 'leanprover.lean4#guide.linux', false)
+            await commands.executeCommand('workbench.action.openWalkthrough', 'leanprover.lean4#lean4.welcome.linux', false)
         } else {
-            await commands.executeCommand('workbench.action.openWalkthrough', 'leanprover.lean4#guide.linux', false)
+            await commands.executeCommand('workbench.action.openWalkthrough', 'leanprover.lean4#lean4.welcome.linux', false)
         }
     }))
 

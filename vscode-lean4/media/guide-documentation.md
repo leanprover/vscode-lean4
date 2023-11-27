@@ -20,7 +20,13 @@ If you want to dive right into using Lean 4 to prove elementary theorems about n
 [Lean's website](https://lean-lang.org/) links to learning resources, publications, talks and articles about Lean.
 
 **Lean Community**  
-The [Lean Community website](https://leanprover-community.github.io/index.html) links to several other helpful learning resources not listed here and provides an introduction to [mathlib](https://github.com/leanprover-community/mathlib4), Lean's math library.
+The [Lean Community website](https://leanprover-community.github.io/index.html) links to several other helpful learning resources not listed here and provides an introduction to [Mathlib](https://github.com/leanprover-community/mathlib4), Lean's math library.
 
 **Manual**  
 The [Lean Manual](https://lean-lang.org/lean4/doc/) documents several features of Lean 4 and can be consulted for some of the more technical details concerning Lean.
+
+## Finding Definitions and Theorems
+There are two search engines that help you find definitions and theorems in [Mathlib](https://github.com/leanprover-community/mathlib4), [Lean's standard library](https://github.com/leanprover/std4) and Lean 4 itself:
+
+- [Loogle](https://loogle.lean-lang.org/): A pattern-based search engine that finds definitions and theorems by type signature or by the names of their identifiers.
+- [Moogle](https://www.moogle.ai/): An AI-based search engine that finds definitions and theorems by a description in natural language.

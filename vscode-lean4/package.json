@@ -723,13 +723,13 @@
 		},
 		"walkthroughs": [
 			{
-				"id": "guide.linux",
+				"id": "lean4.welcome.linux",
 				"title": "Lean 4 Setup",
 				"description": "Getting started with Lean 4 on Linux\n",
 				"when": "isLinux",
 				"steps": [
 					{
-						"id": "guide.linux.openSetupGuide",
+						"id": "lean4.welcome.linux.openSetupGuide",
 						"title": "Re-Open Setup Guide",
 						"description": "This guide can always be re-opened by opening an empty file, clicking on the ∀-symbol in the top right and selecting 'Documentation…' > 'Setup: Show Setup Guide'.",
 						"media": {
@@ -738,31 +738,37 @@
 						}
 					},
 					{
-						"id": "guide.linux.documentation",
+						"id": "lean4.welcome.linux.documentation",
 						"title": "Books and Documentation",
 						"description": "Learn using Lean 4 with the resources on the right.",
 						"media": { "markdown": "./media/guide-documentation.md" }
 					},
 					{
-						"id": "guide.linux.installDeps",
+						"id": "lean4.welcome.linux.installDeps",
 						"title": "Install Required Dependencies",
 						"description": "Install Git and curl using your package manager.",
 						"media": { "markdown": "./media/guide-installDeps-linux.md" }
 					},
 					{
-						"id": "guide.linux.installElan",
+						"id": "lean4.welcome.linux.installElan",
 						"title": "Install Lean Version Manager",
 						"description": "Install Lean's version manager Elan.\n[Click to install](command:lean4.setup.installElan)",
 						"media": { "markdown": "./media/guide-installElan-unix.md" }
 					},
 					{
-						"id": "guide.linux.setupProject",
+						"id": "lean4.welcome.linux.setupProject",
 						"title": "Set Up Lean 4 Project",
 						"description": "Set up a Lean 4 project by clicking on one of the options on the right.",
 						"media": { "markdown": "./media/guide-setupProject.md" }
 					},
 					{
-						"id": "guide.linux.help",
+						"id": "lean4.welcome.linux.vscode",
+						"title": "Using Lean 4 in VS Code",
+						"description": "Learn how to use Lean 4 together with its VS Code extension.",
+						"media": { "markdown": "./media/guide-vscode.md" }
+					},
+					{
+						"id": "lean4.welcome.linux.help",
 						"title": "Questions and Troubleshooting",
 						"description": "If you have any questions or are having trouble with any of the previous steps, please visit us on the [Lean Zulip chat](https://leanprover.zulipchat.com/) so that we can help you.",
 						"media": { "markdown": "./media/guide-help.md" }
@@ -770,13 +776,13 @@
 				]
 			},
 			{
-				"id": "guide.mac",
+				"id": "lean4.welcome.mac",
 				"title": "Lean 4 Setup",
 				"description": "Getting started with Lean 4 on Mac\n",
 				"when": "isMac",
 				"steps": [
 					{
-						"id": "guide.mac.openSetupGuide",
+						"id": "lean4.welcome.mac.openSetupGuide",
 						"title": "Re-Open Setup Guide",
 						"description": "This guide can always be re-opened by opening an empty file, clicking on the ∀-symbol in the top right and selecting 'Documentation…' > 'Setup: Show Setup Guide'.",
 						"media": {
@@ -785,31 +791,37 @@
 						}
 					},
 					{
-						"id": "guide.mac.documentation",
+						"id": "lean4.welcome.mac.documentation",
 						"title": "Books and Documentation",
 						"description": "Learn using Lean 4 with the resources on the right.",
 						"media": { "markdown": "./media/guide-documentation.md" }
 					},
 					{
-						"id": "guide.mac.installDeps",
+						"id": "lean4.welcome.mac.installDeps",
 						"title": "Install Required Dependencies",
 						"description": "Install Homebrew, Git and curl.",
 						"media": { "markdown": "./media/guide-installDeps-mac.md" }
 					},
 					{
-						"id": "guide.mac.installElan",
+						"id": "lean4.welcome.mac.installElan",
 						"title": "Install Lean Version Manager",
 						"description": "Install Lean's version manager Elan.\n[Click to install](command:lean4.setup.installElan)",
 						"media": { "markdown": "./media/guide-installElan-unix.md" }
 					},
 					{
-						"id": "guide.mac.setupProject",
+						"id": "lean4.welcome.mac.setupProject",
 						"title": "Set Up Lean 4 Project",
 						"description": "Set up a Lean 4 project by clicking on one of the options on the right.",
 						"media": { "markdown": "./media/guide-setupProject.md" }
 					},
 					{
-						"id": "guide.mac.help",
+						"id": "lean4.welcome.mac.vscode",
+						"title": "Using Lean 4 in VS Code",
+						"description": "Learn how to use Lean 4 together with its VS Code extension.",
+						"media": { "markdown": "./media/guide-vscode.md" }
+					},
+					{
+						"id": "lean4.welcome.mac.help",
 						"title": "Questions and Troubleshooting",
 						"description": "If you have any questions or are having trouble with any of the previous steps, please visit us on the [Lean Zulip chat](https://leanprover.zulipchat.com/) so that we can help you.",
 						"media": { "markdown": "./media/guide-help.md" }
@@ -817,13 +829,13 @@
 				]
 			},
 			{
-				"id": "guide.windows",
+				"id": "lean4.welcome.windows",
 				"title": "Lean 4 Setup",
 				"description": "Getting started with Lean 4 on Windows\n",
 				"when": "isWindows",
 				"steps": [
 					{
-						"id": "guide.windows.openSetupGuide",
+						"id": "lean4.welcome.windows.openSetupGuide",
 						"title": "Re-Open Setup Guide",
 						"description": "This guide can always be re-opened by opening an empty file, clicking on the ∀-symbol in the top right and selecting 'Documentation…' > 'Setup: Show Setup Guide'.",
 						"media": {
@@ -832,31 +844,37 @@
 						}
 					},
 					{
-						"id": "guide.windows.documentation",
+						"id": "lean4.welcome.windows.documentation",
 						"title": "Books and Documentation",
 						"description": "Learn using Lean 4 with the resources on the right.",
 						"media": { "markdown": "./media/guide-documentation.md" }
 					},
 					{
-						"id": "guide.windows.installDeps",
+						"id": "lean4.welcome.windows.installDeps",
 						"title": "Install Required Dependencies",
 						"description": "Install Git.",
 						"media": { "markdown": "./media/guide-installDeps-windows.md" }
 					},
 					{
-						"id": "guide.windows.installElan",
+						"id": "lean4.welcome.windows.installElan",
 						"title": "Install Lean Version Manager",
 						"description": "Install Lean's version manager Elan.\n[Click to install](command:lean4.setup.installElan)",
 						"media": { "markdown": "./media/guide-installElan-windows.md" }
 					},
 					{
-						"id": "guide.windows.setupProject",
+						"id": "lean4.welcome.windows.setupProject",
 						"title": "Set Up Lean 4 Project",
 						"description": "Set up a Lean 4 project by clicking on one of the options on the right.",
 						"media": { "markdown": "./media/guide-setupProject.md" }
 					},
 					{
-						"id": "guide.windows.help",
+						"id": "lean4.welcome.windows.vscode",
+						"title": "Using Lean 4 in VS Code",
+						"description": "Learn how to use Lean 4 together with its VS Code extension.",
+						"media": { "markdown": "./media/guide-vscode.md" }
+					},
+					{
+						"id": "lean4.welcome.windows.help",
 						"title": "Questions and Troubleshooting",
 						"description": "If you have any questions or are having trouble with any of the previous steps, please visit us on the [Lean Zulip chat](https://leanprover.zulipchat.com/) so that we can help you.",
 						"media": { "markdown": "./media/guide-help.md" }
