@@ -762,10 +762,10 @@
 						"media": { "markdown": "./media/guide-setupProject.md" }
 					},
 					{
-						"id": "lean4.welcome.linux.manual",
+						"id": "lean4.welcome.linux.vscode",
 						"title": "Using Lean 4 in VS Code",
 						"description": "Learn how to use Lean 4 together with its VS Code extension.",
-						"media": { "markdown": "./media/guide-manual.md" }
+						"media": { "markdown": "./media/guide-vscode.md" }
 					},
 					{
 						"id": "lean4.welcome.linux.help",
@@ -815,10 +815,10 @@
 						"media": { "markdown": "./media/guide-setupProject.md" }
 					},
 					{
-						"id": "lean4.welcome.mac.manual",
+						"id": "lean4.welcome.mac.vscode",
 						"title": "Using Lean 4 in VS Code",
 						"description": "Learn how to use Lean 4 together with its VS Code extension.",
-						"media": { "markdown": "./media/guide-manual.md" }
+						"media": { "markdown": "./media/guide-vscode.md" }
 					},
 					{
 						"id": "lean4.welcome.mac.help",
@@ -868,10 +868,10 @@
 						"media": { "markdown": "./media/guide-setupProject.md" }
 					},
 					{
-						"id": "lean4.welcome.windows.manual",
+						"id": "lean4.welcome.windows.vscode",
 						"title": "Using Lean 4 in VS Code",
 						"description": "Learn how to use Lean 4 together with its VS Code extension.",
-						"media": { "markdown": "./media/guide-manual.md" }
+						"media": { "markdown": "./media/guide-vscode.md" }
 					},
 					{
 						"id": "lean4.welcome.windows.help",
