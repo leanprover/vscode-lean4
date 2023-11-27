@@ -65,17 +65,8 @@ function activateAlwaysEnabledFeatures(context: ExtensionContext): AlwaysEnabled
         addDefaultElanPath();
     }
 
-    context.subscriptions.push(commands.registerCommand('lean4.setup.showSetupGuide', async () => {
-        if (process.platform === 'win32') {
-            await commands.executeCommand('workbench.action.openWalkthrough', 'leanprover.lean4#lean4.welcome.windows', false)
-        } else if (process.platform === 'darwin') {
-            await commands.executeCommand('workbench.action.openWalkthrough', 'leanprover.lean4#lean4.welcome.mac', false)
-        } else if (process.platform === 'linux') {
-            await commands.executeCommand('workbench.action.openWalkthrough', 'leanprover.lean4#lean4.welcome.linux', false)
-        } else {
-            await commands.executeCommand('workbench.action.openWalkthrough', 'leanprover.lean4#lean4.welcome.linux', false)
-        }
-    }))
+    context.subscriptions.push(commands.registerCommand('lean4.setup.showSetupGuide', async () =>
+        commands.executeCommand('workbench.action.openWalkthrough', 'leanprover.lean4#lean4.welcome', false)))
 
     const docView = new DocViewProvider(context.extensionUri);
     context.subscriptions.push(docView);
