@@ -229,7 +229,8 @@ export class DocViewProvider implements Disposable {
                 'Functional Programming in Lean': mkCommandUri('lean4.docView.openUrl', 'https://lean-lang.org/functional_programming_in_lean/'),
                 'Mathematics in Lean': mkCommandUri('lean4.docView.openUrl', 'https://leanprover-community.github.io/mathematics_in_lean/'),
                 'The Mechanics of Proof': mkCommandUri('lean4.docView.openUrl', 'https://hrmacbeth.github.io/math2001/'),
-                'Reference Manual': mkCommandUri('lean4.docView.openUrl', 'https://lean-lang.org/lean4/doc/'),
+                'Lean Reference Manual': mkCommandUri('lean4.docView.openUrl', 'https://lean-lang.org/lean4/doc/'),
+                'Mathlib API Documentation': mkCommandUri('lean4.docView.openUrl', 'https://leanprover-community.github.io/mathlib4_docs/'),
                 'Abbreviations Cheatsheet': mkCommandUri('lean4.docView.showAllAbbreviations'),
                 'Example': mkCommandUri('lean4.docView.openExample', 'https://github.com/leanprover/lean4-samples/raw/main/HelloWorld/Main.lean'),
 
