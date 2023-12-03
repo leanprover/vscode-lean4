@@ -14,7 +14,7 @@ See the following design topics:
 
 ### Building
 - Make sure you have an up to date installation of `npm` and `node.js`.  For example `npm` version 8.1.3 and `node.js` version v16.13.0.
-- Run `npm install` in this folder. This installs the Lerna package manager.
+- Run `npm install lerna` in your root folder for development. This installs the Lerna package manager.
 - Run `npx lerna bootstrap`. This sets up the project's dependencies.
 - Run `npx lerna run build`. This compiles the extension (which is necessary for go-to-definition in VS Code).
 
