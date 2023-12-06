@@ -30,26 +30,16 @@ html,body {
 }
 
 /* These are syntax highlights for the string goal view. */
-.goal-goals { color: #569cd6; }
-.goal-vdash { color: #569cd6; }
-.goal-case { color: #a1df90; }
-.goal-hyp { color: #ffcc00; }
+.goal-goals { color: var(--vscode-lean4-infoView\.goalCount); }
+.goal-vdash { color: var(--vscode-lean4-infoView\.turnstile); }
+.goal-case { color: var(--vscode-lean4-infoView\.caseLabel); }
+.goal-hyp { color: var(--vscode-lean4-infoView\.hypothesisName); }
 .goal-inaccessible {
-    color: var(--vscode-editor-foreground);
+    color: var(--vscode-lean4-infoView\.inaccessibleHypothesisName);
     opacity: 0.7;
     font-style: italic;
     font-weight: normal;
 }
-
-.vscode-light .goal-goals { color: #367cb6; }
-.vscode-light .goal-vdash { color: #367cb6; }
-.vscode-light .goal-case { color: #1f7a1f; }
-.vscode-light .goal-hyp { color: #cc7a00; }
-
-.vscode-high-contrast  .goal-goals { color: var(--vscode-terminal-ansiBlue); }
-.vscode-high-contrast  .goal-vdash { color: var(--vscode-terminal-ansiBlue); }
-.vscode-high-contrast  .goal-case { color: var(--vscode-terminal-ansiGreen); }
-.vscode-high-contrast  .goal-hyp { color: var(--vscode-terminal-ansiYellow); }
 
 /* Used to denote text highlighted by the pretty-print expression widget. */
 .highlightable {

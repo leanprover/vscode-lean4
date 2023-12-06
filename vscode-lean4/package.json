@@ -436,6 +436,58 @@
 				"when": "lean4.isLeanFeatureSetActive"
 			}
 		],
+		"colors": [
+			{
+				"id": "lean4.infoView.hypothesisName",
+				"description": "The color used to display hypothesis names in the infoview",
+				"defaults": {
+					"light": "#cc7a00",
+					"dark": "#ffcc00",
+					"highContrast": "foreground",
+					"highContrastLight": "foreground"
+				}
+			},
+			{
+				"id": "lean4.infoView.inaccessibleHypothesisName",
+				"description": "The color used to display inaccessible hypothesis names in the infoview",
+				"defaults": {
+					"light": "editor.foreground",
+					"dark": "editor.foreground",
+					"highContrast": "editor.foreground",
+					"highContrastLight": "editor.foreground"
+				}
+			},
+			{
+				"id": "lean4.infoView.goalCount",
+				"description": "The color used to display the goal count in the infoview (e.g. \"1 goal\")",
+				"defaults": {
+					"light": "#367cb6",
+					"dark": "#569cd6",
+					"highContrast": "terminal.ansiBlue",
+					"highContrastLight": "terminal.ansiBlue"
+				}
+			},
+			{
+				"id": "lean4.infoView.turnstile",
+				"description": "The color used to display the turnstile (⊢) in the infoview",
+				"defaults": {
+					"light": "#367cb6",
+					"dark": "#569cd6",
+					"highContrast": "terminal.ansiBlue",
+					"highContrastLight": "terminal.ansiBlue"
+				}
+			},
+			{
+				"id": "lean4.infoView.caseLabel",
+				"description": "The color used to display the names of individual proof cases in the infoview",
+				"defaults": {
+					"light": "#1f7a1f",
+					"dark": "#a1df90",
+					"highContrast": "terminal.ansiGreen",
+					"highContrastLight": "terminal.ansiGreen"
+				}
+			}
+		],
 		"menus": {
 			"commandPalette": [
 				{
@@ -740,60 +792,78 @@
 						"id": "lean4.welcome.documentation",
 						"title": "Books and Documentation",
 						"description": "Learn using Lean 4 with the resources on the right.",
-						"media": { "markdown": "./media/guide-documentation.md" }
+						"media": {
+							"markdown": "./media/guide-documentation.md"
+						}
 					},
 					{
 						"id": "lean4.welcome.installDeps.linux",
 						"title": "Install Required Dependencies",
 						"description": "Install Git and curl using your package manager.",
-						"media": { "markdown": "./media/guide-installDeps-linux.md" },
+						"media": {
+							"markdown": "./media/guide-installDeps-linux.md"
+						},
 						"when": "isLinux"
 					},
 					{
 						"id": "lean4.welcome.installDeps.mac",
 						"title": "Install Required Dependencies",
 						"description": "Install Homebrew, Git and curl.",
-						"media": { "markdown": "./media/guide-installDeps-mac.md" },
+						"media": {
+							"markdown": "./media/guide-installDeps-mac.md"
+						},
 						"when": "isMac"
 					},
 					{
 						"id": "lean4.welcome.installDeps.windows",
 						"title": "Install Required Dependencies",
 						"description": "Install Git.",
-						"media": { "markdown": "./media/guide-installDeps-windows.md" },
+						"media": {
+							"markdown": "./media/guide-installDeps-windows.md"
+						},
 						"when": "isWindows"
 					},
 					{
 						"id": "lean4.welcome.installElan.unix",
 						"title": "Install Lean Version Manager",
 						"description": "Install Lean's version manager Elan.\n[Click to install](command:lean4.setup.installElan)",
-						"media": { "markdown": "./media/guide-installElan-unix.md" },
+						"media": {
+							"markdown": "./media/guide-installElan-unix.md"
+						},
 						"when": "isLinux || isMac"
 					},
 					{
 						"id": "lean4.welcome.installElan.windows",
 						"title": "Install Lean Version Manager",
 						"description": "Install Lean's version manager Elan.\n[Click to install](command:lean4.setup.installElan)",
-						"media": { "markdown": "./media/guide-installElan-windows.md" },
+						"media": {
+							"markdown": "./media/guide-installElan-windows.md"
+						},
 						"when": "isWindows"
 					},
 					{
 						"id": "lean4.welcome.setupProject",
 						"title": "Set Up Lean 4 Project",
 						"description": "Set up a Lean 4 project by clicking on one of the options on the right.",
-						"media": { "markdown": "./media/guide-setupProject.md" }
+						"media": {
+							"markdown": "./media/guide-setupProject.md"
+						}
 					},
 					{
 						"id": "lean4.welcome.vscode",
 						"title": "Using Lean 4 in VS Code",
 						"description": "Learn how to use Lean 4 together with its VS Code extension.",
-						"media": { "markdown": "./media/guide-vscode.md" }
+						"media": {
+							"markdown": "./media/guide-vscode.md"
+						}
 					},
 					{
 						"id": "lean4.welcome.help",
 						"title": "Questions and Troubleshooting",
 						"description": "If you have any questions or are having trouble with any of the previous steps, please visit us on the [Lean Zulip chat](https://leanprover.zulipchat.com/) so that we can help you.",
-						"media": { "markdown": "./media/guide-help.md" }
+						"media": {
+							"markdown": "./media/guide-help.md"
+						}
 					}
 				]
 			}

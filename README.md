@@ -209,6 +209,18 @@ name of the relative path to the store the logs.
 
 * `lean4.infoview.reverseTacticState`: show each goal above its local context by default. This can also be toggled by clicking a button (see the Infoview panel description above). The default is `false`.
 
+#### Colors
+
+These colors are used to display proof states in the infoview:
+
+* `lean4.infoView.hypothesisName`: accessible hypothesis names
+* `lean4.infoView.inaccessibleHypothesisName`: inaccessible hypothesis names
+* `lean4.infoView.goalCount`: the number of goals
+* `lean4.infoView.turnstile`: the turnstile (⊢) that separates the hypotheses from the goal
+* `lean4.infoView.caseLabel`: case labels (e.g. `case zero`)
+
+They can be set in a color theme, or under `workbench.colorCustomizations` in the settings file.
+
 ## Extension commands
 
 This extension also contributes the following commands, which can be bound to keys if desired using the [VS Code keyboard bindings](https://code.visualstudio.com/docs/getstarted/keybindings).
