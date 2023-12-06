@@ -4,6 +4,7 @@
 
 - Read "lean-toolchain" files and do not set --default-toolchain to something specific.
 - elan should not install multiple toolchains.
+- Occurrence highlighting can be configured to ignore string matches and use only Lean's LSP responses
 
 ### 0.0.40 (Oct 21, 2021): c387eab150b988a47956192b0fc48e950f6c1fca
 

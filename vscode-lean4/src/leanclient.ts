@@ -632,31 +632,35 @@ export class LeanClient implements Disposable {
                 },
 
                 provideDocumentHighlights: async (doc, pos, ctok, next) => {
-                    const leanHighlights = await next(doc, pos, ctok);
-                    if (leanHighlights?.length) return leanHighlights;
-
-                    // vscode doesn't fall back to textual highlights,
-                    // so we need to do that manually
-                    await new Promise((res) => setTimeout(res, 250));
-                    if (ctok.isCancellationRequested) return;
-
-                    const wordRange = doc.getWordRangeAtPosition(pos);
-                    if (!wordRange) return;
-                    const word = doc.getText(wordRange);
-
-                    const highlights: DocumentHighlight[] = [];
-                    const text = doc.getText();
-                    const nonWordPattern = '[`~@$%^&*()-=+\\[{\\]}⟨⟩⦃⦄⟦⟧⟮⟯‹›\\\\|;:\",./\\s]|^|$'
-                    const regexp = new RegExp(`(?<=${nonWordPattern})${escapeRegExp(word)}(?=${nonWordPattern})`, 'g')
-                    for (const match of text.matchAll(regexp)) {
-                        const start = doc.positionAt(match.index ?? 0)
-                        highlights.push({
-                            range: new Range(start, start.translate(0, match[0].length)),
-                            kind: DocumentHighlightKind.Text,
-                        })
+                    const mode = workspace.getConfiguration('lean4.editor').get<'semantic'|'both'|'strings'>('occurrenceHighlightingMode', 'semantic');
+                    if (mode === 'both' || mode === 'semantic') {
+                        const leanHighlights = await next(doc, pos, ctok);
+                        if (leanHighlights?.length) return leanHighlights;
                     }
+                    if (mode === 'both' || mode === 'strings') {
+                        // vscode doesn't fall back to textual highlights,
+                        // so we need to do that manually
+                        await new Promise((res) => setTimeout(res, 250));
+                        if (ctok.isCancellationRequested) return;
 
-                    return highlights;
+                        const wordRange = doc.getWordRangeAtPosition(pos);
+                        if (!wordRange) return;
+                        const word = doc.getText(wordRange);
+
+                        const highlights: DocumentHighlight[] = [];
+                        const text = doc.getText();
+                        const nonWordPattern = '[`~@$%^&*()-=+\\[{\\]}⟨⟩⦃⦄⟦⟧⟮⟯‹›\\\\|;:\",./\\s]|^|$'
+                        const regexp = new RegExp(`(?<=${nonWordPattern})${escapeRegExp(word)}(?=${nonWordPattern})`, 'g')
+                        for (const match of text.matchAll(regexp)) {
+                            const start = doc.positionAt(match.index ?? 0)
+                            highlights.push({
+                                range: new Range(start, start.translate(0, match[0].length)),
+                                kind: DocumentHighlightKind.Text,
+                            })
+                        }
+
+                        return highlights;
+                    }
                 }
             },
         }

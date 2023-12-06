@@ -191,6 +191,8 @@ name of the relative path to the store the logs.
 
 * `lean4.typesInCompletionList`: controls whether the types of all items in the list of completions are displayed. By default, only the type of the highlighted item is shown.
 
+* `lean4.editor.occurrenceHighlightingMode`: determine whether occurrences should be highlighted using Lean's semantic information (the default) or string matching.
+
 ### Infoview settings
 
 * `lean4.infoview.autoOpen`: controls whether the Infoview is automatically displayed when the Lean extension is activated for the first time in a given VS Code workspace(`true` by default).  If you manually close the Infoview it will stay closed for that workspace until.  You can then open it again using the <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> `Lean 4: Infoview: Display Goal` command.
