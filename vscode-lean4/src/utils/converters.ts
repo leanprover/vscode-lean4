@@ -108,8 +108,6 @@ export function patchConverters(p2cConverter: Protocol2CodeConverter, c2pConvert
     // eslint-disable-next-line @typescript-eslint/unbound-method
     const oldP2cAsCodeAction = p2cConverter.asCodeAction
     p2cConverter.asCodeAction = async function (item: ls.CodeAction | null | undefined, token?: code.CancellationToken) {
-		// if (item.diagnostics !== undefined) { result.diagnostics = asDiagnosticsSync(item.diagnostics); }
-		// if (item.edit !== undefined) { result.edit = await asWorkspaceEdit(item.edit, token); }
         if (item === undefined || item === null) return undefined
         if (item.edit || item.diagnostics) {
             const result: code.CodeAction = await oldP2cAsCodeAction.apply(this, [item, token])
