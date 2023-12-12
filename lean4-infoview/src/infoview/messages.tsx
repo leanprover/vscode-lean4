@@ -175,8 +175,8 @@ function AllMessagesBody({uri, messages, setNumDiags}: AllMessagesBodyProps) {
             setNumDiags(msgs.length)
         }
         void fn()
-    }, [messages])
-    React.useEffect(() => () => /* Called on unmount. */ setNumDiags(undefined), [])
+    }, [messages, setNumDiags])
+    React.useEffect(() => () => /* Called on unmount. */ setNumDiags(undefined), [setNumDiags])
     if (msgs === undefined) return <>Loading messages...</>
     else return <MessagesList uri={uri} messages={msgs}/>
 }

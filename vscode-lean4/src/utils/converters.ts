@@ -55,7 +55,7 @@ export function patchConverters(p2cConverter: Protocol2CodeConverter, c2pConvert
     // The original definition refers to `asDiagnostic` as a local function
     // rather than as a member of `Protocol2CodeConverter`,
     // so we need to overwrite it, too.
-    p2cConverter.asDiagnostics = async (diags, token) => async.map(diags, p2cConverter.asDiagnostic, token)
+    p2cConverter.asDiagnostics = async (diags, token) => async.map(diags, d => p2cConverter.asDiagnostic(d), token)
 
     // eslint-disable-next-line @typescript-eslint/unbound-method
     const oldC2pAsDiagnostic = c2pConverter.asDiagnostic
@@ -64,8 +64,9 @@ export function patchConverters(p2cConverter: Protocol2CodeConverter, c2pConvert
         protDiag.fullRange = c2pConverter.asRange(diag.fullRange)
         return protDiag
     }
-    c2pConverter.asDiagnostics = async (diags, token) => async.map(diags, c2pConverter.asDiagnostic, token)
+    c2pConverter.asDiagnostics = async (diags, token) => async.map(diags, d => c2pConverter.asDiagnostic(d), token)
 
+    // eslint-disable-next-line @typescript-eslint/unbound-method
     const oldP2CAsWorkspaceEdit = p2cConverter.asWorkspaceEdit
     p2cConverter.asWorkspaceEdit = async function (item: ls.WorkspaceEdit | null | undefined, token?: code.CancellationToken) {
         if (item === undefined || item === null) return undefined
@@ -104,6 +105,7 @@ export function patchConverters(p2cConverter: Protocol2CodeConverter, c2pConvert
         return oldP2CAsWorkspaceEdit.apply(this, [item, token])
     }
 
+    // eslint-disable-next-line @typescript-eslint/unbound-method
     const oldP2cAsCodeAction = p2cConverter.asCodeAction
     p2cConverter.asCodeAction = async function (item: ls.CodeAction | null | undefined, token?: code.CancellationToken) {
 		// if (item.diagnostics !== undefined) { result.diagnostics = asDiagnosticsSync(item.diagnostics); }
