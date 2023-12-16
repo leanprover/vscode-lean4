@@ -153,7 +153,7 @@ export function getGoToLocation(rs: RpcSessionAtPos, kind: GoToKind, info: InfoW
 
 export interface UserWidget {
     id: string;
-    /** Newer versions of Lean do not send this.
+    /** Newer widget APIs do not send this.
      * In previous versions, it used to be a user-readable name to show in a title bar. */
     name?: string;
     /** A hash (provided by Lean) of the widgetSource's sourcetext.
