@@ -61,7 +61,7 @@ module.exports = {
         "@typescript-eslint/no-explicit-any": "off",
         "@typescript-eslint/no-misused-new": "error",
         "@typescript-eslint/no-unused-vars": "off",
-        "@typescript-eslint/no-namespace": "error",
+        "@typescript-eslint/no-namespace": "off",
         "@typescript-eslint/no-parameter-properties": "off",
         "@typescript-eslint/no-inferrable-types": "off",
         "@typescript-eslint/no-use-before-define": "off",
