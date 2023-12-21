@@ -130,13 +130,22 @@ const InfoDisplayContent = React.memo((props: InfoDisplayContentProps) => {
             initiallyOpen={config.showExpectedType}
             displayCount={false}
             togglingAction='toggleExpectedType' />
-        {userWidgets.map(widget =>
-            <details key={`widget::${widget.id}::${widget.range?.toString()}`} open>
-                <summary className='mv2 pointer'>{widget.name}</summary>
-                <PanelWidgetDisplay pos={pos} goals={goals ? goals.goals : []} termGoal={termGoal}
-                    selectedLocations={selectedLocs} widget={widget}/>
-            </details>
-        )}
+        {userWidgets.map(widget => {
+            const inner =
+                <PanelWidgetDisplay key={`widget::${widget.id}::${widget.range?.toString()}`}
+                    pos={pos}
+                    goals={goals ? goals.goals : []}
+                    termGoal={termGoal}
+                    selectedLocations={selectedLocs}
+                    widget={widget} />
+            if (widget.name)
+                return <details key={`widget::${widget.id}::${widget.range?.toString()}`} open>
+                    <summary className='mv2 pointer'>{widget.name}</summary>
+                    {inner}
+                </details>
+            else
+                return inner
+        })}
         <div style={{display: hasMessages ? 'block' : 'none'}} key='messages'>
             <details key='messages' open>
                 <summary className='mv2 pointer'>Messages ({messages.length})</summary>

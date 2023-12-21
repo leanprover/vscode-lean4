@@ -153,8 +153,9 @@ export function getGoToLocation(rs: RpcSessionAtPos, kind: GoToKind, info: InfoW
 
 export interface UserWidget {
     id: string;
-    /** Pretty user name. */
-    name: string;
+    /** Newer widget APIs do not send this.
+     * In previous versions, it used to be a user-readable name to show in a title bar. */
+    name?: string;
     /** A hash (provided by Lean) of the widgetSource's sourcetext.
      * This is used to look up the WidgetSource object.
      */
