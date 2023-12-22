@@ -119,8 +119,8 @@ export class LeanClient implements Disposable {
             return
         }
 
-        const message = `Imports of '${fileName}' are out of date and must be rebuilt.`
-        const input = 'Rebuild Imports'
+        const message = `Imports of '${fileName}' are out of date and must be rebuilt. Restarting the file will rebuild them.`
+        const input = 'Restart File'
         const choice = await window.showInformationMessage(message, input)
         if (choice !== input) {
             return
