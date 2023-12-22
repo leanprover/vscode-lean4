@@ -837,7 +837,7 @@
 		"@types/semver": "^7.5.4",
 		"@types/vscode": "^1.61.0",
 		"@types/vscode-webview": "^1.57.0",
-		"@vscode/test-electron": "^2.1.2",
+		"@vscode/test-electron": "^2.3.8",
 		"@vscode/vsce": "~2.21.1",
 		"concurrently": "^7.0.0",
 		"copy-webpack-plugin": "^10.2.4",
