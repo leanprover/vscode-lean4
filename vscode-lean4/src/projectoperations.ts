@@ -114,7 +114,6 @@ export class ProjectOperationProvider implements Disposable {
         const activeClient: LeanClient | undefined = this.clientProvider.getActiveClient()
         if (!activeClient) {
             void window.showErrorMessage('No active client.')
-            this.isRunningOperation = false
             return
         }
 
@@ -152,6 +151,13 @@ export class ProjectOperationProvider implements Disposable {
             canPickMany: false
         })
         if (!dependencyChoice) {
+            return
+        }
+
+        const warningMessage = `This command will update ${dependencyChoice.name} to its most recent version. It is only intended to be used by maintainers of this project. If the updated version of ${dependencyChoice.name} is incompatible with any other dependency or the code in this project, this project may not successfully build anymore. Are you sure you want to proceed?`
+        const warningInput = 'Proceed'
+        const warningChoice = await window.showWarningMessage(warningMessage, { modal: true }, warningInput)
+        if (warningChoice !== warningInput) {
             return
         }
 
