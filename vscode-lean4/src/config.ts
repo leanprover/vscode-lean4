@@ -227,6 +227,10 @@ export function shouldShowInvalidProjectWarnings(): boolean {
     return workspace.getConfiguration('lean4').get('showInvalidProjectWarnings', true)
 }
 
+export function getFallBackToStringOccurrenceHighlighting(): boolean {
+    return workspace.getConfiguration('lean4').get('fallBackToStringOccurrenceHighlighting', false)
+}
+
 export function getLeanExecutableName(): string {
     if (process.platform === 'win32') {
         return 'lean.exe'

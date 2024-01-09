@@ -17,7 +17,7 @@ import {
 } from 'vscode-languageclient/node'
 import * as ls from 'vscode-languageserver-protocol'
 
-import { toolchainPath, lakePath, addServerEnvPaths, serverArgs, serverLoggingEnabled, serverLoggingPath, shouldAutofocusOutput, getElaborationDelay, lakeEnabled, automaticallyBuildDependencies } from './config'
+import { toolchainPath, lakePath, addServerEnvPaths, serverArgs, serverLoggingEnabled, serverLoggingPath, shouldAutofocusOutput, getElaborationDelay, lakeEnabled, automaticallyBuildDependencies, getFallBackToStringOccurrenceHighlighting } from './config'
 import { assert } from './utils/assert'
 import { LeanFileProgressParams, LeanFileProgressProcessingInfo, ServerStoppedReason } from '@leanprover/infoview-api';
 import { ExecutionExitCode, ExecutionResult, batchExecute } from './utils/batch'
@@ -635,8 +635,12 @@ export class LeanClient implements Disposable {
                     const leanHighlights = await next(doc, pos, ctok);
                     if (leanHighlights?.length) return leanHighlights;
 
-                    // vscode doesn't fall back to textual highlights,
-                    // so we need to do that manually
+                    // vscode doesn't fall back to textual highlights, so we
+                    // need to do that manually if the user asked for it
+                    if (!getFallBackToStringOccurrenceHighlighting()) {
+                        return [];
+                    }
+
                     await new Promise((res) => setTimeout(res, 250));
                     if (ctok.isCancellationRequested) return;
 
