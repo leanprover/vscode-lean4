@@ -1,14 +1,14 @@
+## Dependencies Needed by Lean 4
+[Git](https://git-scm.com/) is a commonly used [Version Control System](https://en.wikipedia.org/wiki/Version_control) that is used by Lean to help manage different versions of Lean formalization packages and software packages.
+
+[curl](https://curl.se/) is a small tool to transfer data that is used by Lean to download files when managing Lean formalization packages and software packages.
+
 ## Installing Required Dependencies
 1. [Open a new terminal](command:workbench.action.terminal.new).
 2. Type in `/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"` and press Enter to install [Homebrew](https://brew.sh/), a package manager for macOS.
 3. Follow the instructions in the terminal.
 4. Type in `brew install curl git` and press Enter.
 5. Wait until the installation has completed.
-
-## Dependencies Needed by Lean 4
-[Git](https://git-scm.com/) is a commonly used [Version Control System](https://en.wikipedia.org/wiki/Version_control) that is used by Lean to help manage different versions of Lean formalization packages and software packages.
-
-[curl](https://curl.se/) is a small tool to transfer data that is used by Lean to download files when managing Lean formalization packages and software packages.
 
 ## Restricted Environments
 If you are in an environment where you cannot install Homebrew, Git or curl, for example a restricted university computer, you can check if you already have them installed by [opening a new terminal](command:workbench.action.terminal.new), typing in `which git curl` and pressing Enter. If the terminal output displays two file paths and no error, you already have them installed.  

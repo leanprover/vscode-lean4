@@ -1,3 +1,8 @@
+## Dependencies Needed by Lean 4
+[Git](https://git-scm.com/) is a commonly used [Version Control System](https://en.wikipedia.org/wiki/Version_control) that is used by Lean to help manage different versions of Lean formalization packages and software packages.
+
+[curl](https://curl.se/) is a small tool to transfer data that is used by Lean to download files when managing Lean formalization packages and software packages.
+
 ## Installing Required Dependencies
 1. [Open a new terminal](command:workbench.action.terminal.new).
 2. Depending on your Linux distribution, do one of the following to install Git and curl using your package manager:
@@ -6,11 +11,6 @@
     * If you are not sure which Linux distribution you are using, you can try both.
 3. When prompted, type in your login credentials.
 4. Wait until the installation has completed.
-
-## Dependencies Needed by Lean 4
-[Git](https://git-scm.com/) is a commonly used [Version Control System](https://en.wikipedia.org/wiki/Version_control) that is used by Lean to help manage different versions of Lean formalization packages and software packages.
-
-[curl](https://curl.se/) is a small tool to transfer data that is used by Lean to download files when managing Lean formalization packages and software packages.
 
 ## Restricted Environments
 If you are in an environment where you cannot install Git or curl, for example a restricted university computer, you can check if you already have them installed by [opening a new terminal](command:workbench.action.terminal.new), typing in `which git curl` and pressing Enter. If the terminal output displays two file paths and no error, you already have them installed.  
