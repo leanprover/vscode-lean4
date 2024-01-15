@@ -141,23 +141,14 @@ Open this project instead?`
     }
 
     private async cloneProject() {
-        const unparsedProjectUri: string | undefined = await window.showInputBox({
+        const projectUri: string | undefined = await window.showInputBox({
             title: 'URL Input',
             value: 'https://github.com/leanprover-community/mathlib4',
-            prompt: 'URL of Git repository for existing Lean 4 project',
-            validateInput: value => {
-                try {
-                    Uri.parse(value, true)
-                    return undefined // Valid URI
-                } catch (e) {
-                    return 'Invalid URL'
-                }
-            }
+            prompt: 'URL of Git repository for existing Lean 4 project'
         })
-        if (unparsedProjectUri === undefined) {
+        if (projectUri === undefined) {
             return
         }
-        const existingProjectUri = Uri.parse(unparsedProjectUri)
 
         const projectFolder: Uri | undefined = await ProjectInitializationProvider.askForNewProjectFolderLocation({
             saveLabel: 'Create project folder',
@@ -167,7 +158,7 @@ Open this project instead?`
             return
         }
 
-        const result: ExecutionResult = await batchExecuteWithProgress('git', ['clone', existingProjectUri.toString(), projectFolder.fsPath], 'Cloning project', { channel: this.channel, allowCancellation: true })
+        const result: ExecutionResult = await batchExecuteWithProgress('git', ['clone', projectUri, projectFolder.fsPath], 'Cloning project', { channel: this.channel, allowCancellation: true })
         if (result.exitCode === ExecutionExitCode.Cancelled) {
             return
         }
