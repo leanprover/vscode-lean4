@@ -11,7 +11,7 @@
       "match": "\\b(?<!\\.)(global|local|scoped|partial|unsafe|private|protected|noncomputable)(?!\\.)\\b",
       "name": "storage.modifier.lean4"
     },
-    { "match": "\\bsorry\\b", "name": "invalid.illegal.lean4" },
+    { "match": "\\b(sorry|admit|stop)\\b", "name": "invalid.illegal.lean4" },
     { "match": "#(print|eval|reduce|check|check_failure)\\b", "name": "keyword.other.lean4" },
     {
       "match": "\\bderiving\\s+instance\\b",
