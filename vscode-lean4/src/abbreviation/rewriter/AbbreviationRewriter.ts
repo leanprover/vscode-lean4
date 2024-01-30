@@ -1,5 +1,5 @@
 import { Range as LineColRange } from 'vscode';
-import { commands, Disposable, TextEditor, window, workspace, Selection, OutputChannel, TextDocument } from 'vscode';
+import { commands, Disposable, TextEditor, window, workspace, Selection, OutputChannel, TextDocument, extensions } from 'vscode';
 import { assert } from '../../utils/assert';
 import { AbbreviationProvider } from '../AbbreviationProvider';
 import { AbbreviationConfig } from '../config';
@@ -22,6 +22,11 @@ export class AbbreviationRewriter {
 	private dontTrackNewAbbr = false;
 	private stderrOutput: OutputChannel;
 	private firstOutput = true;
+	private isVimExtensionInstalled = false;
+
+	private checkIsVimExtensionInstalled() {
+		this.isVimExtensionInstalled = extensions.getExtension('vscodevim.vim') !== undefined
+	}
 
 	constructor(
 		private readonly config: AbbreviationConfig,
@@ -87,6 +92,9 @@ export class AbbreviationRewriter {
 				this.forceReplace([...this.trackedAbbreviations])
 			)
 		);
+
+		this.checkIsVimExtensionInstalled()
+		this.disposables.push(extensions.onDidChange(_ => this.checkIsVimExtensionInstalled()))
 	}
 
 	private writeError(e: string) {
@@ -204,7 +212,14 @@ export class AbbreviationRewriter {
 		// This is important because setting `this.textEditor.selections = this.textEditor.selections`
 		// may override changes to the cursor made between the `this.textEditor.edit` call and updating
 		// the selection. This is due to `this.textEditor.selections` being only updated on `await`.
-		if (!replacements.some(r => r.cursorOffset)) {
+		//
+		// When users have the Vim extension installed, the builtin selection manipulation of VS Code
+		// consistently moves the cursor to a wrong position, likely because the Vim extension manipulates
+		// the cursor itself or because edits sent by the VS Code extension conflict with that of the
+		// AbbreviationRewriter. In this case, we fall back to manually manipulating the cursor. This is
+		// subject to race conditions, but at least not consistently wrong, as would otherwise be the case
+		// with the Vim extension installed.
+		if (!replacements.some(r => r.cursorOffset) && !this.isVimExtensionInstalled) {
 			return
 		}
 
