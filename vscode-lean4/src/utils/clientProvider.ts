@@ -10,7 +10,7 @@ import { addDefaultElanPath, getDefaultElanPath, addToolchainBinPath, isElanDisa
 import { displayErrorWithOutput } from './errors';
 import { Diagnostic, DiagnosticSeverity, PublishDiagnosticsParams, integer } from 'vscode-languageclient';
 
-interface PendingDiagnosticNotification {
+interface NotificationDiagnostic {
     client: LeanClient
     uri: Uri
     version: integer
@@ -38,7 +38,7 @@ export class LeanClientProvider implements Disposable {
     /**
      * Notifications that will be discharged as soon as the file denoted by a key in the map is selected.
      */
-    private pendingNotifications: Map<string, PendingDiagnosticNotification[]> = new Map()
+    private pendingNotifications: Map<string, NotificationDiagnostic[]> = new Map()
 
     private progressChangedEmitter = new EventEmitter<[string, LeanFileProgressProcessingInfo[]]>()
     progressChanged = this.progressChangedEmitter.event
@@ -390,7 +390,7 @@ export class LeanClientProvider implements Disposable {
                 const version = doc.version
 
                 for (const d of params.diagnostics) {
-                    if (!this.isDiagnosticNotification(d)) {
+                    if (!this.isNotificationDiagnostic(d)) {
                         continue
                     }
 
@@ -401,7 +401,7 @@ export class LeanClientProvider implements Disposable {
                         diagnostic: d
                     }
 
-                    await this.addPendingDiagnosticNotification(n)
+                    await this.addPendingNotificationDiagnostic(n)
                 }
             })
 
@@ -459,7 +459,7 @@ Open this project instead?`
         }
     }
 
-    private async addPendingDiagnosticNotification(newPendingNotification: PendingDiagnosticNotification) {
+    private async addPendingNotificationDiagnostic(newPendingNotification: NotificationDiagnostic) {
         const uri = newPendingNotification.uri
         const pendingNotifications = this.pendingNotifications.get(uri.fsPath) ?? []
         pendingNotifications.push(newPendingNotification)
@@ -499,7 +499,7 @@ Open this project instead?`
 
     }
 
-    private isDiagnosticNotification(d: Diagnostic): boolean {
+    private isNotificationDiagnostic(d: Diagnostic): boolean {
         return this.isImportOutdatedWarning(d) || this.isImportsOutdatedError(d)
     }
 
