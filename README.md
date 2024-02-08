@@ -136,8 +136,8 @@ You can also disable auto-opening behavior using the setting `lean4.infoViewAuto
   | Symbol | Description |
   |--------|-------------|
   | ![quotes](vscode-lean4/media/quotes.png) | Copy the contents of the widget to a comment in the active text editor. |
-  | ![pin](vscode-lean4/media/pin.png) | Split off a "pinned" tactic state widget, which tracks the tactic state at a fixed position, even if you move your cursor away.  When pinned you will see the unpin and reveal file location icons appear. |
-  | ![unpin](vscode-lean4/media/unpin.png) | Remove a pinned widget from the Infoview. |
+  | ![pin](vscode-lean4/media/pin.png) | Remove a pinned widget from the Infoview. |
+  | ![unpin](vscode-lean4/media/unpin.png) | Split off a "pinned" tactic state widget, which tracks the tactic state at a fixed position, even if you move your cursor away.  When pinned you will see the unpin and reveal file location icons appear. |
   | ![reveal](vscode-lean4/media/reveal-file-location.png) | Move the cursor in the editor to the pinned location in the file. |
   | ![pause](vscode-lean4/media/pause.png) | Prevent the tactic state widget from updating when the file is edited. When paused you will see the following addition icons show up.
   | ![continue](vscode-lean4/media/continue.png) | Once paused you can then click this icon to resume updates. |
