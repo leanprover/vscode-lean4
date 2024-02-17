@@ -2,7 +2,7 @@
 	"name": "lean4",
 	"displayName": "lean4",
 	"description": "Lean 4 language support for VS Code",
-	"version": "0.0.127",
+	"version": "0.0.128",
 	"publisher": "leanprover",
 	"engines": {
 		"vscode": "^1.75.0"
@@ -894,7 +894,7 @@
 		"test": "node ./out/test/suite/runTest.js"
 	},
 	"dependencies": {
-		"@leanprover/infoview": "~0.4.3",
+		"@leanprover/infoview": "~0.4.5",
 		"@leanprover/infoview-api": "~0.2.1",
 		"axios": "^1.6.2",
 		"cheerio": "^1.0.0-rc.10",
