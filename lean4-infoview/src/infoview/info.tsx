@@ -8,7 +8,7 @@ import { ConfigContext, EditorContext, LspDiagnosticsContext, ProgressContext } 
 import { lspDiagToInteractive, MessagesList } from './messages';
 import { getInteractiveGoals, getInteractiveTermGoal, InteractiveDiagnostic,
     InteractiveGoals, UserWidgetInstance, Widget_getWidgets, RpcSessionAtPos, isRpcError,
-    RpcErrorCode, getInteractiveDiagnostics, InteractiveTermGoal } from '@leanprover/infoview-api';
+    RpcErrorCode, getInteractiveDiagnostics, InteractiveTermGoal, LeanDiagnostic } from '@leanprover/infoview-api';
 import { PanelWidgetDisplay } from './userWidget'
 import { RpcContext, useRpcSessionAtPos } from './rpcSessions';
 import { GoalsLocation, Locations, LocationsContext } from './goalLocation';
@@ -267,7 +267,7 @@ function InfoAux(props: InfoProps) {
         // Note: the curly braces are important. https://medium.com/geekculture/react-uncaught-typeerror-destroy-is-not-a-function-192738a6e79b
         setLspDiagsHere(diags0 => {
             const diagPred = (d: Diagnostic) =>
-                RangeHelpers.contains(d.range, {line: pos.line, character: pos.character}, config.allErrorsOnLine)
+                RangeHelpers.contains((d as LeanDiagnostic).fullRange || d.range, {line: pos.line, character: pos.character}, config.allErrorsOnLine)
             const newDiags = (lspDiags.get(pos.uri) || []).filter(diagPred)
             if (newDiags.length === diags0.length && newDiags.every((d, i) => d === diags0[i])) return diags0
             return newDiags
