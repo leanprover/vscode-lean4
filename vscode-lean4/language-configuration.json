@@ -130,5 +130,27 @@
         ["\"", "\""],
         ["'", "'"]
     ],
-    "wordPattern" : "([^`~@$%^&*()\\-=+\\[{\\]}⟨⟩⦃⦄⟦⟧⟮⟯‹›<>\\\\|;:\",./\\s]+)"
+    "wordPattern" : "([^`~@$%^&*()\\-=+\\[{\\]}⟨⟩⦃⦄⟦⟧⟮⟯‹›<>\\\\|;:\",./\\s]+)",
+    "onEnterRules" : [
+        {
+            "beforeText" : "^\\s*(·|\\.)\\s((((?!--).)*\\b(?<!(\\.|#))(by|do|try|finally|then|else|where|from|extends|deriving|termination_by(')?|decreasing_by|calc(\\b.*)?))|((.*\\s)?(:=|←|=>|::|<\\|)))\\s*(--.*)?$",
+            "action" : { "indent" : "indent", "appendText": "\t" }
+        },
+        {
+            "beforeText" : "^((((?!--).)*\\b(?<!(\\.|#))(by|do|try|finally|then|else|where|from|extends|deriving|termination_by(')?|decreasing_by|calc(\\b.*)?))|((.*\\s)?(:=|←|=>|::|<\\|)))\\s*(--.*)?$",
+            "action" : { "indent" : "indent" }
+        },
+        {
+            "beforeText" : "^\\s*(·|\\.)\\s.*\\s:\\s*$",
+            "action" : { "indent" : "indent", "appendText": "\t\t" }
+        },
+        {
+            "beforeText" : "^(?!\\s*(\\(|{|\\[|⦃)).*\\s:\\s*$",
+            "action" : { "indent" : "indent", "appendText": "\t" }
+        },
+        {
+            "beforeText" : "^\\s*(·|\\.)\\s.*$",
+            "action" : { "indent" : "indent" }
+        }
+    ]
 }
