@@ -36,6 +36,23 @@
     },
     { "begin": "«", "end": "»", "contentName": "entity.name.lean4" },
     {
+      "begin": "(s!)\"", "end": "\"",
+      "name": "string.interpolated.lean4",
+      "beginCaptures": {
+        "1": { "name": "keyword.other.lean4" }
+      },
+      "patterns": [
+        {
+          "begin": "(\\{)", "end": "(\\})",
+          "beginCaptures": { "1": { "name": "keyword.other.lean4" } },
+          "endCaptures": { "1": { "name": "keyword.other.lean4" } },
+          "patterns": [ {"include": "$self"} ] },
+        { "match": "\\\\[\\\\\"ntr']", "name": "constant.character.escape.lean4" },
+        { "match": "\\\\x[0-9A-Fa-f][0-9A-Fa-f]", "name": "constant.character.escape.lean4" },
+        { "match": "\\\\u[0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f]", "name": "constant.character.escape.lean4" }
+      ]
+    },
+    {
       "begin": "\"", "end": "\"",
       "name": "string.quoted.double.lean4",
       "patterns": [
