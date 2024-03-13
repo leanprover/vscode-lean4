@@ -1,5 +1,5 @@
 import { Range as LineColRange } from 'vscode';
-import { commands, Disposable, TextEditor, window, workspace, Selection, OutputChannel, TextDocument } from 'vscode';
+import { commands, Disposable, TextEditor, window, workspace, Selection, OutputChannel, TextDocument, extensions } from 'vscode';
 import { assert } from '../../utils/assert';
 import { AbbreviationProvider } from '../AbbreviationProvider';
 import { AbbreviationConfig } from '../config';
@@ -22,6 +22,11 @@ export class AbbreviationRewriter {
 	private dontTrackNewAbbr = false;
 	private stderrOutput: OutputChannel;
 	private firstOutput = true;
+	private isVimExtensionInstalled = false;
+
+	private checkIsVimExtensionInstalled() {
+		this.isVimExtensionInstalled = extensions.getExtension('vscodevim.vim') !== undefined
+	}
 
 	constructor(
 		private readonly config: AbbreviationConfig,
@@ -61,7 +66,7 @@ export class AbbreviationRewriter {
 		);
 		this.disposables.push(
 			window.onDidChangeTextEditorSelection((e) => {
-				if (e.textEditor !== this.textEditor) {
+				if (e.textEditor.document !== this.textEditor.document) {
 					return;
 				}
 
@@ -87,6 +92,9 @@ export class AbbreviationRewriter {
 				this.forceReplace([...this.trackedAbbreviations])
 			)
 		);
+
+		this.checkIsVimExtensionInstalled()
+		this.disposables.push(extensions.onDidChange(_ => this.checkIsVimExtensionInstalled()))
 	}
 
 	private writeError(e: string) {
@@ -108,95 +116,160 @@ export class AbbreviationRewriter {
 			this.trackedAbbreviations.delete(a);
 		}
 
-		// Wait for VS Code to trigger `onDidChangeTextEditorSelection`
-		await waitForNextTick();
+		const replacements = this.computeReplacements(abbreviations)
+		const replacingSuccessful = await this.replaceAbbreviations(replacements)
 
+		if (replacingSuccessful) {
+			this.moveSelections(replacements)
+			this.abbreviationProvider.onAbbreviationsCompleted(this.textEditor);
+		} else {
+			// If replacing the abbreviation did not succeed, keep it around so that we can re-try next time
+			// when the text document was changed, the cursor was moved around or the replacement was triggered
+			// manually.
+			for (const a of abbreviations) {
+				this.trackedAbbreviations.add(a);
+			}
+		}
+
+		this.updateState();
+	}
+
+	private computeReplacements(abbreviations: TrackedAbbreviation[]): {
+		range: Range
+		newText: string
+		cursorOffset?: number | undefined
+	}[] {
 		const cursorVar = '$CURSOR';
 		const replacements = new Array<{
-			range: Range;
-			newText: string;
-			transformOffsetInRange: (offset: number) => number;
+			range: Range
+			newText: string
+			cursorOffset?: number | undefined
 		}>();
+
 		for (const abbr of abbreviations) {
 			const symbol = abbr.matchingSymbol;
 			if (symbol) {
 				const newText = symbol.replace(cursorVar, '');
-				let cursorOffset = symbol.indexOf(cursorVar);
+				let cursorOffset: number | undefined = symbol.indexOf(cursorVar);
 				if (cursorOffset === -1) {
-					// position the cursor after the inserted symbol
-					cursorOffset = newText.length;
+					cursorOffset = undefined;
 				}
 				replacements.push({
 					range: abbr.range,
 					newText,
-					transformOffsetInRange: (offset) => cursorOffset,
+					cursorOffset,
 				});
 			}
 		}
-		// Process replacements with highest offset first
-		replacements.sort((a, b) => b.range.offset - a.range.offset);
 
-		// We cannot rely on VS Code to update the selections -
-		// it becomes janky if symbols are inserted that are longer
-		// than their abbreviation. It also does not really work for \[[]].
-		const newSelections = this.textEditor.selections
-			.map((s) => fromVsCodeRange(s, this.textEditor.document))
-			.map((s) => {
-				// Apply the replacement of abbreviations to the selections.
-				let newSel = s;
-				for (const r of replacements) {
-					if (
-						r.range.isBefore(newSel) &&
-						!r.range.containsRange(newSel)
-					) {
-						// don't do this on ` \abbr| `
-						newSel = newSel.move(r.newText.length - r.range.length);
-					} else if (
-						!r.range.isAfter(newSel) ||
-						r.range.containsRange(newSel)
-					) {
-						// do this on ` \abbr| ` or ` \ab|br `
-						// newSel and r.range intersect
-						const offset = newSel.offset - r.range.offset;
-						const newOffset = r.transformOffsetInRange(offset);
-						newSel = newSel.move(newOffset - offset);
-					}
-				}
-				return newSel;
-			});
+		return replacements
+	}
 
+	private async replaceAbbreviations(replacements: {
+		range: Range;
+		newText: string;
+		cursorOffset?: number | undefined;
+	}[]): Promise<Boolean> {
 		// We don't want replaced symbols (e.g. "\") to trigger abbreviations.
 		this.dontTrackNewAbbr = true;
+
 		let ok = false;
+		let retries = 0
 		try {
-			ok = await this.textEditor.edit((builder) => {
-				for (const r of replacements) {
-					builder.replace(
-						toVsCodeRange(r.range, this.textEditor.document),
-						r.newText
-					);
-				}
-			});
+			// The user may have changed the text document in-between `this.textEditor` being updated
+			// (when the call to the extension was started) and `this.textEditor.edit()` being executed.
+			// In this case, since the state of the editor that the extension sees and the state that
+			// the user sees are different, VS Code will reject the edit.
+			// This occurs especially often in setups with increased latency until the extension is triggered,
+			// e.g. an SSH setup. Since VS Code does not appear to support an atomic read -> write operation,
+			// unfortunately the only thing we can do here is to retry.
+			while (!ok && retries < 10) {
+				ok = await this.textEditor.edit((builder) => {
+					for (const r of replacements) {
+						builder.replace(
+							toVsCodeRange(r.range, this.textEditor.document),
+							r.newText
+						);
+					}
+				})
+				retries++
+			}
 		} catch (e) {
-			this.writeError('Error: while replacing abbreviation: ' + e);
+			this.writeError('Error while replacing abbreviation: ' + e);
 		}
+
 		this.dontTrackNewAbbr = false;
 
-		if (ok) {
-			this.textEditor.selections = newSelections.map((s) => {
-				const vr = toVsCodeRange(s, this.textEditor.document);
-				return new Selection(vr.start, vr.end);
-			});
+		return ok
+	}
 
-			this.abbreviationProvider.onAbbreviationsCompleted(this.textEditor);
-		}
-		else {
-			// Our edit did not succeed, do not update the selections.
-			// This can happen if `waitForNextTick` waits too long.
-			this.writeError('Error: Unable to replace abbreviation');
+	private moveSelections(replacements: {
+		range: Range;
+		newText: string;
+		cursorOffset?: number | undefined;
+	}[]) {
+		// Only move the cursor if there were any abbreviations with $CURSOR.
+		// This is important because setting `this.textEditor.selections = this.textEditor.selections`
+		// may override changes to the cursor made between the `this.textEditor.edit` call and updating
+		// the selection. This is due to `this.textEditor.selections` being only updated on `await`.
+		//
+		// When users have the Vim extension installed, the builtin selection manipulation of VS Code
+		// consistently moves the cursor to a wrong position, likely because the Vim extension manipulates
+		// the cursor itself or because edits sent by the VS Code extension conflict with that of the
+		// AbbreviationRewriter. In this case, we fall back to manually manipulating the cursor. This is
+		// subject to race conditions, but at least not consistently wrong, as would otherwise be the case
+		// with the Vim extension installed.
+		if (!replacements.some(r => r.cursorOffset) && !this.isVimExtensionInstalled) {
+			return
 		}
 
-		this.updateState();
+		// Process replacements with lowest offset first
+		replacements.sort((a, b) => a.range.offset - b.range.offset);
+
+		const afterEditReplacements = new Array<{
+			range: Range
+			newText: string
+			cursorOffset?: number | undefined
+		}>();
+		let totalOffsetShift = 0
+		for (const r of replacements) {
+			// Re-adjust range to account for new length and changes in prior lengths.
+			const afterEditRange = new Range(r.range.offset + totalOffsetShift, r.newText.length)
+			afterEditReplacements.push({
+				range: afterEditRange,
+				newText: r.newText,
+				cursorOffset: r.cursorOffset
+			})
+			totalOffsetShift += r.newText.length - r.range.length
+		}
+
+		const newSelections = this.textEditor.selections
+			.map(s => fromVsCodeRange(s, this.textEditor.document))
+			.map(s => {
+				for (const r of afterEditReplacements) {
+					if (!r.cursorOffset) {
+						// Only move cursor if abbreviation contained $CURSOR
+						continue
+					}
+
+					const isCursorAtEndOfAbbreviation = s.offset === r.range.offsetEnd + 1
+					// Safety check: Prevents moving the cursor if e.g. the replacement triggered
+					// because the selection was moved away from the abbreviation.
+					if (isCursorAtEndOfAbbreviation) {
+						// Move cursor backwards to the position of $CURSOR
+						return s.move(r.cursorOffset - r.newText.length)
+					}
+				}
+
+				// Cursor not at the end of any abbreviation that contained $CURSOR
+				// => Keep it where it is
+				return s
+			})
+
+		this.textEditor.selections = newSelections.map(s => {
+			const vr = toVsCodeRange(s, this.textEditor.document);
+			return new Selection(vr.start, vr.end)
+		});
 	}
 
 	private updateState() {
@@ -270,8 +343,4 @@ function toVsCodeRange(range: Range, doc: TextDocument): LineColRange {
 	const start = doc.positionAt(range.offset);
 	const end = doc.positionAt(range.offsetEnd + 1);
 	return new LineColRange(start, end);
-}
-
-function waitForNextTick(): Promise<void> {
-	return new Promise((res) => setTimeout(res, 0));
 }

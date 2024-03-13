@@ -19,9 +19,9 @@ containing the following:
 1. Open your file `hello.lean`.
 1. If `Lean` is not yet installed on your system you will see a prompt like this:
 
-    ![prompt](vscode-lean4/media/install-elan.png)
+    ![prompt](vscode-lean4/media/install-lean.png)
 
-1. Click the `Install Lean using Elan` option and enter any default options that appear in the terminal window.
+1. Click the `Install Lean` option and enter any default options that appear in the terminal window.
 1. After this succeeds the correct version of Lean will be installed by `elan`
 and you should see something like this in the `Lean: Editor` output panel:
     ```
@@ -136,8 +136,8 @@ You can also disable auto-opening behavior using the setting `lean4.infoViewAuto
   | Symbol | Description |
   |--------|-------------|
   | ![quotes](vscode-lean4/media/quotes.png) | Copy the contents of the widget to a comment in the active text editor. |
-  | ![pin](vscode-lean4/media/pin.png) | Split off a "pinned" tactic state widget, which tracks the tactic state at a fixed position, even if you move your cursor away.  When pinned you will see the unpin and reveal file location icons appear. |
-  | ![unpin](vscode-lean4/media/unpin.png) | Remove a pinned widget from the Infoview. |
+  | ![pin](vscode-lean4/media/pin.png) | Remove a pinned widget from the Infoview. |
+  | ![unpin](vscode-lean4/media/unpin.png) | Split off a "pinned" tactic state widget, which tracks the tactic state at a fixed position, even if you move your cursor away.  When pinned you will see the unpin and reveal file location icons appear. |
   | ![reveal](vscode-lean4/media/reveal-file-location.png) | Move the cursor in the editor to the pinned location in the file. |
   | ![pause](vscode-lean4/media/pause.png) | Prevent the tactic state widget from updating when the file is edited. When paused you will see the following addition icons show up.
   | ![continue](vscode-lean4/media/continue.png) | Once paused you can then click this icon to resume updates. |
@@ -191,6 +191,8 @@ name of the relative path to the store the logs.
 
 * `lean4.typesInCompletionList`: controls whether the types of all items in the list of completions are displayed. By default, only the type of the highlighted item is shown.
 
+* `lean4.fallBackToStringOccurrenceHighlighting`: controls whether the editor should fall back to string-based occurrence highlighting when there are no symbol occurrences found.
+
 ### Infoview settings
 
 * `lean4.infoview.autoOpen`: controls whether the Infoview is automatically displayed when the Lean extension is activated for the first time in a given VS Code workspace(`true` by default).  If you manually close the Infoview it will stay closed for that workspace until.  You can then open it again using the <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> `Lean 4: Infoview: Display Goal` command.
@@ -208,6 +210,18 @@ name of the relative path to the store the logs.
 * `lean4.infoview.emphasizeFirstGoal`: emphasize the first goal by displaying the other goals with reduced size and opacity. The default is `false`.
 
 * `lean4.infoview.reverseTacticState`: show each goal above its local context by default. This can also be toggled by clicking a button (see the Infoview panel description above). The default is `false`.
+
+#### Colors
+
+These colors are used to display proof states in the infoview:
+
+* `lean4.infoView.hypothesisName`: accessible hypothesis names
+* `lean4.infoView.inaccessibleHypothesisName`: inaccessible hypothesis names
+* `lean4.infoView.goalCount`: the number of goals
+* `lean4.infoView.turnstile`: the turnstile (⊢) that separates the hypotheses from the goal
+* `lean4.infoView.caseLabel`: case labels (e.g. `case zero`)
+
+They can be set in a color theme, or under `workbench.colorCustomizations` in the settings file.
 
 ## Extension commands
 

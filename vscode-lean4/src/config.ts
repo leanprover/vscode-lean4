@@ -146,6 +146,10 @@ export function serverEnv(): object {
     return workspace.getConfiguration('lean4').get('serverEnv', {})
 }
 
+export function automaticallyBuildDependencies(): boolean {
+    return workspace.getConfiguration('lean4').get('automaticallyBuildDependencies', false)
+}
+
 export function serverEnvPaths(): string[] {
     return workspace.getConfiguration('lean4').get('serverEnvPaths', [])
 }
@@ -217,6 +221,14 @@ export function getInfoViewShowTooltipOnHover(): boolean {
 
 export function getElaborationDelay(): number {
     return workspace.getConfiguration('lean4').get('elaborationDelay', 200);
+}
+
+export function shouldShowInvalidProjectWarnings(): boolean {
+    return workspace.getConfiguration('lean4').get('showInvalidProjectWarnings', true)
+}
+
+export function getFallBackToStringOccurrenceHighlighting(): boolean {
+    return workspace.getConfiguration('lean4').get('fallBackToStringOccurrenceHighlighting', false)
 }
 
 export function getLeanExecutableName(): string {

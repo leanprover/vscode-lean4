@@ -8,7 +8,7 @@ import { ConfigContext, EditorContext, LspDiagnosticsContext, ProgressContext } 
 import { lspDiagToInteractive, MessagesList } from './messages';
 import { getInteractiveGoals, getInteractiveTermGoal, InteractiveDiagnostic,
     InteractiveGoals, UserWidgetInstance, Widget_getWidgets, RpcSessionAtPos, isRpcError,
-    RpcErrorCode, getInteractiveDiagnostics, InteractiveTermGoal } from '@leanprover/infoview-api';
+    RpcErrorCode, getInteractiveDiagnostics, InteractiveTermGoal, LeanDiagnostic } from '@leanprover/infoview-api';
 import { PanelWidgetDisplay } from './userWidget'
 import { RpcContext, useRpcSessionAtPos } from './rpcSessions';
 import { GoalsLocation, Locations, LocationsContext } from './goalLocation';
@@ -130,13 +130,22 @@ const InfoDisplayContent = React.memo((props: InfoDisplayContentProps) => {
             initiallyOpen={config.showExpectedType}
             displayCount={false}
             togglingAction='toggleExpectedType' />
-        {userWidgets.map(widget =>
-            <details key={`widget::${widget.id}::${widget.range?.toString()}`} open>
-                <summary className='mv2 pointer'>{widget.name}</summary>
-                <PanelWidgetDisplay pos={pos} goals={goals ? goals.goals : []} termGoal={termGoal}
-                    selectedLocations={selectedLocs} widget={widget}/>
-            </details>
-        )}
+        {userWidgets.map(widget => {
+            const inner =
+                <PanelWidgetDisplay key={`widget::${widget.id}::${widget.range?.toString()}`}
+                    pos={pos}
+                    goals={goals ? goals.goals : []}
+                    termGoal={termGoal}
+                    selectedLocations={selectedLocs}
+                    widget={widget} />
+            if (widget.name)
+                return <details key={`widget::${widget.id}::${widget.range?.toString()}`} open>
+                    <summary className='mv2 pointer'>{widget.name}</summary>
+                    {inner}
+                </details>
+            else
+                return inner
+        })}
         <div style={{display: hasMessages ? 'block' : 'none'}} key='messages'>
             <details key='messages' open>
                 <summary className='mv2 pointer'>Messages ({messages.length})</summary>
@@ -258,7 +267,7 @@ function InfoAux(props: InfoProps) {
         // Note: the curly braces are important. https://medium.com/geekculture/react-uncaught-typeerror-destroy-is-not-a-function-192738a6e79b
         setLspDiagsHere(diags0 => {
             const diagPred = (d: Diagnostic) =>
-                RangeHelpers.contains(d.range, {line: pos.line, character: pos.character}, config.allErrorsOnLine)
+                RangeHelpers.contains((d as LeanDiagnostic).fullRange || d.range, {line: pos.line, character: pos.character}, config.allErrorsOnLine)
             const newDiags = (lspDiags.get(pos.uri) || []).filter(diagPred)
             if (newDiags.length === diags0.length && newDiags.every((d, i) => d === diags0[i])) return diags0
             return newDiags

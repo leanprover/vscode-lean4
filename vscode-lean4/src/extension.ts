@@ -1,44 +1,61 @@
-import { window, Uri, workspace, ExtensionContext, TextDocument } from 'vscode'
+import { window, ExtensionContext, TextDocument, tasks, commands, Disposable, workspace } from 'vscode'
 import { AbbreviationFeature } from './abbreviation'
 import { InfoProvider } from './infoview'
-import { DocViewProvider } from './docview';
+import { DocViewProvider } from './docview'
 import { LeanTaskGutter } from './taskgutter'
 import { LeanInstaller } from './utils/leanInstaller'
-import { LeanpkgService } from './utils/leanpkg';
-import { LeanClientProvider } from './utils/clientProvider';
-import { addDefaultElanPath, removeElanPath, addToolchainBinPath, isElanDisabled, getDefaultLeanVersion} from './config';
-import { findLeanPackageVersionInfo } from './utils/projectInfo';
+import { LeanpkgService } from './utils/leanpkg'
+import { LeanClientProvider } from './utils/clientProvider'
+import { addDefaultElanPath, removeElanPath, addToolchainBinPath, isElanDisabled, getDefaultLeanVersion, getDefaultElanPath} from './config'
+import { findLeanPackageVersionInfo } from './utils/projectInfo'
 import { Exports } from './exports';
 import { logger } from './utils/logger'
+import { ProjectInitializationProvider } from './projectinit'
+import { ProjectOperationProvider } from './projectoperations'
+import { LeanClient } from './leanclient'
+
+interface AlwaysEnabledFeatures {
+    docView: DocViewProvider
+    projectInitializationProvider: ProjectInitializationProvider
+    installer: LeanInstaller
+}
+
+interface Lean4EnabledFeatures {
+    clientProvider: LeanClientProvider
+    infoProvider: InfoProvider
+    projectOperationProvider: ProjectOperationProvider
+}
+
+async function setLeanFeatureSetActive(isActive: boolean) {
+    await commands.executeCommand('setContext', 'lean4.isLeanFeatureSetActive', isActive)
+}
 
 function isLean(languageId : string) : boolean {
     return languageId === 'lean' || languageId === 'lean4';
 }
 
-
-function getLeanDocument() : TextDocument | undefined {
-    let document : TextDocument | undefined;
-    if (window.activeTextEditor && isLean(window.activeTextEditor.document.languageId))
-    {
-        document = window.activeTextEditor.document
+function findOpenLeanDocument() : TextDocument | undefined {
+    const activeEditor = window.activeTextEditor
+    if (activeEditor && isLean(activeEditor.document.languageId)) {
+        return activeEditor.document
     }
-    else {
-        // This happens if vscode starts with a lean file open
-        // but the "Getting Started" page is active.
-        for (const editor of window.visibleTextEditors) {
-            const lang = editor.document.languageId;
-            if (isLean(lang)) {
-                document = editor.document;
-                break;
-            }
+
+    // This happens if vscode starts with a lean file open
+    // but the "Getting Started" page is active.
+    for (const editor of window.visibleTextEditors) {
+        if (isLean(editor.document.languageId)) {
+            return editor.document
         }
     }
-    return document;
+
+    return undefined;
 }
 
-export async function activate(context: ExtensionContext): Promise<Exports> {
-
-    // for unit test that tests behavior when there is no elan installed.
+/**
+ * Activates all extension features that are *always* enabled, even when no Lean 4 document is currently open.
+ */
+function activateAlwaysEnabledFeatures(context: ExtensionContext): AlwaysEnabledFeatures {
+    // For unit test that tests behavior when there is no elan installed.
     if (isElanDisabled()) {
         const elanRoot = removeElanPath();
         if (elanRoot){
@@ -48,60 +65,148 @@ export async function activate(context: ExtensionContext): Promise<Exports> {
         addDefaultElanPath();
     }
 
-    const defaultToolchain = getDefaultLeanVersion();
-
-    // note: workspace.rootPath can be undefined in the untitled or adhoc case
-    // where the user ran "code lean_filename".
-    const doc = getLeanDocument();
-    let packageUri = null;
-    let toolchainVersion = null;
-    if (doc) {
-        [packageUri, toolchainVersion] = await findLeanPackageVersionInfo(doc.uri);
-        if (toolchainVersion && toolchainVersion.indexOf('lean:3') > 0) {
-            logger.log(`Lean4 skipping lean 3 project: ${toolchainVersion}`);
-            return { isLean4Project: false, version: toolchainVersion,
-                infoProvider: undefined, clientProvider: undefined, installer: undefined, docView: undefined };
-        }
-    }
-
-    const outputChannel = window.createOutputChannel('Lean: Editor');
-
-    const installer = new LeanInstaller(outputChannel, defaultToolchain)
-    context.subscriptions.push(installer);
-
-    const versionInfo = await installer.checkLeanVersion(packageUri, toolchainVersion??defaultToolchain)
-    // Check whether rootPath is a Lean 3 project (the Lean 3 extension also uses the deprecated rootPath)
-    if (versionInfo.version === '3') {
-        context.subscriptions.pop()?.dispose(); // stop installer
-        // We need to terminate before registering the LeanClientProvider,
-        // because that class changes the document id to `lean4`.
-        return { isLean4Project: false, version: '3',
-            infoProvider: undefined, clientProvider: undefined, installer: undefined, docView: undefined };
-    }
-
-    const pkgService = new LeanpkgService()
-    context.subscriptions.push(pkgService);
-
-    const leanClientProvider = new LeanClientProvider(installer, pkgService, outputChannel);
-    context.subscriptions.push(leanClientProvider)
-
-    const info = new InfoProvider(leanClientProvider, {language: 'lean4'}, context);
-    context.subscriptions.push(info)
-
-    const abbrev = new AbbreviationFeature();
-    context.subscriptions.push(abbrev);
+    context.subscriptions.push(commands.registerCommand('lean4.setup.showSetupGuide', async () =>
+        commands.executeCommand('workbench.action.openWalkthrough', 'leanprover.lean4#lean4.welcome', false)))
 
     const docView = new DocViewProvider(context.extensionUri);
     context.subscriptions.push(docView);
 
-    // pass the abbreviations through to the docView so it can show them on demand.
+    const outputChannel = window.createOutputChannel('Lean: Editor');
+    context.subscriptions.push(commands.registerCommand('lean4.troubleshooting.showOutput', () => outputChannel.show(true)))
+
+    const projectInitializationProvider = new ProjectInitializationProvider(outputChannel)
+    context.subscriptions.push(projectInitializationProvider)
+
+    const defaultToolchain = getDefaultLeanVersion();
+    const installer = new LeanInstaller(outputChannel, defaultToolchain)
+
+    context.subscriptions.push(commands.registerCommand('lean4.setup.installElan', async () => {
+        await installer.installElan();
+        if (isElanDisabled()) {
+            addToolchainBinPath(getDefaultElanPath());
+        } else {
+            addDefaultElanPath();
+        }
+    }))
+
+    return { docView, projectInitializationProvider, installer }
+}
+
+async function isLean3Project(installer: LeanInstaller): Promise<boolean> {
+    const doc = findOpenLeanDocument();
+
+    const [packageUri, toolchainVersion] = doc
+        ? await findLeanPackageVersionInfo(doc.uri)
+        : [null, null]
+
+    if (toolchainVersion && toolchainVersion.indexOf('lean:3') > 0) {
+        logger.log(`Lean4 skipping lean 3 project: ${toolchainVersion}`);
+        return true
+    }
+
+    const versionInfo = await installer.checkLeanVersion(packageUri, toolchainVersion ?? installer.getDefaultToolchain())
+    if (versionInfo.version === '3') {
+        return true
+    }
+
+    return false
+}
+
+function activateAbbreviationFeature(context: ExtensionContext, docView: DocViewProvider): AbbreviationFeature {
+    const abbrev = new AbbreviationFeature();
+    // Pass the abbreviations through to the docView so it can show them on demand.
     docView.setAbbreviations(abbrev.abbreviations.symbolsByAbbreviation);
+    context.subscriptions.push(abbrev);
+    return abbrev
+}
 
-    context.subscriptions.push(new LeanTaskGutter(leanClientProvider, context))
+async function activateLean4Features(context: ExtensionContext, installer: LeanInstaller): Promise<Lean4EnabledFeatures> {
+    const clientProvider = new LeanClientProvider(installer, installer.getOutputChannel());
+    context.subscriptions.push(clientProvider)
 
-    pkgService.versionChanged((uri) => installer.handleVersionChanged(uri));
+    const pkgService = new LeanpkgService()
+    pkgService.versionChanged(async uri => {
+        const client: LeanClient | undefined = clientProvider.getClientForFolder(uri)
+        if (client && !client.isRunning()) {
+            // This can naturally happen when we update the Lean version using the "Update Dependency" command
+            // because the Lean server is stopped while doing so. We want to avoid triggering the "Version changed"
+            // message in this case.
+            return
+        }
+        await installer.handleVersionChanged(uri)
+    });
     pkgService.lakeFileChanged((uri) => installer.handleLakeFileChanged(uri));
+    context.subscriptions.push(pkgService);
 
-    return { isLean4Project: true, version: '4',
-        infoProvider: info, clientProvider: leanClientProvider, installer, docView};
+    const infoProvider = new InfoProvider(clientProvider, {language: 'lean4'}, context);
+    context.subscriptions.push(infoProvider)
+
+    context.subscriptions.push(new LeanTaskGutter(clientProvider, context))
+
+    const projectOperationProvider: ProjectOperationProvider = new ProjectOperationProvider(installer.getOutputChannel(), clientProvider)
+
+    await setLeanFeatureSetActive(true)
+
+    return { clientProvider, infoProvider, projectOperationProvider }
+}
+
+let extensionExports: Exports
+
+export async function activate(context: ExtensionContext): Promise<Exports> {
+    await setLeanFeatureSetActive(false)
+    const alwaysEnabledFeatures: AlwaysEnabledFeatures = activateAlwaysEnabledFeatures(context)
+
+    if (await isLean3Project(alwaysEnabledFeatures.installer)) {
+        extensionExports = {
+            isLean4Project: false,
+            version: '3',
+            infoProvider: undefined,
+            clientProvider: undefined,
+            projectOperationProvider: undefined,
+            installer: alwaysEnabledFeatures.installer,
+            docView: alwaysEnabledFeatures.docView,
+            projectInitializationProver: alwaysEnabledFeatures.projectInitializationProvider
+        }
+        return extensionExports
+    }
+
+    activateAbbreviationFeature(context, alwaysEnabledFeatures.docView)
+
+    if (findOpenLeanDocument()) {
+        const lean4EnabledFeatures: Lean4EnabledFeatures = await activateLean4Features(context, alwaysEnabledFeatures.installer)
+        extensionExports = {
+            isLean4Project: true,
+            version: '4',
+            infoProvider: lean4EnabledFeatures.infoProvider,
+            clientProvider: lean4EnabledFeatures.clientProvider,
+            projectOperationProvider: lean4EnabledFeatures.projectOperationProvider,
+            installer: alwaysEnabledFeatures.installer,
+            docView: alwaysEnabledFeatures.docView,
+            projectInitializationProver: alwaysEnabledFeatures.projectInitializationProvider
+        }
+        return extensionExports
+    }
+
+    // No Lean 4 document yet => Load remaining features when one is open
+    const disposeActivationListener: Disposable = workspace.onDidOpenTextDocument(async doc => {
+        if (isLean(doc.languageId)) {
+            const lean4EnabledFeatures: Lean4EnabledFeatures = await activateLean4Features(context, alwaysEnabledFeatures.installer)
+            extensionExports.infoProvider = lean4EnabledFeatures.infoProvider
+            extensionExports.clientProvider = lean4EnabledFeatures.clientProvider
+            extensionExports.projectOperationProvider = lean4EnabledFeatures.projectOperationProvider
+            disposeActivationListener.dispose()
+        }
+    }, context.subscriptions)
+
+    extensionExports = {
+        isLean4Project: true,
+        version: '4',
+        infoProvider: undefined,
+        clientProvider: undefined,
+        projectOperationProvider: undefined,
+        installer: alwaysEnabledFeatures.installer,
+        docView: alwaysEnabledFeatures.docView,
+        projectInitializationProver: alwaysEnabledFeatures.projectInitializationProvider
+    }
+    return extensionExports
 }
