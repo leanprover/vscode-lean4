@@ -3,7 +3,7 @@ import path = require('path');
 import { checkParentFoldersForLeanProject, isValidLeanProject } from './utils/projectInfo';
 import { elanSelfUpdate } from './utils/elan';
 import { lake } from './utils/lake';
-import { ExecutionExitCode, ExecutionResult, batchExecuteWithProgress, displayError } from './utils/batch';
+import { ExecutionExitCode, ExecutionResult, batchExecute, batchExecuteWithProgress, displayError } from './utils/batch';
 
 export class ProjectInitializationProvider implements Disposable {
 
@@ -34,6 +34,11 @@ export class ProjectInitializationProvider implements Disposable {
             return
         }
 
+        const initialCommitResult: 'Success' | 'GitAddFailed' | 'GitCommitFailed' = await this.createInitialCommit(projectFolder)
+        if (initialCommitResult !== 'Success') {
+            return
+        }
+
         await ProjectInitializationProvider.openNewFolder(projectFolder)
     }
 
@@ -50,6 +55,20 @@ export class ProjectInitializationProvider implements Disposable {
         }
         if (cacheGetResult.exitCode !== ExecutionExitCode.Success) {
             await displayError(cacheGetResult, 'Cannot fetch Mathlib build artifact cache.')
+            return
+        }
+
+        const buildResult: ExecutionResult = await lake(this.channel, projectFolder, mathlibToolchain).build()
+        if (buildResult.exitCode === ExecutionExitCode.Cancelled) {
+            return
+        }
+        if (buildResult.exitCode !== ExecutionExitCode.Success) {
+            await displayError(buildResult, 'Cannot build Lean project.')
+            return
+        }
+
+        const initialCommitResult: 'Success' | 'GitAddFailed' | 'GitCommitFailed' = await this.createInitialCommit(projectFolder)
+        if (initialCommitResult !== 'Success') {
             return
         }
 
@@ -90,6 +109,22 @@ export class ProjectInitializationProvider implements Disposable {
         }
 
         return projectFolder
+    }
+
+    private async createInitialCommit(projectFolder: Uri): Promise<'Success' | 'GitAddFailed' | 'GitCommitFailed'> {
+        const gitAddResult = await batchExecute('git', ['add', '--all'], projectFolder.fsPath, { combined: this.channel } )
+        if (gitAddResult.exitCode !== ExecutionExitCode.Success) {
+            await displayError(gitAddResult, 'Cannot add files to staging area of Git repository for project.')
+            return 'GitAddFailed'
+        }
+
+        const gitCommitResult = await batchExecute('git', ['commit', '--author', 'Lean 4 VS Code Extension <>', '-m', 'Initial commit'], projectFolder.fsPath, { combined: this.channel } )
+        if (gitCommitResult.exitCode !== ExecutionExitCode.Success) {
+            await displayError(gitAddResult, 'Cannot commit files to Git repository for project.')
+            return 'GitCommitFailed'
+        }
+
+        return 'Success'
     }
 
     private async openProject() {
