@@ -4,6 +4,7 @@ import { checkParentFoldersForLeanProject, isValidLeanProject } from './utils/pr
 import { elanSelfUpdate } from './utils/elan';
 import { lake } from './utils/lake';
 import { ExecutionExitCode, ExecutionResult, batchExecute, batchExecuteWithProgress, displayError } from './utils/batch';
+import { diagnose } from './utils/setupDiagnostics';
 
 export class ProjectInitializationProvider implements Disposable {
 
@@ -84,6 +85,10 @@ export class ProjectInitializationProvider implements Disposable {
             title: 'Create a new project folder'
         })
         if (projectFolder === undefined) {
+            return 'DidNotComplete'
+        }
+
+        if (await this.checkSetupDeps(projectFolder) === 'IncompleteSetup') {
             return 'DidNotComplete'
         }
 
@@ -176,6 +181,10 @@ Open this project instead?`
     }
 
     private async cloneProject() {
+        if (await this.checkGit() === 'GitNotInstalled') {
+            return
+        }
+
         const projectUri: string | undefined = await window.showInputBox({
             title: 'URL Input',
             value: 'https://github.com/leanprover-community/mathlib4',
@@ -199,6 +208,10 @@ Open this project instead?`
         }
         if (result.exitCode !== ExecutionExitCode.Success) {
             await displayError(result, 'Cannot download project.')
+            return
+        }
+
+        if (await this.checkLake(projectFolder) === 'LakeNotInstalled') {
             return
         }
 
@@ -236,6 +249,36 @@ Open this project instead?`
             // This kills the extension host, so it has to be the last command
             await commands.executeCommand('vscode.openFolder', projectFolder)
         }
+    }
+
+    private async checkSetupDeps(projectFolder: Uri): Promise<'CompleteSetup' | 'IncompleteSetup'> {
+        if (await this.checkGit(projectFolder) === 'GitNotInstalled') {
+            return 'IncompleteSetup'
+        }
+        if (await this.checkLake(projectFolder) === 'LakeNotInstalled') {
+            return 'IncompleteSetup'
+        }
+        return 'CompleteSetup'
+    }
+
+    private async checkGit(projectFolder?: Uri | undefined): Promise<'GitInstalled' | 'GitNotInstalled'> {
+        if (!await diagnose(this.channel, projectFolder).checkGitAvailable()) {
+            const message = `Git is not installed. Lean uses Git to download and install specific versions of Lean packages.
+Click the following link to learn how to install Git: [(Show Setup Guide)](command:lean4.setup.showSetupGuide)`
+            void window.showErrorMessage(message)
+            return 'GitNotInstalled'
+        }
+        return 'GitInstalled'
+    }
+
+    private async checkLake(projectFolder: Uri): Promise<'LakeInstalled' | 'LakeNotInstalled'> {
+        if (!await diagnose(this.channel, projectFolder).checkLakeAvailable()) {
+            const message = `Lean's package manager Lake is not installed. This likely means that Lean itself is also not installed.
+Click the following link to learn how to install Lean: [(Show Setup Guide)](command:lean4.setup.showSetupGuide)`
+            void window.showErrorMessage(message)
+            return 'LakeNotInstalled'
+        }
+        return 'LakeInstalled'
     }
 
     dispose() {

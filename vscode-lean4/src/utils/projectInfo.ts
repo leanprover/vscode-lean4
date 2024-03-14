@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import { URL } from 'url';
-import { FileType, Uri, workspace, WorkspaceFolder } from 'vscode';
+import { Uri, workspace, WorkspaceFolder } from 'vscode';
 import { fileExists } from './fsHelper';
 import { logger } from './logger'
 import path = require('path');
