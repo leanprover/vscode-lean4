@@ -74,9 +74,9 @@ export function basename(path: string): string {
  * A specialization of {@link React.useEffect} which executes `f` with the event data whenever
  * `ev` fires. */
 export function useEvent<E>(ev: EventEmitter<E>, f: (_: E) => void,
-    dependencies?: React.DependencyList): void {
+    dependencies?: React.DependencyList, key?: string): void {
   React.useEffect(() => {
-    const h = ev.on(f);
+    const h = ev.on(f, key);
     return () => h.dispose();
   }, dependencies)
 }
