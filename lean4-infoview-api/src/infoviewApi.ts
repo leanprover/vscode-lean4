@@ -144,6 +144,13 @@ export interface InfoviewApi {
   requestedAction(action: InfoviewAction): Promise<void>;
 
   /**
+   * Must fire whenever the user requests to go to a definition using the infoview context menu.
+   * `interactiveCodeTagId` is obtainable from the `data-vscode-context` field in
+   * `InteractiveCodeTag`s in the InfoView.
+   */
+  goToDefinition(interactiveCodeTagId: string): Promise<void>;
+
+  /**
    * Execute the given JavaScript code inside the infoview. Must not be used
    * for anything other than testing.
    */

@@ -5,19 +5,38 @@ import type { Disposable } from 'vscode-languageserver-protocol';
  * to all registered handlers. Handlers can be registered using `on`. */
 export class EventEmitter<E> {
     private handlers: ((_: E) => void)[] = [];
+    private handlersWithKey = new Map<string, ((_: E) => void)[]>();
     current?: E;
 
-    on(handler: (_: E) => void): Disposable {
-        this.handlers.push(handler);
+    on(handler: (_: E) => void, key?: string | undefined): Disposable {
+        if (key) {
+            const handlersForKey = this.handlersWithKey.get(key) ?? [];
+            handlersForKey.push(handler);
+        } else {
+            this.handlers.push(handler);
+        }
         return {
-          dispose: () => { this.handlers = this.handlers.filter((h) => h !== handler); }
+            dispose: () => {
+                if (key) {
+                    const handlersForKey = this.handlersWithKey.get(key) ?? [];
+                    this.handlersWithKey.set(key, handlersForKey.filter((h) => h !== handler));
+                } else {
+                    this.handlers = this.handlers.filter((h) => h !== handler);
+                }
+            }
         };
     }
 
-    fire(event: E): void {
+    fire(event: E, key?: string | undefined): void {
         this.current = event;
         for (const h of this.handlers) {
             h(event);
+        }
+        if (key) {
+            const handlersForKey = this.handlersWithKey.get(key) ?? [];
+            for (const h of handlersForKey) {
+                h(event);
+            }
         }
     }
 

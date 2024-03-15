@@ -1,7 +1,7 @@
 import * as React from 'react'
 
 import { EditorContext } from './contexts'
-import { useAsync, mapRpcError } from './util'
+import { useAsync, mapRpcError, useEvent } from './util'
 import { SubexprInfo, CodeWithInfos, InteractiveDiagnostics_infoToInteractive, getGoToLocation, TaggedText, DiffTag } from '@leanprover/infoview-api'
 import { HoverState, WithTooltipOnHover } from './tooltips'
 import { Location } from 'vscode-languageserver-protocol'
@@ -143,6 +143,11 @@ function InteractiveCodeTag({tag: ct, fmt}: InteractiveTagProps<SubexprInfo>) {
   // an underline if a jump target is available.
   React.useEffect(() => { if (hoverState === 'ctrlOver') void fetchGoToLoc() }, [hoverState, fetchGoToLoc])
 
+  const execGoToLoc = () => void fetchGoToLoc().then(loc => {
+    if (loc === undefined) return
+    void ec.revealPosition({ uri: loc.uri, ...loc.range.start })
+  })
+
   const locs = React.useContext(LocationsContext)
   const ourLoc = locs && locs.subexprTemplate && ct.subexprPos ?
     GoalsLocation.withSubexprPos(locs.subexprTemplate, ct.subexprPos) :
@@ -153,17 +158,23 @@ function InteractiveCodeTag({tag: ct, fmt}: InteractiveTagProps<SubexprInfo>) {
     spanClassName += DIFF_TAG_TO_CLASS[ct.diffStatus] + ' '
   }
 
+  // ID that we can use to identify the component that a context menu was opened in.
+  // When selecting a custom context menu entry, VS Code will execute a VS Code command
+  // parameterized with `data-vscode-context`. We then use this context to execute the
+  // command in the context of the correct interactive code tag in the InfoView.
+  const interactiveCodeTagId = React.useId()
+  const vscodeContext = { interactiveCodeTagId }
+  useEvent(ec.events.goToDefinition, _ => execGoToLoc(), undefined, interactiveCodeTagId)
+
   return (
     <WithTooltipOnHover
+      data-vscode-context={JSON.stringify(vscodeContext)}
       tooltipChildren={<TypePopupContents info={ct} />}
       onClick={(e, next) => {
         // On ctrl-click or ⌘-click, if location is known, go to it in the editor
         if (e.ctrlKey || e.metaKey) {
           setHoverState(st => st === 'over' ? 'ctrlOver' : st)
-          void fetchGoToLoc().then(loc => {
-            if (loc === undefined) return
-            void ec.revealPosition({ uri: loc.uri, ...loc.range.start })
-          })
+          execGoToLoc()
         } else if (!e.shiftKey) next(e)
       }}
       onContextMenu={e => {

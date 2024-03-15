@@ -134,7 +134,7 @@ export class DocViewProvider implements Disposable {
                 retainContextWhenHidden: true,
             };
 
-            this.webview = window.createWebviewPanel('lean4', 'Lean Documentation',
+            this.webview = window.createWebviewPanel('lean4_docview', 'Lean Documentation',
                 { viewColumn: 3, preserveFocus: true }, options)
             this.webview.onDidDispose(() => this.webview = undefined);
             this.webview.webview.onDidReceiveMessage(m => this.receiveMessage(m));

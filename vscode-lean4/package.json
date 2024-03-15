@@ -279,6 +279,12 @@
 				"description": "Toggle the display of expected type."
 			},
 			{
+				"command": "lean4.infoview.goToDefinition",
+				"category": "Lean 4",
+				"title": "Go to Definition",
+				"description": "Go to definition for the currently selected element in the InfoView."
+			},
+			{
 				"command": "lean4.docView.showAllAbbreviations",
 				"category": "Lean 4",
 				"title": "Docview: Show All Abbreviations",
@@ -723,6 +729,12 @@
 					"command": "lean4.restartFile",
 					"when": "editorLangId == lean4",
 					"group": "z_commands"
+				}
+			],
+			"webview/context": [
+				{
+					"command": "lean4.infoview.goToDefinition",
+					"when": "webviewId == 'lean4_infoview' && interactiveCodeTagId"
 				}
 			]
 		},
