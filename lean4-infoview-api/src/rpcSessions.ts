@@ -83,7 +83,7 @@ class RpcSessionForFile {
                 clearTimeout(releaseTimeout);
                 releaseTimeout = undefined;
             } else if (releaseTimeout === undefined) {
-                releaseTimeout = setTimeout(() => {
+                releaseTimeout = window.setTimeout(() => {
                     void this.releaseNow()
                     releaseTimeout = undefined;
                 }, 100);
