@@ -8,7 +8,7 @@ import { isFileInFolder } from './fsHelper';
 import { logger } from './logger'
 import { addDefaultElanPath, getDefaultElanPath, addToolchainBinPath, isElanDisabled, shouldShowInvalidProjectWarnings } from '../config'
 import { displayErrorWithOutput } from './errors';
-import { Diagnostic, DiagnosticSeverity, PublishDiagnosticsParams, integer } from 'vscode-languageclient';
+import { Diagnostic, DiagnosticSeverity, integer } from 'vscode-languageclient';
 
 interface NotificationDiagnostic {
     client: LeanClient

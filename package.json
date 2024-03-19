@@ -2,10 +2,10 @@
   "name": "@leanprover/vscode-lean4-repo",
   "private": true,
   "scripts": {
-    "build": "npm run build --workspaces --if-present",
-    "test": "npm run test --workspaces --if-present",
-    "watch": "npm run watch --workspaces --if-present",
-    "watchTest": "npm run watchTest --workspaces --if-present",
+    "build": "lerna run --stream build",
+    "test": "lerna run --stream test",
+    "watch": "lerna run --parallel --stream watch",
+    "watchTest": "lerna run --parallel --stream watchTest",
     "lint": "eslint -c .eslintrc.js \"{lean4-infoview-api,lean4-infoview,vscode-lean4}/src/**/*.{ts,tsx}\" \"vscode-lean4/test/suite/**/*.{ts,tsx}\""
   },
   "workspaces": [
@@ -18,6 +18,7 @@
     "@typescript-eslint/parser": "^5.62.0",
     "eslint": "^8.45.0",
     "eslint-plugin-react-hooks": "^4.6.0",
-    "typescript": "^4.9.5"
+    "typescript": "^4.9.5",
+    "lerna": "^8.1.2"
   }
 }

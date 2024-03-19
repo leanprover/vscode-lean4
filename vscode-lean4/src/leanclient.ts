@@ -582,7 +582,7 @@ export class LeanClient implements Disposable {
                 didChange: async (data, next) => {
                     await next(data);
                     if (!this.running || !this.client) return; // there was a problem starting lean server.
-                    const params = c2pConverter.asChangeTextDocumentParams(data);
+                    const params = c2pConverter.asChangeTextDocumentParams(data, data.document.uri, data.document.version);
                     this.didChangeEmitter.fire(params);
                 },
 
