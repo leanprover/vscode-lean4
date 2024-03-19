@@ -88,11 +88,11 @@ export class ProjectInitializationProvider implements Disposable {
             return 'DidNotComplete'
         }
 
+        await workspace.fs.createDirectory(projectFolder)
+
         if (await this.checkSetupDeps(projectFolder) === 'IncompleteSetup') {
             return 'DidNotComplete'
         }
-
-        await workspace.fs.createDirectory(projectFolder)
 
         // This can fail silently in setups without Elan.
         await elanSelfUpdate(this.channel)
