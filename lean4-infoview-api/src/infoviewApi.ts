@@ -146,7 +146,7 @@ export interface InfoviewApi {
   /**
    * Must fire whenever the user requests to go to a definition using the infoview context menu.
    * `interactiveCodeTagId` is obtainable from the `data-vscode-context` field in
-   * `InteractiveCodeTag`s in the InfoView.
+   * `InteractiveCodeTag`s in the InfoView. See https://code.visualstudio.com/api/extension-guides/webview#context-menus.
    */
   goToDefinition(interactiveCodeTagId: string): Promise<void>;
 
