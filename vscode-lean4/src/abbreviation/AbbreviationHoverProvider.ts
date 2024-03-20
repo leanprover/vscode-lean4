@@ -38,7 +38,7 @@ export class AbbreviationHoverProvider implements HoverProvider {
 				const autoClosingInfo =
 					autoClosingAbbrevs.length === 0
 					? ''
-					: `. ${symbol} can also be auto-closed with ${autoClosingAbbrevs
+					: `. ${symbol} can be auto-closed with ${autoClosingAbbrevs
 						.map((([a, closingSym]) => `${closingSym} using \`${leader}${a}\``))
 						.join(' or ')}.`
 				return abbrevInfo + autoClosingInfo
