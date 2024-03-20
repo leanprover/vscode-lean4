@@ -30,12 +30,19 @@ export class AbbreviationHoverProvider implements HoverProvider {
 		const leader = this.config.abbreviationCharacter.get();
 
 		const hoverMarkdown = allAbbrevs
-			.map(
-				({ symbol, abbrevs }) =>
-					`Type ${symbol} using ${abbrevs
-						.map((a) => '`' + leader + a + '`')
-						.join(' or ')}`
-			)
+			.map(({ symbol, abbrevs }) => {
+				const abbrevInfo = `Type ${symbol} using ${abbrevs
+					.map((a) => '`' + leader + a + '`')
+					.join(' or ')}`
+				const autoClosingAbbrevs = this.abbreviations.findAutoClosingAbbreviations(symbol)
+				const autoClosingInfo =
+					autoClosingAbbrevs.length === 0
+					? ''
+					: `. ${symbol} can also be auto-closed with ${autoClosingAbbrevs
+						.map((([a, closingSym]) => `${closingSym} using \`${leader}${a}\``))
+						.join(' or ')}.`
+				return abbrevInfo + autoClosingInfo
+			})
 			.join('\n\n');
 
 		const maxSymbolLength = Math.max(
