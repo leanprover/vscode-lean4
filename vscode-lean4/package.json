@@ -554,6 +554,10 @@
 					"when": "lean4.isLeanFeatureSetActive"
 				},
 				{
+					"command": "lean4.infoview.goToDefinition",
+					"when": "false"
+				},
+				{
 					"command": "lean4.docView.open"
 				},
 				{
