@@ -44,6 +44,12 @@ export class AbbreviationProvider implements Disposable {
 			.map(([abbr]) => abbr);
 	}
 
+	findAutoClosingAbbreviations(openingSymbol: string): [string, string][]  {
+		return Object.entries(this.symbolsByAbbreviation)
+			.filter(([_, sym]) => sym.startsWith(`${openingSymbol}$CURSOR`))
+			.map(([abbr, sym]) => [abbr, sym.replace(`${openingSymbol}$CURSOR`, '')])
+	}
+
 	findSymbolsIn(symbolPlusUnknown: string): string[] {
 		const result = new Set<string>();
 		for (const [abbr, sym] of Object.entries(this.symbolsByAbbreviation)) {
