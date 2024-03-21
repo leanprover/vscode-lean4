@@ -282,7 +282,7 @@
 				"command": "lean4.infoview.goToDefinition",
 				"category": "Lean 4",
 				"title": "Go to Definition",
-				"description": "Go to definition for the currently selected element in the InfoView."
+				"description": "This command is an implementation detail of the 'Go to Definition' context menu option in the infoview."
 			},
 			{
 				"command": "lean4.docView.showAllAbbreviations",
