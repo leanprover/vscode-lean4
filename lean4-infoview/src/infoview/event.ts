@@ -1,30 +1,37 @@
 import type { Disposable } from 'vscode-languageserver-protocol'
 
 export class EventEmitter<E> {
-    private handlers: ((_: E) => void)[] = []
+    private freshId: number = 0
+    private handlers = new Map<number, (_: E) => void>()
     private handlersWithKey = new Map<string, ((_: E) => void)[]>()
     current?: E
 
-    /** Register a handler for events emitted by this emitter
-     * and return a closure that removed the handler registration.
+    /**
+     * Register a handler that will receive events from this emitter
+     * and return a closure that removes the handler registration.
      *
-     * If `key` is specified, only events fired with that key will propagate to this handler.
+     * If `key` is specified, only events fired with that key
+     * will be propagated to this handler.
      */
     on(handler: (_: E) => void, key?: string): Disposable {
+        const id = this.freshId
+        this.freshId += 1
         if (key) {
             const handlersForKey = this.handlersWithKey.get(key) ?? []
             handlersForKey.push(handler)
             this.handlersWithKey.set(key, handlersForKey)
         } else {
-            this.handlers.push(handler)
+            this.handlers.set(id, handler)
         }
         return {
             dispose: () => {
                 if (key) {
                     const handlersForKey = this.handlersWithKey.get(key) ?? []
+                    // We assume that no key has so many handlers registered
+                    // that the linear `filter` operation becomes a perf issue.
                     this.handlersWithKey.set(key, handlersForKey.filter(h => h !== handler))
                 } else {
-                    this.handlers = this.handlers.filter(h => h !== handler)
+                    this.handlers.delete(id)
                 }
             }
         }
@@ -39,7 +46,7 @@ export class EventEmitter<E> {
      */
     fire(event: E, key?: string): void {
         this.current = event
-        for (const h of this.handlers) {
+        for (const h of this.handlers.values()) {
             h(event)
         }
         if (key) {
@@ -48,10 +55,6 @@ export class EventEmitter<E> {
                 h(event)
             }
         }
-    }
-
-    dispose(): void {
-        this.handlers = []
     }
 }
 
