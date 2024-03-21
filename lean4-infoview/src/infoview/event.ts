@@ -1,9 +1,9 @@
 import type { Disposable } from 'vscode-languageserver-protocol'
 
-export class EventEmitter<E> {
+export class EventEmitter<E, in out K> {
     private freshId: number = 0
     private handlers = new Map<number, (_: E) => void>()
-    private handlersWithKey = new Map<string, ((_: E) => void)[]>()
+    private handlersWithKey = new Map<K, ((_: E) => void)[]>()
     current?: E
 
     /**
@@ -13,7 +13,7 @@ export class EventEmitter<E> {
      * If `key` is specified, only events fired with that key
      * will be propagated to this handler.
      */
-    on(handler: (_: E) => void, key?: string): Disposable {
+    on(handler: (_: E) => void, key?: K): Disposable {
         const id = this.freshId
         this.freshId += 1
         if (key) {
@@ -44,7 +44,7 @@ export class EventEmitter<E> {
      * Furthermore if `key` is provided,
      * the event is also propagated to handlers registered with that key.
      */
-    fire(event: E, key?: string): void {
+    fire(event: E, key?: K): void {
         this.current = event
         for (const h of this.handlers.values()) {
             h(event)
@@ -67,6 +67,6 @@ type ExcludeNonEvent<T, U> = T extends (...args: any) => Promise<void> ? U : nev
  */
 export type Eventify<T> = {
     [P in keyof T as ExcludeNonEvent<T[P], P>]:
-        T[P] extends (arg: infer A) => Promise<void> ? EventEmitter<A> :
-            T[P] extends (...args: infer As) => Promise<void> ? EventEmitter<As> : never
+        T[P] extends (arg: infer A) => Promise<void> ? EventEmitter<A, never> :
+            T[P] extends (...args: infer As) => Promise<void> ? EventEmitter<As, never> : never
 }
