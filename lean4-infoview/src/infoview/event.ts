@@ -12,6 +12,7 @@ export class EventEmitter<E> {
         if (key) {
             const handlersForKey = this.handlersWithKey.get(key) ?? [];
             handlersForKey.push(handler);
+            this.handlersWithKey.set(key, handlersForKey);
         } else {
             this.handlers.push(handler);
         }
