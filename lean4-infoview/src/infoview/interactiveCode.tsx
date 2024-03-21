@@ -143,10 +143,11 @@ function InteractiveCodeTag({tag: ct, fmt}: InteractiveTagProps<SubexprInfo>) {
   // an underline if a jump target is available.
   React.useEffect(() => { if (hoverState === 'ctrlOver') void fetchGoToLoc() }, [hoverState, fetchGoToLoc])
 
-  const execGoToLoc = () => void fetchGoToLoc().then(loc => {
-    if (loc === undefined) return
-    void ec.revealPosition({ uri: loc.uri, ...loc.range.start })
-  })
+  const execGoToLoc = React.useCallback(async () => {
+      const loc = await fetchGoToLoc()
+      if (loc === undefined) return
+      await ec.revealPosition({ uri: loc.uri, ...loc.range.start })
+    }, [fetchGoToLoc, ec])
 
   const locs = React.useContext(LocationsContext)
   const ourLoc = locs && locs.subexprTemplate && ct.subexprPos ?
@@ -164,7 +165,7 @@ function InteractiveCodeTag({tag: ct, fmt}: InteractiveTagProps<SubexprInfo>) {
   // command in the context of the correct interactive code tag in the InfoView.
   const interactiveCodeTagId = React.useId()
   const vscodeContext = { interactiveCodeTagId }
-  useEvent(ec.events.goToDefinition, _ => execGoToLoc(), undefined, interactiveCodeTagId)
+  useEvent(ec.events.goToDefinition, _ => void execGoToLoc(), [execGoToLoc], interactiveCodeTagId)
 
   return (
     <WithTooltipOnHover
@@ -174,7 +175,7 @@ function InteractiveCodeTag({tag: ct, fmt}: InteractiveTagProps<SubexprInfo>) {
         // On ctrl-click or ⌘-click, if location is known, go to it in the editor
         if (e.ctrlKey || e.metaKey) {
           setHoverState(st => st === 'over' ? 'ctrlOver' : st)
-          execGoToLoc()
+          void execGoToLoc()
         } else if (!e.shiftKey) next(e)
       }}
       onContextMenu={e => {

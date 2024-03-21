@@ -5,6 +5,10 @@ import { EditorContext } from './contexts';
 import { DocumentPosition, Keyed, PositionHelpers, useClientNotificationEffect, useClientNotificationState, useEvent, useEventResult } from './util';
 import { Info, InfoProps } from './info';
 
+function isPinned(pinnedPositions: DocumentPosition[], pos: DocumentPosition): boolean {
+    return pinnedPositions.some(p => DocumentPosition.isEqual(p, pos));
+}
+
 /** Manages and displays pinned infos, as well as info for the current location. */
 export function Infos() {
     const ec = React.useContext(EditorContext);
@@ -88,9 +92,6 @@ export function Infos() {
 
     // Update pins on UI actions
     const pinKey = React.useRef<number>(0);
-    const isPinned = (pinnedPositions: DocumentPosition[], pos: DocumentPosition) => {
-        return pinnedPositions.some(p => DocumentPosition.isEqual(p, pos));
-    }
     const pin = React.useCallback((pos: DocumentPosition) => {
         setPinnedPositions(pinnedPositions => {
             if (isPinned(pinnedPositions, pos)) return pinnedPositions;
@@ -106,8 +107,7 @@ export function Infos() {
     }, [setPinnedPositions]);
 
     // Toggle pin at current position when the editor requests it
-    useEvent(ec.events.requestedAction, act => {
-        if (act.kind !== 'togglePin') return
+    useEvent(ec.events.requestedAction, _ => {
         if (!curPos) return
         setPinnedPositions(pinnedPositions => {
             if (isPinned(pinnedPositions, curPos)) {
@@ -117,7 +117,7 @@ export function Infos() {
                 return [ ...pinnedPositions, { ...curPos, key: pinKey.current.toString() } ];
             }
         });
-    }, [curPos?.uri, curPos?.line, curPos?.character]);
+    }, [curPos?.uri, curPos?.line, curPos?.character, setPinnedPositions, pinKey], 'togglePin');
 
     const infoProps: Keyed<InfoProps>[] = pinnedPositions.map(pos => ({ kind: 'pin', onPin: unpin, pos, key: pos.key }));
     if (curPos) infoProps.push({ kind: 'cursor', onPin: pin, key: 'cursor' });
