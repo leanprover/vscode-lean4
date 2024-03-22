@@ -225,8 +225,6 @@ export class LeanClientProvider implements Disposable {
 
             await client.openLean4Document(document)
 
-            await this.dischargePendingNotifications(document.uri)
-
             await this.checkIsValidProjectFolder(client.folderUri)
         } catch (e) {
             logger.log(`[ClientProvider] ### Error opening document: ${e}`);
@@ -376,35 +374,6 @@ export class LeanClientProvider implements Disposable {
                 this.progressChangedEmitter.fire(arg);
             });
 
-            client.diagnostics(async params => {
-                if (!client) {
-                    return
-                }
-
-                const fileUri = Uri.parse(params.uri)
-
-                const doc: TextDocument | undefined = workspace.textDocuments.find(doc => doc.uri.fsPath === fileUri.fsPath)
-                if (!doc) {
-                    return
-                }
-                const version = doc.version
-
-                for (const d of params.diagnostics) {
-                    if (!this.isNotificationDiagnostic(d)) {
-                        continue
-                    }
-
-                    const n = {
-                        client,
-                        uri: fileUri,
-                        version,
-                        diagnostic: d
-                    }
-
-                    await this.addPendingNotificationDiagnostic(n)
-                }
-            })
-
             client.restartedWorker(uri => this.didCloseEditor(Uri.parse(uri)))
 
             this.pending.delete(key);
@@ -457,112 +426,6 @@ Open this project instead?`
             // this kills the extension host
             await commands.executeCommand('vscode.openFolder', parentProjectFolder)
         }
-    }
-
-    private async addPendingNotificationDiagnostic(newPendingNotification: NotificationDiagnostic) {
-        const uri = newPendingNotification.uri
-        const pendingNotifications = this.pendingNotifications.get(uri.fsPath) ?? []
-        pendingNotifications.push(newPendingNotification)
-        this.pendingNotifications.set(uri.fsPath, pendingNotifications)
-
-        // File is already open => immediately discharge notification
-        if (window.visibleTextEditors.some(e => e.document.uri.fsPath === uri.fsPath)) {
-            await this.dischargePendingNotifications(uri)
-        }
-    }
-
-    private async dischargePendingNotifications(uri: Uri) {
-        const pendingNotifications = this.pendingNotifications.get(uri.fsPath) ?? []
-        this.pendingNotifications.delete(uri.fsPath)
-
-        const importsOutdatedErrors = pendingNotifications.filter(n => this.isImportsOutdatedError(n.diagnostic))
-        if (importsOutdatedErrors.length > 0) {
-            void this.issueImportsOutdatedError(importsOutdatedErrors[0].client, uri)
-        }
-
-        const importOutdatedWarnings = pendingNotifications.filter(n => this.isImportOutdatedWarning(n.diagnostic))
-        if (importOutdatedWarnings.length > 0) {
-            let maxVersionWarning = importOutdatedWarnings[0]
-            for (const importOutdatedWarning of importOutdatedWarnings) {
-                if (importOutdatedWarning.version > maxVersionWarning.version) {
-                    maxVersionWarning = importOutdatedWarning
-                }
-            }
-            const code = maxVersionWarning.diagnostic.code as string // ensured by isImportOutdatedWarning
-            const data = maxVersionWarning.diagnostic.data
-            const isOldImportOutdatedWarning = this.isKnownNotificationDiagnostic(uri, code, data)
-            if (!isOldImportOutdatedWarning) {
-                this.addNotificationDiagnostic(uri, code, data)
-                void this.issueImportOutdatedWarning(maxVersionWarning.client, uri, maxVersionWarning.diagnostic)
-            }
-        }
-
-    }
-
-    private isNotificationDiagnostic(d: Diagnostic): boolean {
-        return this.isImportOutdatedWarning(d) || this.isImportsOutdatedError(d)
-    }
-
-    private isImportOutdatedWarning(d: Diagnostic): boolean {
-        return d.severity === DiagnosticSeverity.Warning && d.code === 'LanguageServer_ImportOutOfDate'
-    }
-
-    private isImportsOutdatedError(d: Diagnostic): boolean {
-        return d.severity === DiagnosticSeverity.Error
-            && d.message.includes('Imports are out of date and must be rebuilt')
-            && d.range.start.line === 0
-            && d.range.start.character === 0
-            && d.range.end.line === 0
-            && d.range.end.character === 0
-    }
-
-    private async issueImportsOutdatedError(client: LeanClient, fileUri: Uri) {
-        const fileName = path.basename(fileUri.fsPath)
-        const message = `Imports of '${fileName}' are out of date and must be rebuilt. Restarting the file will rebuild them.`
-        const input = 'Restart File'
-        const choice = await window.showInformationMessage(message, input)
-        if (choice !== input) {
-            return
-        }
-
-        const document = workspace.textDocuments.find(doc => doc.uri.fsPath === fileUri.fsPath)
-        if (!document || document.isClosed) {
-            void window.showErrorMessage(`'${fileName}' was closed in the meantime. Imports will not be rebuilt.`)
-            return
-        }
-
-        await client.restartFile(document)
-    }
-
-    private async issueImportOutdatedWarning(client: LeanClient, fileUri: Uri, d: Diagnostic) {
-        const fileName = path.basename(fileUri.fsPath)
-
-        const message = `Import '${d.data}' of '${fileName}' is out of date. Restarting the file will update it.`
-        const input = 'Restart File'
-        const choice = await window.showInformationMessage(message, input)
-        if (choice !== input) {
-            return
-        }
-
-        const document = workspace.textDocuments.find(doc => doc.uri.fsPath === fileUri.fsPath)
-        if (!document || document.isClosed) {
-            void window.showErrorMessage(`'${fileName}' was closed in the meantime. File will not be restarted.`)
-            return
-        }
-
-        await client.restartFile(document)
-    }
-
-    private isKnownNotificationDiagnostic(uri: Uri, code: string, data?: string | undefined): boolean {
-        return this.notificationDiagnostics.get(uri.fsPath)?.get(code)?.has(data) ?? false
-    }
-
-    private addNotificationDiagnostic(uri: Uri, code: string, data?: string | undefined) {
-        const map: Map<string, Set<string | undefined>> = this.notificationDiagnostics.get(uri.fsPath) ?? new Map()
-        const set = map.get(code) ?? new Set()
-        set.add(data)
-        map.set(code, set)
-        this.notificationDiagnostics.set(uri.fsPath, map)
     }
 
     dispose(): void {

@@ -300,9 +300,11 @@ function InfoAux(props: InfoProps) {
         // While `lake print-paths` is running, the output of Lake is shown as
         // info diagnostics on line 1.  However, all RPC requests block until
         // Lake is finished, so we don't see these diagnostics while Lake is
-        // building.  Therefore we show the LSP diagnostics on line 1 if the
+        // building. Therefore we show the LSP diagnostics on line 1 if the
         // server does not respond within half a second.
-        if (pos.line === 0 && lspDiagsHere.length) {
+        // The same is true for fatal header diagnostics like the stale dependency notification.
+        const isAllHeaderDiags = lspDiagsHere.length > 0 && lspDiagsHere.every(diag => diag.range.start.line === 0)
+        if (isAllHeaderDiags) {
             setTimeout(() => resolve({
                 pos,
                 status: 'updating',

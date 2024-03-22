@@ -1,6 +1,7 @@
 import * as React from 'react';
 import * as ReactDOM from 'react-dom/client';
 import type { DidCloseTextDocumentParams, Location, DocumentUri } from 'vscode-languageserver-protocol';
+import { VSCodeButton } from '@vscode/webview-ui-toolkit/react'
 
 import 'tachyons/css/tachyons.css';
 import '@vscode/codicons/dist/codicon.ttf';
@@ -65,6 +66,13 @@ function Main(props: {}) {
             {curUri && <div className="mv2">
                 <AllMessages uri={curUri} />
             </div>}
+            {curUri &&
+                <VSCodeButton
+                    className='restart-file-button'
+                    onClick={_ => ec.api.restartFile(curUri)}
+                    title='Restarts this file, rebuilding all of its outdated dependencies.'>
+                    Restart File
+                </VSCodeButton>}
         </div>
     }
 

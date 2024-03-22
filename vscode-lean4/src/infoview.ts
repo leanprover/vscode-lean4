@@ -230,6 +230,20 @@ export class InfoProvider implements Disposable {
                 p2cConverter.asRange(show.selection)
             );
         },
+        restartFile: async (uri) => {
+            const client = this.clientProvider.findClient(uri)
+            if (!client) {
+                return
+            }
+
+            const path = Uri.parse(uri).fsPath
+            const document = workspace.textDocuments.find(doc => doc.uri.fsPath === path)
+            if (!document || document.isClosed) {
+                return
+            }
+
+            await client.restartFile(document)
+        },
 
         createRpcSession: async uri => {
             const client = this.clientProvider.findClient(uri);
