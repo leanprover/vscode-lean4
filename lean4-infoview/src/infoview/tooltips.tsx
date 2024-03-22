@@ -1,5 +1,6 @@
 import * as React from 'react'
 import * as ReactDOM from 'react-dom'
+import { Transition, TransitionStatus } from 'react-transition-group'
 
 import {
   useFloating, shift, offset, arrow, autoPlacement, autoUpdate, size, FloatingArrow
@@ -13,7 +14,7 @@ export type TooltipProps =
   { reference: HTMLElement | null }
 
 export function Tooltip(props_: TooltipProps) {
-  const {reference, children, ...props} = props_
+  const {reference, children, style, ...props} = props_
   const arrowRef = React.useRef(null)
 
   const { refs, floatingStyles, context } = useFloating({
@@ -48,7 +49,7 @@ export function Tooltip(props_: TooltipProps) {
         if (node) logicalDomCleanupFn.current = logicalDom.registerDescendant(node)
         else logicalDomCleanupFn.current = () => {}
       }}
-      style={floatingStyles}
+      style={{...style, ...floatingStyles}}
       className='tooltip'
       {...props}
     >
@@ -69,6 +70,52 @@ export function Tooltip(props_: TooltipProps) {
   // (https://github.com/leanprover/vscode-lean4/issues/51)
   return ReactDOM.createPortal(floating, document.body)
 }
+
+export const WithFadingTooltip =
+  forwardAndUseStateRef<HTMLSpanElement, React.HTMLProps<HTMLSpanElement> & {
+    isTooltipShown: boolean
+    hideTooltip: () => void
+    tooltipChildren: React.ReactNode
+  }>((props_, ref, setRef) => {
+  const { isTooltipShown, hideTooltip, tooltipChildren, ...props } = props_
+
+  const fadeOutStyles: { [status in TransitionStatus]: any } = {
+    'entering': {
+      opacity: 1
+    },
+    'entered': {
+      opacity: 1
+    },
+    'exiting': {
+      opacity: 0,
+      transition: 'opacity 1.5s ease-out',
+    },
+    'exited': {
+      display: 'none',
+      opacity: 0
+    },
+    'unmounted': {
+      opacity: 0
+    }
+  }
+
+  return (<span ref={setRef} {...props}>
+    <Transition
+      in={isTooltipShown}
+      timeout={1500}
+      onEntered={() => hideTooltip()}
+    >
+    {state =>
+      <Tooltip
+        reference={ref}
+        style={fadeOutStyles[state]}
+      >
+        {tooltipChildren}
+      </Tooltip>}
+    </Transition>
+    {props.children}
+  </span>)
+})
 
 /** Hover state of an element. The pointer can be
  * - elsewhere (`off`)

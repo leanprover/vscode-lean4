@@ -2,8 +2,8 @@ import * as React from 'react'
 
 import { EditorContext } from './contexts'
 import { useAsync, mapRpcError, useEvent } from './util'
-import { SubexprInfo, CodeWithInfos, InteractiveDiagnostics_infoToInteractive, getGoToLocation, TaggedText, DiffTag } from '@leanprover/infoview-api'
-import { HoverState, WithTooltipOnHover } from './tooltips'
+import { SubexprInfo, CodeWithInfos, InteractiveDiagnostics_infoToInteractive, getGoToLocation, TaggedText, DiffTag, TaggedText_stripTags } from '@leanprover/infoview-api'
+import { HoverState, WithFadingTooltip, WithTooltipOnHover } from './tooltips'
 import { Location } from 'vscode-languageserver-protocol'
 import { marked } from 'marked'
 import { RpcContext } from './rpcSessions'
@@ -122,6 +122,7 @@ function InteractiveCodeTag({tag: ct, fmt}: InteractiveTagProps<SubexprInfo>) {
   const rs = React.useContext(RpcContext)
   const ec = React.useContext(EditorContext)
   const [hoverState, setHoverState] = React.useState<HoverState>('off')
+  const [goToDefErrorState, setGoToDefErrorState] = React.useState<boolean>(false)
 
   // We mimick the VSCode ctrl-hover and ctrl-click UI for go-to-definition
   const [goToLoc, setGoToLoc] = React.useState<Location | undefined>(undefined)
@@ -143,9 +144,14 @@ function InteractiveCodeTag({tag: ct, fmt}: InteractiveTagProps<SubexprInfo>) {
   // an underline if a jump target is available.
   React.useEffect(() => { if (hoverState === 'ctrlOver') void fetchGoToLoc() }, [hoverState, fetchGoToLoc])
 
-  const execGoToLoc = React.useCallback(async () => {
+  const execGoToLoc = React.useCallback(async (withError: boolean) => {
       const loc = await fetchGoToLoc()
-      if (loc === undefined) return
+      if (loc === undefined) {
+        if (withError) {
+          setGoToDefErrorState(true)
+        }
+        return
+      }
       await ec.revealPosition({ uri: loc.uri, ...loc.range.start })
     }, [fetchGoToLoc, ec])
 
@@ -165,43 +171,49 @@ function InteractiveCodeTag({tag: ct, fmt}: InteractiveTagProps<SubexprInfo>) {
   // command in the context of the correct interactive code tag in the InfoView.
   const interactiveCodeTagId = React.useId()
   const vscodeContext = { interactiveCodeTagId }
-  useEvent(ec.events.goToDefinition, _ => void execGoToLoc(), [execGoToLoc], interactiveCodeTagId)
+  useEvent(ec.events.goToDefinition, async _ => void execGoToLoc(true))
 
   return (
-    <WithTooltipOnHover
-      data-vscode-context={JSON.stringify(vscodeContext)}
-      tooltipChildren={<TypePopupContents info={ct} />}
-      onClick={(e, next) => {
-        // On ctrl-click or ⌘-click, if location is known, go to it in the editor
-        if (e.ctrlKey || e.metaKey) {
-          setHoverState(st => st === 'over' ? 'ctrlOver' : st)
-          void execGoToLoc()
-        } else if (!e.shiftKey) next(e)
-      }}
-      onContextMenu={e => {
-        // Mark the event as seen so that parent handlers skip it.
-        // We cannot use `stopPropagation` as that prevents the VSC context menu from showing up.
-        if ('_InteractiveCodeTagSeen' in e) return
-        (e as any)._InteractiveCodeTagSeen = {}
-        if (!(e.target instanceof Node)) return
-        if (!e.currentTarget.contains(e.target)) return
-        // Select the pretty-printed code.
-        const sel = window.getSelection()
-        if (!sel) return
-        sel.removeAllRanges()
-        sel.selectAllChildren(e.currentTarget)
-      }}
+    <WithFadingTooltip
+      tooltipChildren={`No definition found for '${TaggedText_stripTags(fmt)}'`}
+      isTooltipShown={goToDefErrorState}
+      hideTooltip={() => setGoToDefErrorState(false)}
     >
-      <SelectableLocation
-        setHoverState={setHoverState}
-        className={spanClassName}
-        locs={locs}
-        loc={ourLoc}
-        alwaysHighlight={true}
+      <WithTooltipOnHover
+        data-vscode-context={JSON.stringify(vscodeContext)}
+        tooltipChildren={<TypePopupContents info={ct} />}
+        onClick={(e, next) => {
+          // On ctrl-click or ⌘-click, if location is known, go to it in the editor
+          if (e.ctrlKey || e.metaKey) {
+            setHoverState(st => st === 'over' ? 'ctrlOver' : st)
+            void execGoToLoc(false)
+          } else if (!e.shiftKey) next(e)
+        }}
+        onContextMenu={e => {
+          // Mark the event as seen so that parent handlers skip it.
+          // We cannot use `stopPropagation` as that prevents the VSC context menu from showing up.
+          if ('_InteractiveCodeTagSeen' in e) return
+          (e as any)._InteractiveCodeTagSeen = {}
+          if (!(e.target instanceof Node)) return
+          if (!e.currentTarget.contains(e.target)) return
+          // Select the pretty-printed code.
+          const sel = window.getSelection()
+          if (!sel) return
+          sel.removeAllRanges()
+          sel.selectAllChildren(e.currentTarget)
+        }}
       >
-        <InteractiveCode fmt={fmt} />
-      </SelectableLocation>
-    </WithTooltipOnHover>
+        <SelectableLocation
+          setHoverState={setHoverState}
+          className={spanClassName}
+          locs={locs}
+          loc={ourLoc}
+          alwaysHighlight={true}
+        >
+          <InteractiveCode fmt={fmt} />
+        </SelectableLocation>
+      </WithTooltipOnHover>
+    </WithFadingTooltip>
   )
 }
 
