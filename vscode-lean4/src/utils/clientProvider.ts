@@ -28,17 +28,6 @@ export class LeanClientProvider implements Disposable {
     private pendingInstallChanged: Uri[] = [];
     private processingInstallChanged: boolean = false;
     private activeClient: LeanClient | undefined = undefined;
-    /**
-     * `Set<File Uri x Diagnostic Code x Diagnostic Data>` to avoid issuing multiple notifications
-     * for the "same" (same uri, diagnostic code and data) diagnostic. The language server issues
-     * diagnostics after every `didChange`, so we must ensure that we do not issue notifications
-     * over and over again.
-     */
-    private notificationDiagnostics: Map<string, Map<string, Set<string | undefined>>> = new Map()
-    /**
-     * Notifications that will be discharged as soon as the file denoted by a key in the map is selected.
-     */
-    private pendingNotifications: Map<string, NotificationDiagnostic[]> = new Map()
 
     private progressChangedEmitter = new EventEmitter<[string, LeanFileProgressProcessingInfo[]]>()
     progressChanged = this.progressChangedEmitter.event
@@ -72,7 +61,6 @@ export class LeanClientProvider implements Disposable {
         );
 
         workspace.onDidOpenTextDocument(document => this.didOpenEditor(document));
-        workspace.onDidCloseTextDocument(document => this.didCloseEditor(document.uri))
 
         workspace.onDidChangeWorkspaceFolders((event) => {
             for (const folder of event.removed) {
@@ -181,11 +169,6 @@ export class LeanClientProvider implements Disposable {
 
     clientIsStarted() {
         void this.activeClient?.isStarted();
-    }
-
-    private async didCloseEditor(uri: Uri) {
-        this.notificationDiagnostics.delete(uri.fsPath)
-        this.pendingNotifications.delete(uri.fsPath)
     }
 
     async didOpenEditor(document: TextDocument) {
@@ -373,8 +356,6 @@ export class LeanClientProvider implements Disposable {
             client.progressChanged(arg => {
                 this.progressChangedEmitter.fire(arg);
             });
-
-            client.restartedWorker(uri => this.didCloseEditor(Uri.parse(uri)))
 
             this.pending.delete(key);
             logger.log('[ClientProvider] firing clientAddedEmitter event');
