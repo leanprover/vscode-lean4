@@ -7,9 +7,9 @@ import { fileExists } from './fsHelper';
 // lean-toolchain, leanpkg.toml or lakefile.lean files found there.
 export class LeanpkgService implements Disposable {
     private subscriptions: Disposable[] = [];
-    private lakeFileName : string = 'lakefile.lean'
+    private lakeFileLeanName : string = 'lakefile.lean'
+    private lakeFileTomlName: string = 'lakefile.toml'
     // We track the current version info for each workspace open in VS code.
-    // The key to these maps is the Lean package root Uri.
     private currentVersion : Map<string,string> = new Map();
     private normalizedLakeFileContents : Map<string,string> = new Map();
 
@@ -34,11 +34,17 @@ export class LeanpkgService implements Disposable {
             watcher.onDidDelete((u) => this.handleFileChanged(u, true));
             this.subscriptions.push(watcher);
 
-            const watcher2 = workspace.createFileSystemWatcher(`**/${this.lakeFileName}`);
+            const watcher2 = workspace.createFileSystemWatcher(`**/${this.lakeFileLeanName}`);
             watcher2.onDidChange((u) => this.handleLakeFileChanged(u, true));
             watcher2.onDidCreate((u) => this.handleLakeFileChanged(u, true));
             watcher2.onDidDelete((u) => this.handleLakeFileChanged(u, true));
-            this.subscriptions.push(watcher);
+            this.subscriptions.push(watcher2);
+
+            const watcher3 = workspace.createFileSystemWatcher(`**/${this.lakeFileTomlName}`);
+            watcher3.onDidChange((u) => this.handleLakeFileChanged(u, true));
+            watcher3.onDidCreate((u) => this.handleLakeFileChanged(u, true));
+            watcher3.onDidDelete((u) => this.handleLakeFileChanged(u, true));
+            this.subscriptions.push(watcher3);
         });
 
         window.visibleTextEditors.forEach(e => this.didOpen(e.document.uri));
@@ -55,34 +61,29 @@ export class LeanpkgService implements Disposable {
     // of the files we care about.
     private didOpen(uri: Uri){
         const fileName = path.basename(uri.fsPath);
-        if (fileName === this.lakeFileName){
+        if (fileName === this.lakeFileLeanName || fileName === this.lakeFileTomlName){
             void this.handleLakeFileChanged(uri, false);
         }
         else if (fileName === 'lean-toolchain'){
             void this.handleFileChanged(uri, false);
         }
         else if (fileName === 'leanpkg.toml'){
-            void  this.handleFileChanged(uri, false);
+            void this.handleFileChanged(uri, false);
         }
     }
 
-    private async handleLakeFileChanged(uri : Uri, raiseEvent : boolean)  {
+    private async handleLakeFileChanged(fileUri: Uri, raiseEvent : boolean)  {
         // Note: just opening the file fires this event sometimes which is annoying, so
         // we compare the contents just to be sure and normalize whitespace so that
         // just adding a new line doesn't trigger the prompt.
-        const [_1, packageUri, _2] = await findLeanPackageRoot(uri)
+        const [_1, packageUri, _2] = await findLeanPackageRoot(fileUri)
         if (!packageUri) {
-            return
-        }
-
-        const fileUri = await this.findLakeFile(packageUri)
-        if (!fileUri) {
             return
         }
 
         const contents = await this.readWhitespaceNormalized(fileUri)
         let existing : string | undefined
-        const key = packageUri.toString()
+        const key = fileUri.toString()
         if (this.normalizedLakeFileContents.get(key)) {
             existing = this.normalizedLakeFileContents.get(key)
         }
@@ -119,15 +120,6 @@ export class LeanpkgService implements Disposable {
             // raise an event so the extension triggers handleVersionChanged.
             this.versionChangedEmitter.fire(packageUri)
         }
-    }
-
-    private async findLakeFile(packageUri: Uri) : Promise<Uri | null> {
-        const fullPath = Uri.joinPath(packageUri, this.lakeFileName);
-        const url = fullPath.fsPath;
-        if (await fileExists(url)) {
-            return fullPath;
-        }
-        return null;
     }
 
     // Return file contents with whitespace normalized.

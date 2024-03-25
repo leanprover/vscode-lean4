@@ -512,8 +512,9 @@ export class LeanClient implements Disposable {
             return false
         }
 
-        const lakefile = Uri.joinPath(this.folderUri, 'lakefile.lean')
-        if (!await fileExists(new URL(lakefile.toString()))) {
+        const lakefileLean = Uri.joinPath(this.folderUri, 'lakefile.lean')
+        const lakefileToml = Uri.joinPath(this.folderUri, 'lakefile.toml')
+        if (!await fileExists(new URL(lakefileLean.toString())) && !await fileExists(new URL(lakefileToml.toString()))) {
             return false
         }
 
