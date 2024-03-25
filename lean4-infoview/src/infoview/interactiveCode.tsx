@@ -171,7 +171,7 @@ function InteractiveCodeTag({tag: ct, fmt}: InteractiveTagProps<SubexprInfo>) {
   // command in the context of the correct interactive code tag in the InfoView.
   const interactiveCodeTagId = React.useId()
   const vscodeContext = { interactiveCodeTagId }
-  useEvent(ec.events.goToDefinition, async _ => void execGoToLoc(true))
+  useEvent(ec.events.goToDefinition, async _ => void execGoToLoc(true), [execGoToLoc], interactiveCodeTagId)
 
   return (
     <WithFadingTooltip
