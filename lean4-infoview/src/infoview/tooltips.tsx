@@ -111,14 +111,14 @@ export const WithFadingTooltip =
       onEntered={() => hideTooltip()}
     >
     {state =>
-      <div ref={nodeRef}>
+      <span ref={nodeRef}>
         <Tooltip
           reference={ref}
           style={fadeOutStyles[state]}
         >
           {tooltipChildren}
         </Tooltip>
-      </div>}
+      </span>}
     </Transition>
     {props.children}
   </span>)
