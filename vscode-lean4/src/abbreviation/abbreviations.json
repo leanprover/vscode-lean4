@@ -15,6 +15,7 @@
     "nnnorm": "‖$CURSOR‖₊",
     "norm": "‖$CURSOR‖",
     "floor": "⌊$CURSOR⌋",
+    "ceil": "⌈$CURSOR⌉",
     "\\": "\\",
     "a": "α",
     "b": "β",
