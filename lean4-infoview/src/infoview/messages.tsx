@@ -131,11 +131,11 @@ export function AllMessages({uri: uri0}: { uri: DocumentUri }) {
     React.useEffect(() => { if (isPaused) { void iDiags() } }, [iDiags, isPaused]);
 
     const setOpenRef = React.useRef<React.Dispatch<React.SetStateAction<boolean>>>();
-    useEvent(ec.events.requestedAction, act => {
-        if (act.kind === 'toggleAllMessages' && setOpenRef.current !== undefined) {
+    useEvent(ec.events.requestedAction, _ => {
+        if (setOpenRef.current !== undefined) {
             setOpenRef.current(t => !t);
         }
-    });
+    }, [setOpenRef], 'toggleAllMessages');
 
     // The number of actually displayed messages, or `undefined` if the panel is collapsed.
     // When `undefined`, we can approximate it by `diags.length`.

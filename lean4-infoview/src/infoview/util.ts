@@ -71,12 +71,14 @@ export function basename(path: string): string {
 }
 
 /**
- * A specialization of {@link React.useEffect} which executes `f` with the event data whenever
- * `ev` fires. */
-export function useEvent<E>(ev: EventEmitter<E>, f: (_: E) => void,
-    dependencies?: React.DependencyList): void {
+ * A specialization of {@link React.useEffect} which executes `f` with the event data
+ * whenever `ev` fires.
+ * If `key` is provided, `f` is only invoked on events fired with that key.
+ */
+export function useEvent<E, K>(ev: EventEmitter<E, K>, f: (_: E) => void,
+    dependencies?: React.DependencyList, key?: K): void {
   React.useEffect(() => {
-    const h = ev.on(f);
+    const h = ev.on(f, key);
     return () => h.dispose();
   }, dependencies)
 }
@@ -84,12 +86,12 @@ export function useEvent<E>(ev: EventEmitter<E>, f: (_: E) => void,
 /**
  * A piece of React {@link React.useState} which returns the data that `ev` most recently fired with.
  * If `f` is provided, the data is mapped through `f` first. */
-export function useEventResult<E>(ev: EventEmitter<E>): E | undefined;
-export function useEventResult<E, T>(ev: EventEmitter<E>, f: (newVal: E) => T): T | undefined;
-export function useEventResult<E, T>(ev: EventEmitter<E>, f?: (_: E) => T): T | undefined {
+export function useEventResult<E, K>(ev: EventEmitter<E, K>): E | undefined;
+export function useEventResult<E, K, T>(ev: EventEmitter<E, K>, f: (newVal: E) => T): T | undefined;
+export function useEventResult<E, K, T>(ev: EventEmitter<E, K>, f?: (_: E) => T): T | undefined {
   const fn: (_: E) => T = f ?? (x => x as any)
   const [s, setS] = React.useState<T | undefined>(ev.current ? fn(ev.current) : undefined)
-  useEvent(ev, newV => setS(newV ? fn(newV) : undefined))
+  useEvent<E, K>(ev, newV => setS(newV ? fn(newV) : undefined))
   return s
 }
 

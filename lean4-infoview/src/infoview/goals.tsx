@@ -251,11 +251,11 @@ export const FilteredGoals = React.memo(({ headerChildren, goals, displayCount, 
         </WithTooltipOnHover>
 
     const setOpenRef = React.useRef<React.Dispatch<React.SetStateAction<boolean>>>()
-    useEvent(ec.events.requestedAction, act => {
-        if (act.kind === togglingAction && setOpenRef.current !== undefined) {
+    useEvent(ec.events.requestedAction, _ => {
+        if (setOpenRef.current !== undefined) {
             setOpenRef.current(t => !t)
         }
-    })
+    }, [setOpenRef, togglingAction], togglingAction)
 
     return <div style={{display: goals !== undefined ? 'block' : 'none'}}>
         <Details setOpenRef={r => setOpenRef.current = r} initiallyOpen={initiallyOpen}>
