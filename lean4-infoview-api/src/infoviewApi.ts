@@ -57,6 +57,9 @@ export interface EditorApi {
   /** Highlight a range in a document in the editor. */
   showDocument(show: ShowDocumentParams): Promise<void>;
 
+  /** Restarts the given file. */
+  restartFile(uri: string): Promise<void>
+
   /**
    * Creates an RPC session for the given uri and returns the session id.
    * The extension takes care of keeping the RPC session alive.

@@ -108,6 +108,13 @@ html,body {
 
 /* Headers for infoview */
 
+.restart-file-button {
+    position: fixed;
+    bottom: 10px;
+    right: 10px;
+    z-index: 37;
+}
+
 select {
     background-color: var(--vscode-dropdown-background);
     color: var(--vscode-dropdown-foreground);
