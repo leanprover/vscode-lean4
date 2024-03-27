@@ -71,7 +71,7 @@ interface HypProps {
 function Hyp({ hyp: h, mvarId }: HypProps) {
     const locs = React.useContext(LocationsContext)
 
-    const namecls: string = 'mr1 ' +
+    const namecls: string =
         (h.isInserted ? 'inserted-text ' : '') +
         (h.isRemoved ? 'removed-text ' : '')
 
@@ -85,6 +85,7 @@ function Hyp({ hyp: h, mvarId }: HypProps) {
                 }
                 alwaysHighlight={false}
             >{n}</SelectableLocation>
+            &nbsp;
         </span>)
 
     const typeLocs: Locations | undefined = React.useMemo(() =>
