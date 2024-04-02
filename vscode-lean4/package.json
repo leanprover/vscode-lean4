@@ -910,8 +910,8 @@
 		"test": "node ./out/test/suite/runTest.js"
 	},
 	"dependencies": {
-		"@leanprover/infoview": "~0.5.0",
-		"@leanprover/infoview-api": "~0.3.0",
+		"@leanprover/infoview": "~0.6.0",
+		"@leanprover/infoview-api": "~0.4.0",
 		"axios": "^1.6.7",
 		"cheerio": "^1.0.0-rc.12",
 		"mobx": "^5.15.7",
