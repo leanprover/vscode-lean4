@@ -200,16 +200,14 @@ function InfoDisplay(props0: InfoDisplayProps & InfoPinnable) {
     // If we are the cursor infoview, then we should subscribe to
     // some commands from the editor extension
     const isCursor = kind === 'cursor';
-    useEvent(ec.events.requestedAction, act => {
+    useEvent(ec.events.requestedAction, _ => {
         if (!isCursor) return;
-        if (act.kind !== 'copyToComment') return;
         if (goals) void ec.copyToComment(goalsToString(goals));
-    }, [goals]);
-    useEvent(ec.events.requestedAction, act => {
+    }, [isCursor, goals, ec], 'copyToComment');
+    useEvent(ec.events.requestedAction, _ => {
         if (!isCursor) return;
-        if (act.kind !== 'togglePaused') return;
         setPaused(isPaused => !isPaused);
-    });
+    }, [isCursor, setPaused], 'togglePaused');
 
     return (
     <RpcContext.Provider value={rpcSess}>

@@ -279,6 +279,12 @@
 				"description": "Toggle the display of expected type."
 			},
 			{
+				"command": "lean4.infoview.goToDefinition",
+				"category": "Lean 4",
+				"title": "Go to Definition",
+				"description": "This command is an implementation detail of the 'Go to Definition' context menu option in the infoview."
+			},
+			{
 				"command": "lean4.docView.showAllAbbreviations",
 				"category": "Lean 4",
 				"title": "Docview: Show All Abbreviations",
@@ -548,6 +554,10 @@
 					"when": "lean4.isLeanFeatureSetActive"
 				},
 				{
+					"command": "lean4.infoview.goToDefinition",
+					"when": "false"
+				},
+				{
 					"command": "lean4.docView.open"
 				},
 				{
@@ -724,6 +734,12 @@
 					"when": "editorLangId == lean4",
 					"group": "z_commands"
 				}
+			],
+			"webview/context": [
+				{
+					"command": "lean4.infoview.goToDefinition",
+					"when": "webviewId == 'lean4_infoview' && interactiveCodeTagId"
+				}
 			]
 		},
 		"submenus": [
@@ -894,8 +910,8 @@
 		"test": "node ./out/test/suite/runTest.js"
 	},
 	"dependencies": {
-		"@leanprover/infoview": "~0.5.0",
-		"@leanprover/infoview-api": "~0.3.0",
+		"@leanprover/infoview": "~0.6.0",
+		"@leanprover/infoview-api": "~0.4.0",
 		"axios": "^1.6.7",
 		"cheerio": "^1.0.0-rc.12",
 		"mobx": "^5.15.7",

@@ -1,11 +1,14 @@
 import type { Location, ShowDocumentParams } from 'vscode-languageserver-protocol';
 
-import { EditorApi, InfoviewApi, PlainGoal, PlainTermGoal } from '@leanprover/infoview-api';
+import { EditorApi, InfoviewAction, InfoviewActionKind, InfoviewApi, PlainGoal, PlainTermGoal } from '@leanprover/infoview-api';
 
-import { Eventify } from './event';
+import { Eventify, EventEmitter } from './event';
 import { DocumentPosition } from './util';
 
-export type EditorEvents = Eventify<InfoviewApi>;
+export type EditorEvents = Omit<Eventify<InfoviewApi>, 'requestedAction' | 'goToDefinition'> & {
+    requestedAction: EventEmitter<InfoviewAction, InfoviewActionKind>
+    goToDefinition: EventEmitter<string, string>
+  };
 
 /** Provides higher-level wrappers around functionality provided by the editor,
  * e.g. to insert a comment. See also {@link EditorApi}. */

@@ -308,6 +308,9 @@ export class InfoProvider implements Disposable {
                 this.webviewPanel?.api.requestedAction({kind: 'toggleExpectedType'})),
             commands.registerTextEditorCommand('lean4.infoView.toggleStickyPosition',
                 () => this.webviewPanel?.api.requestedAction({kind: 'togglePin'})),
+            commands.registerCommand('lean4.infoview.goToDefinition', args =>
+                this.webviewPanel?.api.goToDefinition(args.interactiveCodeTagId)
+            )
         );
     }
 
@@ -522,7 +525,7 @@ export class InfoProvider implements Disposable {
         if (this.webviewPanel) {
             this.webviewPanel.reveal(column, true);
         } else {
-            const webviewPanel = window.createWebviewPanel('lean4', 'Lean Infoview',
+            const webviewPanel = window.createWebviewPanel('lean4_infoview', 'Lean Infoview',
                 { viewColumn: column, preserveFocus: true },
                 {
                     enableFindWidget: true,
