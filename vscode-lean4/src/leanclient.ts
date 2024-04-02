@@ -3,6 +3,7 @@ import { TextDocument, EventEmitter, Diagnostic,
     Disposable, Uri, ConfigurationChangeEvent, OutputChannel, DiagnosticCollection,
     WorkspaceFolder, window, ProgressLocation, ProgressOptions, Progress } from 'vscode'
 import {
+    DiagnosticSeverity,
     DidChangeTextDocumentParams,
     DidCloseTextDocumentParams,
     DocumentFilter,
@@ -30,6 +31,7 @@ import { SemVer } from 'semver';
 import { fileExists, isFileInFolder } from './utils/fsHelper';
 import { c2pConverter, p2cConverter, patchConverters } from './utils/converters'
 import { displayErrorWithOutput } from './utils/errors'
+import path = require('path')
 
 const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
@@ -51,6 +53,7 @@ export class LeanClient implements Disposable {
     private showingRestartMessage : boolean = false;
     private elanDefaultToolchain: string;
     private isRestarting: boolean = false
+    private staleDepNotifier: Disposable | undefined
 
     private didChangeEmitter = new EventEmitter<DidChangeTextDocumentParams>()
     didChange = this.didChangeEmitter.event
@@ -99,6 +102,11 @@ export class LeanClient implements Disposable {
         this.elanDefaultToolchain = elanDefaultToolchain;
         if (!this.toolchainPath) this.toolchainPath = toolchainPath();
         this.subscriptions.push(workspace.onDidChangeConfiguration((e) => this.configChanged(e)));
+        this.subscriptions.push(new Disposable(() => {
+            if (this.staleDepNotifier) {
+                this.staleDepNotifier.dispose()
+            }
+        }))
     }
 
     dispose(): void {
@@ -191,6 +199,14 @@ export class LeanClient implements Disposable {
             })
             progress.report({ increment: 80 })
             await this.client.start()
+            const version = this.client.initializeResult?.serverInfo?.version
+            if (version && new SemVer(version).compare('0.2.0') < 0) {
+                if (this.staleDepNotifier) {
+                    this.staleDepNotifier.dispose()
+                }
+                this.staleDepNotifier = this.diagnostics(params => this.checkForImportsOutdatedError(params))
+            }
+
             // tell the new client about the documents that are already open!
             for (const key of this.isOpen.keys()) {
                 const doc = this.isOpen.get(key);
@@ -241,6 +257,37 @@ export class LeanClient implements Disposable {
 
         this.restartedEmitter.fire(undefined)
         insideRestart = false;
+    }
+
+    private async checkForImportsOutdatedError(params: PublishDiagnosticsParams) {
+        const fileUri = Uri.parse(params.uri)
+        const fileName = path.basename(fileUri.fsPath)
+        const isImportsOutdatedError = params.diagnostics.some(d =>
+            d.severity === DiagnosticSeverity.Error
+                && d.message.includes('Imports are out of date and must be rebuilt')
+                && d.range.start.line === 0
+                && d.range.start.character === 0
+                && d.range.end.line === 0
+                && d.range.end.character === 0)
+        if (!isImportsOutdatedError) {
+            return
+        }
+
+        const message = `Imports of '${fileName}' are out of date and must be rebuilt. Restarting the file will rebuild them.`
+        const input = 'Restart File'
+        const choice = await window.showInformationMessage(message, input)
+        if (choice !== input) {
+            return
+        }
+
+        const fileUriString = fileUri.toString()
+        const document = workspace.textDocuments.find(doc => doc.uri.toString() === fileUriString)
+        if (!document || document.isClosed) {
+            void window.showErrorMessage(`'${fileName}' was closed in the meantime. Imports will not be rebuilt.`)
+            return
+        }
+
+        await this.restartFile(document)
     }
 
     async withStoppedClient(action: () => Promise<void>): Promise<'Success' | 'IsRestarting'> {
