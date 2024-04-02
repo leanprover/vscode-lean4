@@ -106,7 +106,7 @@ export class LeanTaskGutter implements Disposable {
     private updateDecos() {
         const uris: { [uri: string]: boolean } = {}
         for (const editor of window.visibleTextEditors) {
-            if (editor.document.languageId !== 'lean4' && editor.document.languageId !== 'lean') continue;
+            if (editor.document.languageId !== 'lean4') continue;
             const uri = editor.document.uri.toString();
             uris[uri] = true
             const processed = uri in this.status ? this.status[uri] : []

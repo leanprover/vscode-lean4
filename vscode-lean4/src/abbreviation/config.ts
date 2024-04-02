@@ -13,7 +13,7 @@ export class AbbreviationConfig {
 	});
 
 	readonly languages = new VsCodeSetting('lean4.input.languages', {
-		serializer: serializerWithDefault(['lean4', 'lean']),
+		serializer: serializerWithDefault(['lean4']),
 	});
 
 	readonly inputModeCustomTranslations = new VsCodeSetting(

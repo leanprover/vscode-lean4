@@ -45,13 +45,12 @@
 				"lean4.input.languages": {
 					"type": "array",
 					"default": [
-						"lean4",
-						"lean"
+						"lean4"
 					],
 					"markdownDescription": "Enable Lean Unicode input in other file types.",
 					"items": {
 						"type": "string",
-						"description": "the name of a language, e.g. 'lean', 'lean4', 'markdown'"
+						"description": "the name of a language, e.g. 'lean4', 'markdown'"
 					}
 				},
 				"lean4.input.leader": {
@@ -377,18 +376,11 @@
 		],
 		"languages": [
 			{
-				"id": "lean",
-				"aliases": [
-					"Lean",
-					"lean"
-				],
+				"id": "lean4",
+				"configuration": "./language-configuration.json",
 				"extensions": [
 					".lean"
 				]
-			},
-			{
-				"id": "lean4",
-				"configuration": "./language-configuration.json"
 			},
 			{
 				"id": "lean4markdown",
