@@ -252,7 +252,7 @@ export const FilteredGoals = React.memo(({ headerChildren, goals, displayCount, 
 
     const setOpenRef = React.useRef<React.Dispatch<React.SetStateAction<boolean>>>()
     useEvent(ec.events.requestedAction, _ => {
-        if (setOpenRef.current !== undefined) {
+        if (togglingAction !== undefined && setOpenRef.current !== undefined) {
             setOpenRef.current(t => !t)
         }
     }, [setOpenRef, togglingAction], togglingAction)
