@@ -1,4 +1,4 @@
-import { window, ExtensionContext, TextDocument, tasks, commands, Disposable, workspace } from 'vscode'
+import { window, ExtensionContext, TextDocument, commands, Disposable, workspace, extensions } from 'vscode'
 import { AbbreviationFeature } from './abbreviation'
 import { InfoProvider } from './infoview'
 import { DocViewProvider } from './docview'
@@ -31,7 +31,7 @@ async function setLeanFeatureSetActive(isActive: boolean) {
 }
 
 function isLean(languageId : string) : boolean {
-    return languageId === 'lean' || languageId === 'lean4';
+    return languageId === 'lean4';
 }
 
 function findOpenLeanDocument() : TextDocument | undefined {
@@ -88,6 +88,17 @@ function activateAlwaysEnabledFeatures(context: ExtensionContext): AlwaysEnabled
             addDefaultElanPath();
         }
     }))
+
+    const checkForExtensionConflict = (doc: TextDocument) => {
+        const isLean3ExtensionInstalled = extensions.getExtension('jroesch.lean') !== undefined
+        if (isLean3ExtensionInstalled && (doc.languageId === 'lean' || doc.languageId === 'lean4')) {
+            void window.showWarningMessage('The Lean 3 and the Lean 4 VS Code extension are enabled at the same time. Since both extensions act on .lean files, this can lead to issues with either extension. Please disable the extension for the Lean major version that you do not want to use (\'Extensions\' in the left sidebar > Cog icon > \'Disable\').')
+        }
+    }
+    for (const doc of workspace.textDocuments) {
+        checkForExtensionConflict(doc)
+    }
+    context.subscriptions.push(workspace.onDidOpenTextDocument(checkForExtensionConflict))
 
     return { docView, projectInitializationProvider, installer }
 }
