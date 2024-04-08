@@ -3,7 +3,7 @@ import { LeanInstaller, LeanVersion } from './leanInstaller'
 import { LeanClient } from '../leanclient'
 import { LeanFileProgressProcessingInfo, ServerStoppedReason } from '@leanprover/infoview-api';
 import { checkParentFoldersForLeanProject, findLeanPackageRoot, isValidLeanProject } from './projectInfo';
-import { isFileInFolder } from './fsHelper';
+import { isFileInFolder, isFileUriInFolder } from './fsHelper';
 import { logger } from './logger'
 import { addDefaultElanPath, getDefaultElanPath, addToolchainBinPath, isElanDisabled, shouldShowInvalidProjectWarnings } from '../config'
 import { displayErrorWithOutput } from './errors';
@@ -199,13 +199,13 @@ export class LeanClientProvider implements Disposable {
     }
 
     // Find the client for a given document.
-    findClient(path: string) {
-        const candidates = this.getClients().filter(client => isFileInFolder(path, client.getClientFolder()))
+    findClient(path: Uri) {
+        const candidates = this.getClients().filter(client => isFileUriInFolder(path, client.getClientFolder()))
         // All candidate folders are a prefix of `path`, so they must necessarily be prefixes of one another
         // => the best candidate (the most top-level client folder) is just the one with the shortest path
         let bestCandidate: LeanClient | null = null
         for (const candidate of candidates) {
-            if (!bestCandidate || candidate.getClientFolder().length < bestCandidate.getClientFolder().length) {
+            if (!bestCandidate || candidate.getClientFolder().toString().length < bestCandidate.getClientFolder().toString().length) {
                 bestCandidate = candidate
             }
         }

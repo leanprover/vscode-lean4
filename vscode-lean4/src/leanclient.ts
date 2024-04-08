@@ -28,7 +28,7 @@ import { join } from 'path';
 import { logger } from './utils/logger'
  // @ts-ignore
 import { SemVer } from 'semver';
-import { fileExists, isFileInFolder } from './utils/fsHelper';
+import { fileExists, isFileInFolder, isFileUriInFolder } from './utils/fsHelper';
 import { c2pConverter, p2cConverter, patchConverters } from './utils/converters'
 import { displayErrorWithOutput } from './utils/errors'
 import path = require('path')
@@ -335,23 +335,12 @@ export class LeanClient implements Disposable {
         });
     }
 
-    async isInFolderManagedByThisClient(uri: Uri) : Promise<boolean> {
-        if (this.folderUri.scheme !== uri.scheme) {
-            return false
-        }
-        if (this.folderUri.scheme === 'file') {
-            const realPath1 = await fs.promises.realpath(this.folderUri.fsPath)
-            const realPath2 = await fs.promises.realpath(uri.fsPath)
-            return isFileInFolder(realPath2, realPath1)
-        }
-        if (this.folderUri.scheme === 'untitled') {
-            return true
-        }
-        return false
+    isInFolderManagedByThisClient(uri: Uri): boolean {
+        return isFileUriInFolder(this.folderUri, uri)
     }
 
-    getClientFolder() : string {
-        return this.folderUri.toString();
+    getClientFolder(): Uri {
+        return this.folderUri;
     }
 
     start(): Promise<void> {
@@ -400,7 +389,7 @@ export class LeanClient implements Disposable {
 
         assert(() => this.isStarted())
 
-        if (!await this.isInFolderManagedByThisClient(doc.uri)){
+        if (!this.isInFolderManagedByThisClient(doc.uri)){
             // skip it, this file belongs to a different workspace...
             return;
         }

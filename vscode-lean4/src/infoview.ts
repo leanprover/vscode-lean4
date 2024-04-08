@@ -21,7 +21,7 @@ import { LeanClientProvider } from './utils/clientProvider'
 import * as ls from 'vscode-languageserver-protocol'
 import { c2pConverter, p2cConverter } from './utils/converters';
 import { logger } from './utils/logger'
-import { isFileInFolder } from './utils/fsHelper';
+import { isFileInFolder, isFileUriInFolder } from './utils/fsHelper';
 
 const keepAlivePeriodMs = 10000
 
@@ -107,7 +107,7 @@ export class InfoProvider implements Disposable {
 
     private editorApi : EditorApi = {
         sendClientRequest: async (uri: string, method: string, params: any): Promise<any> => {
-            const client = this.clientProvider.findClient(uri);
+            const client = this.clientProvider.findClient(Uri.parse(uri));
             if (client) {
                 try {
                     const result = await client.sendRequest(method, params);
@@ -124,7 +124,7 @@ export class InfoProvider implements Disposable {
             return undefined;
         },
         sendClientNotification: async (uri: string, method: string, params: any): Promise<void> => {
-            const client = this.clientProvider.findClient(uri);
+            const client = this.clientProvider.findClient(Uri.parse(uri));
             if (client) {
                 await client.sendNotification(method, params);
             }
@@ -232,7 +232,7 @@ export class InfoProvider implements Disposable {
             );
         },
         restartFile: async (uri) => {
-            const client = this.clientProvider.findClient(uri)
+            const client = this.clientProvider.findClient(Uri.parse(uri))
             if (!client) {
                 return
             }
@@ -247,7 +247,7 @@ export class InfoProvider implements Disposable {
         },
 
         createRpcSession: async uri => {
-            const client = this.clientProvider.findClient(uri);
+            const client = this.clientProvider.findClient(Uri.parse(uri));
             if (!client) return '';
             const sessionId = await rpcConnect(client, uri);
             const session = new RpcSessionAtPos(client, sessionId, uri);
@@ -336,26 +336,16 @@ export class InfoProvider implements Disposable {
         }
 
         await this.webviewPanel?.api.serverStopped(undefined); // clear any server stopped state
-        const folder = client.getClientFolder()
-        const folderUri = Uri.parse(folder)
-        if (folderUri.scheme === 'file') {
-            for (const worker of this.workersFailed.keys()) {
-                const uri = Uri.parse(worker)
-                if (uri.scheme === 'file' && isFileInFolder(uri.fsPath, folder)) {
-                    this.workersFailed.delete(worker)
-                }
-            }
-        } else if (folderUri.scheme === 'untitled') {
-            for (const worker of this.workersFailed.keys()) {
-                const uri = Uri.parse(worker)
-                if (uri.scheme === 'untitled') {
-                    this.workersFailed.delete(worker)
-                }
+        const folderUri = client.getClientFolder()
+        for (const worker of this.workersFailed.keys()) {
+            const uri = Uri.parse(worker)
+            if (isFileUriInFolder(uri, folderUri)) {
+                this.workersFailed.delete(worker)
             }
         }
 
-        if (this.clientsFailed.has(folder)){
-            this.clientsFailed.delete(folder);
+        if (this.clientsFailed.has(folderUri.toString())){
+            this.clientsFailed.delete(folderUri.toString());
         }
         await this.initInfoView(window.activeTextEditor, client);
     }
@@ -427,8 +417,8 @@ export class InfoProvider implements Disposable {
         const key = client.getClientFolder()
         if (key) {
             await this.sendPosition();
-            if (!this.clientsFailed.has(key)) {
-                this.clientsFailed.set(key, reason);
+            if (!this.clientsFailed.has(key.toString())) {
+                this.clientsFailed.set(key.toString(), reason);
             }
             logger.log(`[InfoProvider] client stopped: ${key}`)
             await client.showRestartMessage();
@@ -578,8 +568,7 @@ export class InfoProvider implements Disposable {
             this.webviewPanel = webviewPanel;
             webviewPanel.webview.html = this.initialHtml();
 
-            const uri = editor.document?.uri?.toString();
-            const client = this.clientProvider.findClient(uri);
+            const client = this.clientProvider.findClient(editor.document.uri);
             await this.initInfoView(editor, client)
         }
     }
@@ -678,10 +667,10 @@ export class InfoProvider implements Disposable {
         }
         // actual editor
         if (this.clientsFailed.size > 0 || this.workersFailed.size > 0) {
-            const client = this.clientProvider.findClient(editor.document.uri.toString())
+            const client = this.clientProvider.findClient(editor.document.uri)
             if (client) {
                 const uri = window.activeTextEditor?.document.uri.toString() ?? '';
-                const folder = client.getClientFolder();
+                const folder = client.getClientFolder().toString();
                 let reason : ServerStoppedReason | undefined;
                 if (this.clientsFailed.has(folder)){
                     reason = this.clientsFailed.get(folder);
