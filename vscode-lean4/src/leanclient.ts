@@ -336,18 +336,18 @@ export class LeanClient implements Disposable {
     }
 
     async isInFolderManagedByThisClient(uri: Uri) : Promise<boolean> {
-        if (this.folderUri) {
-            if (this.folderUri.scheme !== uri.scheme) return false;
-            if (this.folderUri.scheme === 'file') {
-                const realPath1 = await fs.promises.realpath(this.folderUri.fsPath);
-                const realPath2 = await fs.promises.realpath(uri.fsPath);
-                return isFileInFolder(realPath2, realPath1);
-            } else {
-                return uri.toString().startsWith(this.folderUri.toString());
-            }
-        } else {
-            return uri.scheme === 'untitled'
+        if (this.folderUri.scheme !== uri.scheme) {
+            return false
         }
+        if (this.folderUri.scheme === 'file') {
+            const realPath1 = await fs.promises.realpath(this.folderUri.fsPath)
+            const realPath2 = await fs.promises.realpath(uri.fsPath)
+            return isFileInFolder(realPath2, realPath1)
+        }
+        if (this.folderUri.scheme === 'untitled') {
+            return true
+        }
+        return false
     }
 
     getClientFolder() : string {
