@@ -18,7 +18,8 @@
     "@typescript-eslint/parser": "^5.62.0",
     "eslint": "^8.45.0",
     "eslint-plugin-react-hooks": "^4.6.0",
-    "typescript": "^4.9.5",
-    "lerna": "^8.1.2"
+    "lerna": "^8.1.2",
+    "prettier": "3.2.5",
+    "typescript": "^4.9.5"
   }
 }
