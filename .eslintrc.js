@@ -19,7 +19,8 @@ module.exports = {
     "extends": [
         "plugin:@typescript-eslint/recommended",
         "plugin:@typescript-eslint/recommended-requiring-type-checking",
-        "plugin:react-hooks/recommended"
+        "plugin:react-hooks/recommended",
+        "prettier"
     ],
     "parser": "@typescript-eslint/parser",
     "parserOptions": {
@@ -106,7 +107,6 @@ module.exports = {
         "guard-for-in": "error",
         "id-match": "error",
         "max-classes-per-file": "off",
-        "new-parens": "error",
         "no-bitwise": "error",
         "no-caller": "error",
         "no-cond-assign": "error",
@@ -125,7 +125,6 @@ module.exports = {
             }
         ],
         "no-throw-literal": "error",
-        "no-trailing-spaces": "error",
         "no-undef-init": "error",
         "no-underscore-dangle": "off",
         "no-unsafe-finally": "error",
