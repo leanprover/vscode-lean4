@@ -487,6 +487,7 @@ export class LeanClient implements Disposable {
         const start = Date.now()
         const result: ExecutionResult = await batchExecute(executable, versionOptions, this.folderUri?.fsPath);
         if (result.exitCode !== ExecutionExitCode.Success) {
+            logger.error(`[LeanClient] Ran '${executable} ${versionOptions.join(' ')}', got error:\n{result.stderr}`);
             return false
         }
         logger.log(`[LeanClient] Ran '${executable} ${versionOptions.join(' ')}' in ${Date.now() - start} ms`);
