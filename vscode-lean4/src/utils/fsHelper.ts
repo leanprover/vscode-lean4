@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import {promises, PathLike } from 'fs';
 import path = require('path');
-import { Uri } from 'vscode';
 
 /**
     Helper used to replace fs.existsSync (using existsSync to check for the existence
@@ -26,17 +25,4 @@ export function isFileInFolder(file: string, folder: string){
     const relative = path.relative(folder, file)
     const isSubdir = relative.length > 0 && !relative.startsWith('..') && !path.isAbsolute(relative)
     return isSubdir
-}
-
-export function isFileUriInFolder(fileUri: Uri, folderUri: Uri): boolean {
-    if (fileUri.scheme !== folderUri.scheme) {
-        return false
-    }
-    if (fileUri.scheme === 'untitled') {
-        return true
-    }
-    if (fileUri.scheme === 'file') {
-        return isFileInFolder(fileUri.fsPath, folderUri.fsPath)
-    }
-    return false // other URI schemes are currently not supported
 }

@@ -1,11 +1,12 @@
-import { OutputChannel, Uri } from 'vscode';
+import { OutputChannel } from 'vscode';
 import { ExecutionExitCode, ExecutionResult, batchExecute } from './batch';
+import { FileUri } from './exturi';
 
 export class SetupDiagnoser {
     channel: OutputChannel
-    cwdUri: Uri | undefined
+    cwdUri: FileUri | undefined
 
-    constructor(channel: OutputChannel, cwdUri: Uri | undefined) {
+    constructor(channel: OutputChannel, cwdUri: FileUri | undefined) {
         this.channel = channel
         this.cwdUri = cwdUri
     }
@@ -35,7 +36,7 @@ export class SetupDiagnoser {
     }
 }
 
-export function diagnose(channel: OutputChannel, cwdUri: Uri | undefined): SetupDiagnoser {
+export function diagnose(channel: OutputChannel, cwdUri: FileUri | undefined): SetupDiagnoser {
     return new SetupDiagnoser(channel, cwdUri)
 }
 

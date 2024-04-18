@@ -6,6 +6,7 @@ import { isElanDisabled } from '../../../src/config'
 import { initLean4Untitled, waitForActiveEditor, waitForInfoviewHtml, closeAllEditors,
     extractPhrase, gotoDefinition, assertStringInInfoview, initLean4 } from '../utils/helpers';
 import { logger } from '../../../src/utils/logger'
+import { UntitledUri } from '../../../src/utils/exturi';
 
 function getElanMode(){
     let mode = ''
@@ -67,7 +68,7 @@ suite('Lean4 Basics Test Suite', () => {
 
         const installer = lean.exports.installer;
         assert(installer, 'No LeanInstaller export');
-        const toolChains = await installer.elanListToolChains(null);
+        const toolChains = await installer.elanListToolChains(new UntitledUri());
         let defaultToolChain = toolChains.find(tc => tc.indexOf('default') > 0);
         if (defaultToolChain) {
             // the IO.appPath should output something like this:

@@ -6,6 +6,7 @@ import * as fs from 'fs';
 import { logger } from '../../../src/utils/logger'
 import { initLean4Untitled, initLean4, waitForInfoviewHtml, closeAllEditors, waitForActiveClient,
 	extractPhrase, restartLeanServer, restartFile, assertStringInInfoview, insertText, deleteAllText } from '../utils/helpers';
+import { FileUri } from '../../../src/utils/exturi';
 
 // Expects to be launched with folder: ${workspaceFolder}/vscode-lean4/test/suite/simple
 suite('Lean Server Restart Test Suite', () => {
@@ -131,7 +132,7 @@ suite('Lean Server Restart Test Suite', () => {
 			logger.log('Now invoke the restart server command');
 			const clients = lean.exports.clientProvider;
 			assert(clients, 'No LeanClientProvider export');
-			const client = clients.getClientForFolder(vscode.Uri.file(simpleRoot));
+			const client = clients.getClientForFolder(new FileUri(simpleRoot));
 			if (client) {
 				await restartLeanServer(client);
 			} else {

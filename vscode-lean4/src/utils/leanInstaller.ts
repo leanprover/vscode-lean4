@@ -1,9 +1,10 @@
-import { window, TerminalOptions, OutputChannel, EventEmitter, Uri } from 'vscode'
+import { window, TerminalOptions, OutputChannel, EventEmitter } from 'vscode'
 import { toolchainPath, addServerEnvPaths, getPowerShellPath, shouldAutofocusOutput, isRunningTest } from '../config'
 import { ExecutionExitCode, ExecutionResult, batchExecute } from './batch'
 import { readLeanVersion, isCoreLean4Directory } from './projectInfo';
 import { join } from 'path';
 import { logger } from './logger'
+import { ExtUri, FileUri } from './exturi';
 
 export class LeanVersion {
     version: string;
@@ -25,7 +26,7 @@ export class LeanInstaller {
 
     // This event is raised whenever a version change happens.
     // The event provides the workspace Uri where the change happened.
-    private installChangedEmitter = new EventEmitter<Uri>();
+    private installChangedEmitter = new EventEmitter<ExtUri>();
     installChanged = this.installChangedEmitter.event
 
     constructor(outputChannel: OutputChannel, defaultToolchain : string) {
@@ -47,12 +48,11 @@ export class LeanInstaller {
         return this.outputChannel
     }
 
-    async testLeanVersion(packageUri: Uri) : Promise<LeanVersion> {
-
+    async testLeanVersion(packageUri: ExtUri) : Promise<LeanVersion> {
         // see if there is a lean-toolchain file and use that version info.
-        let leanVersion : string | null = await readLeanVersion(packageUri);
+        let leanVersion: string | undefined = packageUri.scheme === 'file' ? await readLeanVersion(packageUri) : undefined
 
-        if (!leanVersion){
+        if (leanVersion === undefined) {
             const hasElan = await this.hasElan();
             if (!hasElan) {
                 // Ah, there is no elan, but what if Lean is in the PATH due to custom install?
@@ -60,7 +60,7 @@ export class LeanInstaller {
                 if (found.error) {
                     return { version: '', error: 'no elan installed' }
                 }
-            } else if (! await isCoreLean4Directory(packageUri)) {
+            } else if (packageUri.scheme === 'file' && ! await isCoreLean4Directory(packageUri)) {
                 const defaultVersion = await this.getElanDefaultToolchain(packageUri);
                 if (!defaultVersion) {
                     return { version: '', error: 'no default toolchain' }
@@ -78,12 +78,10 @@ export class LeanInstaller {
         return found;
     }
 
-    async handleVersionChanged(packageUri : Uri) :  Promise<void> {
-        if (packageUri && packageUri.scheme === 'file') {
-            const key = packageUri.fsPath;
-            if (this.versionCache.has(key)) {
-                this.versionCache.delete(key);
-            }
+    async handleVersionChanged(packageUri: FileUri) :  Promise<void> {
+        const key = packageUri.toString();
+        if (this.versionCache.has(key)) {
+            this.versionCache.delete(key);
         }
 
         if (!this.promptUser) {
@@ -113,17 +111,17 @@ export class LeanInstaller {
         return item;
     }
 
-    private async checkAndFire(packageUri : Uri) {
+    private async checkAndFire(packageUri: FileUri) {
         const rc = await this.testLeanVersion(packageUri);
-        if (rc.version === '4'){
+        if (rc.version === '4') {
             // it works, so restart the client!
             this.installChangedEmitter.fire(packageUri);
         }
     }
 
-    async handleLakeFileChanged(uri: Uri) :  Promise<void> {
+    async handleLakeFileChanged(packageUri: FileUri) :  Promise<void> {
         if (!this.promptUser) {
-            this.installChangedEmitter.fire(uri);
+            this.installChangedEmitter.fire(packageUri);
             return
         }
 
@@ -134,11 +132,11 @@ export class LeanInstaller {
         const restartItem = 'Restart Lean';
         const item = await this.showPrompt('Lake file configuration changed', restartItem);
         if (item === restartItem) {
-            this.installChangedEmitter.fire(uri);
+            this.installChangedEmitter.fire(packageUri);
         }
     }
 
-    async showInstallOptions(uri: Uri) : Promise<void> {
+    async showInstallOptions(packageUri: ExtUri) : Promise<void> {
         if (!this.promptUser){
             // no need to prompt when there is no user.
             return;
@@ -161,7 +159,7 @@ export class LeanInstaller {
         if (item === installItem) {
             try {
                 await this.installElan();
-                this.installChangedEmitter.fire(uri);
+                this.installChangedEmitter.fire(packageUri);
             } catch (err) {
                 const msg = '' + err;
                 logger.log(`[LeanInstaller] restart error ${msg}`);
@@ -181,19 +179,17 @@ export class LeanInstaller {
         return s.trim();
     }
 
-    async checkLeanVersion(packageUri: Uri | null, version: string | null): Promise<LeanVersion> {
+    async checkLeanVersion(packageUri: ExtUri, version: string | undefined): Promise<LeanVersion> {
         let cmd = toolchainPath();
         if (!cmd) {
             cmd = 'lean'
         } else {
             cmd = join(cmd, 'bin', 'lean')
         }
-        const folderUri = packageUri ?? Uri.from({scheme: 'untitled'});
-        const folderPath: string = folderUri.scheme === 'file' ? folderUri.fsPath : '';
-        const cacheKey = folderUri.toString();
+        const cacheKey = packageUri.toString();
         if (!version && this.versionCache.has(cacheKey)) {
             const result = this.versionCache.get(cacheKey);
-            if (result){
+            if (result) {
                 return result;
             }
         }
@@ -213,7 +209,8 @@ export class LeanInstaller {
             // looks for a global (default) installation of Lean. This way, we can support
             // single file editing.
             logger.log(`executeWithProgress ${cmd} ${options}`)
-            const checkingResult: ExecutionResult = await batchExecute(cmd, options, folderPath, { combined: this.outputChannel })
+            const cwd = packageUri.scheme === 'file' ? packageUri.fsPath : undefined
+            const checkingResult: ExecutionResult = await batchExecute(cmd, options, cwd, { combined: this.outputChannel })
             if (checkingResult.exitCode === ExecutionExitCode.CannotLaunch) {
                 result.error = 'lean not found'
             } else if (checkingResult.exitCode === ExecutionExitCode.ExecutionError) {
@@ -249,7 +246,7 @@ export class LeanInstaller {
         return this.defaultToolchain;
     }
 
-    async getElanDefaultToolchain(packageUri: Uri): Promise<string> {
+    async getElanDefaultToolchain(packageUri: ExtUri): Promise<string> {
         if (this.elanDefaultToolchain){
             return this.elanDefaultToolchain;
         }
@@ -266,18 +263,13 @@ export class LeanInstaller {
         return result;
     }
 
-    async elanListToolChains(packageUri: Uri | null) : Promise<string[]> {
-
-        let folderPath: string = ''
-        if (packageUri) {
-            folderPath = packageUri.fsPath
-        }
-
+    async elanListToolChains(packageUri: ExtUri) : Promise<string[]> {
         try {
             const cmd = 'elan';
             const options = ['toolchain', 'list'];
-            const stdout = (await batchExecute(cmd, options, folderPath)).stdout
-            if (!stdout){
+            const cwd = packageUri.scheme === 'file' ? packageUri.fsPath : undefined
+            const stdout = (await batchExecute(cmd, options, cwd)).stdout
+            if (!stdout) {
                 throw new Error('elan toolchain list returned no output.');
             }
             const result : string[] = [];
