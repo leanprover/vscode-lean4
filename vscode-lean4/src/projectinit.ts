@@ -164,7 +164,10 @@ export class ProjectInitializationProvider implements Disposable {
     private static async attemptFindingLeanProjectInParentFolder(projectFolder: Uri): Promise<Uri | undefined> {
         const parentProjectFolder: Uri | undefined = await checkParentFoldersForLeanProject(projectFolder)
         if (parentProjectFolder === undefined) {
-            void window.showErrorMessage('The selected folder is not a valid Lean 4 project folder. Please make sure to select a folder containing a \'lean-toolchain\' file.')
+            const message = `The selected folder is not a valid Lean 4 project folder.
+Please make sure to select a folder containing a \'lean-toolchain\' file.
+Click the following link to learn how to set up Lean projects: [(Show Setup Guide)](command:lean4.setup.showSetupGuide)`
+            void window.showErrorMessage(message)
             return undefined
         }
 

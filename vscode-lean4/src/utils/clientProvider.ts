@@ -369,7 +369,10 @@ export class LeanClientProvider implements Disposable {
         }
 
         if (folderUri.scheme !== 'file') {
-            void window.showWarningMessage('Lean 4 server operating in restricted single file mode. Please open a valid Lean 4 project containing a \'lean-toolchain\' file for full functionality.')
+            const message = `Lean 4 server operating in restricted single file mode.
+Please open a valid Lean 4 project containing a \'lean-toolchain\' file for full functionality.
+Click the following link to learn how to set up or open Lean projects: [(Show Setup Guide)](command:lean4.setup.showSetupGuide)`
+            void window.showWarningMessage(message)
             return
         }
 
@@ -379,7 +382,10 @@ export class LeanClientProvider implements Disposable {
 
         const parentProjectFolder: Uri | undefined = await checkParentFoldersForLeanProject(folderUri)
         if (parentProjectFolder === undefined) {
-            void window.showWarningMessage('Opened folder is not a valid Lean 4 project. Please open a valid Lean 4 project containing a \'lean-toolchain\' file for full functionality.')
+            const message = `Opened folder is not a valid Lean 4 project.
+Please open a valid Lean 4 project containing a \'lean-toolchain\' file for full functionality.
+Click the following link to learn how to set up or open Lean projects: [(Show Setup Guide)](command:lean4.setup.showSetupGuide)`
+            void window.showWarningMessage(message)
             return
         }
 
