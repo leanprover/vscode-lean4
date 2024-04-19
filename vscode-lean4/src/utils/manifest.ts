@@ -27,14 +27,14 @@ function parseVersion1To6Manifest(parsedJson: any) {
                         url: z.string().url(),
                         rev: z.string(),
                         inherited: z.boolean(),
-                        'inputRev?': z.optional(z.nullable(z.string()))
-                    })
+                        'inputRev?': z.optional(z.nullable(z.string())),
+                    }),
                 }),
                 z.object({
-                    path: z.any()
-                })
-            ])
-        )
+                    path: z.any(),
+                }),
+            ]),
+        ),
     })
 
     const result = version1To6ManifestSchema.safeParse(parsedJson)
@@ -56,7 +56,7 @@ function parseVersion1To6Manifest(parsedJson: any) {
             name: pkg.git.name,
             uri: Uri.parse(pkg.git.url),
             revision: pkg.git.rev,
-            inputRevision: pkg.git['inputRev?'] ?? 'master' // Lake also always falls back to master
+            inputRevision: pkg.git['inputRev?'] ?? 'master', // Lake also always falls back to master
         })
     }
 
@@ -74,14 +74,13 @@ function parseVersion7ToNManifest(parsedJson: any) {
                     url: z.string().url(),
                     rev: z.string(),
                     inherited: z.boolean(),
-                    inputRev: z.optional(z.nullable(z.string()))
+                    inputRev: z.optional(z.nullable(z.string())),
                 }),
                 z.object({
-                    type: z.literal('path')
-                })
-            ])
-
-        )
+                    type: z.literal('path'),
+                }),
+            ]),
+        ),
     })
 
     const result = version7ToNManifestSchema.safeParse(parsedJson)
@@ -103,7 +102,7 @@ function parseVersion7ToNManifest(parsedJson: any) {
             name: pkg.name,
             uri: Uri.parse(pkg.url),
             revision: pkg.rev,
-            inputRevision: pkg.inputRev ?? 'master' // Lake also always falls back to master
+            inputRevision: pkg.inputRev ?? 'master', // Lake also always falls back to master
         })
     }
 

@@ -1,7 +1,6 @@
 import { Uri, workspace } from 'vscode'
 import { isFileInFolder } from './fsHelper'
 
-
 function unsupportedSchemeError(uri: Uri): Error {
     return new Error(`Got URI with unsupported scheme '${uri.scheme}': '${uri}'`)
 }

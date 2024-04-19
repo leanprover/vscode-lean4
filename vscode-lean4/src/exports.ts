@@ -1,9 +1,9 @@
 import { InfoProvider } from './infoview'
-import { DocViewProvider } from './docview';
+import { DocViewProvider } from './docview'
 import { LeanInstaller } from './utils/leanInstaller'
-import { LeanClientProvider } from './utils/clientProvider';
-import { ProjectInitializationProvider } from './projectinit';
-import { ProjectOperationProvider } from './projectoperations';
+import { LeanClientProvider } from './utils/clientProvider'
+import { ProjectInitializationProvider } from './projectinit'
+import { ProjectOperationProvider } from './projectoperations'
 
 export interface Exports {
     isLean4Project: boolean

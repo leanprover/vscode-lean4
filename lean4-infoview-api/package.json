@@ -1,20 +1,20 @@
 {
-  "name": "@leanprover/infoview-api",
-  "version": "0.4.0",
-  "description": "Types and API for @leanprover/infoview.",
-  "scripts": {
-    "watch": "tsc --watch",
-    "watchTest": "tsc --watch",
-    "build": "tsc"
-  },
-  "main": "dist/index",
-  "types": "dist/index",
-  "files": [
-    "dist/*"
-  ],
-  "license": "Apache-2.0",
-  "devDependencies": {
-    "typescript": "^4.9.5",
-    "vscode-languageserver-protocol": "^3.17.3"
-  }
+    "name": "@leanprover/infoview-api",
+    "version": "0.4.0",
+    "description": "Types and API for @leanprover/infoview.",
+    "scripts": {
+        "watch": "tsc --watch",
+        "watchTest": "tsc --watch",
+        "build": "tsc"
+    },
+    "main": "dist/index",
+    "types": "dist/index",
+    "files": [
+        "dist/*"
+    ],
+    "license": "Apache-2.0",
+    "devDependencies": {
+        "typescript": "^4.9.5",
+        "vscode-languageserver-protocol": "^3.17.3"
+    }
 }

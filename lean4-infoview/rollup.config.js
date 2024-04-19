@@ -1,50 +1,51 @@
-import commonjs from '@rollup/plugin-commonjs';
-import typescript from '@rollup/plugin-typescript';
-import nodeResolve from '@rollup/plugin-node-resolve';
-import replace from '@rollup/plugin-replace';
-import terser from '@rollup/plugin-terser';
-import url from '@rollup/plugin-url';
-import css from 'rollup-plugin-css-only';
+import commonjs from '@rollup/plugin-commonjs'
+import typescript from '@rollup/plugin-typescript'
+import nodeResolve from '@rollup/plugin-node-resolve'
+import replace from '@rollup/plugin-replace'
+import terser from '@rollup/plugin-terser'
+import url from '@rollup/plugin-url'
+import css from 'rollup-plugin-css-only'
 
 /** @type {import('rollup').OutputOptions} */
-const output = process.env.NODE_ENV && process.env.NODE_ENV === 'production' ?  {
-        dir: 'dist',
-        sourcemap: false,
-        format: 'esm',
-        compact: true,
-        entryFileNames: '[name].production.min.js',
-        chunkFileNames: '[name]-[hash].production.min.js',
-        plugins: [
-            terser()
-        ]
-    } : {
-        dir: 'dist',
-        sourcemap: 'inline',
-        format: 'esm',
-        entryFileNames: '[name].development.js',
-        chunkFileNames: '[name]-[hash].development.js'
-    }
+const output =
+    process.env.NODE_ENV && process.env.NODE_ENV === 'production'
+        ? {
+              dir: 'dist',
+              sourcemap: false,
+              format: 'esm',
+              compact: true,
+              entryFileNames: '[name].production.min.js',
+              chunkFileNames: '[name]-[hash].production.min.js',
+              plugins: [terser()],
+          }
+        : {
+              dir: 'dist',
+              sourcemap: 'inline',
+              format: 'esm',
+              entryFileNames: '[name].development.js',
+              chunkFileNames: '[name]-[hash].development.js',
+          }
 
 /** @type {import('rollup').InputPluginOption} */
 const plugins = [
     url({
         include: ['**/*.ttf'],
-        fileName: '[name][extname]'
+        fileName: '[name][extname]',
     }),
     typescript({
-        tsconfig: "./tsconfig.json",
+        tsconfig: './tsconfig.json',
         outputToFilesystem: false,
         // https://stackoverflow.com/a/63235210
-        sourceMap: false
+        sourceMap: false,
     }),
     nodeResolve({
-        browser: true
+        browser: true,
     }),
     replace({
         'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV),
-        preventAssignment: true // TODO delete when `true` becomes the default
+        preventAssignment: true, // TODO delete when `true` becomes the default
     }),
-    commonjs()
+    commonjs(),
 ]
 
 /**
@@ -56,21 +57,19 @@ const plugins = [
  * connection. See also `README.md`.
  *
  * @type {import('rollup').RollupOptions[]}
-*/
-const configs = [ {
+ */
+const configs = [
+    {
         output,
         plugins: plugins.concat([
             css({
-                output: 'index.css'
+                output: 'index.css',
             }),
         ]),
         input: 'src/index.tsx',
-        external: [
-            'react',
-            'react-dom',
-            'react/jsx-runtime',
-        ],
-    }, {
+        external: ['react', 'react-dom', 'react/jsx-runtime'],
+    },
+    {
         output: {
             ...output,
             // Put `es-module-shims` in shim mode with support for dynamic `import`
@@ -78,18 +77,24 @@ const configs = [ {
         },
         plugins,
         input: 'src/loader.ts',
-    }, {
-        output, plugins,
-        input: 'src/esm-shims/react.ts'
-    }, {
-        output, plugins,
+    },
+    {
+        output,
+        plugins,
+        input: 'src/esm-shims/react.ts',
+    },
+    {
+        output,
+        plugins,
         input: 'src/esm-shims/react-dom.ts',
-        external: [ 'react' ]
-    }, {
-        output, plugins,
+        external: ['react'],
+    },
+    {
+        output,
+        plugins,
         input: 'src/esm-shims/react-jsx-runtime.ts',
-        external: [ 'react' ]
+        external: ['react'],
     },
 ]
 
-export default configs;
+export default configs

@@ -1,23 +1,31 @@
-import { Disposable, commands, window, OutputChannel, QuickPickItem } from 'vscode';
-import { LakeRunner, cacheNotFoundError, lake } from './utils/lake';
-import { ExecutionExitCode, ExecutionResult, batchExecute, displayError } from './utils/batch';
-import { LeanClientProvider } from './utils/clientProvider';
-import { LeanClient } from './leanclient';
-import { join } from 'path';
+import { Disposable, commands, window, OutputChannel, QuickPickItem } from 'vscode'
+import { LakeRunner, cacheNotFoundError, lake } from './utils/lake'
+import { ExecutionExitCode, ExecutionResult, batchExecute, displayError } from './utils/batch'
+import { LeanClientProvider } from './utils/clientProvider'
+import { LeanClient } from './leanclient'
+import { join } from 'path'
 import * as fs from 'fs'
-import { DirectGitDependency, Manifest, ManifestReadError, parseAsManifest, parseManifestInFolder } from './utils/manifest';
+import {
+    DirectGitDependency,
+    Manifest,
+    ManifestReadError,
+    parseAsManifest,
+    parseManifestInFolder,
+} from './utils/manifest'
 
 export class ProjectOperationProvider implements Disposable {
-
     private subscriptions: Disposable[] = []
     private isRunningOperation: boolean = false // Used to synchronize project operations
 
-    constructor(private channel: OutputChannel, private clientProvider: LeanClientProvider) {
+    constructor(
+        private channel: OutputChannel,
+        private clientProvider: LeanClientProvider,
+    ) {
         this.subscriptions.push(
             commands.registerCommand('lean4.project.build', () => this.buildProject()),
             commands.registerCommand('lean4.project.clean', () => this.cleanProject()),
             commands.registerCommand('lean4.project.updateDependency', () => this.updateDependency()),
-            commands.registerCommand('lean4.project.fetchCache', () => this.fetchMathlibCache())
+            commands.registerCommand('lean4.project.fetchCache', () => this.fetchMathlibCache()),
         )
     }
 
@@ -44,7 +52,11 @@ export class ProjectOperationProvider implements Disposable {
 
     private async cleanProject() {
         const deleteInput = 'Proceed'
-        const deleteChoice: string | undefined = await window.showInformationMessage('Delete all build artifacts?', { modal: true }, deleteInput)
+        const deleteChoice: string | undefined = await window.showInformationMessage(
+            'Delete all build artifacts?',
+            { modal: true },
+            deleteInput,
+        )
         if (deleteChoice !== deleteInput) {
             return
         }
@@ -68,9 +80,13 @@ export class ProjectOperationProvider implements Disposable {
                 return
             }
 
-            const fetchMessage = 'Project cleaned successfully. Do you want to fetch Mathlib\'s build artifact cache?'
+            const fetchMessage = "Project cleaned successfully. Do you want to fetch Mathlib's build artifact cache?"
             const fetchInput = 'Fetch Cache'
-            const fetchChoice: string | undefined = await window.showInformationMessage(fetchMessage, { modal: true }, fetchInput)
+            const fetchChoice: string | undefined = await window.showInformationMessage(
+                fetchMessage,
+                { modal: true },
+                fetchInput,
+            )
             if (fetchChoice !== fetchInput) {
                 return
             }
@@ -145,13 +161,13 @@ export class ProjectOperationProvider implements Disposable {
                 label: `${gitDep.name} @ ${gitDep.inputRevision}`,
                 description: gitDep.uri.toString(),
                 detail,
-                ...gitDep
+                ...gitDep,
             }
         })
 
         const dependencyChoice: GitDependencyQuickPickItem | undefined = await window.showQuickPick(items, {
             title: 'Choose a dependency to update',
-            canPickMany: false
+            canPickMany: false,
         })
         if (!dependencyChoice) {
             return
@@ -177,8 +193,18 @@ export class ProjectOperationProvider implements Disposable {
             await this.tryFetchingCache(lakeRunner)
 
             const localToolchainPath: string = join(activeFolderUri.fsPath, 'lean-toolchain')
-            const dependencyToolchainPath: string = join(activeFolderUri.fsPath, manifestResult.packagesDir, dependencyChoice.name, 'lean-toolchain')
-            const dependencyToolchainResult: string | 'DoNotUpdate' | 'Cancelled' = await this.determineDependencyToolchain(localToolchainPath, dependencyToolchainPath, dependencyChoice.name)
+            const dependencyToolchainPath: string = join(
+                activeFolderUri.fsPath,
+                manifestResult.packagesDir,
+                dependencyChoice.name,
+                'lean-toolchain',
+            )
+            const dependencyToolchainResult: string | 'DoNotUpdate' | 'Cancelled' =
+                await this.determineDependencyToolchain(
+                    localToolchainPath,
+                    dependencyToolchainPath,
+                    dependencyChoice.name,
+                )
             if (dependencyToolchainResult === 'Cancelled') {
                 return
             }
@@ -198,7 +224,11 @@ export class ProjectOperationProvider implements Disposable {
         const augmented: (DirectGitDependency & { remoteRevision?: string | undefined })[] = []
 
         for (const dependency of dependencies) {
-            const result: ExecutionResult = await batchExecute('git', ['ls-remote', dependency.uri.toString(), dependency.inputRevision])
+            const result: ExecutionResult = await batchExecute('git', [
+                'ls-remote',
+                dependency.uri.toString(),
+                dependency.inputRevision,
+            ])
             if (result.exitCode !== ExecutionExitCode.Success) {
                 augmented.push(dependency)
                 continue
@@ -222,13 +252,17 @@ export class ProjectOperationProvider implements Disposable {
         return augmented
     }
 
-    private async determineDependencyToolchain(localToolchainPath: string, dependencyToolchainPath: string, dependencyName: string): Promise<string | 'DoNotUpdate' | 'Cancelled'> {
-
+    private async determineDependencyToolchain(
+        localToolchainPath: string,
+        dependencyToolchainPath: string,
+        dependencyName: string,
+    ): Promise<string | 'DoNotUpdate' | 'Cancelled'> {
         const toolchainResult = await this.readToolchains(localToolchainPath, dependencyToolchainPath)
         if (!(toolchainResult instanceof Array)) {
-            const errorFlavor = toolchainResult === 'CannotReadLocalToolchain'
-                ? `Could not read Lean version of open project at '${localToolchainPath}'`
-                : `Could not read Lean version of ${dependencyName} at ${dependencyToolchainPath}`
+            const errorFlavor =
+                toolchainResult === 'CannotReadLocalToolchain'
+                    ? `Could not read Lean version of open project at '${localToolchainPath}'`
+                    : `Could not read Lean version of ${dependencyName} at ${dependencyToolchainPath}`
             const message = `${errorFlavor}. Do you want to update ${dependencyName} without updating the Lean version of the open project to that of ${dependencyName} regardless?`
             const input = 'Proceed'
             const choice: string | undefined = await window.showInformationMessage(message, { modal: true }, input)
@@ -254,7 +288,10 @@ export class ProjectOperationProvider implements Disposable {
         return dependencyToolchain
     }
 
-    private async readToolchains(localToolchainPath: string, dependencyToolchainPath: string): Promise<[string, string] | 'CannotReadLocalToolchain' | 'CannotReadDependencyToolchain'> {
+    private async readToolchains(
+        localToolchainPath: string,
+        dependencyToolchainPath: string,
+    ): Promise<[string, string] | 'CannotReadLocalToolchain' | 'CannotReadDependencyToolchain'> {
         let localToolchain: string
         try {
             localToolchain = fs.readFileSync(localToolchainPath, 'utf8').trim()
@@ -286,7 +323,9 @@ export class ProjectOperationProvider implements Disposable {
 
     private async runOperation(command: (lakeRunner: LakeRunner) => Promise<void>) {
         if (this.isRunningOperation) {
-            void window.showErrorMessage('Another project action is already being executed. Please wait for its completion.')
+            void window.showErrorMessage(
+                'Another project action is already being executed. Please wait for its completion.',
+            )
             return
         }
         this.isRunningOperation = true
@@ -321,10 +360,10 @@ export class ProjectOperationProvider implements Disposable {
     }
 
     dispose() {
-        for (const s of this.subscriptions) { s.dispose(); }
+        for (const s of this.subscriptions) {
+            s.dispose()
+        }
     }
-
 }
 
-interface GitDependencyQuickPickItem extends QuickPickItem, DirectGitDependency {
-}
+interface GitDependencyQuickPickItem extends QuickPickItem, DirectGitDependency {}

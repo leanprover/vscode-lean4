@@ -1,6 +1,6 @@
-import { OutputChannel } from 'vscode';
-import { ExecutionExitCode, ExecutionResult, batchExecute, batchExecuteWithProgress } from './batch';
-import { FileUri } from './exturi';
+import { OutputChannel } from 'vscode'
+import { ExecutionExitCode, ExecutionResult, batchExecute, batchExecuteWithProgress } from './batch'
+import { FileUri } from './exturi'
 
 export const cacheNotFoundError = 'unknown executable `cache`'
 export const cacheNotFoundExitError = '=> Operation failed. Exit Code: 1.'
@@ -48,7 +48,11 @@ export class LakeRunner {
     }
 
     async isMathlibCacheGetAvailable(): Promise<'Yes' | 'No' | 'Cancelled'> {
-        const result: ExecutionResult = await this.runLakeCommandWithProgress('exe', ['cache'], 'Checking whether this is a Mathlib project')
+        const result: ExecutionResult = await this.runLakeCommandWithProgress(
+            'exe',
+            ['cache'],
+            'Checking whether this is a Mathlib project',
+        )
         if (result.exitCode === ExecutionExitCode.Cancelled) {
             return 'Cancelled'
         }
@@ -68,10 +72,11 @@ export class LakeRunner {
     }
 
     private async runLakeCommandWithProgress(
-            subCommand: string,
-            args: string[],
-            waitingPrompt: string,
-            translator?: ((line: string) => string | undefined) | undefined): Promise<ExecutionResult> {
+        subCommand: string,
+        args: string[],
+        waitingPrompt: string,
+        translator?: ((line: string) => string | undefined) | undefined,
+    ): Promise<ExecutionResult> {
         args = args.slice()
         args.unshift(subCommand)
         if (this.toolchain) {
@@ -81,7 +86,7 @@ export class LakeRunner {
             cwd: this.cwdUri?.fsPath,
             channel: this.channel,
             translator,
-            allowCancellation: true
+            allowCancellation: true,
         })
     }
 }

@@ -1,7 +1,7 @@
-
 /* Some styles specific to the infoview. */
 
-html,body {
+html,
+body {
     height: 100%;
 }
 
@@ -14,8 +14,8 @@ html,body {
 }
 
 .font-size-code-smaller {
-    font-size: calc(.8*var(--vscode-editor-font-size));
-    line-height: calc(.8*var(--vscode-editor-line-height));
+    font-size: calc(0.8 * var(--vscode-editor-font-size));
+    line-height: calc(0.8 * var(--vscode-editor-line-height));
 }
 
 .font-normal {
@@ -30,10 +30,18 @@ html,body {
 }
 
 /* These are syntax highlights for the string goal view. */
-.goal-goals { color: var(--vscode-lean4-infoView\.goalCount); }
-.goal-vdash { color: var(--vscode-lean4-infoView\.turnstile); }
-.goal-case { color: var(--vscode-lean4-infoView\.caseLabel); }
-.goal-hyp { color: var(--vscode-lean4-infoView\.hypothesisName); }
+.goal-goals {
+    color: var(--vscode-lean4-infoView\.goalCount);
+}
+.goal-vdash {
+    color: var(--vscode-lean4-infoView\.turnstile);
+}
+.goal-case {
+    color: var(--vscode-lean4-infoView\.caseLabel);
+}
+.goal-hyp {
+    color: var(--vscode-lean4-infoView\.hypothesisName);
+}
 .goal-inaccessible {
     color: var(--vscode-lean4-infoView\.inaccessibleHypothesisName);
     opacity: 0.7;

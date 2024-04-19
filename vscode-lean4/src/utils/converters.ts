@@ -18,7 +18,7 @@ import * as code from 'vscode'
 import { Code2ProtocolConverter, Protocol2CodeConverter } from 'vscode-languageclient'
 
 interface Lean4Diagnostic extends ls.Diagnostic {
-    fullRange: ls.Range;
+    fullRange: ls.Range
 }
 
 interface SnippetTextEdit extends ls.TextEdit {
@@ -46,7 +46,7 @@ export function patchConverters(p2cConverter: Protocol2CodeConverter, c2pConvert
     p2cConverter.asDiagnostic = function (protDiag: Lean4Diagnostic): code.Diagnostic {
         if (!protDiag.message) {
             // Fixes: Notification handler 'textDocument/publishDiagnostics' failed with message: message must be set
-            protDiag.message = ' ';
+            protDiag.message = ' '
         }
         const diag = oldP2cAsDiagnostic.apply(this, [protDiag])
         diag.fullRange = p2cConverter.asRange(protDiag.fullRange)
@@ -59,7 +59,7 @@ export function patchConverters(p2cConverter: Protocol2CodeConverter, c2pConvert
 
     // eslint-disable-next-line @typescript-eslint/unbound-method
     const oldC2pAsDiagnostic = c2pConverter.asDiagnostic
-    c2pConverter.asDiagnostic = function (diag: code.Diagnostic & {fullRange: code.Range}): Lean4Diagnostic {
+    c2pConverter.asDiagnostic = function (diag: code.Diagnostic & { fullRange: code.Range }): Lean4Diagnostic {
         const protDiag = oldC2pAsDiagnostic.apply(this, [diag])
         protDiag.fullRange = c2pConverter.asRange(diag.fullRange)
         return protDiag
@@ -68,7 +68,10 @@ export function patchConverters(p2cConverter: Protocol2CodeConverter, c2pConvert
 
     // eslint-disable-next-line @typescript-eslint/unbound-method
     const oldP2CAsWorkspaceEdit = p2cConverter.asWorkspaceEdit
-    p2cConverter.asWorkspaceEdit = async function (item: ls.WorkspaceEdit | null | undefined, token?: code.CancellationToken) {
+    p2cConverter.asWorkspaceEdit = async function (
+        item: ls.WorkspaceEdit | null | undefined,
+        token?: code.CancellationToken,
+    ) {
         if (item === undefined || item === null) return undefined
         if (item.documentChanges) {
             // 1. Preprocess `documentChanges` by filtering out snippet edits
@@ -80,26 +83,28 @@ export function patchConverters(p2cConverter: Protocol2CodeConverter, c2pConvert
             // so users cannot rely on it;
             // but a mix of both doesn't seem to work in VSCode anyway as of 1.84.2.
             const snippetChanges: [code.Uri, code.SnippetTextEdit[]][] = []
-            const documentChanges = await async.map(item.documentChanges, change => {
-                if (!ls.TextDocumentEdit.is(change)) return true
-                const uri = code.Uri.parse(change.textDocument.uri)
-                const snippetEdits: code.SnippetTextEdit[] = []
-                const edits = change.edits.filter(edit => {
-                    if (!SnippetTextEdit.is(edit)) return true
-                    const range = p2cConverter.asRange(edit.range)
-                    snippetEdits.push(
-                        new code.SnippetTextEdit(
-                            range,
-                            new code.SnippetString(edit.leanExtSnippet.value)))
-                    return false
-                })
-                snippetChanges.push([uri, snippetEdits])
-                return { ...change, edits }
-            }, token)
+            const documentChanges = await async.map(
+                item.documentChanges,
+                change => {
+                    if (!ls.TextDocumentEdit.is(change)) return true
+                    const uri = code.Uri.parse(change.textDocument.uri)
+                    const snippetEdits: code.SnippetTextEdit[] = []
+                    const edits = change.edits.filter(edit => {
+                        if (!SnippetTextEdit.is(edit)) return true
+                        const range = p2cConverter.asRange(edit.range)
+                        snippetEdits.push(
+                            new code.SnippetTextEdit(range, new code.SnippetString(edit.leanExtSnippet.value)),
+                        )
+                        return false
+                    })
+                    snippetChanges.push([uri, snippetEdits])
+                    return { ...change, edits }
+                },
+                token,
+            )
             const newItem = { ...item, documentChanges }
             const result: code.WorkspaceEdit = await oldP2CAsWorkspaceEdit.apply(this, [newItem, token])
-            for (const [uri, snippetEdits] of snippetChanges)
-                result.set(uri, snippetEdits)
+            for (const [uri, snippetEdits] of snippetChanges) result.set(uri, snippetEdits)
             return result
         }
         return oldP2CAsWorkspaceEdit.apply(this, [item, token])
@@ -107,11 +112,15 @@ export function patchConverters(p2cConverter: Protocol2CodeConverter, c2pConvert
 
     // eslint-disable-next-line @typescript-eslint/unbound-method
     const oldP2cAsCodeAction = p2cConverter.asCodeAction
-    p2cConverter.asCodeAction = async function (item: ls.CodeAction | null | undefined, token?: code.CancellationToken) {
+    p2cConverter.asCodeAction = async function (
+        item: ls.CodeAction | null | undefined,
+        token?: code.CancellationToken,
+    ) {
         if (item === undefined || item === null) return undefined
         if (item.edit || item.diagnostics) {
             const result: code.CodeAction = await oldP2cAsCodeAction.apply(this, [item, token])
-            if (item.diagnostics !== undefined) result.diagnostics = await p2cConverter.asDiagnostics(item.diagnostics, token)
+            if (item.diagnostics !== undefined)
+                result.diagnostics = await p2cConverter.asDiagnostics(item.diagnostics, token)
             if (item.edit) result.edit = await p2cConverter.asWorkspaceEdit(item.edit, token)
         }
         return oldP2cAsCodeAction.apply(this, [item, token])

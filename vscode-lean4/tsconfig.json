@@ -5,19 +5,13 @@
         "module": "commonjs",
         "target": "es6",
         "outDir": "out",
-        "lib": [
-           "es6",
-           "ES2021",
-           "es2020.string"
-        ],
+        "lib": ["es6", "ES2021", "es2020.string"],
         "sourceMap": true,
         "alwaysStrict": true,
         "rootDir": "./",
         "noImplicitAny": true,
         "strictNullChecks": true
     },
-    "include": [
-        "src/**/*", "test/suite/**/*"
-    ],
+    "include": ["src/**/*", "test/suite/**/*"],
     "exclude": ["node_modules", ".vscode-test"]
 }

@@ -1,33 +1,29 @@
 {
-  "compilerOptions": {
-    /* Code generation */
-    "target": "ES2021",
-    "module": "ES6",
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "ES2021"
-    ],
-    "allowJs": true,
-    "esModuleInterop": true,
+    "compilerOptions": {
+        /* Code generation */
+        "target": "ES2021",
+        "module": "ES6",
+        "lib": ["dom", "dom.iterable", "ES2021"],
+        "allowJs": true,
+        "esModuleInterop": true,
 
-    /* Type-checking */
-    "strict": true,
-    "noFallthroughCasesInSwitch": true,
-    "skipLibCheck": true,
+        /* Type-checking */
+        "strict": true,
+        "noFallthroughCasesInSwitch": true,
+        "skipLibCheck": true,
 
-    /* Module resolution */
-    "moduleResolution": "node",
-    "allowSyntheticDefaultImports": true,
-    "forceConsistentCasingInFileNames": true,
+        /* Module resolution */
+        "moduleResolution": "node",
+        "allowSyntheticDefaultImports": true,
+        "forceConsistentCasingInFileNames": true,
 
-    /* Output */
-    "composite": true,
-    "rootDir": "src/",
-    "outDir": "dist/",
-    "declaration": true,
-    "sourceMap": true,
-  },
+        /* Output */
+        "composite": true,
+        "rootDir": "src/",
+        "outDir": "dist/",
+        "declaration": true,
+        "sourceMap": true
+    },
 
-  "include": ["src/**/*"],
+    "include": ["src/**/*"]
 }

@@ -1,11 +1,16 @@
-import * as React from 'react';
+import * as React from 'react'
 
-import { Widget_getWidgetSource, UserWidgetInstance, InteractiveGoal, InteractiveTermGoal,
-    RpcSessionAtPos } from '@leanprover/infoview-api';
-import { RpcContext } from './rpcSessions';
-import { DocumentPosition, mapRpcError, useAsyncPersistent } from './util';
-import { ErrorBoundary } from './errors';
-import { GoalsLocation } from './goalLocation';
+import {
+    Widget_getWidgetSource,
+    UserWidgetInstance,
+    InteractiveGoal,
+    InteractiveTermGoal,
+    RpcSessionAtPos,
+} from '@leanprover/infoview-api'
+import { RpcContext } from './rpcSessions'
+import { DocumentPosition, mapRpcError, useAsyncPersistent } from './util'
+import { ErrorBoundary } from './errors'
+import { GoalsLocation } from './goalLocation'
 
 async function dynamicallyLoadModule(hash: string, code: string): Promise<any> {
     const file = new File([code], `widget_${hash}.js`, { type: 'text/javascript' })
@@ -20,8 +25,7 @@ const moduleCache = new Map<string, any>()
  *
  * The source must hash to `hash` (in Lean) and must have been annotated with `@[widget]`
  * or `@[widget_module]` at some point before `pos`. */
-export async function importWidgetModule(rs: RpcSessionAtPos, pos: DocumentPosition, hash: string):
-        Promise<any> {
+export async function importWidgetModule(rs: RpcSessionAtPos, pos: DocumentPosition, hash: string): Promise<any> {
     if (moduleCache.has(hash)) {
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         return moduleCache.get(hash)!
@@ -48,10 +52,8 @@ export function DynamicComponent(props_: React.PropsWithChildren<DynamicComponen
     return (
         <React.Suspense fallback={`Loading component '${hash}'..`}>
             <ErrorBoundary>
-                {state.state === 'resolved' &&
-                    React.createElement(state.value.default, props, children)}
-                {state.state === 'rejected' &&
-                    <span className='red'>Error: {mapRpcError(state.error).message}</span>}
+                {state.state === 'resolved' && React.createElement(state.value.default, props, children)}
+                {state.state === 'rejected' && <span className="red">Error: {mapRpcError(state.error).message}</span>}
             </ErrorBoundary>
         </React.Suspense>
     )

@@ -1,5 +1,5 @@
-import type { DocumentUri, TextDocumentPositionParams } from 'vscode-languageserver-protocol';
-import { RpcCallParams, RpcErrorCode, RpcPtr, RpcReleaseParams } from './lspTypes';
+import type { DocumentUri, TextDocumentPositionParams } from 'vscode-languageserver-protocol'
+import { RpcCallParams, RpcErrorCode, RpcPtr, RpcReleaseParams } from './lspTypes'
 
 /**
  * Abstraction of the Lean server interface required for RPC communication.
@@ -15,13 +15,13 @@ export interface RpcServerIface {
      * The implementation of `RpcServerIface` takes care to send any required
      * keepalive notifications.
      */
-    createRpcSession(uri: DocumentUri): Promise<string>;
+    createRpcSession(uri: DocumentUri): Promise<string>
     /** Closes an RPC session created with `createRpcSession`. */
-    closeRpcSession(sessionId: string): void;
+    closeRpcSession(sessionId: string): void
     /** Sends an RPC call to the Lean server. */
-    call(request: RpcCallParams): Promise<any>;
+    call(request: RpcCallParams): Promise<any>
     /** Sends an RPC reference release notification to the server. */
-    release(request: RpcReleaseParams): void;
+    release(request: RpcReleaseParams): void
 }
 
 /**
@@ -41,65 +41,68 @@ export interface RpcServerIface {
  * `RpcSessionAtPos` object.)
  */
 export interface RpcSessionAtPos {
-    call<T, S>(method: string, params: T): Promise<S>;
+    call<T, S>(method: string, params: T): Promise<S>
 }
 
 class RpcSessionForFile {
-    sessionId: Promise<string>;
+    sessionId: Promise<string>
     /**
      * `failed` stores a fatal exception indicating that the RPC session can no longer be used.
      * For example: the worker crashed, etc.
      */
-    failed?: any;
+    failed?: any
 
-    refsToRelease: RpcPtr<any>[] = [];
-    finalizers: FinalizationRegistry<RpcPtr<any>>;
+    refsToRelease: RpcPtr<any>[] = []
+    finalizers: FinalizationRegistry<RpcPtr<any>>
 
     /** Essentially a cache for {@link at}. See {@link at} for why we need this. */
-    sessionsAtPos: Map<string, RpcSessionAtPos> = new Map();
+    sessionsAtPos: Map<string, RpcSessionAtPos> = new Map()
 
-    constructor(public uri: DocumentUri, public sessions: RpcSessions) {
+    constructor(
+        public uri: DocumentUri,
+        public sessions: RpcSessions,
+    ) {
         this.sessionId = (async () => {
             try {
-                return await sessions.iface.createRpcSession(uri);
+                return await sessions.iface.createRpcSession(uri)
             } catch (ex) {
-                this.failWithoutClosing(ex);
-                throw ex;
+                this.failWithoutClosing(ex)
+                throw ex
             }
-        })();
-        this.sessionId.catch(() => {}); // silence uncaught exception warning
+        })()
+        this.sessionId.catch(() => {}) // silence uncaught exception warning
 
         // Here we hook into the JS GC and send release-reference notifications
         // whenever the GC finalizes a number of `RpcPtr`s. Requires ES2021.
         let releaseTimeout: number | undefined
         this.finalizers = new FinalizationRegistry(ptr => {
-            if (this.failed) return;
+            if (this.failed) return
             this.refsToRelease.push(ptr)
 
             // We release eagerly instead of delaying when this many refs become garbage
             const maxBatchSize = 100
             if (this.refsToRelease.length > maxBatchSize) {
-                void this.releaseNow();
-                clearTimeout(releaseTimeout);
-                releaseTimeout = undefined;
+                void this.releaseNow()
+                clearTimeout(releaseTimeout)
+                releaseTimeout = undefined
             } else if (releaseTimeout === undefined) {
                 releaseTimeout = window.setTimeout(() => {
                     void this.releaseNow()
-                    releaseTimeout = undefined;
-                }, 100);
+                    releaseTimeout = undefined
+                }, 100)
             }
-        });
+        })
     }
 
     async releaseNow() {
-        const sessionId = await this.sessionId;
-        if (this.failed || this.refsToRelease.length === 0) return;
+        const sessionId = await this.sessionId
+        if (this.failed || this.refsToRelease.length === 0) return
         this.sessions.iface.release({
             uri: this.uri,
             sessionId,
             refs: this.refsToRelease,
-        });
-        this.refsToRelease = [];
+        })
+        this.refsToRelease = []
     }
 
     /** Traverses an object received from the RPC server and registers all contained references
@@ -117,46 +120,49 @@ class RpcSessionForFile {
      */
     registerRefs(o: any) {
         if (o instanceof Object) {
-            if (Object.keys(o as {}).length === 1 && 'p' in o && typeof(o.p) !== 'object') {
-                this.finalizers.register(o as {}, RpcPtr.copy(o as RpcPtr<any>));
+            if (Object.keys(o as {}).length === 1 && 'p' in o && typeof o.p !== 'object') {
+                this.finalizers.register(o as {}, RpcPtr.copy(o as RpcPtr<any>))
             } else {
-                for (const v of Object.values(o as {})) this.registerRefs(v);
+                for (const v of Object.values(o as {})) this.registerRefs(v)
             }
         } else if (o instanceof Array) {
-            for (const e of o) this.registerRefs(e);
+            for (const e of o) this.registerRefs(e)
         }
     }
 
     private failWithoutClosing(reason: any): void {
-        this.failed = reason;
+        this.failed = reason
         // NOTE(WN): the sessions map is keyed by URI rather than ID and by the time this
         // function executes, a new session for the same file may already have been added.
         // So we should only delete the stored session if it is this one.
         if (this.sessions.sessions.get(this.uri) === this) {
-            this.sessions.sessions.delete(this.uri);
+            this.sessions.sessions.delete(this.uri)
         }
     }
 
     fail(reason: any) {
-        this.failWithoutClosing(reason);
-        void this.sessionId.then((id) => this.sessions.iface.closeRpcSession(id));
+        this.failWithoutClosing(reason)
+        void this.sessionId.then(id => this.sessions.iface.closeRpcSession(id))
     }
 
     async call(pos: TextDocumentPositionParams, method: string, params: any): Promise<any> {
-        const sessionId = await this.sessionId;
-        if (this.failed) throw this.failed;
+        const sessionId = await this.sessionId
+        if (this.failed) throw this.failed
         try {
-            const result = await this.sessions.iface.call({ method, params, sessionId, ... pos });
-            this.registerRefs(result);
+            const result = await this.sessions.iface.call({ method, params, sessionId, ...pos })
+            this.registerRefs(result)
             // HACK: most of our types are `T | undefined` so try to return something matching that interface
-            if (result === null) return undefined;
-            return result;
+            if (result === null) return undefined
+            return result
         } catch (ex: any) {
-            if (ex?.code === RpcErrorCode.WorkerCrashed || ex?.code === RpcErrorCode.WorkerExited ||
-                    ex?.code === RpcErrorCode.RpcNeedsReconnect) {
-                this.fail(ex);
+            if (
+                ex?.code === RpcErrorCode.WorkerCrashed ||
+                ex?.code === RpcErrorCode.WorkerExited ||
+                ex?.code === RpcErrorCode.RpcNeedsReconnect
+            ) {
+                this.fail(ex)
             }
-            throw ex;
+            throw ex
         }
     }
 
@@ -182,15 +188,15 @@ export class RpcSessions {
      * it is removed from this map.  The `connect` method will then automatically
      * reconnect the next time it is called.
      */
-    sessions: Map<DocumentUri, RpcSessionForFile> = new Map();
+    sessions: Map<DocumentUri, RpcSessionForFile> = new Map()
 
     constructor(public iface: RpcServerIface) {}
 
     private connectCore(uri: DocumentUri): RpcSessionForFile {
-        if (this.sessions.has(uri)) return this.sessions.get(uri) as RpcSessionForFile;
-        const sess = new RpcSessionForFile(uri, this);
-        this.sessions.set(uri, sess);
-        return sess;
+        if (this.sessions.has(uri)) return this.sessions.get(uri) as RpcSessionForFile
+        const sess = new RpcSessionForFile(uri, this)
+        this.sessions.set(uri, sess)
+        return sess
     }
 
     /**
@@ -201,21 +207,19 @@ export class RpcSessions {
      * crashes) or the session is closed manually (if the file is closed).
      */
     connect(pos: TextDocumentPositionParams): RpcSessionAtPos {
-        return this.connectCore(pos.textDocument.uri).at(pos);
+        return this.connectCore(pos.textDocument.uri).at(pos)
     }
 
     /* Closes the session for the given Uri. */
     closeSessionForFile(uri: DocumentUri): void {
-        void this.sessions.get(uri)?.fail('file closed');
+        void this.sessions.get(uri)?.fail('file closed')
     }
 
     closeAllSessions(): void {
-        for (const k of [...this.sessions.keys()]) this.closeSessionForFile(k);
+        for (const k of [...this.sessions.keys()]) this.closeSessionForFile(k)
     }
 
     dispose(): void {
-        this.closeAllSessions();
+        this.closeAllSessions()
     }
 }
-
-

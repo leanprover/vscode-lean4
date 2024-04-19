@@ -1,59 +1,59 @@
 {
-  "name": "@leanprover/infoview",
-  "version": "0.6.1",
-  "description": "An interactive display for the Lean 4 theorem prover.",
-  "scripts": {
-    "watch": "rollup --config --environment NODE_ENV:development --watch",
-    "build": "rollup --config --environment NODE_ENV:production",
-    "watchTest": "npm run watch",
-    "test": "tsc -p test/tsconfig.json"
-  },
-  "exports": {
-    ".": "./dist/index.development.js",
-    "./loader": "./dist/loader.production.min.js",
-    "./package.json": "./package.json"
-  },
-  "typesVersions": {
-    "*": {
-      "*": [
-        "dist/index.d.ts"
-      ],
-      "loader": [
-        "dist/loader.d.ts"
-      ]
+    "name": "@leanprover/infoview",
+    "version": "0.6.1",
+    "description": "An interactive display for the Lean 4 theorem prover.",
+    "scripts": {
+        "watch": "rollup --config --environment NODE_ENV:development --watch",
+        "build": "rollup --config --environment NODE_ENV:production",
+        "watchTest": "npm run watch",
+        "test": "tsc -p test/tsconfig.json"
+    },
+    "exports": {
+        ".": "./dist/index.development.js",
+        "./loader": "./dist/loader.production.min.js",
+        "./package.json": "./package.json"
+    },
+    "typesVersions": {
+        "*": {
+            "*": [
+                "dist/index.d.ts"
+            ],
+            "loader": [
+                "dist/loader.d.ts"
+            ]
+        }
+    },
+    "files": [
+        "dist/*"
+    ],
+    "type": "module",
+    "license": "Apache-2.0",
+    "devDependencies": {
+        "@floating-ui/react": "^0.24.7",
+        "@rollup/plugin-commonjs": "^23.0.7",
+        "@rollup/plugin-node-resolve": "^15.1.0",
+        "@rollup/plugin-replace": "^5.0.2",
+        "@rollup/plugin-terser": "^0.1.0",
+        "@rollup/plugin-typescript": "^9.0.2",
+        "@rollup/plugin-url": "^8.0.1",
+        "@types/marked": "^4.3.1",
+        "@types/react": "^18.2.15",
+        "@types/react-dom": "^18.2.7",
+        "current-release": "npm:@leanprover/infoview@^0.4.0",
+        "react": "^18.2.0",
+        "react-dom": "^18.2.0",
+        "rollup": "^3.26.2",
+        "rollup-plugin-css-only": "^4.3.0",
+        "typescript": "^4.9.5"
+    },
+    "dependencies": {
+        "@leanprover/infoview-api": "~0.4.0",
+        "@vscode/codicons": "^0.0.32",
+        "@vscode/webview-ui-toolkit": "^1.4.0",
+        "es-module-shims": "^1.7.3",
+        "marked": "^4.3.0",
+        "react-fast-compare": "^3.2.2",
+        "tachyons": "^4.12.0",
+        "vscode-languageserver-protocol": "^3.17.3"
     }
-  },
-  "files": [
-    "dist/*"
-  ],
-  "type": "module",
-  "license": "Apache-2.0",
-  "devDependencies": {
-    "@floating-ui/react": "^0.24.7",
-    "@rollup/plugin-commonjs": "^23.0.7",
-    "@rollup/plugin-node-resolve": "^15.1.0",
-    "@rollup/plugin-replace": "^5.0.2",
-    "@rollup/plugin-terser": "^0.1.0",
-    "@rollup/plugin-typescript": "^9.0.2",
-    "@rollup/plugin-url": "^8.0.1",
-    "@types/marked": "^4.3.1",
-    "@types/react": "^18.2.15",
-    "@types/react-dom": "^18.2.7",
-    "current-release": "npm:@leanprover/infoview@^0.4.0",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "rollup": "^3.26.2",
-    "rollup-plugin-css-only": "^4.3.0",
-    "typescript": "^4.9.5"
-  },
-  "dependencies": {
-    "@leanprover/infoview-api": "~0.4.0",
-    "@vscode/codicons": "^0.0.32",
-    "@vscode/webview-ui-toolkit": "^1.4.0",
-    "es-module-shims": "^1.7.3",
-    "marked": "^4.3.0",
-    "react-fast-compare": "^3.2.2",
-    "tachyons": "^4.12.0",
-    "vscode-languageserver-protocol": "^3.17.3"
-  }
 }
