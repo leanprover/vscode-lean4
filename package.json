@@ -1,26 +1,36 @@
 {
-  "name": "@leanprover/vscode-lean4-repo",
-  "private": true,
-  "scripts": {
-    "build": "lerna run --stream build",
-    "test": "lerna run --stream test",
-    "watch": "lerna run --parallel --stream watch",
-    "watchTest": "lerna run --parallel --stream watchTest",
-    "lint": "eslint -c .eslintrc.js \"{lean4-infoview-api,lean4-infoview,vscode-lean4}/src/**/*.{ts,tsx}\" \"vscode-lean4/test/suite/**/*.{ts,tsx}\""
-  },
-  "workspaces": [
-    "lean4-infoview-api",
-    "lean4-infoview",
-    "vscode-lean4"
-  ],
-  "devDependencies": {
-    "@typescript-eslint/eslint-plugin": "^5.62.0",
-    "@typescript-eslint/parser": "^5.62.0",
-    "eslint": "^8.45.0",
-    "eslint-config-prettier": "^9.1.0",
-    "eslint-plugin-react-hooks": "^4.6.0",
-    "lerna": "^8.1.2",
-    "prettier": "3.2.5",
-    "typescript": "^4.9.5"
-  }
+    "name": "@leanprover/vscode-lean4-repo",
+    "private": true,
+    "scripts": {
+        "build": "lerna run --stream build",
+        "test": "lerna run --stream test",
+        "watch": "lerna run --parallel --stream watch",
+        "watchTest": "lerna run --parallel --stream watchTest",
+        "lint": "eslint -c .eslintrc.js \"{lean4-infoview-api,lean4-infoview,vscode-lean4}/src/**/*.{ts,tsx}\" \"vscode-lean4/test/suite/**/*.{ts,tsx}\"",
+        "prepare": "husky install"
+    },
+    "workspaces": [
+        "lean4-infoview-api",
+        "lean4-infoview",
+        "vscode-lean4"
+    ],
+    "devDependencies": {
+        "@typescript-eslint/eslint-plugin": "^5.62.0",
+        "@typescript-eslint/parser": "^5.62.0",
+        "eslint": "^8.45.0",
+        "eslint-config-prettier": "^9.1.0",
+        "eslint-plugin-react-hooks": "^4.6.0",
+        "husky": "^9.0.11",
+        "lerna": "^8.1.2",
+        "lint-staged": "^15.2.2",
+        "prettier": "3.2.5",
+        "typescript": "^4.9.5"
+    },
+    "lint-staged": {
+        "*.{ts,tsx,js}": [
+            "eslint --cache --fix",
+            "prettier --write"
+        ],
+        "*.{json,css}": "prettier --write"
+    }
 }
