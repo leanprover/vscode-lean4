@@ -1,15 +1,16 @@
-import { OutputChannel, Uri } from 'vscode';
+import { OutputChannel } from 'vscode';
 import { ExecutionExitCode, ExecutionResult, batchExecute, batchExecuteWithProgress } from './batch';
+import { FileUri } from './exturi';
 
 export const cacheNotFoundError = 'unknown executable `cache`'
 export const cacheNotFoundExitError = '=> Operation failed. Exit Code: 1.'
 
 export class LakeRunner {
     channel: OutputChannel
-    cwdUri: Uri | undefined
+    cwdUri: FileUri | undefined
     toolchain: string | undefined
 
-    constructor(channel: OutputChannel, cwdUri: Uri | undefined, toolchain?: string | undefined) {
+    constructor(channel: OutputChannel, cwdUri: FileUri | undefined, toolchain?: string | undefined) {
         this.channel = channel
         this.cwdUri = cwdUri
         this.toolchain = toolchain
@@ -85,6 +86,6 @@ export class LakeRunner {
     }
 }
 
-export function lake(channel: OutputChannel, cwdUri: Uri | undefined, toolchain?: string | undefined): LakeRunner {
+export function lake(channel: OutputChannel, cwdUri: FileUri | undefined, toolchain?: string | undefined): LakeRunner {
     return new LakeRunner(channel, cwdUri, toolchain)
 }

@@ -1,10 +1,11 @@
-import { Disposable, Uri, commands, window, workspace, SaveDialogOptions, OutputChannel } from 'vscode';
+import { Disposable, commands, window, workspace, SaveDialogOptions, OutputChannel, Uri } from 'vscode';
 import path = require('path');
 import { checkParentFoldersForLeanProject, isValidLeanProject } from './utils/projectInfo';
 import { elanSelfUpdate } from './utils/elan';
 import { lake } from './utils/lake';
 import { ExecutionExitCode, ExecutionResult, batchExecute, batchExecuteWithProgress, displayError } from './utils/batch';
 import { diagnose } from './utils/setupDiagnostics';
+import { FileUri } from './utils/exturi';
 
 export class ProjectInitializationProvider implements Disposable {
 
@@ -21,7 +22,7 @@ export class ProjectInitializationProvider implements Disposable {
 
     private async createStandaloneProject() {
         const toolchain = 'leanprover/lean4:stable'
-        const projectFolder: Uri | 'DidNotComplete' = await this.createProject(undefined, toolchain)
+        const projectFolder: FileUri | 'DidNotComplete' = await this.createProject(undefined, toolchain)
         if (projectFolder === 'DidNotComplete') {
             return
         }
@@ -45,7 +46,7 @@ export class ProjectInitializationProvider implements Disposable {
 
     private async createMathlibProject() {
         const mathlibToolchain = 'leanprover-community/mathlib4:lean-toolchain'
-        const projectFolder: Uri | 'DidNotComplete' = await this.createProject('math', mathlibToolchain)
+        const projectFolder: FileUri | 'DidNotComplete' = await this.createProject('math', mathlibToolchain)
         if (projectFolder === 'DidNotComplete') {
             return
         }
@@ -78,9 +79,9 @@ export class ProjectInitializationProvider implements Disposable {
 
     private async createProject(
         kind?: string | undefined,
-        toolchain: string = 'leanprover/lean4:stable'): Promise<Uri | 'DidNotComplete'>  {
+        toolchain: string = 'leanprover/lean4:stable'): Promise<FileUri | 'DidNotComplete'>  {
 
-        const projectFolder: Uri | undefined = await ProjectInitializationProvider.askForNewProjectFolderLocation({
+        const projectFolder: FileUri | undefined = await ProjectInitializationProvider.askForNewProjectFolderLocation({
             saveLabel: 'Create project folder',
             title: 'Create a new project folder'
         })
@@ -88,7 +89,7 @@ export class ProjectInitializationProvider implements Disposable {
             return 'DidNotComplete'
         }
 
-        await workspace.fs.createDirectory(projectFolder)
+        await workspace.fs.createDirectory(projectFolder.asUri())
 
         if (await this.checkSetupDeps(projectFolder) === 'IncompleteSetup') {
             return 'DidNotComplete'
@@ -116,7 +117,7 @@ export class ProjectInitializationProvider implements Disposable {
         return projectFolder
     }
 
-    private async createInitialCommit(projectFolder: Uri): Promise<'Success' | 'GitAddFailed' | 'GitCommitFailed'> {
+    private async createInitialCommit(projectFolder: FileUri): Promise<'Success' | 'GitAddFailed' | 'GitCommitFailed'> {
         const gitAddResult = await batchExecute('git', ['add', '--all'], projectFolder.fsPath, { combined: this.channel } )
         if (gitAddResult.exitCode !== ExecutionExitCode.Success) {
             await displayError(gitAddResult, 'Cannot add files to staging area of Git repository for project.')
@@ -144,13 +145,14 @@ export class ProjectInitializationProvider implements Disposable {
             return
         }
 
-        let projectFolder = projectFolders[0]
-        if (!await ProjectInitializationProvider.checkIsFileUriOrShowError(projectFolder)) {
+        const projectFolderUri = projectFolders[0]
+        if (!await ProjectInitializationProvider.checkIsFileUriOrShowError(projectFolderUri)) {
             return
         }
+        let projectFolder = new FileUri(projectFolderUri.fsPath)
 
         if (!await isValidLeanProject(projectFolder)) {
-            const parentProjectFolder: Uri | undefined = await ProjectInitializationProvider.attemptFindingLeanProjectInParentFolder(projectFolder)
+            const parentProjectFolder: FileUri | undefined = await ProjectInitializationProvider.attemptFindingLeanProjectInParentFolder(projectFolder)
             if (parentProjectFolder === undefined) {
                 return
             }
@@ -158,11 +160,11 @@ export class ProjectInitializationProvider implements Disposable {
         }
 
         // This kills the extension host, so it has to be the last command
-        await commands.executeCommand('vscode.openFolder', projectFolder)
+        await commands.executeCommand('vscode.openFolder', projectFolder.asUri())
     }
 
-    private static async attemptFindingLeanProjectInParentFolder(projectFolder: Uri): Promise<Uri | undefined> {
-        const parentProjectFolder: Uri | undefined = await checkParentFoldersForLeanProject(projectFolder)
+    private static async attemptFindingLeanProjectInParentFolder(projectFolder: FileUri): Promise<FileUri | undefined> {
+        const parentProjectFolder: FileUri | undefined = await checkParentFoldersForLeanProject(projectFolder)
         if (parentProjectFolder === undefined) {
             const message = `The selected folder is not a valid Lean 4 project folder.
 Please make sure to select a folder containing a \'lean-toolchain\' file.
@@ -197,7 +199,7 @@ Open this project instead?`
             return
         }
 
-        const projectFolder: Uri | undefined = await ProjectInitializationProvider.askForNewProjectFolderLocation({
+        const projectFolder: FileUri | undefined = await ProjectInitializationProvider.askForNewProjectFolderLocation({
             saveLabel: 'Create project folder',
             title: 'Create a new project folder to clone existing Lean 4 project into'
         })
@@ -227,12 +229,12 @@ Open this project instead?`
         await ProjectInitializationProvider.openNewFolder(projectFolder)
     }
 
-    private static async askForNewProjectFolderLocation(options: SaveDialogOptions): Promise<Uri | undefined> {
+    private static async askForNewProjectFolderLocation(options: SaveDialogOptions): Promise<FileUri | undefined> {
         const projectFolder: Uri | undefined = await window.showSaveDialog(options)
         if (projectFolder === undefined || !await this.checkIsFileUriOrShowError(projectFolder)) {
             return undefined
         }
-        return projectFolder
+        return new FileUri(projectFolder.fsPath)
     }
 
     private static async checkIsFileUriOrShowError(projectFolder: Uri): Promise<boolean> {
@@ -244,17 +246,17 @@ Open this project instead?`
         }
     }
 
-    private static async openNewFolder(projectFolder: Uri) {
+    private static async openNewFolder(projectFolder: FileUri) {
         const message = `Project initialized. Open new project folder '${path.basename(projectFolder.fsPath)}'?`
         const input = 'Open project folder'
         const choice: string | undefined = await window.showInformationMessage(message, { modal: true }, input)
         if (choice === input) {
             // This kills the extension host, so it has to be the last command
-            await commands.executeCommand('vscode.openFolder', projectFolder)
+            await commands.executeCommand('vscode.openFolder', projectFolder.asUri())
         }
     }
 
-    private async checkSetupDeps(projectFolder: Uri): Promise<'CompleteSetup' | 'IncompleteSetup'> {
+    private async checkSetupDeps(projectFolder: FileUri): Promise<'CompleteSetup' | 'IncompleteSetup'> {
         if (await this.checkGit(projectFolder) === 'GitNotInstalled') {
             return 'IncompleteSetup'
         }
@@ -264,7 +266,7 @@ Open this project instead?`
         return 'CompleteSetup'
     }
 
-    private async checkGit(projectFolder?: Uri | undefined): Promise<'GitInstalled' | 'GitNotInstalled'> {
+    private async checkGit(projectFolder?: FileUri | undefined): Promise<'GitInstalled' | 'GitNotInstalled'> {
         if (!await diagnose(this.channel, projectFolder).checkGitAvailable()) {
             const message = `Git is not installed. Lean uses Git to download and install specific versions of Lean packages.
 Click the following link to learn how to install Git: [(Show Setup Guide)](command:lean4.setup.showSetupGuide)`
@@ -274,7 +276,7 @@ Click the following link to learn how to install Git: [(Show Setup Guide)](comma
         return 'GitInstalled'
     }
 
-    private async checkLake(projectFolder: Uri): Promise<'LakeInstalled' | 'LakeNotInstalled'> {
+    private async checkLake(projectFolder: FileUri): Promise<'LakeInstalled' | 'LakeNotInstalled'> {
         if (!await diagnose(this.channel, projectFolder).checkLakeAvailable()) {
             const message = `Lean's package manager Lake is not installed. This likely means that Lean itself is also not installed.
 Click the following link to learn how to install Lean: [(Show Setup Guide)](command:lean4.setup.showSetupGuide)`

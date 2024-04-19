@@ -1,6 +1,6 @@
 import { TextDocument, EventEmitter, Diagnostic,
     DocumentHighlight, Range, DocumentHighlightKind, workspace,
-    Disposable, Uri, ConfigurationChangeEvent, OutputChannel, DiagnosticCollection,
+    Disposable, ConfigurationChangeEvent, OutputChannel, DiagnosticCollection,
     WorkspaceFolder, window, ProgressLocation, ProgressOptions, Progress } from 'vscode'
 import {
     DiagnosticSeverity,
@@ -22,20 +22,19 @@ import { assert } from './utils/assert'
 import { LeanFileProgressParams, LeanFileProgressProcessingInfo, ServerStoppedReason } from '@leanprover/infoview-api';
 import { ExecutionExitCode, ExecutionResult, batchExecute } from './utils/batch'
 import { readLeanVersion } from './utils/projectInfo';
-import * as fs from 'fs';
-import { URL } from 'url';
 import { join } from 'path';
 import { logger } from './utils/logger'
  // @ts-ignore
 import { SemVer } from 'semver';
-import { fileExists, isFileInFolder } from './utils/fsHelper';
+import { fileExists } from './utils/fsHelper';
 import { c2pConverter, p2cConverter, patchConverters } from './utils/converters'
 import { displayErrorWithOutput } from './utils/errors'
 import path = require('path')
+import { ExtUri, FileUri, extUriOrError, parseExtUri } from './utils/exturi'
 
 const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-export type ServerProgress = Map<Uri, LeanFileProgressProcessingInfo[]>;
+export type ServerProgress = Map<ExtUri, LeanFileProgressProcessingInfo[]>;
 
 export function getFullRange(diag: Diagnostic): Range {
     return (diag as any)?.fullRange || diag.range;
@@ -46,8 +45,7 @@ export class LeanClient implements Disposable {
 	private client: LanguageClient | undefined
     private toolchainPath: string
     private outputChannel: OutputChannel;
-    private workspaceFolder: WorkspaceFolder | undefined;
-    folderUri: Uri;
+    folderUri: ExtUri;
     private subscriptions: Disposable[] = []
     private noPrompt : boolean = false;
     private showingRestartMessage : boolean = false;
@@ -95,9 +93,8 @@ export class LeanClient implements Disposable {
     /** Files which are open. */
     private isOpen: Map<string, TextDocument> = new Map()
 
-    constructor(workspaceFolder: WorkspaceFolder | undefined, folderUri: Uri, outputChannel : OutputChannel, elanDefaultToolchain: string) {
-        this.outputChannel = outputChannel;
-        this.workspaceFolder = workspaceFolder; // can be null when opening adhoc files.
+    constructor(folderUri: ExtUri, outputChannel : OutputChannel, elanDefaultToolchain: string) {
+        this.outputChannel = outputChannel; // can be null when opening adhoc files.
         this.folderUri = folderUri;
         this.elanDefaultToolchain = elanDefaultToolchain;
         if (!this.toolchainPath) this.toolchainPath = toolchainPath();
@@ -114,7 +111,7 @@ export class LeanClient implements Disposable {
         if (this.isStarted()) void this.stop()
     }
 
-    async showRestartMessage(restartFile: boolean = false): Promise<void> {
+    async showRestartMessage(restartFile: boolean = false, uri?: ExtUri | undefined): Promise<void> {
         if (this.showingRestartMessage) {
             return
         }
@@ -131,8 +128,11 @@ export class LeanClient implements Disposable {
         const item = await window.showErrorMessage(messageTitle, restartItem)
         this.showingRestartMessage = false;
         if (item === restartItem) {
-            if (restartFile && window.activeTextEditor) {
-                await this.restartFile(window.activeTextEditor.document);
+            if (restartFile && uri !== undefined) {
+                const document = workspace.textDocuments.find(doc => uri.equalsUri(doc.uri))
+                if (document) {
+                    await this.restartFile(document);
+                }
             } else {
                 void this.start();
             }
@@ -234,7 +234,7 @@ export class LeanClient implements Disposable {
                 const uri = p2cConverter.asUri(params.textDocument.uri)
                 this.progressChangedEmitter.fire([uri.toString(), params.processing]);
                 // save the latest progress on this Uri in case infoview needs it later.
-                this.progress.set(uri, params.processing);
+                this.progress.set(extUriOrError(uri), params.processing);
             }
 
             this.customNotificationEmitter.fire({method, params: params_});
@@ -260,8 +260,8 @@ export class LeanClient implements Disposable {
     }
 
     private async checkForImportsOutdatedError(params: PublishDiagnosticsParams) {
-        const fileUri = Uri.parse(params.uri)
-        const fileName = path.basename(fileUri.fsPath)
+        const fileUri = parseExtUri(params.uri)
+        const fileName = fileUri.scheme === 'file' ? path.basename(fileUri.fsPath) : 'untitled'
         const isImportsOutdatedError = params.diagnostics.some(d =>
             d.severity === DiagnosticSeverity.Error
                 && d.message.includes('Imports are out of date and must be rebuilt')
@@ -280,8 +280,7 @@ export class LeanClient implements Disposable {
             return
         }
 
-        const fileUriString = fileUri.toString()
-        const document = workspace.textDocuments.find(doc => doc.uri.toString() === fileUriString)
+        const document = workspace.textDocuments.find(doc => fileUri.equalsUri(doc.uri))
         if (!document || document.isClosed) {
             void window.showErrorMessage(`'${fileName}' was closed in the meantime. Imports will not be rebuilt.`)
             return
@@ -310,10 +309,6 @@ export class LeanClient implements Disposable {
 
     async openLean4Document(doc: TextDocument) {
         if (this.isOpen.has(doc.uri.toString())) return;
-        if (!await this.isSameWorkspace(doc.uri)){
-            // skip it, this file belongs to a different workspace...
-            return;
-        }
 
         this.isOpen.set(doc.uri.toString(), doc)
 
@@ -338,25 +333,18 @@ export class LeanClient implements Disposable {
         });
     }
 
-    async isSameWorkspace(uri: Uri) : Promise<boolean> {
-        if (this.folderUri) {
-            if (this.folderUri.scheme !== uri.scheme) return false;
-            if (this.folderUri.scheme === 'file') {
-                const realPath1 = await fs.promises.realpath(this.folderUri.fsPath);
-                const realPath2 = await fs.promises.realpath(uri.fsPath);
-                return isFileInFolder(realPath2, realPath1);
-            }
-            else {
-                return uri.toString().startsWith(this.folderUri.toString());
-            }
+    isInFolderManagedByThisClient(uri: ExtUri): boolean {
+        if (this.folderUri.scheme === 'untitled' && uri.scheme === 'untitled') {
+            return true
         }
-        else {
-            return uri.scheme === 'untitled'
+        if (this.folderUri.scheme === 'file' && uri.scheme === 'file') {
+            return uri.isInFolder(this.folderUri)
         }
+        return false
     }
 
-    getWorkspaceFolder() : string {
-        return this.folderUri?.toString();
+    getClientFolder(): ExtUri {
+        return this.folderUri;
     }
 
     start(): Promise<void> {
@@ -405,7 +393,7 @@ export class LeanClient implements Disposable {
 
         assert(() => this.isStarted())
 
-        if (!await this.isSameWorkspace(doc.uri)){
+        if (!this.isInFolderManagedByThisClient(extUriOrError(doc.uri))){
             // skip it, this file belongs to a different workspace...
             return;
         }
@@ -445,14 +433,6 @@ export class LeanClient implements Disposable {
         return this.running  && this.client ? this.client.sendNotification(method, params) : undefined;
     }
 
-    async getDiagnosticParams(uri: Uri, diagnostics: readonly Diagnostic[]) : Promise<PublishDiagnosticsParams> {
-        const params: PublishDiagnosticsParams = {
-            uri: c2pConverter.asUri(uri),
-            diagnostics: await c2pConverter.asDiagnostics(diagnostics as Diagnostic[])
-        };
-        return params;
-    }
-
     getDiagnostics() : DiagnosticCollection | undefined {
         return this.running ? this.client?.diagnostics : undefined;
     }
@@ -461,7 +441,7 @@ export class LeanClient implements Disposable {
         return this.running ? this.client?.initializeResult : undefined
     }
 
-    private async checkToolchainVersion(folderUri: Uri) : Promise<Date | undefined> {
+    private async checkToolchainVersion(folderUri: FileUri) : Promise<Date | undefined> {
         // see if we have a well known toolchain label that corresponds
         // to a known date like 'leanprover/lean4:nightly-2022-02-01'
         const toolchainVersion = await readLeanVersion(folderUri);
@@ -485,7 +465,8 @@ export class LeanClient implements Disposable {
         // Check that the Lake version is high enough to support "lake serve" option.
         const versionOptions = version ? ['+' + version, '--version'] : ['--version']
         const start = Date.now()
-        const result: ExecutionResult = await batchExecute(executable, versionOptions, this.folderUri?.fsPath);
+        const cwd = this.folderUri.scheme === 'file' ? this.folderUri.fsPath : undefined
+        const result: ExecutionResult = await batchExecute(executable, versionOptions, cwd);
         if (result.exitCode !== ExecutionExitCode.Success) {
             return false
         }
@@ -519,7 +500,7 @@ export class LeanClient implements Disposable {
 
         const [serverExecutable, options] = await this.determineExecutable()
 
-        const cwd = this.folderUri?.fsPath
+        const cwd = this.folderUri.scheme === 'file' ? this.folderUri.fsPath : undefined
         if (cwd) {
             // Add folder name to command-line so that it shows up in `ps aux`.
             options.push(cwd)
@@ -555,13 +536,13 @@ export class LeanClient implements Disposable {
 
     private async shouldUseLake(lakeExecutable: string): Promise<boolean> {
         // check if the lake process will start (skip it on scheme: 'untitled' files)
-        if (!lakeEnabled() || !this.folderUri || this.folderUri.scheme !== 'file') {
+        if (!lakeEnabled() || this.folderUri.scheme !== 'file') {
             return false
         }
 
-        const lakefileLean = Uri.joinPath(this.folderUri, 'lakefile.lean')
-        const lakefileToml = Uri.joinPath(this.folderUri, 'lakefile.toml')
-        if (!await fileExists(new URL(lakefileLean.toString())) && !await fileExists(new URL(lakefileToml.toString()))) {
+        const lakefileLean = this.folderUri.join('lakefile.lean')
+        const lakefileToml = this.folderUri.join('lakefile.toml')
+        if (!await fileExists(lakefileLean.fsPath) && !await fileExists(lakefileToml.fsPath)) {
             return false
         }
 
@@ -580,10 +561,14 @@ export class LeanClient implements Disposable {
             language: 'lean4'
         }
 
-        if (this.folderUri){
-            documentSelector.scheme = this.folderUri.scheme
-            if (this.folderUri.scheme !== 'untitled') {
-                documentSelector.pattern = `${this.folderUri.fsPath}/**/*`
+        let workspaceFolder: WorkspaceFolder | undefined
+        documentSelector.scheme = this.folderUri.scheme
+        if (this.folderUri.scheme === 'file') {
+            documentSelector.pattern = `${this.folderUri.fsPath}/**/*`
+            workspaceFolder = {
+                uri: this.folderUri.asUri(),
+                name: path.basename(this.folderUri.fsPath),
+                index: 0 // the language client library does not actually need this index
             }
         }
 
@@ -591,7 +576,7 @@ export class LeanClient implements Disposable {
             outputChannel: this.outputChannel,
             revealOutputChannelOn: RevealOutputChannelOn.Never, // contrary to the name, this disables the message boxes
             documentSelector: [documentSelector],
-            workspaceFolder: this.workspaceFolder,
+            workspaceFolder,
             initializationOptions: {
                 editDelay: getElaborationDelay(), hasWidgets: true,
             },

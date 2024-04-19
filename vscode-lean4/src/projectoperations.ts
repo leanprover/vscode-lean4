@@ -1,4 +1,4 @@
-import { Disposable, commands, window, OutputChannel, QuickPickItem, Uri } from 'vscode';
+import { Disposable, commands, window, OutputChannel, QuickPickItem } from 'vscode';
 import { LakeRunner, cacheNotFoundError, lake } from './utils/lake';
 import { ExecutionExitCode, ExecutionResult, batchExecute, displayError } from './utils/batch';
 import { LeanClientProvider } from './utils/clientProvider';
@@ -107,17 +107,20 @@ export class ProjectOperationProvider implements Disposable {
     }
 
     private async updateDependency() {
-        if (!window.activeTextEditor) {
-            return
-        }
-
         const activeClient: LeanClient | undefined = this.clientProvider.getActiveClient()
         if (!activeClient) {
             void window.showErrorMessage('No active client.')
             return
         }
 
-        const manifestResult: Manifest | ManifestReadError = await parseManifestInFolder(activeClient.folderUri)
+        const activeFolderUri = activeClient.folderUri
+
+        if (activeFolderUri.scheme === 'untitled') {
+            void window.showErrorMessage('Cannot update dependency of untitled file.')
+            return
+        }
+
+        const manifestResult: Manifest | ManifestReadError = await parseManifestInFolder(activeFolderUri)
         if (typeof manifestResult === 'string') {
             void window.showErrorMessage(manifestResult)
             return
@@ -173,8 +176,8 @@ export class ProjectOperationProvider implements Disposable {
 
             await this.tryFetchingCache(lakeRunner)
 
-            const localToolchainPath: string = join(activeClient.folderUri.fsPath, 'lean-toolchain')
-            const dependencyToolchainPath: string = join(activeClient.folderUri.fsPath, manifestResult.packagesDir, dependencyChoice.name, 'lean-toolchain')
+            const localToolchainPath: string = join(activeFolderUri.fsPath, 'lean-toolchain')
+            const dependencyToolchainPath: string = join(activeFolderUri.fsPath, manifestResult.packagesDir, dependencyChoice.name, 'lean-toolchain')
             const dependencyToolchainResult: string | 'DoNotUpdate' | 'Cancelled' = await this.determineDependencyToolchain(localToolchainPath, dependencyToolchainPath, dependencyChoice.name)
             if (dependencyToolchainResult === 'Cancelled') {
                 return
@@ -297,6 +300,12 @@ export class ProjectOperationProvider implements Disposable {
         const activeClient: LeanClient | undefined = this.clientProvider.getActiveClient()
         if (!activeClient) {
             void window.showErrorMessage('No active client.')
+            this.isRunningOperation = false
+            return
+        }
+
+        if (activeClient.folderUri.scheme === 'untitled') {
+            void window.showErrorMessage('Cannot run project action for untitled files.')
             this.isRunningOperation = false
             return
         }

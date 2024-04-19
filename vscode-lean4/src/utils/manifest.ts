@@ -2,6 +2,7 @@ import { join } from 'path'
 import { Uri } from 'vscode'
 import { z } from 'zod'
 import * as fs from 'fs'
+import { FileUri } from './exturi'
 
 export interface DirectGitDependency {
     name: string
@@ -133,8 +134,8 @@ export function parseAsManifest(jsonString: string): Manifest | undefined {
 
 export type ManifestReadError = string
 
-export async function parseManifestInFolder(folderUri: Uri): Promise<Manifest | ManifestReadError> {
-    const manifestPath: string = join(folderUri.fsPath, 'lake-manifest.json')
+export async function parseManifestInFolder(folderUri: FileUri): Promise<Manifest | ManifestReadError> {
+    const manifestPath: string = folderUri.join('lake-manifest.json').fsPath
 
     let jsonString: string
     try {

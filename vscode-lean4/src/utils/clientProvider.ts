@@ -1,23 +1,14 @@
-import { Disposable, OutputChannel, workspace, TextDocument, commands, window, EventEmitter, Uri, languages, TextEditor } from 'vscode';
+import { Disposable, OutputChannel, workspace, TextDocument, commands, window, EventEmitter, TextEditor } from 'vscode';
 import { LeanInstaller, LeanVersion } from './leanInstaller'
 import { LeanClient } from '../leanclient'
 import { LeanFileProgressProcessingInfo, ServerStoppedReason } from '@leanprover/infoview-api';
-import * as path from 'path';
 import { checkParentFoldersForLeanProject, findLeanPackageRoot, isValidLeanProject } from './projectInfo';
-import { isFileInFolder } from './fsHelper';
 import { logger } from './logger'
 import { addDefaultElanPath, getDefaultElanPath, addToolchainBinPath, isElanDisabled, shouldShowInvalidProjectWarnings } from '../config'
 import { displayErrorWithOutput } from './errors';
-import { Diagnostic, DiagnosticSeverity, integer } from 'vscode-languageclient';
+import { ExtUri, FileUri, UntitledUri, extUriOrError, getWorkspaceFolderUri } from './exturi';
 
-interface NotificationDiagnostic {
-    client: LeanClient
-    uri: Uri
-    version: integer
-    diagnostic: Diagnostic
-}
-
-// This class ensures we have one LeanClient per workspace folder.
+// This class ensures we have one LeanClient per folder.
 export class LeanClientProvider implements Disposable {
     private subscriptions: Disposable[] = [];
     private outputChannel: OutputChannel;
@@ -25,7 +16,7 @@ export class LeanClientProvider implements Disposable {
     private versions: Map<string, LeanVersion> = new Map();
     private clients: Map<string, LeanClient> = new Map();
     private pending: Map<string, boolean> = new Map();
-    private pendingInstallChanged: Uri[] = [];
+    private pendingInstallChanged: ExtUri[] = [];
     private processingInstallChanged: boolean = false;
     private activeClient: LeanClient | undefined = undefined;
 
@@ -46,12 +37,15 @@ export class LeanClientProvider implements Disposable {
         this.installer = installer;
 
         // we must setup the installChanged event handler first before any didOpenEditor calls.
-        installer.installChanged(async (uri: Uri) => await this.onInstallChanged(uri));
-        // Only change the document language for *visible* documents,
-        // because this closes and then reopens the document.
+        installer.installChanged(async (uri: ExtUri) => await this.onInstallChanged(uri));
+
         window.visibleTextEditors.forEach(e => this.didOpenEditor(e.document));
-        this.subscriptions.push(window.onDidChangeVisibleTextEditors(es =>
-            es.forEach(e => this.didOpenEditor(e.document))));
+        this.subscriptions.push(window.onDidChangeActiveTextEditor(async e => {
+            if (!e) {
+                return
+            }
+            await this.didOpenEditor(e.document);
+        }))
 
         this.subscriptions.push(
             commands.registerCommand('lean4.restartFile', () => this.restartFile()),
@@ -63,17 +57,21 @@ export class LeanClientProvider implements Disposable {
         workspace.onDidOpenTextDocument(document => this.didOpenEditor(document));
 
         workspace.onDidChangeWorkspaceFolders((event) => {
-            for (const folder of event.removed) {
-                const key = this.getKeyFromUri(folder.uri);
-                const client = this.clients.get(key);
-                if (client) {
-                    logger.log(`[ClientProvider] onDidChangeWorkspaceFolders removing client for ${key}`);
-                    this.clients.delete(key);
-                    this.versions.delete(key);
-                    client.dispose();
-                    this.clientRemovedEmitter.fire(client);
-                }
+            // Remove all clients that are not referenced by any folder anymore
+            if (!event.removed) {
+                return
             }
+            this.clients.forEach((client, key) => {
+                if (client.folderUri.scheme === 'untitled' || getWorkspaceFolderUri(client.folderUri)) {
+                    return
+                }
+
+                logger.log(`[ClientProvider] onDidChangeWorkspaceFolders removing client for ${key}`);
+                this.clients.delete(key);
+                this.versions.delete(key);
+                client.dispose();
+                this.clientRemovedEmitter.fire(client);
+            })
         });
     }
 
@@ -81,7 +79,16 @@ export class LeanClientProvider implements Disposable {
         return this.activeClient;
     }
 
-    private async onInstallChanged(uri: Uri){
+    private async findPackageRootUri(uri: ExtUri): Promise<ExtUri> {
+        if (uri.scheme === 'file') {
+            const [root, _] = await findLeanPackageRoot(uri)
+            return root
+        } else {
+            return new UntitledUri()
+        }
+    }
+
+    private async onInstallChanged(uri: ExtUri){
         // Uri is a package Uri in the case a lean package file was changed.
         logger.log(`[ClientProvider] installChanged for ${uri}`);
         this.pendingInstallChanged.push(uri);
@@ -91,26 +98,26 @@ export class LeanClientProvider implements Disposable {
         }
         this.processingInstallChanged = true;
 
-        while (this.pendingInstallChanged.length > 0)
-        {
+        while (true) {
+            const uri = this.pendingInstallChanged.pop();
+            if (!uri) {
+                break
+            }
             try {
-                const uri = this.pendingInstallChanged.pop();
-                if (uri) {
-                    // have to check again here in case elan install had --default-toolchain none.
-                    const [workspaceFolder, folder, packageFileUri] = await findLeanPackageRoot(uri);
-                    const packageUri = folder ?? Uri.from({scheme: 'untitled'});
-                    logger.log('[ClientProvider] testLeanVersion');
-                    const version = await this.installer.testLeanVersion(packageUri);
-                    if (version.version === '4') {
-                        logger.log('[ClientProvider] got lean version 4');
-                        const [cached, client] = await this.ensureClient(uri, version);
-                        if (cached && client) {
-                            await client.restart();
-                            logger.log('[ClientProvider] restart complete');
-                        }
-                    } else if (version.error) {
-                        logger.log(`[ClientProvider] Lean version not ok: ${version.error}`);
+                // have to check again here in case elan install had --default-toolchain none.
+                const packageUri = await this.findPackageRootUri(uri)
+
+                logger.log('[ClientProvider] testLeanVersion');
+                const version = await this.installer.testLeanVersion(packageUri);
+                if (version.version === '4') {
+                    logger.log('[ClientProvider] got lean version 4');
+                    const [cached, client] = await this.ensureClient(uri, version);
+                    if (cached && client) {
+                        await client.restart();
+                        logger.log('[ClientProvider] restart complete');
                     }
+                } else if (version.error) {
+                    logger.log(`[ClientProvider] Lean version not ok: ${version.error}`);
                 }
             } catch (e) {
                 logger.log(`[ClientProvider] Exception checking lean version: ${e}`);
@@ -133,14 +140,13 @@ export class LeanClientProvider implements Disposable {
         }
     }
 
-    private getVisibleEditor(uri: Uri) : TextEditor | null {
-        const path = uri.toString();
+    private getVisibleEditor(uri: ExtUri) : TextEditor | undefined {
         for (const editor of window.visibleTextEditors) {
-            if (editor.document.uri.toString() === path){
+            if (uri.equalsUri(editor.document.uri)){
                 return editor;
             }
         }
-        return null;
+        return undefined;
     }
 
     private restartFile() {
@@ -177,7 +183,7 @@ export class LeanClientProvider implements Disposable {
             return;
         }
 
-        if (!this.getVisibleEditor(document.uri)) {
+        if (!this.getVisibleEditor(extUriOrError(document.uri))) {
             // Sometimes VS code opens a document that has no editor yet.
             // For example, this happens when the vs code opens files to get git
             // information using a "git:" Uri scheme:
@@ -186,7 +192,7 @@ export class LeanClientProvider implements Disposable {
         }
 
         try {
-            const [cached, client] = await this.ensureClient(document.uri, undefined);
+            const [cached, client] = await this.ensureClient(extUriOrError(document.uri), undefined);
             if (!client) {
                 return
             }
@@ -194,65 +200,43 @@ export class LeanClientProvider implements Disposable {
             await client.openLean4Document(document)
 
             await this.checkIsValidProjectFolder(client.folderUri)
+
         } catch (e) {
             logger.log(`[ClientProvider] ### Error opening document: ${e}`);
         }
     }
 
     // Find the client for a given document.
-    findClient(path: string){
-        if (path) {
-            for (const client of this.getClients()) {
-                const folder = client.getWorkspaceFolder()
-                if (isFileInFolder(path, folder))
-                    return client
+    findClient(path: ExtUri) {
+        const candidates = this.getClients().filter(client => client.isInFolderManagedByThisClient(path))
+        // All candidate folders are a prefix of `path`, so they must necessarily be prefixes of one another
+        // => the best candidate (the most top-level client folder) is just the one with the shortest path
+        let bestCandidate: LeanClient | undefined
+        for (const candidate of candidates) {
+            if (!bestCandidate) {
+                bestCandidate = candidate
+                continue
+            }
+            const folder = candidate.getClientFolder()
+            const bestFolder = bestCandidate.getClientFolder()
+            if (folder.scheme === 'file' && bestFolder.scheme === 'file' && folder.fsPath.length < bestFolder.fsPath.length) {
+                bestCandidate = candidate
             }
         }
-        return null
+        return bestCandidate
     }
 
     getClients() : LeanClient[]{
         return Array.from(this.clients.values());
     }
 
-    // Return a string that can be used as a key in the clients, versions, pendingInstallChanged, and pending
-    // maps.  This is not just uri.toString() because on some platforms the file system is
-    // case insensitive.
-    getKeyFromUri(uri: Uri | null) : string{
-        const uriNonNull = uri ?? Uri.from({scheme: 'untitled'});
-        const path = uriNonNull.toString();
-        if (uriNonNull.scheme === 'file' && process.platform === 'win32') {
-            return path.toLowerCase();
-        }
-        return path;
+    getClientForFolder(folder: ExtUri) : LeanClient | undefined {
+        return this.clients.get(folder.toString());
     }
 
-    getClientForFolder(folder: Uri) : LeanClient | undefined {
-        let client: LeanClient | undefined;
-        const key = this.getKeyFromUri(folder);
-        const cachedClient = this.clients.has(key);
-        if (cachedClient) {
-            // we're good then
-            client = this.clients.get(key);
-        }
-        return client;
-    }
-
-    getFolderFromUri(uri: Uri) : Uri | null {
-        if (uri){
-            if (uri.scheme === 'untitled'){
-                // this lean client can handle all untitled documents.
-                return Uri.from({scheme: 'untitled'});
-            }
-            return uri.with({ path: path.posix.dirname(uri.path) });
-        }
-        return null;
-    }
-
-    private async getLeanVersion(uri: Uri) : Promise<LeanVersion | undefined> {
-        const [workspaceFolder, folder, packageFileUri] = await findLeanPackageRoot(uri);
-        const folderUri = folder ?? Uri.from({scheme: 'untitled'});
-        const key = this.getKeyFromUri(folderUri);
+    private async getLeanVersion(uri: ExtUri) : Promise<LeanVersion | undefined> {
+        const folderUri = await this.findPackageRootUri(uri);
+        const key = folderUri.toString()
         if (this.versions.has(key)){
             return this.versions.get(key);
         }
@@ -280,11 +264,10 @@ export class LeanClientProvider implements Disposable {
     // Starts a LeanClient if the given file is in a new workspace we haven't seen before.
     // Returns a boolean "true" if the LeanClient was already created.
     // Returns a null client if it turns out the new workspace is a lean3 workspace.
-    async ensureClient(uri : Uri, versionInfo: LeanVersion | undefined) : Promise<[boolean,LeanClient | undefined]> {
-        const [workspaceFolder, folder, packageFileUri] = await findLeanPackageRoot(uri);
-        const folderUri = folder ?? Uri.from({scheme: 'untitled'});
+    async ensureClient(uri: ExtUri, versionInfo: LeanVersion | undefined) : Promise<[boolean,LeanClient | undefined]> {
+        const folderUri = await this.findPackageRootUri(uri)
         let client = this.getClientForFolder(folderUri);
-        const key = this.getKeyFromUri(folder);
+        const key = folderUri.toString();
         const cachedClient = (client !== undefined);
         if (!client) {
             if (this.pending.has(key)) {
@@ -308,7 +291,7 @@ export class LeanClientProvider implements Disposable {
             // every open file.  A workspace could have multiple files open and we want
             // to remember all those open files are associated with this client before
             // testLeanVersion has completed.
-            client = new LeanClient(workspaceFolder, folderUri, this.outputChannel, elanDefaultToolchain);
+            client = new LeanClient(folderUri, this.outputChannel, elanDefaultToolchain);
             this.subscriptions.push(client);
             this.clients.set(key, client);
 
@@ -363,7 +346,7 @@ export class LeanClientProvider implements Disposable {
         return [cachedClient, client];
     }
 
-    private async checkIsValidProjectFolder(folderUri: Uri) {
+    private async checkIsValidProjectFolder(folderUri: ExtUri) {
         if (!shouldShowInvalidProjectWarnings()) {
             return
         }
@@ -380,7 +363,7 @@ Click the following link to learn how to set up or open Lean projects: [(Show Se
             return
         }
 
-        const parentProjectFolder: Uri | undefined = await checkParentFoldersForLeanProject(folderUri)
+        const parentProjectFolder: FileUri | undefined = await checkParentFoldersForLeanProject(folderUri)
         if (parentProjectFolder === undefined) {
             const message = `Opened folder is not a valid Lean 4 project.
 Please open a valid Lean 4 project containing a \'lean-toolchain\' file for full functionality.

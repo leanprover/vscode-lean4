@@ -3,7 +3,9 @@ import {
     commands, Disposable, DocumentSelector,
     ExtensionContext, languages, Range,
     Selection, TextEditor, TextEditorRevealType,
-    Uri, ViewColumn, WebviewPanel, window, workspace, env, Position,
+    ViewColumn, WebviewPanel, window, workspace, env, Position,
+    Diagnostic,
+    Uri,
 } from 'vscode';
 import { EditorApi, InfoviewApi, LeanFileProgressParams, TextInsertKind,
     RpcConnectParams, RpcConnected, RpcKeepAliveParams, ServerStoppedReason, RpcErrorCode } from '@leanprover/infoview-api';
@@ -21,6 +23,8 @@ import { LeanClientProvider } from './utils/clientProvider'
 import * as ls from 'vscode-languageserver-protocol'
 import { c2pConverter, p2cConverter } from './utils/converters';
 import { logger } from './utils/logger'
+import { PublishDiagnosticsParams } from 'vscode-languageclient';
+import { ExtUri, extUriOrError, parseExtUri } from './utils/exturi';
 
 const keepAlivePeriodMs = 10000
 
@@ -69,7 +73,7 @@ export class InfoProvider implements Disposable {
 
     private rpcSessions: Map<string, RpcSessionAtPos> = new Map();
 
-    // the key is the LeanClient.getWorkspaceFolder()
+    // the key is the LeanClient.getClientFolder()
     private clientsFailed: Map<string, ServerStoppedReason> = new Map();
 
     // the key is the uri of the file who's worker has failed.
@@ -106,7 +110,7 @@ export class InfoProvider implements Disposable {
 
     private editorApi : EditorApi = {
         sendClientRequest: async (uri: string, method: string, params: any): Promise<any> => {
-            const client = this.clientProvider.findClient(uri);
+            const client = this.clientProvider.findClient(parseExtUri(uri));
             if (client) {
                 try {
                     const result = await client.sendRequest(method, params);
@@ -123,7 +127,7 @@ export class InfoProvider implements Disposable {
             return undefined;
         },
         sendClientNotification: async (uri: string, method: string, params: any): Promise<void> => {
-            const client = this.clientProvider.findClient(uri);
+            const client = this.clientProvider.findClient(parseExtUri(uri));
             if (client) {
                 await client.sendNotification(method, params);
             }
@@ -212,10 +216,10 @@ export class InfoProvider implements Disposable {
             await window.showInformationMessage(`Copied to clipboard: ${text}`);
         },
         insertText: async (text, kind, tdpp) => {
-            let uri: Uri | undefined
+            let uri: ExtUri | undefined
             let pos: Position | undefined
             if (tdpp) {
-                uri = p2cConverter.asUri(tdpp.textDocument.uri);
+                uri = extUriOrError(p2cConverter.asUri(tdpp.textDocument.uri));
                 pos = p2cConverter.asPosition(tdpp.position);
             }
             await this.handleInsertText(text, kind, uri, pos);
@@ -226,18 +230,18 @@ export class InfoProvider implements Disposable {
         },
         showDocument: async (show) => {
             void this.revealEditorSelection(
-                Uri.parse(show.uri),
+                parseExtUri(show.uri),
                 p2cConverter.asRange(show.selection)
             );
         },
         restartFile: async (uri) => {
-            const client = this.clientProvider.findClient(uri)
+            const extUri = parseExtUri(uri)
+            const client = this.clientProvider.findClient(extUri)
             if (!client) {
                 return
             }
 
-            const path = Uri.parse(uri).fsPath
-            const document = workspace.textDocuments.find(doc => doc.uri.fsPath === path)
+            const document = workspace.textDocuments.find(doc => extUri.equalsUri(doc.uri))
             if (!document || document.isClosed) {
                 return
             }
@@ -246,7 +250,7 @@ export class InfoProvider implements Disposable {
         },
 
         createRpcSession: async uri => {
-            const client = this.clientProvider.findClient(uri);
+            const client = this.clientProvider.findClient(parseExtUri(uri));
             if (!client) return '';
             const sessionId = await rpcConnect(client, uri);
             const session = new RpcSessionAtPos(client, sessionId, uri);
@@ -335,21 +339,22 @@ export class InfoProvider implements Disposable {
         }
 
         await this.webviewPanel?.api.serverStopped(undefined); // clear any server stopped state
-        const folder = client.getWorkspaceFolder()
-        for (const uri of this.workersFailed.keys()){
-            if (uri.startsWith(folder)){
-                this.workersFailed.delete(uri)
+        const folderUri = client.getClientFolder()
+        for (const worker of this.workersFailed.keys()) {
+            if (client.isInFolderManagedByThisClient(parseExtUri(worker))) {
+                this.workersFailed.delete(worker)
             }
         }
-        if (this.clientsFailed.has(folder)){
-            this.clientsFailed.delete(folder);
+
+        if (this.clientsFailed.has(folderUri.toString())){
+            this.clientsFailed.delete(folderUri.toString());
         }
         await this.initInfoView(window.activeTextEditor, client);
     }
 
     private async onClientAdded(client: LeanClient) {
 
-        logger.log(`[InfoProvider] Adding client for workspace: ${client.getWorkspaceFolder()}`);
+        logger.log(`[InfoProvider] Adding client for workspace: ${client.getClientFolder()}`);
 
         this.clientSubscriptions.push(
             client.restarted(async () => {
@@ -392,7 +397,7 @@ export class InfoProvider implements Disposable {
             this.workersFailed.set(uri, reason);
         }
         logger.log(`[InfoProvider]client crashed: ${uri}`)
-        await client.showRestartMessage(true);
+        await client.showRestartMessage(true, parseExtUri(uri));
     }
 
     onClientRemoved(client: LeanClient) {
@@ -408,18 +413,16 @@ export class InfoProvider implements Disposable {
             await this.webviewPanel?.api.serverStopped(reason);
         }
 
-        logger.log(`[InfoProvider] client stopped: ${client.getWorkspaceFolder()}`)
+        logger.log(`[InfoProvider] client stopped: ${client.getClientFolder()}`)
 
         // remember this client is in a stopped state
-        const key = client.getWorkspaceFolder()
-        if (key) {
-            await this.sendPosition();
-            if (!this.clientsFailed.has(key)) {
-                this.clientsFailed.set(key, reason);
-            }
-            logger.log(`[InfoProvider] client stopped: ${key}`)
-            await client.showRestartMessage();
+        const key = client.getClientFolder()
+        await this.sendPosition();
+        if (!this.clientsFailed.has(key.toString())) {
+            this.clientsFailed.set(key.toString(), reason);
         }
+        logger.log(`[InfoProvider] client stopped: ${key}`)
+        await client.showRestartMessage();
     }
 
     dispose(): void {
@@ -565,13 +568,12 @@ export class InfoProvider implements Disposable {
             this.webviewPanel = webviewPanel;
             webviewPanel.webview.html = this.initialHtml();
 
-            const uri = editor.document?.uri?.toString();
-            const client = this.clientProvider.findClient(uri);
+            const client = this.clientProvider.findClient(extUriOrError(editor.document.uri));
             await this.initInfoView(editor, client)
         }
     }
 
-    private async initInfoView(editor: TextEditor | undefined, client: LeanClient | null){
+    private async initInfoView(editor: TextEditor | undefined, client: LeanClient | undefined){
         if (editor) {
             const loc = this.getLocation(editor);
             if (loc) {
@@ -589,7 +591,7 @@ export class InfoProvider implements Disposable {
             await this.sendDiagnostics(client);
             await this.sendProgress(client);
             await this.sendPosition();
-        } else if (client == null) {
+        } else if (client === undefined) {
             logger.log('[InfoProvider] initInfoView got null client.')
         } else {
             logger.log('[InfoProvider] initInfoView got undefined client.initializeResult')
@@ -609,11 +611,19 @@ export class InfoProvider implements Disposable {
        })
     }
 
+    private static async getDiagnosticParams(uri: Uri, diagnostics: readonly Diagnostic[]) : Promise<PublishDiagnosticsParams> {
+        const params: PublishDiagnosticsParams = {
+            uri: c2pConverter.asUri(uri),
+            diagnostics: await c2pConverter.asDiagnostics(diagnostics as Diagnostic[])
+        };
+        return params;
+    }
+
     private async sendDiagnostics(client: LeanClient) {
         const panel = this.webviewPanel;
         if (panel) {
             client.getDiagnostics()?.forEach(async (uri, diags) => {
-                const params = client.getDiagnosticParams(uri, diags)
+                const params = InfoProvider.getDiagnosticParams(uri, diags)
                 await panel.api.gotServerNotification('textDocument/publishDiagnostics', params);
             });
         }
@@ -624,7 +634,7 @@ export class InfoProvider implements Disposable {
         for (const [uri, processing] of client.progress) {
             const params: LeanFileProgressParams = {
                 textDocument: {
-                    uri: c2pConverter.asUri(uri),
+                    uri: c2pConverter.asUri(uri.asUri()),
                     version: 0, // HACK: The infoview ignores this
                 },
                 processing,
@@ -665,14 +675,14 @@ export class InfoProvider implements Disposable {
         }
         // actual editor
         if (this.clientsFailed.size > 0 || this.workersFailed.size > 0) {
-            const client = this.clientProvider.findClient(editor.document.uri.toString())
+            const client = this.clientProvider.findClient(extUriOrError(editor.document.uri))
             if (client) {
-                const uri = window.activeTextEditor?.document.uri.toString() ?? '';
-                const folder = client.getWorkspaceFolder();
+                const uri = window.activeTextEditor?.document.uri.toString();
+                const folder = client.getClientFolder().toString();
                 let reason : ServerStoppedReason | undefined;
                 if (this.clientsFailed.has(folder)){
                     reason = this.clientsFailed.get(folder);
-                } else if (this.workersFailed.has(uri)){
+                } else if (uri && this.workersFailed.has(uri)){
                     reason = this.workersFailed.get(uri);
                 }
                 if (reason) {
@@ -695,17 +705,17 @@ export class InfoProvider implements Disposable {
         await this.webviewPanel?.api.changedCursorLocation(loc);
     }
 
-    private async revealEditorSelection(uri: Uri, selection?: Range) {
+    private async revealEditorSelection(uri: ExtUri, selection?: Range) {
         let editor: TextEditor | undefined;
         for (const e of window.visibleTextEditors) {
-            if (e.document.uri.toString() === uri.toString()) {
+            if (uri.equalsUri(e.document.uri)) {
                 editor = e;
                 break;
             }
         }
         if (!editor) {
             const c = window.activeTextEditor ? window.activeTextEditor.viewColumn : ViewColumn.One;
-            editor = await window.showTextDocument(uri, { viewColumn: c, preserveFocus: false });
+            editor = await window.showTextDocument(uri.asUri(), { viewColumn: c, preserveFocus: false });
         }
         if (selection !== undefined) {
             editor.revealRange(selection, TextEditorRevealType.InCenterIfOutsideViewport);
@@ -715,10 +725,10 @@ export class InfoProvider implements Disposable {
         }
     }
 
-    private async handleInsertText(text: string, kind: TextInsertKind, uri?: Uri, pos?: Position) {
+    private async handleInsertText(text: string, kind: TextInsertKind, uri?: ExtUri | undefined, pos?: Position | undefined) {
         let editor: TextEditor | undefined
         if (uri) {
-           editor = window.visibleTextEditors.find(e => e.document.uri.toString() === uri.toString());
+           editor = window.visibleTextEditors.find(e => uri.equalsUri(e.document.uri));
         } else {
             editor = window.activeTextEditor;
             if (!editor) { // sometimes activeTextEditor is null.

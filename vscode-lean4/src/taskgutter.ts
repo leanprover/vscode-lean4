@@ -98,7 +98,7 @@ export class LeanTaskGutter implements Disposable {
         this.subscriptions.push(
             window.onDidChangeVisibleTextEditors(() => this.updateDecos()),
             client.progressChanged(([uri, processing]) => {
-                this.status[uri.toString()] = processing
+                this.status[uri] = processing
                 this.updateDecos()
             }));
     }

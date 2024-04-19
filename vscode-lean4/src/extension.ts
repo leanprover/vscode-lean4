@@ -4,7 +4,7 @@ import { InfoProvider } from './infoview'
 import { DocViewProvider } from './docview'
 import { LeanTaskGutter } from './taskgutter'
 import { LeanInstaller } from './utils/leanInstaller'
-import { LeanpkgService } from './utils/leanpkg'
+import { LeanConfigWatchService } from './utils/configwatchservice'
 import { LeanClientProvider } from './utils/clientProvider'
 import { addDefaultElanPath, removeElanPath, addToolchainBinPath, isElanDisabled, getDefaultLeanVersion, getDefaultElanPath} from './config'
 import { findLeanPackageVersionInfo } from './utils/projectInfo'
@@ -13,6 +13,8 @@ import { logger } from './utils/logger'
 import { ProjectInitializationProvider } from './projectinit'
 import { ProjectOperationProvider } from './projectoperations'
 import { LeanClient } from './leanclient'
+import { UntitledUri, extUriOrError } from './utils/exturi'
+import { version } from 'os'
 
 interface AlwaysEnabledFeatures {
     docView: DocViewProvider
@@ -76,8 +78,8 @@ function activateAlwaysEnabledFeatures(context: ExtensionContext): AlwaysEnabled
 
     const projectInitializationProvider = new ProjectInitializationProvider(outputChannel)
     context.subscriptions.push(projectInitializationProvider)
-
     const defaultToolchain = getDefaultLeanVersion();
+
     const installer = new LeanInstaller(outputChannel, defaultToolchain)
 
     context.subscriptions.push(commands.registerCommand('lean4.setup.installElan', async () => {
@@ -105,10 +107,15 @@ function activateAlwaysEnabledFeatures(context: ExtensionContext): AlwaysEnabled
 
 async function isLean3Project(installer: LeanInstaller): Promise<boolean> {
     const doc = findOpenLeanDocument();
+    if (!doc) {
+        const versionInfo = await installer.checkLeanVersion(new UntitledUri(), installer.getDefaultToolchain())
+        return versionInfo.version === '3'
+    }
 
-    const [packageUri, toolchainVersion] = doc
-        ? await findLeanPackageVersionInfo(doc.uri)
-        : [null, null]
+    const docUri = extUriOrError(doc.uri)
+    const [packageUri, toolchainVersion] = docUri.scheme === 'file'
+        ? await findLeanPackageVersionInfo(docUri)
+        : [new UntitledUri(), undefined]
 
     if (toolchainVersion && toolchainVersion.indexOf('lean:3') > 0) {
         logger.log(`Lean4 skipping lean 3 project: ${toolchainVersion}`);
@@ -135,19 +142,19 @@ async function activateLean4Features(context: ExtensionContext, installer: LeanI
     const clientProvider = new LeanClientProvider(installer, installer.getOutputChannel());
     context.subscriptions.push(clientProvider)
 
-    const pkgService = new LeanpkgService()
-    pkgService.versionChanged(async uri => {
-        const client: LeanClient | undefined = clientProvider.getClientForFolder(uri)
+    const watchService = new LeanConfigWatchService()
+    watchService.versionChanged(async packageUri => {
+        const client: LeanClient | undefined = clientProvider.getClientForFolder(packageUri)
         if (client && !client.isRunning()) {
             // This can naturally happen when we update the Lean version using the "Update Dependency" command
             // because the Lean server is stopped while doing so. We want to avoid triggering the "Version changed"
             // message in this case.
             return
         }
-        await installer.handleVersionChanged(uri)
+        await installer.handleVersionChanged(packageUri)
     });
-    pkgService.lakeFileChanged((uri) => installer.handleLakeFileChanged(uri));
-    context.subscriptions.push(pkgService);
+    watchService.lakeFileChanged((packageUri) => installer.handleLakeFileChanged(packageUri));
+    context.subscriptions.push(watchService);
 
     const infoProvider = new InfoProvider(clientProvider, {language: 'lean4'}, context);
     context.subscriptions.push(infoProvider)
