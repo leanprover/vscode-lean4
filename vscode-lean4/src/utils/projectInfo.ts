@@ -55,10 +55,19 @@ export async function findLeanPackageRoot(uri: FileUri) : Promise<[FileUri, File
         } else if (await isCoreLean4Directory(path)) {
             bestFolder = path
             bestLeanToolchain = undefined
+            // Stop searching in case users accidentally created a lean-toolchain file above the core directory
+            break
         }
         if (containingWsFolderUri !== undefined && path.equals(containingWsFolderUri)) {
-            // don't search above a WorkspaceFolder barrier.
-            break;
+            if (bestLeanToolchain === undefined) {
+                // If we haven't found a toolchain yet, prefer the workspace folder as the project scope for the file,
+                // but keep looking in case there is a lean-toolchain above the workspace folder
+                // (New users sometimes accidentally open sub-folders of projects)
+                bestFolder = path
+            } else {
+                // Stop looking above the barrier if we have a toolchain. This is necessary for the nested lean-toolchain setup of core.
+                break
+            }
         }
         const parent = path.join('..');
         if (parent.equals(path)) {
