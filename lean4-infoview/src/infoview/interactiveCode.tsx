@@ -3,7 +3,7 @@ import * as React from 'react'
 import { EditorContext } from './contexts'
 import { useAsync, mapRpcError, useEvent } from './util'
 import { SubexprInfo, CodeWithInfos, InteractiveDiagnostics_infoToInteractive, getGoToLocation, TaggedText, DiffTag, TaggedText_stripTags } from '@leanprover/infoview-api'
-import { HoverState, WithFadingTooltip, WithTooltipOnHover } from './tooltips'
+import { HoverState, WithToggleableTooltip, WithTooltipOnHover } from './tooltips'
 import { Location } from 'vscode-languageserver-protocol'
 import { marked } from 'marked'
 import { RpcContext } from './rpcSessions'
@@ -174,7 +174,7 @@ function InteractiveCodeTag({tag: ct, fmt}: InteractiveTagProps<SubexprInfo>) {
   useEvent(ec.events.goToDefinition, async _ => void execGoToLoc(true), [execGoToLoc], interactiveCodeTagId)
 
   return (
-    <WithFadingTooltip
+    <WithToggleableTooltip
       tooltipChildren={`No definition found for '${TaggedText_stripTags(fmt)}'`}
       isTooltipShown={goToDefErrorState}
       hideTooltip={() => setGoToDefErrorState(false)}
@@ -213,7 +213,7 @@ function InteractiveCodeTag({tag: ct, fmt}: InteractiveTagProps<SubexprInfo>) {
           <InteractiveCode fmt={fmt} />
         </SelectableLocation>
       </WithTooltipOnHover>
-    </WithFadingTooltip>
+    </WithToggleableTooltip>
   )
 }
 
