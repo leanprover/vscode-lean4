@@ -1,8 +1,8 @@
-import * as fs from 'fs';
-import { fileExists } from './fsHelper';
+import * as fs from 'fs'
+import { fileExists } from './fsHelper'
 import { logger } from './logger'
-import path = require('path');
-import { FileUri, getWorkspaceFolderUri } from './exturi';
+import path = require('path')
+import { FileUri, getWorkspaceFolderUri } from './exturi'
 
 // Detect lean4 root directory (works for both lean4 repo and nightly distribution)
 
@@ -12,9 +12,7 @@ export async function isCoreLean4Directory(path: FileUri): Promise<boolean> {
     const srcPath = path.join('src').fsPath
 
     const isCoreLean4RootDirectory =
-        await fileExists(licensePath)
-        && await fileExists(licensesPath)
-        && await fileExists(srcPath)
+        (await fileExists(licensePath)) && (await fileExists(licensesPath)) && (await fileExists(srcPath))
     if (isCoreLean4RootDirectory) {
         return true
     }
@@ -25,30 +23,30 @@ export async function isCoreLean4Directory(path: FileUri): Promise<boolean> {
     const runtimePath = path.join('runtime').fsPath
 
     const isCoreLean4SrcDirectory =
-        await fileExists(initPath)
-        && await fileExists(leanPath)
-        && await fileExists(kernelPath)
-        && await fileExists(runtimePath)
+        (await fileExists(initPath)) &&
+        (await fileExists(leanPath)) &&
+        (await fileExists(kernelPath)) &&
+        (await fileExists(runtimePath))
     return isCoreLean4SrcDirectory
 }
 
 // Find the root of a Lean project and the Uri for the 'lean-toolchain' file found there.
-export async function findLeanPackageRoot(uri: FileUri) : Promise<[FileUri, FileUri | undefined]> {
-    const toolchainFileName = 'lean-toolchain';
+export async function findLeanPackageRoot(uri: FileUri): Promise<[FileUri, FileUri | undefined]> {
+    const toolchainFileName = 'lean-toolchain'
 
-    let path = uri;
+    let path = uri
     const containingWsFolderUri = getWorkspaceFolderUri(uri)
 
     // then start searching from the directory containing this document.
     // The given uri may already be a folder Uri in some cases.
     if (fs.lstatSync(path.fsPath).isFile()) {
-        path = uri.join('..');
+        path = uri.join('..')
     }
 
     let bestFolder = path
     let bestLeanToolchain: FileUri | undefined
     while (true) {
-        const leanToolchain = path.join(toolchainFileName);
+        const leanToolchain = path.join(toolchainFileName)
         if (await fileExists(leanToolchain.fsPath)) {
             bestFolder = path
             bestLeanToolchain = leanToolchain
@@ -69,48 +67,48 @@ export async function findLeanPackageRoot(uri: FileUri) : Promise<[FileUri, File
                 break
             }
         }
-        const parent = path.join('..');
+        const parent = path.join('..')
         if (parent.equals(path)) {
             // no project file found.
-            break;
+            break
         }
-        path = parent;
+        path = parent
     }
 
-    return [bestFolder, bestLeanToolchain];
+    return [bestFolder, bestLeanToolchain]
 }
 
 // Find the lean project root for the given document and return the
 // Uri for the project root and the "version" information contained
 // in any 'lean-toolchain' file found there.
-export async function findLeanPackageVersionInfo(uri: FileUri) : Promise<[FileUri, string | undefined]> {
-    const [packageUri, packageFileUri] = await findLeanPackageRoot(uri);
+export async function findLeanPackageVersionInfo(uri: FileUri): Promise<[FileUri, string | undefined]> {
+    const [packageUri, packageFileUri] = await findLeanPackageRoot(uri)
 
     let version: string | undefined
     if (packageFileUri) {
         try {
-            version = await readLeanVersionFile(packageFileUri);
+            version = await readLeanVersionFile(packageFileUri)
         } catch (err) {
-            logger.log(`findLeanPackageVersionInfo caught exception ${err}`);
+            logger.log(`findLeanPackageVersionInfo caught exception ${err}`)
         }
     }
 
-    return [packageUri, version];
+    return [packageUri, version]
 }
 
 // Find the 'lean-toolchain' in the given package root and
 // extract the Lean version info from it.
-export async function readLeanVersion(packageUri: FileUri) : Promise<string | undefined> {
-    const toolchainFileName = 'lean-toolchain';
-    const leanToolchain = packageUri.join(toolchainFileName);
+export async function readLeanVersion(packageUri: FileUri): Promise<string | undefined> {
+    const toolchainFileName = 'lean-toolchain'
+    const leanToolchain = packageUri.join(toolchainFileName)
     if (fs.existsSync(leanToolchain.fsPath)) {
-        return await readLeanVersionFile(leanToolchain);
+        return await readLeanVersionFile(leanToolchain)
     }
-    return undefined;
+    return undefined
 }
 
-async function readLeanVersionFile(packageFileUri: FileUri) : Promise<string> {
-    return (await fs.promises.readFile(packageFileUri.fsPath, {encoding: 'utf-8'})).trim();
+async function readLeanVersionFile(packageFileUri: FileUri): Promise<string> {
+    return (await fs.promises.readFile(packageFileUri.fsPath, { encoding: 'utf-8' })).trim()
 }
 
 export async function isValidLeanProject(projectFolder: FileUri): Promise<boolean> {

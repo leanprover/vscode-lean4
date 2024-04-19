@@ -1,38 +1,34 @@
 {
-  "compilerOptions": {
-    /* Projects */
-    "composite": true,
+    "compilerOptions": {
+        /* Projects */
+        "composite": true,
 
-    /* Language and Environment */
-    "target": "esnext",
-    "lib": [
-      "DOM",
-      "DOM.Iterable",
-      "ESNext"
-    ],
-    "jsx": "react-jsx",
+        /* Language and Environment */
+        "target": "esnext",
+        "lib": ["DOM", "DOM.Iterable", "ESNext"],
+        "jsx": "react-jsx",
 
-    /* Modules */
-    "module": "esnext",
-    "moduleResolution": "node",
+        /* Modules */
+        "module": "esnext",
+        "moduleResolution": "node",
 
-    /* Emit */
-    "sourceMap": true,
-    "rootDir": "src",
-    "outDir": "dist",
+        /* Emit */
+        "sourceMap": true,
+        "rootDir": "src",
+        "outDir": "dist",
 
-    /* Interop Constraints */
-    "esModuleInterop": true,
-    "forceConsistentCasingInFileNames": true,
+        /* Interop Constraints */
+        "esModuleInterop": true,
+        "forceConsistentCasingInFileNames": true,
 
-    /* Type Checking */
-    "strict": true,
-    "noImplicitAny": true,
-    "noFallthroughCasesInSwitch": true,
+        /* Type Checking */
+        "strict": true,
+        "noImplicitAny": true,
+        "noFallthroughCasesInSwitch": true,
 
-    /* Completeness */
-    "skipLibCheck": true,
-  },
-  "include": ["src/**/*"],
-  "exclude": ["dist"],
+        /* Completeness */
+        "skipLibCheck": true
+    },
+    "include": ["src/**/*"],
+    "exclude": ["dist"]
 }

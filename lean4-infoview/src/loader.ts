@@ -1,6 +1,6 @@
-import 'es-module-shims';
+import 'es-module-shims'
 
-import type { renderInfoview } from './index';
+import type { renderInfoview } from './index'
 
 /**
  * Dynamically load the infoview module, execute `renderInfoview` with the provided `args`,
@@ -19,9 +19,11 @@ import type { renderInfoview } from './index';
  * }
  * ```
  */
-export function loadRenderInfoview(imports: Record<string, string>,
-        args: Parameters<typeof renderInfoview>,
-        next: (_: ReturnType<typeof renderInfoview>) => void) {
+export function loadRenderInfoview(
+    imports: Record<string, string>,
+    args: Parameters<typeof renderInfoview>,
+    next: (_: ReturnType<typeof renderInfoview>) => void,
+) {
     importShim.addImportMap({ imports })
     importShim('@leanprover/infoview')
         .then((mod: any) => next(mod.renderInfoview(...args)))

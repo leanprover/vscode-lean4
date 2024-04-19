@@ -1,6 +1,6 @@
-import { OutputChannel } from 'vscode';
-import { ExecutionExitCode, ExecutionResult, batchExecute } from './batch';
-import { FileUri } from './exturi';
+import { OutputChannel } from 'vscode'
+import { ExecutionExitCode, ExecutionResult, batchExecute } from './batch'
+import { FileUri } from './exturi'
 
 export class SetupDiagnoser {
     channel: OutputChannel
@@ -12,10 +12,10 @@ export class SetupDiagnoser {
     }
 
     async checkLakeAndDepsAvailable(): Promise<'Success' | 'LakeUnavailable' | 'GitUnavailable'> {
-        if (!await this.checkLakeAvailable()) {
+        if (!(await this.checkLakeAvailable())) {
             return 'LakeUnavailable'
         }
-        if (!await this.checkGitAvailable()) {
+        if (!(await this.checkGitAvailable())) {
             return 'GitUnavailable'
         }
         return 'Success'
@@ -39,4 +39,3 @@ export class SetupDiagnoser {
 export function diagnose(channel: OutputChannel, cwdUri: FileUri | undefined): SetupDiagnoser {
     return new SetupDiagnoser(channel, cwdUri)
 }
-

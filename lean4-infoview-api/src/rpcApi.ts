@@ -10,17 +10,11 @@ import { LeanDiagnostic, RpcPtr } from './lspTypes'
 import { RpcSessionAtPos } from './rpcSessions'
 
 /** A string where certain (possibly nested) substrings have been decorated with objects of type T. */
-export type TaggedText<T> =
-    { text: string } |
-    { append: TaggedText<T>[] } |
-    { tag: [T, TaggedText<T>] }
+export type TaggedText<T> = { text: string } | { append: TaggedText<T>[] } | { tag: [T, TaggedText<T>] }
 
 export type InfoWithCtx = RpcPtr<'Lean.Widget.InfoWithCtx'>
 
-export type DiffTag =
-  | 'wasChanged'  | 'willChange'
-  | 'wasDeleted'  | 'willDelete'
-  | 'wasInserted' | 'willInsert'
+export type DiffTag = 'wasChanged' | 'willChange' | 'wasDeleted' | 'willDelete' | 'wasInserted' | 'willInsert'
 
 // This is an arbitrary-size `Nat` in Lean which in JS we represent as `string`
 export type SubexprPos = string
@@ -88,12 +82,18 @@ export interface InteractiveGoals {
     goals: InteractiveGoal[]
 }
 
-export function getInteractiveGoals(rs: RpcSessionAtPos, pos: TextDocumentPositionParams): Promise<InteractiveGoals | undefined> {
-    return rs.call('Lean.Widget.getInteractiveGoals', pos);
+export function getInteractiveGoals(
+    rs: RpcSessionAtPos,
+    pos: TextDocumentPositionParams,
+): Promise<InteractiveGoals | undefined> {
+    return rs.call('Lean.Widget.getInteractiveGoals', pos)
 }
 
-export function getInteractiveTermGoal(rs: RpcSessionAtPos, pos: TextDocumentPositionParams): Promise<InteractiveTermGoal | undefined> {
-    return rs.call('Lean.Widget.getInteractiveTermGoal', pos);
+export function getInteractiveTermGoal(
+    rs: RpcSessionAtPos,
+    pos: TextDocumentPositionParams,
+): Promise<InteractiveTermGoal | undefined> {
+    return rs.call('Lean.Widget.getInteractiveTermGoal', pos)
 }
 
 export type Name = string
@@ -101,65 +101,78 @@ export type Name = string
 export type StrictOrLazy<S, L> = { strict: S } | { lazy: L }
 export type LazyTraceChildren = RpcPtr<'Lean.Widget.LazyTraceChildren'>
 export interface TraceEmbed {
-    indent: number;
-    cls: Name;
-    msg: TaggedText<MsgEmbed>;
-    collapsed: boolean; // collapsed by default
-    children: StrictOrLazy<TaggedText<MsgEmbed>[], LazyTraceChildren>;
+    indent: number
+    cls: Name
+    msg: TaggedText<MsgEmbed>
+    collapsed: boolean // collapsed by default
+    children: StrictOrLazy<TaggedText<MsgEmbed>[], LazyTraceChildren>
 }
 
 export type MessageData = RpcPtr<'Lean.MessageData'>
 export type MsgEmbed =
-    { expr: CodeWithInfos } |
-    { goal: InteractiveGoal } |
-    { trace: TraceEmbed } |
-    { lazyTrace: [number, Name, MessageData] } // old collapsible trace support
+    | { expr: CodeWithInfos }
+    | { goal: InteractiveGoal }
+    | { trace: TraceEmbed }
+    | { lazyTrace: [number, Name, MessageData] } // old collapsible trace support
 
 export type InteractiveDiagnostic = Omit<LeanDiagnostic, 'message'> & { message: TaggedText<MsgEmbed> }
 
 export interface LineRange {
-    start: number;
-    end: number;
+    start: number
+    end: number
 }
 
-export function getInteractiveDiagnostics(rs: RpcSessionAtPos, lineRange?: LineRange): Promise<InteractiveDiagnostic[]> {
-    return rs.call('Lean.Widget.getInteractiveDiagnostics', {lineRange});
+export function getInteractiveDiagnostics(
+    rs: RpcSessionAtPos,
+    lineRange?: LineRange,
+): Promise<InteractiveDiagnostic[]> {
+    return rs.call('Lean.Widget.getInteractiveDiagnostics', { lineRange })
 }
 
-export function InteractiveDiagnostics_msgToInteractive(rs: RpcSessionAtPos, msg: MessageData, indent: number): Promise<TaggedText<MsgEmbed>> {
+export function InteractiveDiagnostics_msgToInteractive(
+    rs: RpcSessionAtPos,
+    msg: MessageData,
+    indent: number,
+): Promise<TaggedText<MsgEmbed>> {
     interface MessageToInteractive {
         msg: MessageData
         indent: number
     }
-    return rs.call<MessageToInteractive, TaggedText<MsgEmbed>>('Lean.Widget.InteractiveDiagnostics.msgToInteractive', {msg, indent})
+    return rs.call<MessageToInteractive, TaggedText<MsgEmbed>>('Lean.Widget.InteractiveDiagnostics.msgToInteractive', {
+        msg,
+        indent,
+    })
 }
 
-export function lazyTraceChildrenToInteractive(rs: RpcSessionAtPos, children: LazyTraceChildren): Promise<TaggedText<MsgEmbed>[]> {
+export function lazyTraceChildrenToInteractive(
+    rs: RpcSessionAtPos,
+    children: LazyTraceChildren,
+): Promise<TaggedText<MsgEmbed>[]> {
     return rs.call('Lean.Widget.lazyTraceChildrenToInteractive', children)
 }
 
 export function InteractiveDiagnostics_infoToInteractive(rs: RpcSessionAtPos, info: InfoWithCtx): Promise<InfoPopup> {
-    return rs.call('Lean.Widget.InteractiveDiagnostics.infoToInteractive', info);
+    return rs.call('Lean.Widget.InteractiveDiagnostics.infoToInteractive', info)
 }
 
 export type GoToKind = 'declaration' | 'definition' | 'type'
 export function getGoToLocation(rs: RpcSessionAtPos, kind: GoToKind, info: InfoWithCtx): Promise<LocationLink[]> {
     interface GetGoToLocationParams {
-        kind: GoToKind;
-        info: InfoWithCtx;
+        kind: GoToKind
+        info: InfoWithCtx
     }
-    return rs.call<GetGoToLocationParams, LocationLink[]>('Lean.Widget.getGoToLocation', { kind, info });
+    return rs.call<GetGoToLocationParams, LocationLink[]>('Lean.Widget.getGoToLocation', { kind, info })
 }
 
 export interface UserWidget {
-    id: string;
+    id: string
     /** Newer widget APIs do not send this.
      * In previous versions, it used to be a user-readable name to show in a title bar. */
-    name?: string;
+    name?: string
     /** A hash (provided by Lean) of the widgetSource's sourcetext.
      * This is used to look up the WidgetSource object.
      */
-    javascriptHash: string;
+    javascriptHash: string
 }
 
 /** Represents an instance of a user widget that can be rendered.
@@ -167,13 +180,13 @@ export interface UserWidget {
  */
 export interface UserWidgetInstance extends UserWidget {
     /** JSON object to be passed as props to the component */
-    props : any
+    props: any
     range?: Range
 }
 
 /** The response type for the RPC call `Widget_getWidgets`. */
 export interface UserWidgets {
-    widgets : UserWidgetInstance[]
+    widgets: UserWidgetInstance[]
 }
 
 /** Given a position, returns all of the user-widgets on the infotree at this position. */

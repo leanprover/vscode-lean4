@@ -1,4 +1,4 @@
-import { commands, window } from 'vscode';
+import { commands, window } from 'vscode'
 
 export async function displayErrorWithOutput(message: string) {
     const input = 'Show Output'

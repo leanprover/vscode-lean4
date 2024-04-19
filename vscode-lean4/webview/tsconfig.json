@@ -1,16 +1,11 @@
 {
-	"extends": "../tsconfig",
-	"compilerOptions": {
-		"jsx": "react-jsx",
-		"strict": true,
-		"lib": [
-			"dom",
-			"es6",
-		],
-		"rootDir": "../",
+    "extends": "../tsconfig",
+    "compilerOptions": {
+        "jsx": "react-jsx",
+        "strict": true,
+        "lib": ["dom", "es6"],
+        "rootDir": "../",
         "sourceMap": true
-	},
-	"include": [
-		"./**/*",
-	],
+    },
+    "include": ["./**/*"]
 }

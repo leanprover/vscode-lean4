@@ -1,8 +1,8 @@
 /* [note] modified from github.com/microsoft/vscode-pull-request-github MIT licenced*/
 
-const path = require('path');
-const webpack = require('webpack');
-const CopyPlugin = require('copy-webpack-plugin');
+const path = require('path')
+const webpack = require('webpack')
+const CopyPlugin = require('copy-webpack-plugin')
 
 /**
  * @typedef Env
@@ -10,10 +10,10 @@ const CopyPlugin = require('copy-webpack-plugin');
  */
 
 /** @type {(env: Env) => 'production' | 'development'} */
-const prodOrDev = (env) => env.production ? 'production' : 'development';
+const prodOrDev = env => (env.production ? 'production' : 'development')
 
 /** @type {(env: Env) => import('webpack').Configuration} */
-const getWebviewConfig = (env) => ({
+const getWebviewConfig = env => ({
     name: 'webview',
     mode: prodOrDev(env),
     entry: './webview/index.ts',
@@ -26,13 +26,13 @@ const getWebviewConfig = (env) => ({
             },
             {
                 test: /\.js$/,
-                enforce: "pre",
-                use: ["source-map-loader"],
+                enforce: 'pre',
+                use: ['source-map-loader'],
             },
-        ]
+        ],
     },
     resolve: {
-        extensions: ['.tsx', '.ts', '.js']
+        extensions: ['.tsx', '.ts', '.js'],
     },
     devtool: env.production ? undefined : 'inline-source-map',
     output: {
@@ -45,17 +45,19 @@ const getWebviewConfig = (env) => ({
             contextRegExp: /moment$/,
         }),
         new CopyPlugin({
-            patterns: [{
-                // See https://github.com/webpack-contrib/copy-webpack-plugin/tree/e2274daad21baae3020819aa29ab903bd9992cce#yarn-workspaces-and-monorepos
-                from : `${path.dirname(require.resolve('@leanprover/infoview/package.json'))}/dist`,
-                to: path.resolve(__dirname, 'dist', 'lean4-infoview')
-            }]
+            patterns: [
+                {
+                    // See https://github.com/webpack-contrib/copy-webpack-plugin/tree/e2274daad21baae3020819aa29ab903bd9992cce#yarn-workspaces-and-monorepos
+                    from: `${path.dirname(require.resolve('@leanprover/infoview/package.json'))}/dist`,
+                    to: path.resolve(__dirname, 'dist', 'lean4-infoview'),
+                },
+            ],
         }),
-    ]
+    ],
 })
 
 /** @type {(env: Env) => import('webpack').Configuration} */
-const getExtensionConfig = (env) => ({
+const getExtensionConfig = env => ({
     name: 'extension',
     mode: prodOrDev(env),
     target: 'node',
@@ -66,8 +68,8 @@ const getExtensionConfig = (env) => ({
                 test: /\.tsx?$/,
                 use: 'ts-loader',
                 exclude: /node_modules/,
-            }
-        ]
+            },
+        ],
     },
     resolve: {
         extensions: ['.tsx', '.ts', '.js'],
@@ -79,16 +81,16 @@ const getExtensionConfig = (env) => ({
         library: {
             type: 'commonjs',
         },
-        devtoolModuleFilenameTemplate: 'file:///[absolute-resource-path]'
+        devtoolModuleFilenameTemplate: 'file:///[absolute-resource-path]',
     },
     externals: {
-        'vscode': 'commonjs vscode'
-    }
+        vscode: 'commonjs vscode',
+    },
 })
 
 /** @type {(env: any) => import('webpack').Configuration[]} */
-module.exports = function(env) {
-    env = env || {};
-    env.production = !!env.production;
-    return [getWebviewConfig(env), getExtensionConfig(env)];
+module.exports = function (env) {
+    env = env || {}
+    env.production = !!env.production
+    return [getWebviewConfig(env), getExtensionConfig(env)]
 }

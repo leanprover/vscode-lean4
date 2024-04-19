@@ -1,6 +1,6 @@
 /** @module See `rollup.config.js` for what this file does. */
-import * as React from 'react';
-export default React;
+import * as React from 'react'
+export default React
 // We need to explicitly list all the names because 'react' is a CommonJS module for which
 // `export * from` does not work.
 import {
@@ -40,8 +40,8 @@ import {
     useState,
     useSyncExternalStore,
     useTransition,
-    version
-} from 'react';
+    version,
+} from 'react'
 export {
     Children,
     Component,
@@ -77,5 +77,5 @@ export {
     useState,
     useSyncExternalStore,
     useTransition,
-    version
-};
+    version,
+}

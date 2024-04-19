@@ -29,11 +29,14 @@ export class EventEmitter<E, in out K> {
                     const handlersForKey = this.handlersWithKey.get(key) ?? []
                     // We assume that no key has so many handlers registered
                     // that the linear `filter` operation becomes a perf issue.
-                    this.handlersWithKey.set(key, handlersForKey.filter(h => h !== handler))
+                    this.handlersWithKey.set(
+                        key,
+                        handlersForKey.filter(h => h !== handler),
+                    )
                 } else {
                     this.handlers.delete(id)
                 }
-            }
+            },
         }
     }
 
@@ -66,7 +69,9 @@ type ExcludeNonEvent<T, U> = T extends (...args: any) => Promise<void> ? U : nev
  * Other fields are removed.
  */
 export type Eventify<T> = {
-    [P in keyof T as ExcludeNonEvent<T[P], P>]:
-        T[P] extends (arg: infer A) => Promise<void> ? EventEmitter<A, never> :
-            T[P] extends (...args: infer As) => Promise<void> ? EventEmitter<As, never> : never
+    [P in keyof T as ExcludeNonEvent<T[P], P>]: T[P] extends (arg: infer A) => Promise<void>
+        ? EventEmitter<A, never>
+        : T[P] extends (...args: infer As) => Promise<void>
+          ? EventEmitter<As, never>
+          : never
 }

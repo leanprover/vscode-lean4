@@ -1,943 +1,943 @@
 {
-	"name": "lean4",
-	"displayName": "lean4",
-	"description": "Lean 4 language support for VS Code",
-	"version": "0.0.142",
-	"publisher": "leanprover",
-	"engines": {
-		"vscode": "^1.75.0"
-	},
-	"categories": [
-		"Programming Languages"
-	],
-	"keywords": [
-		"multi-root ready"
-	],
-	"repository": {
-		"type": "git",
-		"url": "https://github.com/leanprover-community/vscode-lean4.git"
-	},
-	"contributes": {
-		"configuration": {
-			"type": "object",
-			"title": "Lean 4",
-			"properties": {
-				"lean4.toolchainPath": {
-					"type": "string",
-					"default": "",
-					"markdownDescription": "**DO NOT CHANGE** unless you know what you are doing. Path to your Lean toolchain. Leave this blank to get the default location from your PATH environment or from the default elan install location.",
-					"scope": "machine-overridable"
-				},
-				"lean4.input.enabled": {
-					"type": "boolean",
-					"default": true,
-					"markdownDescription": "Enable Lean input mode."
-				},
-				"lean4.input.customTranslations": {
-					"type": "object",
-					"items": {
-						"type": "string",
-						"description": "Unicode character to translate to"
-					},
-					"default": {},
-					"markdownDescription": "Add additional input Unicode translations. Example: `{\"foo\": \"☺\"}` will correct `\\foo` to `☺`."
-				},
-				"lean4.input.languages": {
-					"type": "array",
-					"default": [
-						"lean4"
-					],
-					"markdownDescription": "Enable Lean Unicode input in other file types.",
-					"items": {
-						"type": "string",
-						"description": "the name of a language, e.g. 'lean4', 'markdown'"
-					}
-				},
-				"lean4.input.leader": {
-					"type": "string",
-					"default": "\\",
-					"markdownDescription": "Leader key to trigger input mode."
-				},
-				"lean4.input.eagerReplacementEnabled": {
-					"type": "boolean",
-					"default": true,
-					"markdownDescription": "Enable eager replacement of abbreviations that uniquely identify a symbol."
-				},
-				"lean4.fallBackToStringOccurrenceHighlighting": {
-					"type": "boolean",
-					"description": "Fall back to string-based occurrence highlighting when there are no semantic symbol occurrences from the Lean language server to highlight.",
-					"default": false
-				},
-				"lean4.automaticallyBuildDependencies": {
-					"type": "boolean",
-					"default": false,
-					"markdownDescription": "Enable automatically building dependencies when opening a file. In Lean versions pre-4.2.0, dependencies are always built automatically regardless of this setting."
-				},
-				"lean4.serverEnv": {
-					"type": "object",
-					"default": {},
-					"description": "Environment variables to add to the Lean 4 server environment",
-					"additionalProperties": {
-						"type": "string",
-						"description": "environment variable to add"
-					},
-					"scope": "machine-overridable"
-				},
-				"lean4.serverEnvPaths": {
-					"type": "array",
-					"default": [],
-					"description": "Paths to add to the Lean 4 server environment PATH variable.",
-					"items": {
-						"type": "string",
-						"description": "a path to add to the environment"
-					},
-					"scope": "machine-overridable"
-				},
-				"lean4.enableLake": {
-					"type": "boolean",
-					"default": true,
-					"markdownDescription": "Enable Lake server when possible."
-				},
-				"lean4.lakePath": {
-					"type": "string",
-					"default": "",
-					"markdownDescription": "Path to Lake. Leave this blank to use the Lake from the toolchain.",
-					"scope": "machine-overridable"
-				},
-				"lean4.serverArgs": {
-					"type": "array",
-					"default": [],
-					"description": "Arguments to pass to the Lean 4 server.",
-					"items": {
-						"type": "string",
-						"description": "an argument to pass to the server"
-					}
-				},
-				"lean4.serverLogging.enabled": {
-					"type": "boolean",
-					"default": false,
-					"description": "Enable Lean 4 server logging."
-				},
-				"lean4.serverLogging.path": {
-					"type": "string",
-					"default": ".",
-					"description": "Path to the directory where Lean 4 server log files are stored.",
-					"scope": "machine-overridable"
-				},
-				"lean4.autofocusOutput": {
-					"type": "boolean",
-					"default": false,
-					"description": "Automatically show the Output panel when the Lean 4 server prints a new message."
-				},
-				"lean4.infoview.autoOpen": {
-					"type": "boolean",
-					"default": true,
-					"markdownDescription": "Open infoview when Lean extension is activated for the first time."
-				},
-				"lean4.infoview.autoOpenShowsGoal": {
-					"type": "boolean",
-					"default": true,
-					"markdownDescription": "When auto-opened, the infoview shows goal and messages for the current line (instead of all messages for the whole file)."
-				},
-				"lean4.infoview.allErrorsOnLine": {
-					"type": "boolean",
-					"default": true,
-					"markdownDescription": "Show all errors on the current line, instead of just the ones to the right of the cursor."
-				},
-				"lean4.infoview.debounceTime": {
-					"type": "number",
-					"default": 50,
-					"markdownDescription": "How long (in milliseconds) the infoview waits before displaying new information after the cursor has stopped moving. The optimal value depends on your machine - try experimenting."
-				},
-				"lean4.infoview.style": {
-					"type": "string",
-					"default": "",
-					"markdownDescription": "Add an additional CSS snippet to the infoview."
-				},
-				"lean4.infoview.showExpectedType": {
-					"type": "boolean",
-					"default": true,
-					"markdownDescription": "Show the expected type by default."
-				},
-				"lean4.infoview.showGoalNames": {
-					"type": "boolean",
-					"default": true,
-					"markdownDescription": "Show goal names (e.g. `case inl`) in the infoview."
-				},
-				"lean4.infoview.emphasizeFirstGoal": {
-					"type": "boolean",
-					"default": false,
-					"markdownDescription": "Display goals other than the main goal in a smaller font size."
-				},
-				"lean4.infoview.reverseTacticState": {
-					"type": "boolean",
-					"default": false,
-					"markdownDescription": "Default to showing the goal type first and then the local context."
-				},
-				"lean4.infoview.showTooltipOnHover": {
-					"type": "boolean",
-					"default": true,
-					"markdownDescription": "Show the tooltip for an interactive element (e.g. a subexpression) when the pointer hovers over that element. When disabled, the element must be clicked for the tooltip to show up."
-				},
-				"lean4.elaborationDelay": {
-					"type": "number",
-					"default": 200,
-					"description": "Time (in milliseconds) which must pass since latest edit until elaboration begins. Lower values may make editing feel faster at the cost of higher CPU usage."
-				},
-				"lean4.showInvalidProjectWarnings": {
-					"type": "boolean",
-					"default": true,
-					"markdownDescription": "Show warnings whenever a .lean-file is opened in a folder that does not contain a 'lean-toolchain' file."
-				},
-				"lean4.alwaysShowTitleBarMenu": {
-					"type": "boolean",
-					"default": true,
-					"markdownDescription": "Always display the Lean extension title bar menu in the top right. This helps beginners create and open Lean projects after launching an empty instance of VS Code, but may not be desirable for anyone who uses VS Code for things other than Lean."
-				}
-			}
-		},
-		"commands": [
-			{
-				"command": "lean4.restartServer",
-				"category": "Lean 4",
-				"title": "Server: Restart Server",
-				"description": "Restart the Lean server (for all files)."
-			},
-			{
-				"command": "lean4.stopServer",
-				"category": "Lean 4",
-				"title": "Server: Stop Server",
-				"description": "Stop the Lean server (for all files)."
-			},
-			{
-				"command": "lean4.restartFile",
-				"category": "Lean 4",
-				"title": "Server: Restart File",
-				"description": "Restarts the Lean server for the file that is currently focused, refreshing the dependencies."
-			},
-			{
-				"command": "lean4.refreshFileDependencies",
-				"category": "Lean 4",
-				"title": "Server: Refresh File Dependencies",
-				"description": "Restarts the Lean server for the file that is currently focused to refresh the dependencies."
-			},
-			{
-				"command": "lean4.input.convert",
-				"category": "Lean 4",
-				"title": "Input: Convert Current Abbreviation",
-				"description": "Converts the current abbreviation (e.g. \\lam)."
-			},
-			{
-				"command": "lean4.displayGoal",
-				"category": "Lean 4",
-				"title": "Infoview: Display Goal",
-				"description": "Display the goal and any messages at the current position in the infoview.",
-				"icon": {
-					"dark": "./media/display-goal-dark.svg",
-					"light": "./media/display-goal-light.svg"
-				}
-			},
-			{
-				"command": "lean4.toggleInfoview",
-				"category": "Lean 4",
-				"title": "Infoview: Toggle Infoview",
-				"description": "Toggle whether the infoview is displayed."
-			},
-			{
-				"command": "lean4.displayList",
-				"category": "Lean 4",
-				"title": "Infoview: Toggle \"All Messages\"",
-				"description": "Toggles the \"All Messages\" panel in the infoview."
-			},
-			{
-				"command": "lean4.infoView.copyToComment",
-				"category": "Lean 4",
-				"title": "Infoview: Copy Contents to Comment",
-				"description": "Copy the contents of the currently active tactic state panel to a new comment on the previous line.",
-				"icon": {
-					"dark": "./media/copy-to-comment-dark.svg",
-					"light": "./media/copy-to-comment-light.svg"
-				}
-			},
-			{
-				"command": "lean4.infoView.toggleStickyPosition",
-				"category": "Lean 4",
-				"title": "Infoview: Toggle Pin",
-				"description": "Create or remove a tactic state panel pinned to show the goal at the current position."
-			},
-			{
-				"command": "lean4.infoView.toggleUpdating",
-				"category": "Lean 4",
-				"title": "Infoview: Toggle Updating",
-				"description": "Pause / Continue live updating of the main tactic state widget."
-			},
-			{
-				"command": "lean4.infoView.toggleExpectedType",
-				"category": "Lean 4",
-				"title": "Infoview: Toggle Expected Type",
-				"description": "Toggle the display of expected type."
-			},
-			{
-				"command": "lean4.infoview.goToDefinition",
-				"category": "Lean 4",
-				"title": "Go to Definition",
-				"description": "This command is an implementation detail of the 'Go to Definition' context menu option in the infoview."
-			},
-			{
-				"command": "lean4.docView.showAllAbbreviations",
-				"category": "Lean 4",
-				"title": "Docview: Show All Abbreviations",
-				"description": "Show help page containing all abbreviations and the Unicode characters they map to."
-			},
-			{
-				"command": "lean4.docView.open",
-				"category": "Lean 4",
-				"title": "Docview: Open Docview",
-				"description": "Open documentation found in local 'html' folder in a separate web view panel."
-			},
-			{
-				"command": "lean4.docView.back",
-				"category": "Lean 4",
-				"title": "Docview: Back",
-				"description": "Go to previous page in documentation view"
-			},
-			{
-				"command": "lean4.docView.forward",
-				"category": "Lean 4",
-				"title": "Docview: Forward",
-				"description": "Go to next page in documentation view"
-			},
-			{
-				"command": "lean4.troubleshooting.showOutput",
-				"category": "Lean 4",
-				"title": "Troubleshooting: Show Output",
-				"description": "Show output channel containing all progress updates and errors of commands"
-			},
-			{
-				"command": "lean4.setup.showSetupGuide",
-				"category": "Lean 4",
-				"title": "Setup: Show Setup Guide",
-				"description": "Show 'Welcome' page containing a checklist of steps to install Lean 4"
-			},
-			{
-				"command": "lean4.setup.installElan",
-				"category": "Lean 4",
-				"title": "Setup: Install Elan",
-				"description": "Install Lean's version manager 'Elan'"
-			},
-			{
-				"command": "lean4.project.createStandaloneProject",
-				"category": "Lean 4",
-				"title": "Project: Create Standalone Project…",
-				"description": "Create a new Lean project that does not depend on any other projects"
-			},
-			{
-				"command": "lean4.project.createMathlibProject",
-				"category": "Lean 4",
-				"title": "Project: Create Project Using Mathlib…",
-				"description": "Create a new Lean math formalization project using Mathlib"
-			},
-			{
-				"command": "lean4.project.open",
-				"category": "Lean 4",
-				"title": "Project: Open Local Project…",
-				"description": "Opens a local Lean project"
-			},
-			{
-				"command": "lean4.project.clone",
-				"category": "Lean 4",
-				"title": "Project: Download Project…",
-				"description": "Download an existing Lean project using `git clone`"
-			},
-			{
-				"command": "lean4.project.build",
-				"category": "Lean 4",
-				"title": "Project: Build Project",
-				"description": "Build the current project"
-			},
-			{
-				"command": "lean4.project.clean",
-				"category": "Lean 4",
-				"title": "Project: Clean Project",
-				"description": "Clean the current project, removing all build artifacts"
-			},
-			{
-				"command": "lean4.project.updateDependency",
-				"category": "Lean 4",
-				"title": "Project: Update Dependency…",
-				"description": "Updates a dependency of the current project to the most recent version available for the branch pinned in 'lakefile.lean'."
-			},
-			{
-				"command": "lean4.project.fetchCache",
-				"category": "Lean 4",
-				"title": "Project: Fetch Mathlib Build Cache",
-				"description": "Downloads cached Mathlib build artifacts to avoid full elaboration"
-			}
-		],
-		"languages": [
-			{
-				"id": "lean4",
-				"configuration": "./language-configuration.json",
-				"extensions": [
-					".lean"
-				]
-			},
-			{
-				"id": "lean4markdown",
-				"aliases": [],
-				"extensions": [
-					".lean4markdown"
-				],
-				"configuration": "./language-configuration.json"
-			}
-		],
-		"grammars": [
-			{
-				"language": "lean4",
-				"scopeName": "source.lean4",
-				"path": "./syntaxes/lean4.json"
-			},
-			{
-				"language": "lean4markdown",
-				"scopeName": "source.lean4.markdown",
-				"path": "./syntaxes/lean4-markdown.json"
-			},
-			{
-				"scopeName": "markdown.lean4.codeblock",
-				"path": "./syntaxes/codeblock.json",
-				"injectTo": [
-					"text.html.markdown"
-				],
-				"embeddedLanguages": {
-					"meta.embedded.block.lean4": "lean4"
-				}
-			}
-		],
-		"keybindings": [
-			{
-				"command": "lean4.input.convert",
-				"key": "tab",
-				"mac": "tab",
-				"when": "editorTextFocus && editorLangId == lean4 && lean4.input.isActive"
-			},
-			{
-				"command": "lean4.restartFile",
-				"key": "ctrl+shift+x",
-				"mac": "cmd+shift+x",
-				"when": "lean4.isLeanFeatureSetActive"
-			},
-			{
-				"command": "lean4.toggleInfoview",
-				"key": "ctrl+shift+enter",
-				"mac": "cmd+shift+enter",
-				"when": "lean4.isLeanFeatureSetActive"
-			},
-			{
-				"command": "lean4.displayList",
-				"key": "ctrl+shift+alt+enter",
-				"mac": "cmd+shift+alt+enter",
-				"when": "lean4.isLeanFeatureSetActive"
-			}
-		],
-		"colors": [
-			{
-				"id": "lean4.infoView.hypothesisName",
-				"description": "The color used to display hypothesis names in the infoview",
-				"defaults": {
-					"light": "#cc7a00",
-					"dark": "#ffcc00",
-					"highContrast": "foreground",
-					"highContrastLight": "foreground"
-				}
-			},
-			{
-				"id": "lean4.infoView.inaccessibleHypothesisName",
-				"description": "The color used to display inaccessible hypothesis names in the infoview",
-				"defaults": {
-					"light": "editor.foreground",
-					"dark": "editor.foreground",
-					"highContrast": "editor.foreground",
-					"highContrastLight": "editor.foreground"
-				}
-			},
-			{
-				"id": "lean4.infoView.goalCount",
-				"description": "The color used to display the goal count in the infoview (e.g. \"1 goal\")",
-				"defaults": {
-					"light": "#367cb6",
-					"dark": "#569cd6",
-					"highContrast": "terminal.ansiBlue",
-					"highContrastLight": "terminal.ansiBlue"
-				}
-			},
-			{
-				"id": "lean4.infoView.turnstile",
-				"description": "The color used to display the turnstile (⊢) in the infoview",
-				"defaults": {
-					"light": "#367cb6",
-					"dark": "#569cd6",
-					"highContrast": "terminal.ansiBlue",
-					"highContrastLight": "terminal.ansiBlue"
-				}
-			},
-			{
-				"id": "lean4.infoView.caseLabel",
-				"description": "The color used to display the names of individual proof cases in the infoview",
-				"defaults": {
-					"light": "#1f7a1f",
-					"dark": "#a1df90",
-					"highContrast": "terminal.ansiGreen",
-					"highContrastLight": "terminal.ansiGreen"
-				}
-			}
-		],
-		"menus": {
-			"commandPalette": [
-				{
-					"command": "lean4.restartServer",
-					"when": "lean4.isLeanFeatureSetActive"
-				},
-				{
-					"command": "lean4.stopServer",
-					"when": "lean4.isLeanFeatureSetActive"
-				},
-				{
-					"command": "lean4.restartFile",
-					"when": "lean4.isLeanFeatureSetActive"
-				},
-				{
-					"command": "lean4.refreshFileDependencies",
-					"when": "lean4.isLeanFeatureSetActive"
-				},
-				{
-					"command": "lean4.input.convert",
-					"when": "lean4.isLeanFeatureSetActive && lean4.input.isActive"
-				},
-				{
-					"command": "lean4.displayGoal",
-					"when": "lean4.isLeanFeatureSetActive"
-				},
-				{
-					"command": "lean4.toggleInfoview",
-					"when": "lean4.isLeanFeatureSetActive"
-				},
-				{
-					"command": "lean4.displayList",
-					"when": "lean4.isLeanFeatureSetActive"
-				},
-				{
-					"command": "lean4.infoView.copyToComment",
-					"when": "lean4.isLeanFeatureSetActive"
-				},
-				{
-					"command": "lean4.infoView.toggleStickyPosition",
-					"when": "lean4.isLeanFeatureSetActive"
-				},
-				{
-					"command": "lean4.infoView.toggleUpdating",
-					"when": "lean4.isLeanFeatureSetActive"
-				},
-				{
-					"command": "lean4.infoView.toggleExpectedType",
-					"when": "lean4.isLeanFeatureSetActive"
-				},
-				{
-					"command": "lean4.docView.showAllAbbreviations",
-					"when": "lean4.isLeanFeatureSetActive"
-				},
-				{
-					"command": "lean4.infoview.goToDefinition",
-					"when": "false"
-				},
-				{
-					"command": "lean4.docView.open"
-				},
-				{
-					"command": "lean4.docView.back"
-				},
-				{
-					"command": "lean4.docView.forward"
-				},
-				{
-					"command": "lean4.troubleshooting.showOutput"
-				},
-				{
-					"command": "lean4.setup.showSetupGuide"
-				},
-				{
-					"command": "lean4.setup.installElan"
-				},
-				{
-					"command": "lean4.project.createStandaloneProject"
-				},
-				{
-					"command": "lean4.project.createMathlibProject"
-				},
-				{
-					"command": "lean4.project.open"
-				},
-				{
-					"command": "lean4.project.clone"
-				},
-				{
-					"command": "lean4.project.build",
-					"when": "lean4.isLeanFeatureSetActive"
-				},
-				{
-					"command": "lean4.project.clean",
-					"when": "lean4.isLeanFeatureSetActive"
-				},
-				{
-					"command": "lean4.project.updateDependency",
-					"when": "lean4.isLeanFeatureSetActive"
-				},
-				{
-					"command": "lean4.project.fetchCache",
-					"when": "lean4.isLeanFeatureSetActive"
-				}
-			],
-			"editor/title": [
-				{
-					"submenu": "lean4.titlebar",
-					"when": "config.lean4.alwaysShowTitleBarMenu || lean4.isLeanFeatureSetActive",
-					"group": "navigation@0"
-				}
-			],
-			"lean4.titlebar": [
-				{
-					"submenu": "lean4.titlebar.newProject",
-					"when": "config.lean4.alwaysShowTitleBarMenu || lean4.isLeanFeatureSetActive",
-					"group": "1_setup@1"
-				},
-				{
-					"submenu": "lean4.titlebar.openProject",
-					"when": "config.lean4.alwaysShowTitleBarMenu || lean4.isLeanFeatureSetActive",
-					"group": "1_setup@1"
-				},
-				{
-					"command": "lean4.restartFile",
-					"when": "lean4.isLeanFeatureSetActive",
-					"group": "2_server@1"
-				},
-				{
-					"command": "lean4.restartServer",
-					"when": "lean4.isLeanFeatureSetActive",
-					"group": "2_server@2"
-				},
-				{
-					"command": "lean4.toggleInfoview",
-					"when": "lean4.isLeanFeatureSetActive",
-					"group": "3_infoview@1"
-				},
-				{
-					"command": "lean4.troubleshooting.showOutput",
-					"when": "config.lean4.alwaysShowTitleBarMenu || lean4.isLeanFeatureSetActive",
-					"group": "4_troubleshooting"
-				},
-				{
-					"submenu": "lean4.titlebar.versions",
-					"when": "config.lean4.alwaysShowTitleBarMenu || lean4.isLeanFeatureSetActive",
-					"group": "5_versions"
-				},
-				{
-					"submenu": "lean4.titlebar.projectActions",
-					"when": "config.lean4.alwaysShowTitleBarMenu || lean4.isLeanFeatureSetActive",
-					"group": "6_projectActions@1"
-				},
-				{
-					"submenu": "lean4.titlebar.documentation",
-					"when": "config.lean4.alwaysShowTitleBarMenu || lean4.isLeanFeatureSetActive",
-					"group": "7_documentation@1"
-				}
-			],
-			"lean4.titlebar.newProject": [
-				{
-					"command": "lean4.project.createStandaloneProject",
-					"when": "config.lean4.alwaysShowTitleBarMenu || lean4.isLeanFeatureSetActive",
-					"group": "1_newProject@1"
-				},
-				{
-					"command": "lean4.project.createMathlibProject",
-					"when": "config.lean4.alwaysShowTitleBarMenu || lean4.isLeanFeatureSetActive",
-					"group": "1_newProject@2"
-				}
-			],
-			"lean4.titlebar.openProject": [
-				{
-					"command": "lean4.project.open",
-					"when": "config.lean4.alwaysShowTitleBarMenu || lean4.isLeanFeatureSetActive",
-					"group": "1_openProject@1"
-				},
-				{
-					"command": "lean4.project.clone",
-					"when": "config.lean4.alwaysShowTitleBarMenu || lean4.isLeanFeatureSetActive",
-					"group": "1_openProject@2"
-				}
-			],
-			"lean4.titlebar.versions": [
-				{
-					"command": "lean4.setup.installElan",
-					"when": "config.lean4.alwaysShowTitleBarMenu || lean4.isLeanFeatureSetActive",
-					"group": "1_setup@1"
-				}
-			],
-			"lean4.titlebar.projectActions": [
-				{
-					"command": "lean4.project.build",
-					"when": "lean4.isLeanFeatureSetActive",
-					"group": "1_projectActions@1"
-				},
-				{
-					"command": "lean4.project.clean",
-					"when": "lean4.isLeanFeatureSetActive",
-					"group": "1_projectActions@2"
-				},
-				{
-					"command": "lean4.project.updateDependency",
-					"when": "lean4.isLeanFeatureSetActive",
-					"group": "1_projectActions@3"
-				},
-				{
-					"command": "lean4.project.fetchCache",
-					"when": "lean4.isLeanFeatureSetActive",
-					"group": "2_mathlibActions@1"
-				}
-			],
-			"lean4.titlebar.documentation": [
-				{
-					"command": "lean4.setup.showSetupGuide",
-					"when": "config.lean4.alwaysShowTitleBarMenu || lean4.isLeanFeatureSetActive",
-					"group": "1_installation@1"
-				},
-				{
-					"command": "lean4.docView.open",
-					"when": "config.lean4.alwaysShowTitleBarMenu || lean4.isLeanFeatureSetActive",
-					"group": "2_docview@1"
-				},
-				{
-					"command": "lean4.docView.showAllAbbreviations",
-					"when": "config.lean4.alwaysShowTitleBarMenu || lean4.isLeanFeatureSetActive",
-					"group": "2_docview@2"
-				}
-			],
-			"editor/context": [
-				{
-					"command": "lean4.restartFile",
-					"when": "editorLangId == lean4",
-					"group": "z_commands"
-				}
-			],
-			"webview/context": [
-				{
-					"command": "lean4.infoview.goToDefinition",
-					"when": "webviewId == 'lean4_infoview' && interactiveCodeTagId"
-				}
-			]
-		},
-		"submenus": [
-			{
-				"id": "lean4.titlebar",
-				"label": "Lean 4",
-				"icon": {
-					"dark": "./media/lean-mini-dark.svg",
-					"light": "./media/lean-mini-light.svg"
-				}
-			},
-			{
-				"id": "lean4.titlebar.newProject",
-				"label": "New Project…"
-			},
-			{
-				"id": "lean4.titlebar.openProject",
-				"label": "Open Project…"
-			},
-			{
-				"id": "lean4.titlebar.versions",
-				"label": "Version Management…"
-			},
-			{
-				"id": "lean4.titlebar.projectActions",
-				"label": "Project Actions…"
-			},
-			{
-				"id": "lean4.titlebar.documentation",
-				"label": "Documentation…"
-			}
-		],
-		"semanticTokenScopes": [
-			{
-				"scopes": {
-					"keyword": [
-						"keyword.other"
-					]
-				}
-			}
-		],
-		"configurationDefaults": {
-			"[lean4]": {
-				"editor.unicodeHighlight.ambiguousCharacters": false,
-				"editor.tabSize": 2,
-				"editor.insertSpaces": true,
-				"editor.wordSeparators": "`~@$%^&*()-=+[{]}⟨⟩⦃⦄⟦⟧⟮⟯‹›\\|;:\",.<>/",
-				"files.encoding": "utf8",
-				"files.eol": "\n",
-				"files.insertFinalNewline": true,
-				"files.trimFinalNewlines": true,
-				"files.trimTrailingWhitespace": true
-			}
-		},
-		"walkthroughs": [
-			{
-				"id": "lean4.welcome",
-				"title": "Lean 4 Setup",
-				"description": "Getting started with Lean 4\n",
-				"steps": [
-					{
-						"id": "lean4.welcome.openSetupGuide",
-						"title": "Re-Open Setup Guide",
-						"description": "This guide can always be re-opened by opening an empty file, clicking on the ∀-symbol in the top right and selecting 'Documentation…' > 'Setup: Show Setup Guide'.",
-						"media": {
-							"image": "media/open-setup-guide.png",
-							"altText": "Click on the ∀-symbol in the top right and select 'Documentation…' > 'Setup: Show Setup Guide'."
-						}
-					},
-					{
-						"id": "lean4.welcome.documentation",
-						"title": "Books and Documentation",
-						"description": "Learn using Lean 4 with the resources on the right.",
-						"media": {
-							"markdown": "./media/guide-documentation.md"
-						}
-					},
-					{
-						"id": "lean4.welcome.installDeps.linux",
-						"title": "Install Required Dependencies",
-						"description": "Install Git and curl using your package manager.",
-						"media": {
-							"markdown": "./media/guide-installDeps-linux.md"
-						},
-						"when": "isLinux"
-					},
-					{
-						"id": "lean4.welcome.installDeps.mac",
-						"title": "Install Required Dependencies",
-						"description": "Install Homebrew, Git and curl.",
-						"media": {
-							"markdown": "./media/guide-installDeps-mac.md"
-						},
-						"when": "isMac"
-					},
-					{
-						"id": "lean4.welcome.installDeps.windows",
-						"title": "Install Required Dependencies",
-						"description": "Install Git.",
-						"media": {
-							"markdown": "./media/guide-installDeps-windows.md"
-						},
-						"when": "isWindows"
-					},
-					{
-						"id": "lean4.welcome.installElan.unix",
-						"title": "Install Lean Version Manager",
-						"description": "Install Lean's version manager Elan.\n[Click to install](command:lean4.setup.installElan)",
-						"media": {
-							"markdown": "./media/guide-installElan-unix.md"
-						},
-						"when": "isLinux || isMac"
-					},
-					{
-						"id": "lean4.welcome.installElan.windows",
-						"title": "Install Lean Version Manager",
-						"description": "Install Lean's version manager Elan.\n[Click to install](command:lean4.setup.installElan)",
-						"media": {
-							"markdown": "./media/guide-installElan-windows.md"
-						},
-						"when": "isWindows"
-					},
-					{
-						"id": "lean4.welcome.setupProject",
-						"title": "Set Up Lean 4 Project",
-						"description": "Set up a Lean 4 project by clicking on one of the options on the right.",
-						"media": {
-							"markdown": "./media/guide-setupProject.md"
-						}
-					},
-					{
-						"id": "lean4.welcome.vscode",
-						"title": "Using Lean 4 in VS Code",
-						"description": "Learn how to use Lean 4 together with its VS Code extension.",
-						"media": {
-							"markdown": "./media/guide-vscode.md"
-						}
-					},
-					{
-						"id": "lean4.welcome.help",
-						"title": "Questions and Troubleshooting",
-						"description": "If you have any questions or are having trouble with any of the previous steps, please visit us on the [Lean Zulip chat](https://leanprover.zulipchat.com/) so that we can help you.",
-						"media": {
-							"markdown": "./media/guide-help.md"
-						}
-					}
-				]
-			}
-		]
-	},
-	"extensionKind": [
-		"workspace"
-	],
-	"activationEvents": [
-		"onLanguage:lean",
-		"onLanguage:markdown",
-		"onStartupFinished"
-	],
-	"main": "./dist/extension",
-	"scripts": {
-		"vscode:prepublish": "webpack --env production",
-		"build": "webpack --env production",
-		"watch": "webpack --env development --watch",
-		"watchTest": "concurrently \"tsc -p . -w --outDir out\" \"npm run watch\"",
-		"package": "vsce package",
-		"packagePreRelease": "vsce package --pre-release",
-		"pretest": "tsc -p . --outDir out",
-		"test": "node ./out/test/suite/runTest.js"
-	},
-	"dependencies": {
-		"@leanprover/infoview": "~0.6.1",
-		"@leanprover/infoview-api": "~0.4.0",
-		"axios": "^1.6.7",
-		"cheerio": "^1.0.0-rc.12",
-		"mobx": "^5.15.7",
-		"semver": "^7.6.0",
-		"vscode-languageclient": "^8.0.2",
-		"zod": "^3.22.4"
-	},
-	"devDependencies": {
-		"@types/cheerio": "^0.22.35",
-		"@types/glob": "^7.2.0",
-		"@types/mocha": "^8.2.3",
-		"@types/node": "^18.19.17",
-		"@types/semver": "^7.5.7",
-		"@types/vscode": "^1.75.0",
-		"@types/vscode-webview": "^1.57.5",
-		"@vscode/test-electron": "^2.3.9",
-		"@vscode/vsce": "^2.21.1",
-		"concurrently": "^7.6.0",
-		"copy-webpack-plugin": "^10.2.4",
-		"glob": "^7.2.3",
-		"mocha": "^10.3.0",
-		"ovsx": "^0.8.3",
-		"source-map-loader": "^3.0.2",
-		"ts-loader": "^9.5.1",
-		"typescript": "^4.9.5",
-		"webpack": "^5.90.3",
-		"webpack-cli": "^4.10.0"
-	},
-	"icon": "images/lean_logo.png",
-	"license": "Apache-2.0",
-	"__metadata": {
-		"id": "ddb6b8b1-9e92-40ce-90d4-45bb5f345ef9",
-		"publisherDisplayName": "leanprover",
-		"publisherId": "36715126-cec3-4ee0-926f-91a098ea5112",
-		"isPreReleaseVersion": false
-	}
+    "name": "lean4",
+    "displayName": "lean4",
+    "description": "Lean 4 language support for VS Code",
+    "version": "0.0.142",
+    "publisher": "leanprover",
+    "engines": {
+        "vscode": "^1.75.0"
+    },
+    "categories": [
+        "Programming Languages"
+    ],
+    "keywords": [
+        "multi-root ready"
+    ],
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/leanprover-community/vscode-lean4.git"
+    },
+    "contributes": {
+        "configuration": {
+            "type": "object",
+            "title": "Lean 4",
+            "properties": {
+                "lean4.toolchainPath": {
+                    "type": "string",
+                    "default": "",
+                    "markdownDescription": "**DO NOT CHANGE** unless you know what you are doing. Path to your Lean toolchain. Leave this blank to get the default location from your PATH environment or from the default elan install location.",
+                    "scope": "machine-overridable"
+                },
+                "lean4.input.enabled": {
+                    "type": "boolean",
+                    "default": true,
+                    "markdownDescription": "Enable Lean input mode."
+                },
+                "lean4.input.customTranslations": {
+                    "type": "object",
+                    "items": {
+                        "type": "string",
+                        "description": "Unicode character to translate to"
+                    },
+                    "default": {},
+                    "markdownDescription": "Add additional input Unicode translations. Example: `{\"foo\": \"☺\"}` will correct `\\foo` to `☺`."
+                },
+                "lean4.input.languages": {
+                    "type": "array",
+                    "default": [
+                        "lean4"
+                    ],
+                    "markdownDescription": "Enable Lean Unicode input in other file types.",
+                    "items": {
+                        "type": "string",
+                        "description": "the name of a language, e.g. 'lean4', 'markdown'"
+                    }
+                },
+                "lean4.input.leader": {
+                    "type": "string",
+                    "default": "\\",
+                    "markdownDescription": "Leader key to trigger input mode."
+                },
+                "lean4.input.eagerReplacementEnabled": {
+                    "type": "boolean",
+                    "default": true,
+                    "markdownDescription": "Enable eager replacement of abbreviations that uniquely identify a symbol."
+                },
+                "lean4.fallBackToStringOccurrenceHighlighting": {
+                    "type": "boolean",
+                    "description": "Fall back to string-based occurrence highlighting when there are no semantic symbol occurrences from the Lean language server to highlight.",
+                    "default": false
+                },
+                "lean4.automaticallyBuildDependencies": {
+                    "type": "boolean",
+                    "default": false,
+                    "markdownDescription": "Enable automatically building dependencies when opening a file. In Lean versions pre-4.2.0, dependencies are always built automatically regardless of this setting."
+                },
+                "lean4.serverEnv": {
+                    "type": "object",
+                    "default": {},
+                    "description": "Environment variables to add to the Lean 4 server environment",
+                    "additionalProperties": {
+                        "type": "string",
+                        "description": "environment variable to add"
+                    },
+                    "scope": "machine-overridable"
+                },
+                "lean4.serverEnvPaths": {
+                    "type": "array",
+                    "default": [],
+                    "description": "Paths to add to the Lean 4 server environment PATH variable.",
+                    "items": {
+                        "type": "string",
+                        "description": "a path to add to the environment"
+                    },
+                    "scope": "machine-overridable"
+                },
+                "lean4.enableLake": {
+                    "type": "boolean",
+                    "default": true,
+                    "markdownDescription": "Enable Lake server when possible."
+                },
+                "lean4.lakePath": {
+                    "type": "string",
+                    "default": "",
+                    "markdownDescription": "Path to Lake. Leave this blank to use the Lake from the toolchain.",
+                    "scope": "machine-overridable"
+                },
+                "lean4.serverArgs": {
+                    "type": "array",
+                    "default": [],
+                    "description": "Arguments to pass to the Lean 4 server.",
+                    "items": {
+                        "type": "string",
+                        "description": "an argument to pass to the server"
+                    }
+                },
+                "lean4.serverLogging.enabled": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Enable Lean 4 server logging."
+                },
+                "lean4.serverLogging.path": {
+                    "type": "string",
+                    "default": ".",
+                    "description": "Path to the directory where Lean 4 server log files are stored.",
+                    "scope": "machine-overridable"
+                },
+                "lean4.autofocusOutput": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Automatically show the Output panel when the Lean 4 server prints a new message."
+                },
+                "lean4.infoview.autoOpen": {
+                    "type": "boolean",
+                    "default": true,
+                    "markdownDescription": "Open infoview when Lean extension is activated for the first time."
+                },
+                "lean4.infoview.autoOpenShowsGoal": {
+                    "type": "boolean",
+                    "default": true,
+                    "markdownDescription": "When auto-opened, the infoview shows goal and messages for the current line (instead of all messages for the whole file)."
+                },
+                "lean4.infoview.allErrorsOnLine": {
+                    "type": "boolean",
+                    "default": true,
+                    "markdownDescription": "Show all errors on the current line, instead of just the ones to the right of the cursor."
+                },
+                "lean4.infoview.debounceTime": {
+                    "type": "number",
+                    "default": 50,
+                    "markdownDescription": "How long (in milliseconds) the infoview waits before displaying new information after the cursor has stopped moving. The optimal value depends on your machine - try experimenting."
+                },
+                "lean4.infoview.style": {
+                    "type": "string",
+                    "default": "",
+                    "markdownDescription": "Add an additional CSS snippet to the infoview."
+                },
+                "lean4.infoview.showExpectedType": {
+                    "type": "boolean",
+                    "default": true,
+                    "markdownDescription": "Show the expected type by default."
+                },
+                "lean4.infoview.showGoalNames": {
+                    "type": "boolean",
+                    "default": true,
+                    "markdownDescription": "Show goal names (e.g. `case inl`) in the infoview."
+                },
+                "lean4.infoview.emphasizeFirstGoal": {
+                    "type": "boolean",
+                    "default": false,
+                    "markdownDescription": "Display goals other than the main goal in a smaller font size."
+                },
+                "lean4.infoview.reverseTacticState": {
+                    "type": "boolean",
+                    "default": false,
+                    "markdownDescription": "Default to showing the goal type first and then the local context."
+                },
+                "lean4.infoview.showTooltipOnHover": {
+                    "type": "boolean",
+                    "default": true,
+                    "markdownDescription": "Show the tooltip for an interactive element (e.g. a subexpression) when the pointer hovers over that element. When disabled, the element must be clicked for the tooltip to show up."
+                },
+                "lean4.elaborationDelay": {
+                    "type": "number",
+                    "default": 200,
+                    "description": "Time (in milliseconds) which must pass since latest edit until elaboration begins. Lower values may make editing feel faster at the cost of higher CPU usage."
+                },
+                "lean4.showInvalidProjectWarnings": {
+                    "type": "boolean",
+                    "default": true,
+                    "markdownDescription": "Show warnings whenever a .lean-file is opened in a folder that does not contain a 'lean-toolchain' file."
+                },
+                "lean4.alwaysShowTitleBarMenu": {
+                    "type": "boolean",
+                    "default": true,
+                    "markdownDescription": "Always display the Lean extension title bar menu in the top right. This helps beginners create and open Lean projects after launching an empty instance of VS Code, but may not be desirable for anyone who uses VS Code for things other than Lean."
+                }
+            }
+        },
+        "commands": [
+            {
+                "command": "lean4.restartServer",
+                "category": "Lean 4",
+                "title": "Server: Restart Server",
+                "description": "Restart the Lean server (for all files)."
+            },
+            {
+                "command": "lean4.stopServer",
+                "category": "Lean 4",
+                "title": "Server: Stop Server",
+                "description": "Stop the Lean server (for all files)."
+            },
+            {
+                "command": "lean4.restartFile",
+                "category": "Lean 4",
+                "title": "Server: Restart File",
+                "description": "Restarts the Lean server for the file that is currently focused, refreshing the dependencies."
+            },
+            {
+                "command": "lean4.refreshFileDependencies",
+                "category": "Lean 4",
+                "title": "Server: Refresh File Dependencies",
+                "description": "Restarts the Lean server for the file that is currently focused to refresh the dependencies."
+            },
+            {
+                "command": "lean4.input.convert",
+                "category": "Lean 4",
+                "title": "Input: Convert Current Abbreviation",
+                "description": "Converts the current abbreviation (e.g. \\lam)."
+            },
+            {
+                "command": "lean4.displayGoal",
+                "category": "Lean 4",
+                "title": "Infoview: Display Goal",
+                "description": "Display the goal and any messages at the current position in the infoview.",
+                "icon": {
+                    "dark": "./media/display-goal-dark.svg",
+                    "light": "./media/display-goal-light.svg"
+                }
+            },
+            {
+                "command": "lean4.toggleInfoview",
+                "category": "Lean 4",
+                "title": "Infoview: Toggle Infoview",
+                "description": "Toggle whether the infoview is displayed."
+            },
+            {
+                "command": "lean4.displayList",
+                "category": "Lean 4",
+                "title": "Infoview: Toggle \"All Messages\"",
+                "description": "Toggles the \"All Messages\" panel in the infoview."
+            },
+            {
+                "command": "lean4.infoView.copyToComment",
+                "category": "Lean 4",
+                "title": "Infoview: Copy Contents to Comment",
+                "description": "Copy the contents of the currently active tactic state panel to a new comment on the previous line.",
+                "icon": {
+                    "dark": "./media/copy-to-comment-dark.svg",
+                    "light": "./media/copy-to-comment-light.svg"
+                }
+            },
+            {
+                "command": "lean4.infoView.toggleStickyPosition",
+                "category": "Lean 4",
+                "title": "Infoview: Toggle Pin",
+                "description": "Create or remove a tactic state panel pinned to show the goal at the current position."
+            },
+            {
+                "command": "lean4.infoView.toggleUpdating",
+                "category": "Lean 4",
+                "title": "Infoview: Toggle Updating",
+                "description": "Pause / Continue live updating of the main tactic state widget."
+            },
+            {
+                "command": "lean4.infoView.toggleExpectedType",
+                "category": "Lean 4",
+                "title": "Infoview: Toggle Expected Type",
+                "description": "Toggle the display of expected type."
+            },
+            {
+                "command": "lean4.infoview.goToDefinition",
+                "category": "Lean 4",
+                "title": "Go to Definition",
+                "description": "This command is an implementation detail of the 'Go to Definition' context menu option in the infoview."
+            },
+            {
+                "command": "lean4.docView.showAllAbbreviations",
+                "category": "Lean 4",
+                "title": "Docview: Show All Abbreviations",
+                "description": "Show help page containing all abbreviations and the Unicode characters they map to."
+            },
+            {
+                "command": "lean4.docView.open",
+                "category": "Lean 4",
+                "title": "Docview: Open Docview",
+                "description": "Open documentation found in local 'html' folder in a separate web view panel."
+            },
+            {
+                "command": "lean4.docView.back",
+                "category": "Lean 4",
+                "title": "Docview: Back",
+                "description": "Go to previous page in documentation view"
+            },
+            {
+                "command": "lean4.docView.forward",
+                "category": "Lean 4",
+                "title": "Docview: Forward",
+                "description": "Go to next page in documentation view"
+            },
+            {
+                "command": "lean4.troubleshooting.showOutput",
+                "category": "Lean 4",
+                "title": "Troubleshooting: Show Output",
+                "description": "Show output channel containing all progress updates and errors of commands"
+            },
+            {
+                "command": "lean4.setup.showSetupGuide",
+                "category": "Lean 4",
+                "title": "Setup: Show Setup Guide",
+                "description": "Show 'Welcome' page containing a checklist of steps to install Lean 4"
+            },
+            {
+                "command": "lean4.setup.installElan",
+                "category": "Lean 4",
+                "title": "Setup: Install Elan",
+                "description": "Install Lean's version manager 'Elan'"
+            },
+            {
+                "command": "lean4.project.createStandaloneProject",
+                "category": "Lean 4",
+                "title": "Project: Create Standalone Project…",
+                "description": "Create a new Lean project that does not depend on any other projects"
+            },
+            {
+                "command": "lean4.project.createMathlibProject",
+                "category": "Lean 4",
+                "title": "Project: Create Project Using Mathlib…",
+                "description": "Create a new Lean math formalization project using Mathlib"
+            },
+            {
+                "command": "lean4.project.open",
+                "category": "Lean 4",
+                "title": "Project: Open Local Project…",
+                "description": "Opens a local Lean project"
+            },
+            {
+                "command": "lean4.project.clone",
+                "category": "Lean 4",
+                "title": "Project: Download Project…",
+                "description": "Download an existing Lean project using `git clone`"
+            },
+            {
+                "command": "lean4.project.build",
+                "category": "Lean 4",
+                "title": "Project: Build Project",
+                "description": "Build the current project"
+            },
+            {
+                "command": "lean4.project.clean",
+                "category": "Lean 4",
+                "title": "Project: Clean Project",
+                "description": "Clean the current project, removing all build artifacts"
+            },
+            {
+                "command": "lean4.project.updateDependency",
+                "category": "Lean 4",
+                "title": "Project: Update Dependency…",
+                "description": "Updates a dependency of the current project to the most recent version available for the branch pinned in 'lakefile.lean'."
+            },
+            {
+                "command": "lean4.project.fetchCache",
+                "category": "Lean 4",
+                "title": "Project: Fetch Mathlib Build Cache",
+                "description": "Downloads cached Mathlib build artifacts to avoid full elaboration"
+            }
+        ],
+        "languages": [
+            {
+                "id": "lean4",
+                "configuration": "./language-configuration.json",
+                "extensions": [
+                    ".lean"
+                ]
+            },
+            {
+                "id": "lean4markdown",
+                "aliases": [],
+                "extensions": [
+                    ".lean4markdown"
+                ],
+                "configuration": "./language-configuration.json"
+            }
+        ],
+        "grammars": [
+            {
+                "language": "lean4",
+                "scopeName": "source.lean4",
+                "path": "./syntaxes/lean4.json"
+            },
+            {
+                "language": "lean4markdown",
+                "scopeName": "source.lean4.markdown",
+                "path": "./syntaxes/lean4-markdown.json"
+            },
+            {
+                "scopeName": "markdown.lean4.codeblock",
+                "path": "./syntaxes/codeblock.json",
+                "injectTo": [
+                    "text.html.markdown"
+                ],
+                "embeddedLanguages": {
+                    "meta.embedded.block.lean4": "lean4"
+                }
+            }
+        ],
+        "keybindings": [
+            {
+                "command": "lean4.input.convert",
+                "key": "tab",
+                "mac": "tab",
+                "when": "editorTextFocus && editorLangId == lean4 && lean4.input.isActive"
+            },
+            {
+                "command": "lean4.restartFile",
+                "key": "ctrl+shift+x",
+                "mac": "cmd+shift+x",
+                "when": "lean4.isLeanFeatureSetActive"
+            },
+            {
+                "command": "lean4.toggleInfoview",
+                "key": "ctrl+shift+enter",
+                "mac": "cmd+shift+enter",
+                "when": "lean4.isLeanFeatureSetActive"
+            },
+            {
+                "command": "lean4.displayList",
+                "key": "ctrl+shift+alt+enter",
+                "mac": "cmd+shift+alt+enter",
+                "when": "lean4.isLeanFeatureSetActive"
+            }
+        ],
+        "colors": [
+            {
+                "id": "lean4.infoView.hypothesisName",
+                "description": "The color used to display hypothesis names in the infoview",
+                "defaults": {
+                    "light": "#cc7a00",
+                    "dark": "#ffcc00",
+                    "highContrast": "foreground",
+                    "highContrastLight": "foreground"
+                }
+            },
+            {
+                "id": "lean4.infoView.inaccessibleHypothesisName",
+                "description": "The color used to display inaccessible hypothesis names in the infoview",
+                "defaults": {
+                    "light": "editor.foreground",
+                    "dark": "editor.foreground",
+                    "highContrast": "editor.foreground",
+                    "highContrastLight": "editor.foreground"
+                }
+            },
+            {
+                "id": "lean4.infoView.goalCount",
+                "description": "The color used to display the goal count in the infoview (e.g. \"1 goal\")",
+                "defaults": {
+                    "light": "#367cb6",
+                    "dark": "#569cd6",
+                    "highContrast": "terminal.ansiBlue",
+                    "highContrastLight": "terminal.ansiBlue"
+                }
+            },
+            {
+                "id": "lean4.infoView.turnstile",
+                "description": "The color used to display the turnstile (⊢) in the infoview",
+                "defaults": {
+                    "light": "#367cb6",
+                    "dark": "#569cd6",
+                    "highContrast": "terminal.ansiBlue",
+                    "highContrastLight": "terminal.ansiBlue"
+                }
+            },
+            {
+                "id": "lean4.infoView.caseLabel",
+                "description": "The color used to display the names of individual proof cases in the infoview",
+                "defaults": {
+                    "light": "#1f7a1f",
+                    "dark": "#a1df90",
+                    "highContrast": "terminal.ansiGreen",
+                    "highContrastLight": "terminal.ansiGreen"
+                }
+            }
+        ],
+        "menus": {
+            "commandPalette": [
+                {
+                    "command": "lean4.restartServer",
+                    "when": "lean4.isLeanFeatureSetActive"
+                },
+                {
+                    "command": "lean4.stopServer",
+                    "when": "lean4.isLeanFeatureSetActive"
+                },
+                {
+                    "command": "lean4.restartFile",
+                    "when": "lean4.isLeanFeatureSetActive"
+                },
+                {
+                    "command": "lean4.refreshFileDependencies",
+                    "when": "lean4.isLeanFeatureSetActive"
+                },
+                {
+                    "command": "lean4.input.convert",
+                    "when": "lean4.isLeanFeatureSetActive && lean4.input.isActive"
+                },
+                {
+                    "command": "lean4.displayGoal",
+                    "when": "lean4.isLeanFeatureSetActive"
+                },
+                {
+                    "command": "lean4.toggleInfoview",
+                    "when": "lean4.isLeanFeatureSetActive"
+                },
+                {
+                    "command": "lean4.displayList",
+                    "when": "lean4.isLeanFeatureSetActive"
+                },
+                {
+                    "command": "lean4.infoView.copyToComment",
+                    "when": "lean4.isLeanFeatureSetActive"
+                },
+                {
+                    "command": "lean4.infoView.toggleStickyPosition",
+                    "when": "lean4.isLeanFeatureSetActive"
+                },
+                {
+                    "command": "lean4.infoView.toggleUpdating",
+                    "when": "lean4.isLeanFeatureSetActive"
+                },
+                {
+                    "command": "lean4.infoView.toggleExpectedType",
+                    "when": "lean4.isLeanFeatureSetActive"
+                },
+                {
+                    "command": "lean4.docView.showAllAbbreviations",
+                    "when": "lean4.isLeanFeatureSetActive"
+                },
+                {
+                    "command": "lean4.infoview.goToDefinition",
+                    "when": "false"
+                },
+                {
+                    "command": "lean4.docView.open"
+                },
+                {
+                    "command": "lean4.docView.back"
+                },
+                {
+                    "command": "lean4.docView.forward"
+                },
+                {
+                    "command": "lean4.troubleshooting.showOutput"
+                },
+                {
+                    "command": "lean4.setup.showSetupGuide"
+                },
+                {
+                    "command": "lean4.setup.installElan"
+                },
+                {
+                    "command": "lean4.project.createStandaloneProject"
+                },
+                {
+                    "command": "lean4.project.createMathlibProject"
+                },
+                {
+                    "command": "lean4.project.open"
+                },
+                {
+                    "command": "lean4.project.clone"
+                },
+                {
+                    "command": "lean4.project.build",
+                    "when": "lean4.isLeanFeatureSetActive"
+                },
+                {
+                    "command": "lean4.project.clean",
+                    "when": "lean4.isLeanFeatureSetActive"
+                },
+                {
+                    "command": "lean4.project.updateDependency",
+                    "when": "lean4.isLeanFeatureSetActive"
+                },
+                {
+                    "command": "lean4.project.fetchCache",
+                    "when": "lean4.isLeanFeatureSetActive"
+                }
+            ],
+            "editor/title": [
+                {
+                    "submenu": "lean4.titlebar",
+                    "when": "config.lean4.alwaysShowTitleBarMenu || lean4.isLeanFeatureSetActive",
+                    "group": "navigation@0"
+                }
+            ],
+            "lean4.titlebar": [
+                {
+                    "submenu": "lean4.titlebar.newProject",
+                    "when": "config.lean4.alwaysShowTitleBarMenu || lean4.isLeanFeatureSetActive",
+                    "group": "1_setup@1"
+                },
+                {
+                    "submenu": "lean4.titlebar.openProject",
+                    "when": "config.lean4.alwaysShowTitleBarMenu || lean4.isLeanFeatureSetActive",
+                    "group": "1_setup@1"
+                },
+                {
+                    "command": "lean4.restartFile",
+                    "when": "lean4.isLeanFeatureSetActive",
+                    "group": "2_server@1"
+                },
+                {
+                    "command": "lean4.restartServer",
+                    "when": "lean4.isLeanFeatureSetActive",
+                    "group": "2_server@2"
+                },
+                {
+                    "command": "lean4.toggleInfoview",
+                    "when": "lean4.isLeanFeatureSetActive",
+                    "group": "3_infoview@1"
+                },
+                {
+                    "command": "lean4.troubleshooting.showOutput",
+                    "when": "config.lean4.alwaysShowTitleBarMenu || lean4.isLeanFeatureSetActive",
+                    "group": "4_troubleshooting"
+                },
+                {
+                    "submenu": "lean4.titlebar.versions",
+                    "when": "config.lean4.alwaysShowTitleBarMenu || lean4.isLeanFeatureSetActive",
+                    "group": "5_versions"
+                },
+                {
+                    "submenu": "lean4.titlebar.projectActions",
+                    "when": "config.lean4.alwaysShowTitleBarMenu || lean4.isLeanFeatureSetActive",
+                    "group": "6_projectActions@1"
+                },
+                {
+                    "submenu": "lean4.titlebar.documentation",
+                    "when": "config.lean4.alwaysShowTitleBarMenu || lean4.isLeanFeatureSetActive",
+                    "group": "7_documentation@1"
+                }
+            ],
+            "lean4.titlebar.newProject": [
+                {
+                    "command": "lean4.project.createStandaloneProject",
+                    "when": "config.lean4.alwaysShowTitleBarMenu || lean4.isLeanFeatureSetActive",
+                    "group": "1_newProject@1"
+                },
+                {
+                    "command": "lean4.project.createMathlibProject",
+                    "when": "config.lean4.alwaysShowTitleBarMenu || lean4.isLeanFeatureSetActive",
+                    "group": "1_newProject@2"
+                }
+            ],
+            "lean4.titlebar.openProject": [
+                {
+                    "command": "lean4.project.open",
+                    "when": "config.lean4.alwaysShowTitleBarMenu || lean4.isLeanFeatureSetActive",
+                    "group": "1_openProject@1"
+                },
+                {
+                    "command": "lean4.project.clone",
+                    "when": "config.lean4.alwaysShowTitleBarMenu || lean4.isLeanFeatureSetActive",
+                    "group": "1_openProject@2"
+                }
+            ],
+            "lean4.titlebar.versions": [
+                {
+                    "command": "lean4.setup.installElan",
+                    "when": "config.lean4.alwaysShowTitleBarMenu || lean4.isLeanFeatureSetActive",
+                    "group": "1_setup@1"
+                }
+            ],
+            "lean4.titlebar.projectActions": [
+                {
+                    "command": "lean4.project.build",
+                    "when": "lean4.isLeanFeatureSetActive",
+                    "group": "1_projectActions@1"
+                },
+                {
+                    "command": "lean4.project.clean",
+                    "when": "lean4.isLeanFeatureSetActive",
+                    "group": "1_projectActions@2"
+                },
+                {
+                    "command": "lean4.project.updateDependency",
+                    "when": "lean4.isLeanFeatureSetActive",
+                    "group": "1_projectActions@3"
+                },
+                {
+                    "command": "lean4.project.fetchCache",
+                    "when": "lean4.isLeanFeatureSetActive",
+                    "group": "2_mathlibActions@1"
+                }
+            ],
+            "lean4.titlebar.documentation": [
+                {
+                    "command": "lean4.setup.showSetupGuide",
+                    "when": "config.lean4.alwaysShowTitleBarMenu || lean4.isLeanFeatureSetActive",
+                    "group": "1_installation@1"
+                },
+                {
+                    "command": "lean4.docView.open",
+                    "when": "config.lean4.alwaysShowTitleBarMenu || lean4.isLeanFeatureSetActive",
+                    "group": "2_docview@1"
+                },
+                {
+                    "command": "lean4.docView.showAllAbbreviations",
+                    "when": "config.lean4.alwaysShowTitleBarMenu || lean4.isLeanFeatureSetActive",
+                    "group": "2_docview@2"
+                }
+            ],
+            "editor/context": [
+                {
+                    "command": "lean4.restartFile",
+                    "when": "editorLangId == lean4",
+                    "group": "z_commands"
+                }
+            ],
+            "webview/context": [
+                {
+                    "command": "lean4.infoview.goToDefinition",
+                    "when": "webviewId == 'lean4_infoview' && interactiveCodeTagId"
+                }
+            ]
+        },
+        "submenus": [
+            {
+                "id": "lean4.titlebar",
+                "label": "Lean 4",
+                "icon": {
+                    "dark": "./media/lean-mini-dark.svg",
+                    "light": "./media/lean-mini-light.svg"
+                }
+            },
+            {
+                "id": "lean4.titlebar.newProject",
+                "label": "New Project…"
+            },
+            {
+                "id": "lean4.titlebar.openProject",
+                "label": "Open Project…"
+            },
+            {
+                "id": "lean4.titlebar.versions",
+                "label": "Version Management…"
+            },
+            {
+                "id": "lean4.titlebar.projectActions",
+                "label": "Project Actions…"
+            },
+            {
+                "id": "lean4.titlebar.documentation",
+                "label": "Documentation…"
+            }
+        ],
+        "semanticTokenScopes": [
+            {
+                "scopes": {
+                    "keyword": [
+                        "keyword.other"
+                    ]
+                }
+            }
+        ],
+        "configurationDefaults": {
+            "[lean4]": {
+                "editor.unicodeHighlight.ambiguousCharacters": false,
+                "editor.tabSize": 2,
+                "editor.insertSpaces": true,
+                "editor.wordSeparators": "`~@$%^&*()-=+[{]}⟨⟩⦃⦄⟦⟧⟮⟯‹›\\|;:\",.<>/",
+                "files.encoding": "utf8",
+                "files.eol": "\n",
+                "files.insertFinalNewline": true,
+                "files.trimFinalNewlines": true,
+                "files.trimTrailingWhitespace": true
+            }
+        },
+        "walkthroughs": [
+            {
+                "id": "lean4.welcome",
+                "title": "Lean 4 Setup",
+                "description": "Getting started with Lean 4\n",
+                "steps": [
+                    {
+                        "id": "lean4.welcome.openSetupGuide",
+                        "title": "Re-Open Setup Guide",
+                        "description": "This guide can always be re-opened by opening an empty file, clicking on the ∀-symbol in the top right and selecting 'Documentation…' > 'Setup: Show Setup Guide'.",
+                        "media": {
+                            "image": "media/open-setup-guide.png",
+                            "altText": "Click on the ∀-symbol in the top right and select 'Documentation…' > 'Setup: Show Setup Guide'."
+                        }
+                    },
+                    {
+                        "id": "lean4.welcome.documentation",
+                        "title": "Books and Documentation",
+                        "description": "Learn using Lean 4 with the resources on the right.",
+                        "media": {
+                            "markdown": "./media/guide-documentation.md"
+                        }
+                    },
+                    {
+                        "id": "lean4.welcome.installDeps.linux",
+                        "title": "Install Required Dependencies",
+                        "description": "Install Git and curl using your package manager.",
+                        "media": {
+                            "markdown": "./media/guide-installDeps-linux.md"
+                        },
+                        "when": "isLinux"
+                    },
+                    {
+                        "id": "lean4.welcome.installDeps.mac",
+                        "title": "Install Required Dependencies",
+                        "description": "Install Homebrew, Git and curl.",
+                        "media": {
+                            "markdown": "./media/guide-installDeps-mac.md"
+                        },
+                        "when": "isMac"
+                    },
+                    {
+                        "id": "lean4.welcome.installDeps.windows",
+                        "title": "Install Required Dependencies",
+                        "description": "Install Git.",
+                        "media": {
+                            "markdown": "./media/guide-installDeps-windows.md"
+                        },
+                        "when": "isWindows"
+                    },
+                    {
+                        "id": "lean4.welcome.installElan.unix",
+                        "title": "Install Lean Version Manager",
+                        "description": "Install Lean's version manager Elan.\n[Click to install](command:lean4.setup.installElan)",
+                        "media": {
+                            "markdown": "./media/guide-installElan-unix.md"
+                        },
+                        "when": "isLinux || isMac"
+                    },
+                    {
+                        "id": "lean4.welcome.installElan.windows",
+                        "title": "Install Lean Version Manager",
+                        "description": "Install Lean's version manager Elan.\n[Click to install](command:lean4.setup.installElan)",
+                        "media": {
+                            "markdown": "./media/guide-installElan-windows.md"
+                        },
+                        "when": "isWindows"
+                    },
+                    {
+                        "id": "lean4.welcome.setupProject",
+                        "title": "Set Up Lean 4 Project",
+                        "description": "Set up a Lean 4 project by clicking on one of the options on the right.",
+                        "media": {
+                            "markdown": "./media/guide-setupProject.md"
+                        }
+                    },
+                    {
+                        "id": "lean4.welcome.vscode",
+                        "title": "Using Lean 4 in VS Code",
+                        "description": "Learn how to use Lean 4 together with its VS Code extension.",
+                        "media": {
+                            "markdown": "./media/guide-vscode.md"
+                        }
+                    },
+                    {
+                        "id": "lean4.welcome.help",
+                        "title": "Questions and Troubleshooting",
+                        "description": "If you have any questions or are having trouble with any of the previous steps, please visit us on the [Lean Zulip chat](https://leanprover.zulipchat.com/) so that we can help you.",
+                        "media": {
+                            "markdown": "./media/guide-help.md"
+                        }
+                    }
+                ]
+            }
+        ]
+    },
+    "extensionKind": [
+        "workspace"
+    ],
+    "activationEvents": [
+        "onLanguage:lean",
+        "onLanguage:markdown",
+        "onStartupFinished"
+    ],
+    "main": "./dist/extension",
+    "scripts": {
+        "vscode:prepublish": "webpack --env production",
+        "build": "webpack --env production",
+        "watch": "webpack --env development --watch",
+        "watchTest": "concurrently \"tsc -p . -w --outDir out\" \"npm run watch\"",
+        "package": "vsce package",
+        "packagePreRelease": "vsce package --pre-release",
+        "pretest": "tsc -p . --outDir out",
+        "test": "node ./out/test/suite/runTest.js"
+    },
+    "dependencies": {
+        "@leanprover/infoview": "~0.6.1",
+        "@leanprover/infoview-api": "~0.4.0",
+        "axios": "^1.6.7",
+        "cheerio": "^1.0.0-rc.12",
+        "mobx": "^5.15.7",
+        "semver": "^7.6.0",
+        "vscode-languageclient": "^8.0.2",
+        "zod": "^3.22.4"
+    },
+    "devDependencies": {
+        "@types/cheerio": "^0.22.35",
+        "@types/glob": "^7.2.0",
+        "@types/mocha": "^8.2.3",
+        "@types/node": "^18.19.17",
+        "@types/semver": "^7.5.7",
+        "@types/vscode": "^1.75.0",
+        "@types/vscode-webview": "^1.57.5",
+        "@vscode/test-electron": "^2.3.9",
+        "@vscode/vsce": "^2.21.1",
+        "concurrently": "^7.6.0",
+        "copy-webpack-plugin": "^10.2.4",
+        "glob": "^7.2.3",
+        "mocha": "^10.3.0",
+        "ovsx": "^0.8.3",
+        "source-map-loader": "^3.0.2",
+        "ts-loader": "^9.5.1",
+        "typescript": "^4.9.5",
+        "webpack": "^5.90.3",
+        "webpack-cli": "^4.10.0"
+    },
+    "icon": "images/lean_logo.png",
+    "license": "Apache-2.0",
+    "__metadata": {
+        "id": "ddb6b8b1-9e92-40ce-90d4-45bb5f345ef9",
+        "publisherDisplayName": "leanprover",
+        "publisherId": "36715126-cec3-4ee0-926f-91a098ea5112",
+        "isPreReleaseVersion": false
+    }
 }

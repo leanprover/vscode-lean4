@@ -1,22 +1,21 @@
-import { Disposable, commands, window, workspace, SaveDialogOptions, OutputChannel, Uri } from 'vscode';
-import path = require('path');
-import { checkParentFoldersForLeanProject, isValidLeanProject } from './utils/projectInfo';
-import { elanSelfUpdate } from './utils/elan';
-import { lake } from './utils/lake';
-import { ExecutionExitCode, ExecutionResult, batchExecute, batchExecuteWithProgress, displayError } from './utils/batch';
-import { diagnose } from './utils/setupDiagnostics';
-import { FileUri } from './utils/exturi';
+import { Disposable, commands, window, workspace, SaveDialogOptions, OutputChannel, Uri } from 'vscode'
+import path = require('path')
+import { checkParentFoldersForLeanProject, isValidLeanProject } from './utils/projectInfo'
+import { elanSelfUpdate } from './utils/elan'
+import { lake } from './utils/lake'
+import { ExecutionExitCode, ExecutionResult, batchExecute, batchExecuteWithProgress, displayError } from './utils/batch'
+import { diagnose } from './utils/setupDiagnostics'
+import { FileUri } from './utils/exturi'
 
 export class ProjectInitializationProvider implements Disposable {
-
-    private subscriptions: Disposable[] = [];
+    private subscriptions: Disposable[] = []
 
     constructor(private channel: OutputChannel) {
         this.subscriptions.push(
             commands.registerCommand('lean4.project.createStandaloneProject', () => this.createStandaloneProject()),
             commands.registerCommand('lean4.project.createMathlibProject', () => this.createMathlibProject()),
             commands.registerCommand('lean4.project.open', () => this.openProject()),
-            commands.registerCommand('lean4.project.clone', () => this.cloneProject())
+            commands.registerCommand('lean4.project.clone', () => this.cloneProject()),
         )
     }
 
@@ -36,7 +35,8 @@ export class ProjectInitializationProvider implements Disposable {
             return
         }
 
-        const initialCommitResult: 'Success' | 'GitAddFailed' | 'GitCommitFailed' = await this.createInitialCommit(projectFolder)
+        const initialCommitResult: 'Success' | 'GitAddFailed' | 'GitCommitFailed' =
+            await this.createInitialCommit(projectFolder)
         if (initialCommitResult !== 'Success') {
             return
         }
@@ -51,7 +51,11 @@ export class ProjectInitializationProvider implements Disposable {
             return
         }
 
-        const cacheGetResult: ExecutionResult = await lake(this.channel, projectFolder, mathlibToolchain).fetchMathlibCache()
+        const cacheGetResult: ExecutionResult = await lake(
+            this.channel,
+            projectFolder,
+            mathlibToolchain,
+        ).fetchMathlibCache()
         if (cacheGetResult.exitCode === ExecutionExitCode.Cancelled) {
             return
         }
@@ -69,7 +73,8 @@ export class ProjectInitializationProvider implements Disposable {
             return
         }
 
-        const initialCommitResult: 'Success' | 'GitAddFailed' | 'GitCommitFailed' = await this.createInitialCommit(projectFolder)
+        const initialCommitResult: 'Success' | 'GitAddFailed' | 'GitCommitFailed' =
+            await this.createInitialCommit(projectFolder)
         if (initialCommitResult !== 'Success') {
             return
         }
@@ -79,11 +84,11 @@ export class ProjectInitializationProvider implements Disposable {
 
     private async createProject(
         kind?: string | undefined,
-        toolchain: string = 'leanprover/lean4:stable'): Promise<FileUri | 'DidNotComplete'>  {
-
+        toolchain: string = 'leanprover/lean4:stable',
+    ): Promise<FileUri | 'DidNotComplete'> {
         const projectFolder: FileUri | undefined = await ProjectInitializationProvider.askForNewProjectFolderLocation({
             saveLabel: 'Create project folder',
-            title: 'Create a new project folder'
+            title: 'Create a new project folder',
         })
         if (projectFolder === undefined) {
             return 'DidNotComplete'
@@ -91,7 +96,7 @@ export class ProjectInitializationProvider implements Disposable {
 
         await workspace.fs.createDirectory(projectFolder.asUri())
 
-        if (await this.checkSetupDeps(projectFolder) === 'IncompleteSetup') {
+        if ((await this.checkSetupDeps(projectFolder)) === 'IncompleteSetup') {
             return 'DidNotComplete'
         }
 
@@ -99,7 +104,10 @@ export class ProjectInitializationProvider implements Disposable {
         await elanSelfUpdate(this.channel)
 
         const projectName: string = path.basename(projectFolder.fsPath)
-        const result: ExecutionResult = await lake(this.channel, projectFolder, toolchain).initProject(projectName, kind)
+        const result: ExecutionResult = await lake(this.channel, projectFolder, toolchain).initProject(
+            projectName,
+            kind,
+        )
         if (result.exitCode !== ExecutionExitCode.Success) {
             await displayError(result, 'Cannot initialize project.')
             return 'DidNotComplete'
@@ -118,13 +126,20 @@ export class ProjectInitializationProvider implements Disposable {
     }
 
     private async createInitialCommit(projectFolder: FileUri): Promise<'Success' | 'GitAddFailed' | 'GitCommitFailed'> {
-        const gitAddResult = await batchExecute('git', ['add', '--all'], projectFolder.fsPath, { combined: this.channel } )
+        const gitAddResult = await batchExecute('git', ['add', '--all'], projectFolder.fsPath, {
+            combined: this.channel,
+        })
         if (gitAddResult.exitCode !== ExecutionExitCode.Success) {
             await displayError(gitAddResult, 'Cannot add files to staging area of Git repository for project.')
             return 'GitAddFailed'
         }
 
-        const gitCommitResult = await batchExecute('git', ['commit', '--author', 'Lean 4 VS Code Extension <>', '-m', 'Initial commit'], projectFolder.fsPath, { combined: this.channel } )
+        const gitCommitResult = await batchExecute(
+            'git',
+            ['commit', '--author', 'Lean 4 VS Code Extension <>', '-m', 'Initial commit'],
+            projectFolder.fsPath,
+            { combined: this.channel },
+        )
         if (gitCommitResult.exitCode !== ExecutionExitCode.Success) {
             await displayError(gitAddResult, 'Cannot commit files to Git repository for project.')
             return 'GitCommitFailed'
@@ -135,24 +150,25 @@ export class ProjectInitializationProvider implements Disposable {
 
     private async openProject() {
         const projectFolders: Uri[] | undefined = await window.showOpenDialog({
-            title: 'Open Lean 4 project folder containing a \'lean-toolchain\' file',
+            title: "Open Lean 4 project folder containing a 'lean-toolchain' file",
             openLabel: 'Open project folder',
             canSelectFiles: false,
             canSelectFolders: true,
-            canSelectMany: false
+            canSelectMany: false,
         })
         if (projectFolders === undefined || projectFolders.length !== 1) {
             return
         }
 
         const projectFolderUri = projectFolders[0]
-        if (!await ProjectInitializationProvider.checkIsFileUriOrShowError(projectFolderUri)) {
+        if (!(await ProjectInitializationProvider.checkIsFileUriOrShowError(projectFolderUri))) {
             return
         }
         let projectFolder = new FileUri(projectFolderUri.fsPath)
 
-        if (!await isValidLeanProject(projectFolder)) {
-            const parentProjectFolder: FileUri | undefined = await ProjectInitializationProvider.attemptFindingLeanProjectInParentFolder(projectFolder)
+        if (!(await isValidLeanProject(projectFolder))) {
+            const parentProjectFolder: FileUri | undefined =
+                await ProjectInitializationProvider.attemptFindingLeanProjectInParentFolder(projectFolder)
             if (parentProjectFolder === undefined) {
                 return
             }
@@ -186,14 +202,14 @@ Open this project instead?`
     }
 
     private async cloneProject() {
-        if (await this.checkGit() === 'GitNotInstalled') {
+        if ((await this.checkGit()) === 'GitNotInstalled') {
             return
         }
 
         const projectUri: string | undefined = await window.showInputBox({
             title: 'URL Input',
             value: 'https://github.com/leanprover-community/mathlib4',
-            prompt: 'URL of Git repository for existing Lean 4 project'
+            prompt: 'URL of Git repository for existing Lean 4 project',
         })
         if (projectUri === undefined) {
             return
@@ -201,13 +217,18 @@ Open this project instead?`
 
         const projectFolder: FileUri | undefined = await ProjectInitializationProvider.askForNewProjectFolderLocation({
             saveLabel: 'Create project folder',
-            title: 'Create a new project folder to clone existing Lean 4 project into'
+            title: 'Create a new project folder to clone existing Lean 4 project into',
         })
         if (projectFolder === undefined) {
             return
         }
 
-        const result: ExecutionResult = await batchExecuteWithProgress('git', ['clone', projectUri, projectFolder.fsPath], 'Cloning project', { channel: this.channel, allowCancellation: true })
+        const result: ExecutionResult = await batchExecuteWithProgress(
+            'git',
+            ['clone', projectUri, projectFolder.fsPath],
+            'Cloning project',
+            { channel: this.channel, allowCancellation: true },
+        )
         if (result.exitCode === ExecutionExitCode.Cancelled) {
             return
         }
@@ -216,7 +237,7 @@ Open this project instead?`
             return
         }
 
-        if (await this.checkLake(projectFolder) === 'LakeNotInstalled') {
+        if ((await this.checkLake(projectFolder)) === 'LakeNotInstalled') {
             return
         }
 
@@ -231,7 +252,7 @@ Open this project instead?`
 
     private static async askForNewProjectFolderLocation(options: SaveDialogOptions): Promise<FileUri | undefined> {
         const projectFolder: Uri | undefined = await window.showSaveDialog(options)
-        if (projectFolder === undefined || !await this.checkIsFileUriOrShowError(projectFolder)) {
+        if (projectFolder === undefined || !(await this.checkIsFileUriOrShowError(projectFolder))) {
             return undefined
         }
         return new FileUri(projectFolder.fsPath)
@@ -257,17 +278,17 @@ Open this project instead?`
     }
 
     private async checkSetupDeps(projectFolder: FileUri): Promise<'CompleteSetup' | 'IncompleteSetup'> {
-        if (await this.checkGit(projectFolder) === 'GitNotInstalled') {
+        if ((await this.checkGit(projectFolder)) === 'GitNotInstalled') {
             return 'IncompleteSetup'
         }
-        if (await this.checkLake(projectFolder) === 'LakeNotInstalled') {
+        if ((await this.checkLake(projectFolder)) === 'LakeNotInstalled') {
             return 'IncompleteSetup'
         }
         return 'CompleteSetup'
     }
 
     private async checkGit(projectFolder?: FileUri | undefined): Promise<'GitInstalled' | 'GitNotInstalled'> {
-        if (!await diagnose(this.channel, projectFolder).checkGitAvailable()) {
+        if (!(await diagnose(this.channel, projectFolder).checkGitAvailable())) {
             const message = `Git is not installed. Lean uses Git to download and install specific versions of Lean packages.
 Click the following link to learn how to install Git: [(Show Setup Guide)](command:lean4.setup.showSetupGuide)`
             void window.showErrorMessage(message)
@@ -277,7 +298,7 @@ Click the following link to learn how to install Git: [(Show Setup Guide)](comma
     }
 
     private async checkLake(projectFolder: FileUri): Promise<'LakeInstalled' | 'LakeNotInstalled'> {
-        if (!await diagnose(this.channel, projectFolder).checkLakeAvailable()) {
+        if (!(await diagnose(this.channel, projectFolder).checkLakeAvailable())) {
             const message = `Lean's package manager Lake is not installed. This likely means that Lean itself is also not installed.
 Click the following link to learn how to install Lean: [(Show Setup Guide)](command:lean4.setup.showSetupGuide)`
             void window.showErrorMessage(message)
@@ -287,7 +308,8 @@ Click the following link to learn how to install Lean: [(Show Setup Guide)](comm
     }
 
     dispose() {
-        for (const s of this.subscriptions) { s.dispose(); }
+        for (const s of this.subscriptions) {
+            s.dispose()
+        }
     }
-
 }
