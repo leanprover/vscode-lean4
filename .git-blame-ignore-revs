@@ -1,0 +1,4 @@
+# Run `git config blame.ignoreRevsFile .git-blame-ignore-revs` to ignore the revisions in this file in `git blame`.
+
+# Formatting the whole extension with prettier
+b17ebbd1201c7bc3b6100ea83a051b9204e3f5e4
