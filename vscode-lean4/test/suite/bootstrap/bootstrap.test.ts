@@ -1,18 +1,17 @@
 import * as assert from 'assert'
-import { join, sep } from 'path'
 import { suite } from 'mocha'
 import * as vscode from 'vscode'
+import { logger } from '../../../src/utils/logger'
 import {
-    initLean4Untitled,
-    waitForInfoviewHtml,
+    cleanTempFolder,
     closeAllEditors,
-    waitForActiveClientRunning,
-    waitForActiveClient,
     getAltBuildVersion,
     getTestLeanVersion,
-    cleanTempFolder,
+    initLean4Untitled,
+    waitForActiveClient,
+    waitForActiveClientRunning,
+    waitForInfoviewHtml,
 } from '../utils/helpers'
-import { logger } from '../../../src/utils/logger'
 
 suite('Lean4 Bootstrap Test Suite', () => {
     test('Install elan on demand', async () => {

@@ -1,10 +1,10 @@
-import { window, TerminalOptions, OutputChannel, EventEmitter } from 'vscode'
-import { toolchainPath, addServerEnvPaths, getPowerShellPath, shouldAutofocusOutput, isRunningTest } from '../config'
-import { ExecutionExitCode, ExecutionResult, batchExecute } from './batch'
-import { readLeanVersion, isCoreLean4Directory } from './projectInfo'
 import { join } from 'path'
-import { logger } from './logger'
+import { EventEmitter, OutputChannel, TerminalOptions, window } from 'vscode'
+import { addServerEnvPaths, getPowerShellPath, isRunningTest, shouldAutofocusOutput, toolchainPath } from '../config'
+import { batchExecute, ExecutionExitCode, ExecutionResult } from './batch'
 import { ExtUri, FileUri } from './exturi'
+import { logger } from './logger'
+import { isCoreLean4Directory, readLeanVersion } from './projectInfo'
 
 export class LeanVersion {
     version: string

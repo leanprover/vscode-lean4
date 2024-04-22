@@ -9,7 +9,7 @@ import {
     PlainTermGoal,
 } from '@leanprover/infoview-api'
 
-import { Eventify, EventEmitter } from './event'
+import { EventEmitter, Eventify } from './event'
 import { DocumentPosition } from './util'
 
 export type EditorEvents = Omit<Eventify<InfoviewApi>, 'requestedAction' | 'goToDefinition'> & {

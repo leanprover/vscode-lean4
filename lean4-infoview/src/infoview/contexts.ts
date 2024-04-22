@@ -1,7 +1,7 @@
 import * as React from 'react'
-import type { DocumentUri, Diagnostic } from 'vscode-languageserver-protocol'
+import type { Diagnostic, DocumentUri } from 'vscode-languageserver-protocol'
 
-import { LeanFileProgressProcessingInfo, InfoviewConfig, defaultInfoviewConfig } from '@leanprover/infoview-api'
+import { defaultInfoviewConfig, InfoviewConfig, LeanFileProgressProcessingInfo } from '@leanprover/infoview-api'
 
 import { EditorConnection } from './editorConnection'
 import { ServerVersion } from './serverVersion'

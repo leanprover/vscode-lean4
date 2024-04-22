@@ -1,11 +1,11 @@
-import { Disposable, commands, window, workspace, SaveDialogOptions, OutputChannel, Uri } from 'vscode'
-import path = require('path')
-import { checkParentFoldersForLeanProject, isValidLeanProject } from './utils/projectInfo'
+import { commands, Disposable, OutputChannel, SaveDialogOptions, Uri, window, workspace } from 'vscode'
+import { batchExecute, batchExecuteWithProgress, displayError, ExecutionExitCode, ExecutionResult } from './utils/batch'
 import { elanSelfUpdate } from './utils/elan'
-import { lake } from './utils/lake'
-import { ExecutionExitCode, ExecutionResult, batchExecute, batchExecuteWithProgress, displayError } from './utils/batch'
-import { diagnose } from './utils/setupDiagnostics'
 import { FileUri } from './utils/exturi'
+import { lake } from './utils/lake'
+import { checkParentFoldersForLeanProject, isValidLeanProject } from './utils/projectInfo'
+import { diagnose } from './utils/setupDiagnostics'
+import path = require('path')
 
 export class ProjectInitializationProvider implements Disposable {
     private subscriptions: Disposable[] = []

@@ -1,7 +1,6 @@
-import { join } from 'path'
+import * as fs from 'fs'
 import { Uri } from 'vscode'
 import { z } from 'zod'
-import * as fs from 'fs'
 import { FileUri } from './exturi'
 
 export interface DirectGitDependency {

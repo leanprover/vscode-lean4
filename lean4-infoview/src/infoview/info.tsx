@@ -1,37 +1,37 @@
 import * as React from 'react'
-import type { Location, Diagnostic } from 'vscode-languageserver-protocol'
+import type { Diagnostic, Location } from 'vscode-languageserver-protocol'
 
-import { FilteredGoals, goalsToString } from './goals'
 import {
-    basename,
-    DocumentPosition,
-    RangeHelpers,
-    useEvent,
-    usePausableState,
-    discardMethodNotFound,
-    mapRpcError,
-    useAsyncWithTrigger,
-    PausableProps,
-} from './util'
-import { ConfigContext, EditorContext, LspDiagnosticsContext, ProgressContext } from './contexts'
-import { lspDiagToInteractive, MessagesList } from './messages'
-import {
+    getInteractiveDiagnostics,
     getInteractiveGoals,
     getInteractiveTermGoal,
     InteractiveDiagnostic,
     InteractiveGoals,
+    InteractiveTermGoal,
+    isRpcError,
+    LeanDiagnostic,
+    RpcErrorCode,
+    RpcSessionAtPos,
     UserWidgetInstance,
     Widget_getWidgets,
-    RpcSessionAtPos,
-    isRpcError,
-    RpcErrorCode,
-    getInteractiveDiagnostics,
-    InteractiveTermGoal,
-    LeanDiagnostic,
 } from '@leanprover/infoview-api'
-import { PanelWidgetDisplay } from './userWidget'
-import { RpcContext, useRpcSessionAtPos } from './rpcSessions'
+import { ConfigContext, EditorContext, LspDiagnosticsContext, ProgressContext } from './contexts'
 import { GoalsLocation, Locations, LocationsContext } from './goalLocation'
+import { FilteredGoals, goalsToString } from './goals'
+import { lspDiagToInteractive, MessagesList } from './messages'
+import { RpcContext, useRpcSessionAtPos } from './rpcSessions'
+import { PanelWidgetDisplay } from './userWidget'
+import {
+    basename,
+    discardMethodNotFound,
+    DocumentPosition,
+    mapRpcError,
+    PausableProps,
+    RangeHelpers,
+    useAsyncWithTrigger,
+    useEvent,
+    usePausableState,
+} from './util'
 
 type InfoStatus = 'updating' | 'error' | 'ready'
 type InfoKind = 'cursor' | 'pin'

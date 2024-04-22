@@ -1,6 +1,6 @@
-import { Uri, workspace, ConfigurationTarget, EventEmitter } from 'vscode'
-import { fromResource } from './fromResource'
 import { computed, runInAction } from 'mobx'
+import { ConfigurationTarget, EventEmitter, Uri, workspace } from 'vscode'
+import { fromResource } from './fromResource'
 
 export interface Serializer<T> {
     deserialize: (val: unknown) => T

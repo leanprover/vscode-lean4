@@ -1,33 +1,31 @@
-import * as React from 'react'
 import { InteractiveDiagnostics_msgToInteractive, MessageData } from '@leanprover/infoview-api'
+import * as React from 'react'
 import { RpcContext } from './infoview/rpcSessions'
-import { mapRpcError, useAsync } from './infoview/util'
 import { InteractiveMessage } from './infoview/traceExplorer'
+import { mapRpcError, useAsync } from './infoview/util'
 
 export * from '@leanprover/infoview-api'
+export { EditorContext, VersionContext } from './infoview/contexts'
+export { EditorConnection } from './infoview/editorConnection'
+export { GoalLocation, GoalsLocation, LocationsContext } from './infoview/goalLocation'
+export { InteractiveCode, InteractiveCodeProps } from './infoview/interactiveCode'
+export { renderInfoview } from './infoview/main'
+export { RpcContext } from './infoview/rpcSessions'
+export { ServerVersion } from './infoview/serverVersion'
+export { DynamicComponent, DynamicComponentProps, importWidgetModule, PanelWidgetProps } from './infoview/userWidget'
 export {
+    DocumentPosition,
+    mapRpcError,
     useAsync,
-    useAsyncWithTrigger,
     useAsyncPersistent,
+    useAsyncWithTrigger,
+    useClientNotificationEffect,
+    useClientNotificationState,
     useEvent,
     useEventResult,
     useServerNotificationEffect,
     useServerNotificationState,
-    useClientNotificationEffect,
-    useClientNotificationState,
-    mapRpcError,
-    DocumentPosition,
 } from './infoview/util'
-export { EditorContext, VersionContext } from './infoview/contexts'
-export { EditorConnection } from './infoview/editorConnection'
-export { RpcContext } from './infoview/rpcSessions'
-export { ServerVersion } from './infoview/serverVersion'
-export { LocationsContext, GoalLocation, GoalsLocation } from './infoview/goalLocation'
-export { importWidgetModule, DynamicComponent, DynamicComponentProps, PanelWidgetProps } from './infoview/userWidget'
-
-export { InteractiveCode, InteractiveCodeProps } from './infoview/interactiveCode'
-export { renderInfoview } from './infoview/main'
-
 export { MessageData }
 
 /** Display the given message data as interactive, pretty-printed text. */

@@ -1,7 +1,7 @@
-import { Disposable } from 'vscode'
 import * as fs from 'fs'
 import * as os from 'os'
-import { join, sep } from 'path'
+import { join } from 'path'
+import { Disposable } from 'vscode'
 
 export class TempFolder implements Disposable {
     folder: string

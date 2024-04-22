@@ -1,29 +1,29 @@
+import { VSCodeButton } from '@vscode/webview-ui-toolkit/react'
 import * as React from 'react'
 import * as ReactDOM from 'react-dom/client'
-import type { DidCloseTextDocumentParams, Location, DocumentUri } from 'vscode-languageserver-protocol'
-import { VSCodeButton } from '@vscode/webview-ui-toolkit/react'
+import type { DidCloseTextDocumentParams, DocumentUri, Location } from 'vscode-languageserver-protocol'
 
-import 'tachyons/css/tachyons.css'
-import '@vscode/codicons/dist/codicon.ttf'
 import '@vscode/codicons/dist/codicon.css'
+import '@vscode/codicons/dist/codicon.ttf'
+import 'tachyons/css/tachyons.css'
 import './index.css'
 
 import {
-    LeanFileProgressParams,
-    LeanFileProgressProcessingInfo,
     defaultInfoviewConfig,
     EditorApi,
     InfoviewApi,
+    LeanFileProgressParams,
+    LeanFileProgressProcessingInfo,
 } from '@leanprover/infoview-api'
 
-import { Infos } from './infos'
-import { AllMessages, WithLspDiagnosticsContext } from './messages'
-import { useClientNotificationEffect, useEventResult, useServerNotificationState } from './util'
-import { EditorContext, ConfigContext, ProgressContext, VersionContext } from './contexts'
-import { WithRpcSessions } from './rpcSessions'
+import { ConfigContext, EditorContext, ProgressContext, VersionContext } from './contexts'
 import { EditorConnection, EditorEvents } from './editorConnection'
 import { EventEmitter } from './event'
+import { Infos } from './infos'
+import { AllMessages, WithLspDiagnosticsContext } from './messages'
+import { WithRpcSessions } from './rpcSessions'
 import { ServerVersion } from './serverVersion'
+import { useClientNotificationEffect, useEventResult, useServerNotificationState } from './util'
 
 function Main(props: {}) {
     const ec = React.useContext(EditorContext)

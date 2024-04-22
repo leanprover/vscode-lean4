@@ -1,5 +1,5 @@
-import { Disposable, ExtensionContext, OverviewRulerLane, Range, TextEditorDecorationType, window } from 'vscode'
 import { LeanFileProgressKind, LeanFileProgressProcessingInfo } from '@leanprover/infoview-api'
+import { Disposable, ExtensionContext, OverviewRulerLane, Range, TextEditorDecorationType, window } from 'vscode'
 import { LeanClientProvider } from './utils/clientProvider'
 
 class LeanFileTaskGutter {

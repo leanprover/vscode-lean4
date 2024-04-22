@@ -1,7 +1,7 @@
-import * as path from 'path'
-import * as Mocha from 'mocha'
 import * as glob from 'glob'
-import { isElanDisabled, getTestFolder } from '../../../src/config'
+import * as Mocha from 'mocha'
+import * as path from 'path'
+import { getTestFolder, isElanDisabled } from '../../../src/config'
 import { logger } from '../../../src/utils/logger'
 
 export function run(testsRoot: string, cb: (error: any, failures?: number) => void): void {

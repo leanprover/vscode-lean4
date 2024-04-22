@@ -1,21 +1,21 @@
 import * as React from 'react'
 
-import { EditorContext } from './contexts'
-import { useAsync, mapRpcError, useEvent } from './util'
 import {
-    SubexprInfo,
     CodeWithInfos,
-    InteractiveDiagnostics_infoToInteractive,
-    getGoToLocation,
-    TaggedText,
     DiffTag,
+    getGoToLocation,
+    InteractiveDiagnostics_infoToInteractive,
+    SubexprInfo,
+    TaggedText,
     TaggedText_stripTags,
 } from '@leanprover/infoview-api'
-import { HoverState, WithToggleableTooltip, WithTooltipOnHover } from './tooltips'
-import { Location } from 'vscode-languageserver-protocol'
 import { marked } from 'marked'
-import { RpcContext } from './rpcSessions'
+import { Location } from 'vscode-languageserver-protocol'
+import { EditorContext } from './contexts'
 import { GoalsLocation, LocationsContext, SelectableLocation } from './goalLocation'
+import { RpcContext } from './rpcSessions'
+import { HoverState, WithToggleableTooltip, WithTooltipOnHover } from './tooltips'
+import { mapRpcError, useAsync, useEvent } from './util'
 
 export interface InteractiveTextComponentProps<T> {
     fmt: TaggedText<T>

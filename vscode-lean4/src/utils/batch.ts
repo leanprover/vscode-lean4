@@ -1,8 +1,8 @@
-import { CancellationToken, Disposable, OutputChannel, ProgressLocation, ProgressOptions, window } from 'vscode'
 import { spawn } from 'child_process'
+import { CancellationToken, Disposable, OutputChannel, ProgressLocation, ProgressOptions, window } from 'vscode'
 import { findProgramInPath, isRunningTest } from '../config'
-import { logger } from './logger'
 import { displayErrorWithOutput } from './errors'
+import { logger } from './logger'
 
 export interface ExecutionChannel {
     combined?: OutputChannel | undefined

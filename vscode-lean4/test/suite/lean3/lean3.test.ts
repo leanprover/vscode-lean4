@@ -2,8 +2,8 @@ import * as assert from 'assert'
 import { suite } from 'mocha'
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { waitForActiveExtension, waitForActiveEditor, closeAllEditors } from '../utils/helpers'
 import { logger } from '../../../src/utils/logger'
+import { closeAllEditors, waitForActiveEditor, waitForActiveExtension } from '../utils/helpers'
 
 suite('Lean3 Compatibility Test Suite', () => {
     test('Lean3 project', async () => {

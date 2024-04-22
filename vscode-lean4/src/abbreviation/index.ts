@@ -2,8 +2,8 @@ import { Disposable, languages } from 'vscode'
 import { autorunDisposable } from '../utils/autorunDisposable'
 import { AbbreviationHoverProvider } from './AbbreviationHoverProvider'
 import { AbbreviationProvider } from './AbbreviationProvider'
-import { AbbreviationRewriterFeature } from './rewriter/AbbreviationRewriterFeature'
 import { AbbreviationConfig } from './config'
+import { AbbreviationRewriterFeature } from './rewriter/AbbreviationRewriterFeature'
 
 export class AbbreviationFeature {
     private readonly disposables = new Array<Disposable>()

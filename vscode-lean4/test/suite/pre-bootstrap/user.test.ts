@@ -1,9 +1,9 @@
 import * as assert from 'assert'
 import { suite } from 'mocha'
-import * as vscode from 'vscode'
 import * as path from 'path'
-import { initLean4, waitForInfoviewLambda, closeAllEditors, cleanTempFolder } from '../utils/helpers'
+import * as vscode from 'vscode'
 import { logger } from '../../../src/utils/logger'
+import { cleanTempFolder, closeAllEditors, initLean4, waitForInfoviewLambda } from '../utils/helpers'
 
 suite('Lean4 Pre-bootstrap Test Suite', () => {
     test('Test user sees the install prompt', async () => {

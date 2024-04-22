@@ -1,10 +1,9 @@
 import * as assert from 'assert'
 import { suite } from 'mocha'
 import * as path from 'path'
-import * as fs from 'fs'
 import * as vscode from 'vscode'
-import { initLean4, assertStringInInfoview, closeAllEditors, getAltBuildVersion } from '../utils/helpers'
 import { logger } from '../../../src/utils/logger'
+import { assertStringInInfoview, closeAllEditors, getAltBuildVersion, initLean4 } from '../utils/helpers'
 
 suite('Multi-Folder Test Suite', () => {
     test('Load a multi-project workspace', async () => {

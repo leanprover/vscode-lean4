@@ -1,8 +1,8 @@
 import commonjs from '@rollup/plugin-commonjs'
-import typescript from '@rollup/plugin-typescript'
 import nodeResolve from '@rollup/plugin-node-resolve'
 import replace from '@rollup/plugin-replace'
 import terser from '@rollup/plugin-terser'
+import typescript from '@rollup/plugin-typescript'
 import url from '@rollup/plugin-url'
 import css from 'rollup-plugin-css-only'
 

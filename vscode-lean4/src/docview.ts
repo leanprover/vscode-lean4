@@ -1,25 +1,25 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import axios from 'axios'
-import cheerio = require('cheerio')
+import { extname } from 'path'
 import { URL } from 'url'
 import {
     commands,
     Disposable,
+    languages,
+    Position,
+    Range,
+    TextDocument,
     Uri,
     ViewColumn,
+    WebviewOptions,
     WebviewPanel,
+    WebviewPanelOptions,
     window,
     workspace,
-    WebviewOptions,
-    WebviewPanelOptions,
-    TextDocument,
-    languages,
-    Range,
-    Position,
 } from 'vscode'
-import { extname } from 'path'
+import { AbbreviationConfig, SymbolsByAbbreviation } from './abbreviation/config'
 import { TempFolder } from './utils/tempFolder'
-import { SymbolsByAbbreviation, AbbreviationConfig } from './abbreviation/config'
+import cheerio = require('cheerio')
 
 export function mkCommandUri(commandName: string, ...args: any[]): string {
     return `command:${commandName}?${encodeURIComponent(JSON.stringify(args))}`

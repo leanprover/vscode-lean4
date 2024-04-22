@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
-import { promises, PathLike } from 'fs'
+import { PathLike, promises } from 'fs'
 import path = require('path')
 
 /**

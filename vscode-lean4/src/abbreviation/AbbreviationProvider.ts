@@ -2,7 +2,7 @@ import { computed } from 'mobx'
 import { Disposable, EventEmitter, TextEditor } from 'vscode'
 import { autorunDisposable } from '../utils/autorunDisposable'
 import * as abbreviations from './abbreviations.json'
-import { SymbolsByAbbreviation, AbbreviationConfig } from './config'
+import { AbbreviationConfig, SymbolsByAbbreviation } from './config'
 
 /**
  * Answers queries to a database of abbreviations.
