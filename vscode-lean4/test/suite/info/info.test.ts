@@ -1,20 +1,20 @@
 import * as assert from 'assert'
 import { suite } from 'mocha'
 import * as vscode from 'vscode'
-import {
-    initLean4Untitled,
-    assertStringInInfoview,
-    findWord,
-    insertText,
-    closeActiveEditor,
-    waitForInfoviewNotHtml,
-    waitForActiveEditor,
-    gotoDefinition,
-    closeAllEditors,
-    clickInfoViewButton,
-    waitForInfoviewHtml,
-} from '../utils/helpers'
 import { logger } from '../../../src/utils/logger'
+import {
+    assertStringInInfoview,
+    clickInfoViewButton,
+    closeActiveEditor,
+    closeAllEditors,
+    findWord,
+    gotoDefinition,
+    initLean4Untitled,
+    insertText,
+    waitForActiveEditor,
+    waitForInfoviewHtml,
+    waitForInfoviewNotHtml,
+} from '../utils/helpers'
 
 suite('InfoView Test Suite', () => {
     test('Copy to Comment', async () => {

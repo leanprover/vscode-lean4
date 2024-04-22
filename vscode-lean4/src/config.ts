@@ -1,6 +1,6 @@
-import { workspace } from 'vscode'
-import * as path from 'path'
 import * as fs from 'fs'
+import * as path from 'path'
+import { workspace } from 'vscode'
 import { logger } from './utils/logger'
 
 // TODO: does currently not contain config options for `./abbreviation`

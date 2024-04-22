@@ -1,14 +1,14 @@
-import { Range as LineColRange } from 'vscode'
 import {
     commands,
     Disposable,
+    extensions,
+    OutputChannel,
+    Range as LineColRange,
+    Selection,
+    TextDocument,
     TextEditor,
     window,
     workspace,
-    Selection,
-    OutputChannel,
-    TextDocument,
-    extensions,
 } from 'vscode'
 import { assert } from '../../utils/assert'
 import { AbbreviationProvider } from '../AbbreviationProvider'

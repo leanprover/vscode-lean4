@@ -1,29 +1,29 @@
 import * as React from 'react'
 import fastIsEqual from 'react-fast-compare'
 import {
-    Location,
-    DocumentUri,
     Diagnostic,
     DiagnosticSeverity,
+    DocumentUri,
+    Location,
     PublishDiagnosticsParams,
 } from 'vscode-languageserver-protocol'
 
 import { LeanDiagnostic, RpcErrorCode } from '@leanprover/infoview-api'
 
+import { getInteractiveDiagnostics, InteractiveDiagnostic } from '@leanprover/infoview-api'
+import { Details } from './collapsing'
+import { ConfigContext, EditorContext, LspDiagnosticsContext } from './contexts'
+import { RpcContext, useRpcSessionAtPos } from './rpcSessions'
+import { InteractiveMessage } from './traceExplorer'
 import {
-    basename,
-    escapeHtml,
-    usePausableState,
-    useEvent,
     addUniqueKeys,
+    basename,
     DocumentPosition,
+    escapeHtml,
+    useEvent,
+    usePausableState,
     useServerNotificationState,
 } from './util'
-import { ConfigContext, EditorContext, LspDiagnosticsContext, VersionContext } from './contexts'
-import { Details } from './collapsing'
-import { InteractiveMessage } from './traceExplorer'
-import { getInteractiveDiagnostics, InteractiveDiagnostic, TaggedText_stripTags } from '@leanprover/infoview-api'
-import { RpcContext, useRpcSessionAtPos } from './rpcSessions'
 
 interface MessageViewProps {
     uri: DocumentUri

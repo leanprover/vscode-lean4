@@ -5,8 +5,8 @@ import type { DocumentUri, Position, Range, TextDocumentPositionParams } from 'v
 
 import { isRpcError, RpcErrorCode } from '@leanprover/infoview-api'
 
-import { EventEmitter } from './event'
 import { EditorContext } from './contexts'
+import { EventEmitter } from './event'
 
 /** A document URI and a position in that document. */
 export interface DocumentPosition extends Position {

@@ -10,12 +10,12 @@
  * @module
  */
 
-import { createConverter as createP2CConverter } from 'vscode-languageclient/lib/common/protocolConverter'
-import { createConverter as createC2PConverter } from 'vscode-languageclient/lib/common/codeConverter'
-import * as async from 'vscode-languageclient/lib/common/utils/async'
-import * as ls from 'vscode-languageserver-protocol'
 import * as code from 'vscode'
 import { Code2ProtocolConverter, Protocol2CodeConverter } from 'vscode-languageclient'
+import { createConverter as createC2PConverter } from 'vscode-languageclient/lib/common/codeConverter'
+import { createConverter as createP2CConverter } from 'vscode-languageclient/lib/common/protocolConverter'
+import * as async from 'vscode-languageclient/lib/common/utils/async'
+import * as ls from 'vscode-languageserver-protocol'
 
 interface Lean4Diagnostic extends ls.Diagnostic {
     fullRange: ls.Range

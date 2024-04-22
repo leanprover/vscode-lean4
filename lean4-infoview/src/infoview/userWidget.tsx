@@ -1,16 +1,16 @@
 import * as React from 'react'
 
 import {
-    Widget_getWidgetSource,
-    UserWidgetInstance,
     InteractiveGoal,
     InteractiveTermGoal,
     RpcSessionAtPos,
+    UserWidgetInstance,
+    Widget_getWidgetSource,
 } from '@leanprover/infoview-api'
-import { RpcContext } from './rpcSessions'
-import { DocumentPosition, mapRpcError, useAsyncPersistent } from './util'
 import { ErrorBoundary } from './errors'
 import { GoalsLocation } from './goalLocation'
+import { RpcContext } from './rpcSessions'
+import { DocumentPosition, mapRpcError, useAsyncPersistent } from './util'
 
 async function dynamicallyLoadModule(hash: string, code: string): Promise<any> {
     const file = new File([code], `widget_${hash}.js`, { type: 'text/javascript' })

@@ -1,5 +1,5 @@
 import { OutputChannel } from 'vscode'
-import { ExecutionExitCode, ExecutionResult, batchExecute } from './batch'
+import { batchExecute, ExecutionExitCode, ExecutionResult } from './batch'
 import { FileUri } from './exturi'
 
 export class SetupDiagnoser {

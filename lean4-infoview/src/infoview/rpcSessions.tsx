@@ -1,4 +1,4 @@
-import { RpcSessions, RpcCallParams, RpcReleaseParams, RpcSessionAtPos } from '@leanprover/infoview-api'
+import { RpcCallParams, RpcReleaseParams, RpcSessionAtPos, RpcSessions } from '@leanprover/infoview-api'
 import * as React from 'react'
 import type {
     DidCloseTextDocumentParams,

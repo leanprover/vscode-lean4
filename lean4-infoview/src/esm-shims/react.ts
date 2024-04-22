@@ -5,24 +5,22 @@ export default React
 // `export * from` does not work.
 import {
     Children,
-    Component,
-    Fragment,
-    Profiler,
-    PureComponent,
-    StrictMode,
-    Suspense,
-    // @ts-ignore
-    __SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED,
     cloneElement,
+    Component,
     createContext,
     createElement,
     createFactory,
     createRef,
     forwardRef,
+    Fragment,
     isValidElement,
     lazy,
     memo,
+    Profiler,
+    PureComponent,
     startTransition,
+    StrictMode,
+    Suspense,
     // @ts-ignore
     unstable_act,
     useCallback,
@@ -41,6 +39,8 @@ import {
     useSyncExternalStore,
     useTransition,
     version,
+    // @ts-ignore
+    __SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED,
 } from 'react'
 export {
     Children,

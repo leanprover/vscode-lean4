@@ -1,17 +1,11 @@
-import { Disposable, commands, window, OutputChannel, QuickPickItem } from 'vscode'
-import { LakeRunner, cacheNotFoundError, lake } from './utils/lake'
-import { ExecutionExitCode, ExecutionResult, batchExecute, displayError } from './utils/batch'
-import { LeanClientProvider } from './utils/clientProvider'
-import { LeanClient } from './leanclient'
-import { join } from 'path'
 import * as fs from 'fs'
-import {
-    DirectGitDependency,
-    Manifest,
-    ManifestReadError,
-    parseAsManifest,
-    parseManifestInFolder,
-} from './utils/manifest'
+import { join } from 'path'
+import { commands, Disposable, OutputChannel, QuickPickItem, window } from 'vscode'
+import { LeanClient } from './leanclient'
+import { batchExecute, displayError, ExecutionExitCode, ExecutionResult } from './utils/batch'
+import { LeanClientProvider } from './utils/clientProvider'
+import { cacheNotFoundError, lake, LakeRunner } from './utils/lake'
+import { DirectGitDependency, Manifest, ManifestReadError, parseManifestInFolder } from './utils/manifest'
 
 export class ProjectOperationProvider implements Disposable {
     private subscriptions: Disposable[] = []

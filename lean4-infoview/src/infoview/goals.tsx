@@ -1,5 +1,3 @@
-import * as React from 'react'
-import { InteractiveCode } from './interactiveCode'
 import {
     InfoviewActionKind,
     InteractiveGoal,
@@ -9,10 +7,12 @@ import {
     MVarId,
     TaggedText_stripTags,
 } from '@leanprover/infoview-api'
-import { WithTooltipOnHover } from './tooltips'
-import { EditorContext, ConfigContext } from './contexts'
-import { Locations, LocationsContext, SelectableLocation } from './goalLocation'
+import * as React from 'react'
 import { Details } from './collapsing'
+import { ConfigContext, EditorContext } from './contexts'
+import { Locations, LocationsContext, SelectableLocation } from './goalLocation'
+import { InteractiveCode } from './interactiveCode'
+import { WithTooltipOnHover } from './tooltips'
 import { useEvent } from './util'
 
 /** Returns true if `h` is inaccessible according to Lean's default name rendering. */

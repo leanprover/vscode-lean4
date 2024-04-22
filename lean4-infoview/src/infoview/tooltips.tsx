@@ -1,8 +1,9 @@
 import * as React from 'react'
 import * as ReactDOM from 'react-dom'
 
-import { useFloating, shift, offset, arrow, autoPlacement, autoUpdate, size, FloatingArrow } from '@floating-ui/react'
+import { arrow, autoPlacement, autoUpdate, FloatingArrow, offset, shift, size, useFloating } from '@floating-ui/react'
 
+import { ConfigContext } from './contexts'
 import {
     forwardAndUseRef,
     forwardAndUseStateRef,
@@ -10,7 +11,6 @@ import {
     useLogicalDomObserver,
     useOnClickOutside,
 } from './util'
-import { ConfigContext } from './contexts'
 
 export type TooltipProps = React.PropsWithChildren<React.HTMLProps<HTMLDivElement>> & { reference: HTMLElement | null }
 

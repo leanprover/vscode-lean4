@@ -6,6 +6,7 @@ import {
 } from 'vscode-languageserver-protocol'
 
 import { EditorContext } from './contexts'
+import { Info, InfoProps } from './info'
 import {
     DocumentPosition,
     Keyed,
@@ -15,7 +16,6 @@ import {
     useEvent,
     useEventResult,
 } from './util'
-import { Info, InfoProps } from './info'
 
 function isPinned(pinnedPositions: DocumentPosition[], pos: DocumentPosition): boolean {
     return pinnedPositions.some(p => DocumentPosition.isEqual(p, pos))

@@ -2,22 +2,21 @@ import * as assert from 'assert'
 import { suite } from 'mocha'
 import * as path from 'path'
 import * as vscode from 'vscode'
-import * as fs from 'fs'
+import { FileUri } from '../../../src/utils/exturi'
 import { logger } from '../../../src/utils/logger'
 import {
-    initLean4Untitled,
-    initLean4,
-    waitForInfoviewHtml,
-    closeAllEditors,
-    waitForActiveClient,
-    extractPhrase,
-    restartLeanServer,
-    restartFile,
     assertStringInInfoview,
-    insertText,
+    closeAllEditors,
     deleteAllText,
+    extractPhrase,
+    initLean4,
+    initLean4Untitled,
+    insertText,
+    restartFile,
+    restartLeanServer,
+    waitForActiveClient,
+    waitForInfoviewHtml,
 } from '../utils/helpers'
-import { FileUri } from '../../../src/utils/exturi'
 
 // Expects to be launched with folder: ${workspaceFolder}/vscode-lean4/test/suite/simple
 suite('Lean Server Restart Test Suite', () => {

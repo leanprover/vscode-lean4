@@ -5,13 +5,13 @@ import * as vscode from 'vscode'
 import { logger } from '../../../src/utils/logger'
 
 import {
-    initLean4,
-    waitForActiveEditor,
-    waitForInfoviewHtml,
     closeAllEditors,
     extractPhrase,
-    waitForDocViewHtml,
+    initLean4,
     invokeHrefCommand,
+    waitForActiveEditor,
+    waitForDocViewHtml,
+    waitForInfoviewHtml,
 } from '../utils/helpers'
 
 function delay(ms: number) {

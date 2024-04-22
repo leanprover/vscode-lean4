@@ -1,17 +1,16 @@
 import * as assert from 'assert'
-import { basename } from 'path'
-import * as vscode from 'vscode'
 import * as fs from 'fs'
 import * as os from 'os'
-import { join, sep } from 'path'
+import { basename, join } from 'path'
+import * as vscode from 'vscode'
+import { DocViewProvider } from '../../../src/docview'
+import { Exports } from '../../../src/exports'
 import { InfoProvider } from '../../../src/infoview'
 import { LeanClient } from '../../../src/leanclient'
-import { DocViewProvider } from '../../../src/docview'
 import { LeanClientProvider } from '../../../src/utils/clientProvider'
-import { Exports } from '../../../src/exports'
+import { logger } from '../../../src/utils/logger'
 import cheerio = require('cheerio')
 import path = require('path')
-import { logger } from '../../../src/utils/logger'
 
 export function sleep(ms: number) {
     return new Promise(resolve => setTimeout(resolve, ms))

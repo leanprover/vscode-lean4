@@ -1,5 +1,5 @@
 import { OutputChannel } from 'vscode'
-import { ExecutionExitCode, ExecutionResult, batchExecute, batchExecuteWithProgress } from './batch'
+import { batchExecute, batchExecuteWithProgress, ExecutionExitCode, ExecutionResult } from './batch'
 import { FileUri } from './exturi'
 
 export const cacheNotFoundError = 'unknown executable `cache`'

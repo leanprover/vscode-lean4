@@ -1,7 +1,7 @@
-import { EventEmitter, Disposable, workspace, window } from 'vscode'
-import { findLeanPackageRoot, findLeanPackageVersionInfo } from './projectInfo'
 import * as path from 'path'
-import { ExtUri, FileUri, extUriOrError } from './exturi'
+import { Disposable, EventEmitter, window, workspace } from 'vscode'
+import { ExtUri, extUriOrError, FileUri } from './exturi'
+import { findLeanPackageRoot, findLeanPackageVersionInfo } from './projectInfo'
 
 // This service monitors the Lean package root folders for changes to any
 // lean-toolchail, lakefile.lean or lakefile.toml files found there.

@@ -1,35 +1,36 @@
-import { join } from 'path'
-import {
-    commands,
-    Disposable,
-    DocumentSelector,
-    ExtensionContext,
-    languages,
-    Range,
-    Selection,
-    TextEditor,
-    TextEditorRevealType,
-    ViewColumn,
-    WebviewPanel,
-    window,
-    workspace,
-    env,
-    Position,
-    Diagnostic,
-    Uri,
-} from 'vscode'
 import {
     EditorApi,
     InfoviewApi,
     LeanFileProgressParams,
-    TextInsertKind,
-    RpcConnectParams,
     RpcConnected,
+    RpcConnectParams,
+    RpcErrorCode,
     RpcKeepAliveParams,
     ServerStoppedReason,
-    RpcErrorCode,
+    TextInsertKind,
 } from '@leanprover/infoview-api'
-import { LeanClient } from './leanclient'
+import { join } from 'path'
+import {
+    commands,
+    Diagnostic,
+    Disposable,
+    DocumentSelector,
+    env,
+    ExtensionContext,
+    languages,
+    Position,
+    Range,
+    Selection,
+    TextEditor,
+    TextEditorRevealType,
+    Uri,
+    ViewColumn,
+    WebviewPanel,
+    window,
+    workspace,
+} from 'vscode'
+import { PublishDiagnosticsParams } from 'vscode-languageclient'
+import * as ls from 'vscode-languageserver-protocol'
 import {
     getEditorLineHeight,
     getInfoViewAllErrorsOnLine,
@@ -45,13 +46,12 @@ import {
     minIfProd,
     prodOrDev,
 } from './config'
+import { LeanClient } from './leanclient'
 import { Rpc } from './rpc'
 import { LeanClientProvider } from './utils/clientProvider'
-import * as ls from 'vscode-languageserver-protocol'
 import { c2pConverter, p2cConverter } from './utils/converters'
-import { logger } from './utils/logger'
-import { PublishDiagnosticsParams } from 'vscode-languageclient'
 import { ExtUri, extUriOrError, parseExtUri } from './utils/exturi'
+import { logger } from './utils/logger'
 
 const keepAlivePeriodMs = 10000
 

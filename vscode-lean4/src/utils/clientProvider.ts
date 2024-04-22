@@ -1,18 +1,18 @@
-import { Disposable, OutputChannel, workspace, TextDocument, commands, window, EventEmitter, TextEditor } from 'vscode'
-import { LeanInstaller, LeanVersion } from './leanInstaller'
-import { LeanClient } from '../leanclient'
 import { LeanFileProgressProcessingInfo, ServerStoppedReason } from '@leanprover/infoview-api'
-import { checkParentFoldersForLeanProject, findLeanPackageRoot, isValidLeanProject } from './projectInfo'
-import { logger } from './logger'
+import { commands, Disposable, EventEmitter, OutputChannel, TextDocument, TextEditor, window, workspace } from 'vscode'
 import {
     addDefaultElanPath,
-    getDefaultElanPath,
     addToolchainBinPath,
+    getDefaultElanPath,
     isElanDisabled,
     shouldShowInvalidProjectWarnings,
 } from '../config'
+import { LeanClient } from '../leanclient'
 import { displayErrorWithOutput } from './errors'
-import { ExtUri, FileUri, UntitledUri, extUriOrError, getWorkspaceFolderUri } from './exturi'
+import { ExtUri, extUriOrError, FileUri, getWorkspaceFolderUri, UntitledUri } from './exturi'
+import { LeanInstaller, LeanVersion } from './leanInstaller'
+import { logger } from './logger'
+import { checkParentFoldersForLeanProject, findLeanPackageRoot, isValidLeanProject } from './projectInfo'
 
 // This class ensures we have one LeanClient per folder.
 export class LeanClientProvider implements Disposable {

@@ -1,20 +1,20 @@
 import {
-    TextDocument,
-    EventEmitter,
-    Diagnostic,
-    DocumentHighlight,
-    Range,
-    DocumentHighlightKind,
-    workspace,
-    Disposable,
     ConfigurationChangeEvent,
-    OutputChannel,
+    Diagnostic,
     DiagnosticCollection,
-    WorkspaceFolder,
-    window,
+    Disposable,
+    DocumentHighlight,
+    DocumentHighlightKind,
+    EventEmitter,
+    OutputChannel,
+    Progress,
     ProgressLocation,
     ProgressOptions,
-    Progress,
+    Range,
+    TextDocument,
+    window,
+    workspace,
+    WorkspaceFolder,
 } from 'vscode'
 import {
     DiagnosticSeverity,
@@ -31,32 +31,32 @@ import {
 } from 'vscode-languageclient/node'
 import * as ls from 'vscode-languageserver-protocol'
 
+import { LeanFileProgressParams, LeanFileProgressProcessingInfo, ServerStoppedReason } from '@leanprover/infoview-api'
+import { join } from 'path'
 import {
-    toolchainPath,
-    lakePath,
     addServerEnvPaths,
+    automaticallyBuildDependencies,
+    getElaborationDelay,
+    getFallBackToStringOccurrenceHighlighting,
+    lakeEnabled,
+    lakePath,
     serverArgs,
     serverLoggingEnabled,
     serverLoggingPath,
     shouldAutofocusOutput,
-    getElaborationDelay,
-    lakeEnabled,
-    automaticallyBuildDependencies,
-    getFallBackToStringOccurrenceHighlighting,
+    toolchainPath,
 } from './config'
 import { assert } from './utils/assert'
-import { LeanFileProgressParams, LeanFileProgressProcessingInfo, ServerStoppedReason } from '@leanprover/infoview-api'
-import { ExecutionExitCode, ExecutionResult, batchExecute } from './utils/batch'
-import { readLeanVersion } from './utils/projectInfo'
-import { join } from 'path'
+import { batchExecute, ExecutionExitCode, ExecutionResult } from './utils/batch'
 import { logger } from './utils/logger'
+import { readLeanVersion } from './utils/projectInfo'
 // @ts-ignore
 import { SemVer } from 'semver'
-import { fileExists } from './utils/fsHelper'
 import { c2pConverter, p2cConverter, patchConverters } from './utils/converters'
 import { displayErrorWithOutput } from './utils/errors'
+import { ExtUri, extUriOrError, FileUri, parseExtUri } from './utils/exturi'
+import { fileExists } from './utils/fsHelper'
 import path = require('path')
-import { ExtUri, FileUri, extUriOrError, parseExtUri } from './utils/exturi'
 
 const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 

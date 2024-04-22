@@ -1,4 +1,4 @@
-import { HoverProvider, TextDocument, Position, Hover, Range } from 'vscode'
+import { Hover, HoverProvider, Position, Range, TextDocument } from 'vscode'
 import { AbbreviationProvider } from './AbbreviationProvider'
 import { AbbreviationConfig } from './config'
 

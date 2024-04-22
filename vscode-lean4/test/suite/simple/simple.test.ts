@@ -3,18 +3,18 @@ import { suite } from 'mocha'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import { isElanDisabled } from '../../../src/config'
+import { UntitledUri } from '../../../src/utils/exturi'
+import { logger } from '../../../src/utils/logger'
 import {
-    initLean4Untitled,
-    waitForActiveEditor,
-    waitForInfoviewHtml,
+    assertStringInInfoview,
     closeAllEditors,
     extractPhrase,
     gotoDefinition,
-    assertStringInInfoview,
     initLean4,
+    initLean4Untitled,
+    waitForActiveEditor,
+    waitForInfoviewHtml,
 } from '../utils/helpers'
-import { logger } from '../../../src/utils/logger'
-import { UntitledUri } from '../../../src/utils/exturi'
 
 function getElanMode() {
     let mode = ''

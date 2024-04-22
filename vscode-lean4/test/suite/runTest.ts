@@ -1,7 +1,7 @@
-import * as path from 'path'
 import * as cp from 'child_process'
+import * as path from 'path'
 
-import { runTests, downloadAndUnzipVSCode, resolveCliArgsFromVSCodeExecutablePath } from '@vscode/test-electron'
+import { downloadAndUnzipVSCode, resolveCliArgsFromVSCodeExecutablePath, runTests } from '@vscode/test-electron'
 import * as fs from 'fs'
 import { logger } from '../../src/utils/logger'
 

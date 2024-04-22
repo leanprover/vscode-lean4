@@ -1,27 +1,26 @@
-import { window, ExtensionContext, TextDocument, commands, Disposable, workspace, extensions } from 'vscode'
+import { commands, Disposable, ExtensionContext, extensions, TextDocument, window, workspace } from 'vscode'
 import { AbbreviationFeature } from './abbreviation'
-import { InfoProvider } from './infoview'
-import { DocViewProvider } from './docview'
-import { LeanTaskGutter } from './taskgutter'
-import { LeanInstaller } from './utils/leanInstaller'
-import { LeanConfigWatchService } from './utils/configwatchservice'
-import { LeanClientProvider } from './utils/clientProvider'
 import {
     addDefaultElanPath,
-    removeElanPath,
     addToolchainBinPath,
-    isElanDisabled,
-    getDefaultLeanVersion,
     getDefaultElanPath,
+    getDefaultLeanVersion,
+    isElanDisabled,
+    removeElanPath,
 } from './config'
-import { findLeanPackageVersionInfo } from './utils/projectInfo'
+import { DocViewProvider } from './docview'
 import { Exports } from './exports'
-import { logger } from './utils/logger'
+import { InfoProvider } from './infoview'
+import { LeanClient } from './leanclient'
 import { ProjectInitializationProvider } from './projectinit'
 import { ProjectOperationProvider } from './projectoperations'
-import { LeanClient } from './leanclient'
-import { UntitledUri, extUriOrError } from './utils/exturi'
-import { version } from 'os'
+import { LeanTaskGutter } from './taskgutter'
+import { LeanClientProvider } from './utils/clientProvider'
+import { LeanConfigWatchService } from './utils/configwatchservice'
+import { extUriOrError, UntitledUri } from './utils/exturi'
+import { LeanInstaller } from './utils/leanInstaller'
+import { logger } from './utils/logger'
+import { findLeanPackageVersionInfo } from './utils/projectInfo'
 
 interface AlwaysEnabledFeatures {
     docView: DocViewProvider

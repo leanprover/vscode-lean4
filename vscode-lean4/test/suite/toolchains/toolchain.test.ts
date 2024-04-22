@@ -1,22 +1,16 @@
 import * as assert from 'assert'
+import * as fs from 'fs'
 import { suite } from 'mocha'
 import * as path from 'path'
 import * as vscode from 'vscode'
-import * as fs from 'fs'
 import { logger } from '../../../src/utils/logger'
 import {
-    initLean4Untitled,
+    assertStringInInfoview,
+    closeAllEditors,
+    extractPhrase,
+    getAltBuildVersion,
     initLean4,
     waitForInfoviewHtml,
-    closeAllEditors,
-    waitForActiveClient,
-    getAltBuildVersion,
-    extractPhrase,
-    restartLeanServer,
-    restartFile,
-    assertStringInInfoview,
-    insertText,
-    deleteAllText,
 } from '../utils/helpers'
 
 // Expects to be launched with folder: ${workspaceFolder}/vscode-lean4/test/suite/simple
