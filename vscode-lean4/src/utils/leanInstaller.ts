@@ -20,7 +20,6 @@ export class LeanInstaller {
     private elanDefaultToolchain: string = '' // the default toolchain according to elan (toolchain marked with '(default)')
     private workspaceSuffix: string = '(workspace override)'
     private defaultSuffix: string = '(default)'
-    private versionCache: Map<string, LeanVersion> = new Map()
     private promptUser: boolean = true
 
     // This event is raised whenever a version change happens.
@@ -79,11 +78,6 @@ export class LeanInstaller {
     }
 
     async handleVersionChanged(packageUri: FileUri): Promise<void> {
-        const key = packageUri.toString()
-        if (this.versionCache.has(key)) {
-            this.versionCache.delete(key)
-        }
-
         if (!this.promptUser) {
             await this.checkAndFire(packageUri)
             return
@@ -179,27 +173,20 @@ export class LeanInstaller {
         return s.trim()
     }
 
-    async checkLeanVersion(packageUri: ExtUri, version: string | undefined): Promise<LeanVersion> {
+    async checkLeanVersion(packageUri: ExtUri, toolchain: string | undefined): Promise<LeanVersion> {
         let cmd = toolchainPath()
         if (!cmd) {
             cmd = 'lean'
         } else {
             cmd = join(cmd, 'bin', 'lean')
         }
-        const cacheKey = packageUri.toString()
-        if (!version && this.versionCache.has(cacheKey)) {
-            const result = this.versionCache.get(cacheKey)
-            if (result) {
-                return result
-            }
-        }
 
         addServerEnvPaths(process.env)
 
         let options = ['--version']
-        if (version) {
+        if (toolchain) {
             // user is requesting an explicit version!
-            options = ['+' + version, ...options]
+            options = ['+' + toolchain, ...options]
         }
 
         const result: LeanVersion = { version: '', error: undefined }
@@ -240,9 +227,6 @@ export class LeanInstaller {
             logger.log(`[LeanInstaller] check lean version error ${msg}`)
             if (this.outputChannel) this.outputChannel.appendLine(msg)
             result.error = err
-        }
-        if (!version) {
-            this.versionCache.set(cacheKey, result)
         }
         return result
     }
@@ -352,8 +336,6 @@ export class LeanInstaller {
             )
         }
 
-        // clear any previous lean version errors.
-        this.versionCache.clear()
         this.elanDefaultToolchain = this.defaultToolchain
 
         return result
