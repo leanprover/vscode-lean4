@@ -47,14 +47,12 @@ import {
     toolchainPath,
 } from './config'
 import { assert } from './utils/assert'
-import { batchExecute, ExecutionExitCode, ExecutionResult } from './utils/batch'
 import { logger } from './utils/logger'
-import { readLeanVersion } from './utils/projectInfo'
 // @ts-ignore
 import { SemVer } from 'semver'
 import { c2pConverter, p2cConverter, patchConverters } from './utils/converters'
 import { displayErrorWithOutput } from './utils/errors'
-import { ExtUri, FileUri, parseExtUri, toExtUri } from './utils/exturi'
+import { ExtUri, parseExtUri, toExtUri } from './utils/exturi'
 import { fileExists } from './utils/fsHelper'
 import path = require('path')
 
@@ -484,58 +482,6 @@ export class LeanClient implements Disposable {
         return this.running ? this.client?.initializeResult : undefined
     }
 
-    private async checkToolchainVersion(folderUri: FileUri): Promise<Date | undefined> {
-        // see if we have a well known toolchain label that corresponds
-        // to a known date like 'leanprover/lean4:nightly-2022-02-01'
-        const toolchainVersion = await readLeanVersion(folderUri)
-        if (toolchainVersion) {
-            const nightly_match = /^leanprover\/lean4:nightly-(\d+)-(\d+)-(\d+)$/.exec(toolchainVersion)
-            if (nightly_match) {
-                return new Date(parseInt(nightly_match[1]), parseInt(nightly_match[2]) - 1, parseInt(nightly_match[3]))
-            }
-            const release_match = /^leanprover\/lean4:(\d+)-(\d+)-(\d+)$/.exec(toolchainVersion)
-            if (release_match) {
-                return new Date(2023, 9, 8)
-            }
-            if (toolchainVersion === 'leanprover/lean4:stable') {
-                return new Date(2022, 2, 1)
-            }
-        }
-        return undefined
-    }
-
-    async checkLakeVersion(executable: string, version: string | null): Promise<boolean> {
-        // Check that the Lake version is high enough to support "lake serve" option.
-        const versionOptions = version ? ['+' + version, '--version'] : ['--version']
-        const start = Date.now()
-        const cwd = this.folderUri.scheme === 'file' ? this.folderUri.fsPath : undefined
-        const result: ExecutionResult = await batchExecute(executable, versionOptions, cwd)
-        if (result.exitCode !== ExecutionExitCode.Success) {
-            logger.error(`[LeanClient] Ran '${executable} ${versionOptions.join(' ')}', got error:\n${result.stderr}`)
-            return false
-        }
-        logger.log(`[LeanClient] Ran '${executable} ${versionOptions.join(' ')}' in ${Date.now() - start} ms`)
-        const lakeVersion = result.stdout
-        const actual = this.extractVersion(lakeVersion)
-        if (actual.compare('3.0.0') > 0) {
-            return true
-        }
-        return false
-    }
-
-    private extractVersion(v: string | undefined): SemVer {
-        if (!v) return new SemVer('0.0.0')
-        const prefix = 'Lake version'
-        if (v.startsWith(prefix)) v = v.slice(prefix.length).trim()
-        const pos = v.indexOf('(')
-        if (pos > 0) v = v.slice(0, pos).trim()
-        try {
-            return new SemVer(v)
-        } catch {
-            return new SemVer('0.0.0')
-        }
-    }
-
     private async determineServerOptions(): Promise<ServerOptions> {
         const env = addServerEnvPaths(process.env)
         if (serverLoggingEnabled()) {
@@ -569,14 +515,14 @@ export class LeanClient implements Disposable {
         const lakeExecutable = lakePath() || (this.toolchainPath ? join(this.toolchainPath, 'bin', 'lake') : 'lake')
         const leanExecutable = this.toolchainPath ? join(this.toolchainPath, 'bin', 'lean') : 'lean'
 
-        if (await this.shouldUseLake(lakeExecutable)) {
+        if (await this.shouldUseLake()) {
             return [lakeExecutable, ['serve', '--']]
         } else {
             return [leanExecutable, ['--server']]
         }
     }
 
-    private async shouldUseLake(lakeExecutable: string): Promise<boolean> {
+    private async shouldUseLake(): Promise<boolean> {
         // check if the lake process will start (skip it on scheme: 'untitled' files)
         if (!lakeEnabled() || this.folderUri.scheme !== 'file') {
             return false
@@ -584,18 +530,7 @@ export class LeanClient implements Disposable {
 
         const lakefileLean = this.folderUri.join('lakefile.lean')
         const lakefileToml = this.folderUri.join('lakefile.toml')
-        if (!(await fileExists(lakefileLean.fsPath)) && !(await fileExists(lakefileToml.fsPath))) {
-            return false
-        }
-
-        // see if we can avoid the more expensive checkLakeVersion call.
-        const date = await this.checkToolchainVersion(this.folderUri)
-        if (date) {
-            // Feb 16 2022 is when the 3.1.0.pre was released.
-            return date >= new Date(2022, 1, 16)
-        }
-
-        return await this.checkLakeVersion(lakeExecutable, null)
+        return (await fileExists(lakefileLean.fsPath)) || (await fileExists(lakefileToml.fsPath))
     }
 
     private obtainClientOptions(): LanguageClientOptions {
