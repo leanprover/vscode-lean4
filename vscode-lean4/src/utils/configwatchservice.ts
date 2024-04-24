@@ -1,7 +1,7 @@
 import * as path from 'path'
 import { Disposable, EventEmitter, Uri, window, workspace } from 'vscode'
 import { FileUri } from './exturi'
-import { findLeanPackageRoot, findLeanPackageVersionInfo } from './projectInfo'
+import { findLeanProjectInfo, findLeanProjectRoot } from './projectInfo'
 
 // This service monitors the Lean package root folders for changes to any
 // lean-toolchail, lakefile.lean or lakefile.toml files found there.
@@ -78,7 +78,7 @@ export class LeanConfigWatchService implements Disposable {
         // Note: just opening the file fires this event sometimes which is annoying, so
         // we compare the contents just to be sure and normalize whitespace so that
         // just adding a new line doesn't trigger the prompt.
-        const [packageUri, _] = await findLeanPackageRoot(fileUri)
+        const [packageUri, _] = await findLeanProjectRoot(fileUri)
         if (!packageUri) {
             return
         }
@@ -108,7 +108,7 @@ export class LeanConfigWatchService implements Disposable {
 
         // note: apply the same rules here with findLeanPackageVersionInfo no matter
         // if a file is added or removed so we always match the elan behavior.
-        const [packageUri, version] = await findLeanPackageVersionInfo(fileUri)
+        const [packageUri, version] = await findLeanProjectInfo(fileUri)
         if (!packageUri || !version) {
             return
         }

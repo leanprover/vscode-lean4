@@ -20,7 +20,7 @@ import { LeanConfigWatchService } from './utils/configwatchservice'
 import { isExtUri, toExtUriOrError, UntitledUri } from './utils/exturi'
 import { LeanInstaller } from './utils/leanInstaller'
 import { logger } from './utils/logger'
-import { findLeanPackageVersionInfo } from './utils/projectInfo'
+import { findLeanProjectInfo } from './utils/projectInfo'
 
 interface AlwaysEnabledFeatures {
     docView: DocViewProvider
@@ -129,7 +129,7 @@ async function isLean3Project(installer: LeanInstaller): Promise<boolean> {
 
     const docUri = toExtUriOrError(doc.uri)
     const [packageUri, toolchainVersion] =
-        docUri.scheme === 'file' ? await findLeanPackageVersionInfo(docUri) : [new UntitledUri(), undefined]
+        docUri.scheme === 'file' ? await findLeanProjectInfo(docUri) : [new UntitledUri(), undefined]
 
     if (toolchainVersion && toolchainVersion.indexOf('lean:3') > 0) {
         logger.log(`Lean4 skipping lean 3 project: ${toolchainVersion}`)

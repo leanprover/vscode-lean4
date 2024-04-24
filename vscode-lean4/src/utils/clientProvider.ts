@@ -12,7 +12,7 @@ import { displayErrorWithOutput } from './errors'
 import { ExtUri, FileUri, getWorkspaceFolderUri, toExtUri, UntitledUri } from './exturi'
 import { LeanInstaller, LeanVersion } from './leanInstaller'
 import { logger } from './logger'
-import { checkParentFoldersForLeanProject, findLeanPackageRoot, isValidLeanProject } from './projectInfo'
+import { checkParentFoldersForLeanProject, findLeanProjectRoot, isValidLeanProject } from './projectInfo'
 
 // This class ensures we have one LeanClient per folder.
 export class LeanClientProvider implements Disposable {
@@ -89,7 +89,7 @@ export class LeanClientProvider implements Disposable {
 
     private async findPackageRootUri(uri: ExtUri): Promise<ExtUri> {
         if (uri.scheme === 'file') {
-            const [root, _] = await findLeanPackageRoot(uri)
+            const [root, _] = await findLeanProjectRoot(uri)
             return root
         } else {
             return new UntitledUri()

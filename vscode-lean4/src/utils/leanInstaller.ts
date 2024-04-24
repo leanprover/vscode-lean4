@@ -4,7 +4,7 @@ import { addServerEnvPaths, getPowerShellPath, isRunningTest, shouldAutofocusOut
 import { batchExecute, ExecutionExitCode, ExecutionResult } from './batch'
 import { ExtUri, FileUri } from './exturi'
 import { logger } from './logger'
-import { isCoreLean4Directory, readLeanVersion } from './projectInfo'
+import { isCoreLean4Directory, readLeanToolchain } from './projectInfo'
 
 export class LeanVersion {
     version: string
@@ -50,7 +50,7 @@ export class LeanInstaller {
     async testLeanVersion(packageUri: ExtUri): Promise<LeanVersion> {
         // see if there is a lean-toolchain file and use that version info.
         let leanVersion: string | undefined =
-            packageUri.scheme === 'file' ? await readLeanVersion(packageUri) : undefined
+            packageUri.scheme === 'file' ? await readLeanToolchain(packageUri) : undefined
 
         if (leanVersion === undefined) {
             const hasElan = await this.hasElan()

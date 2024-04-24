@@ -1,7 +1,6 @@
 import * as fs from 'fs'
 import { FileUri, getWorkspaceFolderUri } from './exturi'
 import { fileExists } from './fsHelper'
-import { logger } from './logger'
 import path = require('path')
 
 // Detect lean4 root directory (works for both lean4 repo and nightly distribution)
@@ -31,7 +30,7 @@ export async function isCoreLean4Directory(path: FileUri): Promise<boolean> {
 }
 
 // Find the root of a Lean project and the Uri for the 'lean-toolchain' file found there.
-export async function findLeanPackageRoot(uri: FileUri): Promise<[FileUri, FileUri | undefined]> {
+export async function findLeanProjectRoot(uri: FileUri): Promise<[FileUri, FileUri | undefined]> {
     const toolchainFileName = 'lean-toolchain'
 
     let path = uri
@@ -78,37 +77,30 @@ export async function findLeanPackageRoot(uri: FileUri): Promise<[FileUri, FileU
     return [bestFolder, bestLeanToolchain]
 }
 
-// Find the lean project root for the given document and return the
-// Uri for the project root and the "version" information contained
-// in any 'lean-toolchain' file found there.
-export async function findLeanPackageVersionInfo(uri: FileUri): Promise<[FileUri, string | undefined]> {
-    const [packageUri, packageFileUri] = await findLeanPackageRoot(uri)
-
-    let version: string | undefined
-    if (packageFileUri) {
-        try {
-            version = await readLeanVersionFile(packageFileUri)
-        } catch (err) {
-            logger.log(`findLeanPackageVersionInfo caught exception ${err}`)
-        }
+export async function findLeanProjectInfo(uri: FileUri): Promise<[FileUri, string | undefined]> {
+    const [projectUri, toolchainUri] = await findLeanProjectRoot(uri)
+    if (!toolchainUri) {
+        return [projectUri, undefined]
     }
 
-    return [packageUri, version]
+    return [projectUri, await readLeanToolchainFile(toolchainUri)]
 }
 
-// Find the 'lean-toolchain' in the given package root and
-// extract the Lean version info from it.
-export async function readLeanVersion(packageUri: FileUri): Promise<string | undefined> {
+export async function readLeanToolchain(projectUri: FileUri): Promise<string | undefined> {
     const toolchainFileName = 'lean-toolchain'
-    const leanToolchain = packageUri.join(toolchainFileName)
-    if (fs.existsSync(leanToolchain.fsPath)) {
-        return await readLeanVersionFile(leanToolchain)
+    const leanToolchain = projectUri.join(toolchainFileName)
+    if (!fs.existsSync(leanToolchain.fsPath)) {
+        return undefined
     }
-    return undefined
+    return await readLeanToolchainFile(leanToolchain)
 }
 
-async function readLeanVersionFile(packageFileUri: FileUri): Promise<string> {
-    return (await fs.promises.readFile(packageFileUri.fsPath, { encoding: 'utf-8' })).trim()
+async function readLeanToolchainFile(toolchainFileUri: FileUri): Promise<string | undefined> {
+    try {
+        return (await fs.promises.readFile(toolchainFileUri.fsPath, { encoding: 'utf-8' })).trim()
+    } catch {
+        return undefined
+    }
 }
 
 export async function isValidLeanProject(projectFolder: FileUri): Promise<boolean> {
