@@ -30,7 +30,7 @@ export async function isCoreLean4Directory(path: FileUri): Promise<boolean> {
 }
 
 // Find the root of a Lean project and the Uri for the 'lean-toolchain' file found there.
-export async function findLeanProjectRoot(uri: FileUri): Promise<[FileUri, FileUri | undefined]> {
+export async function findLeanProjectRootInfo(uri: FileUri): Promise<[FileUri, FileUri | undefined]> {
     const toolchainFileName = 'lean-toolchain'
 
     let path = uri
@@ -77,8 +77,13 @@ export async function findLeanProjectRoot(uri: FileUri): Promise<[FileUri, FileU
     return [bestFolder, bestLeanToolchain]
 }
 
+export async function findLeanProjectRoot(uri: FileUri): Promise<FileUri> {
+    const [projectRootUri, _] = await findLeanProjectRootInfo(uri)
+    return projectRootUri
+}
+
 export async function findLeanProjectInfo(uri: FileUri): Promise<[FileUri, string | undefined]> {
-    const [projectUri, toolchainUri] = await findLeanProjectRoot(uri)
+    const [projectUri, toolchainUri] = await findLeanProjectRootInfo(uri)
     if (!toolchainUri) {
         return [projectUri, undefined]
     }

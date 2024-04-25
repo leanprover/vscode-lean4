@@ -1,10 +1,9 @@
-import { join } from 'path'
 import { EventEmitter, OutputChannel, TerminalOptions, window } from 'vscode'
-import { addServerEnvPaths, getPowerShellPath, isRunningTest, shouldAutofocusOutput, toolchainPath } from '../config'
-import { batchExecute, ExecutionExitCode, ExecutionResult } from './batch'
+import { getPowerShellPath, isRunningTest, shouldAutofocusOutput, toolchainPath } from '../config'
+import { batchExecute } from './batch'
 import { ExtUri, FileUri } from './exturi'
 import { logger } from './logger'
-import { isCoreLean4Directory, readLeanToolchain } from './projectInfo'
+import { diagnose } from './setupDiagnostics'
 
 export class LeanVersion {
     version: string
@@ -46,37 +45,6 @@ export class LeanInstaller {
         return this.outputChannel
     }
 
-    async testLeanVersion(packageUri: ExtUri): Promise<LeanVersion> {
-        // see if there is a lean-toolchain file and use that version info.
-        let leanVersion: string | undefined =
-            packageUri.scheme === 'file' ? await readLeanToolchain(packageUri) : undefined
-
-        if (leanVersion === undefined) {
-            const hasElan = await this.hasElan()
-            if (!hasElan) {
-                // Ah, there is no elan, but what if Lean is in the PATH due to custom install?
-                const found = await this.checkLeanVersion(packageUri, leanVersion)
-                if (found.error) {
-                    return { version: '', error: 'no elan installed' }
-                }
-            } else if (packageUri.scheme === 'file' && !(await isCoreLean4Directory(packageUri))) {
-                const defaultVersion = await this.getElanDefaultToolchain(packageUri)
-                if (!defaultVersion) {
-                    return { version: '', error: 'no default toolchain' }
-                }
-                leanVersion = defaultVersion
-            }
-        }
-
-        const found = await this.checkLeanVersion(packageUri, leanVersion)
-        if (found.error && leanVersion) {
-            // if we have a lean-toolchain version or a workspace override then
-            // use that version during the installElan process.
-            this.defaultToolchain = leanVersion
-        }
-        return found
-    }
-
     async handleVersionChanged(packageUri: FileUri): Promise<void> {
         if (!this.promptUser) {
             await this.checkAndFire(packageUri)
@@ -106,8 +74,8 @@ export class LeanInstaller {
     }
 
     private async checkAndFire(packageUri: FileUri) {
-        const rc = await this.testLeanVersion(packageUri)
-        if (rc.version === '4') {
+        const leanVersionResult = await diagnose(this.outputChannel, packageUri).queryLeanVersion()
+        if (leanVersionResult.kind === 'Success' && leanVersionResult.version.major === 4) {
             // it works, so restart the client!
             this.installChangedEmitter.fire(packageUri)
         }
@@ -171,56 +139,6 @@ export class LeanInstaller {
             }
         })
         return s.trim()
-    }
-
-    async checkLeanVersion(packageUri: ExtUri, toolchain: string | undefined): Promise<LeanVersion> {
-        let cmd = toolchainPath()
-        if (!cmd) {
-            cmd = 'lean'
-        } else {
-            cmd = join(cmd, 'bin', 'lean')
-        }
-
-        addServerEnvPaths(process.env)
-
-        let options = ['--version']
-        if (toolchain) {
-            options = ['+' + toolchain, ...options]
-        }
-
-        const result: LeanVersion = { version: '', error: undefined }
-        // If folderPath is undefined, this will use the process environment for cwd.
-        // Specifically, if the extension was not opened inside of a folder, it
-        // looks for a global (default) installation of Lean. This way, we can support
-        // single file editing.
-        logger.log(`executeWithProgress ${cmd} ${options}`)
-        const cwd = packageUri.scheme === 'file' ? packageUri.fsPath : undefined
-        const checkingResult: ExecutionResult = await batchExecute(cmd, options, cwd, {
-            combined: this.outputChannel,
-        })
-        if (checkingResult.exitCode === ExecutionExitCode.CannotLaunch) {
-            result.error = 'lean not found'
-        } else if (checkingResult.exitCode === ExecutionExitCode.ExecutionError) {
-            if (checkingResult.stderr.match(/error: toolchain '.*' is not installed/)) {
-                result.error = 'selected elan default toolchain not installed - please set a new default toolchain'
-            } else {
-                result.error = 'lean version not found'
-            }
-        } else if (checkingResult.stderr.indexOf('no default toolchain') > 0) {
-            result.error = 'no default toolchain'
-        } else {
-            const filterVersion = /version (\d+)\.\d+\..+/
-            const match = filterVersion.exec(checkingResult.stdout)
-            if (!match) {
-                return {
-                    version: '',
-                    error: `lean4: '${cmd} ${options}' returned incorrect version string '${checkingResult.stdout}'.`,
-                }
-            }
-            const major = match[1]
-            result.version = major
-        }
-        return result
     }
 
     getDefaultToolchain(): string {

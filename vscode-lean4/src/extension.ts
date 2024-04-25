@@ -1,4 +1,13 @@
-import { commands, Disposable, ExtensionContext, extensions, TextDocument, window, workspace } from 'vscode'
+import {
+    commands,
+    Disposable,
+    ExtensionContext,
+    extensions,
+    OutputChannel,
+    TextDocument,
+    window,
+    workspace,
+} from 'vscode'
 import { AbbreviationFeature } from './abbreviation'
 import {
     addDefaultElanPath,
@@ -17,14 +26,15 @@ import { ProjectOperationProvider } from './projectoperations'
 import { LeanTaskGutter } from './taskgutter'
 import { LeanClientProvider } from './utils/clientProvider'
 import { LeanConfigWatchService } from './utils/configwatchservice'
-import { isExtUri, toExtUriOrError, UntitledUri } from './utils/exturi'
+import { isExtUri, toExtUriOrError } from './utils/exturi'
 import { LeanInstaller } from './utils/leanInstaller'
-import { logger } from './utils/logger'
-import { findLeanProjectInfo } from './utils/projectInfo'
+import { findLeanProjectRoot } from './utils/projectInfo'
+import { diagnose } from './utils/setupDiagnostics'
 
 interface AlwaysEnabledFeatures {
     docView: DocViewProvider
     projectInitializationProvider: ProjectInitializationProvider
+    outputChannel: OutputChannel
     installer: LeanInstaller
 }
 
@@ -117,34 +127,21 @@ function activateAlwaysEnabledFeatures(context: ExtensionContext): AlwaysEnabled
     }
     context.subscriptions.push(workspace.onDidOpenTextDocument(checkForExtensionConflict))
 
-    return { docView, projectInitializationProvider, installer }
+    return { docView, projectInitializationProvider, outputChannel, installer }
 }
 
-async function isLean3Project(installer: LeanInstaller): Promise<boolean> {
+async function isLean3Project(outputChannel: OutputChannel): Promise<boolean> {
     const doc = findOpenLeanDocument()
     if (!doc) {
-        const versionInfo = await installer.checkLeanVersion(new UntitledUri(), installer.getDefaultToolchain())
-        return versionInfo.version === '3'
+        const leanVersionResult = await diagnose(outputChannel, undefined).queryLeanVersion()
+        return leanVersionResult.kind === 'Success' && leanVersionResult.version.major === 3
     }
 
     const docUri = toExtUriOrError(doc.uri)
-    const [packageUri, toolchainVersion] =
-        docUri.scheme === 'file' ? await findLeanProjectInfo(docUri) : [new UntitledUri(), undefined]
+    const projectUri = docUri.scheme === 'file' ? await findLeanProjectRoot(docUri) : undefined
 
-    if (toolchainVersion && toolchainVersion.indexOf('lean:3') > 0) {
-        logger.log(`Lean4 skipping lean 3 project: ${toolchainVersion}`)
-        return true
-    }
-
-    const versionInfo = await installer.checkLeanVersion(
-        packageUri,
-        toolchainVersion ?? installer.getDefaultToolchain(),
-    )
-    if (versionInfo.version === '3') {
-        return true
-    }
-
-    return false
+    const leanVersionResult = await diagnose(outputChannel, projectUri).queryLeanVersion()
+    return leanVersionResult.kind === 'Success' && leanVersionResult.version.major === 3
 }
 
 function activateAbbreviationFeature(context: ExtensionContext, docView: DocViewProvider): AbbreviationFeature {
@@ -197,7 +194,7 @@ export async function activate(context: ExtensionContext): Promise<Exports> {
     await setLeanFeatureSetActive(false)
     const alwaysEnabledFeatures: AlwaysEnabledFeatures = activateAlwaysEnabledFeatures(context)
 
-    if (await isLean3Project(alwaysEnabledFeatures.installer)) {
+    if (await isLean3Project(alwaysEnabledFeatures.outputChannel)) {
         extensionExports = {
             isLean4Project: false,
             version: '3',
