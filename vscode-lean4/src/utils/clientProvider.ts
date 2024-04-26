@@ -290,79 +290,75 @@ export class LeanClientProvider implements Disposable {
     async ensureClient(uri: ExtUri): Promise<[boolean, LeanClient | undefined]> {
         const folderUri = await this.findPackageRootUri(uri)
         let client = this.getClientForFolder(folderUri)
+        if (client) {
+            this.activeClient = client
+            return [true, client]
+        }
+
         const key = folderUri.toString()
-        const cachedClient = client !== undefined
-        if (!client) {
-            if (this.pending.has(key)) {
-                logger.log('[ClientProvider] ignoring ensureClient already pending on ' + folderUri.toString())
-                return [cachedClient, client]
-            }
+        if (this.pending.has(key)) {
+            logger.log('[ClientProvider] ignoring ensureClient already pending on ' + folderUri.toString())
+            return [false, undefined]
+        }
 
-            this.pending.set(key, true)
-            // this can go all the way to installing elan (in the test scenario)
-            // so it has to be done BEFORE we attempt to create any LeanClient.
-            const leanVersionResult = await this.getLeanVersion(folderUri)
+        this.pending.set(key, true)
+        // this can go all the way to installing elan (in the test scenario)
+        // so it has to be done BEFORE we attempt to create any LeanClient.
+        const leanVersionResult = await this.getLeanVersion(folderUri)
 
-            logger.log('[ClientProvider] Creating LeanClient for ' + folderUri.toString())
-            const elanDefaultToolchain = await this.installer.getElanDefaultToolchain(folderUri)
+        logger.log('[ClientProvider] Creating LeanClient for ' + folderUri.toString())
+        const elanDefaultToolchain = await this.installer.getElanDefaultToolchain(folderUri)
 
-            // We must create a Client before doing the long running testLeanVersion
-            // so that ensureClient callers have an "optimistic" client to work with.
-            // This is needed in our constructor where it is calling ensureClient for
-            // every open file.  A workspace could have multiple files open and we want
-            // to remember all those open files are associated with this client before
-            // testLeanVersion has completed.
-            client = new LeanClient(folderUri, this.outputChannel, elanDefaultToolchain)
-            this.subscriptions.push(client)
-            this.clients.set(key, client)
+        client = new LeanClient(folderUri, this.outputChannel, elanDefaultToolchain)
+        this.subscriptions.push(client)
+        this.clients.set(key, client)
 
-            if (leanVersionResult.kind === 'Success' && leanVersionResult.version.major !== 4) {
-                // ignore workspaces that belong to a different version of Lean.
-                logger.log(
-                    `[ClientProvider] Lean4 extension ignoring workspace '${folderUri}' because it is not a Lean 4 workspace.`,
-                )
-                this.pending.delete(key)
-                this.clients.delete(key)
-                client.dispose()
-                return [false, undefined]
-            }
-
-            client.serverFailed(err => {
-                // forget this client!
-                logger.log(`[ClientProvider] serverFailed, removing client for ${key}`)
-                const cached = this.clients.get(key)
-                this.clients.delete(key)
-                cached?.dispose()
-                void window.showErrorMessage(err)
-            })
-
-            client.stopped(reason => {
-                if (client) {
-                    // fires a message in case a client is stopped unexpectedly
-                    this.clientStoppedEmitter.fire([client, client === this.activeClient, reason])
-                }
-            })
-
-            // aggregate progress changed events.
-            client.progressChanged(arg => {
-                this.progressChangedEmitter.fire(arg)
-            })
-
+        if (leanVersionResult.kind === 'Success' && leanVersionResult.version.major !== 4) {
+            // ignore workspaces that belong to a different version of Lean.
+            logger.log(
+                `[ClientProvider] Lean4 extension ignoring workspace '${folderUri}' because it is not a Lean 4 workspace.`,
+            )
             this.pending.delete(key)
-            logger.log('[ClientProvider] firing clientAddedEmitter event')
-            this.clientAddedEmitter.fire(client)
+            this.clients.delete(key)
+            client.dispose()
+            return [false, undefined]
+        }
 
-            if (leanVersionResult.kind === 'Success') {
-                // we are ready to start, otherwise some sort of install might be happening
-                // as a result of UI options shown by testLeanVersion.
-                await client.start()
+        client.serverFailed(err => {
+            // forget this client!
+            logger.log(`[ClientProvider] serverFailed, removing client for ${key}`)
+            const cached = this.clients.get(key)
+            this.clients.delete(key)
+            cached?.dispose()
+            void window.showErrorMessage(err)
+        })
+
+        client.stopped(reason => {
+            if (client) {
+                // fires a message in case a client is stopped unexpectedly
+                this.clientStoppedEmitter.fire([client, client === this.activeClient, reason])
             }
+        })
+
+        // aggregate progress changed events.
+        client.progressChanged(arg => {
+            this.progressChangedEmitter.fire(arg)
+        })
+
+        this.pending.delete(key)
+        logger.log('[ClientProvider] firing clientAddedEmitter event')
+        this.clientAddedEmitter.fire(client)
+
+        if (leanVersionResult.kind === 'Success') {
+            // we are ready to start, otherwise some sort of install might be happening
+            // as a result of UI options shown by testLeanVersion.
+            await client.start()
         }
 
         // tell the InfoView about this activated client.
         this.activeClient = client
 
-        return [cachedClient, client]
+        return [false, client]
     }
 
     private async checkIsValidProjectFolder(folderUri: ExtUri) {

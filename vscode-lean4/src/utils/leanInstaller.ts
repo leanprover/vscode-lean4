@@ -3,7 +3,6 @@ import { getPowerShellPath, isRunningTest, shouldAutofocusOutput, toolchainPath 
 import { batchExecute } from './batch'
 import { ExtUri, FileUri } from './exturi'
 import { logger } from './logger'
-import { diagnose } from './setupDiagnostics'
 
 export class LeanVersion {
     version: string
@@ -47,7 +46,7 @@ export class LeanInstaller {
 
     async handleVersionChanged(packageUri: FileUri): Promise<void> {
         if (!this.promptUser) {
-            await this.checkAndFire(packageUri)
+            this.installChangedEmitter.fire(packageUri)
             return
         }
 
@@ -58,7 +57,7 @@ export class LeanInstaller {
         const restartItem = 'Restart Lean'
         const item = await this.showPrompt('Lean version changed', restartItem)
         if (item === restartItem) {
-            await this.checkAndFire(packageUri)
+            this.installChangedEmitter.fire(packageUri)
         }
     }
 
@@ -71,14 +70,6 @@ export class LeanInstaller {
         const item = await window.showErrorMessage(message, ...items)
         this.prompting = false
         return item
-    }
-
-    private async checkAndFire(packageUri: FileUri) {
-        const leanVersionResult = await diagnose(this.outputChannel, packageUri).queryLeanVersion()
-        if (leanVersionResult.kind === 'Success' && leanVersionResult.version.major === 4) {
-            // it works, so restart the client!
-            this.installChangedEmitter.fire(packageUri)
-        }
     }
 
     async handleLakeFileChanged(packageUri: FileUri): Promise<void> {
