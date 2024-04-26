@@ -1,6 +1,6 @@
 import * as path from 'path'
-import { Disposable, EventEmitter, window, workspace } from 'vscode'
-import { ExtUri, extUriOrError, FileUri } from './exturi'
+import { Disposable, EventEmitter, Uri, window, workspace } from 'vscode'
+import { FileUri } from './exturi'
 import { findLeanPackageRoot, findLeanPackageVersionInfo } from './projectInfo'
 
 // This service monitors the Lean package root folders for changes to any
@@ -25,28 +25,28 @@ export class LeanConfigWatchService implements Disposable {
 
     constructor() {
         const watcher1 = workspace.createFileSystemWatcher('**/lean-toolchain')
-        watcher1.onDidChange(u => this.handleFileChanged(FileUri.fromUriOrError(u), true))
-        watcher1.onDidCreate(u => this.handleFileChanged(FileUri.fromUriOrError(u), true))
-        watcher1.onDidDelete(u => this.handleFileChanged(FileUri.fromUriOrError(u), true))
+        watcher1.onDidChange(u => this.handleFileChanged(u, true))
+        watcher1.onDidCreate(u => this.handleFileChanged(u, true))
+        watcher1.onDidDelete(u => this.handleFileChanged(u, true))
         this.subscriptions.push(watcher1)
 
         const watcher2 = workspace.createFileSystemWatcher(`**/${this.lakeFileLeanName}`)
-        watcher2.onDidChange(u => this.handleLakeFileChanged(FileUri.fromUriOrError(u), true))
-        watcher2.onDidCreate(u => this.handleLakeFileChanged(FileUri.fromUriOrError(u), true))
-        watcher2.onDidDelete(u => this.handleLakeFileChanged(FileUri.fromUriOrError(u), true))
+        watcher2.onDidChange(u => this.handleLakeFileChanged(u, true))
+        watcher2.onDidCreate(u => this.handleLakeFileChanged(u, true))
+        watcher2.onDidDelete(u => this.handleLakeFileChanged(u, true))
         this.subscriptions.push(watcher2)
 
         const watcher3 = workspace.createFileSystemWatcher(`**/${this.lakeFileTomlName}`)
-        watcher3.onDidChange(u => this.handleLakeFileChanged(FileUri.fromUriOrError(u), true))
-        watcher3.onDidCreate(u => this.handleLakeFileChanged(FileUri.fromUriOrError(u), true))
-        watcher3.onDidDelete(u => this.handleLakeFileChanged(FileUri.fromUriOrError(u), true))
+        watcher3.onDidChange(u => this.handleLakeFileChanged(u, true))
+        watcher3.onDidCreate(u => this.handleLakeFileChanged(u, true))
+        watcher3.onDidDelete(u => this.handleLakeFileChanged(u, true))
         this.subscriptions.push(watcher3)
 
-        window.visibleTextEditors.forEach(e => this.didOpen(extUriOrError(e.document.uri)))
+        window.visibleTextEditors.forEach(e => this.didOpen(e.document.uri))
         this.subscriptions.push(
-            window.onDidChangeVisibleTextEditors(es => es.forEach(e => this.didOpen(extUriOrError(e.document.uri)))),
+            window.onDidChangeVisibleTextEditors(es => es.forEach(e => this.didOpen(e.document.uri))),
         )
-        workspace.onDidOpenTextDocument(document => this.didOpen(extUriOrError(document.uri)))
+        workspace.onDidOpenTextDocument(document => this.didOpen(document.uri))
     }
 
     dispose(): void {
@@ -57,7 +57,7 @@ export class LeanConfigWatchService implements Disposable {
 
     // Must be called when every file is opened so it can track the current contents
     // of the files we care about.
-    private didOpen(uri: ExtUri) {
+    private didOpen(uri: Uri) {
         if (uri.scheme !== 'file') {
             return
         }
@@ -69,7 +69,12 @@ export class LeanConfigWatchService implements Disposable {
         }
     }
 
-    private async handleLakeFileChanged(fileUri: FileUri, raiseEvent: boolean) {
+    private async handleLakeFileChanged(uri: Uri, raiseEvent: boolean) {
+        const fileUri = FileUri.fromUri(uri)
+        if (fileUri === undefined) {
+            return
+        }
+
         // Note: just opening the file fires this event sometimes which is annoying, so
         // we compare the contents just to be sure and normalize whitespace so that
         // just adding a new line doesn't trigger the prompt.
@@ -95,10 +100,15 @@ export class LeanConfigWatchService implements Disposable {
         }
     }
 
-    private async handleFileChanged(uri: FileUri, raiseEvent: boolean) {
+    private async handleFileChanged(uri: Uri, raiseEvent: boolean) {
+        const fileUri = FileUri.fromUri(uri)
+        if (fileUri === undefined) {
+            return
+        }
+
         // note: apply the same rules here with findLeanPackageVersionInfo no matter
         // if a file is added or removed so we always match the elan behavior.
-        const [packageUri, version] = await findLeanPackageVersionInfo(uri)
+        const [packageUri, version] = await findLeanPackageVersionInfo(fileUri)
         if (!packageUri || !version) {
             return
         }

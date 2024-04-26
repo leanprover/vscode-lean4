@@ -54,7 +54,7 @@ import { readLeanVersion } from './utils/projectInfo'
 import { SemVer } from 'semver'
 import { c2pConverter, p2cConverter, patchConverters } from './utils/converters'
 import { displayErrorWithOutput } from './utils/errors'
-import { ExtUri, extUriOrError, FileUri, parseExtUri } from './utils/exturi'
+import { ExtUri, FileUri, parseExtUri, toExtUri } from './utils/exturi'
 import { fileExists } from './utils/fsHelper'
 import path = require('path')
 
@@ -258,10 +258,12 @@ export class LeanClient implements Disposable {
         const starHandler = (method: string, params_: any) => {
             if (method === '$/lean/fileProgress' && this.client) {
                 const params = params_ as LeanFileProgressParams
-                const uri = p2cConverter.asUri(params.textDocument.uri)
-                this.progressChangedEmitter.fire([uri.toString(), params.processing])
-                // save the latest progress on this Uri in case infoview needs it later.
-                this.progress.set(extUriOrError(uri), params.processing)
+                const uri = toExtUri(p2cConverter.asUri(params.textDocument.uri))
+                if (uri !== undefined) {
+                    this.progressChangedEmitter.fire([uri.toString(), params.processing])
+                    // save the latest progress on this Uri in case infoview needs it later.
+                    this.progress.set(uri, params.processing)
+                }
             }
 
             this.customNotificationEmitter.fire({ method, params: params_ })
@@ -288,6 +290,10 @@ export class LeanClient implements Disposable {
 
     private async checkForImportsOutdatedError(params: PublishDiagnosticsParams) {
         const fileUri = parseExtUri(params.uri)
+        if (fileUri === undefined) {
+            return
+        }
+
         const fileName = fileUri.scheme === 'file' ? path.basename(fileUri.fsPath) : 'untitled'
         const isImportsOutdatedError = params.diagnostics.some(
             d =>
@@ -422,11 +428,16 @@ export class LeanClient implements Disposable {
 
         assert(() => this.isStarted())
 
-        if (!this.isInFolderManagedByThisClient(extUriOrError(doc.uri))) {
+        const docUri = toExtUri(doc.uri)
+        if (docUri === undefined) {
+            return
+        }
+
+        if (!this.isInFolderManagedByThisClient(docUri)) {
             // skip it, this file belongs to a different workspace...
             return
         }
-        const uri = doc.uri.toString()
+        const uri = docUri.toString()
         logger.log(`[LeanClient] Restarting File: ${uri}`)
         // This causes a text document version number discontinuity. In
         // (didChange (oldVersion) => restartFile => didChange (newVersion))

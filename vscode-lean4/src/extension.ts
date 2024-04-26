@@ -17,7 +17,7 @@ import { ProjectOperationProvider } from './projectoperations'
 import { LeanTaskGutter } from './taskgutter'
 import { LeanClientProvider } from './utils/clientProvider'
 import { LeanConfigWatchService } from './utils/configwatchservice'
-import { extUriOrError, UntitledUri } from './utils/exturi'
+import { isExtUri, toExtUriOrError, UntitledUri } from './utils/exturi'
 import { LeanInstaller } from './utils/leanInstaller'
 import { logger } from './utils/logger'
 import { findLeanPackageVersionInfo } from './utils/projectInfo'
@@ -38,20 +38,20 @@ async function setLeanFeatureSetActive(isActive: boolean) {
     await commands.executeCommand('setContext', 'lean4.isLeanFeatureSetActive', isActive)
 }
 
-function isLean(languageId: string): boolean {
-    return languageId === 'lean4'
+function isLean4Document(doc: TextDocument): boolean {
+    return isExtUri(doc.uri) && doc.languageId === 'lean4'
 }
 
 function findOpenLeanDocument(): TextDocument | undefined {
     const activeEditor = window.activeTextEditor
-    if (activeEditor && isLean(activeEditor.document.languageId)) {
+    if (activeEditor && isLean4Document(activeEditor.document)) {
         return activeEditor.document
     }
 
     // This happens if vscode starts with a lean file open
     // but the "Getting Started" page is active.
     for (const editor of window.visibleTextEditors) {
-        if (isLean(editor.document.languageId)) {
+        if (isLean4Document(editor.document)) {
             return editor.document
         }
     }
@@ -127,7 +127,7 @@ async function isLean3Project(installer: LeanInstaller): Promise<boolean> {
         return versionInfo.version === '3'
     }
 
-    const docUri = extUriOrError(doc.uri)
+    const docUri = toExtUriOrError(doc.uri)
     const [packageUri, toolchainVersion] =
         docUri.scheme === 'file' ? await findLeanPackageVersionInfo(docUri) : [new UntitledUri(), undefined]
 
@@ -233,7 +233,7 @@ export async function activate(context: ExtensionContext): Promise<Exports> {
 
     // No Lean 4 document yet => Load remaining features when one is open
     const disposeActivationListener: Disposable = workspace.onDidOpenTextDocument(async doc => {
-        if (isLean(doc.languageId)) {
+        if (isLean4Document(doc)) {
             const lean4EnabledFeatures: Lean4EnabledFeatures = await activateLean4Features(
                 context,
                 alwaysEnabledFeatures.installer,
