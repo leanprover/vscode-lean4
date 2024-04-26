@@ -14,11 +14,19 @@ export class FileUri {
         this.fsPath = fsPath
     }
 
-    static fromUriOrError(uri: Uri): FileUri {
+    static fromUri(uri: Uri): FileUri | undefined {
         if (uri.scheme !== 'file') {
-            throw unsupportedSchemeError(uri)
+            return undefined
         }
         return new FileUri(uri.fsPath)
+    }
+
+    static fromUriOrError(uri: Uri): FileUri {
+        const fileUri = FileUri.fromUri(uri)
+        if (fileUri === undefined) {
+            throw unsupportedSchemeError(uri)
+        }
+        return fileUri
     }
 
     asUri(): Uri {
@@ -30,10 +38,11 @@ export class FileUri {
     }
 
     equalsUri(other: Uri): boolean {
-        if (other.scheme !== 'file') {
+        const otherFileUri = FileUri.fromUri(other)
+        if (otherFileUri === undefined) {
             return false
         }
-        return this.equals(new FileUri(other.fsPath))
+        return this.equals(otherFileUri)
     }
 
     toString(): string {
@@ -41,7 +50,7 @@ export class FileUri {
     }
 
     join(...pathSegments: string[]): FileUri {
-        return new FileUri(Uri.joinPath(this.asUri(), ...pathSegments).fsPath)
+        return FileUri.fromUriOrError(Uri.joinPath(this.asUri(), ...pathSegments))
     }
 
     isInFolder(folderUri: FileUri): boolean {
@@ -54,22 +63,51 @@ export function getWorkspaceFolderUri(uri: FileUri): FileUri | undefined {
     if (folder === undefined) {
         return undefined
     }
-    return FileUri.fromUriOrError(folder.uri)
+    const folderUri = FileUri.fromUri(folder.uri)
+    if (folderUri === undefined) {
+        return undefined
+    }
+    return folderUri
 }
 
 export class UntitledUri {
     scheme: 'untitled'
+    path: string
 
-    constructor() {
+    constructor(path?: string | undefined) {
         this.scheme = 'untitled'
+        this.path = path ?? ''
+    }
+
+    static fromUri(uri: Uri): UntitledUri | undefined {
+        if (uri.scheme !== 'untitled') {
+            return undefined
+        }
+        return new UntitledUri(uri.path)
+    }
+
+    static fromUriOrError(uri: Uri): UntitledUri {
+        const untitledUri = UntitledUri.fromUri(uri)
+        if (untitledUri === undefined) {
+            throw unsupportedSchemeError(uri)
+        }
+        return untitledUri
     }
 
     asUri(): Uri {
-        return Uri.from({ scheme: 'untitled' })
+        return Uri.from({ scheme: 'untitled', path: this.path })
+    }
+
+    equals(other: UntitledUri): boolean {
+        return this.path === other.path
     }
 
     equalsUri(other: Uri): boolean {
-        return other.scheme === 'untitled'
+        const otherFileUri = UntitledUri.fromUri(other)
+        if (otherFileUri === undefined) {
+            return false
+        }
+        return this.equals(otherFileUri)
     }
 
     toString(): string {
@@ -80,16 +118,32 @@ export class UntitledUri {
 /** Uris supported by this extension. */
 export type ExtUri = FileUri | UntitledUri
 
-export function extUriOrError(uri: Uri): ExtUri {
+export function isExtUri(uri: Uri): boolean {
+    return uri.scheme === 'untitled' || uri.scheme === 'file'
+}
+
+export function toExtUri(uri: Uri): ExtUri | undefined {
     if (uri.scheme === 'untitled') {
-        return new UntitledUri()
+        return new UntitledUri(uri.path)
     }
     if (uri.scheme === 'file') {
         return new FileUri(uri.fsPath)
     }
-    throw new Error(`Got URI with unsupported scheme '${uri.scheme}': '${uri}'`)
+    return undefined
 }
 
-export function parseExtUri(uriString: string): ExtUri {
-    return extUriOrError(Uri.parse(uriString))
+export function toExtUriOrError(uri: Uri): ExtUri {
+    const result: ExtUri | undefined = toExtUri(uri)
+    if (result === undefined) {
+        throw unsupportedSchemeError(uri)
+    }
+    return result
+}
+
+export function parseExtUri(uriString: string): ExtUri | undefined {
+    return toExtUri(Uri.parse(uriString))
+}
+
+export function parseExtUriOrError(uriString: string): ExtUri {
+    return toExtUriOrError(Uri.parse(uriString))
 }

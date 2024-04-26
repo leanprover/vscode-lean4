@@ -9,7 +9,7 @@ import {
 } from '../config'
 import { LeanClient } from '../leanclient'
 import { displayErrorWithOutput } from './errors'
-import { ExtUri, extUriOrError, FileUri, getWorkspaceFolderUri, UntitledUri } from './exturi'
+import { ExtUri, FileUri, getWorkspaceFolderUri, toExtUri, UntitledUri } from './exturi'
 import { LeanInstaller, LeanVersion } from './leanInstaller'
 import { logger } from './logger'
 import { checkParentFoldersForLeanProject, findLeanPackageRoot, isValidLeanProject } from './projectInfo'
@@ -193,7 +193,12 @@ export class LeanClientProvider implements Disposable {
             return
         }
 
-        if (!this.getVisibleEditor(extUriOrError(document.uri))) {
+        const uri = toExtUri(document.uri)
+        if (uri === undefined) {
+            return
+        }
+
+        if (!this.getVisibleEditor(uri)) {
             // Sometimes VS code opens a document that has no editor yet.
             // For example, this happens when the vs code opens files to get git
             // information using a "git:" Uri scheme:
@@ -202,7 +207,7 @@ export class LeanClientProvider implements Disposable {
         }
 
         try {
-            const [cached, client] = await this.ensureClient(extUriOrError(document.uri), undefined)
+            const [cached, client] = await this.ensureClient(uri, undefined)
             if (!client) {
                 return
             }
