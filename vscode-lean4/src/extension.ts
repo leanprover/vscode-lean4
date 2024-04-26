@@ -26,10 +26,8 @@ import { ProjectOperationProvider } from './projectoperations'
 import { LeanTaskGutter } from './taskgutter'
 import { LeanClientProvider } from './utils/clientProvider'
 import { LeanConfigWatchService } from './utils/configwatchservice'
-import { isExtUri, toExtUriOrError } from './utils/exturi'
+import { isExtUri } from './utils/exturi'
 import { LeanInstaller } from './utils/leanInstaller'
-import { findLeanProjectRoot } from './utils/projectInfo'
-import { diagnose } from './utils/setupDiagnostics'
 
 interface AlwaysEnabledFeatures {
     docView: DocViewProvider
@@ -130,20 +128,6 @@ function activateAlwaysEnabledFeatures(context: ExtensionContext): AlwaysEnabled
     return { docView, projectInitializationProvider, outputChannel, installer }
 }
 
-async function isLean3Project(outputChannel: OutputChannel): Promise<boolean> {
-    const doc = findOpenLeanDocument()
-    if (!doc) {
-        const leanVersionResult = await diagnose(outputChannel, undefined).queryLeanVersion()
-        return leanVersionResult.kind === 'Success' && leanVersionResult.version.major === 3
-    }
-
-    const docUri = toExtUriOrError(doc.uri)
-    const projectUri = docUri.scheme === 'file' ? await findLeanProjectRoot(docUri) : undefined
-
-    const leanVersionResult = await diagnose(outputChannel, projectUri).queryLeanVersion()
-    return leanVersionResult.kind === 'Success' && leanVersionResult.version.major === 3
-}
-
 function activateAbbreviationFeature(context: ExtensionContext, docView: DocViewProvider): AbbreviationFeature {
     const abbrev = new AbbreviationFeature()
     // Pass the abbreviations through to the docView so it can show them on demand.
@@ -193,20 +177,6 @@ let extensionExports: Exports
 export async function activate(context: ExtensionContext): Promise<Exports> {
     await setLeanFeatureSetActive(false)
     const alwaysEnabledFeatures: AlwaysEnabledFeatures = activateAlwaysEnabledFeatures(context)
-
-    if (await isLean3Project(alwaysEnabledFeatures.outputChannel)) {
-        extensionExports = {
-            isLean4Project: false,
-            version: '3',
-            infoProvider: undefined,
-            clientProvider: undefined,
-            projectOperationProvider: undefined,
-            installer: alwaysEnabledFeatures.installer,
-            docView: alwaysEnabledFeatures.docView,
-            projectInitializationProver: alwaysEnabledFeatures.projectInitializationProvider,
-        }
-        return extensionExports
-    }
 
     activateAbbreviationFeature(context, alwaysEnabledFeatures.docView)
 

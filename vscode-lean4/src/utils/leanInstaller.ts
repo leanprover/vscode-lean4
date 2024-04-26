@@ -22,7 +22,7 @@ export class LeanInstaller {
 
     // This event is raised whenever a version change happens.
     // The event provides the workspace Uri where the change happened.
-    private installChangedEmitter = new EventEmitter<ExtUri>()
+    private installChangedEmitter = new EventEmitter<FileUri>()
     installChanged = this.installChangedEmitter.event
 
     constructor(outputChannel: OutputChannel, defaultToolchain: string) {
@@ -89,17 +89,17 @@ export class LeanInstaller {
         }
     }
 
-    async showInstallOptions(packageUri: ExtUri): Promise<void> {
+    async showInstallOptions(): Promise<boolean> {
         if (!this.promptUser) {
             // no need to prompt when there is no user.
-            return
+            return false
         }
         const path = toolchainPath()
 
         // note; we keep the LeanClient alive so that it can be restarted if the
         // user changes the Lean: Executable Path.
         const installItem = 'Install Lean'
-        let prompt = "Failed to start 'lean' language server"
+        let prompt = 'Failed to start Lean 4 language server'
         if (path) {
             prompt += ` from ${path}`
         }
@@ -109,15 +109,17 @@ export class LeanInstaller {
         }
 
         const item = await this.showPrompt(prompt, installItem)
-        if (item === installItem) {
-            try {
-                await this.installElan()
-                this.installChangedEmitter.fire(packageUri)
-            } catch (err) {
-                const msg = '' + err
-                logger.log(`[LeanInstaller] restart error ${msg}`)
-                this.outputChannel.appendLine(msg)
-            }
+        if (item !== installItem) {
+            return false
+        }
+        try {
+            await this.installElan()
+            return true
+        } catch (err) {
+            const msg = '' + err
+            logger.log(`[LeanInstaller] restart error ${msg}`)
+            this.outputChannel.appendLine(msg)
+            return false
         }
     }
 

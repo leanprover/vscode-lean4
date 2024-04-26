@@ -1,5 +1,4 @@
 import { LeanFileProgressProcessingInfo, ServerStoppedReason } from '@leanprover/infoview-api'
-import { SemVer } from 'semver'
 import { commands, Disposable, EventEmitter, OutputChannel, TextDocument, TextEditor, window, workspace } from 'vscode'
 import {
     addDefaultElanPath,
@@ -21,10 +20,9 @@ export class LeanClientProvider implements Disposable {
     private subscriptions: Disposable[] = []
     private outputChannel: OutputChannel
     private installer: LeanInstaller
-    private versions: Map<string, SemVer> = new Map()
     private clients: Map<string, LeanClient> = new Map()
     private pending: Map<string, boolean> = new Map()
-    private pendingInstallChanged: ExtUri[] = []
+    private pendingInstallChanged: FileUri[] = []
     private processingInstallChanged: boolean = false
     private activeClient: LeanClient | undefined = undefined
 
@@ -45,7 +43,7 @@ export class LeanClientProvider implements Disposable {
         this.installer = installer
 
         // we must setup the installChanged event handler first before any didOpenEditor calls.
-        installer.installChanged(async (uri: ExtUri) => await this.onInstallChanged(uri))
+        installer.installChanged(async (uri: FileUri) => await this.onInstallChanged(uri))
 
         window.visibleTextEditors.forEach(e => this.didOpenEditor(e.document))
         this.subscriptions.push(
@@ -78,7 +76,6 @@ export class LeanClientProvider implements Disposable {
 
                 logger.log(`[ClientProvider] onDidChangeWorkspaceFolders removing client for ${key}`)
                 this.clients.delete(key)
-                this.versions.delete(key)
                 client.dispose()
                 this.clientRemovedEmitter.fire(client)
             })
@@ -97,7 +94,7 @@ export class LeanClientProvider implements Disposable {
         }
     }
 
-    private async onInstallChanged(uri: ExtUri) {
+    private async onInstallChanged(uri: FileUri) {
         // Uri is a package Uri in the case a lean package file was changed.
         logger.log(`[ClientProvider] installChanged for ${uri}`)
         this.pendingInstallChanged.push(uri)
@@ -113,8 +110,7 @@ export class LeanClientProvider implements Disposable {
                 break
             }
             try {
-                // have to check again here in case elan install had --default-toolchain none.
-                const projectUri = uri.scheme === 'file' ? await findLeanProjectRoot(uri) : undefined
+                const projectUri = await findLeanProjectRoot(uri)
 
                 logger.log('[ClientProvider] testLeanVersion')
                 const leanVersionResult = await diagnose(this.outputChannel, projectUri).queryLeanVersion()
@@ -140,10 +136,6 @@ export class LeanClientProvider implements Disposable {
             addToolchainBinPath(getDefaultElanPath())
         } else {
             addDefaultElanPath()
-        }
-
-        for (const [_, client] of this.clients) {
-            await this.onInstallChanged(client.folderUri)
         }
     }
 
@@ -251,28 +243,22 @@ export class LeanClientProvider implements Disposable {
         return this.clients.get(folder.toString())
     }
 
-    private async getLeanVersion(uri: ExtUri): Promise<VersionQueryResult> {
+    private async queryLeanVersionAndInstallElan(uri: ExtUri): Promise<VersionQueryResult> {
         const folderUri = await this.findPackageRootUri(uri)
-        const key = folderUri.toString()
-        const cachedVersion = this.versions.get(key)
-        if (cachedVersion) {
-            return { kind: 'Success', version: cachedVersion }
-        }
         const cwd = folderUri.scheme === 'file' ? folderUri : undefined
-        let leanVersionResult = await diagnose(this.outputChannel, cwd).queryLeanVersion()
+        const leanVersionResult = await diagnose(this.outputChannel, cwd).queryLeanVersion()
         if (leanVersionResult.kind === 'Success') {
-            this.versions.set(key, leanVersionResult.version)
-        } else if (leanVersionResult.kind === 'CommandNotFound') {
+            return leanVersionResult
+        }
+        if (leanVersionResult.kind === 'CommandNotFound') {
             if (!this.installer.getPromptUser()) {
                 await this.autoInstall()
-                leanVersionResult = await diagnose(this.outputChannel, cwd).queryLeanVersion()
-                if (leanVersionResult.kind === 'Success') {
-                    this.versions.set(key, leanVersionResult.version)
-                }
+                return await diagnose(this.outputChannel, cwd).queryLeanVersion()
             } else {
-                // Ah, then we need to prompt the user, this waits for answer,
-                // but does not wait for the install to complete.
-                await this.installer.showInstallOptions(uri)
+                const installSuccessful = await this.installer.showInstallOptions()
+                if (installSuccessful) {
+                    return await diagnose(this.outputChannel, cwd).queryLeanVersion()
+                }
             }
         } else if (leanVersionResult.kind === 'CommandError') {
             void displayErrorWithOutput('Cannot determine Lean version: ' + leanVersionResult.message)
@@ -304,7 +290,7 @@ export class LeanClientProvider implements Disposable {
         this.pending.set(key, true)
         // this can go all the way to installing elan (in the test scenario)
         // so it has to be done BEFORE we attempt to create any LeanClient.
-        const leanVersionResult = await this.getLeanVersion(folderUri)
+        const leanVersionResult = await this.queryLeanVersionAndInstallElan(folderUri)
 
         logger.log('[ClientProvider] Creating LeanClient for ' + folderUri.toString())
         const elanDefaultToolchain = await this.installer.getElanDefaultToolchain(folderUri)
