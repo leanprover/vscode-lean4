@@ -198,7 +198,7 @@ export class LeanClientProvider implements Disposable {
         }
 
         try {
-            const [cached, client] = await this.ensureClient(uri)
+            const [_, client] = await this.ensureClient(uri)
             if (!client) {
                 return
             }
@@ -283,14 +283,18 @@ export class LeanClientProvider implements Disposable {
 
         const key = folderUri.toString()
         if (this.pending.has(key)) {
-            logger.log('[ClientProvider] ignoring ensureClient already pending on ' + folderUri.toString())
             return [false, undefined]
         }
 
         this.pending.set(key, true)
-        // this can go all the way to installing elan (in the test scenario)
-        // so it has to be done BEFORE we attempt to create any LeanClient.
         const leanVersionResult = await this.queryLeanVersionAndInstallElan(folderUri)
+        if (
+            leanVersionResult.kind !== 'Success' ||
+            (leanVersionResult.kind === 'Success' && leanVersionResult.version.major !== 4)
+        ) {
+            this.pending.delete(key)
+            return [false, undefined]
+        }
 
         logger.log('[ClientProvider] Creating LeanClient for ' + folderUri.toString())
         const elanDefaultToolchain = await this.installer.getElanDefaultToolchain(folderUri)
@@ -299,31 +303,14 @@ export class LeanClientProvider implements Disposable {
         this.subscriptions.push(client)
         this.clients.set(key, client)
 
-        if (leanVersionResult.kind === 'Success' && leanVersionResult.version.major !== 4) {
-            // ignore workspaces that belong to a different version of Lean.
-            logger.log(
-                `[ClientProvider] Lean4 extension ignoring workspace '${folderUri}' because it is not a Lean 4 workspace.`,
-            )
-            this.pending.delete(key)
+        client.serverFailed(err => {
             this.clients.delete(key)
             client.dispose()
-            return [false, undefined]
-        }
-
-        client.serverFailed(err => {
-            // forget this client!
-            logger.log(`[ClientProvider] serverFailed, removing client for ${key}`)
-            const cached = this.clients.get(key)
-            this.clients.delete(key)
-            cached?.dispose()
             void window.showErrorMessage(err)
         })
 
         client.stopped(reason => {
-            if (client) {
-                // fires a message in case a client is stopped unexpectedly
-                this.clientStoppedEmitter.fire([client, client === this.activeClient, reason])
-            }
+            this.clientStoppedEmitter.fire([client, client === this.activeClient, reason])
         })
 
         // aggregate progress changed events.
@@ -332,14 +319,9 @@ export class LeanClientProvider implements Disposable {
         })
 
         this.pending.delete(key)
-        logger.log('[ClientProvider] firing clientAddedEmitter event')
         this.clientAddedEmitter.fire(client)
 
-        if (leanVersionResult.kind === 'Success') {
-            // we are ready to start, otherwise some sort of install might be happening
-            // as a result of UI options shown by testLeanVersion.
-            await client.start()
-        }
+        await client.start()
 
         // tell the InfoView about this activated client.
         this.activeClient = client

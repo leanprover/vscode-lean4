@@ -14,7 +14,7 @@ export class LeanInstaller {
     private leanInstallerWindows = 'https://raw.githubusercontent.com/leanprover/elan/master/elan-init.ps1'
     private outputChannel: OutputChannel
     private prompting: boolean = false
-    private defaultToolchain: string // the default to use if there is no elan installed
+    private freshInstallDefaultToolchain: string
     private elanDefaultToolchain: string = '' // the default toolchain according to elan (toolchain marked with '(default)')
     private workspaceSuffix: string = '(workspace override)'
     private defaultSuffix: string = '(default)'
@@ -25,9 +25,9 @@ export class LeanInstaller {
     private installChangedEmitter = new EventEmitter<FileUri>()
     installChanged = this.installChangedEmitter.event
 
-    constructor(outputChannel: OutputChannel, defaultToolchain: string) {
+    constructor(outputChannel: OutputChannel, freshInstallDefaultToolchain: string) {
         this.outputChannel = outputChannel
-        this.defaultToolchain = defaultToolchain
+        this.freshInstallDefaultToolchain = freshInstallDefaultToolchain
         if (isRunningTest()) {
             this.promptUser = false
             if (process.env.LEAN4_PROMPT_USER === 'true') {
@@ -134,10 +134,6 @@ export class LeanInstaller {
         return s.trim()
     }
 
-    getDefaultToolchain(): string {
-        return this.defaultToolchain
-    }
-
     async getElanDefaultToolchain(packageUri: ExtUri): Promise<string> {
         if (this.elanDefaultToolchain) {
             return this.elanDefaultToolchain
@@ -222,7 +218,7 @@ export class LeanInstaller {
             terminal.sendText(
                 `Start-BitsTransfer -Source "${this.leanInstallerWindows}" -Destination "elan-init.ps1"\r\n` +
                     'Set-ExecutionPolicy -ExecutionPolicy Unrestricted -Scope Process\r\n' +
-                    `$rc = .\\elan-init.ps1 -NoPrompt 1 -DefaultToolchain ${this.defaultToolchain}\r\n` +
+                    `$rc = .\\elan-init.ps1 -NoPrompt 1 -DefaultToolchain ${this.freshInstallDefaultToolchain}\r\n` +
                     'Write-Host "elan-init returned [$rc]"\r\n' +
                     'del .\\elan-init.ps1\r\n' +
                     'if ($rc -ne 0) {\r\n' +
@@ -231,7 +227,7 @@ export class LeanInstaller {
                     'exit\r\n',
             )
         } else {
-            const elanArgs = `-y --default-toolchain ${this.defaultToolchain}`
+            const elanArgs = `-y --default-toolchain ${this.freshInstallDefaultToolchain}`
             const prompt = '(echo && read -n 1 -s -r -p "Install failed, press ENTER to continue...")'
 
             terminal.sendText(
@@ -239,7 +235,7 @@ export class LeanInstaller {
             )
         }
 
-        this.elanDefaultToolchain = this.defaultToolchain
+        this.elanDefaultToolchain = this.freshInstallDefaultToolchain
 
         return result
     }
