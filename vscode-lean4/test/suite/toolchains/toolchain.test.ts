@@ -21,12 +21,12 @@ suite('Toolchain Test Suite', () => {
 
         const testsRoot = path.join(__dirname, '..', '..', '..', '..', 'test', 'test-fixtures', 'simple')
 
-        const lean = await initLean4(path.join(testsRoot, 'Main.lean'))
+        const features = await initLean4(path.join(testsRoot, 'Main.lean'))
 
         // turn off the user prompts so restart of lean server happens automatically.
-        const info = lean.exports.infoProvider
+        const info = features.infoProvider
         assert(info, 'No InfoProvider export')
-        const installer = lean.exports.installer
+        const installer = features.installer
         assert(installer, 'No LeanInstaller export')
 
         // wait for info view to show up.

@@ -22,15 +22,15 @@ suite('Lean4 Bootstrap Test Suite', () => {
 
         // this will wait up to 60 seconds to do full elan lean install, so test machines better
         // be able to do that.
-        const lean = await initLean4Untitled('#eval Lean.versionString')
-        const info = lean.exports.infoProvider
+        const features = await initLean4Untitled('#eval Lean.versionString')
+        const info = features.infoProvider
         const expected = '4.0.0-nightly-'
         assert(info, 'No InfoProvider export')
 
         // give it a extra long timeout in case test machine is really slow.
         logger.log('Wait for elan install of Lean nightly build...')
-        await waitForActiveClient(lean.exports.clientProvider, 120)
-        await waitForActiveClientRunning(lean.exports.clientProvider, 300)
+        await waitForActiveClient(features.clientProvider, 120)
+        await waitForActiveClientRunning(features.clientProvider, 300)
 
         const hackNeeded = false
         if (hackNeeded) {
@@ -69,8 +69,8 @@ suite('Lean4 Bootstrap Test Suite', () => {
         void vscode.window.showInformationMessage('Running tests: ' + __dirname)
 
         // Lean is already installed so this should be quick.
-        const lean = await initLean4Untitled('#eval Lean.versionString')
-        const info = lean.exports.infoProvider
+        const features = await initLean4Untitled('#eval Lean.versionString')
+        const info = features.infoProvider
         assert(info, 'No InfoProvider export')
 
         logger.log('Wait for Lean nightly build server to start...')

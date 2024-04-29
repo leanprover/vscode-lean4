@@ -155,29 +155,28 @@ export async function activate(context: ExtensionContext): Promise<Exports> {
     const alwaysEnabledFeatures: AlwaysEnabledFeatures = activateAlwaysEnabledFeatures(context)
     activateAbbreviationFeature(context, alwaysEnabledFeatures.docView)
 
-    return {
-        ...alwaysEnabledFeatures,
-        activatedLean4Features: new Promise(async (resolve, _) => {
-            const doc: TextDocument | undefined = findOpenLeanDocument()
-            if (doc) {
-                const lean4EnabledFeatures: Lean4EnabledFeatures = await activateLean4Features(
-                    context,
-                    alwaysEnabledFeatures.installer,
-                )
-                resolve(lean4EnabledFeatures)
-            } else {
-                // No Lean 4 document yet => Load remaining features when one is open
-                const disposeActivationListener: Disposable = workspace.onDidOpenTextDocument(async doc => {
-                    if (isLean4Document(doc)) {
-                        const lean4EnabledFeatures: Lean4EnabledFeatures = await activateLean4Features(
-                            context,
-                            alwaysEnabledFeatures.installer,
-                        )
-                        resolve(lean4EnabledFeatures)
-                        disposeActivationListener.dispose()
-                    }
-                }, context.subscriptions)
-            }
-        }),
-    }
+    const lean4EnabledFeatures: Promise<Lean4EnabledFeatures> = new Promise(async (resolve, _) => {
+        const doc: TextDocument | undefined = findOpenLeanDocument()
+        if (doc) {
+            const lean4EnabledFeatures: Lean4EnabledFeatures = await activateLean4Features(
+                context,
+                alwaysEnabledFeatures.installer,
+            )
+            resolve(lean4EnabledFeatures)
+        } else {
+            // No Lean 4 document yet => Load remaining features when one is open
+            const disposeActivationListener: Disposable = workspace.onDidOpenTextDocument(async doc => {
+                if (isLean4Document(doc)) {
+                    const lean4EnabledFeatures: Lean4EnabledFeatures = await activateLean4Features(
+                        context,
+                        alwaysEnabledFeatures.installer,
+                    )
+                    resolve(lean4EnabledFeatures)
+                    disposeActivationListener.dispose()
+                }
+            }, context.subscriptions)
+        }
+    })
+
+    return new Exports(alwaysEnabledFeatures, lean4EnabledFeatures)
 }

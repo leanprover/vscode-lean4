@@ -19,6 +19,19 @@ export interface Lean4EnabledFeatures {
     projectOperationProvider: ProjectOperationProvider
 }
 
-export interface Exports extends AlwaysEnabledFeatures {
-    activatedLean4Features: Thenable<Lean4EnabledFeatures>
+export interface EnabledFeatures extends AlwaysEnabledFeatures, Lean4EnabledFeatures {}
+
+export class Exports {
+    alwaysEnabledFeatures: AlwaysEnabledFeatures
+    lean4EnabledFeatures: Promise<Lean4EnabledFeatures>
+
+    constructor(alwaysEnabledFeatures: AlwaysEnabledFeatures, lean4EnabledFeatures: Promise<Lean4EnabledFeatures>) {
+        this.alwaysEnabledFeatures = alwaysEnabledFeatures
+        this.lean4EnabledFeatures = lean4EnabledFeatures
+    }
+
+    async allFeatures(): Promise<EnabledFeatures> {
+        const lean4EnabledFeatures = await this.lean4EnabledFeatures
+        return { ...this.alwaysEnabledFeatures, ...lean4EnabledFeatures }
+    }
 }

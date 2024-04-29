@@ -14,10 +14,9 @@ suite('Lean4 Pre-bootstrap Test Suite', () => {
 
         // this will wait up to 60 seconds to do full elan lean install, so test machines better
         // be able to do that.
-        const promptUser = true
         const projectRoot = path.join(__dirname, '..', '..', '..', '..', 'test', 'test-fixtures', 'simple')
-        const lean = await initLean4(path.join(projectRoot, 'Main.lean'))
-        const info = lean.exports.infoProvider
+        const features = await initLean4(path.join(projectRoot, 'Main.lean'))
+        const info = features.infoProvider
         const expected1 = 'Waiting for Lean server to start...'
         const expected2 = 'nightly' // lean was already installed before this test started!
         assert(info, 'No InfoProvider export')
@@ -33,7 +32,7 @@ suite('Lean4 Pre-bootstrap Test Suite', () => {
 
         let retries = 10
         while (html.indexOf(expected1) > 0) {
-            const installer = lean.exports.installer
+            const installer = features.installer
             if (!installer?.isPromptVisible()) {
                 html = await waitForInfoviewLambda(info, lambda, 10)
                 retries--

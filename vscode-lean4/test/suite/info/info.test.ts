@@ -24,8 +24,8 @@ suite('InfoView Test Suite', () => {
         const b = 22
         const expectedEval1 = (a * b).toString()
 
-        const lean = await initLean4Untitled(`#eval ${a}*${b}`)
-        const info = lean.exports.infoProvider
+        const features = await initLean4Untitled(`#eval ${a}*${b}`)
+        const info = features.infoProvider
         assert(info, 'No InfoProvider export')
 
         await assertStringInInfoview(info, expectedEval1)
@@ -49,8 +49,8 @@ suite('InfoView Test Suite', () => {
         const c = 77
         const d = 7
 
-        const lean = await initLean4Untitled(`#eval ${a}*${b}`)
-        const info = lean.exports.infoProvider
+        const features = await initLean4Untitled(`#eval ${a}*${b}`)
+        const info = features.infoProvider
         assert(info, 'No InfoProvider export')
 
         const expectedEval1 = (a * b).toString()
@@ -84,12 +84,12 @@ suite('InfoView Test Suite', () => {
 
         const expectedEval = '[1, 2, 3]'
 
-        const lean = await initLean4Untitled('#eval [1, 1+1, 1+1+1] \n')
+        const features = await initLean4Untitled('#eval [1, 1+1, 1+1+1] \n')
         const editor = await waitForActiveEditor()
         const firstLine = editor.document.lineAt(0).range
         editor.selection = new vscode.Selection(firstLine.end, firstLine.end)
 
-        const info = lean.exports.infoProvider
+        const info = features.infoProvider
         assert(info, 'No InfoProvider export')
         await waitForInfoviewHtml(info, expectedEval, 30, 1000, false)
 
@@ -127,8 +127,8 @@ suite('InfoView Test Suite', () => {
         const b = 95
         const prefix = 'Lean version is:'
 
-        const lean = await initLean4Untitled(`#eval ${a}*${b}`)
-        const info = lean.exports.infoProvider
+        const features = await initLean4Untitled(`#eval ${a}*${b}`)
+        const info = features.infoProvider
         assert(info, 'No InfoProvider export')
 
         const expectedEval = (a * b).toString()

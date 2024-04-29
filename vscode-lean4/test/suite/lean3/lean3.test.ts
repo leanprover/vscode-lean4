@@ -3,7 +3,12 @@ import { suite } from 'mocha'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import { logger } from '../../../src/utils/logger'
-import { closeAllEditors, waitForActiveEditor, waitForActiveExtension } from '../utils/helpers'
+import {
+    assertLean4FeaturesNotLoaded,
+    closeAllEditors,
+    waitForActiveEditor,
+    waitForActiveExtension,
+} from '../utils/helpers'
 
 suite('Lean3 Compatibility Test Suite', () => {
     test('Lean3 project', async () => {
@@ -21,7 +26,7 @@ suite('Lean3 Compatibility Test Suite', () => {
 
         const lean = await waitForActiveExtension('leanprover.lean4')
         assert(lean, 'Lean extension not loaded')
-        assert(!lean.exports.isLean4Project, 'Lean4 extension should not be running!')
+        await assertLean4FeaturesNotLoaded(lean.exports)
 
         logger.log('Checking vscode commands...')
         const cmds = await vscode.commands.getCommands(true)

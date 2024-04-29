@@ -29,8 +29,8 @@ suite('Lean4 Basics Test Suite', () => {
         logger.log(`=================== Untitled Lean File ${getElanMode()} ===================`)
         void vscode.window.showInformationMessage('Running tests: ' + __dirname)
 
-        const lean = await initLean4Untitled('#eval Lean.versionString')
-        const info = lean.exports.infoProvider
+        const features = await initLean4Untitled('#eval Lean.versionString')
+        const info = features.infoProvider
         assert(info, 'No InfoProvider export')
 
         await assertStringInInfoview(info, '4.0.0-nightly-')
@@ -63,14 +63,14 @@ suite('Lean4 Basics Test Suite', () => {
         void vscode.window.showInformationMessage('Running tests: ' + __dirname)
 
         const testsRoot = path.join(__dirname, '..', '..', '..', '..', 'test', 'test-fixtures', 'orphan')
-        const lean = await initLean4(path.join(testsRoot, 'factorial.lean'))
+        const features = await initLean4(path.join(testsRoot, 'factorial.lean'))
 
-        const info = lean.exports.infoProvider
+        const info = features.infoProvider
         assert(info, 'No InfoProvider export')
         const expectedVersion = '5040' // the factorial function works.
         const html = await waitForInfoviewHtml(info, expectedVersion)
 
-        const installer = lean.exports.installer
+        const installer = features.installer
         assert(installer, 'No LeanInstaller export')
         const toolChains = await installer.elanListToolChains(new UntitledUri())
         let defaultToolChain = toolChains.find(tc => tc.indexOf('default') > 0)
@@ -101,9 +101,9 @@ suite('Lean4 Basics Test Suite', () => {
         // and again using "open folder" mode.
 
         const testsRoot = path.join(__dirname, '..', '..', '..', '..', 'test', 'test-fixtures', 'simple')
-        const lean = await initLean4(path.join(testsRoot, 'Main.lean'))
+        const features = await initLean4(path.join(testsRoot, 'Main.lean'))
 
-        const info = lean.exports.infoProvider
+        const info = features.infoProvider
         assert(info, 'No InfoProvider export')
         let expectedVersion = 'Hello:'
         let html = await waitForInfoviewHtml(info, expectedVersion)

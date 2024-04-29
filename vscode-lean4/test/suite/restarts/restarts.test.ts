@@ -28,14 +28,14 @@ suite('Lean Server Restart Test Suite', () => {
 
         // add normal values to initialize lean4 file
         const hello = 'Hello World'
-        const lean = await initLean4Untitled(`#eval "${hello}"`)
-        const info = lean.exports.infoProvider
+        const features = await initLean4Untitled(`#eval "${hello}"`)
+        const info = features.infoProvider
         assert(info, 'No InfoProvider export')
 
         logger.log('make sure language server is up and running.')
         await assertStringInInfoview(info, hello)
 
-        const clients = lean.exports.clientProvider
+        const clients = features.clientProvider
         assert(clients, 'No LeanClientProvider export')
 
         logger.log('Insert eval that causes crash.')
@@ -73,14 +73,14 @@ suite('Lean Server Restart Test Suite', () => {
 
         // add normal values to initialize lean4 file
         const hello = 'Hello World'
-        const lean = await initLean4Untitled(`#eval "${hello}"`)
-        const info = lean.exports.infoProvider
+        const features = await initLean4Untitled(`#eval "${hello}"`)
+        const info = features.infoProvider
         assert(info, 'No InfoProvider export')
 
         logger.log('make sure language server is up and running.')
         await assertStringInInfoview(info, hello)
 
-        const clients = lean.exports.clientProvider
+        const clients = features.clientProvider
         assert(clients, 'No LeanClientProvider export')
 
         logger.log('Insert eval that causes crash.')
@@ -119,9 +119,9 @@ suite('Lean Server Restart Test Suite', () => {
 
         // run this code twice to ensure that it still works after a Restart Server
         for (let i = 0; i < 2; i++) {
-            const lean = await initLean4(path.join(simpleRoot, 'Main.lean'))
+            const features = await initLean4(path.join(simpleRoot, 'Main.lean'))
 
-            const info = lean.exports.infoProvider
+            const info = features.infoProvider
             assert(info, 'No InfoProvider export')
 
             const activeEditor = vscode.window.activeTextEditor
@@ -139,7 +139,7 @@ suite('Lean Server Restart Test Suite', () => {
             logger.log(`>>> Found "${versionString}" in infoview`)
 
             logger.log('Now invoke the restart server command')
-            const clients = lean.exports.clientProvider
+            const clients = features.clientProvider
             assert(clients, 'No LeanClientProvider export')
             const client = clients.getClientForFolder(new FileUri(simpleRoot))
             if (client) {
