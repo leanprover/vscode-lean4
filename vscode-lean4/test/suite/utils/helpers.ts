@@ -193,10 +193,10 @@ export async function waitForActiveExtension(
 
 export async function waitForLean4FeatureActivation(exports: Exports, timeout = 60000): Promise<EnabledFeatures> {
     logger.log('Waiting for Lean 4 feature exports of extension to be loaded...')
-    const allFeatures: EnabledFeatures | undefined = await new Promise(async (resolve, _) => {
-        setTimeout(() => resolve(undefined), timeout)
-        await exports.allFeatures()
-    })
+    const timeoutPromise: Promise<EnabledFeatures | undefined> = new Promise((resolve, _) =>
+        setTimeout(() => resolve(undefined), timeout),
+    )
+    const allFeatures: EnabledFeatures | undefined = await Promise.race([exports.allFeatures(), timeoutPromise])
     assertAndLog(allFeatures, 'Lean 4 features did not activate.')
     logger.log('Lean 4 feature exports loaded.')
     return allFeatures
