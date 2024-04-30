@@ -17,8 +17,11 @@ import { ProjectOperationProvider } from './projectoperations'
 import { LeanTaskGutter } from './taskgutter'
 import { LeanClientProvider } from './utils/clientProvider'
 import { LeanConfigWatchService } from './utils/configwatchservice'
-import { isExtUri } from './utils/exturi'
+import { displayErrorWithOutput } from './utils/errors'
+import { FileUri, isExtUri, toExtUriOrError } from './utils/exturi'
 import { LeanInstaller } from './utils/leanInstaller'
+import { findLeanProjectRoot } from './utils/projectInfo'
+import { diagnose } from './utils/setupDiagnostics'
 
 async function setLeanFeatureSetActive(isActive: boolean) {
     await commands.executeCommand('setContext', 'lean4.isLeanFeatureSetActive', isActive)
@@ -114,10 +117,49 @@ function activateAbbreviationFeature(context: ExtensionContext, docView: DocView
     return abbrev
 }
 
+async function ensureLean4IsInstalled(installer: LeanInstaller, doc: TextDocument): Promise<boolean> {
+    const docUri = toExtUriOrError(doc.uri)
+    const cwd: FileUri | undefined = docUri.scheme === 'file' ? await findLeanProjectRoot(docUri) : undefined
+    const leanVersionResult = await diagnose(installer.getOutputChannel(), cwd).queryLeanVersion()
+    switch (leanVersionResult.kind) {
+        case 'Success':
+            return leanVersionResult.version.major === 4
+
+        case 'CommandError':
+            void displayErrorWithOutput('Cannot determine Lean version: ' + leanVersionResult.message)
+            return false
+
+        case 'InvalidVersion':
+            void displayErrorWithOutput(
+                'Cannot determine Lean version because `lean --version` returned malformed output.',
+            )
+            return false
+
+        case 'CommandNotFound':
+            if (!installer.getPromptUser()) {
+                // Used in tests
+                await installer.autoInstall()
+                return true
+            }
+
+            const installSuccessful = await installer.showInstallOptions()
+            if (installSuccessful) {
+                return true
+            }
+            return false
+    }
+}
+
 async function activateLean4Features(
     context: ExtensionContext,
     installer: LeanInstaller,
-): Promise<Lean4EnabledFeatures> {
+    doc: TextDocument,
+): Promise<Lean4EnabledFeatures | undefined> {
+    const isLean4Installed = await ensureLean4IsInstalled(installer, doc)
+    if (!isLean4Installed) {
+        return undefined
+    }
+
     const clientProvider = new LeanClientProvider(installer, installer.getOutputChannel())
     context.subscriptions.push(clientProvider)
 
@@ -158,24 +200,33 @@ export async function activate(context: ExtensionContext): Promise<Exports> {
     const lean4EnabledFeatures: Promise<Lean4EnabledFeatures> = new Promise(async (resolve, _) => {
         const doc: TextDocument | undefined = findOpenLeanDocument()
         if (doc) {
-            const lean4EnabledFeatures: Lean4EnabledFeatures = await activateLean4Features(
+            const lean4EnabledFeatures: Lean4EnabledFeatures | undefined = await activateLean4Features(
                 context,
                 alwaysEnabledFeatures.installer,
+                doc,
             )
-            resolve(lean4EnabledFeatures)
-        } else {
-            // No Lean 4 document yet => Load remaining features when one is open
-            const disposeActivationListener: Disposable = workspace.onDidOpenTextDocument(async doc => {
-                if (isLean4Document(doc)) {
-                    const lean4EnabledFeatures: Lean4EnabledFeatures = await activateLean4Features(
-                        context,
-                        alwaysEnabledFeatures.installer,
-                    )
-                    resolve(lean4EnabledFeatures)
-                    disposeActivationListener.dispose()
-                }
-            }, context.subscriptions)
+            if (lean4EnabledFeatures) {
+                resolve(lean4EnabledFeatures)
+                return
+            }
         }
+
+        // No Lean 4 document yet => Load remaining features when one is open
+        const disposeActivationListener: Disposable = workspace.onDidOpenTextDocument(async doc => {
+            if (!isLean4Document(doc)) {
+                return
+            }
+            const lean4EnabledFeatures: Lean4EnabledFeatures | undefined = await activateLean4Features(
+                context,
+                alwaysEnabledFeatures.installer,
+                doc,
+            )
+            if (!lean4EnabledFeatures) {
+                return
+            }
+            resolve(lean4EnabledFeatures)
+            disposeActivationListener.dispose()
+        }, context.subscriptions)
     })
 
     return new Exports(alwaysEnabledFeatures, lean4EnabledFeatures)

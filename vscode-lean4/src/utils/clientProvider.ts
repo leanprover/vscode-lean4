@@ -1,19 +1,12 @@
 import { LeanFileProgressProcessingInfo, ServerStoppedReason } from '@leanprover/infoview-api'
-import { commands, Disposable, EventEmitter, OutputChannel, TextDocument, TextEditor, window, workspace } from 'vscode'
-import {
-    addDefaultElanPath,
-    addToolchainBinPath,
-    getDefaultElanPath,
-    isElanDisabled,
-    shouldShowInvalidProjectWarnings,
-} from '../config'
+import { Disposable, EventEmitter, OutputChannel, TextDocument, TextEditor, commands, window, workspace } from 'vscode'
+import { shouldShowInvalidProjectWarnings } from '../config'
 import { LeanClient } from '../leanclient'
-import { displayErrorWithOutput } from './errors'
-import { ExtUri, FileUri, getWorkspaceFolderUri, toExtUri, UntitledUri } from './exturi'
+import { ExtUri, FileUri, UntitledUri, getWorkspaceFolderUri, toExtUri } from './exturi'
 import { LeanInstaller } from './leanInstaller'
 import { logger } from './logger'
 import { checkParentFoldersForLeanProject, findLeanProjectRoot, isValidLeanProject } from './projectInfo'
-import { diagnose, VersionQueryResult } from './setupDiagnostics'
+import { diagnose } from './setupDiagnostics'
 
 // This class ensures we have one LeanClient per folder.
 export class LeanClientProvider implements Disposable {
@@ -86,14 +79,6 @@ export class LeanClientProvider implements Disposable {
         return this.activeClient
     }
 
-    private async findPackageRootUri(uri: ExtUri): Promise<ExtUri> {
-        if (uri.scheme === 'file') {
-            return await findLeanProjectRoot(uri)
-        } else {
-            return new UntitledUri()
-        }
-    }
-
     private async onInstallChanged(uri: FileUri) {
         // Uri is a package Uri in the case a lean package file was changed.
         logger.log(`[ClientProvider] installChanged for ${uri}`)
@@ -127,16 +112,6 @@ export class LeanClientProvider implements Disposable {
             }
         }
         this.processingInstallChanged = false
-    }
-
-    private async autoInstall(): Promise<void> {
-        // no prompt, just do it!
-        await this.installer.installElan()
-        if (isElanDisabled()) {
-            addToolchainBinPath(getDefaultElanPath())
-        } else {
-            addDefaultElanPath()
-        }
     }
 
     private getVisibleEditor(uri: ExtUri): TextEditor | undefined {
@@ -243,38 +218,11 @@ export class LeanClientProvider implements Disposable {
         return this.clients.get(folder.toString())
     }
 
-    private async queryLeanVersionAndInstallElan(uri: ExtUri): Promise<VersionQueryResult> {
-        const folderUri = await this.findPackageRootUri(uri)
-        const cwd = folderUri.scheme === 'file' ? folderUri : undefined
-        const leanVersionResult = await diagnose(this.outputChannel, cwd).queryLeanVersion()
-        if (leanVersionResult.kind === 'Success') {
-            return leanVersionResult
-        }
-        if (leanVersionResult.kind === 'CommandNotFound') {
-            if (!this.installer.getPromptUser()) {
-                await this.autoInstall()
-                return await diagnose(this.outputChannel, cwd).queryLeanVersion()
-            } else {
-                const installSuccessful = await this.installer.showInstallOptions()
-                if (installSuccessful) {
-                    return await diagnose(this.outputChannel, cwd).queryLeanVersion()
-                }
-            }
-        } else if (leanVersionResult.kind === 'CommandError') {
-            void displayErrorWithOutput('Cannot determine Lean version: ' + leanVersionResult.message)
-        } else {
-            void displayErrorWithOutput(
-                'Cannot determine Lean version because `lean --version` returned malformed output.',
-            )
-        }
-        return leanVersionResult
-    }
-
     // Starts a LeanClient if the given file is in a new workspace we haven't seen before.
     // Returns a boolean "true" if the LeanClient was already created.
     // Returns a null client if it turns out the new workspace is a lean3 workspace.
     async ensureClient(uri: ExtUri): Promise<[boolean, LeanClient | undefined]> {
-        const folderUri = await this.findPackageRootUri(uri)
+        const folderUri = uri.scheme === 'file' ? await findLeanProjectRoot(uri) : new UntitledUri()
         let client = this.getClientForFolder(folderUri)
         if (client) {
             this.activeClient = client
@@ -287,7 +235,8 @@ export class LeanClientProvider implements Disposable {
         }
 
         this.pending.set(key, true)
-        const leanVersionResult = await this.queryLeanVersionAndInstallElan(folderUri)
+        const cwd = folderUri.scheme === 'file' ? folderUri : undefined
+        const leanVersionResult = await diagnose(this.outputChannel, cwd).queryLeanVersion()
         if (
             leanVersionResult.kind !== 'Success' ||
             (leanVersionResult.kind === 'Success' && leanVersionResult.version.major !== 4)
