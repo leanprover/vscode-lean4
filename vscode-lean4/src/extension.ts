@@ -1,13 +1,6 @@
 import { commands, Disposable, ExtensionContext, extensions, TextDocument, window, workspace } from 'vscode'
 import { AbbreviationFeature } from './abbreviation'
-import {
-    addDefaultElanPath,
-    addToolchainBinPath,
-    getDefaultElanPath,
-    getDefaultLeanVersion,
-    isElanDisabled,
-    removeElanPath,
-} from './config'
+import { addDefaultElanPath, getDefaultLeanVersion } from './config'
 import { DocViewProvider } from './docview'
 import { AlwaysEnabledFeatures, Exports, Lean4EnabledFeatures } from './exports'
 import { checkLean4FeaturePreconditions } from './globalDiagnostics'
@@ -51,15 +44,7 @@ function findOpenLeanDocument(): TextDocument | undefined {
  * Activates all extension features that are *always* enabled, even when no Lean 4 document is currently open.
  */
 function activateAlwaysEnabledFeatures(context: ExtensionContext): AlwaysEnabledFeatures {
-    // For unit test that tests behavior when there is no elan installed.
-    if (isElanDisabled()) {
-        const elanRoot = removeElanPath()
-        if (elanRoot) {
-            addToolchainBinPath(elanRoot)
-        }
-    } else {
-        addDefaultElanPath()
-    }
+    addDefaultElanPath()
 
     context.subscriptions.push(
         commands.registerCommand('lean4.setup.showSetupGuide', async () =>
@@ -84,11 +69,7 @@ function activateAlwaysEnabledFeatures(context: ExtensionContext): AlwaysEnabled
     context.subscriptions.push(
         commands.registerCommand('lean4.setup.installElan', async () => {
             await installer.installElan()
-            if (isElanDisabled()) {
-                addToolchainBinPath(getDefaultElanPath())
-            } else {
-                addDefaultElanPath()
-            }
+            addDefaultElanPath()
         }),
     )
 

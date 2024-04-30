@@ -1,7 +1,7 @@
 import * as glob from 'glob'
 import * as Mocha from 'mocha'
 import * as path from 'path'
-import { getTestFolder, isElanDisabled } from '../../../src/config'
+import { getTestFolder } from '../../../src/config'
 import { logger } from '../../../src/utils/logger'
 
 export function run(testsRoot: string, cb: (error: any, failures?: number) => void): void {
@@ -20,10 +20,6 @@ export function run(testsRoot: string, cb: (error: any, failures?: number) => vo
     }
 
     logger.log('>>>>>>>>> testsRoot=' + testsRoot)
-
-    if (isElanDisabled()) {
-        logger.log('>>>>>>>>> running without elan')
-    }
 
     glob('**/**.test.js', { cwd: testsRoot }, (err, files) => {
         if (err) {

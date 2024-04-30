@@ -252,10 +252,6 @@ export function getDefaultLeanVersion(): string {
         : 'leanprover/lean4:stable'
 }
 
-export function isElanDisabled(): boolean {
-    return typeof process.env.DISABLE_ELAN === 'string'
-}
-
 /** The editor line height, in pixels. */
 export function getEditorLineHeight(): number {
     // The implementation

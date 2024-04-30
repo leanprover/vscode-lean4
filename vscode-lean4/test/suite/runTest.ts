@@ -83,26 +83,6 @@ async function main() {
         // now that elan is installed we can run the lean3 test in one vs code instance,
         // using `open folder` since lean3 doesn't like ad-hoc files.
 
-        // BUGBUG: this test has begun to fail on newer vscode builds with "Uncaught Error: write EPIPE"
-        // await runTests({
-        //     vscodeExecutablePath,
-        //     extensionDevelopmentPath,
-        //     extensionTestsPath: path.resolve(__dirname, 'index'),
-        //     extensionTestsEnv: {'LEAN4_TEST_FOLDER': 'lean3'},
-        //     launchArgs: ['--new-window', '--disable-gpu'] });
-        // // The '--new-window' doesn't see to be working, so this hack
-        // // ensures the following test does not re-open the lean3 folder
-        // clearUserWorkspaceData(vscodeTestPath);
-
-        // run 'no elan' tests
-        await runTests({
-            vscodeExecutablePath,
-            extensionDevelopmentPath,
-            extensionTestsPath: path.resolve(__dirname, 'index'),
-            extensionTestsEnv: { LEAN4_TEST_FOLDER: 'simple', DISABLE_ELAN: '1', DEFAULT_LEAN_TOOLCHAIN: test_version },
-            launchArgs: ['--new-window', '--disable-gpu'],
-        })
-
         clearUserWorkspaceData(vscodeTestPath)
 
         // run the infoView tests
@@ -110,7 +90,7 @@ async function main() {
             vscodeExecutablePath,
             extensionDevelopmentPath,
             extensionTestsPath: path.resolve(__dirname, 'index'),
-            extensionTestsEnv: { LEAN4_TEST_FOLDER: 'info', DISABLE_ELAN: '1', DEFAULT_LEAN_TOOLCHAIN: test_version },
+            extensionTestsEnv: { LEAN4_TEST_FOLDER: 'info', DEFAULT_LEAN_TOOLCHAIN: test_version },
             launchArgs: ['--new-window', '--disable-gpu'],
         })
 

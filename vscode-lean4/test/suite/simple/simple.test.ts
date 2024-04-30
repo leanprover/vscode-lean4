@@ -2,7 +2,6 @@ import * as assert from 'assert'
 import { suite } from 'mocha'
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { isElanDisabled } from '../../../src/config'
 import { UntitledUri } from '../../../src/utils/exturi'
 import { logger } from '../../../src/utils/logger'
 import {
@@ -16,17 +15,9 @@ import {
     waitForInfoviewHtml,
 } from '../utils/helpers'
 
-function getElanMode() {
-    let mode = ''
-    if (isElanDisabled()) {
-        mode = ' no elan '
-    }
-    return mode
-}
-
 suite('Lean4 Basics Test Suite', () => {
     test('Untitled Lean File', async () => {
-        logger.log(`=================== Untitled Lean File ${getElanMode()} ===================`)
+        logger.log('=================== Untitled Lean File ===================')
         void vscode.window.showInformationMessage('Running tests: ' + __dirname)
 
         const features = await initLean4Untitled('#eval Lean.versionString')
@@ -59,7 +50,7 @@ suite('Lean4 Basics Test Suite', () => {
     }).timeout(60000)
 
     test('Orphaned Lean File', async () => {
-        logger.log(`=================== Orphaned Lean File ${getElanMode()} ===================`)
+        logger.log('=================== Orphaned Lean File ===================')
         void vscode.window.showInformationMessage('Running tests: ' + __dirname)
 
         const testsRoot = path.join(__dirname, '..', '..', '..', '..', 'test', 'test-fixtures', 'orphan')
@@ -90,7 +81,7 @@ suite('Lean4 Basics Test Suite', () => {
     }).timeout(60000)
 
     test('Goto definition in a package folder', async () => {
-        logger.log(`=================== Goto definition in a package folder  ${getElanMode()} ===================`)
+        logger.log('=================== Goto definition in a package folder ===================')
         void vscode.window.showInformationMessage('Running tests: ' + __dirname)
 
         // Test we can load file in a project folder from a package folder and also
