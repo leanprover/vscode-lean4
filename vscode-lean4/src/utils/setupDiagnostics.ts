@@ -7,7 +7,15 @@ export type VersionQueryResult =
     | { kind: 'Success'; version: SemVer }
     | { kind: 'CommandNotFound' }
     | { kind: 'CommandError'; message: string }
-    | { kind: 'InvalidVersion' }
+    | { kind: 'InvalidVersion'; versionResult: string }
+
+const recommendedElanVersion = new SemVer('3.1.1')
+
+export type ElanDiagnosis =
+    | { kind: 'UpToDate' }
+    | { kind: 'Outdated'; currentVersion: SemVer; recommendedVersion: SemVer }
+    | { kind: 'NotInstalled' }
+    | { kind: 'ExecutionError'; message: string }
 
 export function versionQueryResult(executionResult: ExecutionResult, versionRegex: RegExp): VersionQueryResult {
     if (executionResult.exitCode === ExecutionExitCode.CannotLaunch) {
@@ -20,15 +28,15 @@ export function versionQueryResult(executionResult: ExecutionResult, versionRege
 
     const match = versionRegex.exec(executionResult.stdout)
     if (!match) {
-        return { kind: 'InvalidVersion' }
+        return { kind: 'InvalidVersion', versionResult: executionResult.stdout }
     }
 
     return { kind: 'Success', version: new SemVer(match[1]) }
 }
 
 export class SetupDiagnoser {
-    channel: OutputChannel
-    cwdUri: FileUri | undefined
+    readonly channel: OutputChannel
+    readonly cwdUri: FileUri | undefined
 
     constructor(channel: OutputChannel, cwdUri: FileUri | undefined) {
         this.channel = channel
@@ -38,6 +46,11 @@ export class SetupDiagnoser {
     async checkLakeAvailable(): Promise<boolean> {
         const lakeVersionResult = await this.runSilently('lake', ['--version'])
         return lakeVersionResult.exitCode === ExecutionExitCode.Success
+    }
+
+    async checkCurlAvailable(): Promise<boolean> {
+        const curlVersionResult = await this.runSilently('curl', ['--version'])
+        return curlVersionResult.exitCode === ExecutionExitCode.Success
     }
 
     async checkGitAvailable(): Promise<boolean> {
@@ -54,6 +67,33 @@ export class SetupDiagnoser {
     async queryElanVersion(): Promise<VersionQueryResult> {
         const elanVersionResult = await this.runSilently('elan', ['--version'])
         return versionQueryResult(elanVersionResult, /elan (\d+\.\d+\.\d+)/)
+    }
+
+    async elan(): Promise<ElanDiagnosis> {
+        const elanVersionResult = await this.queryElanVersion()
+        switch (elanVersionResult.kind) {
+            case 'CommandNotFound':
+                return { kind: 'NotInstalled' }
+
+            case 'CommandError':
+                return { kind: 'ExecutionError', message: elanVersionResult.message }
+
+            case 'InvalidVersion':
+                return {
+                    kind: 'ExecutionError',
+                    message: `Invalid version format: '${elanVersionResult.versionResult}'`,
+                }
+
+            case 'Success':
+                if (elanVersionResult.version.compare(recommendedElanVersion) < 0) {
+                    return {
+                        kind: 'Outdated',
+                        currentVersion: elanVersionResult.version,
+                        recommendedVersion: recommendedElanVersion,
+                    }
+                }
+                return { kind: 'UpToDate' }
+        }
     }
 
     private async runSilently(executablePath: string, args: string[]): Promise<ExecutionResult> {

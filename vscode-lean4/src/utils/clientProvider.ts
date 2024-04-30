@@ -297,14 +297,14 @@ Click the following link to learn how to set up or open Lean projects: [(Show Se
 
         const parentProjectFolder: FileUri | undefined = await checkParentFoldersForLeanProject(folderUri)
         if (parentProjectFolder === undefined) {
-            const message = `Opened folder is not a valid Lean 4 project.
+            const message = `Opened folder does not contain a valid Lean 4 project.
 Please open a valid Lean 4 project containing a \'lean-toolchain\' file for full functionality.
 Click the following link to learn how to set up or open Lean projects: [(Show Setup Guide)](command:lean4.setup.showSetupGuide)`
             void window.showWarningMessage(message)
             return
         }
 
-        const message = `Opened folder is not a valid Lean 4 project folder because it does not contain a 'lean-toolchain' file.
+        const message = `Opened folder does not contain a valid Lean 4 project folder because it does not contain a 'lean-toolchain' file.
 However, a valid Lean 4 project folder was found in one of the parent directories at '${parentProjectFolder.fsPath}'.
 Open this project instead?`
         const input = 'Open parent directory project'

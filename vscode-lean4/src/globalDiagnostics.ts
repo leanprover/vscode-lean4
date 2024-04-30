@@ -1,0 +1,139 @@
+import { OutputChannel, commands, window } from 'vscode'
+import { elanSelfUpdate } from './utils/elan'
+import { displayErrorWithOutput, displayWarningWithOutput } from './utils/errors'
+import { FileUri } from './utils/exturi'
+import { LeanInstaller } from './utils/leanInstaller'
+import { SetupDiagnoser, diagnose } from './utils/setupDiagnostics'
+
+class GlobalDiagnosticsProvider {
+    readonly installer: LeanInstaller
+    readonly channel: OutputChannel
+    readonly cwdUri: FileUri | undefined
+
+    constructor(installer: LeanInstaller, cwdUri: FileUri | undefined) {
+        this.installer = installer
+        this.channel = installer.getOutputChannel()
+        this.cwdUri = cwdUri
+    }
+
+    private diagnose(): SetupDiagnoser {
+        return diagnose(this.channel, this.cwdUri)
+    }
+
+    async checkDependenciesAreInstalled(): Promise<boolean> {
+        const isCurlInstalled = await this.diagnose().checkCurlAvailable()
+        const isGitInstalled = await this.diagnose().checkGitAvailable()
+        if (isCurlInstalled && isGitInstalled) {
+            return true
+        }
+
+        let missingDepMessage: string
+        if (!isCurlInstalled && isGitInstalled) {
+            missingDepMessage = "One of Lean's dependencies ('curl') is missing"
+        } else if (isCurlInstalled && !isGitInstalled) {
+            missingDepMessage = "One of Lean's dependencies ('git') is missing"
+        } else {
+            missingDepMessage = "Both of Lean's dependencies ('curl' and 'git') are missing"
+        }
+
+        const errorMessage = `${missingDepMessage}. Please read the Setup Guide on how to install missing dependencies and set up Lean 4.`
+        const openSetupGuideInput = 'Open Setup Guide'
+        const choice = await window.showErrorMessage(errorMessage, openSetupGuideInput)
+        if (choice === openSetupGuideInput) {
+            await commands.executeCommand('lean4.setup.showSetupGuide')
+        }
+        return false
+    }
+
+    async checkLean4IsInstalled(): Promise<boolean> {
+        const leanVersionResult = await this.diagnose().queryLeanVersion()
+        switch (leanVersionResult.kind) {
+            case 'Success':
+                return leanVersionResult.version.major === 4
+
+            case 'CommandError':
+                void displayErrorWithOutput('Cannot determine Lean version: ' + leanVersionResult.message)
+                return false
+
+            case 'InvalidVersion':
+                void displayErrorWithOutput(
+                    'Cannot determine Lean version because `lean --version` returned malformed output.',
+                )
+                return false
+
+            case 'CommandNotFound':
+                if (!this.installer.getPromptUser()) {
+                    // Used in tests
+                    await this.installer.autoInstall()
+                    return true
+                }
+
+                const installSuccessful = await this.installer.showInstallOptions()
+                if (installSuccessful) {
+                    return true
+                }
+                return false
+        }
+    }
+
+    async checkElanIsUpToDate(): Promise<boolean> {
+        const elanDiagnosis = await this.diagnose().elan()
+
+        switch (elanDiagnosis.kind) {
+            case 'NotInstalled':
+                const installElanItem = 'Install Elan'
+                const installElanChoice = await window.showWarningMessage(
+                    "Lean's version manager Elan is not installed. This means that the correct Lean 4 toolchain version of Lean 4 projects will not be selected or installed automatically. Do you want to install Elan?",
+                    installElanItem,
+                )
+                if (installElanChoice === undefined) {
+                    return false
+                }
+                await this.installer.installElan()
+                return true
+
+            case 'ExecutionError':
+                void displayWarningWithOutput('Cannot determine Elan version: ' + elanDiagnosis.message)
+                return false
+
+            case 'Outdated':
+                const updateElanItem = 'Update Elan'
+                const updateElanChoice = await window.showWarningMessage(
+                    `Lean's version manager Elan is outdated: the installed version is ${elanDiagnosis.currentVersion.toString()}, but a version of ${elanDiagnosis.recommendedVersion.toString()} is recommended. Do you want to update Elan?`,
+                    updateElanItem,
+                )
+                if (updateElanChoice === undefined) {
+                    return false
+                }
+                await elanSelfUpdate(this.channel)
+                return true
+
+            case 'UpToDate':
+                return true
+        }
+    }
+}
+
+export async function checkLean4FeaturePreconditions(
+    installer: LeanInstaller,
+    cwdUri: FileUri | undefined,
+): Promise<'Fulfilled' | 'Warning' | 'Fatal'> {
+    const diagnosticsProvider = new GlobalDiagnosticsProvider(installer, cwdUri)
+
+    const areDependenciesInstalled = await diagnosticsProvider.checkDependenciesAreInstalled()
+    if (!areDependenciesInstalled) {
+        return 'Fatal'
+    }
+
+    const isLean4Installed = await diagnosticsProvider.checkLean4IsInstalled()
+    if (!isLean4Installed) {
+        return 'Fatal'
+    }
+
+    const isElanUpToDate = await diagnosticsProvider.checkElanIsUpToDate()
+    if (!isElanUpToDate) {
+        return 'Warning'
+    }
+
+    return 'Fulfilled'
+}

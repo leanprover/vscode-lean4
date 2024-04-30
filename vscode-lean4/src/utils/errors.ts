@@ -7,3 +7,11 @@ export async function displayErrorWithOutput(message: string) {
         await commands.executeCommand('lean4.troubleshooting.showOutput')
     }
 }
+
+export async function displayWarningWithOutput(message: string) {
+    const input = 'Show Output'
+    const choice = await window.showWarningMessage(message, input)
+    if (choice === input) {
+        await commands.executeCommand('lean4.troubleshooting.showOutput')
+    }
+}

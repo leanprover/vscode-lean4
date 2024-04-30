@@ -10,6 +10,7 @@ import {
 } from './config'
 import { DocViewProvider } from './docview'
 import { AlwaysEnabledFeatures, Exports, Lean4EnabledFeatures } from './exports'
+import { checkLean4FeaturePreconditions } from './globalDiagnostics'
 import { InfoProvider } from './infoview'
 import { LeanClient } from './leanclient'
 import { ProjectInitializationProvider } from './projectinit'
@@ -17,11 +18,9 @@ import { ProjectOperationProvider } from './projectoperations'
 import { LeanTaskGutter } from './taskgutter'
 import { LeanClientProvider } from './utils/clientProvider'
 import { LeanConfigWatchService } from './utils/configwatchservice'
-import { displayErrorWithOutput } from './utils/errors'
-import { FileUri, isExtUri, toExtUriOrError } from './utils/exturi'
+import { isExtUri, toExtUriOrError } from './utils/exturi'
 import { LeanInstaller } from './utils/leanInstaller'
 import { findLeanProjectRoot } from './utils/projectInfo'
-import { diagnose } from './utils/setupDiagnostics'
 
 async function setLeanFeatureSetActive(isActive: boolean) {
     await commands.executeCommand('setContext', 'lean4.isLeanFeatureSetActive', isActive)
@@ -117,46 +116,15 @@ function activateAbbreviationFeature(context: ExtensionContext, docView: DocView
     return abbrev
 }
 
-async function ensureLean4IsInstalled(installer: LeanInstaller, doc: TextDocument): Promise<boolean> {
-    const docUri = toExtUriOrError(doc.uri)
-    const cwd: FileUri | undefined = docUri.scheme === 'file' ? await findLeanProjectRoot(docUri) : undefined
-    const leanVersionResult = await diagnose(installer.getOutputChannel(), cwd).queryLeanVersion()
-    switch (leanVersionResult.kind) {
-        case 'Success':
-            return leanVersionResult.version.major === 4
-
-        case 'CommandError':
-            void displayErrorWithOutput('Cannot determine Lean version: ' + leanVersionResult.message)
-            return false
-
-        case 'InvalidVersion':
-            void displayErrorWithOutput(
-                'Cannot determine Lean version because `lean --version` returned malformed output.',
-            )
-            return false
-
-        case 'CommandNotFound':
-            if (!installer.getPromptUser()) {
-                // Used in tests
-                await installer.autoInstall()
-                return true
-            }
-
-            const installSuccessful = await installer.showInstallOptions()
-            if (installSuccessful) {
-                return true
-            }
-            return false
-    }
-}
-
 async function activateLean4Features(
     context: ExtensionContext,
     installer: LeanInstaller,
     doc: TextDocument,
 ): Promise<Lean4EnabledFeatures | undefined> {
-    const isLean4Installed = await ensureLean4IsInstalled(installer, doc)
-    if (!isLean4Installed) {
+    const docUri = toExtUriOrError(doc.uri)
+    const cwd = docUri.scheme === 'file' ? await findLeanProjectRoot(docUri) : undefined
+    const preconditionCheckResult = await checkLean4FeaturePreconditions(installer, cwd)
+    if (preconditionCheckResult === 'Fatal') {
         return undefined
     }
 
