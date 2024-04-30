@@ -4,7 +4,7 @@ import * as os from 'os'
 import { basename, join } from 'path'
 import * as vscode from 'vscode'
 import { DocViewProvider } from '../../../src/docview'
-import { EnabledFeatures, Exports } from '../../../src/exports'
+import { AlwaysEnabledFeatures, EnabledFeatures, Exports } from '../../../src/exports'
 import { InfoProvider } from '../../../src/infoview'
 import { LeanClient } from '../../../src/leanclient'
 import { LeanClientProvider } from '../../../src/utils/clientProvider'
@@ -50,6 +50,22 @@ export async function initLean4(fileName: string): Promise<EnabledFeatures> {
     assertAndLog(info, 'No InfoProvider export')
     assertAndLog(await waitForInfoViewOpen(info, 60), 'Info view did not open after 20 seconds')
     return features
+}
+
+export async function initLean4WithoutInstallation(fileName: string): Promise<AlwaysEnabledFeatures> {
+    await closeAllEditors()
+    const options: vscode.TextDocumentShowOptions = { preview: false }
+
+    const lean = await waitForActiveExtension('leanprover.lean4', 60)
+    assertAndLog(lean, 'Lean extension not loaded')
+    assertAndLog(lean.isActive, 'Lean extension is not active')
+    logger.log(`Found lean package version: ${lean.packageJSON.version}`)
+
+    const doc = await vscode.workspace.openTextDocument(fileName)
+    await vscode.window.showTextDocument(doc, options)
+
+    await waitForActiveEditor(basename(fileName))
+    return lean.exports.alwaysEnabledFeatures
 }
 
 export async function insertText(text: string): Promise<void> {
