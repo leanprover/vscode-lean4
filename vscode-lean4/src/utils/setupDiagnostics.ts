@@ -233,7 +233,11 @@ function formatElanVersionDiagnosis(d: ElanVersionDiagnosis): string {
         case 'Outdated':
             return `Outdated (version: ${d.currentVersion.toString()}, recommended version: ${d.recommendedVersion.toString()})`
         case 'ExecutionError':
-            return 'Execution error [(Show command output)](command:lean4.troubleshooting.showOutput)'
+            const errorMessage = d.message
+                .split('\n')
+                .map(line => '    ' + line)
+                .join('\n')
+            return 'Execution error:\n' + errorMessage
         case 'NotInstalled':
             return 'Not installed'
     }
@@ -248,7 +252,11 @@ function formatLeanVersionDiagnosis(d: LeanVersionDiagnosis): string {
         case 'IsAncientLean4Version':
             return `Pre-stable-release Lean 4 version (version: ${d.version})`
         case 'ExecutionError':
-            return 'Execution error [(Show command output)](command:lean4.troubleshooting.showOutput)'
+            const errorMessage = d.message
+                .split('\n')
+                .map(line => '    ' + line)
+                .join('\n')
+            return 'Execution error:\n' + errorMessage
         case 'NotInstalled':
             return 'Not installed'
     }
