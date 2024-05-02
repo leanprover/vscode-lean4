@@ -314,6 +314,12 @@
                 "description": "Show output channel containing all progress updates and errors of commands"
             },
             {
+                "command": "lean4.troubleshooting.showSetupInformation",
+                "category": "Lean 4",
+                "title": "Troubleshooting: Show Setup Information",
+                "description": "Show setup information for the environment that the VS Code extension is running in"
+            },
+            {
                 "command": "lean4.setup.showSetupGuide",
                 "category": "Lean 4",
                 "title": "Setup: Show Setup Guide",
@@ -562,6 +568,9 @@
                     "command": "lean4.troubleshooting.showOutput"
                 },
                 {
+                    "command": "lean4.troubleshooting.showSetupInformation"
+                },
+                {
                     "command": "lean4.setup.showSetupGuide"
                 },
                 {
@@ -631,6 +640,11 @@
                 },
                 {
                     "command": "lean4.troubleshooting.showOutput",
+                    "when": "config.lean4.alwaysShowTitleBarMenu || lean4.isLeanFeatureSetActive",
+                    "group": "4_troubleshooting"
+                },
+                {
+                    "command": "lean4.troubleshooting.showSetupInformation",
                     "when": "config.lean4.alwaysShowTitleBarMenu || lean4.isLeanFeatureSetActive",
                     "group": "4_troubleshooting"
                 },

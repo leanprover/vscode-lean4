@@ -71,8 +71,12 @@ class ProjectDiagnosticsProvider {
     async checkIsLeanVersionUpToDate(): Promise<PreconditionCheckResult> {
         const projectLeanVersionDiagnosis = await this.diagnose().projectLeanVersion()
         switch (projectLeanVersionDiagnosis.kind) {
-            case 'Error':
-                void displayErrorWithOutput(projectLeanVersionDiagnosis.message)
+            case 'NotInstalled':
+                void displayErrorWithOutput("Error while checking Lean version: 'lean' command was not found.")
+                return PreconditionCheckResult.Fatal
+
+            case 'ExecutionError':
+                void displayErrorWithOutput(`Error while checking Lean version: ${projectLeanVersionDiagnosis.message}`)
                 return PreconditionCheckResult.Fatal
 
             case 'IsLean3Version':

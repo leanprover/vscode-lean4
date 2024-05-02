@@ -1,14 +1,9 @@
-import { SemVer } from 'semver'
 import { OutputChannel, commands, window } from 'vscode'
 import { elanSelfUpdate } from './utils/elan'
 import { displayErrorWithOutput, displayWarningWithOutput } from './utils/errors'
 import { FileUri } from './utils/exturi'
 import { LeanInstaller } from './utils/leanInstaller'
 import { PreconditionCheckResult, SetupDiagnoser, diagnose } from './utils/setupDiagnostics'
-
-const lean3ProjectErrorMessage = (projectVersion: SemVer) =>
-    `Opened file is using Lean 3 (version: ${projectVersion.toString()}).
-If you want to use Lean 3, disable this extension ('Extensions' in the left sidebar > Cog icon on 'lean4' > 'Disable') and install the 'lean' extension for Lean 3 support.`
 
 class GlobalDiagnosticsProvider {
     readonly installer: LeanInstaller
@@ -54,10 +49,6 @@ class GlobalDiagnosticsProvider {
         const leanVersionResult = await this.diagnose().queryLeanVersion()
         switch (leanVersionResult.kind) {
             case 'Success':
-                if (leanVersionResult.version.major === 3) {
-                    void window.showErrorMessage(lean3ProjectErrorMessage(leanVersionResult.version))
-                    return false
-                }
                 return true
 
             case 'CommandError':

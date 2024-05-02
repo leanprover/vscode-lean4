@@ -5,12 +5,14 @@ import { ProjectInitializationProvider } from './projectinit'
 import { ProjectOperationProvider } from './projectoperations'
 import { LeanClientProvider } from './utils/clientProvider'
 import { LeanInstaller } from './utils/leanInstaller'
+import { FullDiagnosticsProvider } from './utils/setupDiagnostics'
 
 export interface AlwaysEnabledFeatures {
     docView: DocViewProvider
     projectInitializationProvider: ProjectInitializationProvider
     outputChannel: OutputChannel
     installer: LeanInstaller
+    fullDiagnosticsProvider: FullDiagnosticsProvider
 }
 
 export interface Lean4EnabledFeatures {

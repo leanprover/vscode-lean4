@@ -147,3 +147,13 @@ export function parseExtUri(uriString: string): ExtUri | undefined {
 export function parseExtUriOrError(uriString: string): ExtUri {
     return toExtUriOrError(Uri.parse(uriString))
 }
+
+export function extUriEquals(a: ExtUri, b: ExtUri): boolean {
+    if (a.scheme === 'untitled' && b.scheme === 'untitled') {
+        return a.equals(b)
+    }
+    if (a.scheme === 'file' && b.scheme === 'file') {
+        return a.equals(b)
+    }
+    return false
+}

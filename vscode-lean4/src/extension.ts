@@ -14,7 +14,7 @@ import { LeanConfigWatchService } from './utils/configwatchservice'
 import { isExtUri, toExtUriOrError } from './utils/exturi'
 import { LeanInstaller } from './utils/leanInstaller'
 import { findLeanProjectRoot } from './utils/projectInfo'
-import { PreconditionCheckResult } from './utils/setupDiagnostics'
+import { FullDiagnosticsProvider, PreconditionCheckResult } from './utils/setupDiagnostics'
 
 async function setLeanFeatureSetActive(isActive: boolean) {
     await commands.executeCommand('setContext', 'lean4.isLeanFeatureSetActive', isActive)
@@ -87,7 +87,10 @@ function activateAlwaysEnabledFeatures(context: ExtensionContext): AlwaysEnabled
     }
     context.subscriptions.push(workspace.onDidOpenTextDocument(checkForExtensionConflict))
 
-    return { docView, projectInitializationProvider, outputChannel, installer }
+    const fullDiagnosticsProvider = new FullDiagnosticsProvider(outputChannel)
+    context.subscriptions.push(fullDiagnosticsProvider)
+
+    return { docView, projectInitializationProvider, outputChannel, installer, fullDiagnosticsProvider }
 }
 
 function activateAbbreviationFeature(context: ExtensionContext, docView: DocViewProvider): AbbreviationFeature {
