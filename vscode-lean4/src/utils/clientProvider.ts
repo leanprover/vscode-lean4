@@ -1,12 +1,12 @@
 import { LeanFileProgressProcessingInfo, ServerStoppedReason } from '@leanprover/infoview-api'
 import { Disposable, EventEmitter, OutputChannel, TextDocument, TextEditor, commands, window, workspace } from 'vscode'
-import { shouldShowInvalidProjectWarnings } from '../config'
 import { LeanClient } from '../leanclient'
 import { ExtUri, FileUri, UntitledUri, getWorkspaceFolderUri, toExtUri } from './exturi'
 import { LeanInstaller } from './leanInstaller'
 import { logger } from './logger'
-import { checkParentFoldersForLeanProject, findLeanProjectRoot, isValidLeanProject } from './projectInfo'
-import { diagnose } from './setupDiagnostics'
+import { checkLean4ProjectPreconditions } from './projectDiagnostics'
+import { findLeanProjectRoot } from './projectInfo'
+import { PreconditionCheckResult } from './setupDiagnostics'
 
 // This class ensures we have one LeanClient per folder.
 export class LeanClientProvider implements Disposable {
@@ -97,9 +97,8 @@ export class LeanClientProvider implements Disposable {
             try {
                 const projectUri = await findLeanProjectRoot(uri)
 
-                logger.log('[ClientProvider] testLeanVersion')
-                const leanVersionResult = await diagnose(this.outputChannel, projectUri).queryLeanVersion()
-                if (leanVersionResult.kind === 'Success' && leanVersionResult.version.major === 4) {
+                const preconditionCheckResult = await checkLean4ProjectPreconditions(this.outputChannel, projectUri)
+                if (preconditionCheckResult !== PreconditionCheckResult.Fatal) {
                     logger.log('[ClientProvider] got lean version 4')
                     const [cached, client] = await this.ensureClient(uri)
                     if (cached && client) {
@@ -179,8 +178,6 @@ export class LeanClientProvider implements Disposable {
             }
 
             await client.openLean4Document(document)
-
-            await this.checkIsValidProjectFolder(client.folderUri)
         } catch (e) {
             logger.log(`[ClientProvider] ### Error opening document: ${e}`)
         }
@@ -233,14 +230,10 @@ export class LeanClientProvider implements Disposable {
         if (this.pending.has(key)) {
             return [false, undefined]
         }
-
         this.pending.set(key, true)
-        const cwd = folderUri.scheme === 'file' ? folderUri : undefined
-        const leanVersionResult = await diagnose(this.outputChannel, cwd).queryLeanVersion()
-        if (
-            leanVersionResult.kind !== 'Success' ||
-            (leanVersionResult.kind === 'Success' && leanVersionResult.version.major !== 4)
-        ) {
+
+        const preconditionCheckResult = await checkLean4ProjectPreconditions(this.outputChannel, folderUri)
+        if (preconditionCheckResult === PreconditionCheckResult.Fatal) {
             this.pending.delete(key)
             return [false, undefined]
         }
@@ -276,43 +269,6 @@ export class LeanClientProvider implements Disposable {
         this.activeClient = client
 
         return [false, client]
-    }
-
-    private async checkIsValidProjectFolder(folderUri: ExtUri) {
-        if (!shouldShowInvalidProjectWarnings()) {
-            return
-        }
-
-        if (folderUri.scheme !== 'file') {
-            const message = `Lean 4 server operating in restricted single file mode.
-Please open a valid Lean 4 project containing a \'lean-toolchain\' file for full functionality.
-Click the following link to learn how to set up or open Lean projects: [(Show Setup Guide)](command:lean4.setup.showSetupGuide)`
-            void window.showWarningMessage(message)
-            return
-        }
-
-        if (await isValidLeanProject(folderUri)) {
-            return
-        }
-
-        const parentProjectFolder: FileUri | undefined = await checkParentFoldersForLeanProject(folderUri)
-        if (parentProjectFolder === undefined) {
-            const message = `Opened folder does not contain a valid Lean 4 project.
-Please open a valid Lean 4 project containing a \'lean-toolchain\' file for full functionality.
-Click the following link to learn how to set up or open Lean projects: [(Show Setup Guide)](command:lean4.setup.showSetupGuide)`
-            void window.showWarningMessage(message)
-            return
-        }
-
-        const message = `Opened folder does not contain a valid Lean 4 project folder because it does not contain a 'lean-toolchain' file.
-However, a valid Lean 4 project folder was found in one of the parent directories at '${parentProjectFolder.fsPath}'.
-Open this project instead?`
-        const input = 'Open parent directory project'
-        const choice: string | undefined = await window.showWarningMessage(message, input)
-        if (choice === input) {
-            // this kills the extension host
-            await commands.executeCommand('vscode.openFolder', parentProjectFolder)
-        }
     }
 
     dispose(): void {

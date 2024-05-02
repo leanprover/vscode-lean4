@@ -1,9 +1,14 @@
+import { SemVer } from 'semver'
 import { OutputChannel, commands, window } from 'vscode'
 import { elanSelfUpdate } from './utils/elan'
 import { displayErrorWithOutput, displayWarningWithOutput } from './utils/errors'
 import { FileUri } from './utils/exturi'
 import { LeanInstaller } from './utils/leanInstaller'
-import { SetupDiagnoser, diagnose } from './utils/setupDiagnostics'
+import { PreconditionCheckResult, SetupDiagnoser, diagnose } from './utils/setupDiagnostics'
+
+const lean3ProjectErrorMessage = (projectVersion: SemVer) =>
+    `Opened file is using Lean 3 (version: ${projectVersion.toString()}).
+If you want to use Lean 3, disable this extension ('Extensions' in the left sidebar > Cog icon on 'lean4' > 'Disable') and install the 'lean' extension for Lean 3 support.`
 
 class GlobalDiagnosticsProvider {
     readonly installer: LeanInstaller
@@ -49,15 +54,19 @@ class GlobalDiagnosticsProvider {
         const leanVersionResult = await this.diagnose().queryLeanVersion()
         switch (leanVersionResult.kind) {
             case 'Success':
-                return leanVersionResult.version.major === 4
+                if (leanVersionResult.version.major === 3) {
+                    void window.showErrorMessage(lean3ProjectErrorMessage(leanVersionResult.version))
+                    return false
+                }
+                return true
 
             case 'CommandError':
-                void displayErrorWithOutput('Cannot determine Lean version: ' + leanVersionResult.message)
+                void displayErrorWithOutput(`Error while checking Lean version: ${leanVersionResult.message}`)
                 return false
 
             case 'InvalidVersion':
                 void displayErrorWithOutput(
-                    'Cannot determine Lean version because `lean --version` returned malformed output.',
+                    `Error while checking Lean version: 'lean --version' returned a version that could not be parsed: '${leanVersionResult.versionResult}'`,
                 )
                 return false
 
@@ -117,23 +126,23 @@ class GlobalDiagnosticsProvider {
 export async function checkLean4FeaturePreconditions(
     installer: LeanInstaller,
     cwdUri: FileUri | undefined,
-): Promise<'Fulfilled' | 'Warning' | 'Fatal'> {
+): Promise<PreconditionCheckResult> {
     const diagnosticsProvider = new GlobalDiagnosticsProvider(installer, cwdUri)
 
     const areDependenciesInstalled = await diagnosticsProvider.checkDependenciesAreInstalled()
     if (!areDependenciesInstalled) {
-        return 'Fatal'
+        return PreconditionCheckResult.Fatal
     }
 
     const isLean4Installed = await diagnosticsProvider.checkLean4IsInstalled()
     if (!isLean4Installed) {
-        return 'Fatal'
+        return PreconditionCheckResult.Fatal
     }
 
     const isElanUpToDate = await diagnosticsProvider.checkElanIsUpToDate()
     if (!isElanUpToDate) {
-        return 'Warning'
+        return PreconditionCheckResult.Warning
     }
 
-    return 'Fulfilled'
+    return PreconditionCheckResult.Fulfilled
 }

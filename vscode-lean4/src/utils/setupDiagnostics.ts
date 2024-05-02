@@ -2,6 +2,7 @@ import { SemVer } from 'semver'
 import { OutputChannel } from 'vscode'
 import { batchExecute, ExecutionExitCode, ExecutionResult } from './batch'
 import { FileUri } from './exturi'
+import { checkParentFoldersForLeanProject, isValidLeanProject } from './projectInfo'
 
 export type VersionQueryResult =
     | { kind: 'Success'; version: SemVer }
@@ -16,6 +17,30 @@ export type ElanDiagnosis =
     | { kind: 'Outdated'; currentVersion: SemVer; recommendedVersion: SemVer }
     | { kind: 'NotInstalled' }
     | { kind: 'ExecutionError'; message: string }
+
+export type ProjectSetupDiagnosis =
+    | { kind: 'SingleFile' }
+    | { kind: 'MissingLeanToolchain'; parentProjectFolder: FileUri | undefined }
+    | { kind: 'ValidProjectSetup' }
+
+export type LeanVersionDiagnosis =
+    | { kind: 'Error'; message: string }
+    | { kind: 'IsLean3Version'; version: SemVer }
+    | { kind: 'IsAncientLean4Version'; version: SemVer }
+    | { kind: 'UpToDate' }
+
+export enum PreconditionCheckResult {
+    Fulfilled = 0,
+    Warning = 1,
+    Fatal = 2,
+}
+
+export function worstPreconditionViolation(
+    a: PreconditionCheckResult,
+    b: PreconditionCheckResult,
+): PreconditionCheckResult {
+    return Math.max(a, b)
+}
 
 export function versionQueryResult(executionResult: ExecutionResult, versionRegex: RegExp): VersionQueryResult {
     if (executionResult.exitCode === ExecutionExitCode.CannotLaunch) {
@@ -61,7 +86,7 @@ export class SetupDiagnoser {
     async queryLeanVersion(toolchain?: string | undefined): Promise<VersionQueryResult> {
         const options = toolchain ? ['--version', '+' + toolchain] : ['--version']
         const leanVersionResult = await this.runSilently('lean', options)
-        return versionQueryResult(leanVersionResult, /version (\d+\.\d+\.\d+)/)
+        return versionQueryResult(leanVersionResult, /version (\d+\.\d+\.\d+(\w|-)*)/)
     }
 
     async queryElanVersion(): Promise<VersionQueryResult> {
@@ -94,6 +119,52 @@ export class SetupDiagnoser {
                 }
                 return { kind: 'UpToDate' }
         }
+    }
+
+    async projectSetup(): Promise<ProjectSetupDiagnosis> {
+        if (this.cwdUri === undefined) {
+            return { kind: 'SingleFile' }
+        }
+
+        if (!(await isValidLeanProject(this.cwdUri))) {
+            const parentProjectFolder: FileUri | undefined = await checkParentFoldersForLeanProject(this.cwdUri)
+            return { kind: 'MissingLeanToolchain', parentProjectFolder }
+        }
+
+        return { kind: 'ValidProjectSetup' }
+    }
+
+    async projectLeanVersion(): Promise<LeanVersionDiagnosis> {
+        const leanVersionResult = await this.queryLeanVersion()
+        if (leanVersionResult.kind === 'CommandNotFound') {
+            return {
+                kind: 'Error',
+                message: "Error while checking Lean version: 'lean' command was not found.",
+            }
+        }
+        if (leanVersionResult.kind === 'CommandError') {
+            return {
+                kind: 'Error',
+                message: `Error while checking Lean version: ${leanVersionResult.message}`,
+            }
+        }
+        if (leanVersionResult.kind === 'InvalidVersion') {
+            return {
+                kind: 'Error',
+                message: `Error while checking Lean version: 'lean --version' returned a version that could not be parsed: '${leanVersionResult.versionResult}'`,
+            }
+        }
+
+        const leanVersion = leanVersionResult.version
+        if (leanVersion.major === 3) {
+            return { kind: 'IsLean3Version', version: leanVersion }
+        }
+
+        if (leanVersion.major === 4 && leanVersion.minor === 0 && leanVersion.prerelease.length > 0) {
+            return { kind: 'IsAncientLean4Version', version: leanVersion }
+        }
+
+        return { kind: 'UpToDate' }
     }
 
     private async runSilently(executablePath: string, args: string[]): Promise<ExecutionResult> {

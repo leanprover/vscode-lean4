@@ -14,6 +14,7 @@ import { LeanConfigWatchService } from './utils/configwatchservice'
 import { isExtUri, toExtUriOrError } from './utils/exturi'
 import { LeanInstaller } from './utils/leanInstaller'
 import { findLeanProjectRoot } from './utils/projectInfo'
+import { PreconditionCheckResult } from './utils/setupDiagnostics'
 
 async function setLeanFeatureSetActive(isActive: boolean) {
     await commands.executeCommand('setContext', 'lean4.isLeanFeatureSetActive', isActive)
@@ -105,7 +106,7 @@ async function activateLean4Features(
     const docUri = toExtUriOrError(doc.uri)
     const cwd = docUri.scheme === 'file' ? await findLeanProjectRoot(docUri) : undefined
     const preconditionCheckResult = await checkLean4FeaturePreconditions(installer, cwd)
-    if (preconditionCheckResult === 'Fatal') {
+    if (preconditionCheckResult === PreconditionCheckResult.Fatal) {
         return undefined
     }
 
