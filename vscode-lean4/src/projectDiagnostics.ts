@@ -29,8 +29,8 @@ const lean3ProjectErrorMessage = (projectVersion: SemVer) =>
 If you want to use Lean 3, disable this extension ('Extensions' in the left sidebar > Cog icon on 'lean4' > 'Disable') and install the 'lean' extension for Lean 3 support.`
 
 const ancientLean4ProjectWarningMessage = (projectVersion: SemVer) =>
-    `Opened project uses a Lean 4 version (${projectVersion.toString()}) from before the first Lean 4 stable release (4.0.0).
-Pre-stable Lean 4 versions are increasingly less supported, so please consider updating this project to a newer Lean 4 version.`
+    `Opened file is using a Lean 4 version (${projectVersion.toString()}) from before the first Lean 4 stable release (4.0.0).
+Pre-stable Lean 4 versions are increasingly less supported, so please consider updating to a newer Lean 4 version.`
 
 class ProjectDiagnosticsProvider {
     readonly channel: OutputChannel
