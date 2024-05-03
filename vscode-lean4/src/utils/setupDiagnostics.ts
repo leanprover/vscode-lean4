@@ -2,7 +2,7 @@ import * as os from 'os'
 import { SemVer } from 'semver'
 import { Disposable, OutputChannel, TextDocument, commands, env, window, workspace } from 'vscode'
 import { shouldShowSetupWarnings } from '../config'
-import { ExecutionExitCode, ExecutionResult, batchExecute } from './batch'
+import { ExecutionExitCode, ExecutionResult, batchExecute, batchExecuteWithProgress } from './batch'
 import { displayErrorWithOutput, displayWarningWithOutput } from './errors'
 import { ExtUri, FileUri, extUriEquals, toExtUri } from './exturi'
 import { checkParentFoldersForLeanProject, findLeanProjectRoot, isValidLeanProject } from './projectInfo'
@@ -147,7 +147,7 @@ export class SetupDiagnoser {
     }
 
     async checkLakeAvailable(): Promise<boolean> {
-        const lakeVersionResult = await this.runSilently('lake', ['--version'])
+        const lakeVersionResult = await this.runWithProgress('lake', ['--version'], 'Checking Lake version')
         return lakeVersionResult.exitCode === ExecutionExitCode.Success
     }
 
@@ -176,9 +176,8 @@ export class SetupDiagnoser {
         }
     }
 
-    async queryLeanVersion(toolchain?: string | undefined): Promise<VersionQueryResult> {
-        const options = toolchain ? ['--version', '+' + toolchain] : ['--version']
-        const leanVersionResult = await this.runSilently('lean', options)
+    async queryLeanVersion(): Promise<VersionQueryResult> {
+        const leanVersionResult = await this.runWithProgress('lean', ['--version'], 'Checking Lean version')
         return versionQueryResult(leanVersionResult, /version (\d+\.\d+\.\d+(\w|-)*)/)
     }
 
@@ -212,6 +211,13 @@ export class SetupDiagnoser {
 
     private async runSilently(executablePath: string, args: string[]): Promise<ExecutionResult> {
         return batchExecute(executablePath, args, this.cwdUri?.fsPath, { combined: this.channel })
+    }
+
+    private async runWithProgress(executablePath: string, args: string[], title: string): Promise<ExecutionResult> {
+        return batchExecuteWithProgress(executablePath, args, title, {
+            cwd: this.cwdUri?.fsPath,
+            channel: this.channel,
+        })
     }
 }
 

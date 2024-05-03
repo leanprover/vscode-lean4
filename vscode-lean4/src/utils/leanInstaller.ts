@@ -1,5 +1,5 @@
 import { EventEmitter, OutputChannel, TerminalOptions, window } from 'vscode'
-import { getPowerShellPath, isRunningTest, shouldAutofocusOutput } from '../config'
+import { getPowerShellPath, isRunningTest } from '../config'
 import { batchExecute } from './batch'
 import { ExtUri, FileUri } from './exturi'
 import { logger } from './logger'
@@ -14,6 +14,7 @@ export class LeanInstaller {
     private leanInstallerWindows = 'https://raw.githubusercontent.com/leanprover/elan/master/elan-init.ps1'
     private outputChannel: OutputChannel
     private prompting: boolean = false
+    private installing: boolean = false
     private freshInstallDefaultToolchain: string
     private elanDefaultToolchain: string = '' // the default toolchain according to elan (toolchain marked with '(default)')
     private workspaceSuffix: string = '(workspace override)'
@@ -89,36 +90,6 @@ export class LeanInstaller {
         }
     }
 
-    async showInstallOptions(): Promise<boolean> {
-        if (!this.promptUser) {
-            // no need to prompt when there is no user.
-            return false
-        }
-
-        // note; we keep the LeanClient alive so that it can be restarted if the
-        // user changes the Lean: Executable Path.
-        const installItem = 'Install Lean'
-        const prompt = 'Failed to start Lean 4 language server'
-
-        if (shouldAutofocusOutput()) {
-            this.outputChannel.show(true)
-        }
-
-        const item = await this.showPrompt(prompt, installItem)
-        if (item !== installItem) {
-            return false
-        }
-        try {
-            await this.installElan()
-            return true
-        } catch (err) {
-            const msg = '' + err
-            logger.log(`[LeanInstaller] restart error ${msg}`)
-            this.outputChannel.appendLine(msg)
-            return false
-        }
-    }
-
     private removeSuffix(version: string): string {
         let s = version
         const suffixes = [this.defaultSuffix, this.workspaceSuffix]
@@ -187,7 +158,13 @@ export class LeanInstaller {
         logger.log('[LeanInstaller] Elan installed')
     }
 
-    async installElan(): Promise<boolean> {
+    async installElan(): Promise<'Success' | 'InstallationFailed' | 'PendingInstallation'> {
+        if (this.installing) {
+            void window.showErrorMessage('Elan is already being installed.')
+            return 'PendingInstallation'
+        }
+        this.installing = true
+
         const terminalName = 'Lean installation via elan'
 
         let terminalOptions: TerminalOptions = { name: terminalName }
@@ -198,7 +175,7 @@ export class LeanInstaller {
         terminal.show()
 
         // We register a listener, to restart the Lean extension once elan has finished.
-        const result = new Promise<boolean>(function (resolve, reject) {
+        const resultPromise = new Promise<boolean>(function (resolve, reject) {
             window.onDidCloseTerminal(async t => {
                 if (t === terminal) {
                     resolve(true)
@@ -229,8 +206,14 @@ export class LeanInstaller {
             )
         }
 
+        const result = await resultPromise
         this.elanDefaultToolchain = this.freshInstallDefaultToolchain
+        this.installing = false
+        if (!result) {
+            void window.showErrorMessage('Elan installation failed. Check the terminal output for errors.')
+            return 'InstallationFailed'
+        }
 
-        return result
+        return 'Success'
     }
 }

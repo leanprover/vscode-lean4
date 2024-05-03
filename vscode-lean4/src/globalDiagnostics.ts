@@ -75,11 +75,16 @@ class GlobalDiagnosticsProvider {
                     return true
                 }
 
-                const installSuccessful = await this.installer.showInstallOptions()
-                if (installSuccessful) {
-                    return true
+                const installElanItem = 'Install Elan and Lean 4'
+                const installElanChoice = await showSetupError(
+                    "Lean is not installed. Do you want to install Lean's version manager Elan and a recent stable version of Lean 4?",
+                    installElanItem,
+                )
+                if (installElanChoice === undefined) {
+                    return false
                 }
-                return false
+                await this.installer.installElan()
+                return true
         }
     }
 
@@ -88,9 +93,9 @@ class GlobalDiagnosticsProvider {
 
         switch (elanDiagnosis.kind) {
             case 'NotInstalled':
-                const installElanItem = 'Install Elan'
+                const installElanItem = 'Install Elan and Lean 4'
                 const installElanChoice = await showSetupWarning(
-                    "Lean's version manager Elan is not installed. This means that the correct Lean 4 toolchain version of Lean 4 projects will not be selected or installed automatically. Do you want to install Elan?",
+                    "Lean's version manager Elan is not installed. This means that the correct Lean 4 toolchain version of Lean 4 projects will not be selected or installed automatically. Do you want to install Elan and a recent stable version of Lean 4?",
                     installElanItem,
                 )
                 if (installElanChoice === undefined) {
