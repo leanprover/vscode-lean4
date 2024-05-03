@@ -2,19 +2,10 @@ import * as fs from 'fs'
 import * as os from 'os'
 import * as path from 'path'
 import { workspace } from 'vscode'
-import { PATH, setPATH, setProcessEnvPATH } from './utils/envPath'
+import { PATH, setProcessEnvPATH } from './utils/envPath'
 
 // TODO: does currently not contain config options for `./abbreviation`
 // so that it is easy to keep it in sync with vscode-lean.
-
-export function addServerEnvPaths(input_env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
-    const env = Object.assign({}, input_env, serverEnv())
-    const serverEnvPATH = new PATH(serverEnvPaths())
-    if (!serverEnvPATH.isEmpty()) {
-        setPATH(env, serverEnvPATH.join(PATH.ofEnv(env)))
-    }
-    return env
-}
 
 export function getElanPath(): string {
     return path.join(os.homedir(), '.elan', 'bin')
@@ -57,28 +48,8 @@ export function getPowerShellPath(): string {
     return `${windir}\\System32\\WindowsPowerShell\\v1.0\\powershell.exe`
 }
 
-export function toolchainPath(): string {
-    return workspace.getConfiguration('lean4').get('toolchainPath', '')
-}
-
-export function lakePath(): string {
-    return workspace.getConfiguration('lean4').get('lakePath', '')
-}
-
-export function lakeEnabled(): boolean {
-    return workspace.getConfiguration('lean4').get('enableLake', false)
-}
-
-export function serverEnv(): object {
-    return workspace.getConfiguration('lean4').get('serverEnv', {})
-}
-
 export function automaticallyBuildDependencies(): boolean {
     return workspace.getConfiguration('lean4').get('automaticallyBuildDependencies', false)
-}
-
-export function serverEnvPaths(): string[] {
-    return workspace.getConfiguration('lean4').get('serverEnvPaths', [])
 }
 
 export function serverArgs(): string[] {

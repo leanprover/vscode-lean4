@@ -1,5 +1,5 @@
 import { EventEmitter, OutputChannel, TerminalOptions, window } from 'vscode'
-import { getPowerShellPath, isRunningTest, shouldAutofocusOutput, toolchainPath } from '../config'
+import { getPowerShellPath, isRunningTest, shouldAutofocusOutput } from '../config'
 import { batchExecute } from './batch'
 import { ExtUri, FileUri } from './exturi'
 import { logger } from './logger'
@@ -94,15 +94,11 @@ export class LeanInstaller {
             // no need to prompt when there is no user.
             return false
         }
-        const path = toolchainPath()
 
         // note; we keep the LeanClient alive so that it can be restarted if the
         // user changes the Lean: Executable Path.
         const installItem = 'Install Lean'
-        let prompt = 'Failed to start Lean 4 language server'
-        if (path) {
-            prompt += ` from ${path}`
-        }
+        const prompt = 'Failed to start Lean 4 language server'
 
         if (shouldAutofocusOutput()) {
             this.outputChannel.show(true)
@@ -192,14 +188,6 @@ export class LeanInstaller {
     }
 
     async installElan(): Promise<boolean> {
-        if (toolchainPath()) {
-            void window.showErrorMessage(
-                "It looks like you've modified the `lean.toolchainPath` user setting." +
-                    'Please clear this setting before installing elan.',
-            )
-            return false
-        }
-
         const terminalName = 'Lean installation via elan'
 
         let terminalOptions: TerminalOptions = { name: terminalName }

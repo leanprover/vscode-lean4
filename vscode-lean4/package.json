@@ -22,12 +22,6 @@
             "type": "object",
             "title": "Lean 4",
             "properties": {
-                "lean4.toolchainPath": {
-                    "type": "string",
-                    "default": "",
-                    "markdownDescription": "**DO NOT CHANGE** unless you know what you are doing. Path to your Lean toolchain. Leave this blank to get the default location from your PATH environment or from the default elan install location.",
-                    "scope": "machine-overridable"
-                },
                 "lean4.input.enabled": {
                     "type": "boolean",
                     "default": true,
@@ -72,37 +66,6 @@
                     "type": "boolean",
                     "default": false,
                     "markdownDescription": "Enable automatically building dependencies when opening a file. In Lean versions pre-4.2.0, dependencies are always built automatically regardless of this setting."
-                },
-                "lean4.serverEnv": {
-                    "type": "object",
-                    "default": {},
-                    "description": "Environment variables to add to the Lean 4 server environment",
-                    "additionalProperties": {
-                        "type": "string",
-                        "description": "environment variable to add"
-                    },
-                    "scope": "machine-overridable"
-                },
-                "lean4.serverEnvPaths": {
-                    "type": "array",
-                    "default": [],
-                    "description": "Paths to add to the Lean 4 server environment PATH variable.",
-                    "items": {
-                        "type": "string",
-                        "description": "a path to add to the environment"
-                    },
-                    "scope": "machine-overridable"
-                },
-                "lean4.enableLake": {
-                    "type": "boolean",
-                    "default": true,
-                    "markdownDescription": "Enable Lake server when possible."
-                },
-                "lean4.lakePath": {
-                    "type": "string",
-                    "default": "",
-                    "markdownDescription": "Path to Lake. Leave this blank to use the Lake from the toolchain.",
-                    "scope": "machine-overridable"
                 },
                 "lean4.serverArgs": {
                     "type": "array",

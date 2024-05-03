@@ -1,5 +1,4 @@
 import {
-    ConfigurationChangeEvent,
     Diagnostic,
     DiagnosticCollection,
     Disposable,
@@ -32,19 +31,14 @@ import {
 import * as ls from 'vscode-languageserver-protocol'
 
 import { LeanFileProgressParams, LeanFileProgressProcessingInfo, ServerStoppedReason } from '@leanprover/infoview-api'
-import { join } from 'path'
 import {
-    addServerEnvPaths,
     automaticallyBuildDependencies,
     getElaborationDelay,
     getFallBackToStringOccurrenceHighlighting,
-    lakeEnabled,
-    lakePath,
     serverArgs,
     serverLoggingEnabled,
     serverLoggingPath,
     shouldAutofocusOutput,
-    toolchainPath,
 } from './config'
 import { assert } from './utils/assert'
 import { logger } from './utils/logger'
@@ -67,7 +61,6 @@ export function getFullRange(diag: Diagnostic): Range {
 export class LeanClient implements Disposable {
     running: boolean
     private client: LanguageClient | undefined
-    private toolchainPath: string
     private outputChannel: OutputChannel
     folderUri: ExtUri
     private subscriptions: Disposable[] = []
@@ -121,8 +114,6 @@ export class LeanClient implements Disposable {
         this.outputChannel = outputChannel // can be null when opening adhoc files.
         this.folderUri = folderUri
         this.elanDefaultToolchain = elanDefaultToolchain
-        if (!this.toolchainPath) this.toolchainPath = toolchainPath()
-        this.subscriptions.push(workspace.onDidChangeConfiguration(e => this.configChanged(e)))
         this.subscriptions.push(
             new Disposable(() => {
                 if (this.staleDepNotifier) {
@@ -178,7 +169,6 @@ export class LeanClient implements Disposable {
             }
 
             this.restartingEmitter.fire(undefined)
-            this.toolchainPath = toolchainPath()
 
             const progressOptions: ProgressOptions = {
                 location: ProgressLocation.Notification,
@@ -414,13 +404,6 @@ export class LeanClient implements Disposable {
         this.running = false
     }
 
-    configChanged(e: ConfigurationChangeEvent): void {
-        const newToolchainPath = toolchainPath()
-        if (this.toolchainPath !== newToolchainPath) {
-            void this.restart()
-        }
-    }
-
     async restartFile(doc: TextDocument): Promise<void> {
         if (!this.running) return // there was a problem starting lean server.
 
@@ -483,7 +466,7 @@ export class LeanClient implements Disposable {
     }
 
     private async determineServerOptions(): Promise<ServerOptions> {
-        const env = addServerEnvPaths(process.env)
+        const env = Object.assign({}, process.env)
         if (serverLoggingEnabled()) {
             env.LEAN_SERVER_LOG_DIR = serverLoggingPath()
         }
@@ -512,19 +495,16 @@ export class LeanClient implements Disposable {
     }
 
     private async determineExecutable(): Promise<[string, string[]]> {
-        const lakeExecutable = lakePath() || (this.toolchainPath ? join(this.toolchainPath, 'bin', 'lake') : 'lake')
-        const leanExecutable = this.toolchainPath ? join(this.toolchainPath, 'bin', 'lean') : 'lean'
-
         if (await this.shouldUseLake()) {
-            return [lakeExecutable, ['serve', '--']]
+            return ['lake', ['serve', '--']]
         } else {
-            return [leanExecutable, ['--server']]
+            return ['lean', ['--server']]
         }
     }
 
     private async shouldUseLake(): Promise<boolean> {
         // check if the lake process will start (skip it on scheme: 'untitled' files)
-        if (!lakeEnabled() || this.folderUri.scheme !== 'file') {
+        if (this.folderUri.scheme !== 'file') {
             return false
         }
 
