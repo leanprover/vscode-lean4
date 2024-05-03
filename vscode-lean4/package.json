@@ -156,10 +156,10 @@
                     "default": 200,
                     "description": "Time (in milliseconds) which must pass since latest edit until elaboration begins. Lower values may make editing feel faster at the cost of higher CPU usage."
                 },
-                "lean4.showInvalidProjectWarnings": {
+                "lean4.showSetupWarnings": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "Show warnings whenever a .lean-file is opened in a folder that does not contain a 'lean-toolchain' file."
+                    "markdownDescription": "Show warning notifications when the Lean setup has warning-level issues."
                 },
                 "lean4.alwaysShowTitleBarMenu": {
                     "type": "boolean",

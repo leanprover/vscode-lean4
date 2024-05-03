@@ -1,9 +1,16 @@
-import { OutputChannel, commands, window } from 'vscode'
+import { OutputChannel, commands } from 'vscode'
 import { elanSelfUpdate } from './utils/elan'
-import { displayErrorWithOutput, displayWarningWithOutput } from './utils/errors'
 import { FileUri } from './utils/exturi'
 import { LeanInstaller } from './utils/leanInstaller'
-import { PreconditionCheckResult, SetupDiagnoser, diagnose } from './utils/setupDiagnostics'
+import {
+    PreconditionCheckResult,
+    SetupDiagnoser,
+    diagnose,
+    showSetupError,
+    showSetupErrorWithOutput,
+    showSetupWarning,
+    showSetupWarningWithOutput,
+} from './utils/setupDiagnostics'
 
 class GlobalDiagnosticsProvider {
     readonly installer: LeanInstaller
@@ -38,7 +45,7 @@ class GlobalDiagnosticsProvider {
 
         const errorMessage = `${missingDepMessage}. Please read the Setup Guide on how to install missing dependencies and set up Lean 4.`
         const openSetupGuideInput = 'Open Setup Guide'
-        const choice = await window.showErrorMessage(errorMessage, openSetupGuideInput)
+        const choice = await showSetupError(errorMessage, openSetupGuideInput)
         if (choice === openSetupGuideInput) {
             await commands.executeCommand('lean4.setup.showSetupGuide')
         }
@@ -52,11 +59,11 @@ class GlobalDiagnosticsProvider {
                 return true
 
             case 'CommandError':
-                void displayErrorWithOutput(`Error while checking Lean version: ${leanVersionResult.message}`)
+                void showSetupErrorWithOutput(`Error while checking Lean version: ${leanVersionResult.message}`)
                 return false
 
             case 'InvalidVersion':
-                void displayErrorWithOutput(
+                void showSetupErrorWithOutput(
                     `Error while checking Lean version: 'lean --version' returned a version that could not be parsed: '${leanVersionResult.versionResult}'`,
                 )
                 return false
@@ -82,7 +89,7 @@ class GlobalDiagnosticsProvider {
         switch (elanDiagnosis.kind) {
             case 'NotInstalled':
                 const installElanItem = 'Install Elan'
-                const installElanChoice = await window.showWarningMessage(
+                const installElanChoice = await showSetupWarning(
                     "Lean's version manager Elan is not installed. This means that the correct Lean 4 toolchain version of Lean 4 projects will not be selected or installed automatically. Do you want to install Elan?",
                     installElanItem,
                 )
@@ -93,12 +100,12 @@ class GlobalDiagnosticsProvider {
                 return true
 
             case 'ExecutionError':
-                void displayWarningWithOutput('Cannot determine Elan version: ' + elanDiagnosis.message)
+                void showSetupWarningWithOutput('Cannot determine Elan version: ' + elanDiagnosis.message)
                 return false
 
             case 'Outdated':
                 const updateElanItem = 'Update Elan'
-                const updateElanChoice = await window.showWarningMessage(
+                const updateElanChoice = await showSetupWarning(
                     `Lean's version manager Elan is outdated: the installed version is ${elanDiagnosis.currentVersion.toString()}, but a version of ${elanDiagnosis.recommendedVersion.toString()} is recommended. Do you want to update Elan?`,
                     updateElanItem,
                 )

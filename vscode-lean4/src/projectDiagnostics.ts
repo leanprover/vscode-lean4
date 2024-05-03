@@ -1,8 +1,15 @@
 import { SemVer } from 'semver'
-import { OutputChannel, commands, window } from 'vscode'
-import { displayErrorWithOutput } from './utils/errors'
+import { OutputChannel, commands } from 'vscode'
 import { ExtUri, FileUri } from './utils/exturi'
-import { PreconditionCheckResult, SetupDiagnoser, diagnose, worstPreconditionViolation } from './utils/setupDiagnostics'
+import {
+    PreconditionCheckResult,
+    SetupDiagnoser,
+    diagnose,
+    showSetupError,
+    showSetupErrorWithOutput,
+    showSetupWarning,
+    worstPreconditionViolation,
+} from './utils/setupDiagnostics'
 
 const singleFileWarningMessage = `Lean 4 server is operating in restricted single file mode.
 Please open a valid Lean 4 project containing a \'lean-toolchain\' file for full functionality.
@@ -43,16 +50,16 @@ class ProjectDiagnosticsProvider {
         const projectSetupDiagnosis = await this.diagnose().projectSetup()
         switch (projectSetupDiagnosis.kind) {
             case 'SingleFile':
-                void window.showWarningMessage(singleFileWarningMessage)
+                void showSetupWarning(singleFileWarningMessage)
                 return false
 
             case 'MissingLeanToolchain':
                 const parentProjectFolder = projectSetupDiagnosis.parentProjectFolder
                 if (parentProjectFolder === undefined) {
-                    void window.showWarningMessage(missingLeanToolchainWarningMessage)
+                    void showSetupWarning(missingLeanToolchainWarningMessage)
                 } else {
                     const input = 'Open parent directory project'
-                    const choice: string | undefined = await window.showWarningMessage(
+                    const choice: string | undefined = await showSetupWarning(
                         missingLeanToolchainWithParentProjectWarningMessage(parentProjectFolder),
                         input,
                     )
@@ -72,19 +79,21 @@ class ProjectDiagnosticsProvider {
         const projectLeanVersionDiagnosis = await this.diagnose().projectLeanVersion()
         switch (projectLeanVersionDiagnosis.kind) {
             case 'NotInstalled':
-                void displayErrorWithOutput("Error while checking Lean version: 'lean' command was not found.")
+                void showSetupErrorWithOutput("Error while checking Lean version: 'lean' command was not found.")
                 return PreconditionCheckResult.Fatal
 
             case 'ExecutionError':
-                void displayErrorWithOutput(`Error while checking Lean version: ${projectLeanVersionDiagnosis.message}`)
+                void showSetupErrorWithOutput(
+                    `Error while checking Lean version: ${projectLeanVersionDiagnosis.message}`,
+                )
                 return PreconditionCheckResult.Fatal
 
             case 'IsLean3Version':
-                void window.showErrorMessage(lean3ProjectErrorMessage(projectLeanVersionDiagnosis.version))
+                void showSetupError(lean3ProjectErrorMessage(projectLeanVersionDiagnosis.version))
                 return PreconditionCheckResult.Fatal
 
             case 'IsAncientLean4Version':
-                void window.showWarningMessage(ancientLean4ProjectWarningMessage(projectLeanVersionDiagnosis.version))
+                void showSetupWarning(ancientLean4ProjectWarningMessage(projectLeanVersionDiagnosis.version))
                 return PreconditionCheckResult.Warning
 
             case 'UpToDate':

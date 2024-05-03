@@ -125,8 +125,8 @@ export function getElaborationDelay(): number {
     return workspace.getConfiguration('lean4').get('elaborationDelay', 200)
 }
 
-export function shouldShowInvalidProjectWarnings(): boolean {
-    return workspace.getConfiguration('lean4').get('showInvalidProjectWarnings', true)
+export function shouldShowSetupWarnings(): boolean {
+    return workspace.getConfiguration('lean4').get('showSetupWarnings', true)
 }
 
 export function getFallBackToStringOccurrenceHighlighting(): boolean {

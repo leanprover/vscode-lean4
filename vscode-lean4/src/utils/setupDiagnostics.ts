@@ -1,7 +1,9 @@
 import * as os from 'os'
 import { SemVer } from 'semver'
 import { Disposable, OutputChannel, commands, env, window, workspace } from 'vscode'
+import { shouldShowSetupWarnings } from '../config'
 import { ExecutionExitCode, ExecutionResult, batchExecute } from './batch'
+import { displayErrorWithOutput, displayWarningWithOutput } from './errors'
 import { ExtUri, FileUri, extUriEquals, toExtUri } from './exturi'
 import { checkParentFoldersForLeanProject, findLeanProjectRoot, isValidLeanProject } from './projectInfo'
 
@@ -386,4 +388,26 @@ export class FullDiagnosticsProvider implements Disposable {
             s.dispose()
         }
     }
+}
+
+export async function showSetupError<T extends string>(message: string, ...items: T[]): Promise<T | undefined> {
+    return await window.showErrorMessage(message, ...items)
+}
+
+export async function showSetupErrorWithOutput(message: string) {
+    return await displayErrorWithOutput(message)
+}
+
+export async function showSetupWarning<T extends string>(message: string, ...items: T[]): Promise<T | undefined> {
+    if (!shouldShowSetupWarnings()) {
+        return undefined
+    }
+    return await window.showWarningMessage(message, ...items)
+}
+
+export async function showSetupWarningWithOutput(message: string) {
+    if (!shouldShowSetupWarnings()) {
+        return
+    }
+    return await displayWarningWithOutput(message)
 }
