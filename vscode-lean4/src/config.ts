@@ -1,47 +1,8 @@
-import * as fs from 'fs'
-import * as os from 'os'
-import * as path from 'path'
 import { workspace } from 'vscode'
-import { PATH, setProcessEnvPATH } from './utils/envPath'
+import { PATH } from './utils/envPath'
 
 // TODO: does currently not contain config options for `./abbreviation`
 // so that it is easy to keep it in sync with vscode-lean.
-
-export function getElanPath(): string {
-    return path.join(os.homedir(), '.elan', 'bin')
-}
-
-export function addElanPathToPATH() {
-    const path = PATH.ofProcessEnv()
-    const elanPath = getElanPath()
-    if (!path.includes(elanPath)) {
-        setProcessEnvPATH(path.prepend(elanPath))
-    }
-}
-
-export function findProgramInPath(name: string): string {
-    if (fs.existsSync(name)) {
-        return name
-    }
-    const extensions: string[] = []
-    if (process.platform === 'win32') {
-        extensions.push('.exe')
-        extensions.push('.com')
-        extensions.push('.cmd')
-    } else {
-        extensions.push('')
-    }
-    const parts = PATH.ofProcessEnv().paths
-    for (const part of parts) {
-        for (const ext of extensions) {
-            const fullPath = path.join(part, name + ext)
-            if (fs.existsSync(fullPath)) {
-                return fullPath
-            }
-        }
-    }
-    return ''
-}
 
 export function getPowerShellPath(): string {
     const windir = process.env.windir

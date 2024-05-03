@@ -1,6 +1,8 @@
+import * as os from 'os'
+import * as path from 'path'
 import { commands, Disposable, ExtensionContext, extensions, TextDocument, window, workspace } from 'vscode'
 import { AbbreviationFeature } from './abbreviation'
-import { addElanPathToPATH, getDefaultLeanVersion } from './config'
+import { getDefaultLeanVersion } from './config'
 import { DocViewProvider } from './docview'
 import { AlwaysEnabledFeatures, Exports, Lean4EnabledFeatures } from './exports'
 import { checkLean4FeaturePreconditions } from './globalDiagnostics'
@@ -11,6 +13,7 @@ import { ProjectOperationProvider } from './projectoperations'
 import { LeanTaskGutter } from './taskgutter'
 import { LeanClientProvider } from './utils/clientProvider'
 import { LeanConfigWatchService } from './utils/configwatchservice'
+import { PATH, setProcessEnvPATH } from './utils/envPath'
 import { isExtUri, toExtUriOrError } from './utils/exturi'
 import { LeanInstaller } from './utils/leanInstaller'
 import { PathExtensionProvider } from './utils/pathExtensionProvider'
@@ -40,6 +43,18 @@ function findOpenLeanDocument(): TextDocument | undefined {
     }
 
     return undefined
+}
+
+function getElanPath(): string {
+    return path.join(os.homedir(), '.elan', 'bin')
+}
+
+function addElanPathToPATH() {
+    const path = PATH.ofProcessEnv()
+    const elanPath = getElanPath()
+    if (!path.includes(elanPath)) {
+        setProcessEnvPATH(path.prepend(elanPath))
+    }
 }
 
 /**
