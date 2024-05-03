@@ -11,7 +11,7 @@ export function getElanPath(): string {
     return path.join(os.homedir(), '.elan', 'bin')
 }
 
-export function addElanPathToPATH(): void {
+export function addElanPathToPATH() {
     const path = PATH.ofProcessEnv()
     const elanPath = getElanPath()
     if (!path.includes(elanPath)) {
@@ -50,6 +50,10 @@ export function getPowerShellPath(): string {
 
 export function automaticallyBuildDependencies(): boolean {
     return workspace.getConfiguration('lean4').get('automaticallyBuildDependencies', false)
+}
+
+export function envPathExtensions(): PATH {
+    return new PATH(workspace.getConfiguration('lean4').get('envPathExtensions', []))
 }
 
 export function serverArgs(): string[] {

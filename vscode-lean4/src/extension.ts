@@ -13,6 +13,7 @@ import { LeanClientProvider } from './utils/clientProvider'
 import { LeanConfigWatchService } from './utils/configwatchservice'
 import { isExtUri, toExtUriOrError } from './utils/exturi'
 import { LeanInstaller } from './utils/leanInstaller'
+import { PathExtensionProvider } from './utils/pathExtensionProvider'
 import { findLeanProjectRoot } from './utils/projectInfo'
 import { FullDiagnosticsProvider, PreconditionCheckResult } from './utils/setupDiagnostics'
 
@@ -46,6 +47,7 @@ function findOpenLeanDocument(): TextDocument | undefined {
  */
 function activateAlwaysEnabledFeatures(context: ExtensionContext): AlwaysEnabledFeatures {
     addElanPathToPATH()
+    context.subscriptions.push(PathExtensionProvider.withAddedEnvPathExtensions())
 
     context.subscriptions.push(
         commands.registerCommand('lean4.setup.showSetupGuide', async () =>

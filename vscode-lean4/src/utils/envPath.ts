@@ -8,6 +8,10 @@ export class PATH {
         this.paths = paths
     }
 
+    static empty() {
+        return new PATH([])
+    }
+
     static ofEnvPath(envPath: string): PATH {
         return new PATH(envPath.split(path.delimiter))
     }
@@ -50,6 +54,10 @@ export class PATH {
 
     includes(path: string): boolean {
         return this.paths.includes(path)
+    }
+
+    filter(p: (path: string) => boolean): PATH {
+        return new PATH(this.paths.filter(p))
     }
 }
 

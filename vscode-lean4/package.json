@@ -67,6 +67,15 @@
                     "default": false,
                     "markdownDescription": "Enable automatically building dependencies when opening a file. In Lean versions pre-4.2.0, dependencies are always built automatically regardless of this setting."
                 },
+                "lean4.envPathExtensions": {
+                    "type": "array",
+                    "default": [],
+                    "markdownDescription": "Additional entries to add to the PATH variable of the Lean 4 VS Code extension process and any of its child processes.",
+                    "items": {
+                        "type": "string",
+                        "description": "Entry to add to the PATH variable"
+                    }
+                },
                 "lean4.serverArgs": {
                     "type": "array",
                     "default": [],
