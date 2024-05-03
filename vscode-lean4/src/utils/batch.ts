@@ -1,6 +1,5 @@
 import { spawn } from 'child_process'
 import { CancellationToken, Disposable, OutputChannel, ProgressLocation, ProgressOptions, window } from 'vscode'
-import { findProgramInPath, isRunningTest } from '../config'
 import { displayErrorWithOutput } from './errors'
 import { logger } from './logger'
 
@@ -47,17 +46,6 @@ export async function batchExecute(
         }
 
         try {
-            if (isRunningTest()) {
-                // The mocha test framework listens to process.on('uncaughtException')
-                // which is raised if spawn cannot find the command and the test automatically
-                // fails with "Uncaught Error: spawn elan ENOENT".  Therefore we manually
-                // check if the command exists so as not to trigger that exception.
-                const fullPath = findProgramInPath(executablePath)
-                if (!fullPath) {
-                    resolve(createCannotLaunchExecutionResult(''))
-                    return
-                }
-            }
             if (channel?.combined) {
                 const formattedCwd = workingDirectory ? `${workingDirectory}` : ''
                 const formattedArgs = args.map(arg => (arg.includes(' ') ? `"${arg}"` : arg)).join(' ')
