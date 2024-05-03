@@ -52,19 +52,6 @@ async function main() {
 
         clearUserWorkspaceData(vscodeTestPath)
 
-        // run pre-bootstrap tests on a lean project that has a lean-toolchain (bug #265)
-        await runTests({
-            vscodeExecutablePath,
-            extensionDevelopmentPath,
-            extensionTestsPath: path.resolve(__dirname, 'index'),
-            extensionTestsEnv: {
-                LEAN4_TEST_FOLDER: 'pre-bootstrap',
-                DEFAULT_LEAN_TOOLCHAIN: test_version,
-                LEAN4_PROMPT_USER: 'true',
-            },
-            launchArgs: ['--new-window', '--disable-gpu'],
-        })
-
         // The '--new-window' doesn't see to be working, so this hack
         // ensures the following test does not re-open the previous folder
         clearUserWorkspaceData(vscodeTestPath)
