@@ -1,8 +1,8 @@
 import { SemVer } from 'semver'
 import { OutputChannel, commands, window } from 'vscode'
-import { displayErrorWithOutput } from './errors'
-import { ExtUri, FileUri } from './exturi'
-import { PreconditionCheckResult, SetupDiagnoser, diagnose, worstPreconditionViolation } from './setupDiagnostics'
+import { displayErrorWithOutput } from './utils/errors'
+import { ExtUri, FileUri } from './utils/exturi'
+import { PreconditionCheckResult, SetupDiagnoser, diagnose, worstPreconditionViolation } from './utils/setupDiagnostics'
 
 const singleFileWarningMessage = `Lean 4 server is operating in restricted single file mode.
 Please open a valid Lean 4 project containing a \'lean-toolchain\' file for full functionality.

@@ -1,10 +1,10 @@
 import { LeanFileProgressProcessingInfo, ServerStoppedReason } from '@leanprover/infoview-api'
 import { Disposable, EventEmitter, OutputChannel, TextDocument, TextEditor, commands, window, workspace } from 'vscode'
 import { LeanClient } from '../leanclient'
+import { checkLean4ProjectPreconditions } from '../projectDiagnostics'
 import { ExtUri, FileUri, UntitledUri, getWorkspaceFolderUri, toExtUri } from './exturi'
 import { LeanInstaller } from './leanInstaller'
 import { logger } from './logger'
-import { checkLean4ProjectPreconditions } from './projectDiagnostics'
 import { findLeanProjectRoot } from './projectInfo'
 import { PreconditionCheckResult } from './setupDiagnostics'
 
