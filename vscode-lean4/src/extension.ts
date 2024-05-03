@@ -1,6 +1,6 @@
 import { commands, Disposable, ExtensionContext, extensions, TextDocument, window, workspace } from 'vscode'
 import { AbbreviationFeature } from './abbreviation'
-import { addDefaultElanPath, getDefaultLeanVersion } from './config'
+import { addElanPathToPATH, getDefaultLeanVersion } from './config'
 import { DocViewProvider } from './docview'
 import { AlwaysEnabledFeatures, Exports, Lean4EnabledFeatures } from './exports'
 import { checkLean4FeaturePreconditions } from './globalDiagnostics'
@@ -45,7 +45,7 @@ function findOpenLeanDocument(): TextDocument | undefined {
  * Activates all extension features that are *always* enabled, even when no Lean 4 document is currently open.
  */
 function activateAlwaysEnabledFeatures(context: ExtensionContext): AlwaysEnabledFeatures {
-    addDefaultElanPath()
+    addElanPathToPATH()
 
     context.subscriptions.push(
         commands.registerCommand('lean4.setup.showSetupGuide', async () =>
@@ -67,12 +67,7 @@ function activateAlwaysEnabledFeatures(context: ExtensionContext): AlwaysEnabled
 
     const installer = new LeanInstaller(outputChannel, defaultToolchain)
 
-    context.subscriptions.push(
-        commands.registerCommand('lean4.setup.installElan', async () => {
-            await installer.installElan()
-            addDefaultElanPath()
-        }),
-    )
+    context.subscriptions.push(commands.registerCommand('lean4.setup.installElan', () => installer.installElan()))
 
     const checkForExtensionConflict = (doc: TextDocument) => {
         const isLean3ExtensionInstalled = extensions.getExtension('jroesch.lean') !== undefined

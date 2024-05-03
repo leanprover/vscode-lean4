@@ -1,5 +1,5 @@
 import { EventEmitter, OutputChannel, TerminalOptions, window } from 'vscode'
-import { addDefaultElanPath, getPowerShellPath, isRunningTest, shouldAutofocusOutput, toolchainPath } from '../config'
+import { getPowerShellPath, isRunningTest, shouldAutofocusOutput, toolchainPath } from '../config'
 import { batchExecute } from './batch'
 import { ExtUri, FileUri } from './exturi'
 import { logger } from './logger'
@@ -189,7 +189,6 @@ export class LeanInstaller {
         logger.log('[LeanInstaller] Installing Elan ...')
         await this.installElan()
         logger.log('[LeanInstaller] Elan installed')
-        addDefaultElanPath()
     }
 
     async installElan(): Promise<boolean> {

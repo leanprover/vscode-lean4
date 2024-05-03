@@ -229,7 +229,7 @@ export type FullDiagnostics = {
 function formatElanVersionDiagnosis(d: ElanVersionDiagnosis): string {
     switch (d.kind) {
         case 'UpToDate':
-            return `Up-to-date (version: ${d.version.toString()})`
+            return `Reasonably up-to-date (version: ${d.version.toString()})`
         case 'Outdated':
             return `Outdated (version: ${d.currentVersion.toString()}, recommended version: ${d.recommendedVersion.toString()})`
         case 'ExecutionError':
@@ -246,7 +246,7 @@ function formatElanVersionDiagnosis(d: ElanVersionDiagnosis): string {
 function formatLeanVersionDiagnosis(d: LeanVersionDiagnosis): string {
     switch (d.kind) {
         case 'UpToDate':
-            return `Up-to-date (version: ${d.version})`
+            return `Reasonably up-to-date (version: ${d.version})`
         case 'IsLean3Version':
             return `Lean 3 version (version: ${d.version})`
         case 'IsAncientLean4Version':
