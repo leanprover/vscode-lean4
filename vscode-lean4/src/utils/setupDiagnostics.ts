@@ -1,6 +1,6 @@
 import * as os from 'os'
 import { SemVer } from 'semver'
-import { Disposable, OutputChannel, commands, env, window, workspace } from 'vscode'
+import { Disposable, OutputChannel, TextDocument, commands, env, window, workspace } from 'vscode'
 import { shouldShowSetupWarnings } from '../config'
 import { ExecutionExitCode, ExecutionResult, batchExecute } from './batch'
 import { displayErrorWithOutput, displayWarningWithOutput } from './errors'
@@ -273,9 +273,9 @@ function formatProjectSetupDiagnosis(d: ProjectSetupDiagnosis): string {
                 d.parentProjectFolder === undefined
                     ? ''
                     : `(Valid Lean project in parent folder: ${d.parentProjectFolder.fsPath})`
-            return `Folder without lean-toolchain file (no valid Lean project) ${parentProjectFolder}`
+            return `Folder without lean-toolchain file (no valid Lean project) (path: ${d.folder.fsPath}) ${parentProjectFolder}`
         case 'ValidProjectSetup':
-            return 'Valid Lean project'
+            return `Valid Lean project (path: ${d.projectFolder.fsPath})`
     }
 }
 
@@ -321,18 +321,16 @@ export class FullDiagnosticsProvider implements Disposable {
 
     constructor(outputChannel: OutputChannel) {
         this.outputChannel = outputChannel
-        this.lastActiveLeanDocumentUri = undefined
+
+        if (window.activeTextEditor !== undefined) {
+            this.lastActiveLeanDocumentUri = FullDiagnosticsProvider.getLean4DocUri(window.activeTextEditor.document)
+        }
+
         window.onDidChangeActiveTextEditor(e => {
             if (e === undefined) {
                 return
             }
-            const doc = e.document
-
-            if (doc.languageId !== 'lean4') {
-                return
-            }
-
-            const docUri = toExtUri(doc.uri)
+            const docUri = FullDiagnosticsProvider.getLean4DocUri(e.document)
             if (docUri === undefined) {
                 return
             }
@@ -344,11 +342,7 @@ export class FullDiagnosticsProvider implements Disposable {
                 return
             }
 
-            if (doc.languageId !== 'lean4') {
-                return
-            }
-
-            const docUri = toExtUri(doc.uri)
+            const docUri = FullDiagnosticsProvider.getLean4DocUri(doc)
             if (docUri === undefined) {
                 return
             }
@@ -381,6 +375,13 @@ export class FullDiagnosticsProvider implements Disposable {
         if (choice === copyToClipboardInput) {
             await env.clipboard.writeText(formattedFullDiagnostics)
         }
+    }
+
+    private static getLean4DocUri(doc: TextDocument): ExtUri | undefined {
+        if (doc.languageId !== 'lean4') {
+            return undefined
+        }
+        return toExtUri(doc.uri)
     }
 
     dispose() {
