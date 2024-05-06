@@ -100,6 +100,28 @@ class ProjectDiagnosticsProvider {
                 return PreconditionCheckResult.Fulfilled
         }
     }
+
+    async checkIsLakeInstalled(): Promise<PreconditionCheckResult> {
+        const lakeVersionResult = await this.diagnose().queryLakeVersion()
+        switch (lakeVersionResult.kind) {
+            case 'CommandNotFound':
+                void showSetupErrorWithOutput("Error while checking Lake version: 'lake' command was not found.")
+                return PreconditionCheckResult.Fatal
+
+            case 'CommandError':
+                void showSetupErrorWithOutput(`Error while checking Lake version: ${lakeVersionResult.message}`)
+                return PreconditionCheckResult.Fatal
+
+            case 'InvalidVersion':
+                void showSetupErrorWithOutput(
+                    `Error while checking Lake version: Invalid Lake version format: '${lakeVersionResult.versionResult}'`,
+                )
+                return PreconditionCheckResult.Fatal
+
+            case 'Success':
+                return PreconditionCheckResult.Fulfilled
+        }
+    }
 }
 
 export async function checkLean4ProjectPreconditions(
@@ -115,5 +137,12 @@ export async function checkLean4ProjectPreconditions(
 
     const leanVersionCheckResult = await diagnosticsProvider.checkIsLeanVersionUpToDate()
 
-    return worstPreconditionViolation(validProjectFolderCheckResult, leanVersionCheckResult)
+    const leanProjectCheckResult = worstPreconditionViolation(validProjectFolderCheckResult, leanVersionCheckResult)
+    if (leanProjectCheckResult === PreconditionCheckResult.Fatal) {
+        return PreconditionCheckResult.Fatal
+    }
+
+    const lakeVersionCheckResult = await diagnosticsProvider.checkIsLakeInstalled()
+
+    return worstPreconditionViolation(leanProjectCheckResult, lakeVersionCheckResult)
 }

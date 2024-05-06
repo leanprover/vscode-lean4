@@ -59,7 +59,7 @@ export function versionQueryResult(executionResult: ExecutionResult, versionRege
     }
 
     if (executionResult.exitCode === ExecutionExitCode.ExecutionError) {
-        return { kind: 'CommandError', message: executionResult.stderr }
+        return { kind: 'CommandError', message: executionResult.stdout }
     }
 
     const match = versionRegex.exec(executionResult.stdout)
@@ -146,9 +146,14 @@ export class SetupDiagnoser {
         return gitVersionResult.exitCode === ExecutionExitCode.Success
     }
 
-    async checkLakeAvailable(): Promise<boolean> {
+    async queryLakeVersion(): Promise<VersionQueryResult> {
         const lakeVersionResult = await this.runWithProgress('lake', ['--version'], 'Checking Lake version')
-        return lakeVersionResult.exitCode === ExecutionExitCode.Success
+        return versionQueryResult(lakeVersionResult, /version (\d+\.\d+\.\d+(\w|-)*)/)
+    }
+
+    async checkLakeAvailable(): Promise<boolean> {
+        const lakeVersionResult = await this.queryLakeVersion()
+        return lakeVersionResult.kind === 'Success'
     }
 
     querySystemInformation(): SystemQueryResult {
