@@ -244,11 +244,8 @@ export type FullDiagnostics = {
     elanShowOutput: ExecutionResult
 }
 
-function indent(s: string): string {
-    return s
-        .split('\n')
-        .map(line => '    ' + line)
-        .join('\n')
+function formatCommandOutput(cmdOutput: string): string {
+    return '\n```\n' + cmdOutput + '\n```'
 }
 
 function formatElanVersionDiagnosis(d: ElanVersionDiagnosis): string {
@@ -258,7 +255,7 @@ function formatElanVersionDiagnosis(d: ElanVersionDiagnosis): string {
         case 'Outdated':
             return `Outdated (version: ${d.currentVersion.toString()}, recommended version: ${d.recommendedVersion.toString()})`
         case 'ExecutionError':
-            return 'Execution error:\n' + indent(d.message)
+            return 'Execution error: ' + formatCommandOutput(d.message)
         case 'NotInstalled':
             return 'Not installed'
     }
@@ -273,7 +270,7 @@ function formatLeanVersionDiagnosis(d: LeanVersionDiagnosis): string {
         case 'IsAncientLean4Version':
             return `Pre-stable-release Lean 4 version (version: ${d.version})`
         case 'ExecutionError':
-            return 'Execution error:\n' + indent(d.message)
+            return 'Execution error: ' + formatCommandOutput(d.message)
         case 'NotInstalled':
             return 'Not installed'
     }
@@ -299,9 +296,9 @@ function formatElanShowOutput(r: ExecutionResult): string {
         return 'Elan not installed'
     }
     if (r.exitCode === ExecutionExitCode.ExecutionError) {
-        return 'Execution error:\n' + indent(r.combined)
+        return 'Execution error: ' + formatCommandOutput(r.combined)
     }
-    return '\n' + indent(r.stdout)
+    return formatCommandOutput(r.stdout)
 }
 
 export function formatFullDiagnostics(d: FullDiagnostics): string {
@@ -317,7 +314,7 @@ export function formatFullDiagnostics(d: FullDiagnostics): string {
         `**Lean**: ${formatLeanVersionDiagnosis(d.leanVersionDiagnosis)}`,
         `**Project**: ${formatProjectSetupDiagnosis(d.projectSetupDiagnosis)}`,
         '',
-        '=====================================',
+        '-------------------------------------',
         '',
         `**Elan toolchains**: ${formatElanShowOutput(d.elanShowOutput)}`,
     ].join('\n')
