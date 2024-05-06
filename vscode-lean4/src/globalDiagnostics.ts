@@ -89,7 +89,7 @@ class GlobalDiagnosticsProvider {
     }
 
     async checkElanIsUpToDate(): Promise<boolean> {
-        const elanDiagnosis = await this.diagnose().elan()
+        const elanDiagnosis = await this.diagnose().elanVersion()
 
         switch (elanDiagnosis.kind) {
             case 'NotInstalled':

@@ -191,7 +191,11 @@ export class SetupDiagnoser {
         return versionQueryResult(elanVersionResult, /elan (\d+\.\d+\.\d+)/)
     }
 
-    async elan(): Promise<ElanVersionDiagnosis> {
+    async queryElanShow(): Promise<ExecutionResult> {
+        return await this.runSilently('elan', ['show'])
+    }
+
+    async elanVersion(): Promise<ElanVersionDiagnosis> {
         const elanVersionResult = await this.queryElanVersion()
         return checkElanVersion(elanVersionResult)
     }
@@ -237,6 +241,14 @@ export type FullDiagnostics = {
     elanVersionDiagnosis: ElanVersionDiagnosis
     leanVersionDiagnosis: LeanVersionDiagnosis
     projectSetupDiagnosis: ProjectSetupDiagnosis
+    elanShowOutput: ExecutionResult
+}
+
+function indent(s: string): string {
+    return s
+        .split('\n')
+        .map(line => '    ' + line)
+        .join('\n')
 }
 
 function formatElanVersionDiagnosis(d: ElanVersionDiagnosis): string {
@@ -246,11 +258,7 @@ function formatElanVersionDiagnosis(d: ElanVersionDiagnosis): string {
         case 'Outdated':
             return `Outdated (version: ${d.currentVersion.toString()}, recommended version: ${d.recommendedVersion.toString()})`
         case 'ExecutionError':
-            const errorMessage = d.message
-                .split('\n')
-                .map(line => '    ' + line)
-                .join('\n')
-            return 'Execution error:\n' + errorMessage
+            return 'Execution error:\n' + indent(d.message)
         case 'NotInstalled':
             return 'Not installed'
     }
@@ -265,11 +273,7 @@ function formatLeanVersionDiagnosis(d: LeanVersionDiagnosis): string {
         case 'IsAncientLean4Version':
             return `Pre-stable-release Lean 4 version (version: ${d.version})`
         case 'ExecutionError':
-            const errorMessage = d.message
-                .split('\n')
-                .map(line => '    ' + line)
-                .join('\n')
-            return 'Execution error:\n' + errorMessage
+            return 'Execution error:\n' + indent(d.message)
         case 'NotInstalled':
             return 'Not installed'
     }
@@ -290,18 +294,32 @@ function formatProjectSetupDiagnosis(d: ProjectSetupDiagnosis): string {
     }
 }
 
+function formatElanShowOutput(r: ExecutionResult): string {
+    if (r.exitCode === ExecutionExitCode.CannotLaunch) {
+        return 'Elan not installed'
+    }
+    if (r.exitCode === ExecutionExitCode.ExecutionError) {
+        return 'Execution error:\n' + indent(r.combined)
+    }
+    return '\n' + indent(r.stdout)
+}
+
 export function formatFullDiagnostics(d: FullDiagnostics): string {
     return [
-        `Operating system: ${d.systemInfo.operatingSystem}`,
-        `CPU architecture: ${d.systemInfo.cpuArchitecture}`,
-        `CPU model: ${d.systemInfo.cpuModels}`,
-        `Available RAM: ${d.systemInfo.totalMemory}`,
+        `**Operating system**: ${d.systemInfo.operatingSystem}`,
+        `**CPU architecture**: ${d.systemInfo.cpuArchitecture}`,
+        `**CPU model**: ${d.systemInfo.cpuModels}`,
+        `**Available RAM**: ${d.systemInfo.totalMemory}`,
         '',
-        `Curl installed: ${d.isCurlAvailable}`,
-        `Git installed: ${d.isGitAvailable}`,
-        `Elan: ${formatElanVersionDiagnosis(d.elanVersionDiagnosis)}`,
-        `Lean: ${formatLeanVersionDiagnosis(d.leanVersionDiagnosis)}`,
-        `Project: ${formatProjectSetupDiagnosis(d.projectSetupDiagnosis)}`,
+        `**Curl installed**: ${d.isCurlAvailable}`,
+        `**Git installed**: ${d.isGitAvailable}`,
+        `**Elan**: ${formatElanVersionDiagnosis(d.elanVersionDiagnosis)}`,
+        `**Lean**: ${formatLeanVersionDiagnosis(d.leanVersionDiagnosis)}`,
+        `**Project**: ${formatProjectSetupDiagnosis(d.projectSetupDiagnosis)}`,
+        '',
+        '=====================================',
+        '',
+        `**Elan toolchains**: ${formatElanShowOutput(d.elanShowOutput)}`,
     ].join('\n')
 }
 
@@ -314,9 +332,10 @@ export async function performFullDiagnosis(
         systemInfo: diagnose.querySystemInformation(),
         isCurlAvailable: await diagnose.checkCurlAvailable(),
         isGitAvailable: await diagnose.checkGitAvailable(),
-        elanVersionDiagnosis: await diagnose.elan(),
+        elanVersionDiagnosis: await diagnose.elanVersion(),
         leanVersionDiagnosis: await diagnose.projectLeanVersion(),
         projectSetupDiagnosis: await diagnose.projectSetup(),
+        elanShowOutput: await diagnose.queryElanShow(),
     }
 }
 
