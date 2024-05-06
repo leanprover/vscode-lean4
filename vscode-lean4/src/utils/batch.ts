@@ -20,6 +20,7 @@ export interface ExecutionResult {
     exitCode: ExecutionExitCode
     stdout: string
     stderr: string
+    combined: string
 }
 
 function createCannotLaunchExecutionResult(message: string): ExecutionResult {
@@ -27,6 +28,7 @@ function createCannotLaunchExecutionResult(message: string): ExecutionResult {
         exitCode: ExecutionExitCode.CannotLaunch,
         stdout: message,
         stderr: '',
+        combined: message,
     }
 }
 
@@ -38,6 +40,7 @@ export function batchExecuteWithProc(
 ): [ChildProcessWithoutNullStreams | 'CannotLaunch', Promise<ExecutionResult>] {
     let stdout: string = ''
     let stderr: string = ''
+    let combined: string = ''
     let options = {}
     if (workingDirectory !== undefined) {
         options = { cwd: workingDirectory }
@@ -65,6 +68,7 @@ export function batchExecuteWithProc(
             if (channel?.combined) channel.combined.appendLine(s)
             if (channel?.stdout) channel.stdout.appendLine(s)
             stdout += s + '\n'
+            combined += s + '\n'
         })
 
         proc.stderr.on('data', line => {
@@ -72,6 +76,7 @@ export function batchExecuteWithProc(
             if (channel?.combined) channel.combined.appendLine(s)
             if (channel?.stderr) channel.stderr.appendLine(s)
             stderr += s + '\n'
+            combined += s + '\n'
         })
 
         proc.on('close', (code, signal) => {
@@ -84,6 +89,7 @@ export function batchExecuteWithProc(
                     exitCode: ExecutionExitCode.Cancelled,
                     stdout,
                     stderr,
+                    combined,
                 })
                 return
             }
@@ -97,6 +103,7 @@ export function batchExecuteWithProc(
                     exitCode: ExecutionExitCode.ExecutionError,
                     stdout,
                     stderr,
+                    combined,
                 })
                 return
             }
@@ -104,6 +111,7 @@ export function batchExecuteWithProc(
                 exitCode: ExecutionExitCode.Success,
                 stdout,
                 stderr,
+                combined,
             })
         })
     })
@@ -245,8 +253,8 @@ export async function displayError(result: ExecutionResult, message: string) {
 }
 
 function formatErrorMessage(error: ExecutionResult, message: string): string {
-    if (error.stderr === '') {
+    if (error.combined === '') {
         return `${message}`
     }
-    return `${message} Command error output: ${error.stderr}`
+    return `${message} Command output: ${error.combined}`
 }

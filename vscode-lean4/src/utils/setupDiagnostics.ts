@@ -59,7 +59,7 @@ export function versionQueryResult(executionResult: ExecutionResult, versionRege
     }
 
     if (executionResult.exitCode === ExecutionExitCode.ExecutionError) {
-        return { kind: 'CommandError', message: executionResult.stdout }
+        return { kind: 'CommandError', message: executionResult.combined }
     }
 
     const match = versionRegex.exec(executionResult.stdout)
