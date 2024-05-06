@@ -59,8 +59,16 @@ export function batchExecuteWithProc(
     }
 
     const execPromise: Promise<ExecutionResult> = new Promise(resolve => {
+        const conclude = (r: ExecutionResult) =>
+            resolve({
+                exitCode: r.exitCode,
+                stdout: r.stdout.trim(),
+                stderr: r.stderr.trim(),
+                combined: r.combined.trim(),
+            })
+
         proc.on('error', err => {
-            resolve(createCannotLaunchExecutionResult(err.message))
+            conclude(createCannotLaunchExecutionResult(err.message))
         })
 
         proc.stdout.on('data', line => {
@@ -85,7 +93,7 @@ export function batchExecuteWithProc(
                 if (channel?.combined) {
                     channel.combined.appendLine('=> Operation cancelled by user.')
                 }
-                resolve({
+                conclude({
                     exitCode: ExecutionExitCode.Cancelled,
                     stdout,
                     stderr,
@@ -99,7 +107,7 @@ export function batchExecuteWithProc(
                     const formattedSignal = signal ? `Signal: ${signal}.` : ''
                     channel.combined.appendLine(`=> Operation failed. ${formattedCode} ${formattedSignal}`.trim())
                 }
-                resolve({
+                conclude({
                     exitCode: ExecutionExitCode.ExecutionError,
                     stdout,
                     stderr,
@@ -107,7 +115,7 @@ export function batchExecuteWithProc(
                 })
                 return
             }
-            resolve({
+            conclude({
                 exitCode: ExecutionExitCode.Success,
                 stdout,
                 stderr,
