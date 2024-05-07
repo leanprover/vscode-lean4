@@ -3,6 +3,7 @@ import { suite } from 'mocha'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import { logger } from '../../../src/utils/logger'
+import { displayInformation } from '../../../src/utils/notifs'
 import { assertStringInInfoview, closeAllEditors, getAltBuildVersion, initLean4 } from '../utils/helpers'
 
 suite('Multi-Folder Test Suite', () => {
@@ -10,13 +11,13 @@ suite('Multi-Folder Test Suite', () => {
         logger.log('=================== Load Lean Files in a multi-project workspace ===================')
         // make sure test is always run in predictable state, which is no file or folder open
         await closeAllEditors()
-        void vscode.window.showInformationMessage('Running tests: ' + __dirname)
+        displayInformation('Running tests: ' + __dirname)
 
         const multiRoot = path.join(__dirname, '..', '..', '..', '..', 'test', 'test-fixtures', 'multi')
-        const lean = await initLean4(path.join(multiRoot, 'test', 'Main.lean'))
+        const features = await initLean4(path.join(multiRoot, 'test', 'Main.lean'))
 
         // verify we have a nightly build running in this folder.
-        const info = lean.exports.infoProvider
+        const info = features.infoProvider
         assert(info, 'No InfoProvider export')
         await assertStringInInfoview(info, '4.0.0-nightly-')
 
@@ -30,7 +31,7 @@ suite('Multi-Folder Test Suite', () => {
         await assertStringInInfoview(info, version)
 
         // Now verify we have 2 LeanClients running.
-        const clients = lean.exports.clientProvider
+        const clients = features.clientProvider
         assert(clients, 'No LeanClientProvider export')
         const actual = clients.getClients().length
         assert(actual === 2, 'Expected 2 LeanClients to be running, but found ' + actual)

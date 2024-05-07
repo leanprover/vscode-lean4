@@ -1,28 +1,22 @@
 import { LeanFileProgressProcessingInfo, ServerStoppedReason } from '@leanprover/infoview-api'
-import { commands, Disposable, EventEmitter, OutputChannel, TextDocument, TextEditor, window, workspace } from 'vscode'
-import {
-    addDefaultElanPath,
-    addToolchainBinPath,
-    getDefaultElanPath,
-    isElanDisabled,
-    shouldShowInvalidProjectWarnings,
-} from '../config'
+import { Disposable, EventEmitter, OutputChannel, TextDocument, TextEditor, commands, window, workspace } from 'vscode'
 import { LeanClient } from '../leanclient'
-import { displayErrorWithOutput } from './errors'
-import { ExtUri, FileUri, getWorkspaceFolderUri, toExtUri, UntitledUri } from './exturi'
-import { LeanInstaller, LeanVersion } from './leanInstaller'
+import { checkLean4ProjectPreconditions } from '../projectDiagnostics'
+import { ExtUri, FileUri, UntitledUri, getWorkspaceFolderUri, toExtUri } from './exturi'
+import { LeanInstaller } from './leanInstaller'
 import { logger } from './logger'
-import { checkParentFoldersForLeanProject, findLeanPackageRoot, isValidLeanProject } from './projectInfo'
+import { displayError } from './notifs'
+import { findLeanProjectRoot } from './projectInfo'
+import { PreconditionCheckResult } from './setupDiagnostics'
 
 // This class ensures we have one LeanClient per folder.
 export class LeanClientProvider implements Disposable {
     private subscriptions: Disposable[] = []
     private outputChannel: OutputChannel
     private installer: LeanInstaller
-    private versions: Map<string, LeanVersion> = new Map()
     private clients: Map<string, LeanClient> = new Map()
     private pending: Map<string, boolean> = new Map()
-    private pendingInstallChanged: ExtUri[] = []
+    private pendingInstallChanged: FileUri[] = []
     private processingInstallChanged: boolean = false
     private activeClient: LeanClient | undefined = undefined
 
@@ -43,7 +37,7 @@ export class LeanClientProvider implements Disposable {
         this.installer = installer
 
         // we must setup the installChanged event handler first before any didOpenEditor calls.
-        installer.installChanged(async (uri: ExtUri) => await this.onInstallChanged(uri))
+        installer.installChanged(async (uri: FileUri) => await this.onInstallChanged(uri))
 
         window.visibleTextEditors.forEach(e => this.didOpenEditor(e.document))
         this.subscriptions.push(
@@ -76,7 +70,6 @@ export class LeanClientProvider implements Disposable {
 
                 logger.log(`[ClientProvider] onDidChangeWorkspaceFolders removing client for ${key}`)
                 this.clients.delete(key)
-                this.versions.delete(key)
                 client.dispose()
                 this.clientRemovedEmitter.fire(client)
             })
@@ -87,16 +80,7 @@ export class LeanClientProvider implements Disposable {
         return this.activeClient
     }
 
-    private async findPackageRootUri(uri: ExtUri): Promise<ExtUri> {
-        if (uri.scheme === 'file') {
-            const [root, _] = await findLeanPackageRoot(uri)
-            return root
-        } else {
-            return new UntitledUri()
-        }
-    }
-
-    private async onInstallChanged(uri: ExtUri) {
+    private async onInstallChanged(uri: FileUri) {
         // Uri is a package Uri in the case a lean package file was changed.
         logger.log(`[ClientProvider] installChanged for ${uri}`)
         this.pendingInstallChanged.push(uri)
@@ -112,40 +96,22 @@ export class LeanClientProvider implements Disposable {
                 break
             }
             try {
-                // have to check again here in case elan install had --default-toolchain none.
-                const packageUri = await this.findPackageRootUri(uri)
+                const projectUri = await findLeanProjectRoot(uri)
 
-                logger.log('[ClientProvider] testLeanVersion')
-                const version = await this.installer.testLeanVersion(packageUri)
-                if (version.version === '4') {
+                const preconditionCheckResult = await checkLean4ProjectPreconditions(this.outputChannel, projectUri)
+                if (preconditionCheckResult !== PreconditionCheckResult.Fatal) {
                     logger.log('[ClientProvider] got lean version 4')
-                    const [cached, client] = await this.ensureClient(uri, version)
+                    const [cached, client] = await this.ensureClient(uri)
                     if (cached && client) {
                         await client.restart()
                         logger.log('[ClientProvider] restart complete')
                     }
-                } else if (version.error) {
-                    logger.log(`[ClientProvider] Lean version not ok: ${version.error}`)
                 }
             } catch (e) {
                 logger.log(`[ClientProvider] Exception checking lean version: ${e}`)
             }
         }
         this.processingInstallChanged = false
-    }
-
-    private async autoInstall(): Promise<void> {
-        // no prompt, just do it!
-        await this.installer.installElan()
-        if (isElanDisabled()) {
-            addToolchainBinPath(getDefaultElanPath())
-        } else {
-            addDefaultElanPath()
-        }
-
-        for (const [_, client] of this.clients) {
-            await this.onInstallChanged(client.folderUri)
-        }
     }
 
     private getVisibleEditor(uri: ExtUri): TextEditor | undefined {
@@ -159,12 +125,12 @@ export class LeanClientProvider implements Disposable {
 
     private restartFile() {
         if (!this.activeClient || !this.activeClient.isRunning()) {
-            void window.showErrorMessage('No active client.')
+            displayError('No active client.')
             return
         }
 
         if (!window.activeTextEditor || window.activeTextEditor.document.languageId !== 'lean4') {
-            void window.showErrorMessage(
+            displayError(
                 'No active Lean editor tab. Make sure to focus the Lean editor tab for which you want to issue a restart.',
             )
             return
@@ -207,14 +173,12 @@ export class LeanClientProvider implements Disposable {
         }
 
         try {
-            const [cached, client] = await this.ensureClient(uri, undefined)
+            const [_, client] = await this.ensureClient(uri)
             if (!client) {
                 return
             }
 
             await client.openLean4Document(document)
-
-            await this.checkIsValidProjectFolder(client.folderUri)
         } catch (e) {
             logger.log(`[ClientProvider] ### Error opening document: ${e}`)
         }
@@ -252,157 +216,60 @@ export class LeanClientProvider implements Disposable {
         return this.clients.get(folder.toString())
     }
 
-    private async getLeanVersion(uri: ExtUri): Promise<LeanVersion | undefined> {
-        const folderUri = await this.findPackageRootUri(uri)
-        const key = folderUri.toString()
-        if (this.versions.has(key)) {
-            return this.versions.get(key)
-        }
-        let versionInfo: LeanVersion | undefined = await this.installer.testLeanVersion(folderUri)
-        if (!versionInfo.error) {
-            this.versions.set(key, versionInfo)
-        } else if (versionInfo.error === 'no elan installed' || versionInfo.error === 'lean not found') {
-            if (!this.installer.getPromptUser()) {
-                await this.autoInstall()
-                versionInfo = await this.installer.testLeanVersion(folderUri)
-                if (!versionInfo.error) {
-                    this.versions.set(key, versionInfo)
-                }
-            } else {
-                // Ah, then we need to prompt the user, this waits for answer,
-                // but does not wait for the install to complete.
-                await this.installer.showInstallOptions(uri)
-            }
-        } else {
-            void displayErrorWithOutput('Cannot determine Lean version: ' + versionInfo.error)
-        }
-        return versionInfo
-    }
-
     // Starts a LeanClient if the given file is in a new workspace we haven't seen before.
     // Returns a boolean "true" if the LeanClient was already created.
     // Returns a null client if it turns out the new workspace is a lean3 workspace.
-    async ensureClient(uri: ExtUri, versionInfo: LeanVersion | undefined): Promise<[boolean, LeanClient | undefined]> {
-        const folderUri = await this.findPackageRootUri(uri)
+    async ensureClient(uri: ExtUri): Promise<[boolean, LeanClient | undefined]> {
+        const folderUri = uri.scheme === 'file' ? await findLeanProjectRoot(uri) : new UntitledUri()
         let client = this.getClientForFolder(folderUri)
-        const key = folderUri.toString()
-        const cachedClient = client !== undefined
-        if (!client) {
-            if (this.pending.has(key)) {
-                logger.log('[ClientProvider] ignoring ensureClient already pending on ' + folderUri.toString())
-                return [cachedClient, client]
-            }
-
-            this.pending.set(key, true)
-            if (!versionInfo) {
-                // this can go all the way to installing elan (in the test scenario)
-                // so it has to be done BEFORE we attempt to create any LeanClient.
-                versionInfo = await this.getLeanVersion(folderUri)
-            }
-
-            logger.log('[ClientProvider] Creating LeanClient for ' + folderUri.toString())
-            const elanDefaultToolchain = await this.installer.getElanDefaultToolchain(folderUri)
-
-            // We must create a Client before doing the long running testLeanVersion
-            // so that ensureClient callers have an "optimistic" client to work with.
-            // This is needed in our constructor where it is calling ensureClient for
-            // every open file.  A workspace could have multiple files open and we want
-            // to remember all those open files are associated with this client before
-            // testLeanVersion has completed.
-            client = new LeanClient(folderUri, this.outputChannel, elanDefaultToolchain)
-            this.subscriptions.push(client)
-            this.clients.set(key, client)
-
-            if (versionInfo && versionInfo.version && versionInfo.version !== '4') {
-                // ignore workspaces that belong to a different version of Lean.
-                logger.log(
-                    `[ClientProvider] Lean4 extension ignoring workspace '${folderUri}' because it is not a Lean 4 workspace.`,
-                )
-                this.pending.delete(key)
-                this.clients.delete(key)
-                client.dispose()
-                return [false, undefined]
-            }
-
-            client.serverFailed(err => {
-                // forget this client!
-                logger.log(`[ClientProvider] serverFailed, removing client for ${key}`)
-                const cached = this.clients.get(key)
-                this.clients.delete(key)
-                cached?.dispose()
-                void window.showErrorMessage(err)
-            })
-
-            client.stopped(reason => {
-                if (client) {
-                    // fires a message in case a client is stopped unexpectedly
-                    this.clientStoppedEmitter.fire([client, client === this.activeClient, reason])
-                }
-            })
-
-            // aggregate progress changed events.
-            client.progressChanged(arg => {
-                this.progressChangedEmitter.fire(arg)
-            })
-
-            this.pending.delete(key)
-            logger.log('[ClientProvider] firing clientAddedEmitter event')
-            this.clientAddedEmitter.fire(client)
-
-            if (versionInfo) {
-                if (!versionInfo.error) {
-                    // we are ready to start, otherwise some sort of install might be happening
-                    // as a result of UI options shown by testLeanVersion.
-                    await client.start()
-                } else {
-                    logger.log(
-                        `[ClientProvider] skipping client.start because of versionInfo error: ${versionInfo?.error}`,
-                    )
-                }
-            }
+        if (client) {
+            this.activeClient = client
+            return [true, client]
         }
+
+        const key = folderUri.toString()
+        if (this.pending.has(key)) {
+            return [false, undefined]
+        }
+        this.pending.set(key, true)
+
+        const preconditionCheckResult = await checkLean4ProjectPreconditions(this.outputChannel, folderUri)
+        if (preconditionCheckResult === PreconditionCheckResult.Fatal) {
+            this.pending.delete(key)
+            return [false, undefined]
+        }
+
+        logger.log('[ClientProvider] Creating LeanClient for ' + folderUri.toString())
+        const elanDefaultToolchain = await this.installer.getElanDefaultToolchain(folderUri)
+
+        client = new LeanClient(folderUri, this.outputChannel, elanDefaultToolchain)
+        this.subscriptions.push(client)
+        this.clients.set(key, client)
+
+        client.serverFailed(err => {
+            this.clients.delete(key)
+            client.dispose()
+            displayError(err)
+        })
+
+        client.stopped(reason => {
+            this.clientStoppedEmitter.fire([client, client === this.activeClient, reason])
+        })
+
+        // aggregate progress changed events.
+        client.progressChanged(arg => {
+            this.progressChangedEmitter.fire(arg)
+        })
+
+        this.pending.delete(key)
+        this.clientAddedEmitter.fire(client)
+
+        await client.start()
 
         // tell the InfoView about this activated client.
         this.activeClient = client
 
-        return [cachedClient, client]
-    }
-
-    private async checkIsValidProjectFolder(folderUri: ExtUri) {
-        if (!shouldShowInvalidProjectWarnings()) {
-            return
-        }
-
-        if (folderUri.scheme !== 'file') {
-            const message = `Lean 4 server operating in restricted single file mode.
-Please open a valid Lean 4 project containing a \'lean-toolchain\' file for full functionality.
-Click the following link to learn how to set up or open Lean projects: [(Show Setup Guide)](command:lean4.setup.showSetupGuide)`
-            void window.showWarningMessage(message)
-            return
-        }
-
-        if (await isValidLeanProject(folderUri)) {
-            return
-        }
-
-        const parentProjectFolder: FileUri | undefined = await checkParentFoldersForLeanProject(folderUri)
-        if (parentProjectFolder === undefined) {
-            const message = `Opened folder is not a valid Lean 4 project.
-Please open a valid Lean 4 project containing a \'lean-toolchain\' file for full functionality.
-Click the following link to learn how to set up or open Lean projects: [(Show Setup Guide)](command:lean4.setup.showSetupGuide)`
-            void window.showWarningMessage(message)
-            return
-        }
-
-        const message = `Opened folder is not a valid Lean 4 project folder because it does not contain a 'lean-toolchain' file.
-However, a valid Lean 4 project folder was found in one of the parent directories at '${parentProjectFolder.fsPath}'.
-Open this project instead?`
-        const input = 'Open parent directory project'
-        const choice: string | undefined = await window.showWarningMessage(message, input)
-        if (choice === input) {
-            // this kills the extension host
-            await commands.executeCommand('vscode.openFolder', parentProjectFolder)
-        }
+        return [false, client]
     }
 
     dispose(): void {

@@ -22,12 +22,6 @@
             "type": "object",
             "title": "Lean 4",
             "properties": {
-                "lean4.toolchainPath": {
-                    "type": "string",
-                    "default": "",
-                    "markdownDescription": "**DO NOT CHANGE** unless you know what you are doing. Path to your Lean toolchain. Leave this blank to get the default location from your PATH environment or from the default elan install location.",
-                    "scope": "machine-overridable"
-                },
                 "lean4.input.enabled": {
                     "type": "boolean",
                     "default": true,
@@ -73,36 +67,14 @@
                     "default": false,
                     "markdownDescription": "Enable automatically building dependencies when opening a file. In Lean versions pre-4.2.0, dependencies are always built automatically regardless of this setting."
                 },
-                "lean4.serverEnv": {
-                    "type": "object",
-                    "default": {},
-                    "description": "Environment variables to add to the Lean 4 server environment",
-                    "additionalProperties": {
-                        "type": "string",
-                        "description": "environment variable to add"
-                    },
-                    "scope": "machine-overridable"
-                },
-                "lean4.serverEnvPaths": {
+                "lean4.envPathExtensions": {
                     "type": "array",
                     "default": [],
-                    "description": "Paths to add to the Lean 4 server environment PATH variable.",
+                    "markdownDescription": "Additional entries to add to the PATH variable of the Lean 4 VS Code extension process and any of its child processes.",
                     "items": {
                         "type": "string",
-                        "description": "a path to add to the environment"
-                    },
-                    "scope": "machine-overridable"
-                },
-                "lean4.enableLake": {
-                    "type": "boolean",
-                    "default": true,
-                    "markdownDescription": "Enable Lake server when possible."
-                },
-                "lean4.lakePath": {
-                    "type": "string",
-                    "default": "",
-                    "markdownDescription": "Path to Lake. Leave this blank to use the Lake from the toolchain.",
-                    "scope": "machine-overridable"
+                        "description": "Entry to add to the PATH variable"
+                    }
                 },
                 "lean4.serverArgs": {
                     "type": "array",
@@ -184,10 +156,10 @@
                     "default": 200,
                     "description": "Time (in milliseconds) which must pass since latest edit until elaboration begins. Lower values may make editing feel faster at the cost of higher CPU usage."
                 },
-                "lean4.showInvalidProjectWarnings": {
+                "lean4.showSetupWarnings": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "Show warnings whenever a .lean-file is opened in a folder that does not contain a 'lean-toolchain' file."
+                    "markdownDescription": "Show warning notifications when the Lean setup has warning-level issues."
                 },
                 "lean4.alwaysShowTitleBarMenu": {
                     "type": "boolean",
@@ -312,6 +284,12 @@
                 "category": "Lean 4",
                 "title": "Troubleshooting: Show Output",
                 "description": "Show output channel containing all progress updates and errors of commands"
+            },
+            {
+                "command": "lean4.troubleshooting.showSetupInformation",
+                "category": "Lean 4",
+                "title": "Troubleshooting: Show Setup Information",
+                "description": "Show setup information for the environment that the VS Code extension is running in"
             },
             {
                 "command": "lean4.setup.showSetupGuide",
@@ -562,6 +540,9 @@
                     "command": "lean4.troubleshooting.showOutput"
                 },
                 {
+                    "command": "lean4.troubleshooting.showSetupInformation"
+                },
+                {
                     "command": "lean4.setup.showSetupGuide"
                 },
                 {
@@ -631,6 +612,11 @@
                 },
                 {
                     "command": "lean4.troubleshooting.showOutput",
+                    "when": "config.lean4.alwaysShowTitleBarMenu || lean4.isLeanFeatureSetActive",
+                    "group": "4_troubleshooting"
+                },
+                {
+                    "command": "lean4.troubleshooting.showSetupInformation",
                     "when": "config.lean4.alwaysShowTitleBarMenu || lean4.isLeanFeatureSetActive",
                     "group": "4_troubleshooting"
                 },
@@ -902,7 +888,7 @@
         "test": "node ./out/test/suite/runTest.js"
     },
     "dependencies": {
-        "@leanprover/infoview": "~0.6.1",
+        "@leanprover/infoview": "~0.7.0",
         "@leanprover/infoview-api": "~0.4.0",
         "axios": "^1.6.7",
         "cheerio": "^1.0.0-rc.12",
@@ -928,7 +914,7 @@
         "ovsx": "^0.8.3",
         "source-map-loader": "^3.0.2",
         "ts-loader": "^9.5.1",
-        "typescript": "^4.9.5",
+        "typescript": "^5.4.5",
         "webpack": "^5.90.3",
         "webpack-cli": "^4.10.0"
     },

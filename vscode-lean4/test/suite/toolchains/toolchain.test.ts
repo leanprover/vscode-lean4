@@ -2,8 +2,8 @@ import * as assert from 'assert'
 import * as fs from 'fs'
 import { suite } from 'mocha'
 import * as path from 'path'
-import * as vscode from 'vscode'
 import { logger } from '../../../src/utils/logger'
+import { displayInformation } from '../../../src/utils/notifs'
 import {
     assertStringInInfoview,
     closeAllEditors,
@@ -17,16 +17,16 @@ import {
 suite('Toolchain Test Suite', () => {
     test('Edit lean-toolchain version', async () => {
         logger.log('=================== Edit lean-toolchain version ===================')
-        void vscode.window.showInformationMessage('Running tests: ' + __dirname)
+        displayInformation('Running tests: ' + __dirname)
 
         const testsRoot = path.join(__dirname, '..', '..', '..', '..', 'test', 'test-fixtures', 'simple')
 
-        const lean = await initLean4(path.join(testsRoot, 'Main.lean'))
+        const features = await initLean4(path.join(testsRoot, 'Main.lean'))
 
         // turn off the user prompts so restart of lean server happens automatically.
-        const info = lean.exports.infoProvider
+        const info = features.infoProvider
         assert(info, 'No InfoProvider export')
-        const installer = lean.exports.installer
+        const installer = features.installer
         assert(installer, 'No LeanInstaller export')
 
         // wait for info view to show up.

@@ -4,6 +4,7 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 import { logger } from '../../../src/utils/logger'
 
+import { displayInformation } from '../../../src/utils/notifs'
 import {
     closeAllEditors,
     extractPhrase,
@@ -23,11 +24,11 @@ suite('Documentation View Test Suite', () => {
         // This test opens the documentation view and selects the "Example" link.
         logger.log('=================== Documentation View Example Test ===================')
 
-        void vscode.window.showInformationMessage('Running tests: ' + __dirname)
+        displayInformation('Running tests: ' + __dirname)
         const testsRoot = path.join(__dirname, '..', '..', '..', '..', 'test', 'test-fixtures', 'simple')
         const mainFile = path.join(testsRoot, 'Main.lean')
-        const lean = await initLean4(mainFile)
-        const info = lean.exports.infoProvider
+        const features = await initLean4(mainFile)
+        const info = features.infoProvider
         assert(info, 'No InfoProvider export')
         const expectedVersion = 'Hello:'
         let html = await waitForInfoviewHtml(info, expectedVersion)
@@ -36,7 +37,7 @@ suite('Documentation View Test Suite', () => {
 
         await vscode.commands.executeCommand('lean4.docView.open')
 
-        const docView = lean.exports.docView
+        const docView = features.docView
         assert(docView, 'No docView export')
         const expectedMenuItem = 'Abbreviations Cheatsheet'
         html = await waitForDocViewHtml(docView, expectedMenuItem)

@@ -4,7 +4,7 @@ import * as os from 'os'
 import { basename, join } from 'path'
 import * as vscode from 'vscode'
 import { DocViewProvider } from '../../../src/docview'
-import { Exports } from '../../../src/exports'
+import { AlwaysEnabledFeatures, EnabledFeatures, Exports } from '../../../src/exports'
 import { InfoProvider } from '../../../src/infoview'
 import { LeanClient } from '../../../src/leanclient'
 import { LeanClientProvider } from '../../../src/utils/clientProvider'
@@ -31,13 +31,12 @@ export function assertAndLog(value: unknown, message: string): asserts value {
     assert(value, message)
 }
 
-export async function initLean4(fileName: string): Promise<vscode.Extension<Exports>> {
+export async function initLean4(fileName: string): Promise<EnabledFeatures> {
     await closeAllEditors()
     const options: vscode.TextDocumentShowOptions = { preview: false }
 
     const lean = await waitForActiveExtension('leanprover.lean4', 60)
     assertAndLog(lean, 'Lean extension not loaded')
-    assertAndLog(lean.exports.isLean4Project, 'Lean extension is not a lean4 project')
     assertAndLog(lean.isActive, 'Lean extension is not active')
     logger.log(`Found lean package version: ${lean.packageJSON.version}`)
 
@@ -45,11 +44,28 @@ export async function initLean4(fileName: string): Promise<vscode.Extension<Expo
     await vscode.window.showTextDocument(doc, options)
 
     await waitForActiveEditor(basename(fileName))
-    assertAndLog(await waitForActiveInfoProvider(lean.exports), 'Info view provider did not load after 60 seconds')
-    const info = lean.exports.infoProvider
+    const features = await waitForLean4FeatureActivation(lean.exports)
+    assertAndLog(await waitForActiveInfoProvider(features), 'Info view provider did not load after 60 seconds')
+    const info = features.infoProvider
     assertAndLog(info, 'No InfoProvider export')
     assertAndLog(await waitForInfoViewOpen(info, 60), 'Info view did not open after 20 seconds')
-    return lean
+    return features
+}
+
+export async function initLean4WithoutInstallation(fileName: string): Promise<AlwaysEnabledFeatures> {
+    await closeAllEditors()
+    const options: vscode.TextDocumentShowOptions = { preview: false }
+
+    const lean = await waitForActiveExtension('leanprover.lean4', 60)
+    assertAndLog(lean, 'Lean extension not loaded')
+    assertAndLog(lean.isActive, 'Lean extension is not active')
+    logger.log(`Found lean package version: ${lean.packageJSON.version}`)
+
+    const doc = await vscode.workspace.openTextDocument(fileName)
+    await vscode.window.showTextDocument(doc, options)
+
+    await waitForActiveEditor(basename(fileName))
+    return lean.exports.alwaysEnabledFeatures
 }
 
 export async function insertText(text: string): Promise<void> {
@@ -77,7 +93,7 @@ export async function deleteAllText(): Promise<void> {
     })
 }
 
-export async function initLean4Untitled(contents: string): Promise<vscode.Extension<Exports>> {
+export async function initLean4Untitled(contents: string): Promise<EnabledFeatures> {
     // make sure test is always run in predictable state, which is no file or folder open
     await closeAllEditors()
 
@@ -95,13 +111,14 @@ export async function initLean4Untitled(contents: string): Promise<vscode.Extens
     const lean = await waitForActiveExtension('leanprover.lean4', 60)
     assertAndLog(lean, 'Lean extension not loaded')
     logger.log(`Found lean package version: ${lean.packageJSON.version}`)
-    const info = lean.exports.infoProvider
+    const features = await waitForLean4FeatureActivation(lean.exports)
+    const info = features.infoProvider
     assertAndLog(info, 'No InfoProvider export')
 
     // If info view opens too quickly there is no LeanClient ready yet and
     // it's initialization gets messed up.
     assertAndLog(await waitForInfoViewOpen(info, 60), 'Info view did not open after 60 seconds')
-    return lean
+    return features
 }
 
 export async function waitForActiveClientRunning(
@@ -190,6 +207,27 @@ export async function waitForActiveExtension(
     return lean
 }
 
+export async function waitForLean4FeatureActivation(exports: Exports, timeout = 60000): Promise<EnabledFeatures> {
+    logger.log('Waiting for Lean 4 feature exports of extension to be loaded...')
+    const timeoutPromise: Promise<EnabledFeatures | undefined> = new Promise((resolve, _) =>
+        setTimeout(() => resolve(undefined), timeout),
+    )
+    const allFeatures: EnabledFeatures | undefined = await Promise.race([exports.allFeatures(), timeoutPromise])
+    assertAndLog(allFeatures, 'Lean 4 features did not activate.')
+    logger.log('Lean 4 feature exports loaded.')
+    return allFeatures
+}
+
+export async function assertLean4FeaturesNotLoaded(exports: Exports) {
+    logger.log('Waiting for Lean 4 feature exports of extension to be loaded...')
+    const allFeatures: EnabledFeatures | undefined = await new Promise(async (resolve, _) => {
+        setTimeout(() => resolve(undefined), 5000)
+        await exports.allFeatures()
+    })
+    assertAndLog(!allFeatures, 'Lean 4 features activated when they should not have been activated.')
+    logger.log('Lean 4 features correctly did not load.')
+}
+
 export async function waitForActiveEditor(filename = '', retries = 60, delay = 1000): Promise<vscode.TextEditor> {
     let count = 0
     while (!vscode.window.activeTextEditor && count < retries) {
@@ -221,11 +259,15 @@ export async function waitForActiveEditor(filename = '', retries = 60, delay = 1
     return editor
 }
 
-export async function waitForActiveInfoProvider(exports: Exports, retries = 60, delay = 1000): Promise<boolean> {
+export async function waitForActiveInfoProvider(
+    features: EnabledFeatures,
+    retries = 60,
+    delay = 1000,
+): Promise<boolean> {
     logger.log('Waiting for info view provider to be loaded...')
 
     let count = 0
-    while (!exports.infoProvider) {
+    while (!features.infoProvider) {
         count += 1
         if (count >= retries) {
             logger.log('Info view provider did not load.')

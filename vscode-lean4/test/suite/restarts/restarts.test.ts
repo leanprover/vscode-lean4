@@ -4,6 +4,7 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 import { FileUri } from '../../../src/utils/exturi'
 import { logger } from '../../../src/utils/logger'
+import { displayInformation } from '../../../src/utils/notifs'
 import {
     assertStringInInfoview,
     closeAllEditors,
@@ -24,18 +25,18 @@ suite('Lean Server Restart Test Suite', () => {
         logger.log(
             '=================== Test worker crashed and client running - Restarting Lean Server ===================',
         )
-        void vscode.window.showInformationMessage('Running tests: ' + __dirname)
+        displayInformation('Running tests: ' + __dirname)
 
         // add normal values to initialize lean4 file
         const hello = 'Hello World'
-        const lean = await initLean4Untitled(`#eval "${hello}"`)
-        const info = lean.exports.infoProvider
+        const features = await initLean4Untitled(`#eval "${hello}"`)
+        const info = features.infoProvider
         assert(info, 'No InfoProvider export')
 
         logger.log('make sure language server is up and running.')
         await assertStringInInfoview(info, hello)
 
-        const clients = lean.exports.clientProvider
+        const clients = features.clientProvider
         assert(clients, 'No LeanClientProvider export')
 
         logger.log('Insert eval that causes crash.')
@@ -69,18 +70,18 @@ suite('Lean Server Restart Test Suite', () => {
         logger.log(
             '=================== Test worker crashed and client running (Refreshing dependencies) ===================',
         )
-        void vscode.window.showInformationMessage('Running tests: ' + __dirname)
+        displayInformation('Running tests: ' + __dirname)
 
         // add normal values to initialize lean4 file
         const hello = 'Hello World'
-        const lean = await initLean4Untitled(`#eval "${hello}"`)
-        const info = lean.exports.infoProvider
+        const features = await initLean4Untitled(`#eval "${hello}"`)
+        const info = features.infoProvider
         assert(info, 'No InfoProvider export')
 
         logger.log('make sure language server is up and running.')
         await assertStringInInfoview(info, hello)
 
-        const clients = lean.exports.clientProvider
+        const clients = features.clientProvider
         assert(clients, 'No LeanClientProvider export')
 
         logger.log('Insert eval that causes crash.')
@@ -112,16 +113,16 @@ suite('Lean Server Restart Test Suite', () => {
 
     test('Restart Server', async () => {
         logger.log('=================== Test Restart Server ===================')
-        void vscode.window.showInformationMessage('Running tests: ' + __dirname)
+        displayInformation('Running tests: ' + __dirname)
 
         // Test we can restart the lean server
         const simpleRoot = path.join(__dirname, '..', '..', '..', '..', 'test', 'test-fixtures', 'simple')
 
         // run this code twice to ensure that it still works after a Restart Server
         for (let i = 0; i < 2; i++) {
-            const lean = await initLean4(path.join(simpleRoot, 'Main.lean'))
+            const features = await initLean4(path.join(simpleRoot, 'Main.lean'))
 
-            const info = lean.exports.infoProvider
+            const info = features.infoProvider
             assert(info, 'No InfoProvider export')
 
             const activeEditor = vscode.window.activeTextEditor
@@ -139,7 +140,7 @@ suite('Lean Server Restart Test Suite', () => {
             logger.log(`>>> Found "${versionString}" in infoview`)
 
             logger.log('Now invoke the restart server command')
-            const clients = lean.exports.clientProvider
+            const clients = features.clientProvider
             assert(clients, 'No LeanClientProvider export')
             const client = clients.getClientForFolder(new FileUri(simpleRoot))
             if (client) {
