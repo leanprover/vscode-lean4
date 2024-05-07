@@ -2,10 +2,11 @@ import * as fs from 'fs'
 import { join } from 'path'
 import { commands, Disposable, OutputChannel, QuickPickItem, window } from 'vscode'
 import { LeanClient } from './leanclient'
-import { batchExecute, displayError, ExecutionExitCode, ExecutionResult } from './utils/batch'
+import { batchExecute, displayResultError, ExecutionExitCode, ExecutionResult } from './utils/batch'
 import { LeanClientProvider } from './utils/clientProvider'
 import { cacheNotFoundError, lake, LakeRunner } from './utils/lake'
 import { DirectGitDependency, Manifest, ManifestReadError, parseManifestInFolder } from './utils/manifest'
+import { displayError, displayInformation, displayInformationWithInput, displayWarningWithInput } from './utils/notifs'
 
 export class ProjectOperationProvider implements Disposable {
     private subscriptions: Disposable[] = []
@@ -35,20 +36,19 @@ export class ProjectOperationProvider implements Disposable {
                 return
             }
             if (result.exitCode !== ExecutionExitCode.Success) {
-                void displayError(result, 'Cannot build project.')
+                displayResultError(result, 'Cannot build project.')
                 return
             }
 
-            void window.showInformationMessage('Project built successfully.')
+            displayInformation('Project built successfully.')
             return
         })
     }
 
     private async cleanProject() {
         const deleteInput = 'Proceed'
-        const deleteChoice: string | undefined = await window.showInformationMessage(
+        const deleteChoice: string | undefined = await displayInformationWithInput(
             'Delete all build artifacts?',
-            { modal: true },
             deleteInput,
         )
         if (deleteChoice !== deleteInput) {
@@ -61,7 +61,7 @@ export class ProjectOperationProvider implements Disposable {
                 return
             }
             if (cleanResult.exitCode !== ExecutionExitCode.Success) {
-                void displayError(cleanResult, 'Cannot delete build artifacts.')
+                displayResultError(cleanResult, 'Cannot delete build artifacts.')
                 return
             }
 
@@ -70,17 +70,13 @@ export class ProjectOperationProvider implements Disposable {
                 return
             }
             if (checkResult === 'No') {
-                void window.showInformationMessage('Project cleaned successfully.')
+                displayInformation('Project cleaned successfully.')
                 return
             }
 
             const fetchMessage = "Project cleaned successfully. Do you want to fetch Mathlib's build artifact cache?"
             const fetchInput = 'Fetch Cache'
-            const fetchChoice: string | undefined = await window.showInformationMessage(
-                fetchMessage,
-                { modal: true },
-                fetchInput,
-            )
+            const fetchChoice: string | undefined = await displayInformationWithInput(fetchMessage, fetchInput)
             if (fetchChoice !== fetchInput) {
                 return
             }
@@ -90,10 +86,10 @@ export class ProjectOperationProvider implements Disposable {
                 return
             }
             if (fetchResult.exitCode !== ExecutionExitCode.Success) {
-                void displayError(fetchResult, 'Cannot fetch Mathlib build artifact cache.')
+                void displayResultError(fetchResult, 'Cannot fetch Mathlib build artifact cache.')
                 return
             }
-            void window.showInformationMessage('Mathlib build artifact cache fetched successfully.')
+            displayInformation('Mathlib build artifact cache fetched successfully.')
         })
     }
 
@@ -105,41 +101,41 @@ export class ProjectOperationProvider implements Disposable {
             }
             if (result.exitCode !== ExecutionExitCode.Success) {
                 if (result.stderr.includes(cacheNotFoundError)) {
-                    void window.showErrorMessage('This command cannot be used in non-Mathlib projects.')
+                    displayError('This command cannot be used in non-Mathlib projects.')
                     return
                 }
-                void displayError(result, 'Cannot fetch Mathlib build artifact cache.')
+                displayResultError(result, 'Cannot fetch Mathlib build artifact cache.')
                 return
             }
 
-            void window.showInformationMessage('Mathlib build artifact cache fetched successfully.')
+            displayInformation('Mathlib build artifact cache fetched successfully.')
         })
     }
 
     private async updateDependency() {
         const activeClient: LeanClient | undefined = this.clientProvider.getActiveClient()
         if (!activeClient) {
-            void window.showErrorMessage('No active client.')
+            displayError('No active client.')
             return
         }
 
         const activeFolderUri = activeClient.folderUri
 
         if (activeFolderUri.scheme === 'untitled') {
-            void window.showErrorMessage('Cannot update dependency of untitled file.')
+            displayError('Cannot update dependency of untitled file.')
             return
         }
 
         const manifestResult: Manifest | ManifestReadError = await parseManifestInFolder(activeFolderUri)
         if (typeof manifestResult === 'string') {
-            void window.showErrorMessage(manifestResult)
+            displayError(manifestResult)
             return
         }
 
         const dependencies: (DirectGitDependency & { remoteRevision?: string | undefined })[] =
             await this.findUpdateableDependencies(manifestResult.directGitDependencies)
         if (dependencies.length === 0) {
-            void window.showInformationMessage('Nothing to update - all dependencies are up-to-date.')
+            displayInformation('Nothing to update - all dependencies are up-to-date.')
             return
         }
 
@@ -169,7 +165,7 @@ export class ProjectOperationProvider implements Disposable {
 
         const warningMessage = `This command will update ${dependencyChoice.name} to its most recent version. It is only intended to be used by maintainers of this project. If the updated version of ${dependencyChoice.name} is incompatible with any other dependency or the code in this project, this project may not successfully build anymore. Are you sure you want to proceed?`
         const warningInput = 'Proceed'
-        const warningChoice = await window.showWarningMessage(warningMessage, { modal: true }, warningInput)
+        const warningChoice = await displayWarningWithInput(warningMessage, warningInput)
         if (warningChoice !== warningInput) {
             return
         }
@@ -180,7 +176,7 @@ export class ProjectOperationProvider implements Disposable {
                 return
             }
             if (result.exitCode !== ExecutionExitCode.Success) {
-                void displayError(result, 'Cannot update dependency.')
+                void displayResultError(result, 'Cannot update dependency.')
                 return
             }
 
@@ -207,7 +203,7 @@ export class ProjectOperationProvider implements Disposable {
                 try {
                     fs.writeFileSync(localToolchainPath, dependencyToolchainResult)
                 } catch {
-                    void window.showErrorMessage('Cannot update Lean version.')
+                    displayError('Cannot update Lean version.')
                     return
                 }
             }
@@ -259,7 +255,7 @@ export class ProjectOperationProvider implements Disposable {
                     : `Could not read Lean version of ${dependencyName} at ${dependencyToolchainPath}`
             const message = `${errorFlavor}. Do you want to update ${dependencyName} without updating the Lean version of the open project to that of ${dependencyName} regardless?`
             const input = 'Proceed'
-            const choice: string | undefined = await window.showInformationMessage(message, { modal: true }, input)
+            const choice: string | undefined = await displayInformationWithInput(message, input)
             return choice === 'input' ? 'DoNotUpdate' : 'Cancelled'
         }
         const [localToolchain, dependencyToolchain]: [string, string] = toolchainResult
@@ -271,7 +267,7 @@ export class ProjectOperationProvider implements Disposable {
         const message = `The Lean version '${localToolchain}' of the open project differs from the Lean version '${dependencyToolchain}' of ${dependencyName}. Do you want to update the Lean version of the open project to the Lean version of ${dependencyName}?`
         const input1 = 'Update Lean Version'
         const input2 = 'Keep Lean Version'
-        const choice = await window.showInformationMessage(message, { modal: true }, input1, input2)
+        const choice = await displayInformationWithInput(message, input1, input2)
         if (choice === undefined) {
             return 'Cancelled'
         }
@@ -317,28 +313,26 @@ export class ProjectOperationProvider implements Disposable {
 
     private async runOperation(command: (lakeRunner: LakeRunner) => Promise<void>) {
         if (this.isRunningOperation) {
-            void window.showErrorMessage(
-                'Another project action is already being executed. Please wait for its completion.',
-            )
+            displayError('Another project action is already being executed. Please wait for its completion.')
             return
         }
         this.isRunningOperation = true
 
         if (!this.clientProvider) {
-            void window.showErrorMessage('Lean client has not loaded yet.')
+            displayError('Lean client has not loaded yet.')
             this.isRunningOperation = false
             return
         }
 
         const activeClient: LeanClient | undefined = this.clientProvider.getActiveClient()
         if (!activeClient) {
-            void window.showErrorMessage('No active client.')
+            displayError('No active client.')
             this.isRunningOperation = false
             return
         }
 
         if (activeClient.folderUri.scheme === 'untitled') {
-            void window.showErrorMessage('Cannot run project action for untitled files.')
+            displayError('Cannot run project action for untitled files.')
             this.isRunningOperation = false
             return
         }
@@ -347,7 +341,7 @@ export class ProjectOperationProvider implements Disposable {
 
         const result: 'Success' | 'IsRestarting' = await activeClient.withStoppedClient(() => command(lakeRunner))
         if (result === 'IsRestarting') {
-            void window.showErrorMessage('Cannot run project action while restarting the server.')
+            displayError('Cannot run project action while restarting the server.')
         }
 
         this.isRunningOperation = false

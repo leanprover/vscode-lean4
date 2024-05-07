@@ -52,6 +52,7 @@ import { LeanClientProvider } from './utils/clientProvider'
 import { c2pConverter, p2cConverter } from './utils/converters'
 import { ExtUri, parseExtUri, toExtUri } from './utils/exturi'
 import { logger } from './utils/logger'
+import { displayError, displayInformation } from './utils/notifs'
 
 const keepAlivePeriodMs = 10000
 
@@ -257,7 +258,7 @@ export class InfoProvider implements Disposable {
         },
         copyToClipboard: async text => {
             await env.clipboard.writeText(text)
-            await window.showInformationMessage(`Copied to clipboard: ${text}`)
+            displayInformation(`Copied to clipboard: ${text}`)
         },
         insertText: async (text, kind, tdpp) => {
             let uri: ExtUri | undefined
@@ -464,7 +465,7 @@ export class InfoProvider implements Disposable {
             this.workersFailed.set(uri, reason)
         }
         logger.log(`[InfoProvider]client crashed: ${uri}`)
-        await client.showRestartMessage(true, extUri)
+        void client.showRestartMessage(true, extUri)
     }
 
     onClientRemoved(client: LeanClient) {
@@ -488,7 +489,7 @@ export class InfoProvider implements Disposable {
             this.clientsFailed.set(key.toString(), reason)
         }
         logger.log(`[InfoProvider] client stopped: ${key}`)
-        await client.showRestartMessage()
+        void client.showRestartMessage()
     }
 
     dispose(): void {
@@ -585,7 +586,7 @@ export class InfoProvider implements Disposable {
         } else if (window.activeTextEditor && window.activeTextEditor.document.languageId === 'lean4') {
             await this.openPreview(window.activeTextEditor)
         } else {
-            void window.showErrorMessage(
+            displayError(
                 'No active Lean editor tab. Make sure to focus the Lean editor tab for which you want to open the infoview.',
             )
         }

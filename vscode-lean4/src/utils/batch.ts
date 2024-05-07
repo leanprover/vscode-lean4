@@ -1,7 +1,7 @@
 import { ChildProcessWithoutNullStreams, spawn } from 'child_process'
 import { OutputChannel, Progress, ProgressLocation, ProgressOptions, window } from 'vscode'
-import { displayErrorWithOutput } from './errors'
 import { logger } from './logger'
+import { displayErrorWithOutput } from './notifs'
 
 export interface ExecutionChannel {
     combined?: OutputChannel | undefined
@@ -252,12 +252,12 @@ export async function executeAll(executions: BatchExecution[]): Promise<Executio
     return results
 }
 
-export async function displayError(result: ExecutionResult, message: string) {
+export function displayResultError(result: ExecutionResult, message: string) {
     if (result.exitCode === ExecutionExitCode.Success) {
         throw Error()
     }
     const errorMessage: string = formatErrorMessage(result, message)
-    await displayErrorWithOutput(errorMessage)
+    displayErrorWithOutput(errorMessage)
 }
 
 function formatErrorMessage(error: ExecutionResult, message: string): string {

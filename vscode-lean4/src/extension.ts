@@ -16,6 +16,7 @@ import { LeanConfigWatchService } from './utils/configwatchservice'
 import { PATH, setProcessEnvPATH } from './utils/envPath'
 import { isExtUri, toExtUriOrError } from './utils/exturi'
 import { LeanInstaller } from './utils/leanInstaller'
+import { displayWarning } from './utils/notifs'
 import { PathExtensionProvider } from './utils/pathExtensionProvider'
 import { findLeanProjectRoot } from './utils/projectInfo'
 import { FullDiagnosticsProvider, PreconditionCheckResult } from './utils/setupDiagnostics'
@@ -89,7 +90,7 @@ function activateAlwaysEnabledFeatures(context: ExtensionContext): AlwaysEnabled
     const checkForExtensionConflict = (doc: TextDocument) => {
         const isLean3ExtensionInstalled = extensions.getExtension('jroesch.lean') !== undefined
         if (isLean3ExtensionInstalled && (doc.languageId === 'lean' || doc.languageId === 'lean4')) {
-            void window.showWarningMessage(
+            displayWarning(
                 "The Lean 3 and the Lean 4 VS Code extension are enabled at the same time. Since both extensions act on .lean files, this can lead to issues with either extension. Please disable the extension for the Lean major version that you do not want to use ('Extensions' in the left sidebar > Cog icon > 'Disable').",
             )
         }
@@ -129,7 +130,7 @@ async function activateLean4Features(
     context.subscriptions.push(clientProvider)
 
     const watchService = new LeanConfigWatchService()
-    watchService.versionChanged(async packageUri => {
+    watchService.versionChanged(packageUri => {
         const client: LeanClient | undefined = clientProvider.getClientForFolder(packageUri)
         if (client && !client.isRunning()) {
             // This can naturally happen when we update the Lean version using the "Update Dependency" command
@@ -137,7 +138,7 @@ async function activateLean4Features(
             // message in this case.
             return
         }
-        await installer.handleVersionChanged(packageUri)
+        installer.handleVersionChanged(packageUri)
     })
     watchService.lakeFileChanged(packageUri => installer.handleLakeFileChanged(packageUri))
     context.subscriptions.push(watchService)

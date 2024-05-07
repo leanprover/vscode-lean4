@@ -3,6 +3,7 @@ import { getPowerShellPath, isRunningTest } from '../config'
 import { batchExecute } from './batch'
 import { ExtUri, FileUri } from './exturi'
 import { logger } from './logger'
+import { displayError, displayErrorWithOptionalInput } from './notifs'
 
 export class LeanVersion {
     version: string
@@ -45,35 +46,15 @@ export class LeanInstaller {
         return this.outputChannel
     }
 
-    async handleVersionChanged(packageUri: FileUri): Promise<void> {
-        if (!this.promptUser) {
-            this.installChangedEmitter.fire(packageUri)
-            return
-        }
-
-        if (this.prompting) {
-            return
-        }
-
-        const restartItem = 'Restart Lean'
-        const item = await this.showPrompt('Lean version changed', restartItem)
-        if (item === restartItem) {
-            this.installChangedEmitter.fire(packageUri)
-        }
+    handleVersionChanged(packageUri: FileUri) {
+        void this.showRestartPromptAndRestart('Lean version changed', packageUri)
     }
 
     isPromptVisible() {
         return this.prompting
     }
 
-    private async showPrompt(message: string, ...items: string[]): Promise<string | undefined> {
-        this.prompting = true
-        const item = await window.showErrorMessage(message, ...items)
-        this.prompting = false
-        return item
-    }
-
-    async handleLakeFileChanged(packageUri: FileUri): Promise<void> {
+    private async showRestartPromptAndRestart(message: string, packageUri: FileUri) {
         if (!this.promptUser) {
             this.installChangedEmitter.fire(packageUri)
             return
@@ -83,11 +64,20 @@ export class LeanInstaller {
             return
         }
 
-        const restartItem = 'Restart Lean'
-        const item = await this.showPrompt('Lake file configuration changed', restartItem)
-        if (item === restartItem) {
-            this.installChangedEmitter.fire(packageUri)
+        this.prompting = true
+        const finalizer = () => {
+            this.prompting = false
         }
+        displayErrorWithOptionalInput(
+            message,
+            'Restart Lean',
+            () => this.installChangedEmitter.fire(packageUri),
+            finalizer,
+        )
+    }
+
+    handleLakeFileChanged(packageUri: FileUri) {
+        void this.showRestartPromptAndRestart('Lake file configuration changed', packageUri)
     }
 
     private removeSuffix(version: string): string {
@@ -160,7 +150,7 @@ export class LeanInstaller {
 
     async installElan(): Promise<'Success' | 'InstallationFailed' | 'PendingInstallation'> {
         if (this.installing) {
-            void window.showErrorMessage('Elan is already being installed.')
+            displayError('Elan is already being installed.')
             return 'PendingInstallation'
         }
         this.installing = true
@@ -210,7 +200,7 @@ export class LeanInstaller {
         this.elanDefaultToolchain = this.freshInstallDefaultToolchain
         this.installing = false
         if (!result) {
-            void window.showErrorMessage('Elan installation failed. Check the terminal output for errors.')
+            displayError('Elan installation failed. Check the terminal output for errors.')
             return 'InstallationFailed'
         }
 

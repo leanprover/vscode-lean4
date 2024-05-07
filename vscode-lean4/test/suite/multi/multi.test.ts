@@ -3,6 +3,7 @@ import { suite } from 'mocha'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import { logger } from '../../../src/utils/logger'
+import { displayInformation } from '../../../src/utils/notifs'
 import { assertStringInInfoview, closeAllEditors, getAltBuildVersion, initLean4 } from '../utils/helpers'
 
 suite('Multi-Folder Test Suite', () => {
@@ -10,7 +11,7 @@ suite('Multi-Folder Test Suite', () => {
         logger.log('=================== Load Lean Files in a multi-project workspace ===================')
         // make sure test is always run in predictable state, which is no file or folder open
         await closeAllEditors()
-        void vscode.window.showInformationMessage('Running tests: ' + __dirname)
+        displayInformation('Running tests: ' + __dirname)
 
         const multiRoot = path.join(__dirname, '..', '..', '..', '..', 'test', 'test-fixtures', 'multi')
         const features = await initLean4(path.join(multiRoot, 'test', 'Main.lean'))

@@ -5,9 +5,10 @@ import {
     PreconditionCheckResult,
     SetupDiagnoser,
     diagnose,
-    showSetupError,
-    showSetupErrorWithOutput,
-    showSetupWarning,
+    displaySetupError,
+    displaySetupErrorWithOutput,
+    displaySetupWarning,
+    displaySetupWarningWithOptionalInput,
     worstPreconditionViolation,
 } from './utils/setupDiagnostics'
 
@@ -50,23 +51,20 @@ class ProjectDiagnosticsProvider {
         const projectSetupDiagnosis = await this.diagnose().projectSetup()
         switch (projectSetupDiagnosis.kind) {
             case 'SingleFile':
-                void showSetupWarning(singleFileWarningMessage)
+                displaySetupWarning(singleFileWarningMessage)
                 return false
 
             case 'MissingLeanToolchain':
                 const parentProjectFolder = projectSetupDiagnosis.parentProjectFolder
                 if (parentProjectFolder === undefined) {
-                    void showSetupWarning(missingLeanToolchainWarningMessage)
+                    displaySetupWarning(missingLeanToolchainWarningMessage)
                 } else {
-                    const input = 'Open parent directory project'
-                    const choice: string | undefined = await showSetupWarning(
+                    displaySetupWarningWithOptionalInput(
                         missingLeanToolchainWithParentProjectWarningMessage(parentProjectFolder),
-                        input,
-                    )
-                    if (choice === input) {
+                        'Open Parent Directory Project',
                         // this kills the extension host
-                        await commands.executeCommand('vscode.openFolder', parentProjectFolder)
-                    }
+                        () => commands.executeCommand('vscode.openFolder', parentProjectFolder),
+                    )
                 }
                 return false
 
@@ -79,21 +77,19 @@ class ProjectDiagnosticsProvider {
         const projectLeanVersionDiagnosis = await this.diagnose().projectLeanVersion()
         switch (projectLeanVersionDiagnosis.kind) {
             case 'NotInstalled':
-                void showSetupErrorWithOutput("Error while checking Lean version: 'lean' command was not found.")
+                displaySetupErrorWithOutput("Error while checking Lean version: 'lean' command was not found.")
                 return PreconditionCheckResult.Fatal
 
             case 'ExecutionError':
-                void showSetupErrorWithOutput(
-                    `Error while checking Lean version: ${projectLeanVersionDiagnosis.message}`,
-                )
+                displaySetupErrorWithOutput(`Error while checking Lean version: ${projectLeanVersionDiagnosis.message}`)
                 return PreconditionCheckResult.Fatal
 
             case 'IsLean3Version':
-                void showSetupError(lean3ProjectErrorMessage(projectLeanVersionDiagnosis.version))
+                void displaySetupError(lean3ProjectErrorMessage(projectLeanVersionDiagnosis.version))
                 return PreconditionCheckResult.Fatal
 
             case 'IsAncientLean4Version':
-                void showSetupWarning(ancientLean4ProjectWarningMessage(projectLeanVersionDiagnosis.version))
+                displaySetupWarning(ancientLean4ProjectWarningMessage(projectLeanVersionDiagnosis.version))
                 return PreconditionCheckResult.Warning
 
             case 'UpToDate':
@@ -105,15 +101,15 @@ class ProjectDiagnosticsProvider {
         const lakeVersionResult = await this.diagnose().queryLakeVersion()
         switch (lakeVersionResult.kind) {
             case 'CommandNotFound':
-                void showSetupErrorWithOutput("Error while checking Lake version: 'lake' command was not found.")
+                displaySetupErrorWithOutput("Error while checking Lake version: 'lake' command was not found.")
                 return PreconditionCheckResult.Fatal
 
             case 'CommandError':
-                void showSetupErrorWithOutput(`Error while checking Lake version: ${lakeVersionResult.message}`)
+                displaySetupErrorWithOutput(`Error while checking Lake version: ${lakeVersionResult.message}`)
                 return PreconditionCheckResult.Fatal
 
             case 'InvalidVersion':
-                void showSetupErrorWithOutput(
+                displaySetupErrorWithOutput(
                     `Error while checking Lake version: Invalid Lake version format: '${lakeVersionResult.versionResult}'`,
                 )
                 return PreconditionCheckResult.Fatal

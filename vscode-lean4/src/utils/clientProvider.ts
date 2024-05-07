@@ -5,6 +5,7 @@ import { checkLean4ProjectPreconditions } from '../projectDiagnostics'
 import { ExtUri, FileUri, UntitledUri, getWorkspaceFolderUri, toExtUri } from './exturi'
 import { LeanInstaller } from './leanInstaller'
 import { logger } from './logger'
+import { displayError } from './notifs'
 import { findLeanProjectRoot } from './projectInfo'
 import { PreconditionCheckResult } from './setupDiagnostics'
 
@@ -124,12 +125,12 @@ export class LeanClientProvider implements Disposable {
 
     private restartFile() {
         if (!this.activeClient || !this.activeClient.isRunning()) {
-            void window.showErrorMessage('No active client.')
+            displayError('No active client.')
             return
         }
 
         if (!window.activeTextEditor || window.activeTextEditor.document.languageId !== 'lean4') {
-            void window.showErrorMessage(
+            displayError(
                 'No active Lean editor tab. Make sure to focus the Lean editor tab for which you want to issue a restart.',
             )
             return
@@ -248,7 +249,7 @@ export class LeanClientProvider implements Disposable {
         client.serverFailed(err => {
             this.clients.delete(key)
             client.dispose()
-            void window.showErrorMessage(err)
+            displayError(err)
         })
 
         client.stopped(reason => {

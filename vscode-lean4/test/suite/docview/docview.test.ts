@@ -4,6 +4,7 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 import { logger } from '../../../src/utils/logger'
 
+import { displayInformation } from '../../../src/utils/notifs'
 import {
     closeAllEditors,
     extractPhrase,
@@ -23,7 +24,7 @@ suite('Documentation View Test Suite', () => {
         // This test opens the documentation view and selects the "Example" link.
         logger.log('=================== Documentation View Example Test ===================')
 
-        void vscode.window.showInformationMessage('Running tests: ' + __dirname)
+        displayInformation('Running tests: ' + __dirname)
         const testsRoot = path.join(__dirname, '..', '..', '..', '..', 'test', 'test-fixtures', 'simple')
         const mainFile = path.join(testsRoot, 'Main.lean')
         const features = await initLean4(mainFile)

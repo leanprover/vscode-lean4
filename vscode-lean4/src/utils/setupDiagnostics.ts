@@ -3,8 +3,20 @@ import { SemVer } from 'semver'
 import { Disposable, OutputChannel, TextDocument, commands, env, window, workspace } from 'vscode'
 import { shouldShowSetupWarnings } from '../config'
 import { ExecutionExitCode, ExecutionResult, batchExecute, batchExecuteWithProgress } from './batch'
-import { displayErrorWithOutput, displayWarningWithOutput } from './errors'
 import { ExtUri, FileUri, extUriEquals, toExtUri } from './exturi'
+import {
+    displayError,
+    displayErrorWithInput,
+    displayErrorWithOptionalInput,
+    displayErrorWithOutput,
+    displayErrorWithSetupGuide,
+    displayInformationWithInput,
+    displayWarning,
+    displayWarningWithInput,
+    displayWarningWithOptionalInput,
+    displayWarningWithOutput,
+    displayWarningWithSetupGuide,
+} from './notifs'
 import { checkParentFoldersForLeanProject, findLeanProjectRoot, isValidLeanProject } from './projectInfo'
 
 export type SystemQueryResult = {
@@ -394,11 +406,7 @@ export class FullDiagnosticsProvider implements Disposable {
         const fullDiagnostics = await performFullDiagnosis(this.outputChannel, projectUri)
         const formattedFullDiagnostics = formatFullDiagnostics(fullDiagnostics)
         const copyToClipboardInput = 'Copy to Clipboard'
-        const choice = await window.showInformationMessage(
-            formattedFullDiagnostics,
-            { modal: true },
-            copyToClipboardInput,
-        )
+        const choice = await displayInformationWithInput(formattedFullDiagnostics, copyToClipboardInput)
         if (choice === copyToClipboardInput) {
             await env.clipboard.writeText(formattedFullDiagnostics)
         }
@@ -418,24 +426,73 @@ export class FullDiagnosticsProvider implements Disposable {
     }
 }
 
-export async function showSetupError<T extends string>(message: string, ...items: T[]): Promise<T | undefined> {
-    return await window.showErrorMessage(message, ...items)
+export function displaySetupError(message: string, finalizer?: (() => void) | undefined) {
+    displayError(message, finalizer)
 }
 
-export async function showSetupErrorWithOutput(message: string) {
-    return await displayErrorWithOutput(message)
+export async function displaySetupErrorWithInput<T extends string>(
+    message: string,
+    ...items: T[]
+): Promise<T | undefined> {
+    return await displayErrorWithInput(message, ...items)
 }
 
-export async function showSetupWarning<T extends string>(message: string, ...items: T[]): Promise<T | undefined> {
-    if (!shouldShowSetupWarnings()) {
-        return undefined
-    }
-    return await window.showWarningMessage(message, ...items)
+export function displaySetupErrorWithOptionalInput<T extends string>(
+    message: string,
+    input: T,
+    action: () => void,
+    finalizer?: (() => void) | undefined,
+) {
+    displayErrorWithOptionalInput(message, input, action, finalizer)
 }
 
-export async function showSetupWarningWithOutput(message: string) {
+export function displaySetupErrorWithOutput(message: string, finalizer?: (() => void) | undefined) {
+    displayErrorWithOutput(message, finalizer)
+}
+
+export function displaySetupErrorWithSetupGuide(message: string, finalizer?: (() => void) | undefined) {
+    displayErrorWithSetupGuide(message, finalizer)
+}
+
+export function displaySetupWarning(message: string, finalizer?: (() => void) | undefined) {
     if (!shouldShowSetupWarnings()) {
         return
     }
-    return await displayWarningWithOutput(message)
+    displayWarning(message, finalizer)
+}
+
+export async function displaySetupWarningWithInput<T extends string>(
+    message: string,
+    ...items: T[]
+): Promise<T | undefined> {
+    if (!shouldShowSetupWarnings()) {
+        return undefined
+    }
+    return await displayWarningWithInput(message, ...items)
+}
+
+export function displaySetupWarningWithOptionalInput<T extends string>(
+    message: string,
+    input: T,
+    action: () => void,
+    finalizer?: (() => void) | undefined,
+) {
+    if (!shouldShowSetupWarnings()) {
+        return
+    }
+    displayWarningWithOptionalInput(message, input, action, finalizer)
+}
+
+export function displaySetupWarningWithOutput(message: string, finalizer?: (() => void) | undefined) {
+    if (!shouldShowSetupWarnings()) {
+        return
+    }
+    displayWarningWithOutput(message, finalizer)
+}
+
+export function displaySetupWarningWithSetupGuide(message: string, finalizer?: (() => void) | undefined) {
+    if (!shouldShowSetupWarnings()) {
+        return
+    }
+    displayWarningWithSetupGuide(message, finalizer)
 }

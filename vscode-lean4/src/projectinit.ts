@@ -1,8 +1,15 @@
 import { commands, Disposable, OutputChannel, SaveDialogOptions, Uri, window, workspace } from 'vscode'
-import { batchExecute, batchExecuteWithProgress, displayError, ExecutionExitCode, ExecutionResult } from './utils/batch'
+import {
+    batchExecute,
+    batchExecuteWithProgress,
+    displayResultError,
+    ExecutionExitCode,
+    ExecutionResult,
+} from './utils/batch'
 import { elanSelfUpdate } from './utils/elan'
 import { FileUri } from './utils/exturi'
 import { lake } from './utils/lake'
+import { displayError, displayInformationWithInput } from './utils/notifs'
 import { checkParentFoldersForLeanProject, isValidLeanProject } from './utils/projectInfo'
 import { diagnose } from './utils/setupDiagnostics'
 import path = require('path')
@@ -31,7 +38,7 @@ export class ProjectInitializationProvider implements Disposable {
             return
         }
         if (buildResult.exitCode !== ExecutionExitCode.Success) {
-            await displayError(buildResult, 'Cannot build Lean project.')
+            displayResultError(buildResult, 'Cannot build Lean project.')
             return
         }
 
@@ -60,7 +67,7 @@ export class ProjectInitializationProvider implements Disposable {
             return
         }
         if (cacheGetResult.exitCode !== ExecutionExitCode.Success) {
-            await displayError(cacheGetResult, 'Cannot fetch Mathlib build artifact cache.')
+            displayResultError(cacheGetResult, 'Cannot fetch Mathlib build artifact cache.')
             return
         }
 
@@ -69,7 +76,7 @@ export class ProjectInitializationProvider implements Disposable {
             return
         }
         if (buildResult.exitCode !== ExecutionExitCode.Success) {
-            await displayError(buildResult, 'Cannot build Lean project.')
+            displayResultError(buildResult, 'Cannot build Lean project.')
             return
         }
 
@@ -109,7 +116,7 @@ export class ProjectInitializationProvider implements Disposable {
             kind,
         )
         if (result.exitCode !== ExecutionExitCode.Success) {
-            await displayError(result, 'Cannot initialize project.')
+            displayResultError(result, 'Cannot initialize project.')
             return 'DidNotComplete'
         }
 
@@ -118,7 +125,7 @@ export class ProjectInitializationProvider implements Disposable {
             return 'DidNotComplete'
         }
         if (updateResult.exitCode !== ExecutionExitCode.Success) {
-            await displayError(updateResult, 'Cannot update dependencies.')
+            displayResultError(updateResult, 'Cannot update dependencies.')
             return 'DidNotComplete'
         }
 
@@ -130,7 +137,7 @@ export class ProjectInitializationProvider implements Disposable {
             combined: this.channel,
         })
         if (gitAddResult.exitCode !== ExecutionExitCode.Success) {
-            await displayError(gitAddResult, 'Cannot add files to staging area of Git repository for project.')
+            displayResultError(gitAddResult, 'Cannot add files to staging area of Git repository for project.')
             return 'GitAddFailed'
         }
 
@@ -141,7 +148,7 @@ export class ProjectInitializationProvider implements Disposable {
             { combined: this.channel },
         )
         if (gitCommitResult.exitCode !== ExecutionExitCode.Success) {
-            await displayError(gitAddResult, 'Cannot commit files to Git repository for project.')
+            displayResultError(gitAddResult, 'Cannot commit files to Git repository for project.')
             return 'GitCommitFailed'
         }
 
@@ -185,7 +192,7 @@ export class ProjectInitializationProvider implements Disposable {
             const message = `The selected folder is not a valid Lean 4 project folder.
 Please make sure to select a folder containing a \'lean-toolchain\' file.
 Click the following link to learn how to set up Lean projects: [(Show Setup Guide)](command:lean4.setup.showSetupGuide)`
-            void window.showErrorMessage(message)
+            displayError(message)
             return undefined
         }
 
@@ -193,7 +200,7 @@ Click the following link to learn how to set up Lean projects: [(Show Setup Guid
 However, a valid Lean 4 project folder was found in one of the parent directories at '${parentProjectFolder.fsPath}'.
 Open this project instead?`
         const input = 'Open parent directory project'
-        const choice: string | undefined = await window.showInformationMessage(message, { modal: true }, input)
+        const choice: string | undefined = await displayInformationWithInput(message, input)
         if (choice !== input) {
             return undefined
         }
@@ -233,7 +240,7 @@ Open this project instead?`
             return
         }
         if (result.exitCode !== ExecutionExitCode.Success) {
-            await displayError(result, 'Cannot download project.')
+            displayResultError(result, 'Cannot download project.')
             return
         }
 
@@ -262,7 +269,7 @@ Open this project instead?`
         if (projectFolder.scheme === 'file') {
             return true
         } else {
-            void window.showErrorMessage('Project folder must be created in a file system.')
+            displayError('Project folder must be created in a file system.')
             return false
         }
     }
@@ -270,7 +277,7 @@ Open this project instead?`
     private static async openNewFolder(projectFolder: FileUri) {
         const message = `Project initialized. Open new project folder '${path.basename(projectFolder.fsPath)}'?`
         const input = 'Open project folder'
-        const choice: string | undefined = await window.showInformationMessage(message, { modal: true }, input)
+        const choice: string | undefined = await displayInformationWithInput(message, input)
         if (choice === input) {
             // This kills the extension host, so it has to be the last command
             await commands.executeCommand('vscode.openFolder', projectFolder.asUri())
@@ -291,7 +298,7 @@ Open this project instead?`
         if (!(await diagnose(this.channel, projectFolder).checkGitAvailable())) {
             const message = `Git is not installed. Lean uses Git to download and install specific versions of Lean packages.
 Click the following link to learn how to install Git: [(Show Setup Guide)](command:lean4.setup.showSetupGuide)`
-            void window.showErrorMessage(message)
+            displayError(message)
             return 'GitNotInstalled'
         }
         return 'GitInstalled'
@@ -301,7 +308,7 @@ Click the following link to learn how to install Git: [(Show Setup Guide)](comma
         if (!(await diagnose(this.channel, projectFolder).checkLakeAvailable())) {
             const message = `Lean's package manager Lake is not installed. This likely means that Lean itself is also not installed.
 Click the following link to learn how to install Lean: [(Show Setup Guide)](command:lean4.setup.showSetupGuide)`
-            void window.showErrorMessage(message)
+            displayError(message)
             return 'LakeNotInstalled'
         }
         return 'LakeInstalled'

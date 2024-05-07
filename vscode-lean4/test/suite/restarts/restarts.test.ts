@@ -4,6 +4,7 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 import { FileUri } from '../../../src/utils/exturi'
 import { logger } from '../../../src/utils/logger'
+import { displayInformation } from '../../../src/utils/notifs'
 import {
     assertStringInInfoview,
     closeAllEditors,
@@ -24,7 +25,7 @@ suite('Lean Server Restart Test Suite', () => {
         logger.log(
             '=================== Test worker crashed and client running - Restarting Lean Server ===================',
         )
-        void vscode.window.showInformationMessage('Running tests: ' + __dirname)
+        displayInformation('Running tests: ' + __dirname)
 
         // add normal values to initialize lean4 file
         const hello = 'Hello World'
@@ -69,7 +70,7 @@ suite('Lean Server Restart Test Suite', () => {
         logger.log(
             '=================== Test worker crashed and client running (Refreshing dependencies) ===================',
         )
-        void vscode.window.showInformationMessage('Running tests: ' + __dirname)
+        displayInformation('Running tests: ' + __dirname)
 
         // add normal values to initialize lean4 file
         const hello = 'Hello World'
@@ -112,7 +113,7 @@ suite('Lean Server Restart Test Suite', () => {
 
     test('Restart Server', async () => {
         logger.log('=================== Test Restart Server ===================')
-        void vscode.window.showInformationMessage('Running tests: ' + __dirname)
+        displayInformation('Running tests: ' + __dirname)
 
         // Test we can restart the lean server
         const simpleRoot = path.join(__dirname, '..', '..', '..', '..', 'test', 'test-fixtures', 'simple')

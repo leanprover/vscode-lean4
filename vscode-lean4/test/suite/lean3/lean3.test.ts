@@ -3,6 +3,7 @@ import { suite } from 'mocha'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import { logger } from '../../../src/utils/logger'
+import { displayInformation } from '../../../src/utils/notifs'
 import {
     assertLean4FeaturesNotLoaded,
     closeAllEditors,
@@ -12,7 +13,7 @@ import {
 
 suite('Lean3 Compatibility Test Suite', () => {
     test('Lean3 project', async () => {
-        void vscode.window.showInformationMessage('Running tests: ' + __dirname)
+        displayInformation('Running tests: ' + __dirname)
 
         const testsRoot = path.join(__dirname, '..', '..', '..', '..', 'test', 'test-fixtures', 'lean3')
 

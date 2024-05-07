@@ -4,6 +4,7 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 import { UntitledUri } from '../../../src/utils/exturi'
 import { logger } from '../../../src/utils/logger'
+import { displayInformation } from '../../../src/utils/notifs'
 import {
     assertStringInInfoview,
     closeAllEditors,
@@ -18,7 +19,7 @@ import {
 suite('Lean4 Basics Test Suite', () => {
     test('Untitled Lean File', async () => {
         logger.log('=================== Untitled Lean File ===================')
-        void vscode.window.showInformationMessage('Running tests: ' + __dirname)
+        displayInformation('Running tests: ' + __dirname)
 
         const features = await initLean4Untitled('#eval Lean.versionString')
         const info = features.infoProvider
@@ -51,7 +52,7 @@ suite('Lean4 Basics Test Suite', () => {
 
     test('Orphaned Lean File', async () => {
         logger.log('=================== Orphaned Lean File ===================')
-        void vscode.window.showInformationMessage('Running tests: ' + __dirname)
+        displayInformation('Running tests: ' + __dirname)
 
         const testsRoot = path.join(__dirname, '..', '..', '..', '..', 'test', 'test-fixtures', 'orphan')
         const features = await initLean4(path.join(testsRoot, 'factorial.lean'))
@@ -82,7 +83,7 @@ suite('Lean4 Basics Test Suite', () => {
 
     test('Goto definition in a package folder', async () => {
         logger.log('=================== Goto definition in a package folder ===================')
-        void vscode.window.showInformationMessage('Running tests: ' + __dirname)
+        displayInformation('Running tests: ' + __dirname)
 
         // Test we can load file in a project folder from a package folder and also
         // have goto definition work showing that the LeanClient is correctly

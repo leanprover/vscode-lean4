@@ -45,9 +45,14 @@ import { logger } from './utils/logger'
 // @ts-ignore
 import { SemVer } from 'semver'
 import { c2pConverter, p2cConverter, patchConverters } from './utils/converters'
-import { displayErrorWithOutput } from './utils/errors'
 import { ExtUri, parseExtUri, toExtUri } from './utils/exturi'
 import { fileExists } from './utils/fsHelper'
+import {
+    displayError,
+    displayErrorWithOptionalInput,
+    displayErrorWithOutput,
+    displayInformationWithOptionalInput,
+} from './utils/notifs'
 import path = require('path')
 
 const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
@@ -133,6 +138,9 @@ export class LeanClient implements Disposable {
             return
         }
         this.showingRestartMessage = true
+        const finalizer = () => {
+            this.showingRestartMessage = false
+        }
         let restartItem: string
         let messageTitle: string
         if (!restartFile) {
@@ -142,23 +150,26 @@ export class LeanClient implements Disposable {
             restartItem = 'Restart Lean Server on this file'
             messageTitle = 'The Lean Server has stopped processing this file.'
         }
-        const item = await window.showErrorMessage(messageTitle, restartItem)
-        this.showingRestartMessage = false
-        if (item === restartItem) {
-            if (restartFile && uri !== undefined) {
-                const document = workspace.textDocuments.find(doc => uri.equalsUri(doc.uri))
-                if (document) {
-                    await this.restartFile(document)
+        displayErrorWithOptionalInput(
+            messageTitle,
+            restartItem,
+            () => {
+                if (restartFile && uri !== undefined) {
+                    const document = workspace.textDocuments.find(doc => uri.equalsUri(doc.uri))
+                    if (document) {
+                        void this.restartFile(document)
+                    }
+                } else {
+                    void this.start()
                 }
-            } else {
-                void this.start()
-            }
-        }
+            },
+            finalizer,
+        )
     }
 
     async restart(): Promise<void> {
         if (this.isRestarting) {
-            await window.showErrorMessage('Client is already being started.')
+            displayError('Client is already being started.')
             return
         }
         this.isRestarting = true
@@ -208,7 +219,7 @@ export class LeanClient implements Disposable {
                         // only raise this event and show the message if we are not the ones
                         // who called the stop() method.
                         this.stoppedEmitter.fire({ message: 'Lean server has stopped.', reason: '' })
-                        await this.showRestartMessage()
+                        void this.showRestartMessage()
                     }
                 }
             })
@@ -267,8 +278,10 @@ export class LeanClient implements Disposable {
                 this.client?.outputChannel.show(true)
             } else if (!stderrMsgBoxVisible) {
                 stderrMsgBoxVisible = true
-                await displayErrorWithOutput(`Lean server printed an error:\n${chunk.toString()}`)
-                stderrMsgBoxVisible = false
+                const finalizer = () => {
+                    stderrMsgBoxVisible = false
+                }
+                displayErrorWithOutput(`Lean server printed an error:\n${chunk.toString()}`, finalizer)
             }
         })
 
@@ -276,7 +289,7 @@ export class LeanClient implements Disposable {
         insideRestart = false
     }
 
-    private async checkForImportsOutdatedError(params: PublishDiagnosticsParams) {
+    private checkForImportsOutdatedError(params: PublishDiagnosticsParams) {
         const fileUri = parseExtUri(params.uri)
         if (fileUri === undefined) {
             return
@@ -298,18 +311,15 @@ export class LeanClient implements Disposable {
 
         const message = `Imports of '${fileName}' are out of date and must be rebuilt. Restarting the file will rebuild them.`
         const input = 'Restart File'
-        const choice = await window.showInformationMessage(message, input)
-        if (choice !== input) {
-            return
-        }
+        displayInformationWithOptionalInput(message, input, () => {
+            const document = workspace.textDocuments.find(doc => fileUri.equalsUri(doc.uri))
+            if (!document || document.isClosed) {
+                displayError(`'${fileName}' was closed in the meantime. Imports will not be rebuilt.`)
+                return
+            }
 
-        const document = workspace.textDocuments.find(doc => fileUri.equalsUri(doc.uri))
-        if (!document || document.isClosed) {
-            void window.showErrorMessage(`'${fileName}' was closed in the meantime. Imports will not be rebuilt.`)
-            return
-        }
-
-        await this.restartFile(document)
+            void this.restartFile(document)
+        })
     }
 
     async withStoppedClient(action: () => Promise<void>): Promise<'Success' | 'IsRestarting'> {
