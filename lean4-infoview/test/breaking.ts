@@ -101,7 +101,7 @@ type CheckSelfCompatible =
  * From https://stackoverflow.com/a/71618156
  * and https://lostintime.dev/2021/01/02/typescript-api-breaking-changes.html
  */
-//type CheckNoBreakingChanges = CheckExtends<
-//    Recordify<Pick<NextRelease, keyof CurrentRelease>>,
-//    Recordify<CurrentRelease>
-//>
+type CheckNoBreakingChanges = CheckExtends<
+    Recordify<Pick<NextRelease, keyof CurrentRelease>>,
+    Recordify<CurrentRelease>
+>

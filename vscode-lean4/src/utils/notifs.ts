@@ -3,7 +3,7 @@ import { MessageOptions, commands, window } from 'vscode'
 // All calls to window.show(Error|Warning|Information)... should go through functions in this file
 // to prevent accidentally blocking the VS Code extension.
 // Specifically, we want to enforce the following invariants:
-// - Notifications without input should never block the extensions
+// - Notifications without input should never block the extension
 // - Notifications with optional input should never block the extension
 // - Notifications that block the extension must be modal
 
