@@ -15,6 +15,7 @@ import { DocViewProvider } from './docview'
 import { AlwaysEnabledFeatures, Exports, Lean4EnabledFeatures } from './exports'
 import { InfoProvider } from './infoview'
 import { LeanClient } from './leanclient'
+import { ManualView } from './manualview'
 import { ProjectInitializationProvider } from './projectinit'
 import { ProjectOperationProvider } from './projectoperations'
 import { LeanTaskGutter } from './taskgutter'
@@ -76,6 +77,10 @@ function activateAlwaysEnabledFeatures(context: ExtensionContext): AlwaysEnabled
             commands.executeCommand('workbench.action.openWalkthrough', 'leanprover.lean4#lean4.welcome', false),
         ),
     )
+
+    const extensionPath = new FileUri(context.extensionPath)
+    const manualView = new ManualView(extensionPath, extensionPath.join('media', 'manual.md'))
+    context.subscriptions.push(manualView)
 
     const docView = new DocViewProvider(context.extensionUri)
     context.subscriptions.push(docView)

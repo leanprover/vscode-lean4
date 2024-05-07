@@ -298,6 +298,12 @@
                 "description": "Show 'Welcome' page containing a checklist of steps to install Lean 4"
             },
             {
+                "command": "lean4.setup.showExtensionManual",
+                "category": "Lean 4",
+                "title": "Setup: Show Manual",
+                "description": "Show manual for the Lean 4 VS Code extension"
+            },
+            {
                 "command": "lean4.setup.installElan",
                 "category": "Lean 4",
                 "title": "Setup: Install Elan",
@@ -546,6 +552,9 @@
                     "command": "lean4.setup.showSetupGuide"
                 },
                 {
+                    "command": "lean4.setup.showExtensionManual"
+                },
+                {
                     "command": "lean4.setup.installElan"
                 },
                 {
@@ -693,7 +702,12 @@
                 {
                     "command": "lean4.setup.showSetupGuide",
                     "when": "config.lean4.alwaysShowTitleBarMenu || lean4.isLeanFeatureSetActive",
-                    "group": "1_installation@1"
+                    "group": "1_guides@1"
+                },
+                {
+                    "command": "lean4.setup.showExtensionManual",
+                    "when": "config.lean4.alwaysShowTitleBarMenu || lean4.isLeanFeatureSetActive",
+                    "group": "1_guides@2"
                 },
                 {
                     "command": "lean4.docView.open",
@@ -892,6 +906,8 @@
         "@leanprover/infoview-api": "~0.4.0",
         "axios": "^1.6.7",
         "cheerio": "^1.0.0-rc.12",
+        "markdown-it": "^14.1.0",
+        "markdown-it-anchor": "^8.6.7",
         "mobx": "^5.15.7",
         "semver": "^7.6.0",
         "vscode-languageclient": "^8.0.2",
@@ -900,6 +916,7 @@
     "devDependencies": {
         "@types/cheerio": "^0.22.35",
         "@types/glob": "^7.2.0",
+        "@types/markdown-it": "^14.1.1",
         "@types/mocha": "^8.2.3",
         "@types/node": "^18.19.17",
         "@types/semver": "^7.5.7",
