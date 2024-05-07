@@ -1,4 +1,5 @@
 import { OutputChannel } from 'vscode'
+import { ExecutionExitCode, displayResultError } from './utils/batch'
 import { elanSelfUpdate } from './utils/elan'
 import { FileUri } from './utils/exturi'
 import { LeanInstaller } from './utils/leanInstaller'
@@ -114,7 +115,15 @@ class GlobalDiagnosticsProvider {
                 if (updateElanChoice === undefined) {
                     return false
                 }
-                await elanSelfUpdate(this.channel)
+                const elanSelfUpdateResult = await elanSelfUpdate(this.channel)
+                if (elanSelfUpdateResult.exitCode !== ExecutionExitCode.Success) {
+                    displayResultError(
+                        elanSelfUpdateResult,
+                        "Cannot update Elan. If you suspect that this is due to the way that you have set up Elan (e.g. from a package repository that ships an outdated version of Elan), you can disable these warnings using the 'Lean4: Show Setup Warnings' setting under 'File' > 'Preferences' > 'Settings'.",
+                    )
+                    return false
+                }
+
                 return true
 
             case 'UpToDate':
