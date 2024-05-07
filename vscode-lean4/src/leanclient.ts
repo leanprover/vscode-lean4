@@ -133,7 +133,7 @@ export class LeanClient implements Disposable {
         if (this.isStarted()) void this.stop()
     }
 
-    async showRestartMessage(restartFile: boolean = false, uri?: ExtUri | undefined): Promise<void> {
+    showRestartMessage(restartFile: boolean = false, uri?: ExtUri | undefined) {
         if (this.showingRestartMessage) {
             return
         }
@@ -219,7 +219,7 @@ export class LeanClient implements Disposable {
                         // only raise this event and show the message if we are not the ones
                         // who called the stop() method.
                         this.stoppedEmitter.fire({ message: 'Lean server has stopped.', reason: '' })
-                        void this.showRestartMessage()
+                        this.showRestartMessage()
                     }
                 }
             })

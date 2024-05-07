@@ -465,7 +465,7 @@ export class InfoProvider implements Disposable {
             this.workersFailed.set(uri, reason)
         }
         logger.log(`[InfoProvider]client crashed: ${uri}`)
-        void client.showRestartMessage(true, extUri)
+        client.showRestartMessage(true, extUri)
     }
 
     onClientRemoved(client: LeanClient) {
@@ -489,7 +489,7 @@ export class InfoProvider implements Disposable {
             this.clientsFailed.set(key.toString(), reason)
         }
         logger.log(`[InfoProvider] client stopped: ${key}`)
-        void client.showRestartMessage()
+        client.showRestartMessage()
     }
 
     dispose(): void {
