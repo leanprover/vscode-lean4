@@ -46,13 +46,13 @@ import { logger } from './utils/logger'
 import { SemVer } from 'semver'
 import { c2pConverter, p2cConverter, patchConverters } from './utils/converters'
 import { ExtUri, parseExtUri, toExtUri } from './utils/exturi'
-import { fileExists } from './utils/fsHelper'
 import {
     displayError,
     displayErrorWithOptionalInput,
     displayErrorWithOutput,
     displayInformationWithOptionalInput,
 } from './utils/notifs'
+import { willUseLakeServer } from './utils/projectInfo'
 import path = require('path')
 
 const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
@@ -505,22 +505,11 @@ export class LeanClient implements Disposable {
     }
 
     private async determineExecutable(): Promise<[string, string[]]> {
-        if (await this.shouldUseLake()) {
+        if (await willUseLakeServer(this.folderUri)) {
             return ['lake', ['serve', '--']]
         } else {
             return ['lean', ['--server']]
         }
-    }
-
-    private async shouldUseLake(): Promise<boolean> {
-        // check if the lake process will start (skip it on scheme: 'untitled' files)
-        if (this.folderUri.scheme !== 'file') {
-            return false
-        }
-
-        const lakefileLean = this.folderUri.join('lakefile.lean')
-        const lakefileToml = this.folderUri.join('lakefile.toml')
-        return (await fileExists(lakefileLean.fsPath)) || (await fileExists(lakefileToml.fsPath))
     }
 
     private obtainClientOptions(): LanguageClientOptions {

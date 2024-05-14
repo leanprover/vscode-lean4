@@ -1,6 +1,7 @@
 import { SemVer } from 'semver'
 import { OutputChannel, commands } from 'vscode'
 import { ExtUri, FileUri } from './utils/exturi'
+import { willUseLakeServer } from './utils/projectInfo'
 import {
     PreconditionCheckResult,
     SetupDiagnoser,
@@ -97,7 +98,11 @@ class ProjectDiagnosticsProvider {
         }
     }
 
-    async checkIsLakeInstalled(): Promise<PreconditionCheckResult> {
+    async checkIsLakeInstalledCorrectly(): Promise<PreconditionCheckResult> {
+        if (!(await willUseLakeServer(this.folderUri))) {
+            return PreconditionCheckResult.Fulfilled
+        }
+
         const lakeVersionResult = await this.diagnose().queryLakeVersion()
         switch (lakeVersionResult.kind) {
             case 'CommandNotFound':
@@ -138,7 +143,7 @@ export async function checkLean4ProjectPreconditions(
         return PreconditionCheckResult.Fatal
     }
 
-    const lakeVersionCheckResult = await diagnosticsProvider.checkIsLakeInstalled()
+    const lakeVersionCheckResult = await diagnosticsProvider.checkIsLakeInstalledCorrectly()
 
     return worstPreconditionViolation(leanProjectCheckResult, lakeVersionCheckResult)
 }

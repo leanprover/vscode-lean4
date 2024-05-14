@@ -1,5 +1,5 @@
 import * as fs from 'fs'
-import { FileUri, getWorkspaceFolderUri } from './exturi'
+import { ExtUri, FileUri, getWorkspaceFolderUri } from './exturi'
 import { fileExists } from './fsHelper'
 import path = require('path')
 
@@ -130,4 +130,14 @@ export async function checkParentFoldersForLeanProject(folder: FileUri): Promise
         }
     } while (!childFolder.equals(folder))
     return undefined
+}
+
+export async function willUseLakeServer(folder: ExtUri): Promise<boolean> {
+    if (folder.scheme !== 'file') {
+        return false
+    }
+
+    const lakefileLean = folder.join('lakefile.lean')
+    const lakefileToml = folder.join('lakefile.toml')
+    return (await fileExists(lakefileLean.fsPath)) || (await fileExists(lakefileToml.fsPath))
 }
