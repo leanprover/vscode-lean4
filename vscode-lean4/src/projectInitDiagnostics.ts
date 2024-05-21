@@ -9,7 +9,7 @@ import {
     diagnose,
     displaySetupError,
     displaySetupErrorWithOutput,
-    displaySetupWarning,
+    displaySetupWarningWithInput,
     worstPreconditionViolation,
 } from './utils/setupDiagnostics'
 
@@ -19,7 +19,7 @@ If you want to use Lean 3, disable this extension ('Extensions' in the left side
 
 const ancientLean4ToolchainWarningMessage = (toolchainVersion: SemVer) =>
     `The current toolchain is using a Lean 4 version (${toolchainVersion.toString()}) from before the first Lean 4 stable release (4.0.0).
-Pre-stable Lean 4 versions are increasingly less supported, so please consider updating to a newer Lean 4 version.`
+Pre-stable Lean 4 versions are increasingly less supported, so please consider updating to a newer Lean 4 version. Proceed regardless?`
 
 class ProjectInitDiagnosticsProvider {
     readonly channel: OutputChannel
@@ -51,7 +51,14 @@ class ProjectInitDiagnosticsProvider {
                 return PreconditionCheckResult.Fatal
 
             case 'IsAncientLean4Version':
-                displaySetupWarning(ancientLean4ToolchainWarningMessage(projectLeanVersionDiagnosis.version))
+                const item = 'Proceed'
+                const choice = await displaySetupWarningWithInput(
+                    ancientLean4ToolchainWarningMessage(projectLeanVersionDiagnosis.version),
+                    item,
+                )
+                if (choice !== 'Proceed') {
+                    return PreconditionCheckResult.Fatal
+                }
                 return PreconditionCheckResult.Warning
 
             case 'UpToDate':
