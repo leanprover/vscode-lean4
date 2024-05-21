@@ -1,22 +1,26 @@
-import type { DocumentUri, TextDocumentPositionParams } from 'vscode-languageserver-protocol'
+import type { DocumentUri, Position, TextDocumentPositionParams } from 'vscode-languageserver-protocol'
 import { RpcCallParams, RpcErrorCode, RpcPtr, RpcReleaseParams } from './lspTypes'
 
 /**
- * Abstraction of the Lean server interface required for RPC communication.
+ * Abstraction of the functionality needed
+ * to establish RPC sessions in the Lean server
+ * and to make RPC calls.
+ * See the Lean module `Lean.Server.Rpc.Basic`.
  *
- * This interface can be implemented both in the infoview (relaying the LSP
- * messages to the extension via webview RPC mechanism), as well as in the
- * extension itself (directly sending the LSP messages via the
+ * This interface can be implemented both in the infoview
+ * (relaying LSP messages from the webview to the extension),
+ * as well as in the extension itself
+ * (directly sending LSP messages via the
  * `vscode-languageserver-node` library (TODO)).
  */
 export interface RpcServerIface {
     /**
-     * Creates an RPC session for the given uri and returns the session id.
-     * The implementation of `RpcServerIface` takes care to send any required
-     * keepalive notifications.
+     * Creates an RPC session for the given URI and returns the session ID.
+     * The implementation of {@link RpcServerIface} takes care
+     * to send any required keepalive notifications.
      */
     createRpcSession(uri: DocumentUri): Promise<string>
-    /** Closes an RPC session created with `createRpcSession`. */
+    /** Closes an RPC session created with {@link createRpcSession}. */
     closeRpcSession(sessionId: string): void
     /** Sends an RPC call to the Lean server. */
     call(request: RpcCallParams): Promise<any>
@@ -25,30 +29,46 @@ export interface RpcServerIface {
 }
 
 /**
- * An RPC session.  The session object gives access to all the
- * `@[serverRpcMethod]`s available at the position it is initialized with.
- * Morally it is a fixed set of `@[serverRpcMethod]`s together with the RPC
- * reference state (as identified by the session ID on the wire).
+ * An {@link RpcSessionForFile} with `call` specialized to a specific position `p`.
  *
- * `RpcRef`s returned by calls from one `RpcSessionAtPos` may only be passed as
- * arguments to RPC calls *on the same `RpcSessionAtPos` object*.
- * Passing an `RpcRef` from one session to another is unsafe.
+ * Morally, this bundles an RPC session
+ * with the set of RPC methods
+ * available at the position `p`.
  *
- * (The Lean 4 RPC protocol requires every request to specify a position in the
- * file; only `@[serverRpcMethod]` declarations above this position are callable.
- * Implementations of this interface bundle the position.
- * The position and session ID remain the same over the whole lifetime of the
- * `RpcSessionAtPos` object.)
+ * It is okay to mix RPC references
+ * between different {@link RpcSessionAtPos} objects
+ * created from the same {@link RpcSessionForFile}.
  */
 export interface RpcSessionAtPos {
+    /**
+     * Invoke an RPC method in the Lean server.
+     *
+     * @param method fully qualified name of the method to call.
+     * @param params arguments to the invoked method.
+     * @returns a promise that resolves to the returned value, or an error in case the call fails.
+     */
     call<T, S>(method: string, params: T): Promise<S>
 }
 
+/**
+ * Manages a connection to an RPC session
+ * that has been opened for a given file
+ * (in the Lean server's worker process for that file).
+ *
+ * An RPC session keeps track of a set of RPC references
+ * that are mutually intelligible,
+ * in the sense that any RPC method can be called
+ * with any number of references from this set.
+ * On the other hand,
+ * it is not possible to mix RPC references
+ * between different sessions.
+ */
 class RpcSessionForFile {
     sessionId: Promise<string>
     /**
-     * `failed` stores a fatal exception indicating that the RPC session can no longer be used.
-     * For example: the worker crashed, etc.
+     * If present, stores a fatal exception
+     * indicating that the RPC session can no longer be used.
+     * For example: the worker crashed
      */
     failed?: any
 
@@ -105,18 +125,22 @@ class RpcSessionForFile {
         this.refsToRelease = []
     }
 
-    /** Traverses an object received from the RPC server and registers all contained references
+    /**
+     * Traverses an object received from the RPC server
+     * and registers all contained references
      * for future garbage collection.
      *
-     * The function implements a form of "conservative garbage collection" where
-     * it treats any subobject `{'p': v}` as a potential reference.  Therefore
-     * `p` should not be used as a field name on the Lean side to prevent false
-     * positives.
+     * The function implements a form of "conservative garbage collection"
+     * where it treats any subobject `{'p': v}` as a potential RPC reference.
+     * Therefore `p` should not be used as a field name on the Lean side
+     * to prevent false positives.
      *
-     * It is unclear if the false positives will become a big issue.  Earlier
-     * versions of the extension had manually written registration functions for
-     * every type, but those are a lot of boilerplate.  If we change back to
-     * that approach, we should generate them automatically.
+     * It is unclear if the false positives will become a big issue.
+     * Earlier versions of the extension
+     * had manually written registration functions for every type,
+     * but those are a lot of boilerplate.
+     * If we change back to that approach,
+     * we should generate them automatically.
      */
     registerRefs(o: any) {
         if (o instanceof Object) {
@@ -134,7 +158,7 @@ class RpcSessionForFile {
         this.failed = reason
         // NOTE(WN): the sessions map is keyed by URI rather than ID and by the time this
         // function executes, a new session for the same file may already have been added.
-        // So we should only delete the stored session if it is this one.
+        // So we should only delete the stored session if's still this one.
         if (this.sessions.sessions.get(this.uri) === this) {
             this.sessions.sessions.delete(this.uri)
         }
@@ -145,11 +169,26 @@ class RpcSessionForFile {
         void this.sessionId.then(id => this.sessions.iface.closeRpcSession(id))
     }
 
-    async call(pos: TextDocumentPositionParams, method: string, params: any): Promise<any> {
+    /**
+     * Invoke an RPC method in the Lean server.
+     *
+     * To compute the set of RPC methods that can be called,
+     * the server finds the environment `e` at the source code location `this.uri:position`.
+     * The callable methods are then all the builtin ones,
+     * and all constants in `e` marked with `@[server_rpc_method]`
+     * (i.e., the `@[server_rpc_method]` declarations made above `this.uri:position`).
+     *
+     * @param position within the file identified by {@link uri}, used to resolve the set of available RPC methods.
+     * @param method fully qualified name of the method to call.
+     * @param params arguments to the invoked method.
+     * @returns a promise that resolves to the returned value, or to an error in case the call fails.
+     */
+    async call(position: Position, method: string, params: any): Promise<any> {
         const sessionId = await this.sessionId
         if (this.failed) throw this.failed
+        const tdpp: TextDocumentPositionParams = { position, textDocument: { uri: this.uri } }
         try {
-            const result = await this.sessions.iface.call({ method, params, sessionId, ...pos })
+            const result = await this.sessions.iface.call({ method, params, sessionId, ...tdpp })
             this.registerRefs(result)
             // HACK: most of our types are `T | undefined` so try to return something matching that interface
             if (result === null) return undefined
@@ -166,15 +205,18 @@ class RpcSessionForFile {
         }
     }
 
-    /** Returns this session "specialized" to a specific position within its file. This is
-     * guaranteed to return the same (by reference) object if called multiple times with the same
-     * (by deep comparison) position, on the same `RpcSessionForFile`. It can therefore be used
-     * as a React dep. */
-    at(pos: TextDocumentPositionParams): RpcSessionAtPos {
+    /**
+     * Returns this session with {@link call} specialized to `position` within the file.
+     * This is guaranteed to return the same (by reference) object
+     * if called multiple times with the same (by deep comparison) position,
+     * on the same {@link RpcSessionForFile}.
+     * It can therefore be used as a React dep.
+     */
+    at(position: Position): RpcSessionAtPos {
         // As JS tradition dictates, we use stringification for deep comparison of `Position`s in a `Map`.
-        const posStr = `${pos.position.line}:${pos.position.character}`
+        const posStr = `${position.line}:${position.character}`
         if (this.sessionsAtPos.has(posStr)) return this.sessionsAtPos.get(posStr) as RpcSessionAtPos
-        const atPos: RpcSessionAtPos = { call: (method, params) => this.call(pos, method, params) }
+        const atPos: RpcSessionAtPos = { call: (method, params) => this.call(position, method, params) }
         this.sessionsAtPos.set(posStr, atPos)
         return atPos
     }
@@ -183,10 +225,11 @@ class RpcSessionForFile {
 /** Manages RPC sessions for multiple files. */
 export class RpcSessions {
     /**
-     * Contains the active `RpcSessionForFile` objects.
-     * Once an `RpcSessionForFile` is set to failed (e.g. due to a server crash),
-     * it is removed from this map.  The `connect` method will then automatically
-     * reconnect the next time it is called.
+     * Contains the active {@link RpcSessionForFile} objects.
+     * Once an {@link RpcSessionForFile} is set to failed (e.g. due to a server crash),
+     * it is removed from this map.
+     * The {@link connect} method will then automatically reconnect
+     * the next time it is called.
      */
     sessions: Map<DocumentUri, RpcSessionForFile> = new Map()
 
@@ -200,17 +243,17 @@ export class RpcSessions {
     }
 
     /**
-     * Returns an `RpcSessionAtPos` for the given position.
-     * Calling `connect` multiple times will return the same
+     * Returns an {@link RpcSessionAtPos} for the given position.
+     * Calling {@link connect} multiple times will return the same
      * session (with the same session ID).
-     * A new session is only created if a fatal error occurs (i.e., the worker
-     * crashes) or the session is closed manually (if the file is closed).
+     * A new session is only created if a fatal error occurs (the worker crashes)
+     * or the session is closed manually (the file is closed).
      */
     connect(pos: TextDocumentPositionParams): RpcSessionAtPos {
-        return this.connectCore(pos.textDocument.uri).at(pos)
+        return this.connectCore(pos.textDocument.uri).at(pos.position)
     }
 
-    /* Closes the session for the given Uri. */
+    /** Closes the session for the given URI. */
     closeSessionForFile(uri: DocumentUri): void {
         void this.sessions.get(uri)?.fail('file closed')
     }
