@@ -1,5 +1,5 @@
 import { commands, Disposable, OutputChannel, SaveDialogOptions, Uri, window, workspace } from 'vscode'
-import { checkLean4FeaturePreconditions } from './globalDiagnostics'
+import { checkLean4ProjectInitPreconditions } from './projectInitDiagnostics'
 import {
     batchExecute,
     batchExecuteWithProgress,
@@ -12,7 +12,7 @@ import { lake } from './utils/lake'
 import { LeanInstaller } from './utils/leanInstaller'
 import { displayError, displayInformationWithInput } from './utils/notifs'
 import { checkParentFoldersForLeanProject, isValidLeanProject } from './utils/projectInfo'
-import { diagnose, PreconditionCheckResult } from './utils/setupDiagnostics'
+import { PreconditionCheckResult } from './utils/setupDiagnostics'
 import path = require('path')
 
 export class ProjectInitializationProvider implements Disposable {
@@ -107,7 +107,7 @@ export class ProjectInitializationProvider implements Disposable {
 
         await workspace.fs.createDirectory(projectFolder.asUri())
 
-        const preconditionCheckResult = await checkLean4FeaturePreconditions(this.installer, projectFolder)
+        const preconditionCheckResult = await checkLean4ProjectInitPreconditions(this.installer, projectFolder)
         if (preconditionCheckResult === PreconditionCheckResult.Fatal) {
             return 'DidNotComplete'
         }
@@ -184,7 +184,7 @@ export class ProjectInitializationProvider implements Disposable {
             projectFolder = parentProjectFolder
         }
 
-        const preconditionCheckResult = await checkLean4FeaturePreconditions(this.installer, projectFolder)
+        const preconditionCheckResult = await checkLean4ProjectInitPreconditions(this.installer, projectFolder)
         if (preconditionCheckResult === PreconditionCheckResult.Fatal) {
             return
         }
@@ -235,7 +235,7 @@ Open this project instead?`
 
         await workspace.fs.createDirectory(projectFolder.asUri())
 
-        const preconditionCheckResult = await checkLean4FeaturePreconditions(this.installer, projectFolder)
+        const preconditionCheckResult = await checkLean4ProjectInitPreconditions(this.installer, projectFolder)
         if (preconditionCheckResult === PreconditionCheckResult.Fatal) {
             return
         }
@@ -251,10 +251,6 @@ Open this project instead?`
         }
         if (result.exitCode !== ExecutionExitCode.Success) {
             displayResultError(result, 'Cannot download project.')
-            return
-        }
-
-        if ((await this.checkLake(projectFolder)) === 'LakeNotInstalled') {
             return
         }
 
@@ -292,16 +288,6 @@ Open this project instead?`
             // This kills the extension host, so it has to be the last command
             await commands.executeCommand('vscode.openFolder', projectFolder.asUri())
         }
-    }
-
-    private async checkLake(projectFolder: FileUri): Promise<'LakeInstalled' | 'LakeNotInstalled'> {
-        if (!(await diagnose(this.channel, projectFolder).checkLakeAvailable())) {
-            const message = `Lean's package manager Lake is not installed. This likely means that Lean itself is also not installed.
-Click the following link to learn how to install Lean: [(Show Setup Guide)](command:lean4.setup.showSetupGuide)`
-            displayError(message)
-            return 'LakeNotInstalled'
-        }
-        return 'LakeInstalled'
     }
 
     dispose() {

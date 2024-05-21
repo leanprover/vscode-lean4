@@ -58,11 +58,8 @@ export enum PreconditionCheckResult {
     Fatal = 2,
 }
 
-export function worstPreconditionViolation(
-    a: PreconditionCheckResult,
-    b: PreconditionCheckResult,
-): PreconditionCheckResult {
-    return Math.max(a, b)
+export function worstPreconditionViolation(...results: PreconditionCheckResult[]): PreconditionCheckResult {
+    return Math.max(...results)
 }
 
 export function versionQueryResult(executionResult: ExecutionResult, versionRegex: RegExp): VersionQueryResult {
@@ -225,7 +222,7 @@ export class SetupDiagnoser {
         return { kind: 'ValidProjectSetup', projectFolder: this.cwdUri }
     }
 
-    async projectLeanVersion(): Promise<LeanVersionDiagnosis> {
+    async leanVersion(): Promise<LeanVersionDiagnosis> {
         const leanVersionResult = await this.queryLeanVersion()
         return checkLeanVersion(leanVersionResult)
     }
@@ -342,7 +339,7 @@ export async function performFullDiagnosis(
         isCurlAvailable: await diagnose.checkCurlAvailable(),
         isGitAvailable: await diagnose.checkGitAvailable(),
         elanVersionDiagnosis: await diagnose.elanVersion(),
-        leanVersionDiagnosis: await diagnose.projectLeanVersion(),
+        leanVersionDiagnosis: await diagnose.leanVersion(),
         projectSetupDiagnosis: await diagnose.projectSetup(),
         elanShowOutput: await diagnose.queryElanShow(),
     }
