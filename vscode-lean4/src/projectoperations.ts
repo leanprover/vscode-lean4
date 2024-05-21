@@ -189,12 +189,11 @@ export class ProjectOperationProvider implements Disposable {
                 dependencyChoice.name,
                 'lean-toolchain',
             )
-            const dependencyToolchainResult: string | 'DoNotUpdate' | 'Cancelled' =
-                await this.determineDependencyToolchain(
-                    localToolchainPath,
-                    dependencyToolchainPath,
-                    dependencyChoice.name,
-                )
+            const dependencyToolchainResult: string = await this.determineDependencyToolchain(
+                localToolchainPath,
+                dependencyToolchainPath,
+                dependencyChoice.name,
+            )
             if (dependencyToolchainResult === 'Cancelled') {
                 return
             }
@@ -246,7 +245,7 @@ export class ProjectOperationProvider implements Disposable {
         localToolchainPath: string,
         dependencyToolchainPath: string,
         dependencyName: string,
-    ): Promise<string | 'DoNotUpdate' | 'Cancelled'> {
+    ): Promise<string> {
         const toolchainResult = await this.readToolchains(localToolchainPath, dependencyToolchainPath)
         if (!(toolchainResult instanceof Array)) {
             const errorFlavor =
