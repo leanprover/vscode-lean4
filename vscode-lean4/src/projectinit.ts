@@ -1,4 +1,5 @@
 import { commands, Disposable, OutputChannel, SaveDialogOptions, Uri, window, workspace } from 'vscode'
+import { checkLean4FeaturePreconditions } from './globalDiagnostics'
 import {
     batchExecute,
     batchExecuteWithProgress,
@@ -8,15 +9,19 @@ import {
 } from './utils/batch'
 import { FileUri } from './utils/exturi'
 import { lake } from './utils/lake'
+import { LeanInstaller } from './utils/leanInstaller'
 import { displayError, displayInformationWithInput } from './utils/notifs'
 import { checkParentFoldersForLeanProject, isValidLeanProject } from './utils/projectInfo'
-import { diagnose } from './utils/setupDiagnostics'
+import { diagnose, PreconditionCheckResult } from './utils/setupDiagnostics'
 import path = require('path')
 
 export class ProjectInitializationProvider implements Disposable {
     private subscriptions: Disposable[] = []
 
-    constructor(private channel: OutputChannel) {
+    constructor(
+        private channel: OutputChannel,
+        private installer: LeanInstaller,
+    ) {
         this.subscriptions.push(
             commands.registerCommand('lean4.project.createStandaloneProject', () => this.createStandaloneProject()),
             commands.registerCommand('lean4.project.createMathlibProject', () => this.createMathlibProject()),
@@ -102,7 +107,8 @@ export class ProjectInitializationProvider implements Disposable {
 
         await workspace.fs.createDirectory(projectFolder.asUri())
 
-        if ((await this.checkSetupDeps(projectFolder)) === 'IncompleteSetup') {
+        const preconditionCheckResult = await checkLean4FeaturePreconditions(this.installer, projectFolder)
+        if (preconditionCheckResult === PreconditionCheckResult.Fatal) {
             return 'DidNotComplete'
         }
 
@@ -178,6 +184,11 @@ export class ProjectInitializationProvider implements Disposable {
             projectFolder = parentProjectFolder
         }
 
+        const preconditionCheckResult = await checkLean4FeaturePreconditions(this.installer, projectFolder)
+        if (preconditionCheckResult === PreconditionCheckResult.Fatal) {
+            return
+        }
+
         // This kills the extension host, so it has to be the last command
         await commands.executeCommand('vscode.openFolder', projectFolder.asUri())
     }
@@ -205,10 +216,6 @@ Open this project instead?`
     }
 
     private async cloneProject() {
-        if ((await this.checkGit()) === 'GitNotInstalled') {
-            return
-        }
-
         const projectUri: string | undefined = await window.showInputBox({
             title: 'URL Input',
             value: 'https://github.com/leanprover-community/mathlib4',
@@ -223,6 +230,13 @@ Open this project instead?`
             title: 'Create a new project folder to clone existing Lean 4 project into',
         })
         if (projectFolder === undefined) {
+            return
+        }
+
+        await workspace.fs.createDirectory(projectFolder.asUri())
+
+        const preconditionCheckResult = await checkLean4FeaturePreconditions(this.installer, projectFolder)
+        if (preconditionCheckResult === PreconditionCheckResult.Fatal) {
             return
         }
 
@@ -278,26 +292,6 @@ Open this project instead?`
             // This kills the extension host, so it has to be the last command
             await commands.executeCommand('vscode.openFolder', projectFolder.asUri())
         }
-    }
-
-    private async checkSetupDeps(projectFolder: FileUri): Promise<'CompleteSetup' | 'IncompleteSetup'> {
-        if ((await this.checkGit(projectFolder)) === 'GitNotInstalled') {
-            return 'IncompleteSetup'
-        }
-        if ((await this.checkLake(projectFolder)) === 'LakeNotInstalled') {
-            return 'IncompleteSetup'
-        }
-        return 'CompleteSetup'
-    }
-
-    private async checkGit(projectFolder?: FileUri | undefined): Promise<'GitInstalled' | 'GitNotInstalled'> {
-        if (!(await diagnose(this.channel, projectFolder).checkGitAvailable())) {
-            const message = `Git is not installed. Lean uses Git to download and install specific versions of Lean packages.
-Click the following link to learn how to install Git: [(Show Setup Guide)](command:lean4.setup.showSetupGuide)`
-            displayError(message)
-            return 'GitNotInstalled'
-        }
-        return 'GitInstalled'
     }
 
     private async checkLake(projectFolder: FileUri): Promise<'LakeInstalled' | 'LakeNotInstalled'> {

@@ -79,13 +79,12 @@ function activateAlwaysEnabledFeatures(context: ExtensionContext): AlwaysEnabled
         commands.registerCommand('lean4.troubleshooting.showOutput', () => outputChannel.show(true)),
     )
 
-    const projectInitializationProvider = new ProjectInitializationProvider(outputChannel)
-    context.subscriptions.push(projectInitializationProvider)
     const defaultToolchain = getDefaultLeanVersion()
-
     const installer = new LeanInstaller(outputChannel, defaultToolchain)
-
     context.subscriptions.push(commands.registerCommand('lean4.setup.installElan', () => installer.installElan()))
+
+    const projectInitializationProvider = new ProjectInitializationProvider(outputChannel, installer)
+    context.subscriptions.push(projectInitializationProvider)
 
     const checkForExtensionConflict = (doc: TextDocument) => {
         const isLean3ExtensionInstalled = extensions.getExtension('jroesch.lean') !== undefined
