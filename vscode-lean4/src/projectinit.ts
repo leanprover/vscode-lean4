@@ -6,7 +6,6 @@ import {
     ExecutionExitCode,
     ExecutionResult,
 } from './utils/batch'
-import { elanSelfUpdate } from './utils/elan'
 import { FileUri } from './utils/exturi'
 import { lake } from './utils/lake'
 import { displayError, displayInformationWithInput } from './utils/notifs'
@@ -106,9 +105,6 @@ export class ProjectInitializationProvider implements Disposable {
         if ((await this.checkSetupDeps(projectFolder)) === 'IncompleteSetup') {
             return 'DidNotComplete'
         }
-
-        // This can fail silently in setups without Elan.
-        await elanSelfUpdate(this.channel)
 
         const projectName: string = path.basename(projectFolder.fsPath)
         const result: ExecutionResult = await lake(this.channel, projectFolder, toolchain).initProject(

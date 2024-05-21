@@ -115,6 +115,11 @@ class GlobalDiagnosticsProvider {
                 if (updateElanChoice === undefined) {
                     return false
                 }
+                if (elanDiagnosis.currentVersion.compare('3.1.0') === 0) {
+                    // `elan self update` was broken in elan 3.1.0, so we need to take a different approach to updating elan here.
+                    const installElanResult = await this.installer.installElan()
+                    return installElanResult !== 'InstallationFailed'
+                }
                 const elanSelfUpdateResult = await elanSelfUpdate(this.channel)
                 if (elanSelfUpdateResult.exitCode !== ExecutionExitCode.Success) {
                     displayResultError(
