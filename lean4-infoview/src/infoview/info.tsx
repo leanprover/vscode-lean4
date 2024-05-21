@@ -327,7 +327,7 @@ function InfoDisplay(props0: InfoDisplayProps & InfoPinnable) {
  * to avoid flickering when the cursor moved. Otherwise, the component is re-initialised and the
  * goal states reset to `undefined` on cursor moves.
  */
-export type InfoProps = InfoPinnable & { pos?: DocumentPosition }
+export type InfoProps = InfoPinnable & { pos: DocumentPosition }
 
 /** Fetches info from the server and renders an {@link InfoDisplay}. */
 export function Info(props: InfoProps) {
@@ -354,8 +354,7 @@ function useIsProcessingAt(p: DocumentPosition): boolean {
 function InfoAux(props: InfoProps) {
     const config = React.useContext(ConfigContext)
 
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const pos = props.pos!
+    const pos = props.pos
     const rpcSess = useRpcSessionAtPos(pos)
 
     // Compute the LSP diagnostics at this info's position. We try to ensure that if these remain
