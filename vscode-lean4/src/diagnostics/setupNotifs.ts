@@ -17,21 +17,45 @@ import {
     displayWarningWithSetupGuide,
 } from '../utils/notifs'
 
-export enum PreconditionCheckResult {
-    Fulfilled = 0,
-    Warning = 1,
-    Fatal = 2,
+export type PreconditionCheckResult = 'Fulfilled' | 'Warning' | 'Fatal'
+
+export function preconditionCheckResultToSeverity(result: PreconditionCheckResult): 0 | 1 | 2 {
+    switch (result) {
+        case 'Fulfilled':
+            return 0
+        case 'Warning':
+            return 1
+        case 'Fatal':
+            return 2
+    }
+}
+
+export function severityToPreconditionCheckResult(severity: 0 | 1 | 2): PreconditionCheckResult {
+    switch (severity) {
+        case 0:
+            return 'Fulfilled'
+        case 1:
+            return 'Warning'
+        case 2:
+            return 'Fatal'
+    }
 }
 
 export function worstPreconditionViolation(...results: PreconditionCheckResult[]): PreconditionCheckResult {
-    return Math.max(...results)
+    let worstViolation: PreconditionCheckResult = 'Fulfilled'
+    for (const r of results) {
+        if (preconditionCheckResultToSeverity(r) > preconditionCheckResultToSeverity(worstViolation)) {
+            worstViolation = r
+        }
+    }
+    return worstViolation
 }
 
 export type SetupWarningOptions = { modal: true } | { modal: false; finalizer?: (() => void) | undefined }
 
 export function displaySetupError(message: string, finalizer?: (() => void) | undefined): PreconditionCheckResult {
     displayError(message, finalizer)
-    return PreconditionCheckResult.Fatal
+    return 'Fatal'
 }
 
 export async function displaySetupErrorWithInput<T extends string>(
@@ -48,7 +72,7 @@ export function displaySetupErrorWithOptionalInput<T extends string>(
     finalizer?: (() => void) | undefined,
 ): PreconditionCheckResult {
     displayErrorWithOptionalInput(message, input, action, finalizer)
-    return PreconditionCheckResult.Fatal
+    return 'Fatal'
 }
 
 export function displaySetupErrorWithOutput(
@@ -56,7 +80,7 @@ export function displaySetupErrorWithOutput(
     finalizer?: (() => void) | undefined,
 ): PreconditionCheckResult {
     displayErrorWithOutput(message, finalizer)
-    return PreconditionCheckResult.Fatal
+    return 'Fatal'
 }
 
 export function displaySetupErrorWithSetupGuide(
@@ -64,7 +88,7 @@ export function displaySetupErrorWithSetupGuide(
     finalizer?: (() => void) | undefined,
 ): PreconditionCheckResult {
     displayErrorWithSetupGuide(message, finalizer)
-    return PreconditionCheckResult.Fatal
+    return 'Fatal'
 }
 
 export function displayDependencySetupError(missingDeps: string[]): PreconditionCheckResult {
@@ -80,7 +104,7 @@ export function displayDependencySetupError(missingDeps: string[]): Precondition
 
     const errorMessage = `${missingDepMessage}. Please read the Setup Guide on how to install missing dependencies and set up Lean 4.`
     displaySetupErrorWithSetupGuide(errorMessage)
-    return PreconditionCheckResult.Fatal
+    return 'Fatal'
 }
 
 export async function displayElanSetupError(
@@ -88,7 +112,7 @@ export async function displayElanSetupError(
     reason: string,
 ): Promise<PreconditionCheckResult> {
     const isElanInstalled = await installer.displayInstallElanPrompt(reason, 'Error')
-    return isElanInstalled ? PreconditionCheckResult.Fulfilled : PreconditionCheckResult.Fatal
+    return isElanInstalled ? 'Fulfilled' : 'Fatal'
 }
 
 export async function displayElanOutdatedSetupError(
@@ -97,7 +121,7 @@ export async function displayElanOutdatedSetupError(
     recommendedVersion: SemVer,
 ): Promise<PreconditionCheckResult> {
     const isElanUpToDate = await installer.displayUpdateElanPrompt(currentVersion, recommendedVersion, 'Error')
-    return isElanUpToDate ? PreconditionCheckResult.Fulfilled : PreconditionCheckResult.Fatal
+    return isElanUpToDate ? 'Fulfilled' : 'Fatal'
 }
 
 export async function displaySetupWarning(
@@ -105,14 +129,14 @@ export async function displaySetupWarning(
     options: SetupWarningOptions = { modal: false },
 ): Promise<PreconditionCheckResult> {
     if (!shouldShowSetupWarnings()) {
-        return PreconditionCheckResult.Warning
+        return 'Warning'
     }
     if (options.modal) {
         const choice = await displayModalWarning(message)
-        return choice === 'Proceed' ? PreconditionCheckResult.Warning : PreconditionCheckResult.Fatal
+        return choice === 'Proceed' ? 'Warning' : 'Fatal'
     }
     displayWarning(message, options.finalizer)
-    return PreconditionCheckResult.Warning
+    return 'Warning'
 }
 
 export async function displaySetupWarningWithInput<T extends string>(
@@ -132,10 +156,10 @@ export function displaySetupWarningWithOptionalInput<T extends string>(
     finalizer?: (() => void) | undefined,
 ): PreconditionCheckResult {
     if (!shouldShowSetupWarnings()) {
-        return PreconditionCheckResult.Warning
+        return 'Warning'
     }
     displayWarningWithOptionalInput(message, input, action, finalizer)
-    return PreconditionCheckResult.Warning
+    return 'Warning'
 }
 
 export async function displaySetupWarningWithOutput(
@@ -143,14 +167,14 @@ export async function displaySetupWarningWithOutput(
     options: SetupWarningOptions = { modal: false },
 ): Promise<PreconditionCheckResult> {
     if (!shouldShowSetupWarnings()) {
-        return PreconditionCheckResult.Warning
+        return 'Warning'
     }
     if (options.modal) {
         const choice = await displayModalWarningWithOutput(message)
-        return choice === 'Proceed' ? PreconditionCheckResult.Warning : PreconditionCheckResult.Fatal
+        return choice === 'Proceed' ? 'Warning' : 'Fatal'
     }
     displayWarningWithOutput(message, options.finalizer)
-    return PreconditionCheckResult.Warning
+    return 'Warning'
 }
 
 export async function displaySetupWarningWithSetupGuide(
@@ -158,14 +182,14 @@ export async function displaySetupWarningWithSetupGuide(
     options: SetupWarningOptions = { modal: false },
 ): Promise<PreconditionCheckResult> {
     if (!shouldShowSetupWarnings()) {
-        return PreconditionCheckResult.Warning
+        return 'Warning'
     }
     if (options.modal) {
         const choice = await displayModalWarningWithSetupGuide(message)
-        return choice === 'Proceed' ? PreconditionCheckResult.Warning : PreconditionCheckResult.Fatal
+        return choice === 'Proceed' ? 'Warning' : 'Fatal'
     }
     displayWarningWithSetupGuide(message, options.finalizer)
-    return PreconditionCheckResult.Warning
+    return 'Warning'
 }
 
 export async function displayElanSetupWarning(
@@ -173,10 +197,10 @@ export async function displayElanSetupWarning(
     reason: string,
 ): Promise<PreconditionCheckResult> {
     if (!shouldShowSetupWarnings()) {
-        return PreconditionCheckResult.Warning
+        return 'Warning'
     }
     const isElanInstalled = await installer.displayInstallElanPrompt(reason, 'Warning')
-    return isElanInstalled ? PreconditionCheckResult.Fulfilled : PreconditionCheckResult.Warning
+    return isElanInstalled ? 'Fulfilled' : 'Warning'
 }
 
 export async function displayElanOutdatedSetupWarning(
@@ -185,8 +209,8 @@ export async function displayElanOutdatedSetupWarning(
     recommendedVersion: SemVer,
 ): Promise<PreconditionCheckResult> {
     if (!shouldShowSetupWarnings()) {
-        return PreconditionCheckResult.Warning
+        return 'Warning'
     }
     const isElanUpToDate = await installer.displayUpdateElanPrompt(currentVersion, recommendedVersion, 'Warning')
-    return isElanUpToDate ? PreconditionCheckResult.Fulfilled : PreconditionCheckResult.Warning
+    return isElanUpToDate ? 'Fulfilled' : 'Warning'
 }

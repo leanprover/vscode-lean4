@@ -142,7 +142,7 @@ async function activateLean4Features(
     const docUri = toExtUriOrError(doc.uri)
     const cwd = docUri.scheme === 'file' ? await findLeanProjectRoot(docUri) : undefined
     const preconditionCheckResult = await checkLean4FeaturePreconditions(installer, cwd)
-    if (preconditionCheckResult === PreconditionCheckResult.Fatal) {
+    if (preconditionCheckResult === 'Fatal') {
         return undefined
     }
 

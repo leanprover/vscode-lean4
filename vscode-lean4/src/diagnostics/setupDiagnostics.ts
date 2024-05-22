@@ -20,12 +20,12 @@ import {
 export async function checkAll(
     ...checks: (() => Promise<PreconditionCheckResult>)[]
 ): Promise<PreconditionCheckResult> {
-    let worstViolation = PreconditionCheckResult.Fulfilled
+    let worstViolation: PreconditionCheckResult = 'Fulfilled'
     for (const check of checks) {
         const result = await check()
         worstViolation = worstPreconditionViolation(worstViolation, result)
-        if (worstViolation === PreconditionCheckResult.Fatal) {
-            return PreconditionCheckResult.Fatal
+        if (worstViolation === 'Fatal') {
+            return 'Fatal'
         }
     }
     return worstViolation
@@ -64,10 +64,10 @@ export async function checkAreDependenciesInstalled(
         missingDeps.push('git')
     }
     if (missingDeps.length === 0) {
-        return PreconditionCheckResult.Fulfilled
+        return 'Fulfilled'
     }
     displayDependencySetupError(missingDeps)
-    return PreconditionCheckResult.Fatal
+    return 'Fatal'
 }
 
 export async function checkIsLean4Installed(
@@ -77,7 +77,7 @@ export async function checkIsLean4Installed(
     const leanVersionResult = await diagnose(installer.getOutputChannel(), cwdUri).queryLeanVersion()
     switch (leanVersionResult.kind) {
         case 'Success':
-            return PreconditionCheckResult.Fulfilled
+            return 'Fulfilled'
 
         case 'CommandError':
             return displaySetupErrorWithOutput(`Error while checking Lean version: ${leanVersionResult.message}`)
@@ -122,7 +122,7 @@ export async function checkIsElanUpToDate(
             )
 
         case 'UpToDate':
-            return PreconditionCheckResult.Fulfilled
+            return 'Fulfilled'
     }
 }
 
@@ -150,7 +150,7 @@ export async function checkIsValidProjectFolder(
             }
 
         case 'ValidProjectSetup':
-            return PreconditionCheckResult.Fulfilled
+            return 'Fulfilled'
     }
 }
 
@@ -190,7 +190,7 @@ export async function checkIsLeanVersionUpToDate(
             )
 
         case 'UpToDate':
-            return PreconditionCheckResult.Fulfilled
+            return 'Fulfilled'
     }
 }
 
@@ -214,6 +214,6 @@ export async function checkIsLakeInstalledCorrectly(
             )
 
         case 'Success':
-            return PreconditionCheckResult.Fulfilled
+            return 'Fulfilled'
     }
 }

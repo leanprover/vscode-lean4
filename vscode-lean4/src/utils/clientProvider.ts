@@ -23,7 +23,7 @@ async function checkLean4ProjectPreconditions(
         () => checkIsLeanVersionUpToDate(channel, folderUri, { modal: false }),
         async () => {
             if (!(await willUseLakeServer(folderUri))) {
-                return PreconditionCheckResult.Fulfilled
+                return 'Fulfilled'
             }
             return await checkIsLakeInstalledCorrectly(channel, folderUri, {})
         },
@@ -120,7 +120,7 @@ export class LeanClientProvider implements Disposable {
                 const projectUri = await findLeanProjectRoot(uri)
 
                 const preconditionCheckResult = await checkLean4ProjectPreconditions(this.outputChannel, projectUri)
-                if (preconditionCheckResult !== PreconditionCheckResult.Fatal) {
+                if (preconditionCheckResult !== 'Fatal') {
                     logger.log('[ClientProvider] got lean version 4')
                     const [cached, client] = await this.ensureClient(uri)
                     if (cached && client) {
@@ -251,7 +251,7 @@ export class LeanClientProvider implements Disposable {
         this.pending.set(key, true)
 
         const preconditionCheckResult = await checkLean4ProjectPreconditions(this.outputChannel, folderUri)
-        if (preconditionCheckResult === PreconditionCheckResult.Fatal) {
+        if (preconditionCheckResult === 'Fatal') {
             this.pending.delete(key)
             return [false, undefined]
         }

@@ -147,7 +147,7 @@ export class ProjectInitializationProvider implements Disposable {
             projectFolder,
             toolchain,
         )
-        if (preconditionCheckResult === PreconditionCheckResult.Fatal) {
+        if (preconditionCheckResult === 'Fatal') {
             return 'DidNotComplete'
         }
 
@@ -273,7 +273,7 @@ Open this project instead?`
             this.installer.getOutputChannel(),
             projectFolder,
         )
-        if (preCloneCheckResult === PreconditionCheckResult.Fatal) {
+        if (preCloneCheckResult === 'Fatal') {
             return
         }
 
@@ -292,7 +292,7 @@ Open this project instead?`
         }
 
         const postCloneCheckResult = await checkPostCloneLean4ProjectPreconditions(this.installer, projectFolder)
-        if (postCloneCheckResult === PreconditionCheckResult.Fatal) {
+        if (postCloneCheckResult === 'Fatal') {
             return
         }
 
