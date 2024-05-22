@@ -219,7 +219,7 @@ export class SetupDiagnoser {
     private async runLeanCommand(executablePath: string, args: string[], title: string) {
         const leanArgs = [...args]
         if (this.toolchain !== undefined) {
-            leanArgs.push(`+${this.toolchain}`)
+            leanArgs.unshift(`+${this.toolchain}`)
         }
         return await this.runWithProgress(executablePath, leanArgs, title)
     }
