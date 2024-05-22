@@ -14,7 +14,7 @@ import {
     ExecutionExitCode,
     ExecutionResult,
 } from './utils/batch'
-import { ExtUri, FileUri } from './utils/exturi'
+import { ExtUri, extUriToCwdUri, FileUri } from './utils/exturi'
 import { lake } from './utils/lake'
 import { LeanInstaller } from './utils/leanInstaller'
 import { displayError, displayInformationWithInput } from './utils/notifs'
@@ -27,7 +27,7 @@ async function checkCreateLean4ProjectPreconditions(
     projectToolchain: string,
 ): Promise<PreconditionCheckResult> {
     const channel = installer.getOutputChannel()
-    const cwdUri = folderUri.scheme === 'file' ? folderUri : undefined
+    const cwdUri = extUriToCwdUri(folderUri)
     return await checkAll(
         () => checkAreDependenciesInstalled(channel, cwdUri),
         () => checkIsElanUpToDate(installer, cwdUri, { elanMustBeInstalled: true, modal: true }),
@@ -42,7 +42,7 @@ async function checkPreCloneLean4ProjectPreconditions(channel: OutputChannel, cw
 
 async function checkPostCloneLean4ProjectPreconditions(installer: LeanInstaller, folderUri: ExtUri) {
     const channel = installer.getOutputChannel()
-    const cwdUri = folderUri.scheme === 'file' ? folderUri : undefined
+    const cwdUri = extUriToCwdUri(folderUri)
     return await checkAll(
         () => checkIsElanUpToDate(installer, cwdUri, { elanMustBeInstalled: false, modal: true }),
         () => checkIsLeanVersionUpToDate(channel, folderUri, { modal: true }),

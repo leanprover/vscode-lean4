@@ -1,6 +1,6 @@
 import { SemVer } from 'semver'
 import { OutputChannel, commands } from 'vscode'
-import { ExtUri, FileUri } from '../utils/exturi'
+import { ExtUri, FileUri, extUriToCwdUri } from '../utils/exturi'
 import { LeanInstaller } from '../utils/leanInstaller'
 import { diagnose } from './setupDiagnoser'
 import {
@@ -130,8 +130,7 @@ export async function checkIsValidProjectFolder(
     channel: OutputChannel,
     folderUri: ExtUri,
 ): Promise<PreconditionCheckResult> {
-    const cwd = folderUri.scheme === 'file' ? folderUri : undefined
-    const projectSetupDiagnosis = await diagnose(channel, cwd).projectSetup()
+    const projectSetupDiagnosis = await diagnose(channel, extUriToCwdUri(folderUri)).projectSetup()
     switch (projectSetupDiagnosis.kind) {
         case 'SingleFile':
             return await displaySetupWarning(singleFileWarningMessage)
@@ -167,8 +166,11 @@ export async function checkIsLeanVersionUpToDate(
     } else {
         origin = 'Opened project'
     }
-    const cwd = folderUri.scheme === 'file' ? folderUri : undefined
-    const projectLeanVersionDiagnosis = await diagnose(channel, cwd, options.toolchainOverride).leanVersion()
+    const projectLeanVersionDiagnosis = await diagnose(
+        channel,
+        extUriToCwdUri(folderUri),
+        options.toolchainOverride,
+    ).leanVersion()
     switch (projectLeanVersionDiagnosis.kind) {
         case 'NotInstalled':
             return displaySetupErrorWithOutput("Error while checking Lean version: 'lean' command was not found.")
@@ -199,8 +201,11 @@ export async function checkIsLakeInstalledCorrectly(
     folderUri: ExtUri,
     options: { toolchainOverride?: string | undefined },
 ): Promise<PreconditionCheckResult> {
-    const cwd = folderUri.scheme === 'file' ? folderUri : undefined
-    const lakeVersionResult = await diagnose(channel, cwd, options.toolchainOverride).queryLakeVersion()
+    const lakeVersionResult = await diagnose(
+        channel,
+        extUriToCwdUri(folderUri),
+        options.toolchainOverride,
+    ).queryLakeVersion()
     switch (lakeVersionResult.kind) {
         case 'CommandNotFound':
             return displaySetupErrorWithOutput("Error while checking Lake version: 'lake' command was not found.")
