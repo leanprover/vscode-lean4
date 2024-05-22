@@ -149,17 +149,18 @@ export class LeanInstaller {
         }
     }
 
-    async displayInstallElanPrompt(reason: string, severity: NotificationSeverity): Promise<boolean> {
+    async displayInstallElanPrompt(severity: NotificationSeverity, reason: string | undefined): Promise<boolean> {
         if (!this.getPromptUser()) {
             // Used in tests
             await this.autoInstall()
             return true
         }
 
+        const reasonPrefix = reason ? reason + ' ' : ''
         const installElanItem = 'Install Elan and Lean 4'
         const installElanChoice = await displayNotificationWithInput(
             severity,
-            `${reason} Do you want to install Lean's version manager Elan and a recent stable version of Lean 4?`,
+            reasonPrefix + "Do you want to install Lean's version manager Elan and a recent stable version of Lean 4?",
             installElanItem,
         )
         if (installElanChoice === undefined) {
@@ -171,9 +172,9 @@ export class LeanInstaller {
     }
 
     async displayUpdateElanPrompt(
+        severity: NotificationSeverity,
         currentVersion: SemVer,
         recommendedVersion: SemVer,
-        severity: NotificationSeverity,
     ): Promise<boolean> {
         const updateElanItem = 'Update Elan'
         const updateElanChoice = await displayNotificationWithInput(
@@ -212,13 +213,13 @@ export class LeanInstaller {
         return true
     }
 
-    async autoInstall(): Promise<void> {
+    private async autoInstall(): Promise<void> {
         logger.log('[LeanInstaller] Installing Elan ...')
         await this.installElan()
         logger.log('[LeanInstaller] Elan installed')
     }
 
-    async installElan(): Promise<'Success' | 'InstallationFailed' | 'PendingInstallation'> {
+    private async installElan(): Promise<'Success' | 'InstallationFailed' | 'PendingInstallation'> {
         if (this.installing) {
             displayError('Elan is already being installed.')
             return 'PendingInstallation'

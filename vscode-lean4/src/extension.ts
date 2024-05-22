@@ -87,7 +87,11 @@ function activateAlwaysEnabledFeatures(context: ExtensionContext): AlwaysEnabled
 
     const defaultToolchain = getDefaultLeanVersion()
     const installer = new LeanInstaller(outputChannel, defaultToolchain)
-    context.subscriptions.push(commands.registerCommand('lean4.setup.installElan', () => installer.installElan()))
+    context.subscriptions.push(
+        commands.registerCommand('lean4.setup.installElan', () =>
+            installer.displayInstallElanPrompt('Information', undefined),
+        ),
+    )
 
     const projectInitializationProvider = new ProjectInitializationProvider(outputChannel, installer)
     context.subscriptions.push(projectInitializationProvider)

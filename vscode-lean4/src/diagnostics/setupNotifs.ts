@@ -111,7 +111,7 @@ export async function displayElanSetupError(
     installer: LeanInstaller,
     reason: string,
 ): Promise<PreconditionCheckResult> {
-    const isElanInstalled = await installer.displayInstallElanPrompt(reason, 'Error')
+    const isElanInstalled = await installer.displayInstallElanPrompt('Error', reason)
     return isElanInstalled ? 'Fulfilled' : 'Fatal'
 }
 
@@ -120,7 +120,7 @@ export async function displayElanOutdatedSetupError(
     currentVersion: SemVer,
     recommendedVersion: SemVer,
 ): Promise<PreconditionCheckResult> {
-    const isElanUpToDate = await installer.displayUpdateElanPrompt(currentVersion, recommendedVersion, 'Error')
+    const isElanUpToDate = await installer.displayUpdateElanPrompt('Error', currentVersion, recommendedVersion)
     return isElanUpToDate ? 'Fulfilled' : 'Fatal'
 }
 
@@ -199,7 +199,7 @@ export async function displayElanSetupWarning(
     if (!shouldShowSetupWarnings()) {
         return 'Warning'
     }
-    const isElanInstalled = await installer.displayInstallElanPrompt(reason, 'Warning')
+    const isElanInstalled = await installer.displayInstallElanPrompt('Warning', reason)
     return isElanInstalled ? 'Fulfilled' : 'Warning'
 }
 
@@ -211,6 +211,6 @@ export async function displayElanOutdatedSetupWarning(
     if (!shouldShowSetupWarnings()) {
         return 'Warning'
     }
-    const isElanUpToDate = await installer.displayUpdateElanPrompt(currentVersion, recommendedVersion, 'Warning')
+    const isElanUpToDate = await installer.displayUpdateElanPrompt('Warning', currentVersion, recommendedVersion)
     return isElanUpToDate ? 'Fulfilled' : 'Warning'
 }
