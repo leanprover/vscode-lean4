@@ -243,7 +243,7 @@ export class RpcSessions {
     }
 
     /**
-     * Returns an {@link RpcSessionAtPos} for the given position.
+     * Returns an {@link RpcSessionAtPos} for the given document and position.
      * Calling {@link connect} multiple times will return the same
      * session (with the same session ID).
      * A new session is only created if a fatal error occurs (the worker crashes)

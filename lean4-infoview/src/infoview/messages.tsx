@@ -12,7 +12,7 @@ import { LeanDiagnostic, RpcErrorCode } from '@leanprover/infoview-api'
 
 import { getInteractiveDiagnostics, InteractiveDiagnostic } from '@leanprover/infoview-api'
 import { Details } from './collapsing'
-import { ConfigContext, EditorContext, LspDiagnosticsContext } from './contexts'
+import { ConfigContext, EditorContext, LspDiagnosticsContext, PosContext } from './contexts'
 import { RpcContext, useRpcSessionAtPos } from './rpcSessions'
 import { InteractiveMessage } from './traceExplorer'
 import {
@@ -46,6 +46,10 @@ const MessageView = React.memo(({ uri, diag }: MessageViewProps) => {
           }[diag.severity]
         : ''
     const title = `${fname}:${line + 1}:${character}`
+    const startPos: DocumentPosition = React.useMemo(
+        () => ({ uri, ...(diag.fullRange?.start || diag.range.start) }),
+        [uri, diag.fullRange, diag.range],
+    )
     return (
         <details open>
             <summary className={severityClass + ' mv2 pointer'}>
@@ -77,7 +81,9 @@ const MessageView = React.memo(({ uri, diag }: MessageViewProps) => {
             </summary>
             <div className="ml1" ref={node}>
                 <pre className="font-code pre-wrap">
-                    <InteractiveMessage fmt={diag.message} />
+                    <PosContext.Provider value={startPos}>
+                        <InteractiveMessage fmt={diag.message} />
+                    </PosContext.Provider>
                 </pre>
             </div>
         </details>
