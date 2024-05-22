@@ -3,9 +3,16 @@ import * as path from 'path'
 import { commands, Disposable, ExtensionContext, extensions, TextDocument, window, workspace } from 'vscode'
 import { AbbreviationFeature } from './abbreviation'
 import { getDefaultLeanVersion } from './config'
+import { FullDiagnosticsProvider } from './diagnostics/fullDiagnostics'
+import {
+    checkAll,
+    checkAreDependenciesInstalled,
+    checkIsElanUpToDate,
+    checkIsLean4Installed,
+} from './diagnostics/setupDiagnostics'
+import { PreconditionCheckResult } from './diagnostics/setupNotifs'
 import { DocViewProvider } from './docview'
 import { AlwaysEnabledFeatures, Exports, Lean4EnabledFeatures } from './exports'
-import { checkLean4FeaturePreconditions } from './globalDiagnostics'
 import { InfoProvider } from './infoview'
 import { LeanClient } from './leanclient'
 import { ProjectInitializationProvider } from './projectinit'
@@ -14,12 +21,11 @@ import { LeanTaskGutter } from './taskgutter'
 import { LeanClientProvider } from './utils/clientProvider'
 import { LeanConfigWatchService } from './utils/configwatchservice'
 import { PATH, setProcessEnvPATH } from './utils/envPath'
-import { isExtUri, toExtUriOrError } from './utils/exturi'
+import { FileUri, isExtUri, toExtUriOrError } from './utils/exturi'
 import { LeanInstaller } from './utils/leanInstaller'
 import { displayWarning } from './utils/notifs'
 import { PathExtensionProvider } from './utils/pathExtensionProvider'
 import { findLeanProjectRoot } from './utils/projectInfo'
-import { FullDiagnosticsProvider, PreconditionCheckResult } from './utils/setupDiagnostics'
 
 async function setLeanFeatureSetActive(isActive: boolean) {
     await commands.executeCommand('setContext', 'lean4.isLeanFeatureSetActive', isActive)
@@ -111,6 +117,21 @@ function activateAbbreviationFeature(context: ExtensionContext, docView: DocView
     docView.setAbbreviations(abbrev.abbreviations.symbolsByAbbreviation)
     context.subscriptions.push(abbrev)
     return abbrev
+}
+
+async function checkLean4FeaturePreconditions(
+    installer: LeanInstaller,
+    cwdUri: FileUri | undefined,
+): Promise<PreconditionCheckResult> {
+    return await checkAll(
+        () => checkAreDependenciesInstalled(installer.getOutputChannel(), cwdUri),
+        () => checkIsLean4Installed(installer, cwdUri),
+        () =>
+            checkIsElanUpToDate(installer, cwdUri, {
+                elanMustBeInstalled: false,
+                modal: false,
+            }),
+    )
 }
 
 async function activateLean4Features(

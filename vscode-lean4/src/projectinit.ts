@@ -1,5 +1,12 @@
 import { commands, Disposable, OutputChannel, SaveDialogOptions, Uri, window, workspace } from 'vscode'
-import { checkLean4ProjectInitPreconditions } from './projectInitDiagnostics'
+import {
+    checkAll,
+    checkAreDependenciesInstalled,
+    checkIsElanUpToDate,
+    checkIsLakeInstalledCorrectly,
+    checkIsLeanVersionUpToDate,
+} from './diagnostics/setupDiagnostics'
+import { PreconditionCheckResult } from './diagnostics/setupNotifs'
 import {
     batchExecute,
     batchExecuteWithProgress,
@@ -7,13 +14,41 @@ import {
     ExecutionExitCode,
     ExecutionResult,
 } from './utils/batch'
-import { FileUri } from './utils/exturi'
+import { ExtUri, FileUri } from './utils/exturi'
 import { lake } from './utils/lake'
 import { LeanInstaller } from './utils/leanInstaller'
 import { displayError, displayInformationWithInput } from './utils/notifs'
 import { checkParentFoldersForLeanProject, isValidLeanProject } from './utils/projectInfo'
-import { PreconditionCheckResult } from './utils/setupDiagnostics'
 import path = require('path')
+
+async function checkCreateLean4ProjectPreconditions(
+    installer: LeanInstaller,
+    folderUri: ExtUri,
+    projectToolchain: string,
+): Promise<PreconditionCheckResult> {
+    const channel = installer.getOutputChannel()
+    const cwdUri = folderUri.scheme === 'file' ? folderUri : undefined
+    return await checkAll(
+        () => checkAreDependenciesInstalled(channel, cwdUri),
+        () => checkIsElanUpToDate(installer, cwdUri, { elanMustBeInstalled: true, modal: true }),
+        () => checkIsLeanVersionUpToDate(channel, folderUri, { toolchainOverride: projectToolchain, modal: true }),
+        () => checkIsLakeInstalledCorrectly(channel, folderUri, { toolchainOverride: projectToolchain }),
+    )
+}
+
+async function checkPreCloneLean4ProjectPreconditions(channel: OutputChannel, cwdUri: FileUri | undefined) {
+    return await checkAll(() => checkAreDependenciesInstalled(channel, cwdUri))
+}
+
+async function checkPostCloneLean4ProjectPreconditions(installer: LeanInstaller, folderUri: ExtUri) {
+    const channel = installer.getOutputChannel()
+    const cwdUri = folderUri.scheme === 'file' ? folderUri : undefined
+    return await checkAll(
+        () => checkIsElanUpToDate(installer, cwdUri, { elanMustBeInstalled: false, modal: true }),
+        () => checkIsLeanVersionUpToDate(channel, folderUri, { modal: true }),
+        () => checkIsLakeInstalledCorrectly(channel, folderUri, {}),
+    )
+}
 
 export class ProjectInitializationProvider implements Disposable {
     private subscriptions: Disposable[] = []
@@ -107,7 +142,11 @@ export class ProjectInitializationProvider implements Disposable {
 
         await workspace.fs.createDirectory(projectFolder.asUri())
 
-        const preconditionCheckResult = await checkLean4ProjectInitPreconditions(this.installer, projectFolder)
+        const preconditionCheckResult = await checkCreateLean4ProjectPreconditions(
+            this.installer,
+            projectFolder,
+            toolchain,
+        )
         if (preconditionCheckResult === PreconditionCheckResult.Fatal) {
             return 'DidNotComplete'
         }
@@ -184,11 +223,6 @@ export class ProjectInitializationProvider implements Disposable {
             projectFolder = parentProjectFolder
         }
 
-        const preconditionCheckResult = await checkLean4ProjectInitPreconditions(this.installer, projectFolder)
-        if (preconditionCheckResult === PreconditionCheckResult.Fatal) {
-            return
-        }
-
         // This kills the extension host, so it has to be the last command
         await commands.executeCommand('vscode.openFolder', projectFolder.asUri())
     }
@@ -235,8 +269,11 @@ Open this project instead?`
 
         await workspace.fs.createDirectory(projectFolder.asUri())
 
-        const preconditionCheckResult = await checkLean4ProjectInitPreconditions(this.installer, projectFolder)
-        if (preconditionCheckResult === PreconditionCheckResult.Fatal) {
+        const preCloneCheckResult = await checkPreCloneLean4ProjectPreconditions(
+            this.installer.getOutputChannel(),
+            projectFolder,
+        )
+        if (preCloneCheckResult === PreconditionCheckResult.Fatal) {
             return
         }
 
@@ -251,6 +288,11 @@ Open this project instead?`
         }
         if (result.exitCode !== ExecutionExitCode.Success) {
             displayResultError(result, 'Cannot download project.')
+            return
+        }
+
+        const postCloneCheckResult = await checkPostCloneLean4ProjectPreconditions(this.installer, projectFolder)
+        if (postCloneCheckResult === PreconditionCheckResult.Fatal) {
             return
         }
 

@@ -1,9 +1,16 @@
+import { SemVer } from 'semver'
 import { EventEmitter, OutputChannel, TerminalOptions, window } from 'vscode'
 import { getPowerShellPath, isRunningTest } from '../config'
-import { batchExecute } from './batch'
+import { ExecutionExitCode, batchExecute, displayResultError } from './batch'
+import { elanSelfUpdate } from './elan'
 import { ExtUri, FileUri } from './exturi'
 import { logger } from './logger'
-import { displayError, displayErrorWithOptionalInput } from './notifs'
+import {
+    NotificationSeverity,
+    displayError,
+    displayErrorWithOptionalInput,
+    displayNotificationWithInput,
+} from './notifs'
 
 export class LeanVersion {
     version: string
@@ -140,6 +147,69 @@ export class LeanInstaller {
         } catch (err) {
             return false
         }
+    }
+
+    async displayInstallElanPrompt(reason: string, severity: NotificationSeverity): Promise<boolean> {
+        if (!this.getPromptUser()) {
+            // Used in tests
+            await this.autoInstall()
+            return true
+        }
+
+        const installElanItem = 'Install Elan and Lean 4'
+        const installElanChoice = await displayNotificationWithInput(
+            severity,
+            `${reason} Do you want to install Lean's version manager Elan and a recent stable version of Lean 4?`,
+            installElanItem,
+        )
+        if (installElanChoice === undefined) {
+            return false
+        }
+
+        await this.installElan()
+        return true
+    }
+
+    async displayUpdateElanPrompt(
+        currentVersion: SemVer,
+        recommendedVersion: SemVer,
+        severity: NotificationSeverity,
+    ): Promise<boolean> {
+        const updateElanItem = 'Update Elan'
+        const updateElanChoice = await displayNotificationWithInput(
+            severity,
+            `Lean's version manager Elan is outdated: the installed version is ${currentVersion.toString()}, but a version of ${recommendedVersion.toString()} is recommended. Do you want to update Elan?`,
+            updateElanItem,
+        )
+        if (updateElanChoice === undefined) {
+            return false
+        }
+
+        if (currentVersion.compare('3.1.0') === 0) {
+            // `elan self update` was broken in elan 3.1.0, so we need to take a different approach to updating elan here.
+            const installElanResult = await this.installElan()
+            switch (installElanResult) {
+                case 'PendingInstallation':
+                    displayError('Elan is already being installed. Please wait until the installation has finished.')
+                    return false
+                case 'InstallationFailed':
+                    displayError('Cannot install Elan due to an error. Check the terminal for details.')
+                    return false
+                case 'Success':
+                    return true
+            }
+        }
+
+        const elanSelfUpdateResult = await elanSelfUpdate(this.outputChannel)
+        if (elanSelfUpdateResult.exitCode !== ExecutionExitCode.Success) {
+            displayResultError(
+                elanSelfUpdateResult,
+                "Cannot update Elan. If you suspect that this is due to the way that you have set up Elan (e.g. from a package repository that ships an outdated version of Elan), you can disable these warnings using the 'Lean4: Show Setup Warnings' setting under 'File' > 'Preferences' > 'Settings'.",
+            )
+            return false
+        }
+
+        return true
     }
 
     async autoInstall(): Promise<void> {

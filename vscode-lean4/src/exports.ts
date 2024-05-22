@@ -1,11 +1,11 @@
 import { OutputChannel } from 'vscode'
+import { FullDiagnosticsProvider } from './diagnostics/fullDiagnostics'
 import { DocViewProvider } from './docview'
 import { InfoProvider } from './infoview'
 import { ProjectInitializationProvider } from './projectinit'
 import { ProjectOperationProvider } from './projectoperations'
 import { LeanClientProvider } from './utils/clientProvider'
 import { LeanInstaller } from './utils/leanInstaller'
-import { FullDiagnosticsProvider } from './utils/setupDiagnostics'
 
 export interface AlwaysEnabledFeatures {
     docView: DocViewProvider
