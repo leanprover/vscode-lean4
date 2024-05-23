@@ -182,7 +182,7 @@ function InteractiveMessageTag({ tag: embed }: InteractiveTagProps<MsgEmbed>): J
             />
         )
     else if ('widget' in embed)
-        return <DynamicComponent hash={embed.widget.javascriptHash} props={embed.widget.props} />
+        return <DynamicComponent hash={embed.widget.wi.javascriptHash} props={embed.widget.wi.props} />
     else if ('lazyTrace' in embed)
         return <LazyTrace col={embed.lazyTrace[0]} cls={embed.lazyTrace[1]} msg={embed.lazyTrace[2]} />
     else if ('trace' in embed) return <Trace {...embed.trace} />

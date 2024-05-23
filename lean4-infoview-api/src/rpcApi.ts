@@ -112,7 +112,7 @@ export type MessageData = RpcPtr<'Lean.MessageData'>
 export type MsgEmbed =
     | { expr: CodeWithInfos }
     | { goal: InteractiveGoal }
-    | { widget: UserWidgetInstance }
+    | { widget: { wi: UserWidgetInstance; alt: TaggedText<MsgEmbed> } }
     | { trace: TraceEmbed }
     | { lazyTrace: [number, Name, MessageData] } // old collapsible trace support
 
