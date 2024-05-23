@@ -157,3 +157,10 @@ export function extUriEquals(a: ExtUri, b: ExtUri): boolean {
     }
     return false
 }
+
+export function extUriToCwdUri(uri: ExtUri): FileUri | undefined {
+    if (uri.scheme === 'untitled') {
+        return undefined
+    }
+    return uri
+}

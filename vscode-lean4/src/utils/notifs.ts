@@ -7,38 +7,55 @@ import { MessageOptions, commands, window } from 'vscode'
 // - Notifications with optional input should never block the extension
 // - Notifications that block the extension must be modal
 
+export type NotificationSeverity = 'Information' | 'Warning' | 'Error'
+
 type Notification = <T extends string>(
     message: string,
     options: MessageOptions,
     ...items: T[]
 ) => Thenable<T | undefined>
 
-function displayNotification(notif: Notification, message: string, finalizer?: (() => void) | undefined) {
+function toNotif(severity: NotificationSeverity): Notification {
+    switch (severity) {
+        case 'Information':
+            return window.showInformationMessage
+        case 'Warning':
+            return window.showWarningMessage
+        case 'Error':
+            return window.showErrorMessage
+    }
+}
+
+export function displayNotification(
+    severity: NotificationSeverity,
+    message: string,
+    finalizer?: (() => void) | undefined,
+) {
     void (async () => {
-        await notif(message, {})
+        await toNotif(severity)(message, {})
         if (finalizer) {
             finalizer()
         }
     })()
 }
 
-async function displayNotificationWithInput<T extends string>(
-    notif: Notification,
+export async function displayNotificationWithInput<T extends string>(
+    severity: NotificationSeverity,
     message: string,
     ...items: T[]
 ): Promise<T | undefined> {
-    return await notif(message, { modal: true }, ...items)
+    return await toNotif(severity)(message, { modal: true }, ...items)
 }
 
-function displayNotificationWithOptionalInput<T extends string>(
-    notif: Notification,
+export function displayNotificationWithOptionalInput<T extends string>(
+    severity: NotificationSeverity,
     message: string,
     input: T,
     action: () => void,
     finalizer?: (() => void) | undefined,
 ) {
     void (async () => {
-        const choice = await notif(message, {}, input)
+        const choice = await toNotif(severity)(message, {}, input)
         if (choice === input) {
             action()
         }
@@ -48,9 +65,13 @@ function displayNotificationWithOptionalInput<T extends string>(
     })()
 }
 
-function displayNotificationWithOutput(notif: Notification, message: string, finalizer?: (() => void) | undefined) {
+export function displayNotificationWithOutput(
+    severity: NotificationSeverity,
+    message: string,
+    finalizer?: (() => void) | undefined,
+) {
     displayNotificationWithOptionalInput(
-        notif,
+        severity,
         message,
         'Show Output',
         () => commands.executeCommand('lean4.troubleshooting.showOutput'),
@@ -58,9 +79,13 @@ function displayNotificationWithOutput(notif: Notification, message: string, fin
     )
 }
 
-function displayNotificationWithSetupGuide(notif: Notification, message: string, finalizer?: (() => void) | undefined) {
+export function displayNotificationWithSetupGuide(
+    severity: NotificationSeverity,
+    message: string,
+    finalizer?: (() => void) | undefined,
+) {
     displayNotificationWithOptionalInput(
-        notif,
+        severity,
         message,
         'Open Setup Guide',
         () => commands.executeCommand('lean4.setup.showSetupGuide'),
@@ -69,11 +94,11 @@ function displayNotificationWithSetupGuide(notif: Notification, message: string,
 }
 
 export function displayError(message: string, finalizer?: (() => void) | undefined) {
-    displayNotification(window.showErrorMessage, message, finalizer)
+    displayNotification('Error', message, finalizer)
 }
 
 export async function displayErrorWithInput<T extends string>(message: string, ...items: T[]): Promise<T | undefined> {
-    return await displayNotificationWithInput(window.showErrorMessage, message, ...items)
+    return await displayNotificationWithInput('Error', message, ...items)
 }
 
 export function displayErrorWithOptionalInput<T extends string>(
@@ -82,26 +107,31 @@ export function displayErrorWithOptionalInput<T extends string>(
     action: () => void,
     finalizer?: (() => void) | undefined,
 ) {
-    displayNotificationWithOptionalInput(window.showErrorMessage, message, input, action, finalizer)
+    displayNotificationWithOptionalInput('Error', message, input, action, finalizer)
 }
 
 export function displayErrorWithOutput(message: string, finalizer?: (() => void) | undefined) {
-    displayNotificationWithOutput(window.showErrorMessage, message, finalizer)
+    displayNotificationWithOutput('Error', message, finalizer)
 }
 
 export function displayErrorWithSetupGuide(message: string, finalizer?: (() => void) | undefined) {
-    displayNotificationWithSetupGuide(window.showErrorMessage, message, finalizer)
+    displayNotificationWithSetupGuide('Error', message, finalizer)
 }
 
 export function displayWarning(message: string, finalizer?: (() => void) | undefined) {
-    displayNotification(window.showWarningMessage, message, finalizer)
+    displayNotification('Warning', message, finalizer)
+}
+
+export async function displayModalWarning(message: string): Promise<'Proceed' | 'Abort'> {
+    const choice = await window.showWarningMessage(message, { modal: true }, 'Proceed Regardless')
+    return choice === 'Proceed Regardless' ? 'Proceed' : 'Abort'
 }
 
 export async function displayWarningWithInput<T extends string>(
     message: string,
     ...items: T[]
 ): Promise<T | undefined> {
-    return await displayNotificationWithInput(window.showWarningMessage, message, ...items)
+    return await displayNotificationWithInput('Warning', message, ...items)
 }
 
 export function displayWarningWithOptionalInput<T extends string>(
@@ -110,26 +140,50 @@ export function displayWarningWithOptionalInput<T extends string>(
     action: () => void,
     finalizer?: (() => void) | undefined,
 ) {
-    displayNotificationWithOptionalInput(window.showWarningMessage, message, input, action, finalizer)
+    displayNotificationWithOptionalInput('Warning', message, input, action, finalizer)
 }
 
 export function displayWarningWithOutput(message: string, finalizer?: (() => void) | undefined) {
-    displayNotificationWithOutput(window.showWarningMessage, message, finalizer)
+    displayNotificationWithOutput('Warning', message, finalizer)
+}
+
+export async function displayModalWarningWithOutput(message: string): Promise<'Proceed' | 'Abort'> {
+    const choice = await window.showWarningMessage(message, 'Show Output', 'Proceed Regardless')
+    if (choice === undefined) {
+        return 'Abort'
+    }
+    if (choice === 'Proceed Regardless') {
+        return 'Proceed'
+    }
+    await commands.executeCommand('lean4.troubleshooting.showOutput')
+    return 'Abort'
 }
 
 export function displayWarningWithSetupGuide(message: string, finalizer?: (() => void) | undefined) {
-    displayNotificationWithSetupGuide(window.showWarningMessage, message, finalizer)
+    displayNotificationWithSetupGuide('Warning', message, finalizer)
+}
+
+export async function displayModalWarningWithSetupGuide(message: string): Promise<'Proceed' | 'Abort'> {
+    const choice = await window.showWarningMessage(message, 'Open Setup Guide', 'Proceed Regardless')
+    if (choice === undefined) {
+        return 'Abort'
+    }
+    if (choice === 'Proceed Regardless') {
+        return 'Proceed'
+    }
+    await commands.executeCommand('lean4.setup.showSetupGuide')
+    return 'Abort'
 }
 
 export function displayInformation(message: string, finalizer?: (() => void) | undefined) {
-    displayNotification(window.showInformationMessage, message, finalizer)
+    displayNotification('Information', message, finalizer)
 }
 
 export async function displayInformationWithInput<T extends string>(
     message: string,
     ...items: T[]
 ): Promise<T | undefined> {
-    return await displayNotificationWithInput(window.showInformationMessage, message, ...items)
+    return await displayNotificationWithInput('Information', message, ...items)
 }
 
 export function displayInformationWithOptionalInput<T extends string>(
@@ -138,13 +192,13 @@ export function displayInformationWithOptionalInput<T extends string>(
     action: () => void,
     finalizer?: (() => void) | undefined,
 ) {
-    displayNotificationWithOptionalInput(window.showInformationMessage, message, input, action, finalizer)
+    displayNotificationWithOptionalInput('Information', message, input, action, finalizer)
 }
 
 export function displayInformationWithOutput(message: string, finalizer?: (() => void) | undefined) {
-    displayNotificationWithOutput(window.showInformationMessage, message, finalizer)
+    displayNotificationWithOutput('Information', message, finalizer)
 }
 
 export function displayInformationWithSetupGuide(message: string, finalizer?: (() => void) | undefined) {
-    displayNotificationWithSetupGuide(window.showInformationMessage, message, finalizer)
+    displayNotificationWithSetupGuide('Information', message, finalizer)
 }

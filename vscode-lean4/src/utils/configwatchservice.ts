@@ -79,9 +79,6 @@ export class LeanConfigWatchService implements Disposable {
         // we compare the contents just to be sure and normalize whitespace so that
         // just adding a new line doesn't trigger the prompt.
         const [packageUri, _] = await findLeanProjectRootInfo(fileUri)
-        if (!packageUri) {
-            return
-        }
 
         const contents = await this.readWhitespaceNormalized(fileUri)
         let existing: string | undefined
