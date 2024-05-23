@@ -189,16 +189,7 @@ export class LeanInstaller {
         if (currentVersion.compare('3.1.0') === 0) {
             // `elan self update` was broken in elan 3.1.0, so we need to take a different approach to updating elan here.
             const installElanResult = await this.installElan()
-            switch (installElanResult) {
-                case 'PendingInstallation':
-                    displayError('Elan is already being installed. Please wait until the installation has finished.')
-                    return false
-                case 'InstallationFailed':
-                    displayError('Cannot install Elan due to an error. Check the terminal for details.')
-                    return false
-                case 'Success':
-                    return true
-            }
+            return installElanResult === 'Success'
         }
 
         const elanSelfUpdateResult = await elanSelfUpdate(this.outputChannel)
@@ -221,7 +212,7 @@ export class LeanInstaller {
 
     private async installElan(): Promise<'Success' | 'InstallationFailed' | 'PendingInstallation'> {
         if (this.installing) {
-            displayError('Elan is already being installed.')
+            displayError('Elan is already being installed. Please wait until the installation has finished.')
             return 'PendingInstallation'
         }
         this.installing = true
@@ -271,7 +262,7 @@ export class LeanInstaller {
         this.elanDefaultToolchain = this.freshInstallDefaultToolchain
         this.installing = false
         if (!result) {
-            displayError('Elan installation failed. Check the terminal output for errors.')
+            displayError('Elan installation failed. Check the terminal output for details.')
             return 'InstallationFailed'
         }
 
