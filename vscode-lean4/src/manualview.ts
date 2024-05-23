@@ -1,5 +1,5 @@
 import { promises as fs } from 'fs'
-import * as MarkdownIt from 'markdown-it'
+import markdownit from 'markdown-it'
 import anchor from 'markdown-it-anchor'
 import { Disposable, Uri, ViewColumn, WebviewPanel, commands, window } from 'vscode'
 import { FileUri } from './utils/exturi'
@@ -38,9 +38,9 @@ export class ManualView implements Disposable {
 
         const manualContents = await fs.readFile(this.manualFile.fsPath, 'utf8')
 
-        const md = MarkdownIt({ breaks: true, html: true })
+        const md = markdownit({ breaks: true, html: true })
 
-        const proxy: MarkdownIt.Renderer.RenderRule = (tokens, idx, options, _, self) =>
+        const proxy: markdownit.Renderer.RenderRule = (tokens, idx, options, _, self) =>
             self.renderToken(tokens, idx, options)
 
         // Center all tables.

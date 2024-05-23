@@ -10,7 +10,8 @@
         "alwaysStrict": true,
         "rootDir": "./",
         "noImplicitAny": true,
-        "strictNullChecks": true
+        "strictNullChecks": true,
+        "esModuleInterop": true
     },
     "include": ["src/**/*", "test/suite/**/*"],
     "exclude": ["node_modules", ".vscode-test"]
