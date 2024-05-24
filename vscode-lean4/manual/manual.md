@@ -155,6 +155,8 @@ In the scroll bar on the right of the editor, red / orange / blue areas denote t
 
 The amount of diagnostics for all open files are displayed in the left portion of the status bar at the bottom of VS Code using error, warning and information symbols. Clicking this section of the status bar will open the 'Problems view' of VS Code that displays all diagnostics for all currently open files and that can be used to quickly navigate to the span of the diagnostic by clicking on an entry or by using the arrow keys and `Enter`. It can also be opened using the ['View: Show Problems'](command:workbench.actions.view.problems) command or `Ctrl+Shift+M` (`Cmd+Shift+M`).
 
+Using the ['Error Lens'](command:extension.open?%5B%22usernamehw.errorlens%22%5D) VS Code extension, the line that a diagnostic occurs in is highlighted and the message of the diagnostic is displayed inline in the editor.
+
 <br/>
 
 | ![](images/diagnostics.png) | 
