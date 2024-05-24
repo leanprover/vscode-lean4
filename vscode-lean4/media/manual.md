@@ -26,7 +26,7 @@ This manual covers how to interact with the most recent version of Lean 4 using 
     - [Collapsible code blocks](#collapsible-code-blocks)
     - [Sticky scroll](#sticky-scroll)
 1. [Navigating Lean projects](#navigating-lean-projects)
-    - [Go to definition / declaration / type definition](#go-to-definition--declaration--type-definition)
+    - [Go to definition, declaration and type definition](#go-to-definition-declaration-and-type-definition)
     - [Call hierarchy](#call-hierarchy)
     - [Find references](#find-references)
     - [Workspace symbol search](#workspace-symbol-search)
@@ -175,9 +175,9 @@ In order to automatically trigger rebuilds of all changed dependencies when open
 
 ### Unicode input
 
-Lean code uses lots of [Unicode symbols](https://home.unicode.org/) to aid readability. In Lean files, these Unicode symbols can be entered by typing a backslash followed by an abbreviation identifier referring to the symbol. As soon as the abbreviation identifier is unique, the abbreviation will be automatically replaced with the corresponding Unicode symbol - for example, `\forall` will yield `∀`. 
+Lean code uses lots of [Unicode symbols](https://home.unicode.org/) to aid readability. In Lean files, these Unicode symbols can be entered by typing a backslash followed by an abbreviation identifier referring to the symbol. As soon as the abbreviation identifier is complete, if the abbreviation identifier is not a prefix of any other abbreviation identifier, the abbreviation will be automatically replaced with the corresponding Unicode symbol - for example, `\forall` will yield `∀`. 
 
-To replace an abbreviation early, before it is unique, `Tab` can be pressed to trigger the ['Lean 4: Input: Convert Current Abbreviation'](command:lean4.input.convert) command. This will yield the Unicode symbol with the shortest abbreviation identifier.
+To replace an abbreviation early, before it is complete, `Tab` can be pressed to trigger the ['Lean 4: Input: Convert Current Abbreviation'](command:lean4.input.convert) command. This will yield the Unicode symbol with the shortest abbreviation identifier matching the identifier that was typed. Abbreviations are also replaced early when the text cursor is moved away from the abbreviation.
 
 The full list of supported abbreviation identifiers and Unicode symbols can be viewed using the ['Docview: Show All Abbreviations'](command:lean4.docView.showAllAbbreviations) command that can be found in the 'Documentation…' submenu of the command menu. When encountering a Unicode symbol in Lean code, [hovering](#hovers) over the symbol will also provide all available abbreviation identifiers to input the symbol.
 
@@ -185,7 +185,7 @@ For some Unicode brackets, there are special abbreviation identifiers that also 
 
 The Unicode input mechanism has several configuration options:
 - **'Lean 4 > Input: Custom Translations'**. Allows adding additional abbreviation identifiers. For example, `{"foo": "☺"}` will add an abbreviation `\foo` that yields `☺`. Entries must be comma-separated.
-- **'Lean 4 > Input: Eager Replacement Enabled'**. Unticking this option will disable automatic replacement of unique abbreviations, instead requiring that every abbreviation is replaced using `Tab`.
+- **'Lean 4 > Input: Eager Replacement Enabled'**. Unticking this option will disable automatic replacement of complete abbreviations, instead requiring that every abbreviation is replaced using `Tab`.
 - **'Lean 4 > Input: Enabled'**. Unticking this option will disable the entire Unicode input mechanism.
 - **'Lean 4 > Input: Languages'**. Allows adding [VS Code language IDs](https://code.visualstudio.com/docs/languages/identifiers) for which the Unicode input mechanism should also be enabled.
 - **'Lean 4 > Input: Leader'**. Allows replacing the initial character of an abbreviation (`\`) with something else.
@@ -423,7 +423,7 @@ Sticky scroll is also supported in the VS Code explorer and the VS Code terminal
 
 This section covers several essential tools to efficiently navigate Lean projects.
 
-### Go to definition / declaration / type definition
+### Go to definition, declaration and type definition
 
 To jump to the place in the code where an identifier was defined, the ['Go to Definition'](command:editor.action.revealDefinition) command can be used by positioning the text cursor on the identifier and pressing `F12`, by right clicking on the identifier and selecting 'Go to Definition' or by holding `Shift` and clicking on the identifier. 
 
@@ -553,7 +553,7 @@ The Lean 4 VS Code extension supports the following commands that can be run in 
 
 ### Terminal
 
-If the commands provided by the Lean 4 VS Code extension are not sufficient to manage the Lean project, then a built-in VS Code terminal can be launched by calling the ['Terminal: Create New Terminal'](command:workbench.action.terminal.new) command or by pressing ```Ctrl+Shift+```` (```Cmd+Shift+````). In this terminal, all [Lake](https://github.com/leanprover/lean4/blob/master/src/lake/README.md) commands can be executed.
+If the commands provided by the Lean 4 VS Code extension are not sufficient to manage the Lean project, then a built-in VS Code terminal can be launched by calling the ['Terminal: Create New Terminal'](command:workbench.action.terminal.new) command or by pressing ``` Ctrl+Shift+` ``` (``` Cmd+Shift+` ```). In this terminal, all [Lake](https://github.com/leanprover/lean4/blob/master/src/lake/README.md) commands can be executed.
 
 | &nbsp; |
 | :--: | 
