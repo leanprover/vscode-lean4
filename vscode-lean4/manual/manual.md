@@ -50,7 +50,7 @@ This manual covers how to interact with the most recent version of Lean 4 using 
 
 ## Setting up Lean 4
 
-The [Setup Guide](command:lean4.setup.showSetupGuide) covers how to set up Lean 4.
+The ['Setup Guide'](command:lean4.setup.showSetupGuide) of the Lean 4 VS Code extension covers how to set up Lean 4.
 
 ---
 
