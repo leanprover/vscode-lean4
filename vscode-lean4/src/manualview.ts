@@ -76,7 +76,7 @@ export class ManualView implements Disposable {
             if (uri === undefined) {
                 return url
             }
-            const resourceUri = this.extensionPath.join(uri.fsPath).asUri()
+            const resourceUri = this.extensionPath.join('manual', uri.fsPath).asUri()
             const webviewResourceUri = this.webviewPanel.webview.asWebviewUri(resourceUri)
             return webviewResourceUri.toString()
         }

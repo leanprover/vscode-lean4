@@ -26,7 +26,7 @@ This manual covers how to interact with the most recent version of Lean 4 using 
     - [Collapsible code blocks](#collapsible-code-blocks)
     - [Sticky scroll](#sticky-scroll)
 1. [Navigating Lean projects](#navigating-lean-projects)
-    - [Go to definition / declaration / type definition](#go-to-definition--declaration--type-definition)
+    - [Go to definition, declaration and type definition](#go-to-definition-declaration-and-type-definition)
     - [Call hierarchy](#call-hierarchy)
     - [Find references](#find-references)
     - [Workspace symbol search](#workspace-symbol-search)
@@ -60,9 +60,10 @@ Settings of the Lean 4 VS Code extension and VS Code itself can be configured in
 
 The specific settings of the Lean 4 VS Code extension are described in detail in later sections.
 
-| &nbsp; |
+<br/>
+
+| ![](images/settings_page.png) | 
 | :--: | 
-| ![](media/settings_page.png) | 
 | *VS Code 'Settings' page* |
 
 ---
@@ -85,18 +86,20 @@ The command menu displays all commands that are provided by the Lean 4 VS Code e
 
 To hide the ∀-symbol in the top right of the currently focused document when no Lean 4 document has been selected yet, the 'Lean 4: Always Show Title Bar Menu' setting can be disabled.
 
-| &nbsp; |
+<br/>
+
+| ![](images/command-menu.png) | 
 | :--: | 
-| ![](media/command-menu.png) | 
 | *Lean 4 VS Code extension command menu* |
 
 ### Command palette
 
 All commands can be accessed using the [command palette](command:workbench.action.showCommands) at 'View' > 'Command Palette…' or using `Ctrl+Shift+P` (`Cmd+Shift+P`). Typing in 'Lean 4' will display all commands of the Lean 4 VS Code extension. If no Lean 4 document has been selected yet, it will only display commands that do not need an associated Lean 4 document.
 
-| &nbsp; |
+<br/>
+
+| ![](images/command-palette.png) | 
 | :--: | 
-| ![](media/command-palette.png) | 
 | *VS Code command palette* |
 
 ### Chords
@@ -107,9 +110,10 @@ Many commands in VS Code are bound to chord keyboard shortcuts where multiple ke
 
 The [keyboard shortcuts](command:workbench.action.openGlobalKeybindings) for all commands can be configured by navigating to 'File' > 'Preferences' > 'Keyboard Shortcuts' or by using the `Ctrl+K Ctrl+S` (`Cmd+K Cmd+S`) [chord](#chords). Typing in 'Lean 4' will display all commands of the Lean 4 VS Code extension.
 
-| &nbsp; |
-| :--: | 
-| ![](media/shortcut-settings.png) | 
+<br/>
+ 
+| ![](images/shortcut-settings.png) | 
+| :--: |
 | *VS Code keyboard shortcut settings* |
 
 ---
@@ -128,9 +132,10 @@ When making a change to a file, Lean needs to re-process all declarations that c
 
 For parts of the file that are currently still being processed, Lean cannot provide any interactive features that require file processing information yet. For example, in unprocessed parts of the file, [errors, warnings and information](#errors-warnings-and-information) are not displayed, the [InfoView](#infoview) will not show the current goal state and [hovers](#hovers) will not display a popup until file processing has progressed to the respective part of the file.
 
-| &nbsp; |
+<br/>
+
+| ![](images/file-progress.png) | 
 | :--: | 
-| ![](media/file-progress.png) | 
 | *File processing progress. The orange bar on the right displays the progress for the whole file, whereas the one on the left displays the progress for the currently visible source code lines.* |
 
 ### Errors, warnings and information
@@ -150,12 +155,18 @@ In the scroll bar on the right of the editor, red / orange / blue areas denote t
 
 The amount of diagnostics for all open files are displayed in the left portion of the status bar at the bottom of VS Code using error, warning and information symbols. Clicking this section of the status bar will open the 'Problems view' of VS Code that displays all diagnostics for all currently open files and that can be used to quickly navigate to the span of the diagnostic by clicking on an entry or by using the arrow keys and `Enter`. It can also be opened using the ['View: Show Problems'](command:workbench.actions.view.problems) command or `Ctrl+Shift+M` (`Cmd+Shift+M`).
 
-| &nbsp; |
+Using the ['Error Lens'](command:extension.open?%5B%22usernamehw.errorlens%22%5D) VS Code extension, the line that a diagnostic occurs in is highlighted and the message of the diagnostic is displayed inline in the editor.
+
+<br/>
+
+| ![](images/diagnostics.png) | 
 | :--: | 
-| ![](media/diagnostics.png) | 
 | *Error, warning and information diagnostics with corresponding hover- and InfoView information. The red / orange / blue areas in the scroll bar denote the location of the area. The bottom left of the status bar at the bottom of VS Code displays the amount of diagnostics in all open files and clicking this section of the status bar will open the 'Problems view'.* |
-| &nbsp; |
-| ![](media/problems-view.png) | 
+
+<br/>
+
+| ![](images/problems-view.png) | 
+| :--: | 
 | *VS Code 'Problems view'* |
 
 ### File restarting
@@ -168,16 +179,17 @@ VS Code will display [error- or information-level diagnostics](#errors-warnings-
 
 In order to automatically trigger rebuilds of all changed dependencies when opening a file instead of issuing an error, the 'Lean 4: Automatically Build Dependency' setting can be enabled.
 
-| &nbsp; |
+<br/>
+
+| ![](images/restart-file-infoview-button.png) | 
 | :--: | 
-| ![](media/restart-file-infoview-button.png) | 
 | *'Restart File' button in InfoView* |
 
 ### Unicode input
 
-Lean code uses lots of [Unicode symbols](https://home.unicode.org/) to aid readability. In Lean files, these Unicode symbols can be entered by typing a backslash followed by an abbreviation identifier referring to the symbol. As soon as the abbreviation identifier is unique, the abbreviation will be automatically replaced with the corresponding Unicode symbol - for example, `\forall` will yield `∀`. 
+Lean code uses lots of [Unicode symbols](https://home.unicode.org/) to aid readability. In Lean files, these Unicode symbols can be entered by typing a backslash followed by an abbreviation identifier referring to the symbol. As soon as the abbreviation identifier is complete, if the abbreviation identifier is not a prefix of any other abbreviation identifier, the abbreviation will be automatically replaced with the corresponding Unicode symbol - for example, `\forall` will yield `∀`. 
 
-To replace an abbreviation early, before it is unique, `Tab` can be pressed to trigger the ['Lean 4: Input: Convert Current Abbreviation'](command:lean4.input.convert) command. This will yield the Unicode symbol with the shortest abbreviation identifier.
+To replace an abbreviation early, before it is complete, `Tab` can be pressed to trigger the ['Lean 4: Input: Convert Current Abbreviation'](command:lean4.input.convert) command. This will yield the Unicode symbol with the shortest abbreviation identifier matching the identifier that was typed. Abbreviations are also replaced early when the text cursor is moved away from the abbreviation.
 
 The full list of supported abbreviation identifiers and Unicode symbols can be viewed using the ['Docview: Show All Abbreviations'](command:lean4.docView.showAllAbbreviations) command that can be found in the 'Documentation…' submenu of the command menu. When encountering a Unicode symbol in Lean code, [hovering](#hovers) over the symbol will also provide all available abbreviation identifiers to input the symbol.
 
@@ -185,20 +197,27 @@ For some Unicode brackets, there are special abbreviation identifiers that also 
 
 The Unicode input mechanism has several configuration options:
 - **'Lean 4 > Input: Custom Translations'**. Allows adding additional abbreviation identifiers. For example, `{"foo": "☺"}` will add an abbreviation `\foo` that yields `☺`. Entries must be comma-separated.
-- **'Lean 4 > Input: Eager Replacement Enabled'**. Unticking this option will disable automatic replacement of unique abbreviations, instead requiring that every abbreviation is replaced using `Tab`.
+- **'Lean 4 > Input: Eager Replacement Enabled'**. Unticking this option will disable automatic replacement of complete abbreviations, instead requiring that every abbreviation is replaced using `Tab`.
 - **'Lean 4 > Input: Enabled'**. Unticking this option will disable the entire Unicode input mechanism.
 - **'Lean 4 > Input: Languages'**. Allows adding [VS Code language IDs](https://code.visualstudio.com/docs/languages/identifiers) for which the Unicode input mechanism should also be enabled.
 - **'Lean 4 > Input: Leader'**. Allows replacing the initial character of an abbreviation (`\`) with something else.
 
-| &nbsp; |
+<br/>
+
+| ![](images/abbreviation.png) | 
 | :--: | 
-| ![](media/abbreviation.png) | 
 | *Incomplete abbreviation for `∀`* |
-| &nbsp; |
-| ![](media/show-all-abbreviations.png) | 
+
+<br/>
+
+| ![](images/show-all-abbreviations.png) | 
+| :--: | 
 | *Output when the 'Docview: Show All Abbreviations' command is used* |
-| &nbsp; |
-| ![](media/abbreviation_tips.png) | 
+
+<br/>
+
+| ![](images/abbreviation_tips.png) | 
+| :--: | 
 | *Hover for Unicode symbol displaying all abbreviation identifiers* |
 
 ### InfoView
@@ -224,9 +243,10 @@ Using the 'Lean 4 > Infoview: Debounce Time' setting, the InfoView can be made t
 
 Disabling the 'Lean 4 > Infoview: Auto Open Shows Goal' setting will only display the 'All Messages' section when the InfoView is automatically opened.
 
-| &nbsp; |
+<br/>
+
+| ![](images/infoview.png) | 
 | :--: | 
-| ![](media/infoview.png) | 
 | *InfoView with 'Tactic state', 'Messages' and 'All Messages' sections.* |
 
 #### Tactic state and expected type
@@ -259,18 +279,20 @@ When clicking an identifier, its hover popup panel becomes pinned so that it rem
 
 InfoView hovers can be disabled using the 'Lean 4 > Infoview: Show Tooltip On Hover' setting, though clicking identifiers to open and pin the popup panel will still be possible even with this setting disabled.
 
-| &nbsp; |
+<br/>
+
+| ![](images/infoview-hover.png) | 
 | :--: | 
-| ![](media/infoview-hover.png) | 
 | *InfoView hover for `Nat`* |
 
 #### InfoView 'Go to definition'
 
 Right-clicking on any non-local identifier in the InfoView and selecting 'Go to Definition' will directly jump to the place in the code where the identifier was defined. Holding `Ctrl` (`Cmd`) and then clicking on the identifier will also directly jump to the place in the code where the identifier was defined.
 
-| &nbsp; |
+<br/>
+
+| ![](images/infoview-go-to-definition.png) | 
 | :--: | 
-| ![](media/infoview-go-to-definition.png) | 
 | *InfoView 'Go to Definition' on `Nat`* |
 
 #### Widgets
@@ -281,9 +303,10 @@ For an example of a built-in widget, calling the `simp?` tactic in a proof will 
 
 When using Lean's math library, [Mathlib](https://github.com/leanprover-community/mathlib4), and importing `Mathlib.Tactic.Widget.Conv`, a `conv?` tactic can be called. Shift-clicking a subexpression in the proof goal will then generate a `conv` tactic invocation in place of `conv?` that focuses on that specific subexpression.
 
-| &nbsp; |
+<br/>
+
+| ![](images/try-this.png) | 
 | :--: | 
-| ![](media/try-this.png) | 
 | *`simp?` 'Try this' widget* |
 
 ### Hovers
@@ -297,9 +320,10 @@ Hovers can also be triggered at the current text cursor position using the keybo
 
 Moving the mouse away from the hover popup panel will immediately collapse it. Clicking on the hover popup panel will pin it so that it remains open when the mouse is moved away from the hover popup panel.
 
-| &nbsp; |
+<br/>
+
+| ![](images/hover.png) | 
 | :--: | 
-| ![](media/hover.png) | 
 | *Pinned hover popup panel with error and identifier information* |
 
 ### Auto-completion
@@ -317,9 +341,11 @@ There are three different kinds of auto-completion in Lean 4:
 Next to the currently selected identifier in the completion menu, VS Code displays the type of the identifier and a small caret. Clicking this caret or hitting `Ctrl+Space` (`Option+Esc`) again will also display the documentation associated with the currently selected identifier.
 
 By default, VS Code will auto-complete the selected identifier when `Enter` or `Tab` are pressed. Since `Enter` is also used to move the cursor to a new line, some users find this behavior to be irritating. This behavior can be disabled by setting the 'Accept Suggestion On Enter' configuration option to `off`.
-| &nbsp; |
+
+<br/>
+
+| ![](images/completion.png) | 
 | :--: | 
-| ![](media/completion.png) | 
 | *Completion menu for dot completion on `x : Nat`* |
 
 ### Code actions
@@ -333,9 +359,10 @@ The [Batteries](https://github.com/leanprover-community/batteries) library also 
 - Typing `def f : <type1> → <type2> := _` will offer to generate a match on the value of `<type1>`.
 - Typing `induction x` or `cases x` will offer to generate the induction cases for `x`.
 
-| &nbsp; |
+<br/>
+
+| ![](images/code-action.png) | 
 | :--: | 
-| ![](media/code-action.png) | 
 | *Code action for `#guard_msgs` command* |
 
 ### Occurrence highlighting
@@ -344,9 +371,10 @@ Placing the text cursor on an identifier will highlight all occurrences of the i
 
 When placing the text cursor on a `return` statement in a `do` block, the `do` that the `return` belongs to will be highlighted.
 
-| &nbsp; |
+<br/>
+
+| ![](images/occurrence-highlighting.png) | 
 | :--: | 
-| ![](media/occurrence-highlighting.png) | 
 | *Occurrence highlighting on a parameter `x`. Usages of the second semantically distinct `x` that shadows the parameter `x` are not highlighted.* |
 
 ### Semantic highlighting
@@ -359,27 +387,30 @@ By default, the Lean 4 VS Code extension will provide syntax highlighting for co
 
 Whether these different kinds of syntax and semantic highlighting are actually distinguishable in the editor depends on the color theme that is selected in the menu at 'File' > 'Preferences' > 'Theme' > 'Color Theme', which can also be opened by using the `Ctrl+K Ctrl+T` (`Cmd+K Cmd+T`) [chord](#chords) or the ['Preferences: Color Theme'](command:workbench.action.selectTheme) command.
 
-| &nbsp; |
+<br/>
+
+| ![](images/semantic-highlighting.png) | 
 | :--: | 
-| ![](media/semantic-highlighting.png) | 
 | *Semantic highlighting in a proof* |
 
 ### Go to symbol
 
 Using the ['Go to Symbol in Editor'](command:workbench.action.gotoSymbol) command that can be called by pressing `Ctrl+Shift+O` (`Cmd+Shift+O`), all the declarations, namespaces and sections of the current Lean document can be displayed and navigated by typing in the name of the respective identifier, clicking or using the arrow keys. Typing `:` will group all declarations, all sections and all namespaces.
 
-| &nbsp; |
+<br/>
+
+| ![](images/go-to-symbol.png) | 
 | :--: | 
-| ![](media/go-to-symbol.png) | 
 | *'Go to symbol' panel with grouped declarations* |
 
 ### Document outline
 
 The document outline displays a brief overview of all the namespaces, sections and declarations of a Lean document. Clicking an entry will jump to the corresponding location in the code. It can be opened via 'View' > 'Open View' > 'Outline' or by using the ['Explorer: Focus on Outline View'](command:outline.focus) command.
 
-| &nbsp; |
+<br/>
+
+| ![](images/document-outline.png) | 
 | :--: | 
-| ![](media/document-outline.png) | 
 | *Document outline of a Lean 4 document* |
 
 ### Breadcrumbs bar
@@ -390,9 +421,10 @@ Clicking on any entry of the breadcrumbs will display a list of all available al
 
 The breadcrumbs bar can also be focused using `Ctrl+Shift+;` (`Cmd+Shift+;`) or the ['Focus Breadcrumbs'](command:breadcrumbs.focus) command and then navigated using the arrow keys and `Enter`. 
 
-| &nbsp; |
+<br/>
+
+| ![](images/breadcrumbs.png) | 
 | :--: | 
-| ![](media/breadcrumbs.png) | 
 | *Breadcrumbs bar with expanded namespace contents* |
 
 ### Collapsible code blocks
@@ -401,9 +433,10 @@ When hovering over the left column of a Lean document editor that contains the l
 
 Similar to the [document outline](#document-outline) or the [breadcrumbs bar](#breadcrumbs), collapsible code blocks can be used to gain an overview over a Lean document and quickly navigate it, e.g. by using the ['Fold All'](command:editor.foldAll) command or the `Ctrl+K Ctrl+0` (`Cmd+K Cmd+0`) [chord](#chords) to collapse all code blocks and later using the ['Unfold All'](command:editor.unfoldAll) command or the `Ctrl+K Ctrl+J` chord to unfold all code blocks again.
 
-| &nbsp; |
+<br/>
+
+| ![](images/code-folding.png) | 
 | :--: | 
-| ![](media/code-folding.png) | 
 | *Lean 4 document with several folded code blocks* |
 
 ### Sticky scroll
@@ -412,9 +445,10 @@ When scrolling through a Lean document, at the top of the editor, VS Code will d
 
 Sticky scroll is also supported in the VS Code explorer and the VS Code terminal. 
 
-| &nbsp; |
+<br/>
+
+| ![](images/sticky-scroll.png) | 
 | :--: | 
-| ![](media/sticky-scroll.png) | 
 | *Sticky scroll of surrounding namespaces, sections and declaration at the top of the editor* |
 
 ---
@@ -423,7 +457,7 @@ Sticky scroll is also supported in the VS Code explorer and the VS Code terminal
 
 This section covers several essential tools to efficiently navigate Lean projects.
 
-### Go to definition / declaration / type definition
+### Go to definition, declaration and type definition
 
 To jump to the place in the code where an identifier was defined, the ['Go to Definition'](command:editor.action.revealDefinition) command can be used by positioning the text cursor on the identifier and pressing `F12`, by right clicking on the identifier and selecting 'Go to Definition' or by holding `Shift` and clicking on the identifier. 
 
@@ -431,9 +465,10 @@ The ['Go to Declaration'](command:editor.action.revealDeclaration) command that 
 
 The ['Go to Type Definition'](command:editor.action.goToTypeDefinition) command that can be used via the context menu jumps to the type of the identifier at the cursor position.
 
-| &nbsp; |
+<br/>
+
+| ![](images/identifier-context-menu.png) | 
 | :--: | 
-| ![](media/identifier-context-menu.png) | 
 | *Context menu when right-clicking on an identifier. Contains 'Go to Definition', 'Go to Declaration', 'Go to Type Definition', ['Find All References'](#find-references) and ['Show Call Hierarchy'](#call-hierarchy) entries.* |
 
 ### Call hierarchy
@@ -444,30 +479,36 @@ Clicking the phone icon button in the top right of the call hierarchy view or us
 
 When going through a long list of usages and checking that a property holds for every single one of them, it can sometimes be helpful to delete individual entries from the usage list that have already been checked. This can be done by hovering over a call hierarchy entry and clicking the X icon button on the right side of the call hierarchy.
 
-| &nbsp; |
+<br/>
+
+| ![](images/call-hierarchy.png) | 
 | :--: | 
-| ![](media/call-hierarchy.png) | 
 | *Call hierarchy view displaying all usages of an identifier* |
-| &nbsp; |
-| ![](media/call-hierarchy-outgoing.png) | 
+
+<br/>
+
+| ![](images/call-hierarchy-outgoing.png) | 
+| :--: | 
 | *Call hierarchy view displaying all identifiers used in the declaration of an identifier* |
 
 ### Find references
 
 The ['References: Find All References'](command:references-view.findReferences) command can be called by right clicking on an identifier and selecting 'Find All References' or by positioning the text cursor on an identifier and pressing `Alt+Shift+F12`. It is similar to the ['Show Call Hierarchy'](#call-hierarchy) command, but organizes usages by files, not declarations, displays a short snippet of the code where the identifier is used and cannot walk through usages recursively.
 
-| &nbsp; |
+<br/>
+
+| ![](images/find-references.png) | 
 | :--: | 
-| ![](media/find-references.png) | 
 | *'Find references' view displaying all direct usages of an identifier* |
 
 ### Workspace symbol search
 
 Using the ['Go to Symbol in Workspace…'](command:workbench.action.showAllSymbols) command that can be triggered using `Ctrl+T` (`Cmd+T`) or via `Ctrl+P` (`Cmd+P`) and then entering a `#` symbol will open a search panel. Typing identifiers into this search panel will perform a fuzzy search over all available identifiers in the current Lean project. Clicking an identifier or selecting one using the arrow keys and `Enter` will jump to the place in the code where the identifier was declared. Doing so is typically more efficient than using a plain-text search because it will not yield any false-positives.
 
-| &nbsp; |
+<br/>
+
+| ![](images/workspace-symbol-search.png) | 
 | :--: | 
-| ![](media/workspace-symbol-search.png) | 
 | *Workspace symbol search* |
 
 ### Project text search
@@ -491,9 +532,10 @@ When going through a long list of search results, it can sometimes be helpful to
 
 By clicking on the third icon button in the top right of the search view that contains the file icon or by using the ['Search Editor: New Seach Editor'](command:search.action.openNewEditor) command, an alternative search view is opened where search results are displayed directly in a text editor. Clicking in the text editor will navigate to the respective location in the code.
 
-| &nbsp; |
+<br/>
+
+| ![](images/project-search.png) | 
 | :--: | 
-| ![](media/project-search.png) | 
 | *Search view with enabled hierarchical tree display option* |
 
 ### Go to file
@@ -502,9 +544,10 @@ Using the ['Go to File'](command:workbench.action.quickOpen) command by pressing
 
 To use this feature, the Lean project folder must first be opened in VS Code using the ['File: Open Folder…'](command:workbench.action.files.openFolder) command that can be accessed via 'File' > 'Open Folder…' or using the `Ctrl+K Ctrl+O` (`Cmd+K Cmd+O`) [chord](#chords).
 
-| &nbsp; |
+<br/>
+
+| ![](images/go-to-file.png) | 
 | :--: | 
-| ![](media/go-to-file.png) | 
 | *'Go to file' panel with a search for file names containing 'K'* |
 
 ### Explorer
@@ -515,9 +558,10 @@ By default, VS Code will always focus the file in the explorer for which an edit
 
 Selecting two files by holding `Ctrl` (`Cmd`) and then clicking them presents a 'Compare Selected' entry in the context menu when right-clicking any of the files. This will open a diff-view displaying changes between the two files.
 
-| &nbsp; |
+<br/>
+
+| ![](images/file-explorer.png) | 
 | :--: | 
-| ![](media/file-explorer.png) | 
 | *VS Code file explorer* |
 
 ---
@@ -546,18 +590,20 @@ The Lean 4 VS Code extension supports the following commands that can be run in 
 1. **['Project: Update Dependency…'](command:lean4.project.updateDependency)**. Displays a list of all dependencies that can be updated. After selecting a dependency and updating it, if the project is [Mathlib](https://github.com/leanprover-community/mathlib4) or depends on it, it will also download and install the current Mathlib build artifact cache. At the end, if the Lean toolchain of the updated project differs from the Lean toolchain of the project, the command will offer to update the Lean toolchain of the project to that of the updated dependency.
 1. **['Project: Fetch Mathlib Build Cache'](command:lean4.project.fetchCache)**. Downloads and installs the current Mathlib build artifact cache if the project is [Mathlib](https://github.com/leanprover-community/mathlib4) or depends on it.
 
-| &nbsp; |
+<br/>
+
+| ![](images/update-dependency.png) | 
 | :--: | 
-| ![](media/update-dependency.png) | 
 | *'Project: Update Dependency…' selection dialog* |
 
 ### Terminal
 
-If the commands provided by the Lean 4 VS Code extension are not sufficient to manage the Lean project, then a built-in VS Code terminal can be launched by calling the ['Terminal: Create New Terminal'](command:workbench.action.terminal.new) command or by pressing ```Ctrl+Shift+```` (```Cmd+Shift+````). In this terminal, all [Lake](https://github.com/leanprover/lean4/blob/master/src/lake/README.md) commands can be executed.
+If the commands provided by the Lean 4 VS Code extension are not sufficient to manage the Lean project, then a built-in VS Code terminal can be launched by calling the ['Terminal: Create New Terminal'](command:workbench.action.terminal.new) command or by pressing ``` Ctrl+Shift+` ``` (``` Cmd+Shift+` ```). In this terminal, all [Lake](https://github.com/leanprover/lean4/blob/master/src/lake/README.md) commands can be executed.
 
-| &nbsp; |
+<br/>
+
+| ![](images/terminal-view.png) | 
 | :--: | 
-| ![](media/terminal-view.png) | 
 | *VS Code terminal view* |
 
 ---
@@ -612,18 +658,20 @@ Executing the ['Troubleshooting: Show Setup Information'](command:lean4.troubles
 
 The output is formatted using Markdown and will produce a nicely rendered output when copied to a Markdown-supporting tool, e.g. [the Lean Zulip](https://leanprover.zulipchat.com).
 
-| &nbsp; |
+<br/>
+
+| ![](images/setup-information.png) | 
 | :--: | 
-| ![](media/setup-information.png) | 
 | *Setup information output* |
 
 ### Output view
 
 When Lean produces errors while interacting with a file or when an external command is executed, these errors and all external command output are displayed in the 'Lean: Editor' output view, which can be helpful to diagnose issues. It can be opened using the ['Troubleshooting: Show Output'](command:lean4.troubleshooting.showOutput) command from the [command palette](#command-palette) or the [command menu](#command-menu).
 
-| &nbsp; |
+<br/>
+
+| ![](images/output-view.png) | 
 | :--: | 
-| ![](media/output-view.png) | 
 | *'Lean: Editor' output view* |
 
 ### Restarting Lean
