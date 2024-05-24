@@ -79,7 +79,7 @@ function activateAlwaysEnabledFeatures(context: ExtensionContext): AlwaysEnabled
     )
 
     const extensionPath = new FileUri(context.extensionPath)
-    const manualView = new ManualView(extensionPath, extensionPath.join('media', 'manual.md'))
+    const manualView = new ManualView(extensionPath, extensionPath.join('manual', 'manual.md'))
     context.subscriptions.push(manualView)
 
     const docView = new DocViewProvider(context.extensionUri)

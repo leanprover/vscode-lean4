@@ -62,7 +62,7 @@ The specific settings of the Lean 4 VS Code extension are described in detail in
 
 <br/>
 
-| ![](settings_page.png) | 
+| ![](images/settings_page.png) | 
 | :--: | 
 | *VS Code 'Settings' page* |
 
@@ -88,7 +88,7 @@ To hide the ∀-symbol in the top right of the currently focused document when n
 
 <br/>
 
-| ![](command-menu.png) | 
+| ![](images/command-menu.png) | 
 | :--: | 
 | *Lean 4 VS Code extension command menu* |
 
@@ -98,7 +98,7 @@ All commands can be accessed using the [command palette](command:workbench.actio
 
 <br/>
 
-| ![](command-palette.png) | 
+| ![](images/command-palette.png) | 
 | :--: | 
 | *VS Code command palette* |
 
@@ -112,7 +112,7 @@ The [keyboard shortcuts](command:workbench.action.openGlobalKeybindings) for all
 
 <br/>
  
-| ![](shortcut-settings.png) | 
+| ![](images/shortcut-settings.png) | 
 | :--: |
 | *VS Code keyboard shortcut settings* |
 
@@ -134,7 +134,7 @@ For parts of the file that are currently still being processed, Lean cannot prov
 
 <br/>
 
-| ![](file-progress.png) | 
+| ![](images/file-progress.png) | 
 | :--: | 
 | *File processing progress. The orange bar on the right displays the progress for the whole file, whereas the one on the left displays the progress for the currently visible source code lines.* |
 
@@ -157,13 +157,13 @@ The amount of diagnostics for all open files are displayed in the left portion o
 
 <br/>
 
-| ![](diagnostics.png) | 
+| ![](images/diagnostics.png) | 
 | :--: | 
 | *Error, warning and information diagnostics with corresponding hover- and InfoView information. The red / orange / blue areas in the scroll bar denote the location of the area. The bottom left of the status bar at the bottom of VS Code displays the amount of diagnostics in all open files and clicking this section of the status bar will open the 'Problems view'.* |
 
 <br/>
 
-| ![](problems-view.png) | 
+| ![](images/problems-view.png) | 
 | :--: | 
 | *VS Code 'Problems view'* |
 
@@ -179,7 +179,7 @@ In order to automatically trigger rebuilds of all changed dependencies when open
 
 <br/>
 
-| ![](restart-file-infoview-button.png) | 
+| ![](images/restart-file-infoview-button.png) | 
 | :--: | 
 | *'Restart File' button in InfoView* |
 
@@ -202,19 +202,19 @@ The Unicode input mechanism has several configuration options:
 
 <br/>
 
-| ![](abbreviation.png) | 
+| ![](images/abbreviation.png) | 
 | :--: | 
 | *Incomplete abbreviation for `∀`* |
 
 <br/>
 
-| ![](show-all-abbreviations.png) | 
+| ![](images/show-all-abbreviations.png) | 
 | :--: | 
 | *Output when the 'Docview: Show All Abbreviations' command is used* |
 
 <br/>
 
-| ![](abbreviation_tips.png) | 
+| ![](images/abbreviation_tips.png) | 
 | :--: | 
 | *Hover for Unicode symbol displaying all abbreviation identifiers* |
 
@@ -243,7 +243,7 @@ Disabling the 'Lean 4 > Infoview: Auto Open Shows Goal' setting will only displa
 
 <br/>
 
-| ![](infoview.png) | 
+| ![](images/infoview.png) | 
 | :--: | 
 | *InfoView with 'Tactic state', 'Messages' and 'All Messages' sections.* |
 
@@ -279,7 +279,7 @@ InfoView hovers can be disabled using the 'Lean 4 > Infoview: Show Tooltip On Ho
 
 <br/>
 
-| ![](infoview-hover.png) | 
+| ![](images/infoview-hover.png) | 
 | :--: | 
 | *InfoView hover for `Nat`* |
 
@@ -289,7 +289,7 @@ Right-clicking on any non-local identifier in the InfoView and selecting 'Go to 
 
 <br/>
 
-| ![](infoview-go-to-definition.png) | 
+| ![](images/infoview-go-to-definition.png) | 
 | :--: | 
 | *InfoView 'Go to Definition' on `Nat`* |
 
@@ -303,7 +303,7 @@ When using Lean's math library, [Mathlib](https://github.com/leanprover-communit
 
 <br/>
 
-| ![](try-this.png) | 
+| ![](images/try-this.png) | 
 | :--: | 
 | *`simp?` 'Try this' widget* |
 
@@ -320,7 +320,7 @@ Moving the mouse away from the hover popup panel will immediately collapse it. C
 
 <br/>
 
-| ![](hover.png) | 
+| ![](images/hover.png) | 
 | :--: | 
 | *Pinned hover popup panel with error and identifier information* |
 
@@ -342,7 +342,7 @@ By default, VS Code will auto-complete the selected identifier when `Enter` or `
 
 <br/>
 
-| ![](completion.png) | 
+| ![](images/completion.png) | 
 | :--: | 
 | *Completion menu for dot completion on `x : Nat`* |
 
@@ -359,7 +359,7 @@ The [Batteries](https://github.com/leanprover-community/batteries) library also 
 
 <br/>
 
-| ![](code-action.png) | 
+| ![](images/code-action.png) | 
 | :--: | 
 | *Code action for `#guard_msgs` command* |
 
@@ -371,7 +371,7 @@ When placing the text cursor on a `return` statement in a `do` block, the `do` t
 
 <br/>
 
-| ![](occurrence-highlighting.png) | 
+| ![](images/occurrence-highlighting.png) | 
 | :--: | 
 | *Occurrence highlighting on a parameter `x`. Usages of the second semantically distinct `x` that shadows the parameter `x` are not highlighted.* |
 
@@ -387,7 +387,7 @@ Whether these different kinds of syntax and semantic highlighting are actually d
 
 <br/>
 
-| ![](semantic-highlighting.png) | 
+| ![](images/semantic-highlighting.png) | 
 | :--: | 
 | *Semantic highlighting in a proof* |
 
@@ -397,7 +397,7 @@ Using the ['Go to Symbol in Editor'](command:workbench.action.gotoSymbol) comman
 
 <br/>
 
-| ![](go-to-symbol.png) | 
+| ![](images/go-to-symbol.png) | 
 | :--: | 
 | *'Go to symbol' panel with grouped declarations* |
 
@@ -407,7 +407,7 @@ The document outline displays a brief overview of all the namespaces, sections a
 
 <br/>
 
-| ![](document-outline.png) | 
+| ![](images/document-outline.png) | 
 | :--: | 
 | *Document outline of a Lean 4 document* |
 
@@ -421,7 +421,7 @@ The breadcrumbs bar can also be focused using `Ctrl+Shift+;` (`Cmd+Shift+;`) or 
 
 <br/>
 
-| ![](breadcrumbs.png) | 
+| ![](images/breadcrumbs.png) | 
 | :--: | 
 | *Breadcrumbs bar with expanded namespace contents* |
 
@@ -433,7 +433,7 @@ Similar to the [document outline](#document-outline) or the [breadcrumbs bar](#b
 
 <br/>
 
-| ![](code-folding.png) | 
+| ![](images/code-folding.png) | 
 | :--: | 
 | *Lean 4 document with several folded code blocks* |
 
@@ -445,7 +445,7 @@ Sticky scroll is also supported in the VS Code explorer and the VS Code terminal
 
 <br/>
 
-| ![](sticky-scroll.png) | 
+| ![](images/sticky-scroll.png) | 
 | :--: | 
 | *Sticky scroll of surrounding namespaces, sections and declaration at the top of the editor* |
 
@@ -465,7 +465,7 @@ The ['Go to Type Definition'](command:editor.action.goToTypeDefinition) command 
 
 <br/>
 
-| ![](identifier-context-menu.png) | 
+| ![](images/identifier-context-menu.png) | 
 | :--: | 
 | *Context menu when right-clicking on an identifier. Contains 'Go to Definition', 'Go to Declaration', 'Go to Type Definition', ['Find All References'](#find-references) and ['Show Call Hierarchy'](#call-hierarchy) entries.* |
 
@@ -479,13 +479,13 @@ When going through a long list of usages and checking that a property holds for 
 
 <br/>
 
-| ![](call-hierarchy.png) | 
+| ![](images/call-hierarchy.png) | 
 | :--: | 
 | *Call hierarchy view displaying all usages of an identifier* |
 
 <br/>
 
-| ![](call-hierarchy-outgoing.png) | 
+| ![](images/call-hierarchy-outgoing.png) | 
 | :--: | 
 | *Call hierarchy view displaying all identifiers used in the declaration of an identifier* |
 
@@ -495,7 +495,7 @@ The ['References: Find All References'](command:references-view.findReferences) 
 
 <br/>
 
-| ![](find-references.png) | 
+| ![](images/find-references.png) | 
 | :--: | 
 | *'Find references' view displaying all direct usages of an identifier* |
 
@@ -505,7 +505,7 @@ Using the ['Go to Symbol in Workspace…'](command:workbench.action.showAllSymbo
 
 <br/>
 
-| ![](workspace-symbol-search.png) | 
+| ![](images/workspace-symbol-search.png) | 
 | :--: | 
 | *Workspace symbol search* |
 
@@ -532,7 +532,7 @@ By clicking on the third icon button in the top right of the search view that co
 
 <br/>
 
-| ![](project-search.png) | 
+| ![](images/project-search.png) | 
 | :--: | 
 | *Search view with enabled hierarchical tree display option* |
 
@@ -544,7 +544,7 @@ To use this feature, the Lean project folder must first be opened in VS Code usi
 
 <br/>
 
-| ![](go-to-file.png) | 
+| ![](images/go-to-file.png) | 
 | :--: | 
 | *'Go to file' panel with a search for file names containing 'K'* |
 
@@ -558,7 +558,7 @@ Selecting two files by holding `Ctrl` (`Cmd`) and then clicking them presents a 
 
 <br/>
 
-| ![](file-explorer.png) | 
+| ![](images/file-explorer.png) | 
 | :--: | 
 | *VS Code file explorer* |
 
@@ -590,7 +590,7 @@ The Lean 4 VS Code extension supports the following commands that can be run in 
 
 <br/>
 
-| ![](update-dependency.png) | 
+| ![](images/update-dependency.png) | 
 | :--: | 
 | *'Project: Update Dependency…' selection dialog* |
 
@@ -600,7 +600,7 @@ If the commands provided by the Lean 4 VS Code extension are not sufficient to m
 
 <br/>
 
-| ![](terminal-view.png) | 
+| ![](images/terminal-view.png) | 
 | :--: | 
 | *VS Code terminal view* |
 
@@ -658,7 +658,7 @@ The output is formatted using Markdown and will produce a nicely rendered output
 
 <br/>
 
-| ![](setup-information.png) | 
+| ![](images/setup-information.png) | 
 | :--: | 
 | *Setup information output* |
 
@@ -668,7 +668,7 @@ When Lean produces errors while interacting with a file or when an external comm
 
 <br/>
 
-| ![](output-view.png) | 
+| ![](images/output-view.png) | 
 | :--: | 
 | *'Lean: Editor' output view* |
 
