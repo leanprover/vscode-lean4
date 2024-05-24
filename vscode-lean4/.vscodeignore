@@ -10,6 +10,7 @@
 !dist/lean4-infoview/index.css
 !dist/lean4-infoview/codicon.ttf
 !media
+!manual
 !images
 !syntaxes
 !package.json
