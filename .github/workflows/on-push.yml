@@ -22,9 +22,9 @@ jobs:
           # - name: macOS
           #   os: macos-latest
           #   artifact: build-macOS
-          # - name: Windows
-          #   os: windows-latest
-          #   artifact: build-Windows
+          - name: Windows
+            os: windows-latest
+            artifact: build-Windows
     name: ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
 
@@ -119,10 +119,10 @@ jobs:
         run: |
           echo "$HOME\.elan\bin" >> $env:GITHUB_PATH
 
-      # - name: Run tests
-      #   uses: GabrielBB/xvfb-action@v1.0
-      #   with:
-      #     run: npm run test
+      - name: Run tests
+        uses: GabrielBB/xvfb-action@v1.0
+        with:
+          run: npm run test
 
     env:
       NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
