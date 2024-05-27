@@ -43,6 +43,12 @@ jobs:
           npm ci
           npm run build
 
+      - name: Publish infoview-api
+        if: ${{ matrix.os == 'ubuntu-latest' }}
+        continue-on-error: true
+        run: |
+          (cd lean4-infoview-api && npm publish --access=public)
+
       - name: Publish infoview
         if: ${{ matrix.os == 'ubuntu-latest' }}
         continue-on-error: true
