@@ -16,7 +16,7 @@ FILE="./package.json"
 # sed -i 's,"current-release": ".*","current-release": "npm:@joneugster/infoview@^'$new_version'",' "$FILE"
 
 
-echo "//registry.npmjs.org/:_authToken=${NPM_PUBLISH_TOKEN}" >> .npmrc
+echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" >> ../.npmrc
 
 cat .npmrc
 npm run build
