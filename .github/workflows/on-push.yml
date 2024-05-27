@@ -45,7 +45,7 @@ jobs:
 
       - name: Publish infoview
         if: ${{ matrix.os == 'ubuntu-latest' }}
-        continue-on-error: false
+        continue-on-error: true
         run: |
           (cd lean4-infoview && npm publish --access=public)
 
