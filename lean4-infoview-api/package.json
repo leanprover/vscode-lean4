@@ -1,5 +1,5 @@
 {
-    "name": "@joneugster/infoview-api",
+    "name": "@leanprover/infoview-api",
     "version": "0.4.4",
     "description": "Types and API for @leanprover/infoview.",
     "scripts": {
