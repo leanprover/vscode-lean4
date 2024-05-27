@@ -1,6 +1,6 @@
 {
     "name": "@joneugster/infoview-api",
-    "version": "0.4.3",
+    "version": "0.4.4",
     "description": "Types and API for @leanprover/infoview.",
     "scripts": {
         "watch": "tsc --watch",
