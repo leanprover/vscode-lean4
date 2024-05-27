@@ -15,8 +15,7 @@ FILE="./package.json"
 # sed -i 's/"version": ".*"/"version": "'$new_version'"/' "$FILE"
 # sed -i 's,"current-release": ".*","current-release": "npm:@joneugster/infoview@^'$new_version'",' "$FILE"
 
-echo _auth=$NPM_PUBLSH_TOKEN >> .npmrc
-echo email=$NPM_PUBLISH_EMAIL >> .npmrc
-echo always-auth=true >> .npmrc
+
+echo "//registry.npmjs.org/:_authToken=${NPM_PUBLSH_TOKEN}" >> .npmrc
 
 npm publish --access=public

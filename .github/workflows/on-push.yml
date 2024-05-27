@@ -44,6 +44,8 @@ jobs:
           npm run build
 
       - name: Publish infoview
+        if: ${{ matrix.os == 'ubuntu-latest' }}
+        continue-on-error: false
         run: |
           ./lean4-infoview/publish.sh
 
