@@ -22,9 +22,9 @@ jobs:
           # - name: macOS
           #   os: macos-latest
           #   artifact: build-macOS
-          - name: Windows
-            os: windows-latest
-            artifact: build-Windows
+          # - name: Windows
+          #   os: windows-latest
+          #   artifact: build-Windows
     name: ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
 
