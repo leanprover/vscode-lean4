@@ -117,3 +117,6 @@ jobs:
       #   uses: GabrielBB/xvfb-action@v1.0
       #   with:
       #     run: npm run test
+
+    env:
+      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}

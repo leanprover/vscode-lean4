@@ -18,4 +18,7 @@ FILE="./package.json"
 
 echo "//registry.npmjs.org/:_authToken=${NPM_PUBLISH_TOKEN}" >> .npmrc
 
+cat .npmrc
+npm run build
+
 npm publish --access=public
