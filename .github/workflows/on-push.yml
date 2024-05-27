@@ -47,7 +47,7 @@ jobs:
         if: ${{ matrix.os == 'ubuntu-latest' }}
         continue-on-error: false
         run: |
-          ./lean4-infoview/publish.sh
+          (cd lean4-infoview && npm publish --access=public)
 
       - name: Package
         run: npm run package --workspace=lean4
