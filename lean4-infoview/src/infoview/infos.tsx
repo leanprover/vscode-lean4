@@ -149,7 +149,7 @@ export function Infos() {
     return (
         <div>
             {infoProps.map(ps => (
-                <Info {...ps} />
+                <Info {...ps} key={ps.key} />
             ))}
             {!curPos && <p>Click somewhere in the Lean file to enable the infoview.</p>}
         </div>

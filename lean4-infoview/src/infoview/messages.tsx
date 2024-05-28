@@ -20,6 +20,7 @@ import {
     basename,
     DocumentPosition,
     escapeHtml,
+    Keyed,
     useEvent,
     usePausableState,
     useServerNotificationState,
@@ -90,7 +91,7 @@ const MessageView = React.memo(({ uri, diag }: MessageViewProps) => {
     )
 }, fastIsEqual)
 
-function mkMessageViewProps(uri: DocumentUri, messages: InteractiveDiagnostic[]): MessageViewProps[] {
+function mkMessageViewProps(uri: DocumentUri, messages: InteractiveDiagnostic[]): Keyed<MessageViewProps>[] {
     const views: MessageViewProps[] = messages
         .sort((msga, msgb) => {
             const a = msga.fullRange?.end || msga.range.end
@@ -114,7 +115,7 @@ export const MessagesList = React.memo(({ uri, messages }: { uri: DocumentUri; m
     return (
         <div className="ml1">
             {mkMessageViewProps(uri, messages).map(m => (
-                <MessageView {...m} />
+                <MessageView {...m} key={m.key} />
             ))}
         </div>
     )
