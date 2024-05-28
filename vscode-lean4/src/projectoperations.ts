@@ -8,6 +8,11 @@ import { cacheNotFoundError, lake, LakeRunner } from './utils/lake'
 import { DirectGitDependency, Manifest, ManifestReadError, parseManifestInFolder } from './utils/manifest'
 import { displayError, displayInformation, displayInformationWithInput, displayWarningWithInput } from './utils/notifs'
 
+type DependencyToolchainResult =
+    | { kind: 'Success'; dependencyToolchain: string }
+    | { kind: 'DoNotUpdate' }
+    | { kind: 'Cancelled' }
+
 export class ProjectOperationProvider implements Disposable {
     private subscriptions: Disposable[] = []
     private isRunningOperation: boolean = false // Used to synchronize project operations
@@ -189,18 +194,18 @@ export class ProjectOperationProvider implements Disposable {
                 dependencyChoice.name,
                 'lean-toolchain',
             )
-            const dependencyToolchainResult: string = await this.determineDependencyToolchain(
+            const dependencyToolchainResult = await this.determineDependencyToolchain(
                 localToolchainPath,
                 dependencyToolchainPath,
                 dependencyChoice.name,
             )
-            if (dependencyToolchainResult === 'Cancelled') {
+            if (dependencyToolchainResult.kind === 'Cancelled') {
                 return
             }
 
-            if (dependencyToolchainResult !== 'DoNotUpdate') {
+            if (dependencyToolchainResult.kind !== 'DoNotUpdate') {
                 try {
-                    fs.writeFileSync(localToolchainPath, dependencyToolchainResult)
+                    fs.writeFileSync(localToolchainPath, dependencyToolchainResult.dependencyToolchain)
                 } catch {
                     displayError('Cannot update Lean version.')
                     return
@@ -245,7 +250,7 @@ export class ProjectOperationProvider implements Disposable {
         localToolchainPath: string,
         dependencyToolchainPath: string,
         dependencyName: string,
-    ): Promise<string> {
+    ): Promise<DependencyToolchainResult> {
         const toolchainResult = await this.readToolchains(localToolchainPath, dependencyToolchainPath)
         if (!(toolchainResult instanceof Array)) {
             const errorFlavor =
@@ -255,12 +260,12 @@ export class ProjectOperationProvider implements Disposable {
             const message = `${errorFlavor}. Do you want to update ${dependencyName} without updating the Lean version of the open project to that of ${dependencyName} regardless?`
             const input = 'Proceed'
             const choice: string | undefined = await displayInformationWithInput(message, input)
-            return choice === 'input' ? 'DoNotUpdate' : 'Cancelled'
+            return choice === 'input' ? { kind: 'DoNotUpdate' } : { kind: 'Cancelled' }
         }
         const [localToolchain, dependencyToolchain]: [string, string] = toolchainResult
 
         if (localToolchain === dependencyToolchain) {
-            return 'DoNotUpdate'
+            return { kind: 'DoNotUpdate' }
         }
 
         const message = `The Lean version '${localToolchain}' of the open project differs from the Lean version '${dependencyToolchain}' of ${dependencyName}. Do you want to update the Lean version of the open project to the Lean version of ${dependencyName}?`
@@ -268,13 +273,13 @@ export class ProjectOperationProvider implements Disposable {
         const input2 = 'Keep Lean Version'
         const choice = await displayInformationWithInput(message, input1, input2)
         if (choice === undefined) {
-            return 'Cancelled'
+            return { kind: 'Cancelled' }
         }
         if (choice !== input1) {
-            return 'DoNotUpdate'
+            return { kind: 'DoNotUpdate' }
         }
 
-        return dependencyToolchain
+        return { kind: 'Success', dependencyToolchain }
     }
 
     private async readToolchains(

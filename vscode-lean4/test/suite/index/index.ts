@@ -21,12 +21,12 @@ export function run(testsRoot: string, cb: (error: any, failures?: number) => vo
 
     logger.log('>>>>>>>>> testsRoot=' + testsRoot)
 
-    const files = glob.sync('**/**.test.js', { cwd: testsRoot })
-
-    // Add files to the test suite
-    files.forEach(f => mocha.addFile(path.resolve(testsRoot, f)))
-
     try {
+        const files = glob.sync('**/**.test.js', { cwd: testsRoot })
+
+        // Add files to the test suite
+        files.forEach(f => mocha.addFile(path.resolve(testsRoot, f)))
+
         // Run the mocha test
         mocha.timeout(60000) // 60 seconds to run
         mocha.run(failures => {

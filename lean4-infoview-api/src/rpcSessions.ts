@@ -158,7 +158,7 @@ class RpcSessionForFile {
         this.failed = reason
         // NOTE(WN): the sessions map is keyed by URI rather than ID and by the time this
         // function executes, a new session for the same file may already have been added.
-        // So we should only delete the stored session if's still this one.
+        // So we should only delete the stored session if it's still this one.
         if (this.sessions.sessions.get(this.uri) === this) {
             this.sessions.sessions.delete(this.uri)
         }
