@@ -67,6 +67,12 @@ export function useRpcSessionAtPos(pos: DocumentPosition): RpcSessionAtPos {
 }
 
 /** @deprecated use {@link useRpcSession} instead */
+/*
+ * NOTE(WN): This context cannot be removed as of 2024-05-27 since existing widgets use it.
+ * For backwards compatibility, it must be set to the correct value by infoview code.
+ * A future major release of @leanprover/infoview could remove this context
+ * after it has been deprecated for a sufficiently long time.
+ */
 export const RpcContext = React.createContext<RpcSessionAtPos>(noCtxRpcSession)
 
 /**
