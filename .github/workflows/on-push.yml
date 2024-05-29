@@ -43,17 +43,17 @@ jobs:
           npm ci
           npm run build
 
-      - name: Publish infoview-api (if new version)
+      - name: Try publishing infoview-api
         if: ${{ startsWith(github.ref, 'refs/tags/v') && !endsWith(github.ref, '-pre') && matrix.os == 'ubuntu-latest' }}
         continue-on-error: true
         run: |
-          [ "$(npm view @leanprover/infoview-api version)" != "$(sed -n 's/^\s*"version":\s*"\(.*\)",\s*/\1/p' lean4-infoview-api/package.json)" ] && (npm publish --workspace=lean4-infoview-api --access=public) || (echo "infoview-api version unchanged")
+          npm publish --workspace=lean4-infoview-api --access=public
 
-      - name: Publish infoview (if new version)
+      - name: Try publishing infoview
         if: ${{ startsWith(github.ref, 'refs/tags/v') && !endsWith(github.ref, '-pre') && matrix.os == 'ubuntu-latest' }}
         continue-on-error: true
         run: |
-          [ "$(npm view @leanprover/infoview version)" != "$(sed -n 's/^\s*"version":\s*"\(.*\)",\s*/\1/p' lean4-infoview/package.json)" ] && (npm publish --workspace=lean4-infoview --access=public) || (echo "infoview version unchanged")
+          npm publish --workspace=lean4-infoview --access=public
 
       - name: Package
         run: npm run package --workspace=lean4
