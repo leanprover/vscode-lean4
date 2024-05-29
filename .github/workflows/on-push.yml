@@ -43,24 +43,17 @@ jobs:
           npm ci
           npm run build
 
-      - name: Publish infoview-api
+      - name: Publish infoview-api (if new version)
         if: ${{ matrix.os == 'ubuntu-latest' }}
         continue-on-error: true
         run: |
-          npm publish --workspace=lean4-infoview-api --access=public
+          [ "$(npm view @leanprover/infoview-api version)" != "$(node -p -e 'require("./lean4-infoview-api/package.json").version')" ] && npm publish --workspace=lean4-infoview-api --access=public
 
-      - name: Publish infoview
+      - name: Publish infoview (if new version)
         if: ${{ (matrix.os == 'ubuntu-latest') }}
         continue-on-error: true
         run: |
-          [ "$(npm view @leanprover/infoview version)" != "$(node -p -e 'require("./lean4-infoview/package.json").version')" ] && echo "Would publish!"          # PUB_VERSION=$(npm view @leanprover/infoview version)
-          # NEW_VERSION=$(node -p -e "require('./lean4-infoview/package.json').version")
-
-          # npm publish --workspace=lean4-infoview --access=public
-          # PUB_VERSION=$(npm view @leanprover/infoview version)
-          # NEW_VERSION=$(node -p -e "require('./lean4-infoview/package.json').version")
-
-          # npm publish --workspace=lean4-infoview --access=public
+          [ "$(npm view @leanprover/infoview version)" != "$(node -p -e 'require("./lean4-infoview/package.json").version')" ] && npm publish --workspace=lean4-infoview --access=public
 
       - name: Package
         run: npm run package --workspace=lean4

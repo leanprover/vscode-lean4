@@ -1,5 +1,4 @@
 #!/bin/sh
-
 if [ $# != 1 ]; then
   echo Usage: ./prerelease.sh 1.2.3
   exit 1
