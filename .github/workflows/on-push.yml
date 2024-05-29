@@ -47,13 +47,13 @@ jobs:
         if: ${{ matrix.os == 'ubuntu-latest' }}
         continue-on-error: true
         run: |
-          [ "$(npm view @leanprover/infoview-api version)" != "$(node -p -e 'require("./lean4-infoview-api/package.json").version')" ] && npm publish --workspace=lean4-infoview-api --access=public
+          [ "$(npm view @leanprover/infoview-api version)" != "$(sed -n 's/^\s*"version":\s*"\(.*\)",\s*/\1/p' lean4-infoview-api/package.json)" ] && (npm publish --workspace=lean4-infoview-api --access=public) || (echo "infoview-api version unchanged")
 
       - name: Publish infoview (if new version)
         if: ${{ (matrix.os == 'ubuntu-latest') }}
         continue-on-error: true
         run: |
-          [ "$(npm view @leanprover/infoview version)" != "$(node -p -e 'require("./lean4-infoview/package.json").version')" ] && npm publish --workspace=lean4-infoview --access=public
+          [ "$(npm view @leanprover/infoview version)" != "$(sed -n 's/^\s*"version":\s*"\(.*\)",\s*/\1/p' lean4-infoview/package.json)" ] && (npm publish --workspace=lean4-infoview --access=public) || (echo "infoview version unchanged")
 
       - name: Package
         run: npm run package --workspace=lean4
