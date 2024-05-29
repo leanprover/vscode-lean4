@@ -39,7 +39,7 @@
         "@types/marked": "^4.3.1",
         "@types/react": "^18.2.15",
         "@types/react-dom": "^18.2.7",
-        "current-release": "npm:@leanprover/infoview@^0.7.0",
+        "current-release": "npm:@leanprover/infoview@latest",
         "react": "^18.2.0",
         "react-dom": "^18.2.0",
         "rollup": "^3.26.2",
