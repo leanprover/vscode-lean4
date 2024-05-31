@@ -3,5 +3,6 @@
     "compilerOptions": {
         "rootDir": "../"
     },
-    "include": ["./breaking.ts"]
+    "include": ["./**/*", "../src/**/*"],
+    "exclude": ["./breaking.ts"]
 }
