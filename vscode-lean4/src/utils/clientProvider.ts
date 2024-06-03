@@ -1,13 +1,34 @@
 import { LeanFileProgressProcessingInfo, ServerStoppedReason } from '@leanprover/infoview-api'
 import { Disposable, EventEmitter, OutputChannel, TextDocument, TextEditor, commands, window, workspace } from 'vscode'
+import {
+    checkAll,
+    checkIsLakeInstalledCorrectly,
+    checkIsLeanVersionUpToDate,
+    checkIsValidProjectFolder,
+} from '../diagnostics/setupDiagnostics'
+import { PreconditionCheckResult } from '../diagnostics/setupNotifs'
 import { LeanClient } from '../leanclient'
-import { checkLean4ProjectPreconditions } from '../projectDiagnostics'
 import { ExtUri, FileUri, UntitledUri, getWorkspaceFolderUri, toExtUri } from './exturi'
 import { LeanInstaller } from './leanInstaller'
 import { logger } from './logger'
 import { displayError } from './notifs'
-import { findLeanProjectRoot } from './projectInfo'
-import { PreconditionCheckResult } from './setupDiagnostics'
+import { findLeanProjectRoot, willUseLakeServer } from './projectInfo'
+
+async function checkLean4ProjectPreconditions(
+    channel: OutputChannel,
+    folderUri: ExtUri,
+): Promise<PreconditionCheckResult> {
+    return await checkAll(
+        () => checkIsValidProjectFolder(channel, folderUri),
+        () => checkIsLeanVersionUpToDate(channel, folderUri, { modal: false }),
+        async () => {
+            if (!(await willUseLakeServer(folderUri))) {
+                return 'Fulfilled'
+            }
+            return await checkIsLakeInstalledCorrectly(channel, folderUri, {})
+        },
+    )
+}
 
 // This class ensures we have one LeanClient per folder.
 export class LeanClientProvider implements Disposable {
@@ -60,7 +81,7 @@ export class LeanClientProvider implements Disposable {
 
         workspace.onDidChangeWorkspaceFolders(event => {
             // Remove all clients that are not referenced by any folder anymore
-            if (!event.removed) {
+            if (event.removed.length === 0) {
                 return
             }
             this.clients.forEach((client, key) => {
@@ -99,7 +120,7 @@ export class LeanClientProvider implements Disposable {
                 const projectUri = await findLeanProjectRoot(uri)
 
                 const preconditionCheckResult = await checkLean4ProjectPreconditions(this.outputChannel, projectUri)
-                if (preconditionCheckResult !== PreconditionCheckResult.Fatal) {
+                if (preconditionCheckResult !== 'Fatal') {
                     logger.log('[ClientProvider] got lean version 4')
                     const [cached, client] = await this.ensureClient(uri)
                     if (cached && client) {
@@ -172,16 +193,12 @@ export class LeanClientProvider implements Disposable {
             return
         }
 
-        try {
-            const [_, client] = await this.ensureClient(uri)
-            if (!client) {
-                return
-            }
-
-            await client.openLean4Document(document)
-        } catch (e) {
-            logger.log(`[ClientProvider] ### Error opening document: ${e}`)
+        const [_, client] = await this.ensureClient(uri)
+        if (!client) {
+            return
         }
+
+        await client.openLean4Document(document)
     }
 
     // Find the client for a given document.
@@ -234,7 +251,7 @@ export class LeanClientProvider implements Disposable {
         this.pending.set(key, true)
 
         const preconditionCheckResult = await checkLean4ProjectPreconditions(this.outputChannel, folderUri)
-        if (preconditionCheckResult === PreconditionCheckResult.Fatal) {
+        if (preconditionCheckResult === 'Fatal') {
             this.pending.delete(key)
             return [false, undefined]
         }

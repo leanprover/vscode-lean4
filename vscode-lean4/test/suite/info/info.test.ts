@@ -1,4 +1,4 @@
-import * as assert from 'assert'
+import assert from 'assert'
 import { suite } from 'mocha'
 import * as vscode from 'vscode'
 import { logger } from '../../../src/utils/logger'

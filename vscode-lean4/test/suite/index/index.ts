@@ -1,5 +1,5 @@
-import * as glob from 'glob'
-import * as Mocha from 'mocha'
+import glob from 'glob'
+import Mocha from 'mocha'
 import * as path from 'path'
 import { getTestFolder } from '../../../src/config'
 import { logger } from '../../../src/utils/logger'

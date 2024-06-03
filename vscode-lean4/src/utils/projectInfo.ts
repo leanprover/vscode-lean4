@@ -1,6 +1,6 @@
 import * as fs from 'fs'
 import { ExtUri, FileUri, getWorkspaceFolderUri } from './exturi'
-import { fileExists } from './fsHelper'
+import { dirExists, fileExists } from './fsHelper'
 import path = require('path')
 
 // Detect lean4 root directory (works for both lean4 repo and nightly distribution)
@@ -11,21 +11,21 @@ export async function isCoreLean4Directory(path: FileUri): Promise<boolean> {
     const srcPath = path.join('src').fsPath
 
     const isCoreLean4RootDirectory =
-        (await fileExists(licensePath)) && (await fileExists(licensesPath)) && (await fileExists(srcPath))
+        (await fileExists(licensePath)) && (await fileExists(licensesPath)) && (await dirExists(srcPath))
     if (isCoreLean4RootDirectory) {
         return true
     }
 
-    const initPath = path.join('Init').fsPath
-    const leanPath = path.join('Lean').fsPath
+    const initPath = path.join('Init.lean').fsPath
+    const leanPath = path.join('Lean.lean').fsPath
     const kernelPath = path.join('kernel').fsPath
     const runtimePath = path.join('runtime').fsPath
 
     const isCoreLean4SrcDirectory =
         (await fileExists(initPath)) &&
         (await fileExists(leanPath)) &&
-        (await fileExists(kernelPath)) &&
-        (await fileExists(runtimePath))
+        (await dirExists(kernelPath)) &&
+        (await dirExists(runtimePath))
     return isCoreLean4SrcDirectory
 }
 

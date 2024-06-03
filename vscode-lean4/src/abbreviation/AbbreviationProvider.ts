@@ -1,7 +1,7 @@
 import { computed } from 'mobx'
 import { Disposable, EventEmitter, TextEditor } from 'vscode'
 import { autorunDisposable } from '../utils/autorunDisposable'
-import * as abbreviations from './abbreviations.json'
+import abbreviations from './abbreviations.json'
 import { AbbreviationConfig, SymbolsByAbbreviation } from './config'
 
 /**

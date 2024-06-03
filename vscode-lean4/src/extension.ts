@@ -3,23 +3,30 @@ import * as path from 'path'
 import { commands, Disposable, ExtensionContext, extensions, TextDocument, window, workspace } from 'vscode'
 import { AbbreviationFeature } from './abbreviation'
 import { getDefaultLeanVersion } from './config'
+import { FullDiagnosticsProvider } from './diagnostics/fullDiagnostics'
+import {
+    checkAll,
+    checkAreDependenciesInstalled,
+    checkIsElanUpToDate,
+    checkIsLean4Installed,
+} from './diagnostics/setupDiagnostics'
+import { PreconditionCheckResult } from './diagnostics/setupNotifs'
 import { DocViewProvider } from './docview'
 import { AlwaysEnabledFeatures, Exports, Lean4EnabledFeatures } from './exports'
-import { checkLean4FeaturePreconditions } from './globalDiagnostics'
 import { InfoProvider } from './infoview'
 import { LeanClient } from './leanclient'
+import { ManualView } from './manualview'
 import { ProjectInitializationProvider } from './projectinit'
 import { ProjectOperationProvider } from './projectoperations'
 import { LeanTaskGutter } from './taskgutter'
 import { LeanClientProvider } from './utils/clientProvider'
 import { LeanConfigWatchService } from './utils/configwatchservice'
 import { PATH, setProcessEnvPATH } from './utils/envPath'
-import { isExtUri, toExtUriOrError } from './utils/exturi'
+import { FileUri, isExtUri, toExtUriOrError } from './utils/exturi'
 import { LeanInstaller } from './utils/leanInstaller'
 import { displayWarning } from './utils/notifs'
 import { PathExtensionProvider } from './utils/pathExtensionProvider'
 import { findLeanProjectRoot } from './utils/projectInfo'
-import { FullDiagnosticsProvider, PreconditionCheckResult } from './utils/setupDiagnostics'
 
 async function setLeanFeatureSetActive(isActive: boolean) {
     await commands.executeCommand('setContext', 'lean4.isLeanFeatureSetActive', isActive)
@@ -71,6 +78,10 @@ function activateAlwaysEnabledFeatures(context: ExtensionContext): AlwaysEnabled
         ),
     )
 
+    const extensionPath = new FileUri(context.extensionPath)
+    const manualView = new ManualView(extensionPath, extensionPath.join('manual', 'manual.md'))
+    context.subscriptions.push(manualView)
+
     const docView = new DocViewProvider(context.extensionUri)
     context.subscriptions.push(docView)
 
@@ -79,13 +90,16 @@ function activateAlwaysEnabledFeatures(context: ExtensionContext): AlwaysEnabled
         commands.registerCommand('lean4.troubleshooting.showOutput', () => outputChannel.show(true)),
     )
 
-    const projectInitializationProvider = new ProjectInitializationProvider(outputChannel)
-    context.subscriptions.push(projectInitializationProvider)
     const defaultToolchain = getDefaultLeanVersion()
-
     const installer = new LeanInstaller(outputChannel, defaultToolchain)
+    context.subscriptions.push(
+        commands.registerCommand('lean4.setup.installElan', () =>
+            installer.displayInstallElanPrompt('Information', undefined),
+        ),
+    )
 
-    context.subscriptions.push(commands.registerCommand('lean4.setup.installElan', () => installer.installElan()))
+    const projectInitializationProvider = new ProjectInitializationProvider(outputChannel, installer)
+    context.subscriptions.push(projectInitializationProvider)
 
     const checkForExtensionConflict = (doc: TextDocument) => {
         const isLean3ExtensionInstalled = extensions.getExtension('jroesch.lean') !== undefined
@@ -114,6 +128,21 @@ function activateAbbreviationFeature(context: ExtensionContext, docView: DocView
     return abbrev
 }
 
+async function checkLean4FeaturePreconditions(
+    installer: LeanInstaller,
+    cwdUri: FileUri | undefined,
+): Promise<PreconditionCheckResult> {
+    return await checkAll(
+        () => checkAreDependenciesInstalled(installer.getOutputChannel(), cwdUri),
+        () => checkIsLean4Installed(installer, cwdUri),
+        () =>
+            checkIsElanUpToDate(installer, cwdUri, {
+                elanMustBeInstalled: false,
+                modal: false,
+            }),
+    )
+}
+
 async function activateLean4Features(
     context: ExtensionContext,
     installer: LeanInstaller,
@@ -122,7 +151,7 @@ async function activateLean4Features(
     const docUri = toExtUriOrError(doc.uri)
     const cwd = docUri.scheme === 'file' ? await findLeanProjectRoot(docUri) : undefined
     const preconditionCheckResult = await checkLean4FeaturePreconditions(installer, cwd)
-    if (preconditionCheckResult === PreconditionCheckResult.Fatal) {
+    if (preconditionCheckResult === 'Fatal') {
         return undefined
     }
 
