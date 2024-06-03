@@ -144,12 +144,12 @@ export function Infos() {
     )
 
     const infoProps: Keyed<InfoProps>[] = pinnedPositions.map(pos => ({ kind: 'pin', onPin: unpin, pos, key: pos.key }))
-    if (curPos) infoProps.push({ kind: 'cursor', onPin: pin, key: 'cursor' })
+    if (curPos) infoProps.push({ kind: 'cursor', onPin: pin, key: 'cursor', pos: curPos })
 
     return (
         <div>
             {infoProps.map(ps => (
-                <Info {...ps} />
+                <Info {...ps} key={ps.key} />
             ))}
             {!curPos && <p>Click somewhere in the Lean file to enable the infoview.</p>}
         </div>

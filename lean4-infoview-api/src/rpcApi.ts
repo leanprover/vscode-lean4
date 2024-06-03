@@ -112,6 +112,7 @@ export type MessageData = RpcPtr<'Lean.MessageData'>
 export type MsgEmbed =
     | { expr: CodeWithInfos }
     | { goal: InteractiveGoal }
+    | { widget: { wi: UserWidgetInstance; alt: TaggedText<MsgEmbed> } }
     | { trace: TraceEmbed }
     | { lazyTrace: [number, Name, MessageData] } // old collapsible trace support
 
@@ -166,8 +167,10 @@ export function getGoToLocation(rs: RpcSessionAtPos, kind: GoToKind, info: InfoW
 
 export interface UserWidget {
     id: string
-    /** Newer widget APIs do not send this.
-     * In previous versions, it used to be a user-readable name to show in a title bar. */
+    /**
+     * In previous versions, this used to be a user-readable name to show in a title bar.
+     * @deprecated newer widget APIs do not send this.
+     */
     name?: string
     /** A hash (provided by Lean) of the widgetSource's sourcetext.
      * This is used to look up the WidgetSource object.
