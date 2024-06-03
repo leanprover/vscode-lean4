@@ -32,7 +32,6 @@ import * as ls from 'vscode-languageserver-protocol'
 
 import { LeanFileProgressParams, LeanFileProgressProcessingInfo, ServerStoppedReason } from '@leanprover/infoview-api'
 import {
-    automaticallyBuildDependencies,
     getElaborationDelay,
     getFallBackToStringOccurrenceHighlighting,
     serverArgs,
@@ -355,15 +354,13 @@ export class LeanClient implements Disposable {
     }
 
     notifyDidOpen(doc: TextDocument) {
-        void this.client?.sendNotification('textDocument/didOpen', {
-            textDocument: {
-                uri: doc.uri.toString(),
-                languageId: doc.languageId,
-                version: 1,
-                text: doc.getText(),
-            },
-            dependencyBuildMode: automaticallyBuildDependencies() ? 'always' : 'never',
-        })
+        if (this.client === undefined) {
+            return
+        }
+
+        const params = this.client.code2ProtocolConverter.asOpenTextDocumentParams(doc)
+
+        void this.client.sendNotification('textDocument/didOpen', params)
     }
 
     isInFolderManagedByThisClient(uri: ExtUri): boolean {
@@ -441,15 +438,7 @@ export class LeanClient implements Disposable {
                 uri,
             },
         })
-        void this.client?.sendNotification('textDocument/didOpen', {
-            textDocument: {
-                uri,
-                languageId: 'lean4',
-                version: 1,
-                text: doc.getText(),
-            },
-            dependencyBuildMode: automaticallyBuildDependencies() ? 'always' : 'once',
-        })
+        this.notifyDidOpen(doc)
         this.restartedWorkerEmitter.fire(uri)
     }
 
