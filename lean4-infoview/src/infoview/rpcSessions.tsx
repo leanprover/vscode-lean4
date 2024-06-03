@@ -5,7 +5,7 @@ import type {
     DocumentUri,
     TextDocumentPositionParams,
 } from 'vscode-languageserver-protocol'
-import { EditorContext, PosContext } from './contexts'
+import { EditorContext, EnvPosContext } from './contexts'
 import { DocumentPosition, useClientNotificationEffect, useEvent } from './util'
 
 const RpcSessionsContext = React.createContext<RpcSessions | undefined>(undefined)
@@ -76,12 +76,12 @@ export function useRpcSessionAtPos(pos: DocumentPosition): RpcSessionAtPos {
 export const RpcContext = React.createContext<RpcSessionAtPos>(noCtxRpcSession)
 
 /**
- * Retrieve an RPC session at {@link PosContext},
+ * Retrieve an RPC session at {@link EnvPosContext},
  * if the context is set.
- * Otherwise return a dummy session that throws on any call.
+ * Otherwise return a dummy session that throws on any RPC call.
  */
 export function useRpcSession(): RpcSessionAtPos {
-    const pos = React.useContext(PosContext)
+    const pos = React.useContext(EnvPosContext)
     const rsc = React.useContext(RpcSessionsContext)
     if (!pos) return noPosRpcSession
     if (!rsc) return noCtxRpcSession

@@ -4,7 +4,7 @@ import { InteractiveMessage } from './infoview/traceExplorer'
 import { mapRpcError, useAsync } from './infoview/util'
 
 export * from '@leanprover/infoview-api'
-export { EditorContext, PosContext, VersionContext } from './infoview/contexts'
+export { EditorContext, EnvPosContext, VersionContext } from './infoview/contexts'
 export { EditorConnection } from './infoview/editorConnection'
 export { GoalLocation, GoalsLocation, LocationsContext } from './infoview/goalLocation'
 export { InteractiveCode, InteractiveCodeProps } from './infoview/interactiveCode'
