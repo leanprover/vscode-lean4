@@ -1,5 +1,4 @@
 import {
-    Diagnostic,
     DiagnosticCollection,
     Disposable,
     DocumentHighlight,
@@ -44,7 +43,8 @@ import { logger } from './utils/logger'
 // @ts-ignore
 import { SemVer } from 'semver'
 import { c2pConverter, p2cConverter, patchConverters } from './utils/converters'
-import { ExtUri, parseExtUri, toExtUri } from './utils/exturi'
+import { collectAllOpenLeanDocumentUris } from './utils/docInfo'
+import { ExtUri, extUriEquals, parseExtUri, toExtUri } from './utils/exturi'
 import {
     displayError,
     displayErrorWithOptionalInput,
@@ -57,10 +57,6 @@ import path = require('path')
 const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
 export type ServerProgress = Map<ExtUri, LeanFileProgressProcessingInfo[]>
-
-export function getFullRange(diag: Diagnostic): Range {
-    return (diag as any)?.fullRange || diag.range
-}
 
 export class LeanClient implements Disposable {
     running: boolean
@@ -110,9 +106,6 @@ export class LeanClient implements Disposable {
 
     private serverFailedEmitter = new EventEmitter<string>()
     serverFailed = this.serverFailedEmitter.event
-
-    /** Files which are open. */
-    private isOpen: Map<string, TextDocument> = new Map()
 
     constructor(folderUri: ExtUri, outputChannel: OutputChannel, elanDefaultToolchain: string) {
         this.outputChannel = outputChannel // can be null when opening adhoc files.
@@ -232,11 +225,6 @@ export class LeanClient implements Disposable {
                 this.staleDepNotifier = this.diagnostics(params => this.checkForImportsOutdatedError(params))
             }
 
-            // tell the new client about the documents that are already open!
-            for (const key of this.isOpen.keys()) {
-                const doc = this.isOpen.get(key)
-                if (doc) this.notifyDidOpen(doc)
-            }
             // if we got this far then the client is happy so we are running!
             this.running = true
         } catch (error) {
@@ -337,20 +325,6 @@ export class LeanClient implements Disposable {
         await this.restart()
 
         return 'Success'
-    }
-
-    async openLean4Document(doc: TextDocument) {
-        if (this.isOpen.has(doc.uri.toString())) return
-
-        this.isOpen.set(doc.uri.toString(), doc)
-
-        if (!this.running) return // there was a problem starting lean server.
-
-        // didOpenEditor may have also changed the language, so we fire the
-        // event here because the InfoView should be wired up to receive it now.
-        this.didSetLanguageEmitter.fire(doc.languageId)
-
-        this.notifyDidOpen(doc)
     }
 
     notifyDidOpen(doc: TextDocument) {
@@ -533,7 +507,6 @@ export class LeanClient implements Disposable {
             middleware: {
                 handleDiagnostics: (uri, diagnostics, next) => {
                     next(uri, diagnostics)
-                    if (!this.client) return
                     const uri_ = c2pConverter.asUri(uri)
                     const diagnostics_ = []
                     for (const d of diagnostics) {
@@ -545,22 +518,31 @@ export class LeanClient implements Disposable {
                     this.diagnosticsEmitter.fire({ uri: uri_, diagnostics: diagnostics_ })
                 },
 
-                didOpen: async () => {
-                    // Note: as per the LSP spec: An open notification must not be sent more than once
-                    // without a corresponding close notification send before. This means open and close
-                    // notification must be balanced and the max open count for a particular textDocument
-                    // is one.  So this even does nothing the notification is handled by the
-                    // openLean4Document method below after the 'lean4' languageId is established and
-                    // it has weeded out documents opened to invisible editors (like 'git:' schemes and
-                    // invisible editors created for Ctrl+Hover events.  A side effect of unbalanced
-                    // open/close notification is leaking 'lean --worker' processes.
-                    // See https://github.com/microsoft/vscode/issues/78453).
-                    return
+                didOpen: async (doc, next) => {
+                    const docUri = toExtUri(doc.uri)
+                    if (!docUri) {
+                        return // This should never happen since the glob we launch the client for ensures that all uris are ext uris
+                    }
+
+                    const openDocUris: ExtUri[] = collectAllOpenLeanDocumentUris()
+                    const docIsVisible = openDocUris.some(openDocUri => extUriEquals(openDocUri, docUri))
+
+                    if (!docIsVisible) {
+                        // The language client library emits a `didOpen` notification when hovering over an identifier while holding `Ctrl` in order to provide a preview for the line that the definition is on.
+                        // In Lean, this is very expensive and hence does not make much sense, so we filter these notification here.
+                        // This is not an issue because VS Code will not actually emit any other requests to that file except the corresponding `didClose` notification, which is handled below.
+                        // See https://github.com/microsoft/vscode/issues/78453 (the solution suggested in the thread is wrong, but `collectAllOpenLeanDocumentUris` works).
+                        return
+                    }
+
+                    await next(doc)
+
+                    // Opening the document may have set the language ID.
+                    this.didSetLanguageEmitter.fire(doc.languageId)
                 },
 
                 didChange: async (data, next) => {
                     await next(data)
-                    if (!this.running || !this.client) return // there was a problem starting lean server.
                     const params = c2pConverter.asChangeTextDocumentParams(
                         data,
                         data.document.uri,
@@ -570,11 +552,29 @@ export class LeanClient implements Disposable {
                 },
 
                 didClose: async (doc, next) => {
-                    if (!this.isOpen.delete(doc.uri.toString())) {
+                    const docUri = toExtUri(doc.uri)
+                    if (!docUri) {
+                        return // This should never happen since the glob we launch the client for ensures that all uris are ext uris
+                    }
+
+                    // There is a bug I noticed in the language client library where `openDocuments` will also contain documents
+                    // that were filtered in the `didOpen` middleware if the document was opened while starting the client (as of 8.1.0).
+                    // Fortunately for us, our middleware should only filter synthetic documents that can only be opened
+                    // after launching the language server first, so this should never be an issue.
+                    const openDocuments = Array.from(
+                        this.client?.getFeature('textDocument/didOpen').openDocuments ?? [],
+                    )
+                    const docIsOpen = openDocuments.some(openDoc => {
+                        const openDocUri = toExtUri(openDoc.uri)
+                        return openDocUri !== undefined && extUriEquals(openDocUri, docUri)
+                    })
+                    if (!docIsOpen) {
+                        // Do not send `didClose` if we filtered the corresponding `didOpen` (see comment in the `didOpen` middleware).
                         return
                     }
+
                     await next(doc)
-                    if (!this.running || !this.client) return // there was a problem starting lean server.
+
                     const params = c2pConverter.asCloseTextDocumentParams(doc)
                     this.didCloseEmitter.fire(params)
                 },

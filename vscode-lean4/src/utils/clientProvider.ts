@@ -1,5 +1,5 @@
 import { LeanFileProgressProcessingInfo, ServerStoppedReason } from '@leanprover/infoview-api'
-import { Disposable, EventEmitter, OutputChannel, TextDocument, TextEditor, commands, window, workspace } from 'vscode'
+import { Disposable, EventEmitter, OutputChannel, TextDocument, commands, window, workspace } from 'vscode'
 import {
     checkAll,
     checkIsLakeInstalledCorrectly,
@@ -135,15 +135,6 @@ export class LeanClientProvider implements Disposable {
         this.processingInstallChanged = false
     }
 
-    private getVisibleEditor(uri: ExtUri): TextEditor | undefined {
-        for (const editor of window.visibleTextEditors) {
-            if (uri.equalsUri(editor.document.uri)) {
-                return editor
-            }
-        }
-        return undefined
-    }
-
     private restartFile() {
         if (!this.activeClient || !this.activeClient.isRunning()) {
             displayError('No active client.')
@@ -185,20 +176,8 @@ export class LeanClientProvider implements Disposable {
             return
         }
 
-        if (!this.getVisibleEditor(uri)) {
-            // Sometimes VS code opens a document that has no editor yet.
-            // For example, this happens when the vs code opens files to get git
-            // information using a "git:" Uri scheme:
-            //  git:/d%3A/Temp/lean_examples/Foo/Foo/Hello.lean.git?%7B%22path%22%3A%22d%3A%5C%5CTemp%5C%5Clean_examples%5C%5CFoo%5C%5CFoo%5C%5CHello.lean%22%2C%22ref%22%3A%22%22%7D
-            return
-        }
-
-        const [_, client] = await this.ensureClient(uri)
-        if (!client) {
-            return
-        }
-
-        await client.openLean4Document(document)
+        await this.ensureClient(uri)
+        console.log(window.visibleTextEditors.map(ed => ed.document.uri))
     }
 
     // Find the client for a given document.
