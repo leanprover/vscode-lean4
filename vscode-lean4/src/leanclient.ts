@@ -530,7 +530,7 @@ export class LeanClient implements Disposable {
                     if (!docIsOpen) {
                         // The language client library emits a `didOpen` notification when hovering over an identifier while holding `Ctrl` in order to provide a preview for the line that the definition is on.
                         // In Lean, this is very expensive and hence does not make much sense, so we filter these notification here.
-                        // This is not an issue because VS Code will not actually emit any other requests to that file except the corresponding `didClose` notification, which is handled below.
+                        // Should VS Code decide to send requests to a file that was filtered here, the language server will respond with an error, which VS Code will silently discard and interpret as having received an empty response.
                         // See https://github.com/microsoft/vscode/issues/78453 (the solution suggested in the thread is wrong, but `collectAllOpenLeanDocumentUris` works).
                         return
                     }
@@ -570,6 +570,7 @@ export class LeanClient implements Disposable {
                     })
                     if (!docIsOpen) {
                         // Do not send `didClose` if we filtered the corresponding `didOpen` (see comment in the `didOpen` middleware).
+                        // The language server is only resilient against requests for closed files, not the `didClose` notification itself.
                         return
                     }
 
