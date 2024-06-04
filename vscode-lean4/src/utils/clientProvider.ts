@@ -177,7 +177,6 @@ export class LeanClientProvider implements Disposable {
         }
 
         await this.ensureClient(uri)
-        console.log(window.visibleTextEditors.map(ed => ed.document.uri))
     }
 
     // Find the client for a given document.
