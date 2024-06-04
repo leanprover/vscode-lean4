@@ -16,6 +16,7 @@ import { createConverter as createC2PConverter } from 'vscode-languageclient/lib
 import { createConverter as createP2CConverter } from 'vscode-languageclient/lib/common/protocolConverter'
 import * as async from 'vscode-languageclient/lib/common/utils/async'
 import * as ls from 'vscode-languageserver-protocol'
+import { automaticallyBuildDependencies } from '../config'
 
 interface Lean4Diagnostic extends ls.Diagnostic {
     fullRange: ls.Range
@@ -65,6 +66,14 @@ export function patchConverters(p2cConverter: Protocol2CodeConverter, c2pConvert
         return protDiag
     }
     c2pConverter.asDiagnostics = async (diags, token) => async.map(diags, d => c2pConverter.asDiagnostic(d), token)
+
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    const oldC2pAsOpenTextDocumentParams = c2pConverter.asOpenTextDocumentParams
+    c2pConverter.asOpenTextDocumentParams = doc => {
+        const params = oldC2pAsOpenTextDocumentParams.apply(this, [doc])
+        params.dependencyBuildMode = automaticallyBuildDependencies() ? 'always' : 'once'
+        return params
+    }
 
     // eslint-disable-next-line @typescript-eslint/unbound-method
     const oldP2CAsWorkspaceEdit = p2cConverter.asWorkspaceEdit
