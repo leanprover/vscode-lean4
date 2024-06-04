@@ -525,9 +525,9 @@ export class LeanClient implements Disposable {
                     }
 
                     const openDocUris: ExtUri[] = collectAllOpenLeanDocumentUris()
-                    const docIsVisible = openDocUris.some(openDocUri => extUriEquals(openDocUri, docUri))
+                    const docIsOpen = openDocUris.some(openDocUri => extUriEquals(openDocUri, docUri))
 
-                    if (!docIsVisible) {
+                    if (!docIsOpen) {
                         // The language client library emits a `didOpen` notification when hovering over an identifier while holding `Ctrl` in order to provide a preview for the line that the definition is on.
                         // In Lean, this is very expensive and hence does not make much sense, so we filter these notification here.
                         // This is not an issue because VS Code will not actually emit any other requests to that file except the corresponding `didClose` notification, which is handled below.
