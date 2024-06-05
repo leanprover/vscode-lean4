@@ -15,7 +15,7 @@ import {
     UserWidgetInstance,
     Widget_getWidgets,
 } from '@leanprover/infoview-api'
-import { ConfigContext, EditorContext, LspDiagnosticsContext, ProgressContext } from './contexts'
+import { ConfigContext, EditorContext, EnvPosContext, LspDiagnosticsContext, ProgressContext } from './contexts'
 import { GoalsLocation, Locations, LocationsContext } from './goalLocation'
 import { FilteredGoals, goalsToString } from './goals'
 import { lspDiagToInteractive, MessagesList } from './messages'
@@ -331,8 +331,11 @@ export type InfoProps = InfoPinnable & { pos?: DocumentPosition }
 
 /** Fetches info from the server and renders an {@link InfoDisplay}. */
 export function Info(props: InfoProps) {
-    if (props.kind === 'cursor') return <InfoAtCursor {...props} />
-    else return <InfoAux {...props} pos={props.pos} />
+    return (
+        <EnvPosContext.Provider value={props.pos}>
+            {props.kind === 'cursor' ? <InfoAtCursor {...props} /> : <InfoAux {...props} />}
+        </EnvPosContext.Provider>
+    )
 }
 
 function InfoAtCursor(props: InfoProps) {
