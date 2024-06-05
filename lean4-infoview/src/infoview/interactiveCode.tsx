@@ -214,6 +214,7 @@ function InteractiveCodeTag({ tag: ct, fmt }: InteractiveTagProps<SubexprInfo>) 
         >
             <WithTooltipOnHover
                 data-vscode-context={JSON.stringify(vscodeContext)}
+                data-has-tooltip-on-hover
                 tooltipChildren={<TypePopupContents info={ct} />}
                 onClick={(e, next) => {
                     // On ctrl-click or ⌘-click, if location is known, go to it in the editor
