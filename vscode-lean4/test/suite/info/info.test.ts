@@ -172,30 +172,37 @@ suite('InfoView Test Suite', () => {
     test('Tooltip exists', async () => {
         logger.log('=================== Tooltip exists ===================')
 
-        const features = await initLean4Untitled('#eval 0')
+        const text = 'example (issue461 : Type 4) : issue461 := by sorry'
+        const features = await initLean4Untitled(text)
         const info = features.infoProvider
         assert(info, 'No InfoProvider export')
 
-        gotoPosition(0, 6)
-        await assertStringInInfoview(info, 'Nat')
+        gotoPosition(0, text.indexOf('by'))
+        await assertStringInInfoview(info, 'issue461')
 
-        logger.log('Clicking `Nat` in InfoView')
-        await info.runTestScript(
-            "Array.from(document.querySelectorAll('span')).find(el => el.innerHTML === 'Nat').click()",
-        )
-        await assertStringInInfoview(info, 'Type')
+        logger.log('Opening tooltip for goal type')
+        await info.runTestScript(`
+          Array.from(document.querySelectorAll('[data-is-goal] *'))
+            .find(el => el.innerHTML === 'issue461')
+            .click()
+        `)
+        await waitForInfoviewHtml(info, 'tooltip-content', 30, 1000, false)
 
-        logger.log('Clicking `Type` in InfoView')
-        await info.runTestScript(
-            "Array.from(document.querySelectorAll('span')).find(el => el.innerHTML === 'Type').click()",
-        )
-        await assertStringInInfoview(info, 'Type 1')
+        logger.log('Opening tooltip in tooltip')
+        await info.runTestScript(`
+          Array.from(document.querySelectorAll('.tooltip-content [data-has-tooltip-on-hover] *'))
+            .find(el => el.innerHTML === 'Type 4')
+            .click()
+        `)
+        await assertStringInInfoview(info, 'Type 5')
 
-        logger.log('Clicking `Type 1` in InfoView')
-        await info.runTestScript(
-            "Array.from(document.querySelectorAll('span')).find(el => el.innerHTML === 'Type 1').click()",
-        )
-        await assertStringInInfoview(info, 'Type 2')
+        logger.log('Opening tooltip in tooltip in tooltip')
+        await info.runTestScript(`
+          Array.from(document.querySelectorAll('.tooltip-content [data-has-tooltip-on-hover] *'))
+            .find(el => el.innerHTML === 'Type 5')
+            .click()
+        `)
+        await assertStringInInfoview(info, 'Type 6')
 
         await closeAllEditors()
     }).timeout(60000)

@@ -155,7 +155,7 @@ export const Goal = React.memo((props: GoalProps) => {
         [locs, goal.mvarId],
     )
     const goalLi = (
-        <div key={'goal'}>
+        <div key={'goal'} data-is-goal>
             <strong className="goal-vdash">{prefix}</strong>
             <LocationsContext.Provider value={goalLocs}>
                 <InteractiveCode fmt={goal.type} />
