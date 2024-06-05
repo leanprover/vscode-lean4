@@ -15,7 +15,7 @@ import {
     UserWidgetInstance,
     Widget_getWidgets,
 } from '@leanprover/infoview-api'
-import { ConfigContext, EditorContext, LspDiagnosticsContext, ProgressContext } from './contexts'
+import { ConfigContext, EditorContext, EnvPosContext, LspDiagnosticsContext, ProgressContext } from './contexts'
 import { GoalsLocation, Locations, LocationsContext } from './goalLocation'
 import { FilteredGoals, goalsToString } from './goals'
 import { lspDiagToInteractive, MessagesList } from './messages'
@@ -302,22 +302,24 @@ function InfoDisplay(props0: InfoDisplayProps & InfoPinnable) {
 
     return (
         <RpcContext.Provider value={rpcSess}>
-            <details open>
-                <InfoStatusBar
-                    {...props}
-                    triggerUpdate={triggerDisplayUpdate}
-                    isPaused={isPaused}
-                    setPaused={setPaused}
-                />
-                <div className="ml1">
-                    <InfoDisplayContent
+            <EnvPosContext.Provider value={props.pos}>
+                <details open>
+                    <InfoStatusBar
                         {...props}
                         triggerUpdate={triggerDisplayUpdate}
                         isPaused={isPaused}
                         setPaused={setPaused}
                     />
-                </div>
-            </details>
+                    <div className="ml1">
+                        <InfoDisplayContent
+                            {...props}
+                            triggerUpdate={triggerDisplayUpdate}
+                            isPaused={isPaused}
+                            setPaused={setPaused}
+                        />
+                    </div>
+                </details>
+            </EnvPosContext.Provider>
         </RpcContext.Provider>
     )
 }

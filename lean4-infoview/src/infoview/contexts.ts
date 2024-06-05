@@ -39,12 +39,12 @@ export const ProgressContext = React.createContext<Map<DocumentUri, LeanFileProg
  * #### Infoview implementation details
  *
  * In the infoview, {@link EnvPosContext} is set as follows:
- * - in a `<PanelWidgetDisplay>`,
- *   it is the position at which the widget is being displayed:
+ * - in an `<InfoDisplay>`,
+ *   it is the position at which the info block is being displayed:
  *   either a recent editor cursor position
  *   (when shown in the at-cursor `<InfoDisplay>`,
  *   this will lag behind the current editor cursor position
- *   while the `<InfoDisplay>` is in the process of updating)
+ *   while the `<InfoDisplay>` is in the process of updating),
  *   or a pinned position.
  * - in an `<InteractiveMessage>` that comes from a diagnostic
  *   emitted with a syntactic range,

@@ -95,9 +95,5 @@ export interface PanelWidgetProps {
 
 export function PanelWidgetDisplay({ pos, goals, termGoal, selectedLocations, widget }: PanelWidgetDisplayProps) {
     const componentProps: PanelWidgetProps = { pos, goals, termGoal, selectedLocations, ...widget.props }
-    return (
-        <EnvPosContext.Provider value={pos}>
-            <DynamicComponent hash={widget.javascriptHash} props={componentProps} />
-        </EnvPosContext.Provider>
-    )
+    return <DynamicComponent hash={widget.javascriptHash} props={componentProps} />
 }
