@@ -13,7 +13,7 @@ import { marked } from 'marked'
 import { Location } from 'vscode-languageserver-protocol'
 import { EditorContext } from './contexts'
 import { GoalsLocation, LocationsContext, SelectableLocation } from './goalLocation'
-import { useRpcSession } from './rpcSessions'
+import { RpcContext } from './rpcSessions'
 import { HoverState, WithToggleableTooltip, WithTooltipOnHover } from './tooltips'
 import { mapRpcError, useAsync, useEvent } from './util'
 
@@ -80,7 +80,7 @@ function Markdown({ contents }: { contents: string }): JSX.Element {
 
 /** Shows `explicitValue : itsType` and a docstring if there is one. */
 function TypePopupContents({ info }: TypePopupContentsProps) {
-    const rs = useRpcSession()
+    const rs = React.useContext(RpcContext)
     // When `err` is defined we show the error,
     // otherwise if `ip` is defined we show its contents,
     // otherwise a 'loading' message.
@@ -146,7 +146,7 @@ const DIFF_TAG_TO_EXPLANATION: { [K in DiffTag]: string } = {
  * can be shift-clicked to select it.
  */
 function InteractiveCodeTag({ tag: ct, fmt }: InteractiveTagProps<SubexprInfo>) {
-    const rs = useRpcSession()
+    const rs = React.useContext(RpcContext)
     const ec = React.useContext(EditorContext)
     const [hoverState, setHoverState] = React.useState<HoverState>('off')
     const [goToDefErrorState, setGoToDefErrorState] = React.useState<boolean>(false)

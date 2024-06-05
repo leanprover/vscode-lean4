@@ -7,6 +7,11 @@ import type {
     WorkspaceEdit,
 } from 'vscode-languageserver-protocol'
 
+export interface EditorFsApi {
+    stat(path: string): Promise<any>
+    read(path: string): Promise<Uint8Array>
+}
+
 /**
  * An insert `here` should be written exactly at the specified position,
  * while one `above` should go on the preceding line.
@@ -15,6 +20,9 @@ export type TextInsertKind = 'here' | 'above'
 
 /** Interface that the InfoView WebView uses to talk to the hosting editor. */
 export interface EditorApi {
+    // NOTE: not needed as of now.
+    //fs : EditorFsApi;
+
     /** Make a request to the LSP server. */
     sendClientRequest(uri: string, method: string, params: any): Promise<any>
     /** Send a notification to the LSP server. */
