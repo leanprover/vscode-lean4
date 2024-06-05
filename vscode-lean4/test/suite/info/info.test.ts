@@ -9,6 +9,7 @@ import {
     closeAllEditors,
     findWord,
     gotoDefinition,
+    gotoPosition,
     initLean4Untitled,
     insertText,
     waitForActiveEditor,
@@ -164,6 +165,37 @@ suite('InfoView Test Suite', () => {
 
         logger.log('make sure pinned expression is still there')
         await assertStringInInfoview(info, expectedEval)
+
+        await closeAllEditors()
+    }).timeout(60000)
+
+    test('Tooltip exists', async () => {
+        logger.log('=================== Tooltip exists ===================')
+
+        const features = await initLean4Untitled('#eval 0')
+        const info = features.infoProvider
+        assert(info, 'No InfoProvider export')
+
+        gotoPosition(0, 6)
+        await assertStringInInfoview(info, 'Nat')
+
+        logger.log('Clicking `Nat` in InfoView')
+        await info.runTestScript(
+            "Array.from(document.querySelectorAll('span')).find(el => el.innerHTML === 'Nat').click()",
+        )
+        await assertStringInInfoview(info, 'Type')
+
+        logger.log('Clicking `Type` in InfoView')
+        await info.runTestScript(
+            "Array.from(document.querySelectorAll('span')).find(el => el.innerHTML === 'Type').click()",
+        )
+        await assertStringInInfoview(info, 'Type 1')
+
+        logger.log('Clicking `Type 1` in InfoView')
+        await info.runTestScript(
+            "Array.from(document.querySelectorAll('span')).find(el => el.innerHTML === 'Type 1').click()",
+        )
+        await assertStringInInfoview(info, 'Type 2')
 
         await closeAllEditors()
     }).timeout(60000)
