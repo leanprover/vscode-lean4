@@ -70,6 +70,8 @@ export class LeanClient implements Disposable {
     private isRestarting: boolean = false
     private staleDepNotifier: Disposable | undefined
 
+    private openServerDocuments: Set<string> = new Set<string>()
+
     private didChangeEmitter = new EventEmitter<DidChangeTextDocumentParams>()
     didChange = this.didChangeEmitter.event
 
@@ -327,16 +329,6 @@ export class LeanClient implements Disposable {
         return 'Success'
     }
 
-    notifyDidOpen(doc: TextDocument) {
-        if (this.client === undefined) {
-            return
-        }
-
-        const params = this.client.code2ProtocolConverter.asOpenTextDocumentParams(doc)
-
-        void this.client.sendNotification('textDocument/didOpen', params)
-    }
-
     isInFolderManagedByThisClient(uri: ExtUri): boolean {
         if (this.folderUri.scheme === 'untitled' && uri.scheme === 'untitled') {
             return true
@@ -382,11 +374,12 @@ export class LeanClient implements Disposable {
         this.noPrompt = false
         this.progress = new Map()
         this.client = undefined
+        this.openServerDocuments = new Set()
         this.running = false
     }
 
     async restartFile(doc: TextDocument): Promise<void> {
-        if (!this.running) return // there was a problem starting lean server.
+        if (this.client === undefined || !this.running) return // there was a problem starting lean server.
 
         assert(() => this.isStarted())
 
@@ -396,23 +389,26 @@ export class LeanClient implements Disposable {
         }
 
         if (!this.isInFolderManagedByThisClient(docUri)) {
-            // skip it, this file belongs to a different workspace...
             return
         }
+
         const uri = docUri.toString()
+        if (!this.openServerDocuments.has(uri)) {
+            return
+        }
+
         logger.log(`[LeanClient] Restarting File: ${uri}`)
-        // This causes a text document version number discontinuity. In
-        // (didChange (oldVersion) => restartFile => didChange (newVersion))
-        // the client emits newVersion = oldVersion + 1, despite the fact that the
-        // didOpen packet emitted below initializes the version number to be 1.
-        // This is not a problem though, since both client and server are fine
-        // as long as the version numbers are monotonous.
-        void this.client?.sendNotification('textDocument/didClose', {
-            textDocument: {
-                uri,
-            },
-        })
-        this.notifyDidOpen(doc)
+
+        await this.client.sendNotification(
+            'textDocument/didClose',
+            this.client.code2ProtocolConverter.asCloseTextDocumentParams(doc),
+        )
+        this.openServerDocuments.delete(uri)
+        await this.client.sendNotification(
+            'textDocument/didOpen',
+            this.client.code2ProtocolConverter.asOpenTextDocumentParams(doc),
+        )
+        this.openServerDocuments.add(uri)
         this.restartedWorkerEmitter.fire(uri)
     }
 
@@ -524,6 +520,10 @@ export class LeanClient implements Disposable {
                         return // This should never happen since the glob we launch the client for ensures that all uris are ext uris
                     }
 
+                    if (this.openServerDocuments.has(docUri.toString())) {
+                        return
+                    }
+
                     const openDocUris: ExtUri[] = collectAllOpenLeanDocumentUris()
                     const docIsOpen = openDocUris.some(openDocUri => extUriEquals(openDocUri, docUri))
 
@@ -536,6 +536,8 @@ export class LeanClient implements Disposable {
                     }
 
                     await next(doc)
+
+                    this.openServerDocuments.add(docUri.toString())
 
                     // Opening the document may have set the language ID.
                     this.didSetLanguageEmitter.fire(doc.languageId)
@@ -557,24 +559,15 @@ export class LeanClient implements Disposable {
                         return // This should never happen since the glob we launch the client for ensures that all uris are ext uris
                     }
 
-                    // There is a bug I noticed in the language client library where `openDocuments` will also contain documents
-                    // that were filtered in the `didOpen` middleware if the document was opened while starting the client (as of 8.1.0).
-                    // Fortunately for us, our middleware should only filter synthetic documents that can only be opened
-                    // after launching the language server first, so this should never be an issue.
-                    const openDocuments = Array.from(
-                        this.client?.getFeature('textDocument/didOpen').openDocuments ?? [],
-                    )
-                    const docIsOpen = openDocuments.some(openDoc => {
-                        const openDocUri = toExtUri(openDoc.uri)
-                        return openDocUri !== undefined && extUriEquals(openDocUri, docUri)
-                    })
-                    if (!docIsOpen) {
+                    if (!this.openServerDocuments.has(docUri.toString())) {
                         // Do not send `didClose` if we filtered the corresponding `didOpen` (see comment in the `didOpen` middleware).
                         // The language server is only resilient against requests for closed files, not the `didClose` notification itself.
                         return
                     }
 
                     await next(doc)
+
+                    this.openServerDocuments.delete(docUri.toString())
 
                     const params = c2pConverter.asCloseTextDocumentParams(doc)
                     this.didCloseEmitter.fire(params)
