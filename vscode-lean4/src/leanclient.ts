@@ -393,22 +393,24 @@ export class LeanClient implements Disposable {
         }
 
         const uri = docUri.toString()
-        if (!this.openServerDocuments.has(uri)) {
+        if (!this.openServerDocuments.delete(uri)) {
             return
         }
-
         logger.log(`[LeanClient] Restarting File: ${uri}`)
-
         await this.client.sendNotification(
             'textDocument/didClose',
             this.client.code2ProtocolConverter.asCloseTextDocumentParams(doc),
         )
-        this.openServerDocuments.delete(uri)
+
+        if (this.openServerDocuments.has(uri)) {
+            return
+        }
+        this.openServerDocuments.add(uri)
         await this.client.sendNotification(
             'textDocument/didOpen',
             this.client.code2ProtocolConverter.asOpenTextDocumentParams(doc),
         )
-        this.openServerDocuments.add(uri)
+
         this.restartedWorkerEmitter.fire(uri)
     }
 
@@ -520,10 +522,6 @@ export class LeanClient implements Disposable {
                         return // This should never happen since the glob we launch the client for ensures that all uris are ext uris
                     }
 
-                    if (this.openServerDocuments.has(docUri.toString())) {
-                        return
-                    }
-
                     const openDocUris: ExtUri[] = collectAllOpenLeanDocumentUris()
                     const docIsOpen = openDocUris.some(openDocUri => extUriEquals(openDocUri, docUri))
 
@@ -535,9 +533,12 @@ export class LeanClient implements Disposable {
                         return
                     }
 
-                    await next(doc)
-
+                    if (this.openServerDocuments.has(docUri.toString())) {
+                        return
+                    }
                     this.openServerDocuments.add(docUri.toString())
+
+                    await next(doc)
 
                     // Opening the document may have set the language ID.
                     this.didSetLanguageEmitter.fire(doc.languageId)
@@ -559,15 +560,13 @@ export class LeanClient implements Disposable {
                         return // This should never happen since the glob we launch the client for ensures that all uris are ext uris
                     }
 
-                    if (!this.openServerDocuments.has(docUri.toString())) {
+                    if (!this.openServerDocuments.delete(docUri.toString())) {
                         // Do not send `didClose` if we filtered the corresponding `didOpen` (see comment in the `didOpen` middleware).
                         // The language server is only resilient against requests for closed files, not the `didClose` notification itself.
                         return
                     }
 
                     await next(doc)
-
-                    this.openServerDocuments.delete(docUri.toString())
 
                     const params = c2pConverter.asCloseTextDocumentParams(doc)
                     this.didCloseEmitter.fire(params)
