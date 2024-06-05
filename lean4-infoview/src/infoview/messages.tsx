@@ -12,7 +12,7 @@ import { LeanDiagnostic, RpcErrorCode } from '@leanprover/infoview-api'
 
 import { getInteractiveDiagnostics, InteractiveDiagnostic } from '@leanprover/infoview-api'
 import { Details } from './collapsing'
-import { ConfigContext, EditorContext, EnvPosContext, LspDiagnosticsContext } from './contexts'
+import { ConfigContext, EditorContext, LspDiagnosticsContext } from './contexts'
 import { RpcContext, useRpcSessionAtPos } from './rpcSessions'
 import { InteractiveMessage } from './traceExplorer'
 import {
@@ -20,7 +20,6 @@ import {
     basename,
     DocumentPosition,
     escapeHtml,
-    Keyed,
     useEvent,
     usePausableState,
     useServerNotificationState,
@@ -47,10 +46,6 @@ const MessageView = React.memo(({ uri, diag }: MessageViewProps) => {
           }[diag.severity]
         : ''
     const title = `${fname}:${line + 1}:${character}`
-    const startPos: DocumentPosition = React.useMemo(
-        () => ({ uri, ...(diag.fullRange?.start || diag.range.start) }),
-        [uri, diag.fullRange, diag.range],
-    )
     return (
         <details open>
             <summary className={severityClass + ' mv2 pointer'}>
@@ -82,16 +77,14 @@ const MessageView = React.memo(({ uri, diag }: MessageViewProps) => {
             </summary>
             <div className="ml1" ref={node}>
                 <pre className="font-code pre-wrap">
-                    <EnvPosContext.Provider value={startPos}>
-                        <InteractiveMessage fmt={diag.message} />
-                    </EnvPosContext.Provider>
+                    <InteractiveMessage fmt={diag.message} />
                 </pre>
             </div>
         </details>
     )
 }, fastIsEqual)
 
-function mkMessageViewProps(uri: DocumentUri, messages: InteractiveDiagnostic[]): Keyed<MessageViewProps>[] {
+function mkMessageViewProps(uri: DocumentUri, messages: InteractiveDiagnostic[]): MessageViewProps[] {
     const views: MessageViewProps[] = messages
         .sort((msga, msgb) => {
             const a = msga.fullRange?.end || msga.range.end
@@ -115,7 +108,7 @@ export const MessagesList = React.memo(({ uri, messages }: { uri: DocumentUri; m
     return (
         <div className="ml1">
             {mkMessageViewProps(uri, messages).map(m => (
-                <MessageView {...m} key={m.key} />
+                <MessageView {...m} />
             ))}
         </div>
     )

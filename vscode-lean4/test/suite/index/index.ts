@@ -1,4 +1,4 @@
-import { globSync } from 'glob'
+import glob from 'glob'
 import Mocha from 'mocha'
 import * as path from 'path'
 import { getTestFolder } from '../../../src/config'
@@ -21,19 +21,23 @@ export function run(testsRoot: string, cb: (error: any, failures?: number) => vo
 
     logger.log('>>>>>>>>> testsRoot=' + testsRoot)
 
-    try {
-        const files = globSync('**/**.test.js', { cwd: testsRoot })
+    glob('**/**.test.js', { cwd: testsRoot }, (err, files) => {
+        if (err) {
+            return cb(err)
+        }
 
         // Add files to the test suite
         files.forEach(f => mocha.addFile(path.resolve(testsRoot, f)))
 
-        // Run the mocha test
-        mocha.timeout(60000) // 60 seconds to run
-        mocha.run(failures => {
-            cb(null, failures)
-        })
-    } catch (err) {
-        console.error(err)
-        cb(err)
-    }
+        try {
+            // Run the mocha test
+            mocha.timeout(60000) // 60 seconds to run
+            mocha.run(failures => {
+                cb(null, failures)
+            })
+        } catch (err) {
+            console.error(err)
+            cb(err)
+        }
+    })
 }

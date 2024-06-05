@@ -22,12 +22,11 @@ import {
     InteractiveTagProps,
     InteractiveTextComponentProps,
 } from './interactiveCode'
-import { useRpcSession } from './rpcSessions'
-import { DynamicComponent } from './userWidget'
+import { RpcContext } from './rpcSessions'
 import { mapRpcError, useAsyncWithTrigger } from './util'
 
 function LazyTrace({ col, cls, msg }: { col: number; cls: string; msg: MessageData }) {
-    const rs = useRpcSession()
+    const rs = React.useContext(RpcContext)
 
     const [tt, fetchTrace] = useAsyncWithTrigger(
         () => InteractiveDiagnostics_msgToInteractive(rs, msg, col),
@@ -113,7 +112,7 @@ function ChildlessTraceNode(traceEmbed: TraceEmbed) {
 function CollapsibleTraceNode(traceEmbed: TraceEmbed) {
     const { cls, collapsed: collapsedByDefault, children: lazyKids } = traceEmbed
 
-    const rs = useRpcSession()
+    const rs = React.useContext(RpcContext)
     const [children, fetchChildren] = useAsyncWithTrigger(async () => {
         if ('strict' in lazyKids) {
             return lazyKids.strict
@@ -181,8 +180,6 @@ function InteractiveMessageTag({ tag: embed }: InteractiveTagProps<MsgEmbed>): J
                 additionalClassNames=""
             />
         )
-    else if ('widget' in embed)
-        return <DynamicComponent hash={embed.widget.wi.javascriptHash} props={embed.widget.wi.props} />
     else if ('lazyTrace' in embed)
         return <LazyTrace col={embed.lazyTrace[0]} cls={embed.lazyTrace[1]} msg={embed.lazyTrace[2]} />
     else if ('trace' in embed) return <Trace {...embed.trace} />

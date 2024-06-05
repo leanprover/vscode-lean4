@@ -7,10 +7,9 @@ import {
     UserWidgetInstance,
     Widget_getWidgetSource,
 } from '@leanprover/infoview-api'
-import { EnvPosContext } from './contexts'
 import { ErrorBoundary } from './errors'
 import { GoalsLocation } from './goalLocation'
-import { useRpcSession } from './rpcSessions'
+import { RpcContext } from './rpcSessions'
 import { DocumentPosition, mapRpcError, useAsyncPersistent } from './util'
 
 async function dynamicallyLoadModule(hash: string, code: string): Promise<any> {
@@ -38,31 +37,18 @@ export async function importWidgetModule(rs: RpcSessionAtPos, pos: DocumentPosit
 }
 
 export interface DynamicComponentProps {
+    pos: DocumentPosition
     hash: string
     props: any
-    /** @deprecated set {@link EnvPosContext} instead */
-    pos?: DocumentPosition
 }
 
 /**
- * Use {@link importWidgetModule} to import a module
- * which must `export default` a React component,
- * and render that with `props`.
- * Errors in the component are caught in an error boundary.
- *
- * The {@link EnvPosContext} must be set.
- * It is used to retrieve the `Lean.Environment`
- * from which the widget module identified by `hash`
- * is obtained.
- */
+ * Use {@link importWidgetModule} to import a module which must `export default` a React component,
+ * and render that with `props`. Errors in the component are caught in an error boundary. */
 export function DynamicComponent(props_: React.PropsWithChildren<DynamicComponentProps>) {
-    const { hash, props, children } = props_
-    const rs = useRpcSession()
-    const pos = React.useContext(EnvPosContext)
-    const state = useAsyncPersistent(() => {
-        if (!pos) throw new Error('position context is not set')
-        return importWidgetModule(rs, pos, hash)
-    }, [rs, pos, hash])
+    const { pos, hash, props, children } = props_
+    const rs = React.useContext(RpcContext)
+    const state = useAsyncPersistent(() => importWidgetModule(rs, pos, hash), [rs, pos, hash])
     return (
         <React.Suspense fallback={`Loading component '${hash}'..`}>
             <ErrorBoundary>
@@ -95,9 +81,5 @@ export interface PanelWidgetProps {
 
 export function PanelWidgetDisplay({ pos, goals, termGoal, selectedLocations, widget }: PanelWidgetDisplayProps) {
     const componentProps: PanelWidgetProps = { pos, goals, termGoal, selectedLocations, ...widget.props }
-    return (
-        <EnvPosContext.Provider value={pos}>
-            <DynamicComponent hash={widget.javascriptHash} props={componentProps} />
-        </EnvPosContext.Provider>
-    )
+    return <DynamicComponent pos={pos} hash={widget.javascriptHash} props={componentProps} />
 }
