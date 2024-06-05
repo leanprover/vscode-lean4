@@ -170,7 +170,7 @@ suite('InfoView Test Suite', () => {
     }).timeout(60000)
 
     test('Tooltip exists', async () => {
-        logger.log('=================== Tooltip exists ===================')
+        logger.log('=================== Clicking to open nested tooltips ===================')
 
         const text = 'example (issue461 : Type 4) : issue461 := by sorry'
         const features = await initLean4Untitled(text)
