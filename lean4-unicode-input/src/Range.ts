@@ -1,5 +1,3 @@
-import { assert } from '../../utils/assert'
-
 /**
  * A general purpose range implementation.
  * Is offset/length based in contrast to `vscode.Range` which is line/column based.
@@ -9,7 +7,9 @@ export class Range {
         readonly offset: number,
         readonly length: number,
     ) {
-        assert(() => length >= 0)
+        if (length < 0) {
+            throw new Error()
+        }
     }
 
     contains(offset: number): boolean {
@@ -33,9 +33,10 @@ export class Range {
     }
 
     moveKeepEnd(delta: number): Range {
-        assert(() => delta <= this.length)
+        if (delta > this.length) {
+            throw new Error()
+        }
         const result = new Range(this.offset + delta, this.length - delta)
-        assert(() => result.offsetEnd === this.offsetEnd)
         return result
     }
 
@@ -91,5 +92,9 @@ export class Range {
          *             |#  #    other: false
          */
         return range.offset > this.offsetEnd
+    }
+
+    equals(other: Range): boolean {
+        return this.offset === other.offset && this.length === other.length
     }
 }

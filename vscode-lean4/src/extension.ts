@@ -1,7 +1,7 @@
 import * as os from 'os'
 import * as path from 'path'
 import { commands, Disposable, ExtensionContext, extensions, TextDocument, window, workspace } from 'vscode'
-import { AbbreviationFeature } from './abbreviation'
+import { AbbreviationFeature } from './abbreviation/AbbreviationFeature'
 import { getDefaultLeanVersion } from './config'
 import { FullDiagnosticsProvider } from './diagnostics/fullDiagnostics'
 import {
@@ -15,6 +15,7 @@ import { DocViewProvider } from './docview'
 import { AlwaysEnabledFeatures, Exports, Lean4EnabledFeatures } from './exports'
 import { InfoProvider } from './infoview'
 import { LeanClient } from './leanclient'
+import { LoogleView } from './loogleview'
 import { ManualView } from './manualview'
 import { ProjectInitializationProvider } from './projectinit'
 import { ProjectOperationProvider } from './projectoperations'
@@ -82,6 +83,9 @@ function activateAlwaysEnabledFeatures(context: ExtensionContext): AlwaysEnabled
     const manualView = new ManualView(extensionPath, extensionPath.join('manual', 'manual.md'))
     context.subscriptions.push(manualView)
 
+    const loogleView = new LoogleView(extensionPath)
+    context.subscriptions.push(loogleView)
+
     const docView = new DocViewProvider(context.extensionUri)
     context.subscriptions.push(docView)
 
@@ -123,7 +127,7 @@ function activateAlwaysEnabledFeatures(context: ExtensionContext): AlwaysEnabled
 function activateAbbreviationFeature(context: ExtensionContext, docView: DocViewProvider): AbbreviationFeature {
     const abbrev = new AbbreviationFeature()
     // Pass the abbreviations through to the docView so it can show them on demand.
-    docView.setAbbreviations(abbrev.abbreviations.symbolsByAbbreviation)
+    docView.setAbbreviations(abbrev.abbreviations.getSymbolsByAbbreviation())
     context.subscriptions.push(abbrev)
     return abbrev
 }

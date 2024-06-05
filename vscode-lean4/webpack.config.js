@@ -49,7 +49,50 @@ const getWebviewConfig = env => ({
                 {
                     // See https://github.com/webpack-contrib/copy-webpack-plugin/tree/e2274daad21baae3020819aa29ab903bd9992cce#yarn-workspaces-and-monorepos
                     from: `${path.dirname(require.resolve('@leanprover/infoview/package.json'))}/dist`,
-                    to: path.resolve(__dirname, 'dist', 'lean4-infoview'),
+                    to: path.resolve(__dirname, 'dist', 'loogleview'),
+                },
+            ],
+        }),
+    ],
+})
+
+/** @type {(env: Env) => import('webpack').Configuration} */
+const getLoogleViewConfig = env => ({
+    name: 'loogleview',
+    mode: prodOrDev(env),
+    entry: './loogleview/index.ts',
+    module: {
+        rules: [
+            {
+                test: /\.tsx?$/,
+                use: 'ts-loader',
+                exclude: /node_modules/,
+            },
+            {
+                test: /\.js$/,
+                enforce: 'pre',
+                use: ['source-map-loader'],
+            },
+        ],
+    },
+    resolve: {
+        extensions: ['.tsx', '.ts', '.js'],
+    },
+    devtool: env.production ? undefined : 'inline-source-map',
+    output: {
+        filename: 'loogleview.js',
+        path: path.resolve(__dirname, 'dist'),
+    },
+    plugins: [
+        new CopyPlugin({
+            patterns: [
+                {
+                    from: './loogleview/static',
+                    to: path.resolve(__dirname, 'dist', 'loogleview', 'static'),
+                },
+                {
+                    from: '../node_modules/@vscode/codicons/dist',
+                    to: path.resolve(__dirname, 'dist', 'loogleview', 'static', 'codicons'),
                 },
             ],
         }),
@@ -92,5 +135,5 @@ const getExtensionConfig = env => ({
 module.exports = function (env) {
     env = env || {}
     env.production = !!env.production
-    return [getWebviewConfig(env), getExtensionConfig(env)]
+    return [getWebviewConfig(env), getLoogleViewConfig(env), getExtensionConfig(env)]
 }

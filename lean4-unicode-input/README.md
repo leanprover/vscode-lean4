@@ -1,6 +1,6 @@
 # Abbreviation Feature
 
-Edit [abbreviations.json](./abbreviations.json) to add common abbreviations.
+Edit [abbreviations.json](./src/abbreviations.json) to add common abbreviations.
 Use `$CURSOR` to set the new location of the cursor after replacement.
 
 ## Caveat
@@ -26,13 +26,3 @@ Instead, also add the abbreviation `[]_ -> A`:
 -   `\`, full text: `\`
 -   `[`, full text: `\[]` - this could be either `\[]` or `\[]_`.
 -   `[`, full text: `\[[]]` - this matches the longest abbreviation `[[]]`, so it gets replaced with `B`.
-
-# Demos
-
-## Eager Replacing
-
-![Eager Replacing Demo](../../media/abbreviation-eager-replacing.gif)
-
-## Multiple Cursors
-
-![Multi Cursor Demo](../../media/abbreviation-multi-cursor.gif)

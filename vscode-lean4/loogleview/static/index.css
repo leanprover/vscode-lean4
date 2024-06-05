@@ -1,0 +1,94 @@
+.loader {
+    display: inline-block;
+    margin-left: 8px;
+    border: 4px solid #f3f3f3; /* Light grey */
+    border-top: 4px solid #3498db; /* Blue */
+    border-radius: 50%;
+    width: 16px;
+    height: 16px;
+    animation: spin 2s linear infinite;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+.hidden {
+    display: none;
+}
+
+.query-label {
+    display: block;
+    color: var(--foreground);
+    cursor: pointer;
+    font-size: var(--type-ramp-base-font-size);
+    line-height: var(--type-ramp-base-line-height);
+    margin-bottom: 2px;
+}
+
+.query-container {
+    display: flex;
+    align-items: center;
+}
+
+.input-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 70ch;
+
+    box-sizing: border-box;
+    position: relative;
+    display: flex;
+    flex-direction: row;
+    color: var(--input-foreground);
+    background: var(--input-background);
+    border-radius: calc(var(--corner-radius-round) * 1px);
+    border: calc(var(--border-width) * 1px) solid var(--dropdown-border);
+    height: calc(var(--input-height) * 1px);
+    min-width: var(--input-min-width);
+    font-family: var(--font-family);
+    outline: none;
+    user-select: none;
+}
+
+.input-container:focus-within:not([disabled]) {
+    border-color: var(--focus-border);
+}
+
+[contenteditable='true'].single-line {
+    white-space: nowrap;
+    width: 60ch;
+    overflow: hidden;
+    outline: none;
+
+    height: calc(100% - (var(--design-unit) * 1px));
+    margin-top: auto;
+    margin-bottom: auto;
+    border: none;
+    padding: 0 calc(var(--design-unit) * 2px + 1px);
+    font-size: var(--type-ramp-base-font-size);
+    line-height: var(--type-ramp-base-line-height);
+}
+[contenteditable='true'].single-line br {
+    display: none;
+}
+[contenteditable='true'].single-line * {
+    display: inline;
+    white-space: nowrap;
+}
+
+vscode-button {
+    vertical-align: middle;
+}
+
+.input-buttons {
+    display: inline-flex;
+    margin-left: 0.5em;
+    margin-right: 0.5em;
+}

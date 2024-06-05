@@ -1,0 +1,78 @@
+<label class="query-label" for="query-text-field">Loogle query (supports Unicode input)</label>
+<div class="query-container">
+    <div class="input-container">
+        <div id="query-text-field" class="single-line" contenteditable="true"></div>
+        <vscode-button id="previous-query-button" appearance="icon" aria-label="Load Previous Query"><span class="codicon codicon-arrow-left"></span></vscode-button>
+        <vscode-button id="next-query-button" appearance="icon" aria-label="Load Next Query"><span class="codicon codicon-arrow-right"></span></vscode-button>
+        <vscode-button id="find-button" appearance="icon" aria-label="Send Loogle Query"><span class="codicon codicon-search"></span></vscode-button>
+    </div>
+    <div id="spinner" class="loader hidden"></div>
+</div>
+
+<p id="header" hidden></p>
+
+<p id="error" hidden></p>
+
+<h2 id="result-header" hidden>Results</h2>
+<ol id="results" type="1"></ol>
+
+<h2 id="suggestion-header" hidden>Suggestions</h2>
+<ol id="suggestions" type="1"></ol>
+
+<h2 id="about">About</h2>
+<p>Loogle searches of Lean and Mathlib definitions and theorems.</p>
+
+<h2 id="usage">Usage</h2>
+<p>Loogle finds definitions and lemmas in various ways:</p>
+<ol type="1">
+    <li>
+        <p>
+            By constant:<br>
+            <vscode-link class="query-suggestion">Real.sin</vscode-link> finds all lemmas whose statement somehow mentions the sinefunction.
+        </p>
+    </li>
+    <li>
+        <p>
+            By lemma name substring:<br>
+            <vscode-link class="query-suggestion">"differ"</vscode-link> finds all lemmas that have <code>"differ"</code> somewhere in their lemma <em>name</em>.
+        </p>
+    </li>
+    <li>
+        <p>
+            By subexpression:<br>
+            <vscode-link class="query-suggestion">_ * (_ ^ _)</vscode-link> finds all lemmas whose statements somewhere include a product where the second argument is raised to some power.
+        </p>
+        <p>
+            The pattern can also be non-linear, as in <vscode-link class="query-suggestion">Real.sqrt ?a * Real.sqrt ?a</vscode-link>
+        </p>
+        <p>
+            If the pattern has parameters, they are matched in any order. Both of these will find <code>List.map</code>:<br>
+            <vscode-link class="query-suggestion">(?a -&gt; ?b) -&gt; List ?a -&gt; List ?b</vscode-link><br>
+            <vscode-link class="query-suggestion">List ?a -&gt; (?a -&gt; ?b) -&gt; List ?b</vscode-link>
+        </p>
+    </li>
+    <li>
+        <p>
+            By main conclusion:<br>
+            <vscode-link class="query-suggestion">|- tsum _ = _ * tsum _</vscode-link> finds all lemmas where the conclusion (the subexpression to the right of all <code>→</code> and <code>∀</code>) has the given shape.
+        </p>
+        <p>
+            As before, if the pattern has parameters, they are matched against the hypotheses of the lemma in any order; for example, <vscode-link class="query-suggestion">|- _ &lt; _ → tsum _ &lt; tsum _</vscode-link> will find <code>tsum_lt_tsum</code> even though the hypothesis <code>f i &lt; g i</code> is not the last.
+        </p>
+    </li>
+</ol>
+<p>
+    If you pass more than one such search filter, separated by commas Loogle will return lemmas which match <em>all</em> of them. The search <vscode-link class="query-suggestion">Real.sin, "two", tsum, _ * _, _ ^ _, |- _ &lt; _ → _</vscode-link>
+    would find all lemmas which mention the constants <code>Real.sin</code>
+    and <code>tsum</code>, have <code>"two"</code> as a substring of the
+    lemma name, include a product and a power somewhere in the type,
+    <em>and</em> have a hypothesis of the form <code>_ &lt; _</code> (if
+    there were any such lemmas). Metavariables (<code>?a</code>) are
+    assigned independently in each filter.
+</p>
+
+<h2 id="source-code">Source code</h2>
+<p>You can find the source code for this service at <a href="https://github.com/nomeata/loogle" class="uri">https://github.com/nomeata/loogle</a>. The <a href="https://loogle.lean-lang.org/" class="uri">https://loogle.lean-lang.org/</a> service is currently
+provided by Joachim Breitner &lt;<a href="mailto:mail@joachim-breitner.de" class="email">mail@joachim-breitner.de</a>&gt;.</p>
+
+<a id="close-tab" href="command:workbench.action.closeActiveEditor" hidden />
