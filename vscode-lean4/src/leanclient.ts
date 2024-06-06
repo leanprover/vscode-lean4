@@ -42,7 +42,7 @@ import { assert } from './utils/assert'
 import { logger } from './utils/logger'
 // @ts-ignore
 import { SemVer } from 'semver'
-import { c2pConverter, p2cConverter, patchConverters } from './utils/converters'
+import { c2pConverter, p2cConverter, patchConverters, setDependencyBuildMode } from './utils/converters'
 import { collectAllOpenLeanDocumentUris } from './utils/docInfo'
 import { ExtUri, extUriEquals, parseExtUri, toExtUri } from './utils/exturi'
 import {
@@ -408,7 +408,7 @@ export class LeanClient implements Disposable {
         this.openServerDocuments.add(uri)
         await this.client.sendNotification(
             'textDocument/didOpen',
-            this.client.code2ProtocolConverter.asOpenTextDocumentParams(doc),
+            setDependencyBuildMode(this.client.code2ProtocolConverter.asOpenTextDocumentParams(doc), 'once'),
         )
 
         this.restartedWorkerEmitter.fire(uri)
