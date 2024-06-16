@@ -93,6 +93,13 @@ export async function deleteAllText(): Promise<void> {
     })
 }
 
+export function gotoPosition(line: number, character: number): void {
+    const editor = vscode.window.activeTextEditor
+    assertAndLog(editor !== undefined, 'no active editor')
+    const position = new vscode.Position(line, character)
+    editor.selection = new vscode.Selection(position, position)
+}
+
 export async function initLean4Untitled(contents: string): Promise<EnabledFeatures> {
     // make sure test is always run in predictable state, which is no file or folder open
     await closeAllEditors()
