@@ -40,6 +40,8 @@ This manual covers how to interact with the most recent version of Lean 4 using 
     - [Terminal](#terminal)
 1. [Managing Lean versions](#managing-lean-versions)
     - [Installing and updating Elan](#installing-and-updating-elan)
+1. [Finding definitions and theorems](#finding-definitions-and-theorems)
+    - [LoogleView](#loogleview)
 1. [Troubleshooting issues](#troubleshooting-issues)
     - [Setup diagnostics](#setup-diagnostics)
     - [Collecting setup information](#collecting-setup-information)
@@ -615,6 +617,20 @@ This section covers how to manage different Lean versions. All of these commands
 ### Installing and updating Elan
 
 Lean's version manager [Elan](https://github.com/leanprover/elan/blob/master/README.md) can be installed or updated using the ['Setup: Install Elan'](command:lean4.setup.installElan) command that can be found using the [command palette](#command-palette) or by navigating to the 'Version Management…' submenu in the [command menu](#command-menu).
+
+---
+
+## Finding definitions and theorems
+
+This section covers how to find definitions and theorems in key Lean libraries like [Mathlib](https://github.com/leanprover-community/mathlib4) using the Lean 4 VS Code extension.
+
+### LoogleView
+
+[Loogle](https://loogle.lean-lang.org/), a search engine for definitions and theorems in Lean's standard library and a recent version of [Mathlib](https://github.com/leanprover-community/mathlib4), can be accessed from within VS Code using the ['Loogle: Search'](command:lean4.loogle.search) command. It can be called using `Ctrl+Shift+L` (`Cmd+Shift+L`), from the right click context menu in a Lean file, using the [command palette](#command-palette) or directly from the [command menu](#command-menu). The LoogleView can always be closed using `Escape`.
+
+When selecting text in a text editor before calling ['Loogle: Search'](command:lean4.loogle.search), Loogle will immediately search for the selected text. The input field supports the same [Unicode input](#unicode-input) as the text editor when editing Lean files. Clicking the magnifier icon or pressing `Enter` will search for the given query. Clicking the arrow icons or using the up and down arrow keys will cycle through past queries. The query syntax supported by Loogle is described in the LoogleView itself.
+
+When querying Loogle, it will display either a list of results or a list of possible suggestions if no results were found. The LoogleView will only display the first 200 results matching the query. Each result displays the name of the identifier, the module where it is located and the type of the identifier. Clicking the identifier will launch a browser window in VS Code with the documentation for the given identifier. Clicking a suggestion provided by Loogle if no results were found will immediately issue a query with the given suggestion.
 
 ---
 
