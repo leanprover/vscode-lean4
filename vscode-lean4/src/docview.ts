@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
+import { SymbolsByAbbreviation } from '@leanprover/unicode-input'
 import axios from 'axios'
 import { extname } from 'path'
 import { URL } from 'url'
@@ -17,7 +18,7 @@ import {
     window,
     workspace,
 } from 'vscode'
-import { AbbreviationConfig, SymbolsByAbbreviation } from './abbreviation/config'
+import { VSCodeAbbreviationConfig } from './abbreviation/VSCodeAbbreviationConfig'
 import { TempFolder } from './utils/tempFolder'
 import cheerio = require('cheerio')
 
@@ -149,8 +150,8 @@ export class DocViewProvider implements Disposable {
     private async showAbbreviations(): Promise<void> {
         // display the HTML table definition of all abbreviations
         if (this.abbreviations) {
-            const ac = new AbbreviationConfig()
-            const leader = ac.abbreviationCharacter.get()
+            const ac = new VSCodeAbbreviationConfig()
+            const leader = ac.abbreviationCharacter
             const $ = cheerio.load(
                 '<table style="font-family:var(--vscode-editor-font-family);font-size:var(--vscode-editor-font-size:);"><tr><th style="text-align:left">Abbreviation</th><th style="text-align:left">Unicode Symbol</th></tr></table>',
             )

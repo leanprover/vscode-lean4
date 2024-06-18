@@ -1,4 +1,4 @@
-import { AbbreviationProvider } from '../AbbreviationProvider'
+import { AbbreviationProvider } from './AbbreviationProvider'
 import { Range } from './Range'
 
 /**

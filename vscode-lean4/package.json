@@ -262,6 +262,12 @@
                 "description": "Show help page containing all abbreviations and the Unicode characters they map to."
             },
             {
+                "command": "lean4.loogle.search",
+                "category": "Lean 4",
+                "title": "Loogle: Search",
+                "description": "Show LoogleView"
+            },
+            {
                 "command": "lean4.docView.open",
                 "category": "Lean 4",
                 "title": "Docview: Open Docview",
@@ -421,6 +427,12 @@
                 "key": "ctrl+shift+alt+enter",
                 "mac": "cmd+shift+alt+enter",
                 "when": "lean4.isLeanFeatureSetActive"
+            },
+            {
+                "command": "lean4.loogle.search",
+                "key": "ctrl+shift+l",
+                "mac": "cmd+shift+l",
+                "when": "lean4.isLeanFeatureSetActive"
             }
         ],
         "colors": [
@@ -534,6 +546,9 @@
                     "when": "false"
                 },
                 {
+                    "command": "lean4.loogle.search"
+                },
+                {
                     "command": "lean4.docView.open"
                 },
                 {
@@ -620,29 +635,34 @@
                     "group": "3_infoview@1"
                 },
                 {
+                    "command": "lean4.loogle.search",
+                    "when": "config.lean4.alwaysShowTitleBarMenu || lean4.isLeanFeatureSetActive",
+                    "group": "4_loogle@1"
+                },
+                {
                     "command": "lean4.troubleshooting.showOutput",
                     "when": "config.lean4.alwaysShowTitleBarMenu || lean4.isLeanFeatureSetActive",
-                    "group": "4_troubleshooting"
+                    "group": "5_troubleshooting@1"
                 },
                 {
                     "command": "lean4.troubleshooting.showSetupInformation",
                     "when": "config.lean4.alwaysShowTitleBarMenu || lean4.isLeanFeatureSetActive",
-                    "group": "4_troubleshooting"
+                    "group": "5_troubleshooting@2"
                 },
                 {
                     "submenu": "lean4.titlebar.versions",
                     "when": "config.lean4.alwaysShowTitleBarMenu || lean4.isLeanFeatureSetActive",
-                    "group": "5_versions"
+                    "group": "6_versions@1"
                 },
                 {
                     "submenu": "lean4.titlebar.projectActions",
                     "when": "config.lean4.alwaysShowTitleBarMenu || lean4.isLeanFeatureSetActive",
-                    "group": "6_projectActions@1"
+                    "group": "7_projectActions@1"
                 },
                 {
                     "submenu": "lean4.titlebar.documentation",
                     "when": "config.lean4.alwaysShowTitleBarMenu || lean4.isLeanFeatureSetActive",
-                    "group": "7_documentation@1"
+                    "group": "8_documentation@1"
                 }
             ],
             "lean4.titlebar.newProject": [
@@ -723,6 +743,11 @@
             "editor/context": [
                 {
                     "command": "lean4.restartFile",
+                    "when": "editorLangId == lean4",
+                    "group": "z_commands"
+                },
+                {
+                    "command": "lean4.loogle.search",
                     "when": "editorLangId == lean4",
                     "group": "z_commands"
                 }
@@ -904,11 +929,14 @@
     "dependencies": {
         "@leanprover/infoview": "~0.7.0",
         "@leanprover/infoview-api": "~0.4.0",
+        "@leanprover/unicode-input": "~0.1.0",
+        "@leanprover/unicode-input-component": "~0.1.0",
+        "@vscode/codicons": "^0.0.36",
+        "@vscode/webview-ui-toolkit": "^1.4.0",
         "axios": "^1.6.7",
         "cheerio": "^1.0.0-rc.12",
         "markdown-it": "^14.1.0",
         "markdown-it-anchor": "^9.0.1",
-        "mobx": "^5.15.7",
         "semver": "^7.6.0",
         "vscode-languageclient": "^8.0.2",
         "zod": "^3.22.4"

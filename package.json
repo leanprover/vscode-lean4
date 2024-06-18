@@ -6,12 +6,14 @@
         "test": "lerna run --stream test",
         "watch": "lerna run --parallel --stream watch",
         "watchTest": "lerna run --parallel --stream watchTest",
-        "lint": "eslint -c .eslintrc.js \"{lean4-infoview-api,lean4-infoview,vscode-lean4}/src/**/*.{ts,tsx}\" \"vscode-lean4/test/suite/**/*.{ts,tsx}\"",
+        "lint": "eslint -c .eslintrc.js \"{lean4-infoview-api,lean4-infoview,lean4-unicode-input,lean4-unicode-input-component,vscode-lean4}/src/**/*.{ts,tsx}\" \"vscode-lean4/test/suite/**/*.{ts,tsx}\"",
         "prepare": "husky install"
     },
     "workspaces": [
         "lean4-infoview-api",
         "lean4-infoview",
+        "lean4-unicode-input",
+        "lean4-unicode-input-component",
         "vscode-lean4"
     ],
     "devDependencies": {

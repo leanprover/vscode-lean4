@@ -38,7 +38,6 @@ import {
     serverLoggingPath,
     shouldAutofocusOutput,
 } from './config'
-import { assert } from './utils/assert'
 import { logger } from './utils/logger'
 // @ts-ignore
 import { SemVer } from 'semver'
@@ -359,7 +358,6 @@ export class LeanClient implements Disposable {
     }
 
     async stop(): Promise<void> {
-        assert(() => this.isStarted())
         if (this.client && this.running) {
             this.noPrompt = true
             try {
@@ -380,8 +378,6 @@ export class LeanClient implements Disposable {
 
     async restartFile(doc: TextDocument): Promise<void> {
         if (this.client === undefined || !this.running) return // there was a problem starting lean server.
-
-        assert(() => this.isStarted())
 
         const docUri = toExtUri(doc.uri)
         if (docUri === undefined) {

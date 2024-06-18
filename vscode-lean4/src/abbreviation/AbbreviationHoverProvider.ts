@@ -1,6 +1,5 @@
+import { AbbreviationConfig, AbbreviationProvider } from '@leanprover/unicode-input'
 import { Hover, HoverProvider, Position, Range, TextDocument } from 'vscode'
-import { AbbreviationProvider } from './AbbreviationProvider'
-import { AbbreviationConfig } from './config'
 
 /**
  * Adds hover behaviour for getting translations of unicode characters.
@@ -17,14 +16,14 @@ export class AbbreviationHoverProvider implements HoverProvider {
         const symbolsAtCursor = this.abbreviations.findSymbolsIn(context)
         const allAbbrevs = symbolsAtCursor.map(symbol => ({
             symbol,
-            abbrevs: this.abbreviations.getAllAbbreviations(symbol),
+            abbrevs: this.abbreviations.collectAllAbbreviations(symbol),
         }))
 
         if (allAbbrevs.length === 0 || allAbbrevs.every(a => a.abbrevs.length === 0)) {
             return undefined
         }
 
-        const leader = this.config.abbreviationCharacter.get()
+        const leader = this.config.abbreviationCharacter
 
         const hoverMarkdown = allAbbrevs
             .map(({ symbol, abbrevs }) => {

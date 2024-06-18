@@ -1,44 +1,25 @@
-import { computed } from 'mobx'
-import { Disposable, EventEmitter, TextEditor } from 'vscode'
-import { autorunDisposable } from '../utils/autorunDisposable'
+import { AbbreviationConfig, SymbolsByAbbreviation } from './AbbreviationConfig'
 import abbreviations from './abbreviations.json'
-import { AbbreviationConfig, SymbolsByAbbreviation } from './config'
 
 /**
  * Answers queries to a database of abbreviations.
  */
-export class AbbreviationProvider implements Disposable {
-    private readonly disposables = new Array<Disposable>()
-    private cache: Record<string, string | undefined> = {}
-
-    private abbreviationCompletedEmitter = new EventEmitter<TextEditor>()
-    abbreviationCompleted = this.abbreviationCompletedEmitter.event
+export class AbbreviationProvider {
+    private replacementTextCache: Record<string, string | undefined> = {}
+    private symbolsByAbbreviation: SymbolsByAbbreviation = {}
 
     constructor(private readonly config: AbbreviationConfig) {
-        this.disposables.push(
-            autorunDisposable(() => {
-                // For the livetime of this component, cache the computed's
-                const _ = this.symbolsByAbbreviation
-                // clear cache on change
-                this.cache = {}
-            }),
-        )
-    }
-
-    onAbbreviationsCompleted(editor: TextEditor): void {
-        this.abbreviationCompletedEmitter.fire(editor)
-    }
-
-    @computed
-    get symbolsByAbbreviation(): SymbolsByAbbreviation {
-        // There are only like 1000 symbols. Building an index is not required yet.
-        return {
+        this.symbolsByAbbreviation = {
             ...abbreviations,
-            ...this.config.inputModeCustomTranslations.get(),
+            ...this.config.customTranslations,
         }
     }
 
-    getAllAbbreviations(symbol: string): string[] {
+    getSymbolsByAbbreviation(): SymbolsByAbbreviation {
+        return this.symbolsByAbbreviation
+    }
+
+    collectAllAbbreviations(symbol: string): string[] {
         return Object.entries(this.symbolsByAbbreviation)
             .filter(([abbr, sym]) => sym === symbol)
             .map(([abbr]) => abbr)
@@ -70,15 +51,15 @@ export class AbbreviationProvider implements Disposable {
      *   getReplacementText("") returns undefined
      */
     getReplacementText(abbrev: string): string | undefined {
-        if (abbrev in this.cache) {
-            return this.cache[abbrev]
+        if (abbrev in this.replacementTextCache) {
+            return this.replacementTextCache[abbrev]
         }
-        const result = this._getReplacementText(abbrev)
-        this.cache[abbrev] = result
+        const result = this.findReplacementText(abbrev)
+        this.replacementTextCache[abbrev] = result
         return result
     }
 
-    private _getReplacementText(abbrev: string): string | undefined {
+    private findReplacementText(abbrev: string): string | undefined {
         if (abbrev.length === 0) {
             return undefined
         }
@@ -107,12 +88,6 @@ export class AbbreviationProvider implements Disposable {
         )
 
         matchingAbbreviations.sort((a, b) => a.length - b.length)
-        return matchingAbbreviations.map(abbr => this.symbolsByAbbreviation[abbr])
-    }
-
-    dispose(): void {
-        for (const d of this.disposables) {
-            d.dispose()
-        }
+        return matchingAbbreviations.map(abbr => this.symbolsByAbbreviation[abbr]!)
     }
 }
