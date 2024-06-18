@@ -430,8 +430,8 @@
             },
             {
                 "command": "lean4.loogle.search",
-                "key": "ctrl+shift+l",
-                "mac": "cmd+shift+l",
+                "key": "ctrl+k ctrl+s",
+                "mac": "cmd+k cmd+s",
                 "when": "lean4.isLeanFeatureSetActive"
             }
         ],
