@@ -69,7 +69,7 @@ export class LoogleView implements Disposable {
                 <link rel="stylesheet" href="${this.webviewUri(webviewPanel, 'dist', 'loogleview', 'static', 'codicons', 'codicon.css')}">
             </head>
             <body>
-                <div id="loogleviewRoot" style="max-width: 60%; min-width: 50em"></div>
+                <div id="loogleviewRoot" style="min-width: 50em"></div>
                 <script defer nonce="inline" src="${this.webviewUri(webviewPanel, 'dist/loogleview.js')}" data-id="loogleview-script" abbreviation-config="${escapeHtml(JSON.stringify(new VSCodeAbbreviationConfig()))}" initial-query="${escapeHtml(initialQuery ?? '')}"></script>
             </body>
             </html>`

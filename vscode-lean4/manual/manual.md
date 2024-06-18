@@ -110,7 +110,7 @@ Many commands in VS Code are bound to chord keyboard shortcuts where multiple ke
 
 ### Configuring keyboard shortcuts
 
-The [keyboard shortcuts](command:workbench.action.openGlobalKeybindings) for all commands can be configured by navigating to 'File' > 'Preferences' > 'Keyboard Shortcuts' or by using the `Ctrl+K Ctrl+S` (`Cmd+K Cmd+S`) [chord](#chords). Typing in 'Lean 4' will display all commands of the Lean 4 VS Code extension.
+The [keyboard shortcuts](command:workbench.action.openGlobalKeybindings) for all commands can be configured by navigating to 'File' > 'Preferences' > 'Keyboard Shortcuts'. Typing in 'Lean 4' will display all commands of the Lean 4 VS Code extension.
 
 <br/>
  
@@ -626,7 +626,7 @@ This section covers how to find definitions and theorems in key Lean libraries l
 
 ### LoogleView
 
-[Loogle](https://loogle.lean-lang.org/), a search engine for definitions and theorems in Lean's standard library and a recent version of [Mathlib](https://github.com/leanprover-community/mathlib4), can be accessed from within VS Code using the ['Loogle: Search'](command:lean4.loogle.search) command. It can be called using `Ctrl+Shift+L` (`Cmd+Shift+L`), from the right click context menu in a Lean file, using the [command palette](#command-palette) or directly from the [command menu](#command-menu). The LoogleView can always be closed using `Escape`.
+[Loogle](https://loogle.lean-lang.org/), a search engine for definitions and theorems in Lean's standard library and a recent version of [Mathlib](https://github.com/leanprover-community/mathlib4), can be accessed from within VS Code using the ['Loogle: Search'](command:lean4.loogle.search) command. It can be called using the `Ctrl+K Ctrl+S` (`Cmd+K Cmd+S`) [chord](#chords), from the right click context menu in a Lean file, using the [command palette](#command-palette) or directly from the [command menu](#command-menu). The LoogleView can always be closed using `Escape`.
 
 When selecting text in a text editor before calling ['Loogle: Search'](command:lean4.loogle.search), Loogle will immediately search for the selected text. The input field supports the same [Unicode input](#unicode-input) as the text editor when editing Lean files. Clicking the magnifier icon or pressing `Enter` will search for the given query. Clicking the arrow icons or using the up and down arrow keys will cycle through past queries. The query syntax supported by Loogle is described in the LoogleView itself.
 
