@@ -89,7 +89,7 @@ class LoogleView {
 
     private history: LoogleQueryHistory = new LoogleQueryHistory()
     private abbreviationConfig: AbbreviationConfig = JSON.parse(
-        document.currentScript!.getAttribute('abbreviation-config')!,
+        document.querySelector('script[data-id="loogleview-script"]')!.getAttribute('abbreviation-config')!,
     )
     private rewriter: InputAbbreviationRewriter = new InputAbbreviationRewriter(
         this.abbreviationConfig,
