@@ -906,8 +906,6 @@
         "@leanprover/unicode-input-component": "~0.1.0",
         "@vscode/codicons": "^0.0.36",
         "@vscode/webview-ui-toolkit": "^1.4.0",
-        "axios": "^1.6.7",
-        "cheerio": "^1.0.0-rc.12",
         "markdown-it": "^14.1.0",
         "markdown-it-anchor": "^9.0.1",
         "semver": "^7.6.0",
@@ -915,7 +913,6 @@
         "zod": "^3.22.4"
     },
     "devDependencies": {
-        "@types/cheerio": "^0.22.35",
         "@types/glob": "^8.1.0",
         "@types/markdown-it": "^14.1.1",
         "@types/mocha": "^10.0.6",

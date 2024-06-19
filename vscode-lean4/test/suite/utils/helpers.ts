@@ -8,7 +8,6 @@ import { InfoProvider } from '../../../src/infoview'
 import { LeanClient } from '../../../src/leanclient'
 import { LeanClientProvider } from '../../../src/utils/clientProvider'
 import { logger } from '../../../src/utils/logger'
-import cheerio = require('cheerio')
 import path = require('path')
 
 export function sleep(ms: number) {
@@ -499,31 +498,6 @@ export async function restartLeanServer(client: LeanClient, retries = 60, delay 
 
 export async function assertStringInInfoview(infoView: InfoProvider, expectedVersion: string): Promise<string> {
     return await waitForInfoviewHtml(infoView, expectedVersion)
-}
-
-export async function invokeHrefCommand(html: string, selector: string): Promise<void> {
-    const $ = cheerio.load(html)
-    const link = $(selector)
-    assertAndLog(link, 'openExample link not found')
-    if (link) {
-        const href = link.attr('href')
-        if (href) {
-            const prefix = 'command:'
-            assertAndLog(href.startsWith(prefix), `expecting the href to start with ${prefix}`)
-            const cmd = href.slice(prefix.length)
-            const uri = vscode.Uri.parse(cmd)
-            const query = decodeURIComponent(uri.query)
-            logger.log(`Opening file : ${query}`)
-            const args = JSON.parse(query)
-            let arg: string = ''
-            if (Array.isArray(args)) {
-                arg = args[0]
-            } else {
-                arg = args
-            }
-            await vscode.commands.executeCommand(uri.path.slice(1), arg)
-        }
-    }
 }
 
 export async function clickInfoViewButton(info: InfoProvider, name: string): Promise<void> {
