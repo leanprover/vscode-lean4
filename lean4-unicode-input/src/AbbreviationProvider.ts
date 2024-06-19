@@ -8,7 +8,7 @@ export class AbbreviationProvider {
     private replacementTextCache: Record<string, string | undefined> = {}
     private symbolsByAbbreviation: SymbolsByAbbreviation = {}
 
-    constructor(private readonly config: AbbreviationConfig) {
+    constructor(readonly config: AbbreviationConfig) {
         this.symbolsByAbbreviation = {
             ...abbreviations,
             ...this.config.customTranslations,

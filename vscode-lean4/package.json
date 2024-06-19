@@ -256,34 +256,10 @@
                 "description": "This command is an implementation detail of the 'Go to Definition' context menu option in the infoview."
             },
             {
-                "command": "lean4.docView.showAllAbbreviations",
-                "category": "Lean 4",
-                "title": "Docview: Show All Abbreviations",
-                "description": "Show help page containing all abbreviations and the Unicode characters they map to."
-            },
-            {
                 "command": "lean4.loogle.search",
                 "category": "Lean 4",
                 "title": "Loogle: Search",
                 "description": "Show LoogleView"
-            },
-            {
-                "command": "lean4.docView.open",
-                "category": "Lean 4",
-                "title": "Docview: Open Docview",
-                "description": "Open documentation found in local 'html' folder in a separate web view panel."
-            },
-            {
-                "command": "lean4.docView.back",
-                "category": "Lean 4",
-                "title": "Docview: Back",
-                "description": "Go to previous page in documentation view"
-            },
-            {
-                "command": "lean4.docView.forward",
-                "category": "Lean 4",
-                "title": "Docview: Forward",
-                "description": "Go to next page in documentation view"
             },
             {
                 "command": "lean4.troubleshooting.showOutput",
@@ -298,16 +274,28 @@
                 "description": "Show setup information for the environment that the VS Code extension is running in"
             },
             {
-                "command": "lean4.setup.showSetupGuide",
+                "command": "lean4.docs.showSetupGuide",
                 "category": "Lean 4",
-                "title": "Setup: Show Setup Guide",
+                "title": "Docs: Show Setup Guide",
                 "description": "Show 'Welcome' page containing a checklist of steps to install Lean 4"
             },
             {
-                "command": "lean4.setup.showExtensionManual",
+                "command": "lean4.docs.showExtensionManual",
                 "category": "Lean 4",
-                "title": "Setup: Show Manual",
+                "title": "Docs: Show Manual",
                 "description": "Show manual for the Lean 4 VS Code extension"
+            },
+            {
+                "command": "lean4.docs.showDocResources",
+                "category": "Lean 4",
+                "title": "Docs: Show Documentation Resources",
+                "description": "Show available online documentation resources"
+            },
+            {
+                "command": "lean4.docs.showAbbreviations",
+                "category": "Lean 4",
+                "title": "Docs: Show Unicode Input Abbreviations",
+                "description": "Shows all abbreviations for the unicode input mechanism"
             },
             {
                 "command": "lean4.setup.installElan",
@@ -538,24 +526,11 @@
                     "when": "lean4.isLeanFeatureSetActive"
                 },
                 {
-                    "command": "lean4.docView.showAllAbbreviations",
-                    "when": "lean4.isLeanFeatureSetActive"
-                },
-                {
                     "command": "lean4.infoview.goToDefinition",
                     "when": "false"
                 },
                 {
                     "command": "lean4.loogle.search"
-                },
-                {
-                    "command": "lean4.docView.open"
-                },
-                {
-                    "command": "lean4.docView.back"
-                },
-                {
-                    "command": "lean4.docView.forward"
                 },
                 {
                     "command": "lean4.troubleshooting.showOutput"
@@ -564,10 +539,16 @@
                     "command": "lean4.troubleshooting.showSetupInformation"
                 },
                 {
-                    "command": "lean4.setup.showSetupGuide"
+                    "command": "lean4.docs.showSetupGuide"
                 },
                 {
-                    "command": "lean4.setup.showExtensionManual"
+                    "command": "lean4.docs.showExtensionManual"
+                },
+                {
+                    "command": "lean4.docs.showDocResources"
+                },
+                {
+                    "command": "lean4.docs.showAbbreviations"
                 },
                 {
                     "command": "lean4.setup.installElan"
@@ -720,24 +701,24 @@
             ],
             "lean4.titlebar.documentation": [
                 {
-                    "command": "lean4.setup.showSetupGuide",
+                    "command": "lean4.docs.showSetupGuide",
                     "when": "config.lean4.alwaysShowTitleBarMenu || lean4.isLeanFeatureSetActive",
-                    "group": "1_guides@1"
+                    "group": "1_docs@1"
                 },
                 {
-                    "command": "lean4.setup.showExtensionManual",
+                    "command": "lean4.docs.showExtensionManual",
                     "when": "config.lean4.alwaysShowTitleBarMenu || lean4.isLeanFeatureSetActive",
-                    "group": "1_guides@2"
+                    "group": "1_docs@2"
                 },
                 {
-                    "command": "lean4.docView.open",
+                    "command": "lean4.docs.showDocResources",
                     "when": "config.lean4.alwaysShowTitleBarMenu || lean4.isLeanFeatureSetActive",
-                    "group": "2_docview@1"
+                    "group": "1_docs@3"
                 },
                 {
-                    "command": "lean4.docView.showAllAbbreviations",
+                    "command": "lean4.docs.showAbbreviations",
                     "when": "config.lean4.alwaysShowTitleBarMenu || lean4.isLeanFeatureSetActive",
-                    "group": "2_docview@2"
+                    "group": "1_docs@4"
                 }
             ],
             "editor/context": [
@@ -820,10 +801,10 @@
                     {
                         "id": "lean4.welcome.openSetupGuide",
                         "title": "Re-Open Setup Guide",
-                        "description": "This guide can always be re-opened by opening an empty file, clicking on the ∀-symbol in the top right and selecting 'Documentation…' > 'Setup: Show Setup Guide'.",
+                        "description": "This guide can always be re-opened by opening an empty file, clicking on the ∀-symbol in the top right and selecting 'Documentation…' > 'Docs: Show Setup Guide'.",
                         "media": {
                             "image": "media/open-setup-guide.png",
-                            "altText": "Click on the ∀-symbol in the top right and select 'Documentation…' > 'Setup: Show Setup Guide'."
+                            "altText": "Click on the ∀-symbol in the top right and select 'Documentation…' > 'Docs: Show Setup Guide'."
                         }
                     },
                     {
@@ -888,14 +869,6 @@
                         }
                     },
                     {
-                        "id": "lean4.welcome.vscode",
-                        "title": "Using Lean 4 in VS Code",
-                        "description": "Learn how to use Lean 4 together with its VS Code extension.",
-                        "media": {
-                            "markdown": "./media/guide-vscode.md"
-                        }
-                    },
-                    {
                         "id": "lean4.welcome.help",
                         "title": "Questions and Troubleshooting",
                         "description": "If you have any questions or are having trouble with any of the previous steps, please visit us on the [Lean Zulip chat](https://leanprover.zulipchat.com/) so that we can help you.",
@@ -933,8 +906,6 @@
         "@leanprover/unicode-input-component": "~0.1.0",
         "@vscode/codicons": "^0.0.36",
         "@vscode/webview-ui-toolkit": "^1.4.0",
-        "axios": "^1.6.7",
-        "cheerio": "^1.0.0-rc.12",
         "markdown-it": "^14.1.0",
         "markdown-it-anchor": "^9.0.1",
         "semver": "^7.6.0",
@@ -942,7 +913,6 @@
         "zod": "^3.22.4"
     },
     "devDependencies": {
-        "@types/cheerio": "^0.22.35",
         "@types/glob": "^8.1.0",
         "@types/markdown-it": "^14.1.1",
         "@types/mocha": "^10.0.6",

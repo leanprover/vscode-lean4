@@ -13,7 +13,7 @@ export class ManualView implements Disposable {
     constructor(extensionPath: FileUri, manualFile: FileUri) {
         this.extensionPath = extensionPath
         this.manualFile = manualFile
-        this.subscriptions.push(commands.registerCommand('lean4.setup.showExtensionManual', () => this.displayManual()))
+        this.subscriptions.push(commands.registerCommand('lean4.docs.showExtensionManual', () => this.displayManual()))
     }
 
     async displayManual() {

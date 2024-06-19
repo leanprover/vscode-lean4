@@ -2,6 +2,7 @@ import * as os from 'os'
 import * as path from 'path'
 import { commands, Disposable, ExtensionContext, extensions, TextDocument, window, workspace } from 'vscode'
 import { AbbreviationFeature } from './abbreviation/AbbreviationFeature'
+import { AbbreviationView } from './abbreviationview'
 import { getDefaultLeanVersion } from './config'
 import { FullDiagnosticsProvider } from './diagnostics/fullDiagnostics'
 import {
@@ -11,7 +12,6 @@ import {
     checkIsLean4Installed,
 } from './diagnostics/setupDiagnostics'
 import { PreconditionCheckResult } from './diagnostics/setupNotifs'
-import { DocViewProvider } from './docview'
 import { AlwaysEnabledFeatures, Exports, Lean4EnabledFeatures } from './exports'
 import { InfoProvider } from './infoview'
 import { LeanClient } from './leanclient'
@@ -74,8 +74,11 @@ function activateAlwaysEnabledFeatures(context: ExtensionContext): AlwaysEnabled
     context.subscriptions.push(PathExtensionProvider.withAddedEnvPathExtensions())
 
     context.subscriptions.push(
-        commands.registerCommand('lean4.setup.showSetupGuide', async () =>
+        commands.registerCommand('lean4.docs.showSetupGuide', () =>
             commands.executeCommand('workbench.action.openWalkthrough', 'leanprover.lean4#lean4.welcome', false),
+        ),
+        commands.registerCommand('lean4.docs.showDocResources', () =>
+            commands.executeCommand('simpleBrowser.show', 'https://lean-lang.org/documentation/'),
         ),
     )
 
@@ -85,9 +88,6 @@ function activateAlwaysEnabledFeatures(context: ExtensionContext): AlwaysEnabled
 
     const loogleView = new LoogleView(extensionPath)
     context.subscriptions.push(loogleView)
-
-    const docView = new DocViewProvider(context.extensionUri)
-    context.subscriptions.push(docView)
 
     const outputChannel = window.createOutputChannel('Lean: Editor')
     context.subscriptions.push(
@@ -121,15 +121,13 @@ function activateAlwaysEnabledFeatures(context: ExtensionContext): AlwaysEnabled
     const fullDiagnosticsProvider = new FullDiagnosticsProvider(outputChannel)
     context.subscriptions.push(fullDiagnosticsProvider)
 
-    return { docView, projectInitializationProvider, outputChannel, installer, fullDiagnosticsProvider }
-}
+    const abbreviationFeature = new AbbreviationFeature()
+    context.subscriptions.push(abbreviationFeature)
 
-function activateAbbreviationFeature(context: ExtensionContext, docView: DocViewProvider): AbbreviationFeature {
-    const abbrev = new AbbreviationFeature()
-    // Pass the abbreviations through to the docView so it can show them on demand.
-    docView.setAbbreviations(abbrev.abbreviations.getSymbolsByAbbreviation())
-    context.subscriptions.push(abbrev)
-    return abbrev
+    const abbreviationView = new AbbreviationView(extensionPath, abbreviationFeature.abbreviations)
+    context.subscriptions.push(abbreviationView)
+
+    return { projectInitializationProvider, outputChannel, installer, fullDiagnosticsProvider }
 }
 
 async function checkLean4FeaturePreconditions(
@@ -194,7 +192,6 @@ async function activateLean4Features(
 export async function activate(context: ExtensionContext): Promise<Exports> {
     await setLeanFeatureSetActive(false)
     const alwaysEnabledFeatures: AlwaysEnabledFeatures = activateAlwaysEnabledFeatures(context)
-    activateAbbreviationFeature(context, alwaysEnabledFeatures.docView)
 
     const lean4EnabledFeatures: Promise<Lean4EnabledFeatures> = new Promise(async (resolve, _) => {
         const doc: TextDocument | undefined = findOpenLeanDocument()

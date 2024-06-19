@@ -3,13 +3,11 @@ import * as fs from 'fs'
 import * as os from 'os'
 import { basename, join } from 'path'
 import * as vscode from 'vscode'
-import { DocViewProvider } from '../../../src/docview'
 import { AlwaysEnabledFeatures, EnabledFeatures, Exports } from '../../../src/exports'
 import { InfoProvider } from '../../../src/infoview'
 import { LeanClient } from '../../../src/leanclient'
 import { LeanClientProvider } from '../../../src/utils/clientProvider'
 import { logger } from '../../../src/utils/logger'
-import cheerio = require('cheerio')
 import path = require('path')
 
 export function sleep(ms: number) {
@@ -403,31 +401,6 @@ export async function waitForInfoviewNotHtml(
     assertAndLog(false, `infoview still contains "${toFind}" after ${timeout} seconds`)
 }
 
-export async function waitForDocViewHtml(
-    docView: DocViewProvider,
-    toFind: string,
-    retries = 60,
-    delay = 1000,
-): Promise<string> {
-    let count = 0
-    let html = ''
-    while (count < retries) {
-        html = await docView.getHtmlContents()
-        if (html.indexOf(toFind) > 0) {
-            return html
-        }
-        await sleep(delay)
-        count += 1
-    }
-
-    const timeout = (retries * delay) / 1000
-    logger.log('>>> docview contents:')
-    logger.log(html)
-    logger.log('>>> end of infoview contents')
-    assertAndLog(false, `Missing "${toFind}" in docview after ${timeout} seconds`)
-    return html
-}
-
 export function extractPhrase(html: string, word: string, terminator: string) {
     const pos = html.indexOf(word)
     if (pos >= 0) {
@@ -525,31 +498,6 @@ export async function restartLeanServer(client: LeanClient, retries = 60, delay 
 
 export async function assertStringInInfoview(infoView: InfoProvider, expectedVersion: string): Promise<string> {
     return await waitForInfoviewHtml(infoView, expectedVersion)
-}
-
-export async function invokeHrefCommand(html: string, selector: string): Promise<void> {
-    const $ = cheerio.load(html)
-    const link = $(selector)
-    assertAndLog(link, 'openExample link not found')
-    if (link) {
-        const href = link.attr('href')
-        if (href) {
-            const prefix = 'command:'
-            assertAndLog(href.startsWith(prefix), `expecting the href to start with ${prefix}`)
-            const cmd = href.slice(prefix.length)
-            const uri = vscode.Uri.parse(cmd)
-            const query = decodeURIComponent(uri.query)
-            logger.log(`Opening file : ${query}`)
-            const args = JSON.parse(query)
-            let arg: string = ''
-            if (Array.isArray(args)) {
-                arg = args[0]
-            } else {
-                arg = args
-            }
-            await vscode.commands.executeCommand(uri.path.slice(1), arg)
-        }
-    }
 }
 
 export async function clickInfoViewButton(info: InfoProvider, name: string): Promise<void> {
