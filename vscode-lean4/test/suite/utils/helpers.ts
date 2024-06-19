@@ -3,7 +3,6 @@ import * as fs from 'fs'
 import * as os from 'os'
 import { basename, join } from 'path'
 import * as vscode from 'vscode'
-import { DocViewProvider } from '../../../src/docview'
 import { AlwaysEnabledFeatures, EnabledFeatures, Exports } from '../../../src/exports'
 import { InfoProvider } from '../../../src/infoview'
 import { LeanClient } from '../../../src/leanclient'
@@ -401,31 +400,6 @@ export async function waitForInfoviewNotHtml(
     logger.log(html)
     logger.log('>>> end of infoview contents')
     assertAndLog(false, `infoview still contains "${toFind}" after ${timeout} seconds`)
-}
-
-export async function waitForDocViewHtml(
-    docView: DocViewProvider,
-    toFind: string,
-    retries = 60,
-    delay = 1000,
-): Promise<string> {
-    let count = 0
-    let html = ''
-    while (count < retries) {
-        html = await docView.getHtmlContents()
-        if (html.indexOf(toFind) > 0) {
-            return html
-        }
-        await sleep(delay)
-        count += 1
-    }
-
-    const timeout = (retries * delay) / 1000
-    logger.log('>>> docview contents:')
-    logger.log(html)
-    logger.log('>>> end of infoview contents')
-    assertAndLog(false, `Missing "${toFind}" in docview after ${timeout} seconds`)
-    return html
 }
 
 export function extractPhrase(html: string, word: string, terminator: string) {

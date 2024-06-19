@@ -52,7 +52,7 @@ This manual covers how to interact with the most recent version of Lean 4 using 
 
 ## Setting up Lean 4
 
-The ['Setup Guide'](command:lean4.setup.showSetupGuide) of the Lean 4 VS Code extension covers how to set up Lean 4.
+The ['Setup Guide'](command:lean4.docs.showSetupGuide) of the Lean 4 VS Code extension covers how to set up Lean 4.
 
 ---
 
@@ -191,9 +191,9 @@ In order to automatically trigger rebuilds of all changed dependencies when open
 
 Lean code uses lots of [Unicode symbols](https://home.unicode.org/) to aid readability. In Lean files, these Unicode symbols can be entered by typing a backslash followed by an abbreviation identifier referring to the symbol. As soon as the abbreviation identifier is complete, if the abbreviation identifier is not a prefix of any other abbreviation identifier, the abbreviation will be automatically replaced with the corresponding Unicode symbol - for example, `\forall` will yield `∀`. 
 
-To replace an abbreviation early, before it is complete, `Tab` can be pressed to trigger the ['Lean 4: Input: Convert Current Abbreviation'](command:lean4.input.convert) command. This will yield the Unicode symbol with the shortest abbreviation identifier matching the identifier that was typed. Abbreviations are also replaced early when the text cursor is moved away from the abbreviation.
+To replace an abbreviation early, before it is complete, `Tab` can be pressed to trigger the ['Input: Convert Current Abbreviation'](command:lean4.input.convert) command. This will yield the Unicode symbol with the shortest abbreviation identifier matching the identifier that was typed. Abbreviations are also replaced early when the text cursor is moved away from the abbreviation.
 
-The full list of supported abbreviation identifiers and Unicode symbols can be viewed using the ['Docview: Show All Abbreviations'](command:lean4.docView.showAllAbbreviations) command that can be found in the 'Documentation…' submenu of the command menu. When encountering a Unicode symbol in Lean code, [hovering](#hovers) over the symbol will also provide all available abbreviation identifiers to input the symbol.
+The full list of supported abbreviation identifiers and Unicode symbols can be viewed using the ['Docs: Show Unicode Input Abbreviations'](command:lean4.docs.showAbbreviations) command that can be found in the 'Documentation…' submenu of the command menu. When encountering a Unicode symbol in Lean code, [hovering](#hovers) over the symbol will also provide all available abbreviation identifiers to input the symbol.
 
 For some Unicode brackets, there are special abbreviation identifiers that also insert a matching closing Unicode bracket and ensure that the cursor is in-between the Unicode brackets after replacing the abbreviation. For example, `\<>` yields `⟨⟩`, `\[[]]` yields `⟦⟧`, `\f<<>>` yields `«»` and `\norm` yields `‖‖`.
 
@@ -214,7 +214,7 @@ The Unicode input mechanism has several configuration options:
 
 | ![](images/show-all-abbreviations.png) | 
 | :--: | 
-| *Output when the 'Docview: Show All Abbreviations' command is used* |
+| *Output when the 'Docs: Show Unicode Input Abbreviations' command is used* |
 
 <br/>
 

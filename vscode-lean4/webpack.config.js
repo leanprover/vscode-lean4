@@ -100,6 +100,35 @@ const getLoogleViewConfig = env => ({
 })
 
 /** @type {(env: Env) => import('webpack').Configuration} */
+const getAbbreviationViewConfig = env => ({
+    name: 'abbreviationview',
+    mode: prodOrDev(env),
+    entry: './abbreviationview/index.ts',
+    module: {
+        rules: [
+            {
+                test: /\.tsx?$/,
+                use: 'ts-loader',
+                exclude: /node_modules/,
+            },
+            {
+                test: /\.js$/,
+                enforce: 'pre',
+                use: ['source-map-loader'],
+            },
+        ],
+    },
+    resolve: {
+        extensions: ['.tsx', '.ts', '.js'],
+    },
+    devtool: env.production ? undefined : 'inline-source-map',
+    output: {
+        filename: 'abbreviationview.js',
+        path: path.resolve(__dirname, 'dist'),
+    },
+})
+
+/** @type {(env: Env) => import('webpack').Configuration} */
 const getExtensionConfig = env => ({
     name: 'extension',
     mode: prodOrDev(env),
@@ -135,5 +164,5 @@ const getExtensionConfig = env => ({
 module.exports = function (env) {
     env = env || {}
     env.production = !!env.production
-    return [getWebviewConfig(env), getLoogleViewConfig(env), getExtensionConfig(env)]
+    return [getWebviewConfig(env), getLoogleViewConfig(env), getAbbreviationViewConfig(env), getExtensionConfig(env)]
 }

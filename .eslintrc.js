@@ -33,6 +33,7 @@ module.exports = {
             './vscode-lean4/tsconfig.json',
             './vscode-lean4/webview/tsconfig.json',
             './vscode-lean4/loogleview/tsconfig.json',
+            './vscode-lean4/abbreviationview/tsconfig.json',
         ],
         sourceType: 'module',
     },

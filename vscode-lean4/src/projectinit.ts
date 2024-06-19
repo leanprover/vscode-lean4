@@ -232,7 +232,7 @@ export class ProjectInitializationProvider implements Disposable {
         if (parentProjectFolder === undefined) {
             const message = `The selected folder is not a valid Lean 4 project folder.
 Please make sure to select a folder containing a \'lean-toolchain\' file.
-Click the following link to learn how to set up Lean projects: [(Show Setup Guide)](command:lean4.setup.showSetupGuide)`
+Click the following link to learn how to set up Lean projects: [(Show Setup Guide)](command:lean4.docs.showSetupGuide)`
             displayError(message)
             return undefined
         }

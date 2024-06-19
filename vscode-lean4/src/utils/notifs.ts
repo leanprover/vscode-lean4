@@ -88,7 +88,7 @@ export function displayNotificationWithSetupGuide(
         severity,
         message,
         'Open Setup Guide',
-        () => commands.executeCommand('lean4.setup.showSetupGuide'),
+        () => commands.executeCommand('lean4.docs.showSetupGuide'),
         finalizer,
     )
 }
@@ -171,7 +171,7 @@ export async function displayModalWarningWithSetupGuide(message: string): Promis
     if (choice === 'Proceed Regardless') {
         return 'Proceed'
     }
-    await commands.executeCommand('lean4.setup.showSetupGuide')
+    await commands.executeCommand('lean4.docs.showSetupGuide')
     return 'Abort'
 }
 

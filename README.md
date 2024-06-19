@@ -256,12 +256,6 @@ the server for the file needs to be restarted to pick up the changed dependency.
 
 * `lean4.infoView.toggleExpectedType` (Lean 4: Infoview: Toggle Expected Type): toggles the "Expected Type" widget in the Infoview (bound to <kbd>ctrl</kbd>+<kbd>alt</kbd>+<kbd>e</kbd> by default)
 
-### Documentation commands
-
-* `lean4.docView.open` (Lean 4: Open Documentation View): Open documentation found in local 'html' folder in a separate web view panel.
-
-* `lean4.docView.showAllAbbreviations` (Lean 4: Show all abbreviations): Show help page containing all abbreviations and the Unicode characters they map to.  This makes it easy to then search for the abbreviation for a given symbol you have in mind using <kbd>Ctrl</kbd>+<kbd>F</kbd>.
-
 ## Complete Setup
 
 The complete flow chart for determining how elan and lean are installed is shown below:
