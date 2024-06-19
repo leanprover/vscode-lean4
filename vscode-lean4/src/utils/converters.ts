@@ -11,11 +11,12 @@
  */
 
 import * as code from 'vscode'
-import { Code2ProtocolConverter, Protocol2CodeConverter } from 'vscode-languageclient'
+import { Code2ProtocolConverter, DidOpenTextDocumentParams, Protocol2CodeConverter } from 'vscode-languageclient'
 import { createConverter as createC2PConverter } from 'vscode-languageclient/lib/common/codeConverter'
 import { createConverter as createP2CConverter } from 'vscode-languageclient/lib/common/protocolConverter'
 import * as async from 'vscode-languageclient/lib/common/utils/async'
 import * as ls from 'vscode-languageserver-protocol'
+import { automaticallyBuildDependencies } from '../config'
 
 interface Lean4Diagnostic extends ls.Diagnostic {
     fullRange: ls.Range
@@ -35,6 +36,15 @@ namespace SnippetTextEdit {
         if (typeof snip.value !== 'string' && !(snip.value instanceof String)) return false
         return true
     }
+}
+
+export function setDependencyBuildMode(
+    params: DidOpenTextDocumentParams,
+    dependencyBuildMode: 'once' | 'never',
+): DidOpenTextDocumentParams {
+    const updatedParams: any = params
+    updatedParams.dependencyBuildMode = automaticallyBuildDependencies() ? 'always' : dependencyBuildMode
+    return updatedParams
 }
 
 export const p2cConverter = createP2CConverter(undefined, true, true)
@@ -65,6 +75,13 @@ export function patchConverters(p2cConverter: Protocol2CodeConverter, c2pConvert
         return protDiag
     }
     c2pConverter.asDiagnostics = async (diags, token) => async.map(diags, d => c2pConverter.asDiagnostic(d), token)
+
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    const oldC2pAsOpenTextDocumentParams = c2pConverter.asOpenTextDocumentParams
+    c2pConverter.asOpenTextDocumentParams = doc => {
+        const params = oldC2pAsOpenTextDocumentParams.apply(this, [doc])
+        return setDependencyBuildMode(params, 'never')
+    }
 
     // eslint-disable-next-line @typescript-eslint/unbound-method
     const oldP2CAsWorkspaceEdit = p2cConverter.asWorkspaceEdit

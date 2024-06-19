@@ -155,15 +155,6 @@ async function main() {
             extensionTestsEnv: { LEAN4_TEST_FOLDER: 'multi', DEFAULT_LEAN_TOOLCHAIN: test_version },
             launchArgs: ['--new-window', '--disable-gpu', workspacePath],
         })
-
-        // Test documentation view.
-        await runTests({
-            vscodeExecutablePath,
-            extensionDevelopmentPath,
-            extensionTestsPath: path.resolve(__dirname, 'index'),
-            extensionTestsEnv: { LEAN4_TEST_FOLDER: 'docview', DEFAULT_LEAN_TOOLCHAIN: test_version },
-            launchArgs: ['--new-window', '--disable-gpu', lean4TestFolder],
-        })
     } catch (err) {
         console.error('Failed to run tests')
         console.error(err.message)

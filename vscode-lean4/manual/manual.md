@@ -40,6 +40,8 @@ This manual covers how to interact with the most recent version of Lean 4 using 
     - [Terminal](#terminal)
 1. [Managing Lean versions](#managing-lean-versions)
     - [Installing and updating Elan](#installing-and-updating-elan)
+1. [Finding definitions and theorems](#finding-definitions-and-theorems)
+    - [LoogleView](#loogleview)
 1. [Troubleshooting issues](#troubleshooting-issues)
     - [Setup diagnostics](#setup-diagnostics)
     - [Collecting setup information](#collecting-setup-information)
@@ -50,7 +52,7 @@ This manual covers how to interact with the most recent version of Lean 4 using 
 
 ## Setting up Lean 4
 
-The ['Setup Guide'](command:lean4.setup.showSetupGuide) of the Lean 4 VS Code extension covers how to set up Lean 4.
+The ['Setup Guide'](command:lean4.docs.showSetupGuide) of the Lean 4 VS Code extension covers how to set up Lean 4.
 
 ---
 
@@ -108,7 +110,7 @@ Many commands in VS Code are bound to chord keyboard shortcuts where multiple ke
 
 ### Configuring keyboard shortcuts
 
-The [keyboard shortcuts](command:workbench.action.openGlobalKeybindings) for all commands can be configured by navigating to 'File' > 'Preferences' > 'Keyboard Shortcuts' or by using the `Ctrl+K Ctrl+S` (`Cmd+K Cmd+S`) [chord](#chords). Typing in 'Lean 4' will display all commands of the Lean 4 VS Code extension.
+The [keyboard shortcuts](command:workbench.action.openGlobalKeybindings) for all commands can be configured by navigating to 'File' > 'Preferences' > 'Keyboard Shortcuts'. Typing in 'Lean 4' will display all commands of the Lean 4 VS Code extension.
 
 <br/>
  
@@ -189,9 +191,9 @@ In order to automatically trigger rebuilds of all changed dependencies when open
 
 Lean code uses lots of [Unicode symbols](https://home.unicode.org/) to aid readability. In Lean files, these Unicode symbols can be entered by typing a backslash followed by an abbreviation identifier referring to the symbol. As soon as the abbreviation identifier is complete, if the abbreviation identifier is not a prefix of any other abbreviation identifier, the abbreviation will be automatically replaced with the corresponding Unicode symbol - for example, `\forall` will yield `∀`. 
 
-To replace an abbreviation early, before it is complete, `Tab` can be pressed to trigger the ['Lean 4: Input: Convert Current Abbreviation'](command:lean4.input.convert) command. This will yield the Unicode symbol with the shortest abbreviation identifier matching the identifier that was typed. Abbreviations are also replaced early when the text cursor is moved away from the abbreviation.
+To replace an abbreviation early, before it is complete, `Tab` can be pressed to trigger the ['Input: Convert Current Abbreviation'](command:lean4.input.convert) command. This will yield the Unicode symbol with the shortest abbreviation identifier matching the identifier that was typed. Abbreviations are also replaced early when the text cursor is moved away from the abbreviation.
 
-The full list of supported abbreviation identifiers and Unicode symbols can be viewed using the ['Docview: Show All Abbreviations'](command:lean4.docView.showAllAbbreviations) command that can be found in the 'Documentation…' submenu of the command menu. When encountering a Unicode symbol in Lean code, [hovering](#hovers) over the symbol will also provide all available abbreviation identifiers to input the symbol.
+The full list of supported abbreviation identifiers and Unicode symbols can be viewed using the ['Docs: Show Unicode Input Abbreviations'](command:lean4.docs.showAbbreviations) command that can be found in the 'Documentation…' submenu of the command menu. When encountering a Unicode symbol in Lean code, [hovering](#hovers) over the symbol will also provide all available abbreviation identifiers to input the symbol.
 
 For some Unicode brackets, there are special abbreviation identifiers that also insert a matching closing Unicode bracket and ensure that the cursor is in-between the Unicode brackets after replacing the abbreviation. For example, `\<>` yields `⟨⟩`, `\[[]]` yields `⟦⟧`, `\f<<>>` yields `«»` and `\norm` yields `‖‖`.
 
@@ -212,7 +214,7 @@ The Unicode input mechanism has several configuration options:
 
 | ![](images/show-all-abbreviations.png) | 
 | :--: | 
-| *Output when the 'Docview: Show All Abbreviations' command is used* |
+| *Output when the 'Docs: Show Unicode Input Abbreviations' command is used* |
 
 <br/>
 
@@ -615,6 +617,24 @@ This section covers how to manage different Lean versions. All of these commands
 ### Installing and updating Elan
 
 Lean's version manager [Elan](https://github.com/leanprover/elan/blob/master/README.md) can be installed or updated using the ['Setup: Install Elan'](command:lean4.setup.installElan) command that can be found using the [command palette](#command-palette) or by navigating to the 'Version Management…' submenu in the [command menu](#command-menu).
+
+---
+
+## Finding definitions and theorems
+
+This section covers how to find definitions and theorems in key Lean libraries like [Mathlib](https://github.com/leanprover-community/mathlib4) using the Lean 4 VS Code extension.
+
+### LoogleView
+
+[Loogle](https://loogle.lean-lang.org/), a search engine for definitions and theorems in Lean's standard library and a recent version of [Mathlib](https://github.com/leanprover-community/mathlib4), can be accessed from within VS Code using the ['Loogle: Search'](command:lean4.loogle.search) command. It can be called using the `Ctrl+K Ctrl+S` (`Cmd+K Cmd+S`) [chord](#chords), from the right click context menu in a Lean file, using the [command palette](#command-palette) or directly from the [command menu](#command-menu). The LoogleView can always be closed using `Escape`.
+
+When selecting text in a text editor before calling ['Loogle: Search'](command:lean4.loogle.search), Loogle will immediately search for the selected text. The input field supports the same [Unicode input](#unicode-input) as the text editor when editing Lean files. Clicking the magnifier icon or pressing `Enter` will search for the given query. Clicking the arrow icons or using the up and down arrow keys will cycle through past queries. The query syntax supported by Loogle is described in the LoogleView itself.
+
+When querying Loogle, it will display either a list of results or a list of possible suggestions if no results were found. The LoogleView will only display the first 200 results matching the query. Each result displays the name of the identifier, the module where it is located and the type of the identifier. Clicking the identifier will launch a browser window in VS Code with the documentation for the given identifier. Clicking a suggestion provided by Loogle if no results were found will immediately issue a query with the given suggestion.
+
+| ![](images/loogleview.png) | 
+| :--: | 
+| *LoogleView* |
 
 ---
 

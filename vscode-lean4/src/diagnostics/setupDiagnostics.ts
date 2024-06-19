@@ -33,11 +33,11 @@ export async function checkAll(
 
 const singleFileWarningMessage = `Lean 4 server is operating in restricted single file mode.
 Please open a valid Lean 4 project containing a \'lean-toolchain\' file for full functionality.
-Click the following link to learn how to set up or open Lean projects: [(Show Setup Guide)](command:lean4.setup.showSetupGuide)`
+Click the following link to learn how to set up or open Lean projects: [(Show Setup Guide)](command:lean4.docs.showSetupGuide)`
 
 const missingLeanToolchainWarningMessage = `Opened folder does not contain a valid Lean 4 project.
 Please open a valid Lean 4 project containing a \'lean-toolchain\' file for full functionality.
-Click the following link to learn how to set up or open Lean projects: [(Show Setup Guide)](command:lean4.setup.showSetupGuide)`
+Click the following link to learn how to set up or open Lean projects: [(Show Setup Guide)](command:lean4.docs.showSetupGuide)`
 
 const missingLeanToolchainWithParentProjectWarningMessage = (parentProjectFolder: FileUri) =>
     `Opened folder does not contain a valid Lean 4 project folder because it does not contain a 'lean-toolchain' file.
