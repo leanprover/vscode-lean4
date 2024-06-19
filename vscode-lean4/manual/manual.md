@@ -632,6 +632,10 @@ When selecting text in a text editor before calling ['Loogle: Search'](command:l
 
 When querying Loogle, it will display either a list of results or a list of possible suggestions if no results were found. The LoogleView will only display the first 200 results matching the query. Each result displays the name of the identifier, the module where it is located and the type of the identifier. Clicking the identifier will launch a browser window in VS Code with the documentation for the given identifier. Clicking a suggestion provided by Loogle if no results were found will immediately issue a query with the given suggestion.
 
+| ![](images/loogleview.png) | 
+| :--: | 
+| *LoogleView* |
+
 ---
 
 ## Troubleshooting issues
