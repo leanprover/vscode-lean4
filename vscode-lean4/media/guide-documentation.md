@@ -15,6 +15,10 @@ Once you have completed one of these books and its exercises, you are ready to u
 ## Hands-On Tutorial
 If you want to dive right into using Lean 4 to prove elementary theorems about natural numbers, you can play the [Natural Number Game](https://adam.math.hhu.de/#/g/hhu-adam/NNG4). It can be played online using your browser without a local installation.
 
+## Using Lean 4 in VS Code
+
+The [Lean 4 VS Code extension manual](command:lean4.docs.showExtensionManual) covers all kinds of essential tools when working with Lean 4 in VS Code. Even if you are already familiar with other programming languages and VS Code in general, you may find the first five subsections of the 'Interacting with Lean files' section in the manual to be very helpful. 
+
 ## Additional Resources
 **Website**  
 [Lean's website](https://lean-lang.org/) links to learning resources, publications, talks and articles about Lean.
@@ -28,5 +32,5 @@ The [Lean Manual](https://lean-lang.org/lean4/doc/) documents several features o
 ## Finding Definitions and Theorems
 There are two search engines that help you find definitions and theorems in [Mathlib](https://github.com/leanprover-community/mathlib4), [Lean's standard library](https://github.com/leanprover/std4) and Lean 4 itself:
 
-- [Loogle](https://loogle.lean-lang.org/): A pattern-based search engine that finds definitions and theorems by type signature or by the names of their identifiers.
+- [Loogle](command:lean4.loogle.search): A pattern-based search engine that finds definitions and theorems by type signature or by the names of their identifiers.
 - [Moogle](https://www.moogle.ai/): An AI-based search engine that finds definitions and theorems by a description in natural language.

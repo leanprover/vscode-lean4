@@ -1,10 +1,8 @@
 ## Collecting VS Code Output
-If you are encountering an issue with Lean or this VS Code extension, copying the output from the 'Lean: Editor' output panel can be helpful for others who are trying to help you. 
-You can open the 'Lean: Editor' output panel by clicking on the ∀-symbol in the top right and selecting 'Troubleshooting: Show Output'.
+If you are encountering an issue with Lean or this VS Code extension, copying the output from the 'Troubleshooting: Show Setup Information' and 'Troubleshooting: Show Output' commands can be helpful for others who are trying to help you. 
+You can run these commands by clicking on the ∀-symbol in the top right and selecting 'Troubleshooting: Show Setup Information' and 'Troubleshooting: Show Output'.
 
-  ![Show Output](show-output.png)
-
-Additionally, copying the information that is displayed when clicking on the ∀-symbol in the top right and selecting 'Troubleshooting: Show Setup Information' is also very helpful.
+  ![Troubleshooting](troubleshooting.png)
 
 ## Asking Questions on the Lean Zulip Chat
 

@@ -1,7 +1,12 @@
 import * as fs from 'fs'
+import { SemVer } from 'semver'
 import { Uri } from 'vscode'
 import { z } from 'zod'
 import { FileUri } from './exturi'
+
+// Suggested at https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string
+const semVerRegex =
+    /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/
 
 export interface DirectGitDependency {
     name: string
@@ -13,6 +18,17 @@ export interface DirectGitDependency {
 export interface Manifest {
     packagesDir: string
     directGitDependencies: DirectGitDependency[]
+}
+
+type ManifestVersion = { kind: 'LegacyNumberVersion'; version: number } | { kind: 'SemVer'; version: SemVer }
+
+function asManifestVersion(versionField: number | string): ManifestVersion {
+    switch (typeof versionField) {
+        case 'string':
+            return { kind: 'SemVer', version: new SemVer(versionField) }
+        case 'number':
+            return { kind: 'LegacyNumberVersion', version: versionField }
+    }
 }
 
 function parseVersion1To6Manifest(parsedJson: any) {
@@ -116,14 +132,16 @@ export function parseAsManifest(jsonString: string): Manifest | undefined {
         return undefined
     }
 
-    const versionSchema = z.object({ version: z.number().int().nonnegative() })
+    const versionSchema = z.object({
+        version: z.union([z.number().int().nonnegative(), z.string().regex(semVerRegex)]),
+    })
     const versionResult = versionSchema.safeParse(parsedJson)
     if (!versionResult.success) {
         return undefined
     }
-    const version = versionResult.data.version
+    const version = asManifestVersion(versionResult.data.version)
 
-    if (version <= 6) {
+    if (version.kind === 'LegacyNumberVersion' && version.version <= 6) {
         return parseVersion1To6Manifest(parsedJson)
     } else {
         return parseVersion7ToNManifest(parsedJson)

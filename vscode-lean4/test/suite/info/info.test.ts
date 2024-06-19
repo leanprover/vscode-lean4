@@ -9,6 +9,7 @@ import {
     closeAllEditors,
     findWord,
     gotoDefinition,
+    gotoPosition,
     initLean4Untitled,
     insertText,
     waitForActiveEditor,
@@ -164,6 +165,44 @@ suite('InfoView Test Suite', () => {
 
         logger.log('make sure pinned expression is still there')
         await assertStringInInfoview(info, expectedEval)
+
+        await closeAllEditors()
+    }).timeout(60000)
+
+    test('Tooltip exists', async () => {
+        logger.log('=================== Clicking to open nested tooltips ===================')
+
+        const text = 'example (issue461 : Type 4) : issue461 := by sorry'
+        const features = await initLean4Untitled(text)
+        const info = features.infoProvider
+        assert(info, 'No InfoProvider export')
+
+        gotoPosition(0, text.indexOf('by'))
+        await assertStringInInfoview(info, 'issue461')
+
+        logger.log('Opening tooltip for goal type')
+        await info.runTestScript(`
+          Array.from(document.querySelectorAll('[data-is-goal] *'))
+            .find(el => el.innerHTML === 'issue461')
+            .click()
+        `)
+        await waitForInfoviewHtml(info, 'tooltip-content', 30, 1000, false)
+
+        logger.log('Opening tooltip in tooltip')
+        await info.runTestScript(`
+          Array.from(document.querySelectorAll('.tooltip-content [data-has-tooltip-on-hover] *'))
+            .find(el => el.innerHTML === 'Type 4')
+            .click()
+        `)
+        await assertStringInInfoview(info, 'Type 5')
+
+        logger.log('Opening tooltip in tooltip in tooltip')
+        await info.runTestScript(`
+          Array.from(document.querySelectorAll('.tooltip-content [data-has-tooltip-on-hover] *'))
+            .find(el => el.innerHTML === 'Type 5')
+            .click()
+        `)
+        await assertStringInInfoview(info, 'Type 6')
 
         await closeAllEditors()
     }).timeout(60000)
