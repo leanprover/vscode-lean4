@@ -86,7 +86,7 @@ function activateAlwaysEnabledFeatures(context: ExtensionContext): AlwaysEnabled
     const manualView = new ManualView(extensionPath, extensionPath.join('manual', 'manual.md'))
     context.subscriptions.push(manualView)
 
-    const loogleView = new LoogleView(extensionPath)
+    const loogleView = new LoogleView(extensionPath, context.extension.packageJSON.version)
     context.subscriptions.push(loogleView)
 
     const outputChannel = window.createOutputChannel('Lean: Editor')
