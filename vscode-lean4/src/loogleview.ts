@@ -1,4 +1,4 @@
-import { Disposable, ViewColumn, WebviewPanel, commands, window } from 'vscode'
+import { Disposable, ViewColumn, WebviewPanel, commands, version, window } from 'vscode'
 import { VSCodeAbbreviationConfig } from './abbreviation/VSCodeAbbreviationConfig'
 import { FileUri } from './utils/exturi'
 
@@ -13,10 +13,11 @@ function escapeHtml(s: string) {
 
 export class LoogleView implements Disposable {
     private subscriptions: Disposable[] = []
-    private extensionPath: FileUri
 
-    constructor(extensionPath: FileUri) {
-        this.extensionPath = extensionPath
+    constructor(
+        private extensionPath: FileUri,
+        private extensionVersion: string,
+    ) {
         this.subscriptions.push(
             commands.registerCommand('lean4.loogle.search', async () => {
                 let initialQuery: string | undefined
@@ -70,7 +71,14 @@ export class LoogleView implements Disposable {
             </head>
             <body>
                 <div id="loogleviewRoot" style="min-width: 50em"></div>
-                <script defer nonce="inline" src="${this.webviewUri(webviewPanel, 'dist/loogleview.js')}" data-id="loogleview-script" abbreviation-config="${escapeHtml(JSON.stringify(new VSCodeAbbreviationConfig()))}" initial-query="${escapeHtml(initialQuery ?? '')}"></script>
+                <script defer
+                    nonce="inline"
+                    src="${this.webviewUri(webviewPanel, 'dist/loogleview.js')}"
+                    data-id="loogleview-script"
+                    abbreviation-config="${escapeHtml(JSON.stringify(new VSCodeAbbreviationConfig()))}"
+                    initial-query="${escapeHtml(initialQuery ?? '')}"
+                    vscode-version="${escapeHtml(version)}"
+                    extension-version="${escapeHtml(this.extensionVersion)}"></script>
             </body>
             </html>`
         webviewPanel.reveal()

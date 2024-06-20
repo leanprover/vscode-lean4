@@ -70,6 +70,10 @@ class LoogleQueryHistory {
     }
 }
 
+function getScriptArg(name: string): string {
+    return document.querySelector('script[data-id="loogleview-script"]')!.getAttribute(name)!
+}
+
 class LoogleView {
     private queryInput = document.getElementById('query-text-field')!
     private findButton = document.getElementById('find-button')!
@@ -84,13 +88,15 @@ class LoogleView {
     private suggestions = document.getElementById('suggestions')!
     private spinner = document.getElementById('spinner')!
 
-    private initialQuery = document.querySelector('script[data-id="loogleview-script"]')!.getAttribute('initial-query')
+    private initialQuery = getScriptArg('initial-query')
     private staticSuggestions = Array.from(document.getElementsByClassName('query-suggestion'))
 
     private history: LoogleQueryHistory = new LoogleQueryHistory()
-    private abbreviationConfig: AbbreviationConfig = JSON.parse(
-        document.querySelector('script[data-id="loogleview-script"]')!.getAttribute('abbreviation-config')!,
-    )
+    private abbreviationConfig: AbbreviationConfig = JSON.parse(getScriptArg('abbreviation-config'))
+
+    private vscodeVersion: string = getScriptArg('vscode-version')
+    private extensionVersion: string = getScriptArg('extension-version')
+
     private rewriter: InputAbbreviationRewriter = new InputAbbreviationRewriter(
         this.abbreviationConfig,
         this.queryInput,
@@ -162,7 +168,7 @@ class LoogleView {
         const response: LoogleQueryResponse = await this.withSpinner(async () => {
             try {
                 const headers = new Headers({
-                    'User-Agent': 'Lean 4 VS Code Extension',
+                    'User-Agent': `Code/${this.vscodeVersion} lean4/${this.extensionVersion}`,
                 })
                 return await (
                     await fetch(`https://loogle.lean-lang.org/json?q=${encodeURIComponent(query)}`, {
