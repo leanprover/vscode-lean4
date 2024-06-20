@@ -9,7 +9,7 @@ export { EditorConnection } from './infoview/editorConnection'
 export { GoalLocation, GoalsLocation, LocationsContext } from './infoview/goalLocation'
 export { InteractiveCode, InteractiveCodeProps } from './infoview/interactiveCode'
 export { renderInfoview } from './infoview/main'
-export { RpcContext } from './infoview/rpcSessions'
+export { RpcContext, useRpcSession } from './infoview/rpcSessions'
 export { ServerVersion } from './infoview/serverVersion'
 export { DynamicComponent, DynamicComponentProps, PanelWidgetProps, importWidgetModule } from './infoview/userWidget'
 export {
