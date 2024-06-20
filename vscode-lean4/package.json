@@ -396,7 +396,7 @@
                 "command": "lean4.input.convert",
                 "key": "tab",
                 "mac": "tab",
-                "when": "editorTextFocus && editorLangId == lean4 && lean4.input.isActive"
+                "when": "editorTextFocus && lean4.input.isActive"
             },
             {
                 "command": "lean4.restartFile",

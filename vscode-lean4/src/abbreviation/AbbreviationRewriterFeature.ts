@@ -1,5 +1,5 @@
 import { AbbreviationProvider } from '@leanprover/unicode-input'
-import { Disposable, languages, TextEditor, window, workspace } from 'vscode'
+import { commands, Disposable, languages, TextEditor, window, workspace } from 'vscode'
 import { VSCodeAbbreviationConfig } from './VSCodeAbbreviationConfig'
 import { VSCodeAbbreviationRewriter } from './VSCodeAbbreviationRewriter'
 
@@ -19,6 +19,14 @@ export class AbbreviationRewriterFeature {
     ) {
         this.changedVisibleTextEditors(window.visibleTextEditors)
         this.disposables.push(
+            commands.registerTextEditorCommand('lean4.input.convert', async editor => {
+                const rewriter = this.rewriters.get(editor)
+                if (rewriter === undefined) {
+                    return
+                }
+                await rewriter.replaceAllTrackedAbbreviations()
+            }),
+
             window.onDidChangeVisibleTextEditors(visibleTextEditors =>
                 this.changedVisibleTextEditors(visibleTextEditors),
             ),

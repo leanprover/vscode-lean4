@@ -76,13 +76,6 @@ export class VSCodeAbbreviationRewriter implements AbbreviationTextSource {
             }),
         )
 
-        this.disposables.push(
-            commands.registerTextEditorCommand('lean4.input.convert', async () => {
-                await this.rewriter.replaceAllTrackedAbbreviations()
-                this.updateState()
-            }),
-        )
-
         this.checkIsVimExtensionInstalled()
         this.disposables.push(extensions.onDidChange(_ => this.checkIsVimExtensionInstalled()))
     }
@@ -134,6 +127,11 @@ export class VSCodeAbbreviationRewriter implements AbbreviationTextSource {
             this.writeError('Error while replacing abbreviation: ' + e)
         }
         return ok
+    }
+
+    async replaceAllTrackedAbbreviations() {
+        await this.rewriter.replaceAllTrackedAbbreviations()
+        this.updateState()
     }
 
     private updateState() {
