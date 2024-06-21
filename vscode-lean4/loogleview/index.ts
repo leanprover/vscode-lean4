@@ -169,6 +169,7 @@ class LoogleView {
             try {
                 const headers = new Headers({
                     'User-Agent': `Code/${this.vscodeVersion} lean4/${this.extensionVersion}`,
+                    'X-Loogle-Client': `Code/${this.vscodeVersion} lean4/${this.extensionVersion}`,
                 })
                 return await (
                     await fetch(`https://loogle.lean-lang.org/json?q=${encodeURIComponent(query)}`, {
