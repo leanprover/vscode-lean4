@@ -1,5 +1,6 @@
 import { AbbreviationProvider } from '@leanprover/unicode-input'
 import { commands, Disposable, languages, TextEditor, window, workspace } from 'vscode'
+import { extUriEquals, toExtUri } from '../utils/exturi'
 import { VSCodeAbbreviationConfig } from './VSCodeAbbreviationConfig'
 import { VSCodeAbbreviationRewriter } from './VSCodeAbbreviationRewriter'
 
@@ -10,81 +11,75 @@ import { VSCodeAbbreviationRewriter } from './VSCodeAbbreviationRewriter'
 export class AbbreviationRewriterFeature {
     private readonly disposables = new Array<Disposable>()
 
-    private visibleTextEditorsByUri = new Map<string, TextEditor[]>()
-    private rewriters = new Map<TextEditor, VSCodeAbbreviationRewriter>()
+    private activeAbbreviationRewriter: VSCodeAbbreviationRewriter | undefined
 
     constructor(
         private readonly config: VSCodeAbbreviationConfig,
         private readonly abbreviationProvider: AbbreviationProvider,
     ) {
-        this.changedVisibleTextEditors(window.visibleTextEditors)
+        void this.changedActiveTextEditor(window.activeTextEditor)
+
         this.disposables.push(
-            commands.registerTextEditorCommand('lean4.input.convert', async editor => {
-                const rewriter = this.rewriters.get(editor)
-                if (rewriter === undefined) {
+            commands.registerTextEditorCommand('lean4.input.convert', async () => {
+                if (this.activeAbbreviationRewriter === undefined) {
                     return
                 }
-                await rewriter.replaceAllTrackedAbbreviations()
+                await this.activeAbbreviationRewriter.replaceAllTrackedAbbreviations()
             }),
 
-            window.onDidChangeVisibleTextEditors(visibleTextEditors =>
-                this.changedVisibleTextEditors(visibleTextEditors),
-            ),
+            window.onDidChangeActiveTextEditor(editor => this.changedActiveTextEditor(editor)),
 
-            workspace.onDidOpenTextDocument(doc => {
+            workspace.onDidOpenTextDocument(async doc => {
                 // Ensure that we create/remove abbreviation rewriters when the language ID changes
-                const editors = this.visibleTextEditorsByUri.get(doc.uri.toString())
-                if (editors === undefined) {
+                if (window.activeTextEditor === undefined) {
                     return
                 }
-                for (const editor of editors) {
-                    if (this.shouldEnableRewriterForEditor(editor)) {
-                        if (!this.rewriters.has(editor)) {
-                            this.rewriters.set(
-                                editor,
-                                new VSCodeAbbreviationRewriter(config, abbreviationProvider, editor),
-                            )
-                        }
-                    } else {
-                        const rewriter = this.rewriters.get(editor)
-                        if (rewriter !== undefined) {
-                            this.rewriters.delete(editor)
-                            rewriter.dispose()
-                        }
-                    }
+                const editorUri = toExtUri(window.activeTextEditor.document.uri)
+                const docUri = toExtUri(doc.uri)
+                if (editorUri === undefined || docUri === undefined || !extUriEquals(editorUri, docUri)) {
+                    return
+                }
+                if (
+                    this.activeAbbreviationRewriter === undefined &&
+                    this.shouldEnableRewriterForEditor(window.activeTextEditor)
+                ) {
+                    this.activeAbbreviationRewriter = new VSCodeAbbreviationRewriter(
+                        config,
+                        abbreviationProvider,
+                        window.activeTextEditor,
+                    )
+                } else if (
+                    this.activeAbbreviationRewriter !== undefined &&
+                    !this.shouldEnableRewriterForEditor(window.activeTextEditor)
+                ) {
+                    await this.disposeActiveAbbreviationRewriter()
                 }
             }),
         )
     }
 
-    private changedVisibleTextEditors(visibleTextEditors: readonly TextEditor[]) {
-        // Remove all rewriters for invisible editors, add rewriters for new visible editors,
-        // reuse old rewriters for editors that are still visible
-        const newRewriters = new Map<TextEditor, VSCodeAbbreviationRewriter>()
-        for (const editor of visibleTextEditors) {
-            if (!this.shouldEnableRewriterForEditor(editor)) {
-                continue
-            }
-            const rewriter =
-                this.rewriters.get(editor) ??
-                new VSCodeAbbreviationRewriter(this.config, this.abbreviationProvider, editor)
-            newRewriters.set(editor, rewriter)
+    private async disposeActiveAbbreviationRewriter() {
+        if (this.activeAbbreviationRewriter === undefined) {
+            return
         }
-        for (const [oldVisibleEditor, rewriter] of this.rewriters) {
-            if (!newRewriters.has(oldVisibleEditor)) {
-                rewriter.dispose()
-            }
-        }
-        this.rewriters = newRewriters
+        await this.activeAbbreviationRewriter.replaceAllTrackedAbbreviations()
+        this.activeAbbreviationRewriter.dispose()
+        this.activeAbbreviationRewriter = undefined
+    }
 
-        // Update index of visible text editors
-        this.visibleTextEditorsByUri = new Map<string, TextEditor[]>()
-        for (const editor of visibleTextEditors) {
-            const key = editor.document.uri.toString()
-            const editors = this.visibleTextEditorsByUri.get(key) ?? []
-            editors.push(editor)
-            this.visibleTextEditorsByUri.set(key, editors)
+    private async changedActiveTextEditor(activeTextEditor: TextEditor | undefined) {
+        await this.disposeActiveAbbreviationRewriter()
+        if (activeTextEditor === undefined) {
+            return
         }
+        if (!this.shouldEnableRewriterForEditor(activeTextEditor)) {
+            return
+        }
+        this.activeAbbreviationRewriter = new VSCodeAbbreviationRewriter(
+            this.config,
+            this.abbreviationProvider,
+            activeTextEditor,
+        )
     }
 
     private shouldEnableRewriterForEditor(editor: TextEditor): boolean {
@@ -101,8 +96,6 @@ export class AbbreviationRewriterFeature {
         for (const d of this.disposables) {
             d.dispose()
         }
-        for (const [_, rewriter] of this.rewriters) {
-            rewriter.dispose()
-        }
+        this.activeAbbreviationRewriter?.dispose()
     }
 }

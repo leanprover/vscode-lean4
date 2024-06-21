@@ -24,6 +24,7 @@ import { LeanClientProvider } from './utils/clientProvider'
 import { LeanConfigWatchService } from './utils/configwatchservice'
 import { PATH, setProcessEnvPATH } from './utils/envPath'
 import { FileUri, isExtUri, toExtUriOrError } from './utils/exturi'
+import { displayInternalErrorsIn } from './utils/internalErrors'
 import { LeanInstaller } from './utils/leanInstaller'
 import { displayWarning } from './utils/notifs'
 import { PathExtensionProvider } from './utils/pathExtensionProvider'
@@ -191,15 +192,17 @@ async function activateLean4Features(
 
 export async function activate(context: ExtensionContext): Promise<Exports> {
     await setLeanFeatureSetActive(false)
-    const alwaysEnabledFeatures: AlwaysEnabledFeatures = activateAlwaysEnabledFeatures(context)
+    const alwaysEnabledFeatures: AlwaysEnabledFeatures = await displayInternalErrorsIn(
+        'activating Lean 4 extension',
+        async () => activateAlwaysEnabledFeatures(context),
+    )
 
     const lean4EnabledFeatures: Promise<Lean4EnabledFeatures> = new Promise(async (resolve, _) => {
         const doc: TextDocument | undefined = findOpenLeanDocument()
         if (doc) {
-            const lean4EnabledFeatures: Lean4EnabledFeatures | undefined = await activateLean4Features(
-                context,
-                alwaysEnabledFeatures.installer,
-                doc,
+            const lean4EnabledFeatures: Lean4EnabledFeatures | undefined = await displayInternalErrorsIn(
+                'activating Lean 4 features',
+                () => activateLean4Features(context, alwaysEnabledFeatures.installer, doc),
             )
             if (lean4EnabledFeatures) {
                 resolve(lean4EnabledFeatures)
@@ -212,10 +215,9 @@ export async function activate(context: ExtensionContext): Promise<Exports> {
             if (!isLean4Document(doc)) {
                 return
             }
-            const lean4EnabledFeatures: Lean4EnabledFeatures | undefined = await activateLean4Features(
-                context,
-                alwaysEnabledFeatures.installer,
-                doc,
+            const lean4EnabledFeatures: Lean4EnabledFeatures | undefined = await displayInternalErrorsIn(
+                'activating Lean 4 features',
+                () => activateLean4Features(context, alwaysEnabledFeatures.installer, doc),
             )
             if (!lean4EnabledFeatures) {
                 return
