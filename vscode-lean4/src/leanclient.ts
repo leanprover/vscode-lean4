@@ -20,13 +20,15 @@ import {
     DidCloseTextDocumentParams,
     DocumentFilter,
     InitializeResult,
-    LanguageClient,
     LanguageClientOptions,
     PublishDiagnosticsParams,
     RevealOutputChannelOn,
     ServerOptions,
     State,
 } from 'vscode-languageclient/node'
+import {
+    MonacoLanguageClient as LanguageClient,
+} from 'monaco-languageclient'
 import * as ls from 'vscode-languageserver-protocol'
 
 import { LeanFileProgressParams, LeanFileProgressProcessingInfo, ServerStoppedReason } from '@leanprover/infoview-api'
@@ -51,7 +53,8 @@ import {
     displayInformationWithOptionalInput,
 } from './utils/notifs'
 import { willUseLakeServer } from './utils/projectInfo'
-import path = require('path')
+import path from 'path'
+import { LanguageClientWrapper } from 'monaco-editor-wrapper'
 
 const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
@@ -261,7 +264,7 @@ export class LeanClient implements Disposable {
         // Reveal the standard error output channel when the server prints something to stderr.
         // The vscode-languageclient library already takes care of writing it to the output channel.
         let stderrMsgBoxVisible = false
-        ;(this.client as any)._serverProcess.stderr.on('data', async (chunk: Buffer) => {
+        ;(this.client as any)._serverProcess?.stderr.on('data', async (chunk: Buffer) => {
             if (shouldAutofocusOutput()) {
                 this.client?.outputChannel.show(true)
             } else if (!stderrMsgBoxVisible) {
@@ -488,7 +491,7 @@ export class LeanClient implements Disposable {
         return {
             outputChannel: this.outputChannel,
             revealOutputChannelOn: RevealOutputChannelOn.Never, // contrary to the name, this disables the message boxes
-            documentSelector: [documentSelector],
+            documentSelector: ['lean4'],
             workspaceFolder,
             initializationOptions: {
                 editDelay: getElaborationDelay(),
@@ -542,11 +545,7 @@ export class LeanClient implements Disposable {
 
                 didChange: async (data, next) => {
                     await next(data)
-                    const params = c2pConverter.asChangeTextDocumentParams(
-                        data,
-                        data.document.uri,
-                        data.document.version,
-                    )
+                    const params = c2pConverter.asChangeTextDocumentParams(data as any)
                     this.didChangeEmitter.fire(params)
                 },
 
@@ -603,13 +602,34 @@ export class LeanClient implements Disposable {
         }
     }
 
+    // TODO (Jon): Is this correct?
     private async setupClient(): Promise<LanguageClient> {
-        const serverOptions: ServerOptions = await this.determineServerOptions()
-        const clientOptions: LanguageClientOptions = this.obtainClientOptions()
-
-        const client = new LanguageClient('lean4', 'Lean 4', serverOptions, clientOptions)
-
-        patchConverters(client.protocol2CodeConverter, client.code2ProtocolConverter)
+        const languageClientWrapper = new LanguageClientWrapper();
+        await languageClientWrapper.init({
+            languageClientConfig: {
+                languageId: 'lean4',
+                options: {
+                    $type: 'WebSocketUrl',
+                    url: 'ws://localhost:8080/websocket/mathlib-demo',
+                    startOptions: {
+                    onCall: () => {
+                        console.log('Connected to socket.');
+                    },
+                    reportStatus: true
+                    },
+                    stopOptions: {
+                    onCall: () => {
+                        console.log('Disconnected from socket.');
+                    },
+                    reportStatus: true
+                    }
+                },
+                clientOptions: this.obtainClientOptions()
+            }
+        });
+        await languageClientWrapper?.start();
+        const client = languageClientWrapper.getLanguageClient();
+        patchConverters(client.protocol2CodeConverter, client.code2ProtocolConverter);
         return client
     }
 }

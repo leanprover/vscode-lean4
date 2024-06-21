@@ -91,7 +91,7 @@ class RpcSessionAtPos implements Disposable {
 
 export class InfoProvider implements Disposable {
     /** Instance of the panel, if it is open. Otherwise `undefined`. */
-    private webviewPanel?: WebviewPanel & { rpc: Rpc; api: InfoviewApi }
+    private webviewPanel?: HTMLIFrameElement & {rpc: Rpc, api: InfoviewApi}
     private subscriptions: Disposable[] = []
     private clientSubscriptions: Disposable[] = []
 
@@ -110,6 +110,8 @@ export class InfoProvider implements Disposable {
 
     // the key is the uri of the file who's worker has failed.
     private workersFailed: Map<string, ServerStoppedReason> = new Map()
+
+    private infoviewElement : HTMLElement
 
     private subscribeDidChangeNotification(client: LeanClient, method: string) {
         const h = client.didChange(params => {
@@ -258,7 +260,7 @@ export class InfoProvider implements Disposable {
         },
         copyToClipboard: async text => {
             await env.clipboard.writeText(text)
-            displayInformation(`Copied to clipboard: ${text}`)
+            await window.showInformationMessage(`Copied to clipboard: ${text}`);
         },
         insertText: async (text, kind, tdpp) => {
             let uri: ExtUri | undefined
@@ -283,24 +285,7 @@ export class InfoProvider implements Disposable {
             }
             void this.revealEditorSelection(uri, p2cConverter.asRange(show.selection))
         },
-        restartFile: async uri => {
-            const extUri = parseExtUri(uri)
-            if (extUri === undefined) {
-                return
-            }
-
-            const client = this.clientProvider.findClient(extUri)
-            if (!client) {
-                return
-            }
-
-            const document = workspace.textDocuments.find(doc => extUri.equalsUri(doc.uri))
-            if (!document || document.isClosed) {
-                return
-            }
-
-            await client.restartFile(document)
-        },
+        restartFile: async () => {},
 
         createRpcSession: async uri => {
             const extUri = parseExtUri(uri)
@@ -371,9 +356,9 @@ export class InfoProvider implements Disposable {
             commands.registerCommand('lean4.infoView.toggleUpdating', () =>
                 this.webviewPanel?.api.requestedAction({ kind: 'togglePaused' }),
             ),
-            commands.registerCommand('lean4.infoView.toggleExpectedType', () =>
-                this.webviewPanel?.api.requestedAction({ kind: 'toggleExpectedType' }),
-            ),
+            // commands.registerCommand('lean4.infoView.toggleExpectedType', () =>
+            //     this.webviewPanel?.api.requestedAction({ kind: 'toggleExpectedType' }),
+            // ),
             commands.registerTextEditorCommand('lean4.infoView.toggleStickyPosition', () =>
                 this.webviewPanel?.api.requestedAction({ kind: 'togglePin' }),
             ),
@@ -381,6 +366,10 @@ export class InfoProvider implements Disposable {
                 this.webviewPanel?.api.goToDefinition(args.interactiveCodeTagId),
             ),
         )
+    }
+
+    setInfoviewElement(infoviewElement) {
+        this.infoviewElement = infoviewElement
     }
 
     private async onClientRestarted(client: LeanClient) {
@@ -505,7 +494,7 @@ export class InfoProvider implements Disposable {
     }
 
     isOpen(): boolean {
-        return this.webviewPanel?.visible === true
+        return this.webviewPanel !== undefined
     }
 
     async runTestScript(javaScript: string): Promise<void> {
@@ -581,7 +570,7 @@ export class InfoProvider implements Disposable {
 
     private async toggleInfoview() {
         if (this.webviewPanel) {
-            this.webviewPanel.dispose()
+            // this.webviewPanel.dispose()
             // the onDispose handler sets this.webviewPanel = undefined
         } else if (window.activeTextEditor && window.activeTextEditor.document.languageId === 'lean4') {
             await this.openPreview(window.activeTextEditor)
@@ -603,19 +592,14 @@ export class InfoProvider implements Disposable {
             column = ViewColumn.Three
         }
         if (this.webviewPanel) {
-            this.webviewPanel.reveal(column, true)
+            // this.webviewPanel.reveal(column, true)
         } else {
-            const webviewPanel = window.createWebviewPanel(
-                'lean4_infoview',
-                'Lean Infoview',
-                { viewColumn: column, preserveFocus: true },
-                {
-                    enableFindWidget: true,
-                    retainContextWhenHidden: true,
-                    enableScripts: true,
-                    enableCommandUris: true,
-                },
-            ) as WebviewPanel & { rpc: Rpc; api: InfoviewApi }
+            const iframe : HTMLIFrameElement = document.createElement("iframe")
+            this.infoviewElement.append(iframe)
+            iframe.contentWindow.document.open()
+            iframe.contentWindow.document.write(this.initialHtml())
+            iframe.contentWindow.document.close()
+            const webviewPanel = iframe as HTMLIFrameElement & {rpc: Rpc, api: InfoviewApi}
 
             // Note that an extension can send data to its webviews using webview.postMessage().
             // This method sends any JSON serializable data to the webview. The message is received
@@ -624,7 +608,7 @@ export class InfoProvider implements Disposable {
             // calls window.addEventListener('message',...
             webviewPanel.rpc = new Rpc(m => {
                 try {
-                    void webviewPanel.webview.postMessage(m)
+                    void webviewPanel.contentWindow.postMessage(m)
                 } catch (e) {
                     // ignore any disposed object exceptions
                 }
@@ -632,19 +616,20 @@ export class InfoProvider implements Disposable {
             webviewPanel.rpc.register(this.editorApi)
 
             // Similarly, we can received data from the webview by listening to onDidReceiveMessage.
-            webviewPanel.webview.onDidReceiveMessage(m => {
+            document.defaultView.addEventListener('message', m => {
+                if (m.source != webviewPanel.contentWindow) { return }
                 try {
-                    webviewPanel.rpc.messageReceived(m)
+                    webviewPanel.rpc.messageReceived(m.data)
                 } catch {
                     // ignore any disposed object exceptions
                 }
             })
             webviewPanel.api = webviewPanel.rpc.getApi()
-            webviewPanel.onDidDispose(() => {
-                this.webviewPanel = undefined
-                this.clearNotificationHandlers()
-                this.clearRpcSessions(null) // should be after `webviewPanel = undefined`
-            })
+            // webviewPanel.onDidDispose(() => {
+            //     this.webviewPanel = undefined
+            //     this.clearNotificationHandlers()
+            //     this.clearRpcSessions(null) // should be after `webviewPanel = undefined`
+            // })
             this.webviewPanel = webviewPanel
             webviewPanel.webview.html = this.initialHtml()
 
@@ -743,8 +728,8 @@ export class InfoProvider implements Disposable {
         return {
             uri: uri.toString(),
             range: {
-                start: selection.start,
-                end: selection.end,
+                start: {line: (selection.start as any)._line, character: (selection.start as any)._character},
+                end: {line: (selection.end as any)._line, character: (selection.end as any)._character}
             },
         }
     }
@@ -865,11 +850,12 @@ export class InfoProvider implements Disposable {
 
     private getLocalPath(path: string): string | undefined {
         if (this.webviewPanel) {
-            return this.webviewPanel.webview.asWebviewUri(Uri.file(join(this.context.extensionPath, path))).toString()
+            return path
         }
         return undefined
     }
 
+    // TODO (Jon): Make sure these paths are working again
     private initialHtml() {
         const libPostfix = `.${prodOrDev}${minIfProd}.js`
         return `
@@ -880,11 +866,12 @@ export class InfoProvider implements Disposable {
                 <meta http-equiv="Content-type" content="text/html;charset=utf-8">
                 <title>Infoview</title>
                 <style>${this.stylesheet}</style>
+                <link rel="stylesheet" href="${new URL(`../webview/vscode.css`, import.meta.url)}">
                 <link rel="stylesheet" href="${this.getLocalPath('dist/lean4-infoview/index.css')}">
             </head>
             <body>
                 <div id="react_root"></div>
-                <script
+                <script type="module"
                     data-importmap-leanprover-infoview="${this.getLocalPath(`dist/lean4-infoview/index${libPostfix}`)}"
                     data-importmap-react="${this.getLocalPath(`dist/lean4-infoview/react${libPostfix}`)}"
                     data-importmap-react-jsx-runtime="${this.getLocalPath(`dist/lean4-infoview/react-jsx-runtime${libPostfix}`)}"

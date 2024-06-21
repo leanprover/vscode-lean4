@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
-import { PathLike, promises } from 'fs'
-import path = require('path')
+import { PathLike } from 'fs'
+import path from 'path'
+const promises: any = null
 
 /**
  * Returns true if `pathFile` exists and is a file
@@ -31,6 +32,7 @@ export async function dirExists(pathFile: PathLike): Promise<boolean> {
  * @returns a boolean that says if the file exists in folder
  */
 export function isFileInFolder(file: string, folder: string) {
+    return true // TODO: still necessary?
     const relative = path.relative(folder, file)
     const isSubdir = relative.length > 0 && !relative.startsWith('..') && !path.isAbsolute(relative)
     return isSubdir

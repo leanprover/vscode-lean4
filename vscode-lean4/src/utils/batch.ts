@@ -1,7 +1,8 @@
-import { ChildProcessWithoutNullStreams, spawn } from 'child_process'
+import { ChildProcessWithoutNullStreams } from 'child_process'
 import { OutputChannel, Progress, ProgressLocation, ProgressOptions, window } from 'vscode'
 import { logger } from './logger'
 import { displayErrorWithOutput } from './notifs'
+const spawn = () => {} // was imported from `child_process`
 
 export interface ExecutionChannel {
     combined?: OutputChannel | undefined
