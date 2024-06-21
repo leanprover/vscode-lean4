@@ -1,5 +1,5 @@
 import { AbbreviationProvider } from '@leanprover/unicode-input'
-import { commands, Disposable, languages, TextEditor, window, workspace } from 'vscode'
+import { commands, Disposable, languages, OutputChannel, TextEditor, window, workspace } from 'vscode'
 import { extUriEquals, toExtUri } from '../utils/exturi'
 import { VSCodeAbbreviationConfig } from './VSCodeAbbreviationConfig'
 import { VSCodeAbbreviationRewriter } from './VSCodeAbbreviationRewriter'
@@ -16,6 +16,7 @@ export class AbbreviationRewriterFeature {
     constructor(
         private readonly config: VSCodeAbbreviationConfig,
         private readonly abbreviationProvider: AbbreviationProvider,
+        private readonly outputChannel: OutputChannel,
     ) {
         void this.changedActiveTextEditor(window.activeTextEditor)
 
@@ -46,6 +47,7 @@ export class AbbreviationRewriterFeature {
                     this.activeAbbreviationRewriter = new VSCodeAbbreviationRewriter(
                         config,
                         abbreviationProvider,
+                        outputChannel,
                         window.activeTextEditor,
                     )
                 } else if (
@@ -78,6 +80,7 @@ export class AbbreviationRewriterFeature {
         this.activeAbbreviationRewriter = new VSCodeAbbreviationRewriter(
             this.config,
             this.abbreviationProvider,
+            this.outputChannel,
             activeTextEditor,
         )
     }

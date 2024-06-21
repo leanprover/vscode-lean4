@@ -31,7 +31,6 @@ export class VSCodeAbbreviationRewriter implements AbbreviationTextSource {
         textDecoration: 'underline',
     })
 
-    private stderrOutput: OutputChannel
     private firstOutput = true
     private isVimExtensionInstalled = false
 
@@ -42,6 +41,7 @@ export class VSCodeAbbreviationRewriter implements AbbreviationTextSource {
     constructor(
         readonly config: AbbreviationConfig,
         readonly abbreviationProvider: AbbreviationProvider,
+        private readonly outputChannel: OutputChannel,
         private readonly textEditor: TextEditor,
     ) {
         this.rewriter = new AbbreviationRewriter(config, abbreviationProvider, this)
@@ -81,10 +81,9 @@ export class VSCodeAbbreviationRewriter implements AbbreviationTextSource {
     }
 
     private writeError(e: string) {
-        this.stderrOutput = this.stderrOutput || window.createOutputChannel('Lean: Editor')
-        this.stderrOutput.appendLine(e)
+        this.outputChannel.appendLine(e)
         if (this.firstOutput) {
-            this.stderrOutput.show(true)
+            this.outputChannel.show(true)
             this.firstOutput = false
         }
     }

@@ -122,7 +122,7 @@ function activateAlwaysEnabledFeatures(context: ExtensionContext): AlwaysEnabled
     const fullDiagnosticsProvider = new FullDiagnosticsProvider(outputChannel)
     context.subscriptions.push(fullDiagnosticsProvider)
 
-    const abbreviationFeature = new AbbreviationFeature()
+    const abbreviationFeature = new AbbreviationFeature(outputChannel)
     context.subscriptions.push(abbreviationFeature)
 
     const abbreviationView = new AbbreviationView(extensionPath, abbreviationFeature.abbreviations)
