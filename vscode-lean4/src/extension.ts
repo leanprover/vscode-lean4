@@ -211,19 +211,25 @@ export async function activate(context: ExtensionContext): Promise<Exports> {
         }
 
         // No Lean 4 document yet => Load remaining features when one is open
+        let isActivatingLean4Features = false
         const disposeActivationListener: Disposable = workspace.onDidOpenTextDocument(async doc => {
-            if (!isLean4Document(doc)) {
+            if (!isLean4Document(doc) || isActivatingLean4Features) {
                 return
             }
-            const lean4EnabledFeatures: Lean4EnabledFeatures | undefined = await displayInternalErrorsIn(
-                'activating Lean 4 features',
-                () => activateLean4Features(context, alwaysEnabledFeatures.installer, doc),
-            )
-            if (!lean4EnabledFeatures) {
-                return
+            isActivatingLean4Features = true
+            try {
+                const lean4EnabledFeatures: Lean4EnabledFeatures | undefined = await displayInternalErrorsIn(
+                    'activating Lean 4 features after startup',
+                    () => activateLean4Features(context, alwaysEnabledFeatures.installer, doc),
+                )
+                if (!lean4EnabledFeatures) {
+                    return
+                }
+                disposeActivationListener.dispose()
+                resolve(lean4EnabledFeatures)
+            } finally {
+                isActivatingLean4Features = false
             }
-            resolve(lean4EnabledFeatures)
-            disposeActivationListener.dispose()
         }, context.subscriptions)
     })
 
