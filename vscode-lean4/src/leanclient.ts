@@ -529,7 +529,7 @@ export class LeanClient implements Disposable {
                         // In Lean, this is very expensive and hence does not make much sense, so we filter these notification here.
                         // Should VS Code decide to send requests to a file that was filtered here, the language server will respond with an error, which VS Code will silently discard and interpret as having received an empty response.
                         // See https://github.com/microsoft/vscode/issues/78453 (the solution suggested in the thread is wrong, but `collectAllOpenLeanDocumentUris` works).
-                        return
+                        // return
                     }
 
                     if (this.openServerDocuments.has(docUri.toString())) {

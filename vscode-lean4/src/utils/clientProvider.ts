@@ -18,6 +18,7 @@ async function checkLean4ProjectPreconditions(
     channel: OutputChannel,
     folderUri: ExtUri,
 ): Promise<PreconditionCheckResult> {
+    return 'Fulfilled';
     return await checkAll(
         () => checkIsValidProjectFolder(channel, folderUri),
         () => checkIsLeanVersionUpToDate(channel, folderUri, { modal: false }),

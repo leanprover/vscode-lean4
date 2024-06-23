@@ -631,7 +631,7 @@ export class InfoProvider implements Disposable {
             //     this.clearRpcSessions(null) // should be after `webviewPanel = undefined`
             // })
             this.webviewPanel = webviewPanel
-            webviewPanel.webview.html = this.initialHtml()
+            // webviewPanel.webview.html = this.initialHtml()
 
             const client = this.clientProvider.findClient(docUri)
             await this.initInfoView(editor, client)
@@ -867,7 +867,7 @@ export class InfoProvider implements Disposable {
                 <title>Infoview</title>
                 <style>${this.stylesheet}</style>
                 <link rel="stylesheet" href="${new URL(`../webview/vscode.css`, import.meta.url)}">
-                <link rel="stylesheet" href="${this.getLocalPath('dist/lean4-infoview/index.css')}">
+                <link rel="stylesheet" href="${new URL(`../../../@leanprover/infoview/dist/lean4-infoview/index.css`, import.meta.url)}">
             </head>
             <body>
                 <div id="react_root"></div>
@@ -876,7 +876,7 @@ export class InfoProvider implements Disposable {
                     data-importmap-react="${this.getLocalPath(`dist/lean4-infoview/react${libPostfix}`)}"
                     data-importmap-react-jsx-runtime="${this.getLocalPath(`dist/lean4-infoview/react-jsx-runtime${libPostfix}`)}"
                     data-importmap-react-dom="${this.getLocalPath(`dist/lean4-infoview/react-dom${libPostfix}`)}"
-                    src="${this.getLocalPath('dist/webview.js')}"></script>
+                    src="${new URL('../webview/index.ts', import.meta.url)}"></script>
             </body>
             </html>`
     }
