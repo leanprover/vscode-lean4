@@ -867,7 +867,7 @@ export class InfoProvider implements Disposable {
                 <title>Infoview</title>
                 <style>${this.stylesheet}</style>
                 <link rel="stylesheet" href="${new URL(`../webview/vscode.css`, import.meta.url)}">
-                <link rel="stylesheet" href="${new URL(`../../../@leanprover/infoview/dist/lean4-infoview/index.css`, import.meta.url)}">
+                <link rel="stylesheet" href="${new URL(`../../lean4-infoview/src/infoview/index.css`, import.meta.url)}">
             </head>
             <body>
                 <div id="react_root"></div>
