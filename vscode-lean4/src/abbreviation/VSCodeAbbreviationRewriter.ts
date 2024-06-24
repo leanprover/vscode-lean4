@@ -6,7 +6,7 @@ import {
     Change,
     Range,
     SelectionMoveMode,
-} from '@leanprover/unicode-input'
+} from '@leanprover/unicode-input/src/index'
 import {
     Disposable,
     Range as LineColRange,

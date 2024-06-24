@@ -1,4 +1,4 @@
-{
+export default {
     "{}": "{$CURSOR}",
     "{}_": "{$CURSOR}_",
     "{{}}": "⦃$CURSOR⦄",
