@@ -1,5 +1,5 @@
 import { LeanFileProgressKind, LeanFileProgressProcessingInfo } from '@leanprover/infoview-api'
-import { Disposable, ExtensionContext, OverviewRulerLane, Range, TextEditorDecorationType, window } from 'vscode'
+import { Disposable, ExtensionContext, OverviewRulerLane, Range, TextEditorDecorationType, Uri, window } from 'vscode'
 import { LeanClientProvider } from './utils/clientProvider'
 
 class LeanFileTaskGutter {
@@ -81,10 +81,10 @@ export class LeanTaskGutter implements Disposable {
                 overviewRulerLane: OverviewRulerLane.Left,
                 overviewRulerColor: 'rgba(255, 165, 0, 0.5)',
                 dark: {
-                    gutterIconPath: context.asAbsolutePath('media/progress-dark.svg'),
+                    gutterIconPath: Uri.parse(`${new URL('../media/progress-dark.svg', import.meta.url)}`),
                 },
                 light: {
-                    gutterIconPath: context.asAbsolutePath('media/progress-light.svg'),
+                    gutterIconPath: Uri.parse(`${new URL('../media/progress-light.svg', import.meta.url)}`),
                 },
                 gutterIconSize: 'contain',
             }),
