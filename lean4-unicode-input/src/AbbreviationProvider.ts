@@ -1,5 +1,5 @@
 import { AbbreviationConfig, SymbolsByAbbreviation } from './AbbreviationConfig'
-import abbreviations from './abbreviations'
+import abbreviations from './abbreviations.json'
 
 /**
  * Answers queries to a database of abbreviations.
