@@ -209,7 +209,7 @@ export class LeanClientProvider implements Disposable {
     }
 
     getClientForFolder(folder: ExtUri): LeanClient | undefined {
-        return this.clients.get(folder?.toString())
+        return this.clients.get(folder.toString())
     }
 
     // Starts a LeanClient if the given file is in a new workspace we haven't seen before.

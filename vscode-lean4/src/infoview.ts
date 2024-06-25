@@ -260,7 +260,7 @@ export class InfoProvider implements Disposable {
         },
         copyToClipboard: async text => {
             await env.clipboard.writeText(text)
-            await window.showInformationMessage(`Copied to clipboard: ${text}`);
+            displayInformation(`Copied to clipboard: ${text}`)
         },
         insertText: async (text, kind, tdpp) => {
             let uri: ExtUri | undefined
@@ -285,7 +285,24 @@ export class InfoProvider implements Disposable {
             }
             void this.revealEditorSelection(uri, p2cConverter.asRange(show.selection))
         },
-        restartFile: async () => {},
+        restartFile: async uri => {
+            const extUri = parseExtUri(uri)
+            if (extUri === undefined) {
+                return
+            }
+
+            const client = this.clientProvider.findClient(extUri)
+            if (!client) {
+                return
+            }
+
+            const document = workspace.textDocuments.find(doc => extUri.equalsUri(doc.uri))
+            if (!document || document.isClosed) {
+                return
+            }
+
+            await client.restartFile(document)
+        },
 
         createRpcSession: async uri => {
             const extUri = parseExtUri(uri)
@@ -356,9 +373,9 @@ export class InfoProvider implements Disposable {
             commands.registerCommand('lean4.infoView.toggleUpdating', () =>
                 this.webviewPanel?.api.requestedAction({ kind: 'togglePaused' }),
             ),
-            // commands.registerCommand('lean4.infoView.toggleExpectedType', () =>
-            //     this.webviewPanel?.api.requestedAction({ kind: 'toggleExpectedType' }),
-            // ),
+            commands.registerCommand('lean4.infoView.toggleExpectedType', () =>
+                this.webviewPanel?.api.requestedAction({ kind: 'toggleExpectedType' }),
+            ),
             commands.registerTextEditorCommand('lean4.infoView.toggleStickyPosition', () =>
                 this.webviewPanel?.api.requestedAction({ kind: 'togglePin' }),
             ),

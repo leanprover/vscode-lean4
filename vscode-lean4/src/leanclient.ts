@@ -53,7 +53,7 @@ import {
     displayInformationWithOptionalInput,
 } from './utils/notifs'
 import { willUseLakeServer } from './utils/projectInfo'
-import path from 'path'
+import path = require('path')
 import { LanguageClientWrapper } from 'monaco-editor-wrapper'
 
 const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
@@ -545,7 +545,11 @@ export class LeanClient implements Disposable {
 
                 didChange: async (data, next) => {
                     await next(data)
-                    const params = c2pConverter.asChangeTextDocumentParams(data as any)
+                    const params = c2pConverter.asChangeTextDocumentParams(
+                        data,
+                        data.document.uri,
+                        data.document.version,
+                    )
                     this.didChangeEmitter.fire(params)
                 },
 
@@ -602,7 +606,6 @@ export class LeanClient implements Disposable {
         }
     }
 
-    // TODO (Jon): Is this correct?
     private async setupClient(): Promise<LanguageClient> {
         const languageClientWrapper = new LanguageClientWrapper();
         await languageClientWrapper.init({
