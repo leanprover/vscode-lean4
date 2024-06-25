@@ -1,3 +1,4 @@
+import { SemVer } from 'semver'
 import { Disposable, OutputChannel, TextDocument, commands, env, window, workspace } from 'vscode'
 import { ExecutionExitCode, ExecutionResult } from '../utils/batch'
 import { ExtUri, FileUri, extUriEquals, toExtUri } from '../utils/exturi'
@@ -9,10 +10,13 @@ import {
     ProjectSetupDiagnosis,
     SetupDiagnoser,
     SystemQueryResult,
+    VSCodeVersionDiagnosis,
 } from './setupDiagnoser'
 
 export type FullDiagnostics = {
     systemInfo: SystemQueryResult
+    vscodeVersionDiagnosis: VSCodeVersionDiagnosis
+    extensionVersion: SemVer
     isCurlAvailable: boolean
     isGitAvailable: boolean
     elanVersionDiagnosis: ElanVersionDiagnosis
@@ -23,6 +27,15 @@ export type FullDiagnostics = {
 
 function formatCommandOutput(cmdOutput: string): string {
     return '\n```\n' + cmdOutput + '\n```'
+}
+
+function formatVSCodeVersionDiagnosis(d: VSCodeVersionDiagnosis): string {
+    switch (d.kind) {
+        case 'UpToDate':
+            return `Reasonably up-to-date (version: ${d.version.toString()})`
+        case 'Outdated':
+            return `Outdated (version: ${d.currentVersion.toString()}, recommendedVersion: ${d.recommendedVersion.toString()})`
+    }
 }
 
 function formatElanVersionDiagnosis(d: ElanVersionDiagnosis): string {
@@ -85,6 +98,8 @@ export function formatFullDiagnostics(d: FullDiagnostics): string {
         `**CPU model**: ${d.systemInfo.cpuModels}`,
         `**Available RAM**: ${d.systemInfo.totalMemory}`,
         '',
+        `**VS Code version**: ${formatVSCodeVersionDiagnosis(d.vscodeVersionDiagnosis)}`,
+        `**Lean 4 extension version**: ${d.extensionVersion}`,
         `**Curl installed**: ${d.isCurlAvailable}`,
         `**Git installed**: ${d.isGitAvailable}`,
         `**Elan**: ${formatElanVersionDiagnosis(d.elanVersionDiagnosis)}`,
@@ -104,6 +119,8 @@ export async function performFullDiagnosis(
     const diagnose = new SetupDiagnoser(channel, cwdUri)
     return {
         systemInfo: diagnose.querySystemInformation(),
+        vscodeVersionDiagnosis: diagnose.queryVSCodeVersion(),
+        extensionVersion: diagnose.queryExtensionVersion(),
         isCurlAvailable: await diagnose.checkCurlAvailable(),
         isGitAvailable: await diagnose.checkGitAvailable(),
         elanVersionDiagnosis: await diagnose.elanVersion(),
