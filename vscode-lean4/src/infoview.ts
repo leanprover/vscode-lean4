@@ -872,7 +872,6 @@ export class InfoProvider implements Disposable {
         return undefined
     }
 
-    // TODO (Jon): Make sure these paths are working again
     private initialHtml() {
         const libPostfix = `.${prodOrDev}${minIfProd}.js`
         return `
