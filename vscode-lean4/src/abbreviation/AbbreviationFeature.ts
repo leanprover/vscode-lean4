@@ -1,4 +1,4 @@
-import { AbbreviationProvider } from '@leanprover/unicode-input/src/index'
+import { AbbreviationProvider } from '@leanprover/unicode-input'
 import { Disposable, OutputChannel, languages } from 'vscode'
 import { AbbreviationHoverProvider } from './AbbreviationHoverProvider'
 import { AbbreviationRewriterFeature } from './AbbreviationRewriterFeature'
