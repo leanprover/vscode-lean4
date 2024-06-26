@@ -222,3 +222,16 @@ export async function checkIsLakeInstalledCorrectly(
             return 'Fulfilled'
     }
 }
+
+export async function checkIsVSCodeUpToDate(): Promise<PreconditionCheckResult> {
+    const vscodeVersionResult = diagnose(undefined, undefined).queryVSCodeVersion()
+    switch (vscodeVersionResult.kind) {
+        case 'Outdated':
+            return displaySetupWarning(
+                `VS Code version is too out-of-date for new versions of the Lean 4 VS Code extension. The current VS Code version is ${vscodeVersionResult.currentVersion}, but at least a version of ${vscodeVersionResult.recommendedVersion} is recommended so that new versions of the Lean 4 VS Code extension can be installed.`,
+            )
+
+        case 'UpToDate':
+            return 'Fulfilled'
+    }
+}

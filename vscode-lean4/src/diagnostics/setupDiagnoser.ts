@@ -1,6 +1,6 @@
 import * as os from 'os'
 import { SemVer } from 'semver'
-import { OutputChannel } from 'vscode'
+import { OutputChannel, extensions, version } from 'vscode'
 import { ExecutionExitCode, ExecutionResult, batchExecute, batchExecuteWithProgress } from '../utils/batch'
 import { FileUri } from '../utils/exturi'
 import { checkParentFoldersForLeanProject, isValidLeanProject } from '../utils/projectInfo'
@@ -19,6 +19,9 @@ export type VersionQueryResult =
     | { kind: 'InvalidVersion'; versionResult: string }
 
 const recommendedElanVersion = new SemVer('3.1.1')
+// Should be bumped in a release *before* we bump the version requirement of the VS Code extension so that
+// users know that they need to update and do not get stuck on an old VS Code version.
+const recommendedVSCodeVersion = new SemVer('1.75.0')
 
 export type ElanVersionDiagnosis =
     | { kind: 'UpToDate'; version: SemVer }
@@ -37,6 +40,10 @@ export type LeanVersionDiagnosis =
     | { kind: 'IsAncientLean4Version'; version: SemVer }
     | { kind: 'NotInstalled' }
     | { kind: 'ExecutionError'; message: string }
+
+export type VSCodeVersionDiagnosis =
+    | { kind: 'UpToDate'; version: SemVer }
+    | { kind: 'Outdated'; currentVersion: SemVer; recommendedVersion: SemVer }
 
 export function versionQueryResult(executionResult: ExecutionResult, versionRegex: RegExp): VersionQueryResult {
     if (executionResult.exitCode === ExecutionExitCode.CannotLaunch) {
@@ -113,11 +120,11 @@ export function checkLeanVersion(leanVersionResult: VersionQueryResult): LeanVer
 }
 
 export class SetupDiagnoser {
-    readonly channel: OutputChannel
+    readonly channel: OutputChannel | undefined
     readonly cwdUri: FileUri | undefined
     readonly toolchain: string | undefined
 
-    constructor(channel: OutputChannel, cwdUri: FileUri | undefined, toolchain?: string | undefined) {
+    constructor(channel: OutputChannel | undefined, cwdUri: FileUri | undefined, toolchain?: string | undefined) {
         this.channel = channel
         this.cwdUri = cwdUri
         this.toolchain = toolchain
@@ -166,6 +173,22 @@ export class SetupDiagnoser {
             cpuModels: formattedCpuModels,
             totalMemory: `${totalMemory} GB`,
         }
+    }
+
+    queryExtensionVersion(): SemVer {
+        return new SemVer(extensions.getExtension('leanprover.lean4')!.packageJSON.version)
+    }
+
+    queryVSCodeVersion(): VSCodeVersionDiagnosis {
+        const currentVSCodeVersion = new SemVer(version)
+        if (currentVSCodeVersion.compare(recommendedVSCodeVersion) < 0) {
+            return {
+                kind: 'Outdated',
+                currentVersion: currentVSCodeVersion,
+                recommendedVersion: recommendedVSCodeVersion,
+            }
+        }
+        return { kind: 'UpToDate', version: currentVSCodeVersion }
     }
 
     async queryLeanVersion(): Promise<VersionQueryResult> {
@@ -226,7 +249,7 @@ export class SetupDiagnoser {
 }
 
 export function diagnose(
-    channel: OutputChannel,
+    channel: OutputChannel | undefined,
     cwdUri: FileUri | undefined,
     toolchain?: string | undefined,
 ): SetupDiagnoser {

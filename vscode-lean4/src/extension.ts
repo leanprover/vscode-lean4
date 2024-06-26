@@ -10,6 +10,7 @@ import {
     checkAreDependenciesInstalled,
     checkIsElanUpToDate,
     checkIsLean4Installed,
+    checkIsVSCodeUpToDate,
 } from './diagnostics/setupDiagnostics'
 import { PreconditionCheckResult } from './diagnostics/setupNotifs'
 import { AlwaysEnabledFeatures, Exports, Lean4EnabledFeatures } from './exports'
@@ -143,6 +144,7 @@ async function checkLean4FeaturePreconditions(
                 elanMustBeInstalled: false,
                 modal: false,
             }),
+        () => checkIsVSCodeUpToDate(),
     )
 }
 
