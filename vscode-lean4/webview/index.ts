@@ -5,7 +5,7 @@ import { Rpc } from '../src/rpc'
 const vscodeApi = window.parent // acquireVsCodeApi()
 
 const rpc = new Rpc((m: any) => vscodeApi.postMessage(m))
-window.addEventListener('message', e => rpc.messageReceived(e.data))
+window.addEventListener('message', e => rpc.messageReceived(JSON.parse(e.data)))
 const editorApi: EditorApi = rpc.getApi()
 
 const div: HTMLElement | null = document.querySelector('#react_root')

@@ -625,7 +625,8 @@ export class InfoProvider implements Disposable {
             // calls window.addEventListener('message',...
             webviewPanel.rpc = new Rpc(m => {
                 try {
-                    void webviewPanel.contentWindow.postMessage(m)
+                    // JSON.stringify is needed here to serialize getters such as `Position.line` and `Position.character`
+                    void webviewPanel.contentWindow.postMessage(JSON.stringify(m))
                 } catch (e) {
                     // ignore any disposed object exceptions
                 }
@@ -745,8 +746,8 @@ export class InfoProvider implements Disposable {
         return {
             uri: uri.toString(),
             range: {
-                start: {line: selection.start.line, character: selection.start.character},
-                end: {line: selection.end.line, character: selection.end.character}
+                start: selection.start,
+                end: selection.end,
             },
         }
     }
