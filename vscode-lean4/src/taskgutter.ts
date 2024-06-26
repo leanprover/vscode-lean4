@@ -1,5 +1,5 @@
 import { LeanFileProgressKind, LeanFileProgressProcessingInfo } from '@leanprover/infoview-api'
-import { Disposable, ExtensionContext, OverviewRulerLane, Range, TextEditorDecorationType, Uri, window } from 'vscode'
+import { Disposable, ExtensionContext, OverviewRulerLane, Range, TextEditorDecorationType, window } from 'vscode'
 import { LeanClientProvider } from './utils/clientProvider'
 
 class LeanFileTaskGutter {
@@ -81,10 +81,10 @@ export class LeanTaskGutter implements Disposable {
                 overviewRulerLane: OverviewRulerLane.Left,
                 overviewRulerColor: 'rgba(255, 165, 0, 0.5)',
                 dark: {
-                    gutterIconPath: Uri.parse(`${new URL('../media/progress-dark.svg', import.meta.url)}`),
+                    gutterIconPath: context.asAbsolutePath('media/progress-dark.svg'),
                 },
                 light: {
-                    gutterIconPath: Uri.parse(`${new URL('../media/progress-light.svg', import.meta.url)}`),
+                    gutterIconPath: context.asAbsolutePath('media/progress-light.svg'),
                 },
                 gutterIconSize: 'contain',
             }),
@@ -95,10 +95,10 @@ export class LeanTaskGutter implements Disposable {
                 overviewRulerLane: OverviewRulerLane.Left,
                 overviewRulerColor: 'rgba(255, 0, 0, 0.5)',
                 dark: {
-                    gutterIconPath: Uri.parse(`${new URL('../media/progress-error-dark.svg', import.meta.url)}`),
+                    gutterIconPath: context.asAbsolutePath('media/progress-error-dark.svg'),
                 },
                 light: {
-                    gutterIconPath: Uri.parse(`${new URL('../media/progress-error-light.svg', import.meta.url)}`),
+                    gutterIconPath: context.asAbsolutePath('media/progress-error-light.svg'),
                 },
                 gutterIconSize: 'contain',
             }),
