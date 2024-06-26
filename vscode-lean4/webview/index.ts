@@ -4,7 +4,7 @@ import { Rpc } from '../src/rpc'
 
 const vscodeApi = window.parent // acquireVsCodeApi()
 
-const rpc = new Rpc((m: any) => vscodeApi.postMessage(m))
+const rpc = new Rpc((m: any) => vscodeApi.postMessage(JSON.stringify(m)))
 window.addEventListener('message', e => rpc.messageReceived(JSON.parse(e.data)))
 const editorApi: EditorApi = rpc.getApi()
 

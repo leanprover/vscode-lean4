@@ -637,7 +637,7 @@ export class InfoProvider implements Disposable {
             document.defaultView.addEventListener('message', m => {
                 if (m.source != webviewPanel.contentWindow) { return }
                 try {
-                    webviewPanel.rpc.messageReceived(m.data)
+                    webviewPanel.rpc.messageReceived(JSON.parse(m.data))
                 } catch {
                     // ignore any disposed object exceptions
                 }
