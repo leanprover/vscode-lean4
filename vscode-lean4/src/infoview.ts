@@ -511,7 +511,7 @@ export class InfoProvider implements Disposable {
     }
 
     isOpen(): boolean {
-       return this.webviewPanel?.visible === true
+        return this.webviewPanel?.visible === true
     }
 
     async runTestScript(javaScript: string): Promise<void> {
