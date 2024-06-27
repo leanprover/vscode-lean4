@@ -1,7 +1,7 @@
 import * as path from 'path'
 import { Disposable, EventEmitter, Uri, window, workspace } from 'vscode'
 import { FileUri } from './exturi'
-import { findLeanProjectInfo, findLeanProjectRootInfo } from './projectInfo'
+import { findLeanProjectInfo, findLeanProjectRoot } from './projectInfo'
 
 // This service monitors the Lean package root folders for changes to any
 // lean-toolchail, lakefile.lean or lakefile.toml files found there.
@@ -78,7 +78,10 @@ export class LeanConfigWatchService implements Disposable {
         // Note: just opening the file fires this event sometimes which is annoying, so
         // we compare the contents just to be sure and normalize whitespace so that
         // just adding a new line doesn't trigger the prompt.
-        const [packageUri, _] = await findLeanProjectRootInfo(fileUri)
+        const projectUri = await findLeanProjectRoot(fileUri)
+        if (projectUri === 'FileNotFound') {
+            return
+        }
 
         const contents = await this.readWhitespaceNormalized(fileUri)
         let existing: string | undefined
@@ -93,7 +96,7 @@ export class LeanConfigWatchService implements Disposable {
         this.normalizedLakeFileContents.set(key, contents)
         if (raiseEvent) {
             // raise an event so the extension triggers handleLakeFileChanged.
-            this.lakeFileChangedEmitter.fire(packageUri)
+            this.lakeFileChangedEmitter.fire(projectUri)
         }
     }
 
@@ -105,13 +108,19 @@ export class LeanConfigWatchService implements Disposable {
 
         // note: apply the same rules here with findLeanPackageVersionInfo no matter
         // if a file is added or removed so we always match the elan behavior.
-        const [packageUri, version] = await findLeanProjectInfo(fileUri)
-        if (!packageUri || !version) {
+        const projectInfo = await findLeanProjectInfo(fileUri)
+        if (
+            projectInfo.kind === 'FileNotFound' ||
+            projectInfo.toolchainInfo === undefined ||
+            projectInfo.toolchainInfo.toolchain === undefined
+        ) {
             return
         }
+        const projectUri = projectInfo.projectRootUri
+        const version = projectInfo.toolchainInfo.toolchain
 
         let existing: string | undefined
-        const key = packageUri.toString()
+        const key = projectUri.toString()
         if (this.currentVersion.has(key)) {
             existing = this.currentVersion.get(key)
         }
@@ -122,7 +131,7 @@ export class LeanConfigWatchService implements Disposable {
         this.currentVersion.set(key, version)
         if (raiseEvent) {
             // raise an event so the extension triggers handleVersionChanged.
-            this.versionChangedEmitter.fire(packageUri)
+            this.versionChangedEmitter.fire(projectUri)
         }
     }
 

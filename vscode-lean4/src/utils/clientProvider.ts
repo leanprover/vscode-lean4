@@ -118,6 +118,9 @@ export class LeanClientProvider implements Disposable {
             }
             try {
                 const projectUri = await findLeanProjectRoot(uri)
+                if (projectUri === 'FileNotFound') {
+                    continue
+                }
 
                 const preconditionCheckResult = await checkLean4ProjectPreconditions(this.outputChannel, projectUri)
                 if (preconditionCheckResult !== 'Fatal') {
@@ -216,6 +219,9 @@ export class LeanClientProvider implements Disposable {
     // Returns a null client if it turns out the new workspace is a lean3 workspace.
     async ensureClient(uri: ExtUri): Promise<[boolean, LeanClient | undefined]> {
         const folderUri = uri.scheme === 'file' ? await findLeanProjectRoot(uri) : new UntitledUri()
+        if (folderUri === 'FileNotFound') {
+            return [false, undefined]
+        }
         let client = this.getClientForFolder(folderUri)
         if (client) {
             this.activeClient = client
