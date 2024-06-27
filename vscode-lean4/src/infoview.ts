@@ -91,7 +91,7 @@ class RpcSessionAtPos implements Disposable {
 
 export class InfoProvider implements Disposable {
     /** Instance of the panel, if it is open. Otherwise `undefined`. */
-    private webviewPanel?: HTMLIFrameElement & { rpc: Rpc; api: InfoviewApi }
+    private webviewPanel?: WebviewPanel & { rpc: Rpc; api: InfoviewApi }
     private subscriptions: Disposable[] = []
     private clientSubscriptions: Disposable[] = []
 
@@ -511,7 +511,7 @@ export class InfoProvider implements Disposable {
     }
 
     isOpen(): boolean {
-        return this.webviewPanel !== undefined
+       return this.webviewPanel?.visible === true
     }
 
     async runTestScript(javaScript: string): Promise<void> {
@@ -587,6 +587,8 @@ export class InfoProvider implements Disposable {
 
     private async toggleInfoview() {
         if (this.webviewPanel) {
+            this.webviewPanel.dispose()
+            // the onDispose handler sets this.webviewPanel = undefined
         } else if (window.activeTextEditor && window.activeTextEditor.document.languageId === 'lean4') {
             await this.openPreview(window.activeTextEditor)
         } else {
@@ -607,6 +609,7 @@ export class InfoProvider implements Disposable {
             column = ViewColumn.Three
         }
         if (this.webviewPanel) {
+            this.webviewPanel.reveal(column, true)
         } else {
             const iframe : HTMLIFrameElement = document.createElement("iframe")
             this.infoviewElement.append(iframe)
@@ -622,7 +625,13 @@ export class InfoProvider implements Disposable {
             iframe.contentWindow.document.getElementsByTagName("head")[0].appendChild(vscodeStylesheet);
 
             iframe.contentWindow.document.close()
-            const webviewPanel = iframe as HTMLIFrameElement & {rpc: Rpc, api: InfoviewApi}
+            const webviewPanel = iframe as WebviewPanel & {rpc: Rpc, api: InfoviewApi}
+
+            // JE: manually patch differences between `WebviewPanel` and `HTMLIFrameElement`
+            webviewPanel.visible = true
+            webviewPanel.dispose = () => {}
+            webviewPanel.reveal = ({column, b}) => {}
+            webviewPanel.webview = new Object()
 
             // Note that an extension can send data to its webviews using webview.postMessage().
             // This method sends any JSON serializable data to the webview. The message is received
@@ -867,13 +876,15 @@ export class InfoProvider implements Disposable {
     }
 
     private getLocalPath(path: string): string | undefined {
-        if (path == 'dist/webview.js') {
-            path = '../webview/index.ts'
-        } else {
-            path = path.replace("dist/lean4-infoview", "../../lean4-infoview/src/infoview")
+        if (true) {
+            if (path == 'dist/webview.js') {
+                path = '../webview/index.ts'
+            } else {
+                path = path.replace("dist/lean4-infoview", "../../lean4-infoview/src/infoview")
+            }
+            return new URL(path,  import.meta.url)
         }
-
-        return new URL(path,  import.meta.url)
+        return undefined
     }
 
     private initialHtml() {
