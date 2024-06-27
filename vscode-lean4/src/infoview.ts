@@ -587,8 +587,6 @@ export class InfoProvider implements Disposable {
 
     private async toggleInfoview() {
         if (this.webviewPanel) {
-            // this.webviewPanel.dispose()
-            // the onDispose handler sets this.webviewPanel = undefined
         } else if (window.activeTextEditor && window.activeTextEditor.document.languageId === 'lean4') {
             await this.openPreview(window.activeTextEditor)
         } else {
@@ -609,7 +607,6 @@ export class InfoProvider implements Disposable {
             column = ViewColumn.Three
         }
         if (this.webviewPanel) {
-            // this.webviewPanel.reveal(column, true)
         } else {
             const iframe : HTMLIFrameElement = document.createElement("iframe")
             this.infoviewElement.append(iframe)
@@ -652,13 +649,7 @@ export class InfoProvider implements Disposable {
                 }
             })
             webviewPanel.api = webviewPanel.rpc.getApi()
-            // webviewPanel.onDidDispose(() => {
-            //     this.webviewPanel = undefined
-            //     this.clearNotificationHandlers()
-            //     this.clearRpcSessions(null) // should be after `webviewPanel = undefined`
-            // })
             this.webviewPanel = webviewPanel
-            // webviewPanel.webview.html = this.initialHtml()
 
             const client = this.clientProvider.findClient(docUri)
             await this.initInfoView(editor, client)
@@ -876,7 +867,13 @@ export class InfoProvider implements Disposable {
     }
 
     private getLocalPath(path: string): string | undefined {
-        return new URL(path.replace("dist/", "../../"),  import.meta.url)
+        if (path == 'dist/webview.js') {
+            path = '../webview/index.ts'
+        } else {
+            path = path.replace("dist/lean4-infoview", "../../lean4-infoview/src/infoview")
+        }
+
+        return new URL(path,  import.meta.url)
     }
 
     private initialHtml() {
@@ -889,7 +886,7 @@ export class InfoProvider implements Disposable {
                 <meta http-equiv="Content-type" content="text/html;charset=utf-8">
                 <title>Infoview</title>
                 <style>${this.stylesheet}</style>
-                <link rel="stylesheet" href="${this.getLocalPath(`dist/lean4-infoview/src/infoview/index.css`)}">
+                <link rel="stylesheet" href="${this.getLocalPath('dist/lean4-infoview/index.css')}">
             </head>
             <body>
                 <div id="react_root"></div>
@@ -898,7 +895,7 @@ export class InfoProvider implements Disposable {
                     data-importmap-react="${this.getLocalPath(`dist/lean4-infoview/react${libPostfix}`)}"
                     data-importmap-react-jsx-runtime="${this.getLocalPath(`dist/lean4-infoview/react-jsx-runtime${libPostfix}`)}"
                     data-importmap-react-dom="${this.getLocalPath(`dist/lean4-infoview/react-dom${libPostfix}`)}"
-                    src="${this.getLocalPath('../webview/index.ts')}"></script>
+                    src="${this.getLocalPath('dist/webview.js')}"></script>
             </body>
             </html>`
     }

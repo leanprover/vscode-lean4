@@ -19,16 +19,6 @@ async function checkLean4ProjectPreconditions(
     folderUri: ExtUri,
 ): Promise<PreconditionCheckResult> {
     return 'Fulfilled';
-    return await checkAll(
-        () => checkIsValidProjectFolder(channel, folderUri),
-        () => checkIsLeanVersionUpToDate(channel, folderUri, { modal: false }),
-        async () => {
-            if (!(await willUseLakeServer(folderUri))) {
-                return 'Fulfilled'
-            }
-            return await checkIsLakeInstalledCorrectly(channel, folderUri, {})
-        },
-    )
 }
 
 // This class ensures we have one LeanClient per folder.
