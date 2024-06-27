@@ -615,6 +615,15 @@ export class InfoProvider implements Disposable {
             this.infoviewElement.append(iframe)
             iframe.contentWindow.document.open()
             iframe.contentWindow.document.write(this.initialHtml())
+
+            // Add the VSCODE stylesheet
+            var vscodeStylesheet = iframe.contentWindow.document.createElement("link")
+            vscodeStylesheet.rel = "stylesheet"
+            // TODO: This should be replaced by the stylesheet which applies to .monaco-workbench
+            // but I couldn't figure where this is coming from...
+            vscodeStylesheet.href = new URL(`../webview/vscode.css`, import.meta.url)
+            iframe.contentWindow.document.getElementsByTagName("head")[0].appendChild(vscodeStylesheet);
+
             iframe.contentWindow.document.close()
             const webviewPanel = iframe as HTMLIFrameElement & {rpc: Rpc, api: InfoviewApi}
 
@@ -867,10 +876,7 @@ export class InfoProvider implements Disposable {
     }
 
     private getLocalPath(path: string): string | undefined {
-        if (this.webviewPanel) {
-            return path
-        }
-        return undefined
+        return new URL(path.replace("dist/", "../../"),  import.meta.url)
     }
 
     private initialHtml() {
@@ -883,8 +889,7 @@ export class InfoProvider implements Disposable {
                 <meta http-equiv="Content-type" content="text/html;charset=utf-8">
                 <title>Infoview</title>
                 <style>${this.stylesheet}</style>
-                <link rel="stylesheet" href="${new URL(`../webview/vscode.css`, import.meta.url)}">
-                <link rel="stylesheet" href="${new URL(`../../lean4-infoview/src/infoview/index.css`, import.meta.url)}">
+                <link rel="stylesheet" href="${this.getLocalPath(`dist/lean4-infoview/src/infoview/index.css`)}">
             </head>
             <body>
                 <div id="react_root"></div>
@@ -893,7 +898,7 @@ export class InfoProvider implements Disposable {
                     data-importmap-react="${this.getLocalPath(`dist/lean4-infoview/react${libPostfix}`)}"
                     data-importmap-react-jsx-runtime="${this.getLocalPath(`dist/lean4-infoview/react-jsx-runtime${libPostfix}`)}"
                     data-importmap-react-dom="${this.getLocalPath(`dist/lean4-infoview/react-dom${libPostfix}`)}"
-                    src="${new URL('../webview/index.ts', import.meta.url)}"></script>
+                    src="${this.getLocalPath('../webview/index.ts')}"></script>
             </body>
             </html>`
     }
