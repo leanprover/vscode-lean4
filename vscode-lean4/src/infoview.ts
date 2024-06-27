@@ -631,7 +631,6 @@ export class InfoProvider implements Disposable {
             webviewPanel.visible = true
             webviewPanel.dispose = () => {}
             webviewPanel.reveal = ({column, b}) => {}
-            webviewPanel.webview = new Object()
 
             // Note that an extension can send data to its webviews using webview.postMessage().
             // This method sends any JSON serializable data to the webview. The message is received
