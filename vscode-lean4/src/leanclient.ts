@@ -26,9 +26,7 @@ import {
     ServerOptions,
     State,
 } from 'vscode-languageclient/node'
-import {
-    MonacoLanguageClient as LanguageClient,
-} from 'monaco-languageclient'
+import { MonacoLanguageClient as LanguageClient } from 'monaco-languageclient'
 import * as ls from 'vscode-languageserver-protocol'
 
 import { LeanFileProgressParams, LeanFileProgressProcessingInfo, ServerStoppedReason } from '@leanprover/infoview-api'

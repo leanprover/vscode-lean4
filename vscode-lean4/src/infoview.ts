@@ -91,7 +91,7 @@ class RpcSessionAtPos implements Disposable {
 
 export class InfoProvider implements Disposable {
     /** Instance of the panel, if it is open. Otherwise `undefined`. */
-    private webviewPanel?: HTMLIFrameElement & {rpc: Rpc, api: InfoviewApi}
+    private webviewPanel?: HTMLIFrameElement & { rpc: Rpc; api: InfoviewApi }
     private subscriptions: Disposable[] = []
     private clientSubscriptions: Disposable[] = []
 
