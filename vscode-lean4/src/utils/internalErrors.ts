@@ -5,22 +5,17 @@ export async function displayInternalErrorsIn<T>(scope: string, f: () => Promise
     try {
         return await f()
     } catch (e) {
-        let msg: string
-        if (e instanceof Error) {
-            msg = `Internal error (while ${scope}):`
-            if (e.stack === undefined) {
-                msg += ` ${e.name}: ${e.message}`
-            } else {
-                msg += '\n\n' + e.stack
-            }
-        } else {
-            msg = e
+        let msg: string = `Internal error (while ${scope}): ${e}`
+        let fullMsg: string = msg
+        if (e instanceof Error && e.stack !== undefined) {
+            fullMsg += `\n\n${e.stack}`
         }
-
-        const copyToClipboardInput = 'Copy to Clipboard'
+        msg +=
+            "\n\nIf you are using an up-to-date version of the Lean 4 VS Code extension, please copy the full error message using the 'Copy Error to Clipboard' button and report it at https://github.com/leanprover/vscode-lean4/ or https://leanprover.zulipchat.com/."
+        const copyToClipboardInput = 'Copy Error to Clipboard'
         const choice = await displayErrorWithInput(msg, copyToClipboardInput)
         if (choice === copyToClipboardInput) {
-            await env.clipboard.writeText(msg)
+            await env.clipboard.writeText(fullMsg)
         }
         throw e
     }
