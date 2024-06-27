@@ -2,7 +2,7 @@ import { SemVer } from 'semver'
 import { Disposable, OutputChannel, TextDocument, commands, env, window, workspace } from 'vscode'
 import { ExecutionExitCode, ExecutionResult } from '../utils/batch'
 import { ExtUri, FileUri, extUriEquals, toExtUri } from '../utils/exturi'
-import { displayInformationWithInput } from '../utils/notifs'
+import { displayError, displayInformationWithInput } from '../utils/notifs'
 import { findLeanProjectRoot } from '../utils/projectInfo'
 import {
     ElanVersionDiagnosis,
@@ -185,6 +185,12 @@ export class FullDiagnosticsProvider implements Disposable {
             this.lastActiveLeanDocumentUri !== undefined && this.lastActiveLeanDocumentUri.scheme === 'file'
                 ? await findLeanProjectRoot(this.lastActiveLeanDocumentUri)
                 : undefined
+        if (projectUri === 'FileNotFound') {
+            displayError(
+                `Cannot display setup information for file that does not exist in the file system: ${this.lastActiveLeanDocumentUri}. Please choose a different file to display the setup information for.`,
+            )
+            return
+        }
         const fullDiagnostics = await performFullDiagnosis(this.outputChannel, projectUri)
         const formattedFullDiagnostics = formatFullDiagnostics(fullDiagnostics)
         const copyToClipboardInput = 'Copy to Clipboard'
