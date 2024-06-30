@@ -650,6 +650,7 @@ The Lean 4 VS Code extension checks that the user's Lean setup is well-founded b
   1. Whether [Curl](https://curl.se/) and [Git](https://git-scm.com/) are installed (Error)
   1. Whether some version of Lean can be found (Error)
   1. Whether Lean's version manager [Elan](https://github.com/leanprover/elan/blob/master/README.md) is installed and reasonably up-to-date (Warning)
+  1. Whether VS Code is sufficiently up-to-date to auto-update the Lean 4 VS Code extension to the next version (Warning)
 * Project-level diagnostics are checked whenever the first Lean file of a project is opened. If there is an error-level setup issue, Lean will not launch for that project, but all of the other Lean-specific extension features will be active, provided that the global-level diagnostics did not yield an error. The following project-level aspects of the user's setup are checked:
   1. Whether Lean is being ran in an untitled file that has not been saved to the file system (Warning)
   1. Whether a lean-toolchain file can be found in the project associated with the file (Warning)
