@@ -109,7 +109,7 @@ export class LeanClient implements Disposable {
     serverFailed = this.serverFailedEmitter.event
 
     constructor(folderUri: ExtUri, outputChannel: OutputChannel, elanDefaultToolchain: string,
-            private setupClient: () => Promise<BaseLanguageClient>) {
+            private setupClient: (clientOptions: LanguageClientOptions) => Promise<BaseLanguageClient>) {
         this.outputChannel = outputChannel // can be null when opening adhoc files.
         this.folderUri = folderUri
         this.elanDefaultToolchain = elanDefaultToolchain
@@ -191,7 +191,7 @@ export class LeanClient implements Disposable {
 
         const startTime = Date.now()
         progress.report({ increment: 0 })
-        this.client = await this.setupClient()
+        this.client = await this.setupClient(this.obtainClientOptions())
         patchConverters(this.client.protocol2CodeConverter, this.client.code2ProtocolConverter);
 
         let insideRestart = true

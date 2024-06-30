@@ -13,7 +13,7 @@ import { LeanInstaller } from './leanInstaller'
 import { logger } from './logger'
 import { displayError } from './notifs'
 import { findLeanProjectRoot, willUseLakeServer } from './projectInfo'
-import { BaseLanguageClient } from 'vscode-languageclient/node'
+import { BaseLanguageClient, LanguageClientOptions } from 'vscode-languageclient/node'
 
 async function checkLean4ProjectPreconditions(
     channel: OutputChannel,
@@ -45,7 +45,7 @@ export class LeanClientProvider implements Disposable {
     private clientStoppedEmitter = new EventEmitter<[LeanClient, boolean, ServerStoppedReason]>()
     clientStopped = this.clientStoppedEmitter.event
 
-    constructor(installer: LeanInstaller, outputChannel: OutputChannel, private setupClient: () => Promise<BaseLanguageClient>) {
+    constructor(installer: LeanInstaller, outputChannel: OutputChannel, private setupClient: (clientOptions: LanguageClientOptions) => Promise<BaseLanguageClient>) {
         this.outputChannel = outputChannel
         this.installer = installer
 
