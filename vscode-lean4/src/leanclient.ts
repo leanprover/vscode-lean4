@@ -15,6 +15,7 @@ import {
     WorkspaceFolder,
 } from 'vscode'
 import {
+    BaseLanguageClient,
     DiagnosticSeverity,
     DidChangeTextDocumentParams,
     DidCloseTextDocumentParams,
@@ -26,7 +27,6 @@ import {
     ServerOptions,
     State,
 } from 'vscode-languageclient/node'
-import { MonacoLanguageClient as LanguageClient } from 'monaco-languageclient'
 import * as ls from 'vscode-languageserver-protocol'
 
 import { LeanFileProgressParams, LeanFileProgressProcessingInfo, ServerStoppedReason } from '@leanprover/infoview-api'
@@ -52,7 +52,6 @@ import {
 } from './utils/notifs'
 import { willUseLakeServer } from './utils/projectInfo'
 import path = require('path')
-import { LanguageClientWrapper } from 'monaco-editor-wrapper'
 
 const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
@@ -60,7 +59,7 @@ export type ServerProgress = Map<ExtUri, LeanFileProgressProcessingInfo[]>
 
 export class LeanClient implements Disposable {
     running: boolean
-    private client: LanguageClient | undefined
+    private client: BaseLanguageClient | undefined
     private outputChannel: OutputChannel
     folderUri: ExtUri
     private subscriptions: Disposable[] = []
@@ -109,7 +108,8 @@ export class LeanClient implements Disposable {
     private serverFailedEmitter = new EventEmitter<string>()
     serverFailed = this.serverFailedEmitter.event
 
-    constructor(folderUri: ExtUri, outputChannel: OutputChannel, elanDefaultToolchain: string) {
+    constructor(folderUri: ExtUri, outputChannel: OutputChannel, elanDefaultToolchain: string,
+            private setupClient: () => Promise<BaseLanguageClient>) {
         this.outputChannel = outputChannel // can be null when opening adhoc files.
         this.folderUri = folderUri
         this.elanDefaultToolchain = elanDefaultToolchain
@@ -192,6 +192,7 @@ export class LeanClient implements Disposable {
         const startTime = Date.now()
         progress.report({ increment: 0 })
         this.client = await this.setupClient()
+        patchConverters(this.client.protocol2CodeConverter, this.client.code2ProtocolConverter);
 
         let insideRestart = true
         try {
@@ -601,35 +602,5 @@ export class LeanClient implements Disposable {
                 },
             },
         }
-    }
-
-    private async setupClient(): Promise<LanguageClient> {
-        const languageClientWrapper = new LanguageClientWrapper();
-        await languageClientWrapper.init({
-            languageClientConfig: {
-                languageId: 'lean4',
-                options: {
-                    $type: 'WebSocketUrl',
-                    url: 'ws://localhost:8080/websocket/mathlib-demo',
-                    startOptions: {
-                    onCall: () => {
-                        console.log('Connected to socket.');
-                    },
-                    reportStatus: true
-                    },
-                    stopOptions: {
-                    onCall: () => {
-                        console.log('Disconnected from socket.');
-                    },
-                    reportStatus: true
-                    }
-                },
-                clientOptions: this.obtainClientOptions()
-            }
-        });
-        await languageClientWrapper?.start();
-        const client = languageClientWrapper.getLanguageClient();
-        patchConverters(client.protocol2CodeConverter, client.code2ProtocolConverter);
-        return client
     }
 }
