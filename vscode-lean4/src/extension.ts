@@ -29,6 +29,7 @@ import { LeanInstaller } from './utils/leanInstaller'
 import { displayWarning } from './utils/notifs'
 import { PathExtensionProvider } from './utils/pathExtensionProvider'
 import { findLeanProjectRoot } from './utils/projectInfo'
+import { VSCodeInfoWebviewFactory } from './infowebview'
 
 async function setLeanFeatureSetActive(isActive: boolean) {
     await commands.executeCommand('setContext', 'lean4.isLeanFeatureSetActive', isActive)
@@ -175,7 +176,7 @@ async function activateLean4Features(
     watchService.lakeFileChanged(packageUri => installer.handleLakeFileChanged(packageUri))
     context.subscriptions.push(watchService)
 
-    const infoProvider = new InfoProvider(clientProvider, { language: 'lean4' }, context)
+    const infoProvider = new InfoProvider(clientProvider, { language: 'lean4' }, context, new VSCodeInfoWebviewFactory(context))
     context.subscriptions.push(infoProvider)
 
     context.subscriptions.push(new LeanTaskGutter(clientProvider, context))

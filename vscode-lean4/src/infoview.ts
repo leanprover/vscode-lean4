@@ -16,6 +16,7 @@ import {
     Disposable,
     DocumentSelector,
     env,
+    Event,
     ExtensionContext,
     languages,
     Position,
@@ -60,10 +61,11 @@ export interface InfoWebview {
     readonly visible: boolean;
     dispose(): any
     reveal(viewColumn?: ViewColumn, preserveFocus?: boolean): void;
+    onDidDispose: Event<void>;
 }
 
 export interface InfoWebviewFactory {
-    make(editorApi: EditorApi, stylesheet: string): InfoWebview
+    make(editorApi: EditorApi, stylesheet: string, column: number): InfoWebview
 }
 
 const keepAlivePeriodMs = 10000
@@ -618,7 +620,13 @@ export class InfoProvider implements Disposable {
         if (this.webviewPanel) {
             this.webviewPanel.reveal(column, true)
         } else {
-            this.webviewPanel = this.infoWebviewFactory.make(this.editorApi, this.stylesheet)
+            this.webviewPanel = this.infoWebviewFactory.make(this.editorApi, this.stylesheet, column)
+
+            this.webviewPanel.onDidDispose(() => {
+                this.webviewPanel = undefined
+                this.clearNotificationHandlers()
+                this.clearRpcSessions(null) // should be after `webviewPanel = undefined`
+            })
 
             const client = this.clientProvider.findClient(docUri)
             await this.initInfoView(editor, client)
