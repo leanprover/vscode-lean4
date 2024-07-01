@@ -42,8 +42,7 @@ import { logger } from './utils/logger'
 // @ts-ignore
 import { SemVer } from 'semver'
 import { c2pConverter, p2cConverter, patchConverters, setDependencyBuildMode } from './utils/converters'
-import { collectAllOpenLeanDocumentUris } from './utils/docInfo'
-import { ExtUri, extUriEquals, parseExtUri, toExtUri } from './utils/exturi'
+import { ExtUri, parseExtUri, toExtUri } from './utils/exturi'
 import {
     displayError,
     displayErrorWithOptionalInput,
@@ -518,16 +517,11 @@ export class LeanClient implements Disposable {
                         return // This should never happen since the glob we launch the client for ensures that all uris are ext uris
                     }
 
-                    const openDocUris: ExtUri[] = collectAllOpenLeanDocumentUris()
-                    const docIsOpen = openDocUris.some(openDocUri => extUriEquals(openDocUri, docUri))
-
-                    if (!docIsOpen) {
-                        // The language client library emits a `didOpen` notification when hovering over an identifier while holding `Ctrl` in order to provide a preview for the line that the definition is on.
-                        // In Lean, this is very expensive and hence does not make much sense, so we filter these notification here.
-                        // Should VS Code decide to send requests to a file that was filtered here, the language server will respond with an error, which VS Code will silently discard and interpret as having received an empty response.
-                        // See https://github.com/microsoft/vscode/issues/78453 (the solution suggested in the thread is wrong, but `collectAllOpenLeanDocumentUris` works).
-                        return
-                    }
+                    // This will sometimes open invisible documents in the language server
+                    // (e.g. holding `Ctrl` while hovering over an identifier will quickly emit a `didOpen` and then a `didClose` notification for the document the identifier is in).
+                    // There is no good way to prevent this (c.f. https://github.com/microsoft/vscode-languageserver-node/issues/848#issuecomment-2185043021),
+                    // but specifically in the case of `Ctrl`+Hover, the language server typically seems to not start expensive elaboration for the invisible document.
+                    // We may however launch a new server instance if the document is in a different project (e.g. core).
 
                     if (this.openServerDocuments.has(docUri.toString())) {
                         return
