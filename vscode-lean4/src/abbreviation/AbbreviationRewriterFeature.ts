@@ -61,12 +61,16 @@ export class AbbreviationRewriterFeature {
     }
 
     private async disposeActiveAbbreviationRewriter() {
-        if (this.activeAbbreviationRewriter === undefined) {
+        // This is necessary to prevent `disposeActiveAbbreviationRewriter` from racing with
+        // other assignments to `this.activeAbbreviationRewriter`.
+        const abbreviationRewriterToDispose = this.activeAbbreviationRewriter
+        this.activeAbbreviationRewriter = undefined
+        if (abbreviationRewriterToDispose === undefined) {
             return
         }
-        await this.activeAbbreviationRewriter.replaceAllTrackedAbbreviations()
-        this.activeAbbreviationRewriter.dispose()
-        this.activeAbbreviationRewriter = undefined
+
+        await abbreviationRewriterToDispose.replaceAllTrackedAbbreviations()
+        abbreviationRewriterToDispose.dispose()
     }
 
     private async changedActiveTextEditor(activeTextEditor: TextEditor | undefined) {

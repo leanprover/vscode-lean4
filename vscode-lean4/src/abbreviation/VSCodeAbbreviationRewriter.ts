@@ -123,7 +123,11 @@ export class VSCodeAbbreviationRewriter implements AbbreviationTextSource {
                 retries++
             }
         } catch (e) {
-            this.writeError('Error while replacing abbreviation: ' + e)
+            // The 'not possible on closed editors' error naturally occurs when we attempt to replace abbreviations as the user
+            // is switching away from the active tab.
+            if (!(e instanceof Error) || e.message !== 'TextEditor#edit not possible on closed editors') {
+                this.writeError('Error while replacing abbreviation: ' + e)
+            }
         }
         return ok
     }
