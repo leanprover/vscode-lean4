@@ -1,5 +1,4 @@
-import { ChildProcessWithoutNullStreams } from 'child_process'
-const spawn = () => {}
+import { ChildProcessWithoutNullStreams, spawn } from 'child_process'
 import { OutputChannel, Progress, ProgressLocation, ProgressOptions, window } from 'vscode'
 import { logger } from './logger'
 import { displayErrorWithOutput } from './notifs'
