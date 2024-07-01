@@ -24,7 +24,6 @@ import {
     LanguageClientOptions,
     PublishDiagnosticsParams,
     RevealOutputChannelOn,
-    ServerOptions,
     State,
 } from 'vscode-languageclient/node'
 import * as ls from 'vscode-languageserver-protocol'
@@ -33,9 +32,6 @@ import { LeanFileProgressParams, LeanFileProgressProcessingInfo, ServerStoppedRe
 import {
     getElaborationDelay,
     getFallBackToStringOccurrenceHighlighting,
-    serverArgs,
-    serverLoggingEnabled,
-    serverLoggingPath,
     shouldAutofocusOutput,
 } from './config'
 import { logger } from './utils/logger'
@@ -50,7 +46,6 @@ import {
     displayErrorWithOutput,
     displayInformationWithOptionalInput,
 } from './utils/notifs'
-import { willUseLakeServer } from './utils/projectInfo'
 import path = require('path')
 
 const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
@@ -109,7 +104,7 @@ export class LeanClient implements Disposable {
     serverFailed = this.serverFailedEmitter.event
 
     constructor(folderUri: ExtUri, outputChannel: OutputChannel, elanDefaultToolchain: string,
-            private setupClient: (clientOptions: LanguageClientOptions) => Promise<BaseLanguageClient>) {
+            private setupClient: (clientOptions: LanguageClientOptions, folderUri: ExtUri, elanDefaultToolchain: string) => Promise<BaseLanguageClient>) {
         this.outputChannel = outputChannel // can be null when opening adhoc files.
         this.folderUri = folderUri
         this.elanDefaultToolchain = elanDefaultToolchain
@@ -191,7 +186,7 @@ export class LeanClient implements Disposable {
 
         const startTime = Date.now()
         progress.report({ increment: 0 })
-        this.client = await this.setupClient(this.obtainClientOptions())
+        this.client = await this.setupClient(this.obtainClientOptions(), this.folderUri, this.elanDefaultToolchain)
         patchConverters(this.client.protocol2CodeConverter, this.client.code2ProtocolConverter);
 
         let insideRestart = true
@@ -432,43 +427,6 @@ export class LeanClient implements Disposable {
 
     get initializeResult(): InitializeResult | undefined {
         return this.running ? this.client?.initializeResult : undefined
-    }
-
-    private async determineServerOptions(): Promise<ServerOptions> {
-        const env = Object.assign({}, process.env)
-        if (serverLoggingEnabled()) {
-            env.LEAN_SERVER_LOG_DIR = serverLoggingPath()
-        }
-
-        const [serverExecutable, options] = await this.determineExecutable()
-
-        const cwd = this.folderUri.scheme === 'file' ? this.folderUri.fsPath : undefined
-        if (cwd) {
-            // Add folder name to command-line so that it shows up in `ps aux`.
-            options.push(cwd)
-        } else {
-            // Fixes issue #227, for adhoc files it would pick up the cwd from the open folder
-            // which is not what we want.  For adhoc files we want the (default) toolchain instead.
-            options.unshift('+' + this.elanDefaultToolchain)
-            options.push('untitled')
-        }
-
-        return {
-            command: serverExecutable,
-            args: options.concat(serverArgs()),
-            options: {
-                cwd,
-                env,
-            },
-        }
-    }
-
-    private async determineExecutable(): Promise<[string, string[]]> {
-        if (await willUseLakeServer(this.folderUri)) {
-            return ['lake', ['serve', '--']]
-        } else {
-            return ['lean', ['--server']]
-        }
     }
 
     private obtainClientOptions(): LanguageClientOptions {

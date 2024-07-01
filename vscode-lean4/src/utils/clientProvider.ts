@@ -45,7 +45,8 @@ export class LeanClientProvider implements Disposable {
     private clientStoppedEmitter = new EventEmitter<[LeanClient, boolean, ServerStoppedReason]>()
     clientStopped = this.clientStoppedEmitter.event
 
-    constructor(installer: LeanInstaller, outputChannel: OutputChannel, private setupClient: (clientOptions: LanguageClientOptions) => Promise<BaseLanguageClient>) {
+    constructor(installer: LeanInstaller, outputChannel: OutputChannel,
+            private setupClient: (clientOptions: LanguageClientOptions, folderUri: ExtUri, elanDefaultToolchain: string) => Promise<BaseLanguageClient>) {
         this.outputChannel = outputChannel
         this.installer = installer
 
