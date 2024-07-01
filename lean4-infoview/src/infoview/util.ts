@@ -216,44 +216,6 @@ export function addUniqueKeys<T>(elems: T[], getId: (el: T) => string): Keyed<T>
     })
 }
 
-/** Like `React.forwardRef`, but also allows reading the ref inside the forwarding component.
- * Adapted from https://itnext.io/reusing-the-ref-from-forwardref-with-react-hooks-4ce9df693dd */
-export function forwardAndUseRef<T, P>(
-    render: (props: P, ref: React.RefObject<T>, setRef: (_: T | null) => void) => React.ReactElement | null,
-): React.ForwardRefExoticComponent<React.PropsWithoutRef<P> & React.RefAttributes<T>> {
-    return React.forwardRef<T, P>((props, ref) => {
-        const thisRef = React.useRef<T | null>(null)
-        return render(props, thisRef, v => {
-            thisRef.current = v
-            if (!ref) return
-            if (typeof ref === 'function') {
-                ref(v)
-            } else {
-                ref.current = v
-            }
-        })
-    })
-}
-
-/** Like `forwardAndUseRef`, but the ref is stored in state so that setting it triggers a render.
- * Should only be used if re-rendering is necessary. */
-export function forwardAndUseStateRef<T, P>(
-    render: (props: P, ref: T | null, setRef: (_: T | null) => void) => React.ReactElement | null,
-): React.ForwardRefExoticComponent<React.PropsWithoutRef<P> & React.RefAttributes<T>> {
-    return React.forwardRef<T, P>((props, ref) => {
-        const [thisRef, setThisRef] = React.useState<T | null>(null)
-        return render(props, thisRef, v => {
-            setThisRef(v)
-            if (!ref) return
-            if (typeof ref === 'function') {
-                ref(v)
-            } else {
-                ref.current = v
-            }
-        })
-    })
-}
-
 export interface LogicalDomElement {
     contains(el: Node): boolean
 }

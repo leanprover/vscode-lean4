@@ -4,13 +4,7 @@ import * as ReactDOM from 'react-dom'
 import { arrow, autoPlacement, autoUpdate, FloatingArrow, offset, shift, size, useFloating } from '@floating-ui/react'
 
 import { ConfigContext } from './contexts'
-import {
-    forwardAndUseRef,
-    forwardAndUseStateRef,
-    LogicalDomContext,
-    useLogicalDomObserver,
-    useOnClickOutside,
-} from './util'
+import { LogicalDomContext, useLogicalDomObserver, useOnClickOutside } from './util'
 
 export type TooltipProps = React.PropsWithChildren<React.HTMLProps<HTMLDivElement>> & { reference: HTMLElement | null }
 
@@ -70,15 +64,15 @@ export function Tooltip(props_: TooltipProps) {
     return ReactDOM.createPortal(floating, document.body)
 }
 
-export const WithToggleableTooltip = forwardAndUseStateRef<
-    HTMLSpanElement,
-    React.HTMLProps<HTMLSpanElement> & {
-        isTooltipShown: boolean
-        hideTooltip: () => void
-        tooltipChildren: React.ReactNode
-    }
->((props_, ref, setRef) => {
+export type WithToggleableTooltipProps = React.HTMLProps<HTMLSpanElement> & {
+    isTooltipShown: boolean
+    hideTooltip: () => void
+    tooltipChildren: React.ReactNode
+}
+
+export function WithToggleableTooltip(props_: WithToggleableTooltipProps) {
     const { isTooltipShown, hideTooltip, tooltipChildren, ...props } = props_
+    const [ref, setRef] = React.useState<HTMLSpanElement | null>(null)
 
     // Since we do not want to hide the tooltip if the user is trying to select text in it,
     // we need both the "click outside" and "click inside" handlers here because they
@@ -110,7 +104,7 @@ export const WithToggleableTooltip = forwardAndUseStateRef<
             </span>
         </LogicalDomContext.Provider>
     )
-})
+}
 
 /** Hover state of an element. The pointer can be
  * - elsewhere (`off`)
@@ -119,17 +113,17 @@ export const WithToggleableTooltip = forwardAndUseStateRef<
  */
 export type HoverState = 'off' | 'over' | 'ctrlOver'
 
+export type DetectHoverSpanProps = React.DetailedHTMLProps<React.HTMLAttributes<HTMLSpanElement>, HTMLSpanElement> & {
+    setHoverState: React.Dispatch<React.SetStateAction<HoverState>>
+}
+
 /** An element which calls `setHoverState` when the hover state of its DOM children changes.
  *
  * It is implemented with JS rather than CSS in order to allow nesting of these elements. When nested,
  * only the smallest (deepest in the DOM tree) {@link DetectHoverSpan} has an enabled hover state. */
-export const DetectHoverSpan = forwardAndUseRef<
-    HTMLSpanElement,
-    React.DetailedHTMLProps<React.HTMLAttributes<HTMLSpanElement>, HTMLSpanElement> & {
-        setHoverState: React.Dispatch<React.SetStateAction<HoverState>>
-    }
->((props_, ref, setRef) => {
+export function DetectHoverSpan(props_: DetectHoverSpanProps) {
     const { setHoverState, ...props } = props_
+    const ref = React.useRef<HTMLSpanElement | null>(null)
 
     const onPointerEvent = (b: boolean, e: React.PointerEvent<HTMLSpanElement>) => {
         // It's more composable to let pointer events bubble up rather than to call `stopPropagation`,
@@ -168,7 +162,7 @@ export const DetectHoverSpan = forwardAndUseRef<
     return (
         <span
             {...props}
-            ref={setRef}
+            ref={ref}
             onPointerOver={e => {
                 onPointerEvent(true, e)
                 if (props.onPointerOver) props.onPointerOver(e)
@@ -186,7 +180,7 @@ export const DetectHoverSpan = forwardAndUseRef<
             {props.children}
         </span>
     )
-})
+}
 
 /** Pinning a child tooltip has to also pin all ancestors. This context supports that. */
 interface TipChainContext {
@@ -195,19 +189,14 @@ interface TipChainContext {
 
 const TipChainContext = React.createContext<TipChainContext>({ pinParent: () => {} })
 
-/** Shows a tooltip when the children are hovered over or clicked.
- *
- * An `onClick` middleware can optionally be given in order to control what happens when the
- * hoverable area is clicked. The middleware can invoke `next` to execute the default action
- * which is to pin the tooltip open. */
-export const WithTooltipOnHover = forwardAndUseStateRef<
-    HTMLSpanElement,
-    Omit<React.HTMLProps<HTMLSpanElement>, 'onClick'> & {
-        tooltipChildren: React.ReactNode
-        onClick?: (event: React.MouseEvent<HTMLSpanElement>, next: React.MouseEventHandler<HTMLSpanElement>) => void
-    }
->((props_, ref, setRef) => {
+export type WithTooltipOnHoverProps = Omit<React.HTMLProps<HTMLSpanElement>, 'onClick'> & {
+    tooltipChildren: React.ReactNode
+    onClick?: (event: React.MouseEvent<HTMLSpanElement>, next: React.MouseEventHandler<HTMLSpanElement>) => void
+}
+
+export function WithTooltipOnHover(props_: WithTooltipOnHoverProps) {
     const { tooltipChildren, onClick: onClickProp, ...props } = props_
+    const [ref, setRef] = React.useState<HTMLSpanElement | null>(null)
 
     const config = React.useContext(ConfigContext)
 
@@ -336,4 +325,4 @@ export const WithTooltipOnHover = forwardAndUseStateRef<
             </span>
         </LogicalDomContext.Provider>
     )
-})
+}
