@@ -159,7 +159,14 @@ const InfoDisplayContent = React.memo((props: InfoDisplayContentProps) => {
 
     /* Adding {' '} to manage string literals properly: https://reactjs.org/docs/jsx-in-depth.html#string-literals-1 */
     return (
-        <>
+        <span
+            onClick={e => {
+                if (e.shiftKey) setSelectedLocs([])
+            }}
+            onPointerDown={e => {
+                if (e.shiftKey) e.preventDefault()
+            }}
+        >
             {hasError && (
                 <div className="error" key="errors">
                     Error updating: {error}.
@@ -243,7 +250,7 @@ const InfoDisplayContent = React.memo((props: InfoDisplayContentProps) => {
                 ) : (
                     'No info found.'
                 ))}
-        </>
+        </span>
     )
 })
 
