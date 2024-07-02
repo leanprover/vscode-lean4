@@ -14,7 +14,7 @@ import { Location } from 'vscode-languageserver-protocol'
 import { ConfigContext, EditorContext } from './contexts'
 import { GoalsLocation, LocationsContext } from './goalLocation'
 import { useRpcSession } from './rpcSessions'
-import { HoverState, TipChainContext, Tooltip, WithToggleableTooltip } from './tooltips'
+import { HoverState, TipChainContext, Tooltip } from './tooltips'
 import { LogicalDomContext, mapRpcError, useAsync, useEvent, useLogicalDomObserver, useOnClickOutside } from './util'
 
 export interface InteractiveTextComponentProps<T> {
@@ -311,6 +311,7 @@ function InteractiveCodeTag({ tag: ct, fmt }: InteractiveTagProps<SubexprInfo>) 
     const htOnClickOutside = React.useCallback(() => {
         htClearTimeout()
         setHTState('hide')
+        setGoToDefErrorState(false)
     }, [])
     useOnClickOutside(htLogicalSpanElt, htOnClickOutside)
 
@@ -352,81 +353,75 @@ function InteractiveCodeTag({ tag: ct, fmt }: InteractiveTagProps<SubexprInfo>) 
     }
 
     return (
-        <WithToggleableTooltip
-            tooltipChildren={`No definition found for '${TaggedText_stripTags(fmt)}'`}
-            isTooltipShown={goToDefErrorState}
-            hideTooltip={() => setGoToDefErrorState(false)}
-        >
-            <LogicalDomContext.Provider value={htLogicalDomStorage}>
-                <span
-                    ref={setHTRef}
-                    className={slSpanClassName}
-                    data-vscode-context={JSON.stringify(vscodeContext)}
-                    data-has-tooltip-on-hover
-                    onClick={e => {
-                        // On shift-click, if we are in a context where selecting subexpressions makes sense,
-                        // (un)select the current subexpression.
-                        if (e.shiftKey && locs && ourLoc) {
-                            locs.setSelected(ourLoc, on => !on)
-                            e.stopPropagation()
-                            return
-                        }
-                        htGuardMouseEvent(e => {
-                            // On ctrl-click or ⌘-click, if location is known, go to it in the editor
-                            if (e.ctrlKey || e.metaKey) {
-                                setHoverState(st => (st === 'over' ? 'ctrlOver' : st))
-                                void execGoToLoc(false)
-                            } else if (!e.shiftKey) htOnClick(e)
-                        }, e)
-                    }}
-                    onPointerDown={e => {
-                        // We have special handling for some modifier+click events, so prevent default browser
-                        // events from interfering when a modifier is held.
-                        if (htIsModifierHeld(e)) e.preventDefault()
-                    }}
-                    onPointerOver={e => {
-                        dhOnPointerEvent(true, e)
-                        if (!htIsModifierHeld(e)) {
-                            htGuardMouseEvent(_ => htStartShowTimeout(), e)
-                        }
-                    }}
-                    onPointerOut={e => {
-                        dhOnPointerEvent(false, e)
-                        htGuardMouseEvent(_ => htStartHideTimeout(), e)
-                    }}
-                    onPointerMove={e => {
-                        if (e.ctrlKey || e.metaKey) slSetHoverStateAll(st => (st === 'over' ? 'ctrlOver' : st))
-                        else slSetHoverStateAll(st => (st === 'ctrlOver' ? 'over' : st))
-                    }}
-                    onContextMenu={e => {
-                        // Mark the event as seen so that parent handlers skip it.
-                        // We cannot use `stopPropagation` as that prevents the VSC context menu from showing up.
-                        if ('_InteractiveCodeTagSeen' in e) return
-                        ;(e as any)._InteractiveCodeTagSeen = {}
-                        if (!(e.target instanceof Node)) return
-                        if (!e.currentTarget.contains(e.target)) return
-                        // Select the pretty-printed code.
-                        const sel = window.getSelection()
-                        if (!sel) return
-                        sel.removeAllRanges()
-                        sel.selectAllChildren(e.currentTarget)
-                    }}
-                >
-                    {htShouldShow && (
-                        <TipChainContext.Provider value={newHTTipChainCtx}>
-                            <Tooltip
-                                reference={htRef}
-                                onPointerEnter={htOnPointerEnter}
-                                onPointerLeave={htOnPointerLeave}
-                            >
-                                <TypePopupContents info={ct} />
-                            </Tooltip>
-                        </TipChainContext.Provider>
-                    )}
-                    <InteractiveTaggedText fmt={fmt} InnerTagUi={InteractiveCodeTag} />
-                </span>
-            </LogicalDomContext.Provider>
-        </WithToggleableTooltip>
+        <LogicalDomContext.Provider value={htLogicalDomStorage}>
+            <span
+                ref={setHTRef}
+                className={slSpanClassName}
+                data-vscode-context={JSON.stringify(vscodeContext)}
+                data-has-tooltip-on-hover
+                onClick={e => {
+                    // On shift-click, if we are in a context where selecting subexpressions makes sense,
+                    // (un)select the current subexpression.
+                    if (e.shiftKey && locs && ourLoc) {
+                        locs.setSelected(ourLoc, on => !on)
+                        e.stopPropagation()
+                        return
+                    }
+                    htGuardMouseEvent(e => {
+                        // On ctrl-click or ⌘-click, if location is known, go to it in the editor
+                        if (e.ctrlKey || e.metaKey) {
+                            setHoverState(st => (st === 'over' ? 'ctrlOver' : st))
+                            void execGoToLoc(false)
+                        } else if (!e.shiftKey) htOnClick(e)
+                    }, e)
+                    if (!window.getSelection()?.toString()) setGoToDefErrorState(false)
+                }}
+                onPointerDown={e => {
+                    // We have special handling for some modifier+click events, so prevent default browser
+                    // events from interfering when a modifier is held.
+                    if (htIsModifierHeld(e)) e.preventDefault()
+                }}
+                onPointerOver={e => {
+                    dhOnPointerEvent(true, e)
+                    if (!htIsModifierHeld(e)) {
+                        htGuardMouseEvent(_ => htStartShowTimeout(), e)
+                    }
+                }}
+                onPointerOut={e => {
+                    dhOnPointerEvent(false, e)
+                    htGuardMouseEvent(_ => htStartHideTimeout(), e)
+                }}
+                onPointerMove={e => {
+                    if (e.ctrlKey || e.metaKey) slSetHoverStateAll(st => (st === 'over' ? 'ctrlOver' : st))
+                    else slSetHoverStateAll(st => (st === 'ctrlOver' ? 'over' : st))
+                }}
+                onContextMenu={e => {
+                    // Mark the event as seen so that parent handlers skip it.
+                    // We cannot use `stopPropagation` as that prevents the VSC context menu from showing up.
+                    if ('_InteractiveCodeTagSeen' in e) return
+                    ;(e as any)._InteractiveCodeTagSeen = {}
+                    if (!(e.target instanceof Node)) return
+                    if (!e.currentTarget.contains(e.target)) return
+                    // Select the pretty-printed code.
+                    const sel = window.getSelection()
+                    if (!sel) return
+                    sel.removeAllRanges()
+                    sel.selectAllChildren(e.currentTarget)
+                }}
+            >
+                {goToDefErrorState && (
+                    <Tooltip reference={htRef}>{`No definition found for '${TaggedText_stripTags(fmt)}'`}</Tooltip>
+                )}
+                {htShouldShow && (
+                    <TipChainContext.Provider value={newHTTipChainCtx}>
+                        <Tooltip reference={htRef} onPointerEnter={htOnPointerEnter} onPointerLeave={htOnPointerLeave}>
+                            <TypePopupContents info={ct} />
+                        </Tooltip>
+                    </TipChainContext.Provider>
+                )}
+                <InteractiveTaggedText fmt={fmt} InnerTagUi={InteractiveCodeTag} />
+            </span>
+        </LogicalDomContext.Provider>
     )
 }
 
