@@ -881,6 +881,7 @@ export class InfoProvider implements Disposable {
                 <title>Infoview</title>
                 <style>${this.stylesheet}</style>
                 <link rel="stylesheet" href="${this.getLocalPath('dist/lean4-infoview/index.css')}">
+                <script src="http://localhost:8097"></script>
             </head>
             <body>
                 <div id="react_root"></div>

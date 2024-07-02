@@ -12,7 +12,7 @@ import {
 import { marked } from 'marked'
 import { Location } from 'vscode-languageserver-protocol'
 import { EditorContext } from './contexts'
-import { GoalsLocation, LocationsContext, SelectableLocation } from './goalLocation'
+import { GoalsLocation, LocationsContext } from './goalLocation'
 import { useRpcSession } from './rpcSessions'
 import { HoverState, WithToggleableTooltip, WithTooltipOnHover } from './tooltips'
 import { mapRpcError, useAsync, useEvent } from './util'
@@ -192,6 +192,7 @@ function InteractiveCodeTag({ tag: ct, fmt }: InteractiveTagProps<SubexprInfo>) 
         locs && locs.subexprTemplate && ct.subexprPos
             ? GoalsLocation.withSubexprPos(locs.subexprTemplate, ct.subexprPos)
             : undefined
+    const isSelected = locs && ourLoc && locs.isSelected(ourLoc)
 
     let spanClassName: string = hoverState === 'ctrlOver' && goToLoc !== undefined ? 'underline ' : ''
     if (ct.diffStatus) {
@@ -205,6 +206,59 @@ function InteractiveCodeTag({ tag: ct, fmt }: InteractiveTagProps<SubexprInfo>) 
     const interactiveCodeTagId = React.useId()
     const vscodeContext = { interactiveCodeTagId }
     useEvent(ec.events.goToDefinition, async _ => void execGoToLoc(true), [execGoToLoc], interactiveCodeTagId)
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////
+    /* SelectableLocation */
+    const [slHoverState, setSLHoverState] = React.useState<HoverState>('off')
+    let slSpanClassName: string = ''
+    if (slHoverState !== 'off') {
+        slSpanClassName += 'highlight '
+    } else if (isSelected) {
+        slSpanClassName += 'highlight-selected '
+    }
+    slSpanClassName += spanClassName
+
+    const slSetHoverStateAll: React.Dispatch<React.SetStateAction<HoverState>> = React.useCallback(val => {
+        setSLHoverState(val)
+    }, [])
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////
+    /* DetectHoverSpan */
+    const dhRef = React.useRef<HTMLSpanElement | null>(null)
+
+    const dhOnPointerEvent = (b: boolean, e: React.PointerEvent<HTMLSpanElement>) => {
+        // It's more composable to let pointer events bubble up rather than to call `stopPropagation`,
+        // but we only want to handle hovers in the innermost component. So we record that the
+        // event was handled with a property.
+        // The `contains` check ensures that the node hovered over is a child in the DOM
+        // tree and not just a logical React child (see useLogicalDom and
+        // https://reactjs.org/docs/portals.html#event-bubbling-through-portals).
+        if (dhRef.current && e.target instanceof Node && dhRef.current.contains(e.target)) {
+            if ('_DetectHoverSpanSeen' in e) return
+            ;(e as any)._DetectHoverSpanSeen = {}
+            if (!b) slSetHoverStateAll('off')
+            else if (e.ctrlKey || e.metaKey) slSetHoverStateAll('ctrlOver')
+            else slSetHoverStateAll('over')
+        }
+    }
+
+    React.useEffect(() => {
+        const onKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Control' || e.key === 'Meta') slSetHoverStateAll(st => (st === 'over' ? 'ctrlOver' : st))
+        }
+
+        const onKeyUp = (e: KeyboardEvent) => {
+            if (e.key === 'Control' || e.key === 'Meta') slSetHoverStateAll(st => (st === 'ctrlOver' ? 'over' : st))
+        }
+
+        // Note: In VSCode these events do not fire when the webview is not in focus.
+        document.addEventListener('keydown', onKeyDown)
+        document.addEventListener('keyup', onKeyUp)
+        return () => {
+            document.removeEventListener('keydown', onKeyDown)
+            document.removeEventListener('keyup', onKeyUp)
+        }
+    }, [slSetHoverStateAll])
 
     return (
         <WithToggleableTooltip
@@ -237,15 +291,35 @@ function InteractiveCodeTag({ tag: ct, fmt }: InteractiveTagProps<SubexprInfo>) 
                     sel.selectAllChildren(e.currentTarget)
                 }}
             >
-                <SelectableLocation
-                    setHoverState={setHoverState}
-                    className={spanClassName}
-                    locs={locs}
-                    loc={ourLoc}
-                    alwaysHighlight={true}
+                <span
+                    ref={dhRef}
+                    className={slSpanClassName}
+                    onClick={e => {
+                        // On shift-click, if we are in a context where selecting subexpressions makes sense,
+                        // (un)select the current subexpression.
+                        if (e.shiftKey && locs && ourLoc) {
+                            locs.setSelected(ourLoc, on => !on)
+                            e.stopPropagation()
+                        }
+                    }}
+                    onPointerDown={e => {
+                        // Since shift-click on this component is a custom selection, when shift is held prevent
+                        // the default action which on text is to start a text selection.
+                        if (e.shiftKey) e.preventDefault()
+                    }}
+                    onPointerOver={e => {
+                        dhOnPointerEvent(true, e)
+                    }}
+                    onPointerOut={e => {
+                        dhOnPointerEvent(false, e)
+                    }}
+                    onPointerMove={e => {
+                        if (e.ctrlKey || e.metaKey) slSetHoverStateAll(st => (st === 'over' ? 'ctrlOver' : st))
+                        else slSetHoverStateAll(st => (st === 'ctrlOver' ? 'over' : st))
+                    }}
                 >
-                    <InteractiveCode fmt={fmt} />
-                </SelectableLocation>
+                    <InteractiveTaggedText fmt={fmt} InnerTagUi={InteractiveCodeTag} />
+                </span>
             </WithTooltipOnHover>
         </WithToggleableTooltip>
     )

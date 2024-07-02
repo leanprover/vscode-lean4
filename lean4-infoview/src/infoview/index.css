@@ -49,12 +49,6 @@ body {
     font-weight: normal;
 }
 
-/* Used to denote text highlighted by the pretty-print expression widget. */
-.highlightable {
-    border-radius: 2pt;
-    transition: background-color 100ms ease-in-out;
-}
-
 .highlight {
     background-color: var(--vscode-editor-selectionBackground) !important;
 }
