@@ -183,11 +183,11 @@ export function DetectHoverSpan(props_: DetectHoverSpanProps) {
 }
 
 /** Pinning a child tooltip has to also pin all ancestors. This context supports that. */
-interface TipChainContext {
+export interface TipChainContext {
     pinParent(): void
 }
 
-const TipChainContext = React.createContext<TipChainContext>({ pinParent: () => {} })
+export const TipChainContext = React.createContext<TipChainContext>({ pinParent: () => {} })
 
 export type WithTooltipOnHoverProps = Omit<React.HTMLProps<HTMLSpanElement>, 'onClick'> & {
     tooltipChildren: React.ReactNode

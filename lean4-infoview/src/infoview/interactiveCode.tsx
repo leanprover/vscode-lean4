@@ -11,11 +11,11 @@ import {
 } from '@leanprover/infoview-api'
 import { marked } from 'marked'
 import { Location } from 'vscode-languageserver-protocol'
-import { EditorContext } from './contexts'
+import { ConfigContext, EditorContext } from './contexts'
 import { GoalsLocation, LocationsContext } from './goalLocation'
 import { useRpcSession } from './rpcSessions'
-import { HoverState, WithToggleableTooltip, WithTooltipOnHover } from './tooltips'
-import { mapRpcError, useAsync, useEvent } from './util'
+import { HoverState, TipChainContext, Tooltip, WithToggleableTooltip } from './tooltips'
+import { LogicalDomContext, mapRpcError, useAsync, useEvent, useLogicalDomObserver, useOnClickOutside } from './util'
 
 export interface InteractiveTextComponentProps<T> {
     fmt: TaggedText<T>
@@ -260,67 +260,188 @@ function InteractiveCodeTag({ tag: ct, fmt }: InteractiveTagProps<SubexprInfo>) 
         }
     }, [slSetHoverStateAll])
 
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////
+    /* WithTooltipOnHover */
+    const [htRef, setHTRef] = React.useState<HTMLSpanElement | null>(null)
+
+    const htConfig = React.useContext(ConfigContext)
+
+    // We are pinned when clicked, shown when hovered over, and otherwise hidden.
+    type TooltipState = 'pin' | 'show' | 'hide'
+    const [htState, setHTState] = React.useState<TooltipState>('hide')
+    const htShouldShow = htState !== 'hide'
+
+    const htTipChainCtx = React.useContext(TipChainContext)
+    React.useEffect(() => {
+        if (htState === 'pin') htTipChainCtx.pinParent()
+    }, [htState, htTipChainCtx])
+    const newHTTipChainCtx = React.useMemo(
+        () => ({
+            pinParent: () => {
+                setHTState('pin')
+                htTipChainCtx.pinParent()
+            },
+        }),
+        [htTipChainCtx],
+    )
+
+    // Note: because tooltips are attached to `document.body`, they are not descendants of the
+    // hoverable area in the DOM tree. Thus the `contains` check fails for elements within tooltip
+    // contents and succeeds for elements within the hoverable. We can use this to distinguish them.
+    const htIsWithinHoverable = (el: EventTarget) => htRef && el instanceof Node && htRef.contains(el)
+    const [htLogicalSpanElt, htLogicalDomStorage] = useLogicalDomObserver({ current: htRef })
+
+    // We use timeouts for debouncing hover events.
+    const htTimeout = React.useRef<number>()
+    const htClearTimeout = () => {
+        if (htTimeout.current) {
+            window.clearTimeout(htTimeout.current)
+            htTimeout.current = undefined
+        }
+    }
+    const htShowDelay = 500
+    const htHideDelay = 300
+
+    const htIsModifierHeld = (e: React.MouseEvent) => e.altKey || e.ctrlKey || e.shiftKey || e.metaKey
+
+    const htOnClick = (e: React.MouseEvent<HTMLSpanElement>) => {
+        htClearTimeout()
+        setHTState(state => (state === 'pin' ? 'hide' : 'pin'))
+        e.stopPropagation()
+    }
+
+    const htOnClickOutside = React.useCallback(() => {
+        htClearTimeout()
+        setHTState('hide')
+    }, [])
+    useOnClickOutside(htLogicalSpanElt, htOnClickOutside)
+
+    const htIsPointerOverTooltip = React.useRef<boolean>(false)
+    const htStartShowTimeout = () => {
+        htClearTimeout()
+        if (!htConfig.showTooltipOnHover) return
+        htTimeout.current = window.setTimeout(() => {
+            setHTState(state => (state === 'hide' ? 'show' : state))
+            htTimeout.current = undefined
+        }, htShowDelay)
+    }
+    const htStartHideTimeout = () => {
+        htClearTimeout()
+        htTimeout.current = window.setTimeout(() => {
+            if (!htIsPointerOverTooltip.current) setHTState(state => (state === 'show' ? 'hide' : state))
+            htTimeout.current = undefined
+        }, htHideDelay)
+    }
+
+    const htOnPointerEnter = (e: React.PointerEvent<HTMLSpanElement>) => {
+        htIsPointerOverTooltip.current = true
+        htClearTimeout()
+    }
+
+    const htOnPointerLeave = (e: React.PointerEvent<HTMLSpanElement>) => {
+        htIsPointerOverTooltip.current = false
+        htStartHideTimeout()
+    }
+
+    function htGuardMouseEvent(
+        act: (_: React.MouseEvent<HTMLSpanElement>) => void,
+        e: React.MouseEvent<HTMLSpanElement>,
+    ) {
+        if ('_WithTooltipOnHoverSeen' in e) return
+        if (!htIsWithinHoverable(e.target)) return
+        ;(e as any)._WithTooltipOnHoverSeen = {}
+        act(e)
+    }
+
     return (
         <WithToggleableTooltip
             tooltipChildren={`No definition found for '${TaggedText_stripTags(fmt)}'`}
             isTooltipShown={goToDefErrorState}
             hideTooltip={() => setGoToDefErrorState(false)}
         >
-            <WithTooltipOnHover
-                data-vscode-context={JSON.stringify(vscodeContext)}
-                data-has-tooltip-on-hover
-                tooltipChildren={<TypePopupContents info={ct} />}
-                onClick={(e, next) => {
-                    // On ctrl-click or ⌘-click, if location is known, go to it in the editor
-                    if (e.ctrlKey || e.metaKey) {
-                        setHoverState(st => (st === 'over' ? 'ctrlOver' : st))
-                        void execGoToLoc(false)
-                    } else if (!e.shiftKey) next(e)
-                }}
-                onContextMenu={e => {
-                    // Mark the event as seen so that parent handlers skip it.
-                    // We cannot use `stopPropagation` as that prevents the VSC context menu from showing up.
-                    if ('_InteractiveCodeTagSeen' in e) return
-                    ;(e as any)._InteractiveCodeTagSeen = {}
-                    if (!(e.target instanceof Node)) return
-                    if (!e.currentTarget.contains(e.target)) return
-                    // Select the pretty-printed code.
-                    const sel = window.getSelection()
-                    if (!sel) return
-                    sel.removeAllRanges()
-                    sel.selectAllChildren(e.currentTarget)
-                }}
-            >
+            <LogicalDomContext.Provider value={htLogicalDomStorage}>
                 <span
-                    ref={dhRef}
-                    className={slSpanClassName}
+                    ref={setHTRef}
+                    data-vscode-context={JSON.stringify(vscodeContext)}
+                    data-has-tooltip-on-hover
                     onClick={e => {
-                        // On shift-click, if we are in a context where selecting subexpressions makes sense,
-                        // (un)select the current subexpression.
-                        if (e.shiftKey && locs && ourLoc) {
-                            locs.setSelected(ourLoc, on => !on)
-                            e.stopPropagation()
-                        }
+                        htGuardMouseEvent(e => {
+                            // On ctrl-click or ⌘-click, if location is known, go to it in the editor
+                            if (e.ctrlKey || e.metaKey) {
+                                setHoverState(st => (st === 'over' ? 'ctrlOver' : st))
+                                void execGoToLoc(false)
+                            } else if (!e.shiftKey) htOnClick(e)
+                        }, e)
+                    }}
+                    onContextMenu={e => {
+                        // Mark the event as seen so that parent handlers skip it.
+                        // We cannot use `stopPropagation` as that prevents the VSC context menu from showing up.
+                        if ('_InteractiveCodeTagSeen' in e) return
+                        ;(e as any)._InteractiveCodeTagSeen = {}
+                        if (!(e.target instanceof Node)) return
+                        if (!e.currentTarget.contains(e.target)) return
+                        // Select the pretty-printed code.
+                        const sel = window.getSelection()
+                        if (!sel) return
+                        sel.removeAllRanges()
+                        sel.selectAllChildren(e.currentTarget)
                     }}
                     onPointerDown={e => {
-                        // Since shift-click on this component is a custom selection, when shift is held prevent
-                        // the default action which on text is to start a text selection.
-                        if (e.shiftKey) e.preventDefault()
+                        // We have special handling for some modifier+click events, so prevent default browser
+                        // events from interfering when a modifier is held.
+                        if (htIsModifierHeld(e)) e.preventDefault()
                     }}
                     onPointerOver={e => {
-                        dhOnPointerEvent(true, e)
+                        if (!htIsModifierHeld(e)) {
+                            htGuardMouseEvent(_ => htStartShowTimeout(), e)
+                        }
                     }}
                     onPointerOut={e => {
-                        dhOnPointerEvent(false, e)
-                    }}
-                    onPointerMove={e => {
-                        if (e.ctrlKey || e.metaKey) slSetHoverStateAll(st => (st === 'over' ? 'ctrlOver' : st))
-                        else slSetHoverStateAll(st => (st === 'ctrlOver' ? 'over' : st))
+                        htGuardMouseEvent(_ => htStartHideTimeout(), e)
                     }}
                 >
-                    <InteractiveTaggedText fmt={fmt} InnerTagUi={InteractiveCodeTag} />
+                    {htShouldShow && (
+                        <TipChainContext.Provider value={newHTTipChainCtx}>
+                            <Tooltip
+                                reference={htRef}
+                                onPointerEnter={htOnPointerEnter}
+                                onPointerLeave={htOnPointerLeave}
+                            >
+                                <TypePopupContents info={ct} />
+                            </Tooltip>
+                        </TipChainContext.Provider>
+                    )}
+                    <span
+                        ref={dhRef}
+                        className={slSpanClassName}
+                        onClick={e => {
+                            // On shift-click, if we are in a context where selecting subexpressions makes sense,
+                            // (un)select the current subexpression.
+                            if (e.shiftKey && locs && ourLoc) {
+                                locs.setSelected(ourLoc, on => !on)
+                                e.stopPropagation()
+                            }
+                        }}
+                        onPointerDown={e => {
+                            // Since shift-click on this component is a custom selection, when shift is held prevent
+                            // the default action which on text is to start a text selection.
+                            if (e.shiftKey) e.preventDefault()
+                        }}
+                        onPointerOver={e => {
+                            dhOnPointerEvent(true, e)
+                        }}
+                        onPointerOut={e => {
+                            dhOnPointerEvent(false, e)
+                        }}
+                        onPointerMove={e => {
+                            if (e.ctrlKey || e.metaKey) slSetHoverStateAll(st => (st === 'over' ? 'ctrlOver' : st))
+                            else slSetHoverStateAll(st => (st === 'ctrlOver' ? 'over' : st))
+                        }}
+                    >
+                        <InteractiveTaggedText fmt={fmt} InnerTagUi={InteractiveCodeTag} />
+                    </span>
                 </span>
-            </WithTooltipOnHover>
+            </LogicalDomContext.Provider>
         </WithToggleableTooltip>
     )
 }
