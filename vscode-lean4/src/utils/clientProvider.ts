@@ -1,26 +1,13 @@
 import { LeanFileProgressProcessingInfo, ServerStoppedReason } from '@leanprover/infoview-api'
 import { Disposable, EventEmitter, OutputChannel, TextDocument, commands, window, workspace } from 'vscode'
-import {
-    checkAll,
-    checkIsLakeInstalledCorrectly,
-    checkIsLeanVersionUpToDate,
-    checkIsValidProjectFolder,
-} from '../diagnostics/setupDiagnostics'
 import { PreconditionCheckResult } from '../diagnostics/setupNotifs'
 import { LeanClient } from '../leanclient'
 import { ExtUri, FileUri, UntitledUri, getWorkspaceFolderUri, toExtUri } from './exturi'
 import { LeanInstaller } from './leanInstaller'
 import { logger } from './logger'
 import { displayError } from './notifs'
-import { findLeanProjectRoot, willUseLakeServer } from './projectInfo'
+import { findLeanProjectRoot } from './projectInfo'
 import { BaseLanguageClient, LanguageClientOptions } from 'vscode-languageclient/node'
-
-async function checkLean4ProjectPreconditions(
-    channel: OutputChannel,
-    folderUri: ExtUri,
-): Promise<PreconditionCheckResult> {
-    return 'Fulfilled';
-}
 
 // This class ensures we have one LeanClient per folder.
 export class LeanClientProvider implements Disposable {
@@ -45,8 +32,12 @@ export class LeanClientProvider implements Disposable {
     private clientStoppedEmitter = new EventEmitter<[LeanClient, boolean, ServerStoppedReason]>()
     clientStopped = this.clientStoppedEmitter.event
 
-    constructor(installer: LeanInstaller, outputChannel: OutputChannel,
-            private setupClient: (clientOptions: LanguageClientOptions, folderUri: ExtUri, elanDefaultToolchain: string) => Promise<BaseLanguageClient>) {
+    constructor(
+            installer: LeanInstaller, 
+            outputChannel: OutputChannel,
+            private setupClient: (clientOptions: LanguageClientOptions, folderUri: ExtUri, elanDefaultToolchain: string) => Promise<BaseLanguageClient>,
+            private checkLean4ProjectPreconditions: (channel: OutputChannel, folderUri: ExtUri) => Promise<PreconditionCheckResult>
+        ) {
         this.outputChannel = outputChannel
         this.installer = installer
 
@@ -112,7 +103,7 @@ export class LeanClientProvider implements Disposable {
             try {
                 const projectUri = await findLeanProjectRoot(uri)
 
-                const preconditionCheckResult = await checkLean4ProjectPreconditions(this.outputChannel, projectUri)
+                const preconditionCheckResult = await this.checkLean4ProjectPreconditions(this.outputChannel, projectUri)
                 if (preconditionCheckResult !== 'Fatal') {
                     logger.log('[ClientProvider] got lean version 4')
                     const [cached, client] = await this.ensureClient(uri)
@@ -221,7 +212,7 @@ export class LeanClientProvider implements Disposable {
         }
         this.pending.set(key, true)
 
-        const preconditionCheckResult = await checkLean4ProjectPreconditions(this.outputChannel, folderUri)
+        const preconditionCheckResult = await this.checkLean4ProjectPreconditions(this.outputChannel, folderUri)
         if (preconditionCheckResult === 'Fatal') {
             this.pending.delete(key)
             return [false, undefined]

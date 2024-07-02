@@ -31,7 +31,50 @@ export async function isCoreLean4Directory(path: FileUri): Promise<boolean> {
 
 // Find the root of a Lean project and the Uri for the 'lean-toolchain' file found there.
 export async function findLeanProjectRootInfo(uri: FileUri): Promise<[FileUri, FileUri | undefined]> {
-    return [new FileUri('/'), undefined]
+    const toolchainFileName = 'lean-toolchain'
+
+    let path = uri
+    const containingWsFolderUri = getWorkspaceFolderUri(uri)
+
+    // then start searching from the directory containing this document.
+    // The given uri may already be a folder Uri in some cases.
+    if (fs.lstatSync(path.fsPath).isFile()) {
+        path = uri.join('..')
+    }
+
+    let bestFolder = path
+    let bestLeanToolchain: FileUri | undefined
+    while (true) {
+        const leanToolchain = path.join(toolchainFileName)
+        if (await fileExists(leanToolchain.fsPath)) {
+            bestFolder = path
+            bestLeanToolchain = leanToolchain
+        } else if (await isCoreLean4Directory(path)) {
+            bestFolder = path
+            bestLeanToolchain = undefined
+            // Stop searching in case users accidentally created a lean-toolchain file above the core directory
+            break
+        }
+        if (containingWsFolderUri !== undefined && path.equals(containingWsFolderUri)) {
+            if (bestLeanToolchain === undefined) {
+                // If we haven't found a toolchain yet, prefer the workspace folder as the project scope for the file,
+                // but keep looking in case there is a lean-toolchain above the workspace folder
+                // (New users sometimes accidentally open sub-folders of projects)
+                bestFolder = path
+            } else {
+                // Stop looking above the barrier if we have a toolchain. This is necessary for the nested lean-toolchain setup of core.
+                break
+            }
+        }
+        const parent = path.join('..')
+        if (parent.equals(path)) {
+            // no project file found.
+            break
+        }
+        path = parent
+    }
+
+    return [bestFolder, bestLeanToolchain]
 }
 
 export async function findLeanProjectRoot(uri: FileUri): Promise<FileUri> {
