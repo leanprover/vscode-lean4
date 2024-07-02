@@ -36,7 +36,8 @@ export class LeanClientProvider implements Disposable {
             installer: LeanInstaller, 
             outputChannel: OutputChannel,
             private setupClient: (clientOptions: LanguageClientOptions, folderUri: ExtUri, elanDefaultToolchain: string) => Promise<BaseLanguageClient>,
-            private checkLean4ProjectPreconditions: (channel: OutputChannel, folderUri: ExtUri) => Promise<PreconditionCheckResult>
+            private checkLean4ProjectPreconditions: (channel: OutputChannel, folderUri: ExtUri) => Promise<PreconditionCheckResult>,
+            private isOpenLeanDocument : (docUri : ExtUri) => boolean
         ) {
         this.outputChannel = outputChannel
         this.installer = installer
@@ -221,7 +222,7 @@ export class LeanClientProvider implements Disposable {
         logger.log('[ClientProvider] Creating LeanClient for ' + folderUri.toString())
         const elanDefaultToolchain = await this.installer.getElanDefaultToolchain(folderUri)
 
-        client = new LeanClient(folderUri, this.outputChannel, elanDefaultToolchain, this.setupClient)
+        client = new LeanClient(folderUri, this.outputChannel, elanDefaultToolchain, this.setupClient, this.isOpenLeanDocument)
         this.subscriptions.push(client)
         this.clients.set(key, client)
 

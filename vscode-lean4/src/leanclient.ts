@@ -38,7 +38,6 @@ import { logger } from './utils/logger'
 // @ts-ignore
 import { SemVer } from 'semver'
 import { c2pConverter, p2cConverter, patchConverters, setDependencyBuildMode } from './utils/converters'
-import { collectAllOpenLeanDocumentUris } from './utils/docInfo'
 import { ExtUri, extUriEquals, parseExtUri, toExtUri } from './utils/exturi'
 import {
     displayError,
@@ -103,8 +102,13 @@ export class LeanClient implements Disposable {
     private serverFailedEmitter = new EventEmitter<string>()
     serverFailed = this.serverFailedEmitter.event
 
-    constructor(folderUri: ExtUri, outputChannel: OutputChannel, elanDefaultToolchain: string,
-            private setupClient: (clientOptions: LanguageClientOptions, folderUri: ExtUri, elanDefaultToolchain: string) => Promise<BaseLanguageClient>) {
+    constructor(
+            folderUri: ExtUri, 
+            outputChannel: OutputChannel,
+            elanDefaultToolchain: string,
+            private setupClient: (clientOptions: LanguageClientOptions, folderUri: ExtUri, elanDefaultToolchain: string) => Promise<BaseLanguageClient>,
+            private isOpenLeanDocument : (docUri : ExtUri) => boolean
+        ) {
         this.outputChannel = outputChannel // can be null when opening adhoc files.
         this.folderUri = folderUri
         this.elanDefaultToolchain = elanDefaultToolchain
@@ -478,8 +482,7 @@ export class LeanClient implements Disposable {
                         return // This should never happen since the glob we launch the client for ensures that all uris are ext uris
                     }
 
-                    const openDocUris: ExtUri[] = collectAllOpenLeanDocumentUris()
-                    const docIsOpen = openDocUris.some(openDocUri => extUriEquals(openDocUri, docUri))
+                    const docIsOpen = this.isOpenLeanDocument(docUri)
 
                     if (!docIsOpen) {
                         // The language client library emits a `didOpen` notification when hovering over an identifier while holding `Ctrl` in order to provide a preview for the line that the definition is on.

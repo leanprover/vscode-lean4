@@ -32,6 +32,7 @@ import { findLeanProjectRoot } from './utils/projectInfo'
 import { VSCodeInfoWebviewFactory } from './infowebview'
 import { setupClient } from './vscodeleanclient'
 import { checkLean4ProjectPreconditions } from './preconditions'
+import { isOpenLeanDocument } from './utils/docInfo'
 
 async function setLeanFeatureSetActive(isActive: boolean) {
     await commands.executeCommand('setContext', 'lean4.isLeanFeatureSetActive', isActive)
@@ -161,7 +162,13 @@ async function activateLean4Features(
         return undefined
     }
 
-    const clientProvider = new LeanClientProvider(installer, installer.getOutputChannel(), setupClient, checkLean4ProjectPreconditions)
+    const clientProvider = new LeanClientProvider(
+        installer,
+        installer.getOutputChannel(),
+        setupClient,
+        checkLean4ProjectPreconditions,
+        isOpenLeanDocument
+    )
     context.subscriptions.push(clientProvider)
 
     const watchService = new LeanConfigWatchService()

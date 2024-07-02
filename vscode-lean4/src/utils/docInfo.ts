@@ -1,5 +1,5 @@
 import { TabInputText, TextDocument, window, workspace } from 'vscode'
-import { ExtUri, toExtUri } from './exturi'
+import { ExtUri, extUriEquals, toExtUri } from './exturi'
 
 export function collectAllOpenLeanDocuments(): TextDocument[] {
     const documentsByUri: Map<string, TextDocument> = new Map<string, TextDocument>()
@@ -36,4 +36,9 @@ export function collectAllOpenLeanDocumentUris(): ExtUri[] {
         }
         return uri
     })
+}
+
+export function isOpenLeanDocument(docUri : ExtUri): boolean {
+    const openDocUris: ExtUri[] = collectAllOpenLeanDocumentUris()
+    return openDocUris.some(openDocUri => extUriEquals(openDocUri, docUri))
 }
