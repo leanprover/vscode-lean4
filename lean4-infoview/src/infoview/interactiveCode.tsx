@@ -224,7 +224,7 @@ function InteractiveCodeTag({ tag: ct, fmt }: InteractiveTagProps<SubexprInfo>) 
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////
     /* DetectHoverSpan */
-    const dhRef = React.useRef<HTMLSpanElement | null>(null)
+    const [htRef, setHTRef] = React.useState<HTMLSpanElement | null>(null)
 
     const dhOnPointerEvent = (b: boolean, e: React.PointerEvent<HTMLSpanElement>) => {
         // It's more composable to let pointer events bubble up rather than to call `stopPropagation`,
@@ -233,7 +233,7 @@ function InteractiveCodeTag({ tag: ct, fmt }: InteractiveTagProps<SubexprInfo>) 
         // The `contains` check ensures that the node hovered over is a child in the DOM
         // tree and not just a logical React child (see useLogicalDom and
         // https://reactjs.org/docs/portals.html#event-bubbling-through-portals).
-        if (dhRef.current && e.target instanceof Node && dhRef.current.contains(e.target)) {
+        if (htRef && e.target instanceof Node && htRef.contains(e.target)) {
             if ('_DetectHoverSpanSeen' in e) return
             ;(e as any)._DetectHoverSpanSeen = {}
             if (!b) slSetHoverStateAll('off')
@@ -262,8 +262,6 @@ function InteractiveCodeTag({ tag: ct, fmt }: InteractiveTagProps<SubexprInfo>) 
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////
     /* WithTooltipOnHover */
-    const [htRef, setHTRef] = React.useState<HTMLSpanElement | null>(null)
-
     const htConfig = React.useContext(ConfigContext)
 
     // We are pinned when clicked, shown when hovered over, and otherwise hidden.
@@ -362,9 +360,17 @@ function InteractiveCodeTag({ tag: ct, fmt }: InteractiveTagProps<SubexprInfo>) 
             <LogicalDomContext.Provider value={htLogicalDomStorage}>
                 <span
                     ref={setHTRef}
+                    className={slSpanClassName}
                     data-vscode-context={JSON.stringify(vscodeContext)}
                     data-has-tooltip-on-hover
                     onClick={e => {
+                        // On shift-click, if we are in a context where selecting subexpressions makes sense,
+                        // (un)select the current subexpression.
+                        if (e.shiftKey && locs && ourLoc) {
+                            locs.setSelected(ourLoc, on => !on)
+                            e.stopPropagation()
+                            return
+                        }
                         htGuardMouseEvent(e => {
                             // On ctrl-click or ⌘-click, if location is known, go to it in the editor
                             if (e.ctrlKey || e.metaKey) {
@@ -372,6 +378,25 @@ function InteractiveCodeTag({ tag: ct, fmt }: InteractiveTagProps<SubexprInfo>) 
                                 void execGoToLoc(false)
                             } else if (!e.shiftKey) htOnClick(e)
                         }, e)
+                    }}
+                    onPointerDown={e => {
+                        // We have special handling for some modifier+click events, so prevent default browser
+                        // events from interfering when a modifier is held.
+                        if (htIsModifierHeld(e)) e.preventDefault()
+                    }}
+                    onPointerOver={e => {
+                        dhOnPointerEvent(true, e)
+                        if (!htIsModifierHeld(e)) {
+                            htGuardMouseEvent(_ => htStartShowTimeout(), e)
+                        }
+                    }}
+                    onPointerOut={e => {
+                        dhOnPointerEvent(false, e)
+                        htGuardMouseEvent(_ => htStartHideTimeout(), e)
+                    }}
+                    onPointerMove={e => {
+                        if (e.ctrlKey || e.metaKey) slSetHoverStateAll(st => (st === 'over' ? 'ctrlOver' : st))
+                        else slSetHoverStateAll(st => (st === 'ctrlOver' ? 'over' : st))
                     }}
                     onContextMenu={e => {
                         // Mark the event as seen so that parent handlers skip it.
@@ -386,19 +411,6 @@ function InteractiveCodeTag({ tag: ct, fmt }: InteractiveTagProps<SubexprInfo>) 
                         sel.removeAllRanges()
                         sel.selectAllChildren(e.currentTarget)
                     }}
-                    onPointerDown={e => {
-                        // We have special handling for some modifier+click events, so prevent default browser
-                        // events from interfering when a modifier is held.
-                        if (htIsModifierHeld(e)) e.preventDefault()
-                    }}
-                    onPointerOver={e => {
-                        if (!htIsModifierHeld(e)) {
-                            htGuardMouseEvent(_ => htStartShowTimeout(), e)
-                        }
-                    }}
-                    onPointerOut={e => {
-                        htGuardMouseEvent(_ => htStartHideTimeout(), e)
-                    }}
                 >
                     {htShouldShow && (
                         <TipChainContext.Provider value={newHTTipChainCtx}>
@@ -411,35 +423,7 @@ function InteractiveCodeTag({ tag: ct, fmt }: InteractiveTagProps<SubexprInfo>) 
                             </Tooltip>
                         </TipChainContext.Provider>
                     )}
-                    <span
-                        ref={dhRef}
-                        className={slSpanClassName}
-                        onClick={e => {
-                            // On shift-click, if we are in a context where selecting subexpressions makes sense,
-                            // (un)select the current subexpression.
-                            if (e.shiftKey && locs && ourLoc) {
-                                locs.setSelected(ourLoc, on => !on)
-                                e.stopPropagation()
-                            }
-                        }}
-                        onPointerDown={e => {
-                            // Since shift-click on this component is a custom selection, when shift is held prevent
-                            // the default action which on text is to start a text selection.
-                            if (e.shiftKey) e.preventDefault()
-                        }}
-                        onPointerOver={e => {
-                            dhOnPointerEvent(true, e)
-                        }}
-                        onPointerOut={e => {
-                            dhOnPointerEvent(false, e)
-                        }}
-                        onPointerMove={e => {
-                            if (e.ctrlKey || e.metaKey) slSetHoverStateAll(st => (st === 'over' ? 'ctrlOver' : st))
-                            else slSetHoverStateAll(st => (st === 'ctrlOver' ? 'over' : st))
-                        }}
-                    >
-                        <InteractiveTaggedText fmt={fmt} InnerTagUi={InteractiveCodeTag} />
-                    </span>
+                    <InteractiveTaggedText fmt={fmt} InnerTagUi={InteractiveCodeTag} />
                 </span>
             </LogicalDomContext.Provider>
         </WithToggleableTooltip>
