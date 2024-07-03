@@ -517,6 +517,7 @@ export class InfoProvider implements Disposable {
         for (const s of this.subscriptions) {
             s.dispose()
         }
+        this.webviewPanel?.dispose()
     }
 
     isOpen(): boolean {
