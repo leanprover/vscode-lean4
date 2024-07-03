@@ -148,8 +148,16 @@ const DIFF_TAG_TO_EXPLANATION: { [K in DiffTag]: string } = {
 function InteractiveCodeTag({ tag: ct, fmt }: InteractiveTagProps<SubexprInfo>) {
     const rs = useRpcSession()
     const ec = React.useContext(EditorContext)
+    const htRef = React.useRef<HTMLSpanElement>(null)
     const [hoverState, setHoverState] = React.useState<HoverState>('off')
-    const [goToDefErrorState, setGoToDefErrorState] = React.useState<boolean>(false)
+    const [goToDefErrorState, setGoToDefErrorState_] = React.useState<boolean>(false)
+    const [goToDefErrorTooltipAnchorRef, setGoToDefErrorTooltipAnchorRef] = React.useState<HTMLSpanElement | null>(null)
+    const setGoToDefErrorState: (isError: boolean) => void = React.useCallback(isError => {
+        setGoToDefErrorState_(isError)
+        if (isError) {
+            setGoToDefErrorTooltipAnchorRef(htRef.current)
+        }
+    }, [])
 
     // We mimick the VSCode ctrl-hover and ctrl-click UI for go-to-definition
     const [goToLoc, setGoToLoc] = React.useState<Location | undefined>(undefined)
@@ -179,12 +187,13 @@ function InteractiveCodeTag({ tag: ct, fmt }: InteractiveTagProps<SubexprInfo>) 
             if (loc === undefined) {
                 if (withError) {
                     setGoToDefErrorState(true)
+                    setGoToDefErrorTooltipAnchorRef(htRef.current)
                 }
                 return
             }
             await ec.revealPosition({ uri: loc.uri, ...loc.range.start })
         },
-        [fetchGoToLoc, ec],
+        [fetchGoToLoc, ec, setGoToDefErrorState],
     )
 
     const locs = React.useContext(LocationsContext)
@@ -224,8 +233,6 @@ function InteractiveCodeTag({ tag: ct, fmt }: InteractiveTagProps<SubexprInfo>) 
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////
     /* DetectHoverSpan */
-    const [htRef, setHTRef] = React.useState<HTMLSpanElement | null>(null)
-
     const dhOnPointerEvent = (b: boolean, e: React.PointerEvent<HTMLSpanElement>) => {
         // It's more composable to let pointer events bubble up rather than to call `stopPropagation`,
         // but we only want to handle hovers in the innermost component. So we record that the
@@ -233,7 +240,7 @@ function InteractiveCodeTag({ tag: ct, fmt }: InteractiveTagProps<SubexprInfo>) 
         // The `contains` check ensures that the node hovered over is a child in the DOM
         // tree and not just a logical React child (see useLogicalDom and
         // https://reactjs.org/docs/portals.html#event-bubbling-through-portals).
-        if (htRef && e.target instanceof Node && htRef.contains(e.target)) {
+        if (htRef.current && e.target instanceof Node && htRef.current.contains(e.target)) {
             if ('_DetectHoverSpanSeen' in e) return
             ;(e as any)._DetectHoverSpanSeen = {}
             if (!b) slSetHoverStateAll('off')
@@ -266,7 +273,14 @@ function InteractiveCodeTag({ tag: ct, fmt }: InteractiveTagProps<SubexprInfo>) 
 
     // We are pinned when clicked, shown when hovered over, and otherwise hidden.
     type TooltipState = 'pin' | 'show' | 'hide'
-    const [htState, setHTState] = React.useState<TooltipState>('hide')
+    const [htState, setHTState_] = React.useState<TooltipState>('hide')
+    const [hoverTooltipAnchorRef, setHoverTooltipAnchorRef] = React.useState<HTMLSpanElement | null>(null)
+    const setHTState: (state: TooltipState) => void = React.useCallback(state => {
+        setHTState_(state)
+        if (state !== 'hide') {
+            setHoverTooltipAnchorRef(htRef.current)
+        }
+    }, [])
     const htShouldShow = htState !== 'hide'
 
     const htTipChainCtx = React.useContext(TipChainContext)
@@ -280,14 +294,14 @@ function InteractiveCodeTag({ tag: ct, fmt }: InteractiveTagProps<SubexprInfo>) 
                 htTipChainCtx.pinParent()
             },
         }),
-        [htTipChainCtx],
+        [htTipChainCtx, setHTState],
     )
 
     // Note: because tooltips are attached to `document.body`, they are not descendants of the
     // hoverable area in the DOM tree. Thus the `contains` check fails for elements within tooltip
     // contents and succeeds for elements within the hoverable. We can use this to distinguish them.
-    const htIsWithinHoverable = (el: EventTarget) => htRef && el instanceof Node && htRef.contains(el)
-    const [htLogicalSpanElt, htLogicalDomStorage] = useLogicalDomObserver({ current: htRef })
+    const htIsWithinHoverable = (el: EventTarget) => htRef.current && el instanceof Node && htRef.current.contains(el)
+    const [htLogicalSpanElt, htLogicalDomStorage] = useLogicalDomObserver(htRef)
 
     // We use timeouts for debouncing hover events.
     const htTimeout = React.useRef<number>()
@@ -304,7 +318,7 @@ function InteractiveCodeTag({ tag: ct, fmt }: InteractiveTagProps<SubexprInfo>) 
 
     const htOnClick = (e: React.MouseEvent<HTMLSpanElement>) => {
         htClearTimeout()
-        setHTState(state => (state === 'pin' ? 'hide' : 'pin'))
+        setHTState(htState === 'pin' ? 'hide' : 'pin')
         e.stopPropagation()
     }
 
@@ -312,7 +326,7 @@ function InteractiveCodeTag({ tag: ct, fmt }: InteractiveTagProps<SubexprInfo>) 
         htClearTimeout()
         setHTState('hide')
         setGoToDefErrorState(false)
-    }, [])
+    }, [setHTState, setGoToDefErrorState])
     useOnClickOutside(htLogicalSpanElt, htOnClickOutside)
 
     const htIsPointerOverTooltip = React.useRef<boolean>(false)
@@ -320,14 +334,14 @@ function InteractiveCodeTag({ tag: ct, fmt }: InteractiveTagProps<SubexprInfo>) 
         htClearTimeout()
         if (!htConfig.showTooltipOnHover) return
         htTimeout.current = window.setTimeout(() => {
-            setHTState(state => (state === 'hide' ? 'show' : state))
+            setHTState(htState === 'hide' ? 'show' : htState)
             htTimeout.current = undefined
         }, htShowDelay)
     }
     const htStartHideTimeout = () => {
         htClearTimeout()
         htTimeout.current = window.setTimeout(() => {
-            if (!htIsPointerOverTooltip.current) setHTState(state => (state === 'show' ? 'hide' : state))
+            if (!htIsPointerOverTooltip.current) setHTState(htState === 'show' ? 'hide' : htState)
             htTimeout.current = undefined
         }, htHideDelay)
     }
@@ -355,7 +369,7 @@ function InteractiveCodeTag({ tag: ct, fmt }: InteractiveTagProps<SubexprInfo>) 
     return (
         <LogicalDomContext.Provider value={htLogicalDomStorage}>
             <span
-                ref={setHTRef}
+                ref={htRef}
                 className={slSpanClassName}
                 data-vscode-context={JSON.stringify(vscodeContext)}
                 data-has-tooltip-on-hover
@@ -410,11 +424,17 @@ function InteractiveCodeTag({ tag: ct, fmt }: InteractiveTagProps<SubexprInfo>) 
                 }}
             >
                 {goToDefErrorState && (
-                    <Tooltip reference={htRef}>{`No definition found for '${TaggedText_stripTags(fmt)}'`}</Tooltip>
+                    <Tooltip
+                        reference={goToDefErrorTooltipAnchorRef}
+                    >{`No definition found for '${TaggedText_stripTags(fmt)}'`}</Tooltip>
                 )}
                 {htShouldShow && (
                     <TipChainContext.Provider value={newHTTipChainCtx}>
-                        <Tooltip reference={htRef} onPointerEnter={htOnPointerEnter} onPointerLeave={htOnPointerLeave}>
+                        <Tooltip
+                            reference={hoverTooltipAnchorRef}
+                            onPointerEnter={htOnPointerEnter}
+                            onPointerLeave={htOnPointerLeave}
+                        >
                             <TypePopupContents info={ct} />
                         </Tooltip>
                     </TipChainContext.Provider>
