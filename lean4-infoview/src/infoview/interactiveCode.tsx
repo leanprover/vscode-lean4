@@ -248,24 +248,6 @@ function InteractiveCodeTag({ tag: ct, fmt }: InteractiveTagProps<SubexprInfo>) 
         }
     }
 
-    React.useEffect(() => {
-        const onKeyDown = (e: KeyboardEvent) => {
-            if (e.key === 'Control' || e.key === 'Meta') slSetHoverStateAll(st => (st === 'over' ? 'ctrlOver' : st))
-        }
-
-        const onKeyUp = (e: KeyboardEvent) => {
-            if (e.key === 'Control' || e.key === 'Meta') slSetHoverStateAll(st => (st === 'ctrlOver' ? 'over' : st))
-        }
-
-        // Note: In VSCode these events do not fire when the webview is not in focus.
-        document.addEventListener('keydown', onKeyDown)
-        document.addEventListener('keyup', onKeyUp)
-        return () => {
-            document.removeEventListener('keydown', onKeyDown)
-            document.removeEventListener('keyup', onKeyUp)
-        }
-    }, [slSetHoverStateAll])
-
     //////////////////////////////////////////////////////////////////////////////////////////////////////////
     /* WithTooltipOnHover */
     const htConfig = React.useContext(ConfigContext)
@@ -407,6 +389,14 @@ function InteractiveCodeTag({ tag: ct, fmt }: InteractiveTagProps<SubexprInfo>) 
                 onPointerMove={e => {
                     if (e.ctrlKey || e.metaKey) slSetHoverStateAll(st => (st === 'over' ? 'ctrlOver' : st))
                     else slSetHoverStateAll(st => (st === 'ctrlOver' ? 'over' : st))
+                }}
+                onKeyDown={e => {
+                    if (e.key === 'Control' || e.key === 'Meta')
+                        slSetHoverStateAll(st => (st === 'over' ? 'ctrlOver' : st))
+                }}
+                onKeyUp={e => {
+                    if (e.key === 'Control' || e.key === 'Meta')
+                        slSetHoverStateAll(st => (st === 'ctrlOver' ? 'over' : st))
                 }}
                 onContextMenu={e => {
                     // Mark the event as seen so that parent handlers skip it.
