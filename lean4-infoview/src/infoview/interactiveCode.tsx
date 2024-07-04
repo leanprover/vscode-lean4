@@ -218,9 +218,8 @@ function InteractiveCodeTag({ tag: ct, fmt }: InteractiveTagProps<SubexprInfo>) 
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////
     /* SelectableLocation */
-    const [slHoverState, setSLHoverState] = React.useState<HoverState>('off')
     let slSpanClassName: string = ''
-    if (slHoverState !== 'off') {
+    if (hoverState !== 'off') {
         slSpanClassName += 'highlight '
     } else if (isSelected) {
         slSpanClassName += 'highlight-selected '
@@ -228,7 +227,7 @@ function InteractiveCodeTag({ tag: ct, fmt }: InteractiveTagProps<SubexprInfo>) 
     slSpanClassName += spanClassName
 
     const slSetHoverStateAll: React.Dispatch<React.SetStateAction<HoverState>> = React.useCallback(val => {
-        setSLHoverState(val)
+        setHoverState(val)
     }, [])
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////
