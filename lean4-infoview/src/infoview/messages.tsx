@@ -36,7 +36,6 @@ const MessageView = React.memo(({ uri, diag }: MessageViewProps) => {
     const fname = escapeHtml(basename(uri))
     const { line, character } = diag.range.start
     const loc: Location = { uri, range: diag.range }
-    const [messagesAreOpen, setMessagesAreOpen] = React.useState<boolean>(true)
     /* We grab the text contents of the message from `node.innerText`. */
     const node = React.useRef<HTMLDivElement>(null)
     const severityClass = diag.severity
@@ -53,7 +52,7 @@ const MessageView = React.memo(({ uri, diag }: MessageViewProps) => {
         [uri, diag.fullRange, diag.range],
     )
     return (
-        <details open onToggle={e => setMessagesAreOpen(e.currentTarget.open)}>
+        <Details initiallyOpen>
             <summary className={severityClass + ' mv2 pointer'}>
                 {title}
                 <span className="fr" onClick={e => e.preventDefault()}>
@@ -81,16 +80,14 @@ const MessageView = React.memo(({ uri, diag }: MessageViewProps) => {
                     ></a>
                 </span>
             </summary>
-            {messagesAreOpen && (
-                <div className="ml1" ref={node}>
-                    <pre className="font-code pre-wrap">
-                        <EnvPosContext.Provider value={startPos}>
-                            <InteractiveMessage fmt={diag.message} />
-                        </EnvPosContext.Provider>
-                    </pre>
-                </div>
-            )}
-        </details>
+            <div className="ml1" ref={node}>
+                <pre className="font-code pre-wrap">
+                    <EnvPosContext.Provider value={startPos}>
+                        <InteractiveMessage fmt={diag.message} />
+                    </EnvPosContext.Provider>
+                </pre>
+            </div>
+        </Details>
     )
 }, fastIsEqual)
 
