@@ -15,7 +15,15 @@ import { ConfigContext, EditorContext } from './contexts'
 import { GoalsLocation, LocationsContext } from './goalLocation'
 import { useRpcSession } from './rpcSessions'
 import { HoverState, TipChainContext, Tooltip } from './tooltips'
-import { LogicalDomContext, mapRpcError, useAsync, useEvent, useLogicalDomObserver, useOnClickOutside } from './util'
+import {
+    genericMemo,
+    LogicalDomContext,
+    mapRpcError,
+    useAsync,
+    useEvent,
+    useLogicalDomObserver,
+    useOnClickOutside,
+} from './util'
 
 export interface InteractiveTextComponentProps<T> {
     fmt: TaggedText<T>
@@ -46,6 +54,8 @@ export function InteractiveTaggedText<T>({ fmt, InnerTagUi }: InteractiveTaggedT
     else if ('tag' in fmt) return <InnerTagUi fmt={fmt.tag[1]} tag={fmt.tag[0]} />
     else throw new Error(`malformed 'TaggedText': '${fmt}'`)
 }
+
+export const MemoedInteractiveTaggedText = genericMemo(InteractiveTaggedText)
 
 interface TypePopupContentsProps {
     info: SubexprInfo
@@ -428,7 +438,7 @@ function InteractiveCodeTag({ tag: ct, fmt }: InteractiveTagProps<SubexprInfo>) 
                         </Tooltip>
                     </TipChainContext.Provider>
                 )}
-                <InteractiveTaggedText fmt={fmt} InnerTagUi={InteractiveCodeTag} />
+                <MemoedInteractiveTaggedText fmt={fmt} InnerTagUi={InteractiveCodeTag} />
             </span>
         </LogicalDomContext.Provider>
     )
@@ -440,7 +450,7 @@ export type InteractiveCodeProps = InteractiveTextComponentProps<SubexprInfo>
 export function InteractiveCode(props: InteractiveCodeProps) {
     return (
         <span className="font-code">
-            <InteractiveTaggedText {...props} InnerTagUi={InteractiveCodeTag} />
+            <MemoedInteractiveTaggedText {...props} InnerTagUi={InteractiveCodeTag} />
         </span>
     )
 }

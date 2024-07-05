@@ -424,3 +424,8 @@ export function useAsyncPersistent<T>(fn: () => Promise<T>, deps: React.Dependen
     }
     return state
 }
+
+/**
+ * Memoizes a generic component in a way that does not require a type cast.
+ */
+export const genericMemo: <T>(component: T) => T = React.memo
