@@ -308,7 +308,7 @@ function InteractiveCodeTag({ tag: ct, fmt }: InteractiveTagProps<SubexprInfo>) 
         setHTState('hide')
         setGoToDefErrorState(false)
     }, [setHTState, setGoToDefErrorState])
-    useOnClickOutside(htLogicalSpanElt, htOnClickOutside)
+    useOnClickOutside(htLogicalSpanElt, htOnClickOutside, htShouldShow)
 
     const htIsPointerOverTooltip = React.useRef<boolean>(false)
     const htStartShowTimeout = () => {

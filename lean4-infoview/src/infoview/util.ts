@@ -288,8 +288,15 @@ export function useLogicalDomObserver(elt: React.RefObject<HTMLElement>): [Logic
  * An effect which calls `onClickOutside` whenever an element not logically descending from `ld`
  * (see {@link useLogicalDomObserver}) is clicked. Note that `onClickOutside` is not called on clicks
  * on the scrollbar since these should usually not impact the app's state. */
-export function useOnClickOutside(ld: LogicalDomElement, onClickOutside: (_: PointerEvent) => void) {
+export function useOnClickOutside(
+    ld: LogicalDomElement,
+    onClickOutside: (_: PointerEvent) => void,
+    trigger: boolean = true,
+) {
     React.useEffect(() => {
+        if (!trigger) {
+            return
+        }
         const onClickAnywhere = (e: PointerEvent) => {
             if (e.target instanceof Node && !ld.contains(e.target)) {
                 if (e.target instanceof Element && e.target.tagName === 'HTML') {
@@ -301,7 +308,7 @@ export function useOnClickOutside(ld: LogicalDomElement, onClickOutside: (_: Poi
 
         document.addEventListener('pointerdown', onClickAnywhere)
         return () => document.removeEventListener('pointerdown', onClickAnywhere)
-    }, [ld, onClickOutside])
+    }, [ld, onClickOutside, trigger])
 }
 
 /** Sends an exception object to a throwable error.
