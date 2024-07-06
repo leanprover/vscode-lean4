@@ -1,8 +1,7 @@
 import { LeanFileProgressProcessingInfo, ServerStoppedReason } from '@leanprover/infoview-api'
 import path from 'path'
 import { Disposable, EventEmitter, OutputChannel, commands, workspace } from 'vscode'
-import { SetupDiagnostics, checkAll } from '../diagnostics/setupDiagnostics'
-import { PreconditionCheckResult, SetupNotificationOptions } from '../diagnostics/setupNotifs'
+import { PreconditionCheckResult } from '../diagnostics/setupNotifs'
 import { LeanClient } from '../leanclient'
 import { LeanPublishDiagnosticsParams } from './converters'
 import { ExtUri, FileUri, UntitledUri, getWorkspaceFolderUri } from './exturi'
@@ -10,31 +9,7 @@ import { lean } from './leanEditorProvider'
 import { LeanInstaller } from './leanInstaller'
 import { logger } from './logger'
 import { displayNotification } from './notifs'
-import { findLeanProjectRoot, willUseLakeServer } from './projectInfo'
-
-async function checkLean4ProjectPreconditions(
-    channel: OutputChannel,
-    context: string,
-    folderUri: ExtUri,
-): Promise<PreconditionCheckResult> {
-    const options: SetupNotificationOptions = {
-        errorMode: { mode: 'NonModal' },
-        warningMode: { modal: false, proceedByDefault: true },
-    }
-    const d = new SetupDiagnostics(options)
-    return await checkAll(
-        () => d.checkIsValidProjectFolder(channel, folderUri),
-        () => d.checkIsLeanVersionUpToDate(channel, context, folderUri, { toolchainUpdateMode: 'PromptAboutUpdate' }),
-        async () => {
-            if (!(await willUseLakeServer(folderUri))) {
-                return 'Fulfilled'
-            }
-            return await d.checkIsLakeInstalledCorrectly(channel, context, folderUri, {
-                toolchainUpdateMode: 'PromptAboutUpdate',
-            })
-        },
-    )
-}
+import { findLeanProjectRoot } from './projectInfo'
 
 // This class ensures we have one LeanClient per folder.
 export class LeanClientProvider implements Disposable {
@@ -62,7 +37,14 @@ export class LeanClientProvider implements Disposable {
     private clientStoppedEmitter = new EventEmitter<[LeanClient, boolean, ServerStoppedReason]>()
     clientStopped = this.clientStoppedEmitter.event
 
-    constructor(installer: LeanInstaller, outputChannel: OutputChannel) {
+    constructor(
+        installer: LeanInstaller,
+        outputChannel: OutputChannel,
+        private checkLean4ProjectPreconditions: (
+            channel: OutputChannel,
+            folderUri: ExtUri,
+        ) => Promise<PreconditionCheckResult>,
+    ) {
         this.outputChannel = outputChannel
         this.installer = installer
 
@@ -135,9 +117,8 @@ export class LeanClientProvider implements Disposable {
                     continue
                 }
 
-                const preconditionCheckResult = await checkLean4ProjectPreconditions(
+                const preconditionCheckResult = await this.checkLean4ProjectPreconditions(
                     this.outputChannel,
-                    'Client Restart',
                     projectUri,
                 )
                 if (preconditionCheckResult !== 'Fatal') {
@@ -261,9 +242,8 @@ export class LeanClientProvider implements Disposable {
         }
         this.pending.set(key, true)
 
-        const preconditionCheckResult = await checkLean4ProjectPreconditions(
+        const preconditionCheckResult = await this.checkLean4ProjectPreconditions(
             this.outputChannel,
-            'Client Startup',
             folderUri,
         )
         if (preconditionCheckResult === 'Fatal') {
