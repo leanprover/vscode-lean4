@@ -1,5 +1,6 @@
 import { LeanFileProgressProcessingInfo, ServerStoppedReason } from '@leanprover/infoview-api'
 import { Disposable, EventEmitter, OutputChannel, TextDocument, commands, window, workspace } from 'vscode'
+import { BaseLanguageClient, LanguageClientOptions } from 'vscode-languageclient/node'
 import {
     checkAll,
     checkIsLakeInstalledCorrectly,
@@ -53,7 +54,15 @@ export class LeanClientProvider implements Disposable {
     private clientStoppedEmitter = new EventEmitter<[LeanClient, boolean, ServerStoppedReason]>()
     clientStopped = this.clientStoppedEmitter.event
 
-    constructor(installer: LeanInstaller, outputChannel: OutputChannel) {
+    constructor(
+        installer: LeanInstaller,
+        outputChannel: OutputChannel,
+        private setupClient: (
+            clientOptions: LanguageClientOptions,
+            folderUri: ExtUri,
+            elanDefaultToolchain: string,
+        ) => Promise<BaseLanguageClient>,
+    ) {
         this.outputChannel = outputChannel
         this.installer = installer
 
@@ -243,7 +252,7 @@ export class LeanClientProvider implements Disposable {
         logger.log('[ClientProvider] Creating LeanClient for ' + folderUri.toString())
         const elanDefaultToolchain = await this.installer.getElanDefaultToolchain(folderUri)
 
-        client = new LeanClient(folderUri, this.outputChannel, elanDefaultToolchain)
+        client = new LeanClient(folderUri, this.outputChannel, elanDefaultToolchain, this.setupClient)
         this.subscriptions.push(client)
         this.clients.set(key, client)
 
