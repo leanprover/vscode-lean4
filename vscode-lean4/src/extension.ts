@@ -9,6 +9,7 @@ import { checkAll, SetupDiagnostics } from './diagnostics/setupDiagnostics'
 import { PreconditionCheckResult, SetupNotificationOptions } from './diagnostics/setupNotifs'
 import { AlwaysEnabledFeatures, Exports, Lean4EnabledFeatures } from './exports'
 import { InfoProvider } from './infoview'
+import { VSCodeInfoWebviewFactory } from './infowebview'
 import { LeanClient } from './leanclient'
 import { LoogleView } from './loogleview'
 import { ManualView } from './manualview'
@@ -195,7 +196,7 @@ async function activateLean4Features(
     watchService.lakeFileChanged(packageUri => installer.handleLakeFileChanged(packageUri))
     context.subscriptions.push(watchService)
 
-    const infoProvider = new InfoProvider(clientProvider, context)
+    const infoProvider = new InfoProvider(clientProvider, { language: 'lean4' }, context, new VSCodeInfoWebviewFactory(context))
     context.subscriptions.push(infoProvider)
 
     context.subscriptions.push(new LeanTaskGutter(clientProvider, context))
