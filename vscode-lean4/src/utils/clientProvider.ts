@@ -43,7 +43,9 @@ export class LeanClientProvider implements Disposable {
         this.installer = installer
 
         // we must setup the installChanged event handler first before any didOpenEditor calls.
-        installer.installChanged(async (uri: FileUri) => await this.onInstallChanged(uri))
+        this.subscriptions.push(
+            installer.installChanged(async (uri: FileUri) => await this.onInstallChanged(uri))
+        )
 
         window.visibleTextEditors.forEach(e => this.didOpenEditor(e.document))
         this.subscriptions.push(
@@ -62,24 +64,28 @@ export class LeanClientProvider implements Disposable {
             commands.registerCommand('lean4.stopServer', () => this.stopActiveClient()),
         )
 
-        workspace.onDidOpenTextDocument(document => this.didOpenEditor(document))
+        this.subscriptions.push(
+            workspace.onDidOpenTextDocument(document => this.didOpenEditor(document))
+        )
 
-        workspace.onDidChangeWorkspaceFolders(event => {
-            // Remove all clients that are not referenced by any folder anymore
-            if (event.removed.length === 0) {
-                return
-            }
-            this.clients.forEach((client, key) => {
-                if (client.folderUri.scheme === 'untitled' || getWorkspaceFolderUri(client.folderUri)) {
+        this.subscriptions.push(
+            workspace.onDidChangeWorkspaceFolders(event => {
+                // Remove all clients that are not referenced by any folder anymore
+                if (event.removed.length === 0) {
                     return
                 }
+                this.clients.forEach((client, key) => {
+                    if (client.folderUri.scheme === 'untitled' || getWorkspaceFolderUri(client.folderUri)) {
+                        return
+                    }
 
-                logger.log(`[ClientProvider] onDidChangeWorkspaceFolders removing client for ${key}`)
-                this.clients.delete(key)
-                client.dispose()
-                this.clientRemovedEmitter.fire(client)
+                    logger.log(`[ClientProvider] onDidChangeWorkspaceFolders removing client for ${key}`)
+                    this.clients.delete(key)
+                    client.dispose()
+                    this.clientRemovedEmitter.fire(client)
+                })
             })
-        })
+        )
     }
 
     getActiveClient(): LeanClient | undefined {
