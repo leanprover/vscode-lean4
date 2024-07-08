@@ -5,7 +5,7 @@ Authors: E.W.Ayers, Wojciech Nawrocki
 */
 import { FVarId, MVarId, SubexprPos } from '@leanprover/infoview-api'
 import * as React from 'react'
-import { DetectHoverSpan, HoverState } from './tooltips'
+import { HoverState } from './tooltips'
 
 /**
  * A location within a goal. It is either:
@@ -76,66 +76,107 @@ export interface Locations {
 
 export const LocationsContext = React.createContext<Locations | undefined>(undefined)
 
-type SelectableLocationProps = React.PropsWithoutRef<
-    React.DetailedHTMLProps<React.HTMLAttributes<HTMLSpanElement>, HTMLSpanElement>
-> & {
-    locs?: Locations
-    loc?: GoalsLocation
-    alwaysHighlight: boolean
-    setHoverState?: React.Dispatch<React.SetStateAction<HoverState>>
+export type HoverSettings = { highlightOnHover: true } | { highlightOnHover: false }
+export type ModHoverSettings = { highlightOnModHover: true } | { highlightOnModHover: false }
+export type SelectionSettings = { highlightOnSelection: true; loc: GoalsLocation } | { highlightOnSelection: false }
+export interface LocationHighlightSettings {
+    ref: React.RefObject<HTMLSpanElement>
+    hoverSettings: HoverSettings
+    modHoverSettings: ModHoverSettings
+    selectionSettings: SelectionSettings
+}
+export interface HighlightedLocation {
+    hoverState: HoverState
+    setHoverState: React.Dispatch<React.SetStateAction<HoverState>>
+    className: string
+    onPointerEvent: (b: boolean, e: React.PointerEvent<HTMLSpanElement>) => void
+    onPointerMove: (e: React.PointerEvent<HTMLSpanElement>) => void
+    onKeyDown: (e: React.KeyboardEvent<HTMLSpanElement>) => void
+    onKeyUp: (e: React.KeyboardEvent<HTMLSpanElement>) => void
+    onClick: (e: React.MouseEvent<HTMLSpanElement, MouseEvent>) => boolean
+    onPointerDown: (e: React.PointerEvent<HTMLSpanElement>) => void
 }
 
 /**
- * A `<span>` with a corresponding {@link GoalsLocation} which can be (un)selected using shift-click.
- * If `locs` or `loc` is `undefined`, selection functionality is turned off. The element is also
- * highlighted when hovered over if `alwaysHighlight` is `true` or `locs` and `loc` are both defined.
- * `setHoverState` is passed through to {@link DetectHoverSpan}. */
-export function SelectableLocation(props_: SelectableLocationProps): JSX.Element {
-    const { locs, loc, alwaysHighlight, setHoverState: setParentHoverState, ...props } = props_
+ * Logic for a `<span>` with a corresponding {@link GoalsLocation} which can be (un)selected using shift-click.
+ */
+export function useHighlightedLocation(settings: LocationHighlightSettings): HighlightedLocation {
+    const { ref, hoverSettings, modHoverSettings, selectionSettings } = settings
 
-    const shouldHighlight: boolean = alwaysHighlight || (!!locs && !!loc)
     const [hoverState, setHoverState] = React.useState<HoverState>('off')
-    let spanClassName: string = ''
-    if (shouldHighlight) {
-        spanClassName += 'highlightable '
-        if (hoverState !== 'off') spanClassName += 'highlight '
-        if (props.className) spanClassName += props.className
+
+    const locs = React.useContext(LocationsContext)
+    let className: string = ''
+    if (hoverSettings.highlightOnHover && hoverState !== 'off') {
+        className += 'highlight '
+    } else if (selectionSettings.highlightOnSelection && locs && locs.isSelected(selectionSettings.loc)) {
+        className += 'highlight-selected '
+    }
+    if (modHoverSettings.highlightOnModHover && hoverState === 'ctrlOver') {
+        className += 'underline '
     }
 
-    const innerSpanClassName: string =
-        'highlightable ' + (locs && loc && locs.isSelected(loc) ? 'highlight-selected ' : '')
+    const onPointerEvent = (b: boolean, e: React.PointerEvent<HTMLSpanElement>) => {
+        // It's more composable to let pointer events bubble up rather than to call `stopPropagation`,
+        // but we only want to handle hovers in the innermost component. So we record that the
+        // event was handled with a property.
+        // The `contains` check ensures that the node hovered over is a child in the DOM
+        // tree and not just a logical React child (see useLogicalDom and
+        // https://reactjs.org/docs/portals.html#event-bubbling-through-portals).
+        if (ref.current && e.target instanceof Node && ref.current.contains(e.target)) {
+            if ('_DetectHoverSpanSeen' in e) return
+            ;(e as any)._DetectHoverSpanSeen = {}
+            if (!b) setHoverState('off')
+            else if (e.ctrlKey || e.metaKey) setHoverState('ctrlOver')
+            else setHoverState('over')
+        }
+    }
 
-    const setHoverStateAll: React.Dispatch<React.SetStateAction<HoverState>> = React.useCallback(
-        val => {
-            setHoverState(val)
-            if (setParentHoverState) setParentHoverState(val)
-        },
-        [setParentHoverState],
-    )
+    const onPointerMove = (e: React.PointerEvent<HTMLSpanElement>) => {
+        if (e.ctrlKey || e.metaKey) setHoverState(st => (st === 'over' ? 'ctrlOver' : st))
+        else setHoverState(st => (st === 'ctrlOver' ? 'over' : st))
+    }
 
-    return (
-        <DetectHoverSpan
-            {...props}
-            setHoverState={setHoverStateAll}
-            className={spanClassName}
-            onClick={e => {
-                // On shift-click, if we are in a context where selecting subexpressions makes sense,
-                // (un)select the current subexpression.
-                if (e.shiftKey && locs && loc) {
-                    locs.setSelected(loc, on => !on)
-                    e.stopPropagation()
-                }
-                if (props.onClick) props.onClick(e)
-            }}
-            onPointerDown={e => {
-                // Since shift-click on this component is a custom selection, when shift is held prevent
-                // the default action which on text is to start a text selection.
-                if (e.shiftKey) e.preventDefault()
-                if (props.onPointerDown) props.onPointerDown(e)
-            }}
-        >
-            {/* Note: we use two spans so that the two `highlight`s don't interfere. */}
-            <span className={innerSpanClassName}>{props.children}</span>
-        </DetectHoverSpan>
-    )
+    const onKeyDown = (e: React.KeyboardEvent<HTMLSpanElement>) => {
+        if (e.key === 'Control' || e.key === 'Meta') {
+            setHoverState(st => (st === 'over' ? 'ctrlOver' : st))
+        }
+    }
+
+    const onKeyUp = (e: React.KeyboardEvent<HTMLSpanElement>) => {
+        if (e.key === 'Control' || e.key === 'Meta') {
+            setHoverState(st => (st === 'ctrlOver' ? 'over' : st))
+        }
+    }
+
+    const onClick = (e: React.MouseEvent<HTMLSpanElement, MouseEvent>) => {
+        // On shift-click, if we are in a context where selecting subexpressions makes sense,
+        // (un)select the current subexpression.
+        if (selectionSettings.highlightOnSelection && locs && e.shiftKey) {
+            locs.setSelected(selectionSettings.loc, on => !on)
+            e.stopPropagation()
+            return true
+        }
+        return false
+    }
+
+    const onPointerDown = (e: React.PointerEvent<HTMLSpanElement>) => {
+        // We have special handling for shift+click events, so prevent default browser
+        // events from interfering when shift is held.
+        if (selectionSettings.highlightOnSelection && locs && e.shiftKey) {
+            e.preventDefault()
+        }
+    }
+
+    return {
+        hoverState,
+        setHoverState,
+        className,
+        onPointerEvent,
+        onPointerMove,
+        onKeyDown,
+        onKeyUp,
+        onClick,
+        onPointerDown,
+    }
 }

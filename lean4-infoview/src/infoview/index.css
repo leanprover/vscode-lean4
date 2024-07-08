@@ -54,7 +54,7 @@ body {
 }
 
 .highlight-selected {
-    background-color: var(--vscode-editorOverviewRuler-rangeHighlightForeground);
+    background-color: var(--vscode-editorOverviewRuler-rangeHighlightForeground) !important;
 }
 
 /* Interactive traces */
