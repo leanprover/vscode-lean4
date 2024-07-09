@@ -45,7 +45,7 @@ import {
     displayErrorWithOutput,
     displayInformationWithOptionalInput,
 } from './utils/notifs'
-import path = require('path')
+import path from 'path'
 
 const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
