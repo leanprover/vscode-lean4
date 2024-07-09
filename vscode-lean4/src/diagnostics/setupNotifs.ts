@@ -131,7 +131,7 @@ export async function displaySetupWarning(
     if (!shouldShowSetupWarnings()) {
         return 'Warning'
     }
-    if (options.modal) {
+    if (options.modal == true) {
         const choice = await displayModalWarning(message)
         return choice === 'Proceed' ? 'Warning' : 'Fatal'
     }
@@ -169,7 +169,7 @@ export async function displaySetupWarningWithOutput(
     if (!shouldShowSetupWarnings()) {
         return 'Warning'
     }
-    if (options.modal) {
+    if (options.modal == true) {
         const choice = await displayModalWarningWithOutput(message)
         return choice === 'Proceed' ? 'Warning' : 'Fatal'
     }
@@ -184,7 +184,7 @@ export async function displaySetupWarningWithSetupGuide(
     if (!shouldShowSetupWarnings()) {
         return 'Warning'
     }
-    if (options.modal) {
+    if (options.modal == true) {
         const choice = await displayModalWarningWithSetupGuide(message)
         return choice === 'Proceed' ? 'Warning' : 'Fatal'
     }

@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { PathLike, promises } from 'fs'
-import path = require('path')
+import path from 'path'
 
 /**
  * Returns true if `pathFile` exists and is a file
