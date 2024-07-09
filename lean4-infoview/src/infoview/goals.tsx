@@ -80,10 +80,9 @@ interface HypNameProps {
     isRemoved: boolean
     mvarId?: string | undefined
     fvarId?: string | undefined
-    key: number
 }
 
-function HypName({ name, isInserted, isRemoved, mvarId, fvarId, key }: HypNameProps) {
+function HypName({ name, isInserted, isRemoved, mvarId, fvarId }: HypNameProps) {
     const ref = React.useRef<HTMLSpanElement>(null)
 
     let selectionSettings: SelectionSettings
@@ -112,7 +111,6 @@ function HypName({ name, isInserted, isRemoved, mvarId, fvarId, key }: HypNamePr
             <span
                 ref={ref}
                 className={namecls}
-                key={key}
                 onPointerOver={e => hl.onPointerEvent(true, e)}
                 onPointerOut={e => hl.onPointerEvent(false, e)}
                 onPointerMove={e => hl.onPointerMove(e)}

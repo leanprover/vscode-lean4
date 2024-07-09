@@ -11,10 +11,10 @@ import {
 } from '@leanprover/infoview-api'
 import { marked } from 'marked'
 import { Location } from 'vscode-languageserver-protocol'
-import { ConfigContext, EditorContext } from './contexts'
+import { EditorContext } from './contexts'
 import { GoalsLocation, LocationsContext, SelectionSettings, useHighlightedLocation } from './goalLocation'
 import { useRpcSession } from './rpcSessions'
-import { TipChainContext, Tooltip, useToggleableTooltip } from './tooltips'
+import { useHoverTooltip, useToggleableTooltip } from './tooltips'
 import {
     genericMemo,
     LogicalDomContext,
@@ -158,20 +158,21 @@ const DIFF_TAG_TO_EXPLANATION: { [K in DiffTag]: string } = {
 function InteractiveCodeTag({ tag: ct, fmt }: InteractiveTagProps<SubexprInfo>) {
     const rs = useRpcSession()
     const ec = React.useContext(EditorContext)
-    const htRef = React.useRef<HTMLSpanElement>(null)
+    const ref = React.useRef<HTMLSpanElement>(null)
 
-    const [htLogicalSpanElt, htLogicalDomStorage] = useLogicalDomObserver(htRef)
+    const [logicalSpanElt, logicalDomStorage] = useLogicalDomObserver(ref)
 
-    const tt = useToggleableTooltip(htRef, <>{`No definition found for '${TaggedText_stripTags(fmt)}'`}</>)
+    const tt = useToggleableTooltip(ref, <>{`No definition found for '${TaggedText_stripTags(fmt)}'`}</>)
     const [setGoToDefErrorTooltipDisplayed, onClickOutsideGoToDefErrorTooltip] = [
         tt.setTooltipDisplayed,
         tt.onClickOutside,
     ]
 
+    const locs = React.useContext(LocationsContext)
+
     // We mimick the VSCode ctrl-hover and ctrl-click UI for go-to-definition
     const [goToLoc, setGoToLoc] = React.useState<Location | undefined>(undefined)
 
-    const locs = React.useContext(LocationsContext)
     let selectionSettings: SelectionSettings
     if (locs && locs.subexprTemplate && ct.subexprPos) {
         selectionSettings = {
@@ -183,7 +184,7 @@ function InteractiveCodeTag({ tag: ct, fmt }: InteractiveTagProps<SubexprInfo>) 
     }
 
     const hl = useHighlightedLocation({
-        ref: htRef,
+        ref,
         hoverSettings: { highlightOnHover: true },
         modHoverSettings: { highlightOnModHover: goToLoc !== undefined },
         selectionSettings,
@@ -238,108 +239,29 @@ function InteractiveCodeTag({ tag: ct, fmt }: InteractiveTagProps<SubexprInfo>) 
     const vscodeContext = { interactiveCodeTagId }
     useEvent(ec.events.goToDefinition, async _ => void execGoToLoc(true), [execGoToLoc], interactiveCodeTagId)
 
-    //////////////////////////////////////////////////////////////////////////////////////////////////////////
-    /* WithTooltipOnHover */
-    const htConfig = React.useContext(ConfigContext)
-
-    // We are pinned when clicked, shown when hovered over, and otherwise hidden.
-    type TooltipState = 'pin' | 'show' | 'hide'
-    const [htState, setHTState_] = React.useState<TooltipState>('hide')
-    const [hoverTooltipAnchorRef, setHoverTooltipAnchorRef] = React.useState<HTMLSpanElement | null>(null)
-    const setHTState: (state: TooltipState) => void = React.useCallback(state => {
-        setHTState_(state)
-        if (state !== 'hide') {
-            setHoverTooltipAnchorRef(htRef.current)
+    const ht = useHoverTooltip(ref, <TypePopupContents info={ct} />, (e, cont) => {
+        // On ctrl-click or ⌘-click, if location is known, go to it in the editor
+        if (e.ctrlKey || e.metaKey) {
+            setHoverState(st => (st === 'over' ? 'ctrlOver' : st))
+            void execGoToLoc(false)
+            return
         }
-    }, [])
-    const htShouldShow = htState !== 'hide'
-
-    const htTipChainCtx = React.useContext(TipChainContext)
-    React.useEffect(() => {
-        if (htState === 'pin') htTipChainCtx.pinParent()
-    }, [htState, htTipChainCtx])
-    const newHTTipChainCtx = React.useMemo(
-        () => ({
-            pinParent: () => {
-                setHTState('pin')
-                htTipChainCtx.pinParent()
-            },
-        }),
-        [htTipChainCtx, setHTState],
-    )
-
-    // Note: because tooltips are attached to `document.body`, they are not descendants of the
-    // hoverable area in the DOM tree. Thus the `contains` check fails for elements within tooltip
-    // contents and succeeds for elements within the hoverable. We can use this to distinguish them.
-    const htIsWithinHoverable = (el: EventTarget) => htRef.current && el instanceof Node && htRef.current.contains(el)
-
-    // We use timeouts for debouncing hover events.
-    const htTimeout = React.useRef<number>()
-    const htClearTimeout = () => {
-        if (htTimeout.current) {
-            window.clearTimeout(htTimeout.current)
-            htTimeout.current = undefined
+        if (!e.shiftKey) {
+            cont(e)
         }
-    }
-    const htShowDelay = 500
-    const htHideDelay = 300
+    })
+    const onClickOutsideHoverTooltip = ht.onClickOutside
 
-    const htIsModifierHeld = (e: React.MouseEvent) => e.altKey || e.ctrlKey || e.shiftKey || e.metaKey
-
-    const htOnClick = (e: React.MouseEvent<HTMLSpanElement>) => {
-        htClearTimeout()
-        setHTState(htState === 'pin' ? 'hide' : 'pin')
-        e.stopPropagation()
-    }
-
-    const htOnClickOutside = React.useCallback(() => {
-        htClearTimeout()
-        setHTState('hide')
+    const onClickOutside = React.useCallback(() => {
+        onClickOutsideHoverTooltip()
         onClickOutsideGoToDefErrorTooltip()
-    }, [setHTState, onClickOutsideGoToDefErrorTooltip])
-    useOnClickOutside(htLogicalSpanElt, htOnClickOutside, tt.tooltipDisplayed || htShouldShow)
-
-    const htIsPointerOverTooltip = React.useRef<boolean>(false)
-    const htStartShowTimeout = () => {
-        htClearTimeout()
-        if (!htConfig.showTooltipOnHover) return
-        htTimeout.current = window.setTimeout(() => {
-            setHTState(htState === 'hide' ? 'show' : htState)
-            htTimeout.current = undefined
-        }, htShowDelay)
-    }
-    const htStartHideTimeout = () => {
-        htClearTimeout()
-        htTimeout.current = window.setTimeout(() => {
-            if (!htIsPointerOverTooltip.current) setHTState(htState === 'show' ? 'hide' : htState)
-            htTimeout.current = undefined
-        }, htHideDelay)
-    }
-
-    const htOnPointerEnter = (e: React.PointerEvent<HTMLSpanElement>) => {
-        htIsPointerOverTooltip.current = true
-        htClearTimeout()
-    }
-
-    const htOnPointerLeave = (e: React.PointerEvent<HTMLSpanElement>) => {
-        htIsPointerOverTooltip.current = false
-        htStartHideTimeout()
-    }
-
-    function htGuardMouseEvent(
-        act: (_: React.MouseEvent<HTMLSpanElement>) => void,
-        e: React.MouseEvent<HTMLSpanElement>,
-    ) {
-        if ('_WithTooltipOnHoverSeen' in e) return
-        if (!htIsWithinHoverable(e.target)) return
-        ;(e as any)._WithTooltipOnHoverSeen = {}
-        act(e)
-    }
+    }, [onClickOutsideHoverTooltip, onClickOutsideGoToDefErrorTooltip])
+    useOnClickOutside(logicalSpanElt, onClickOutside, tt.tooltipDisplayed || ht.state !== 'hide')
 
     return (
-        <LogicalDomContext.Provider value={htLogicalDomStorage}>
+        <LogicalDomContext.Provider value={logicalDomStorage}>
             <span
-                ref={htRef}
+                ref={ref}
                 className={className}
                 data-vscode-context={JSON.stringify(vscodeContext)}
                 data-has-tooltip-on-hover
@@ -348,30 +270,20 @@ function InteractiveCodeTag({ tag: ct, fmt }: InteractiveTagProps<SubexprInfo>) 
                     if (stopClick) {
                         return
                     }
-                    htGuardMouseEvent(e => {
-                        // On ctrl-click or ⌘-click, if location is known, go to it in the editor
-                        if (e.ctrlKey || e.metaKey) {
-                            setHoverState(st => (st === 'over' ? 'ctrlOver' : st))
-                            void execGoToLoc(false)
-                        } else if (!e.shiftKey) htOnClick(e)
-                    }, e)
+                    ht.onClick(e)
                     tt.onClick()
                 }}
                 onPointerDown={e => {
                     hl.onPointerDown(e)
-                    // We have special handling for some modifier+click events, so prevent default browser
-                    // events from interfering when a modifier is held.
-                    if (htIsModifierHeld(e)) e.preventDefault()
+                    ht.onPointerDown(e)
                 }}
                 onPointerOver={e => {
                     hl.onPointerEvent(true, e)
-                    if (!htIsModifierHeld(e)) {
-                        htGuardMouseEvent(_ => htStartShowTimeout(), e)
-                    }
+                    ht.onPointerOver(e)
                 }}
                 onPointerOut={e => {
                     hl.onPointerEvent(false, e)
-                    htGuardMouseEvent(_ => htStartHideTimeout(), e)
+                    ht.onPointerOut(e)
                 }}
                 onPointerMove={e => hl.onPointerMove(e)}
                 onKeyDown={e => hl.onKeyDown(e)}
@@ -391,17 +303,7 @@ function InteractiveCodeTag({ tag: ct, fmt }: InteractiveTagProps<SubexprInfo>) 
                 }}
             >
                 {tt.tooltip}
-                {htShouldShow && (
-                    <TipChainContext.Provider value={newHTTipChainCtx}>
-                        <Tooltip
-                            reference={hoverTooltipAnchorRef}
-                            onPointerEnter={htOnPointerEnter}
-                            onPointerLeave={htOnPointerLeave}
-                        >
-                            <TypePopupContents info={ct} />
-                        </Tooltip>
-                    </TipChainContext.Provider>
-                )}
+                {ht.tooltip}
                 <MemoedInteractiveTaggedText fmt={fmt} InnerTagUi={InteractiveCodeTag} />
             </span>
         </LogicalDomContext.Provider>

@@ -130,41 +130,59 @@ export interface TipChainContext {
 
 export const TipChainContext = React.createContext<TipChainContext>({ pinParent: () => {} })
 
-export type WithTooltipOnHoverProps = Omit<React.HTMLProps<HTMLSpanElement>, 'onClick'> & {
-    tooltipChildren: React.ReactNode
-    onClick?: (event: React.MouseEvent<HTMLSpanElement>, next: React.MouseEventHandler<HTMLSpanElement>) => void
+// We are pinned when clicked, shown when hovered over, and otherwise hidden.
+export type TooltipState = 'pin' | 'show' | 'hide'
+
+export interface HoverTooltip {
+    state: TooltipState
+    onClick: (e: React.MouseEvent<HTMLSpanElement>) => void
+    onClickOutside: () => void
+    onPointerDown: (e: React.PointerEvent<HTMLSpanElement>) => void
+    onPointerOver: (e: React.PointerEvent<HTMLSpanElement>) => void
+    onPointerOut: (e: React.PointerEvent<HTMLSpanElement>) => void
+    tooltip: JSX.Element
 }
 
-export function WithTooltipOnHover(props_: WithTooltipOnHoverProps) {
-    const { tooltipChildren, onClick: onClickProp, ...props } = props_
-    const [ref, setRef] = React.useState<HTMLSpanElement | null>(null)
-
+export function useHoverTooltip(
+    ref: React.RefObject<HTMLSpanElement>,
+    tooltipChildren: React.ReactNode,
+    guardedOnClick?: (
+        e: React.MouseEvent<HTMLSpanElement, MouseEvent>,
+        cont: (e: React.MouseEvent<HTMLSpanElement, MouseEvent>) => void,
+    ) => void,
+): HoverTooltip {
     const config = React.useContext(ConfigContext)
 
-    // We are pinned when clicked, shown when hovered over, and otherwise hidden.
-    type TooltipState = 'pin' | 'show' | 'hide'
-    const [state, setState] = React.useState<TooltipState>('hide')
-    const shouldShow = state !== 'hide'
+    const [state, setState_] = React.useState<TooltipState>('hide')
+    const [anchor, setAnchor] = React.useState<HTMLSpanElement | null>(null)
+    const setState: (state: TooltipState) => void = React.useCallback(
+        state => {
+            setState_(state)
+            if (state !== 'hide') {
+                setAnchor(ref.current)
+            }
+        },
+        [ref],
+    )
 
     const tipChainCtx = React.useContext(TipChainContext)
     React.useEffect(() => {
         if (state === 'pin') tipChainCtx.pinParent()
     }, [state, tipChainCtx])
-    const newTipChainCtx = React.useMemo(
+    const newHTTipChainCtx = React.useMemo(
         () => ({
             pinParent: () => {
                 setState('pin')
                 tipChainCtx.pinParent()
             },
         }),
-        [tipChainCtx],
+        [tipChainCtx, setState],
     )
 
     // Note: because tooltips are attached to `document.body`, they are not descendants of the
     // hoverable area in the DOM tree. Thus the `contains` check fails for elements within tooltip
     // contents and succeeds for elements within the hoverable. We can use this to distinguish them.
-    const isWithinHoverable = (el: EventTarget) => ref && el instanceof Node && ref.contains(el)
-    const [logicalSpanElt, logicalDomStorage] = useLogicalDomObserver({ current: ref })
+    const isWithinHoverable = (el: EventTarget) => ref.current && el instanceof Node && ref.current.contains(el)
 
     // We use timeouts for debouncing hover events.
     const timeout = React.useRef<number>()
@@ -174,36 +192,25 @@ export function WithTooltipOnHover(props_: WithTooltipOnHoverProps) {
             timeout.current = undefined
         }
     }
+
     const showDelay = 500
     const hideDelay = 300
 
-    const isModifierHeld = (e: React.MouseEvent) => e.altKey || e.ctrlKey || e.shiftKey || e.metaKey
-
-    const onClick = (e: React.MouseEvent<HTMLSpanElement>) => {
-        clearTimeout()
-        setState(state => (state === 'pin' ? 'hide' : 'pin'))
-        e.stopPropagation()
-    }
-
-    const onClickOutside = React.useCallback(() => {
-        clearTimeout()
-        setState('hide')
-    }, [])
-    useOnClickOutside(logicalSpanElt, onClickOutside)
-
-    const isPointerOverTooltip = React.useRef<boolean>(false)
     const startShowTimeout = () => {
         clearTimeout()
         if (!config.showTooltipOnHover) return
         timeout.current = window.setTimeout(() => {
-            setState(state => (state === 'hide' ? 'show' : state))
+            setState(state === 'hide' ? 'show' : state)
             timeout.current = undefined
         }, showDelay)
     }
+
+    const isPointerOverTooltip = React.useRef<boolean>(false)
+
     const startHideTimeout = () => {
         clearTimeout()
         timeout.current = window.setTimeout(() => {
-            if (!isPointerOverTooltip.current) setState(state => (state === 'show' ? 'hide' : state))
+            if (!isPointerOverTooltip.current) setState(state === 'show' ? 'hide' : state)
             timeout.current = undefined
         }, hideDelay)
     }
@@ -218,50 +225,106 @@ export function WithTooltipOnHover(props_: WithTooltipOnHoverProps) {
         startHideTimeout()
     }
 
-    function guardMouseEvent(
+    const guardMouseEvent = (
         act: (_: React.MouseEvent<HTMLSpanElement>) => void,
         e: React.MouseEvent<HTMLSpanElement>,
-    ) {
+    ) => {
         if ('_WithTooltipOnHoverSeen' in e) return
         if (!isWithinHoverable(e.target)) return
         ;(e as any)._WithTooltipOnHoverSeen = {}
         act(e)
     }
 
+    const pinClick = (e: React.MouseEvent<HTMLSpanElement>) => {
+        clearTimeout()
+        setState(state === 'pin' ? 'hide' : 'pin')
+        e.stopPropagation()
+    }
+
+    const onClick = (e: React.MouseEvent<HTMLSpanElement>) => {
+        guardMouseEvent(e => {
+            if (!guardedOnClick) {
+                pinClick(e)
+                return
+            }
+            guardedOnClick(e, e => pinClick(e))
+        }, e)
+    }
+
+    const onClickOutside = () => {
+        clearTimeout()
+        setState('hide')
+    }
+
+    const isModifierHeld = (e: React.MouseEvent) => e.altKey || e.ctrlKey || e.shiftKey || e.metaKey
+
+    const onPointerDown = (e: React.PointerEvent<HTMLSpanElement>) => {
+        // We have special handling for some modifier+click events, so prevent default browser
+        // events from interfering when a modifier is held.
+        if (isModifierHeld(e)) {
+            e.preventDefault()
+        }
+    }
+
+    const onPointerOver = (e: React.PointerEvent<HTMLSpanElement>) => {
+        if (!isModifierHeld(e)) {
+            guardMouseEvent(_ => startShowTimeout(), e)
+        }
+    }
+
+    const onPointerOut = (e: React.PointerEvent<HTMLSpanElement>) => {
+        guardMouseEvent(_ => startHideTimeout(), e)
+    }
+
+    const tooltip = (
+        <>
+            {state !== 'hide' && (
+                <TipChainContext.Provider value={newHTTipChainCtx}>
+                    <Tooltip reference={anchor} onPointerEnter={onPointerEnter} onPointerLeave={onPointerLeave}>
+                        {tooltipChildren}
+                    </Tooltip>
+                </TipChainContext.Provider>
+            )}
+        </>
+    )
+
+    return {
+        state,
+        onClick,
+        onClickOutside,
+        onPointerDown,
+        onPointerOver,
+        onPointerOut,
+        tooltip,
+    }
+}
+
+export type WithTooltipOnHoverProps = React.HTMLProps<HTMLSpanElement> & {
+    tooltipChildren: React.ReactNode
+}
+
+export function WithTooltipOnHover(props_: WithTooltipOnHoverProps) {
+    const { tooltipChildren, ...props } = props_
+
+    const ref = React.useRef<HTMLSpanElement>(null)
+
+    const [logicalSpanElt, logicalDomStorage] = useLogicalDomObserver(ref)
+
+    const ht = useHoverTooltip(ref, tooltipChildren)
+
+    useOnClickOutside(logicalSpanElt, ht.onClickOutside, ht.state !== 'hide')
+
     return (
         <LogicalDomContext.Provider value={logicalDomStorage}>
             <span
                 {...props}
-                ref={setRef}
-                onClick={e => {
-                    guardMouseEvent(e => {
-                        if (onClickProp !== undefined) onClickProp(e, onClick)
-                        else onClick(e)
-                    }, e)
-                }}
-                onPointerDown={e => {
-                    // We have special handling for some modifier+click events, so prevent default browser
-                    // events from interfering when a modifier is held.
-                    if (isModifierHeld(e)) e.preventDefault()
-                }}
-                onPointerOver={e => {
-                    if (!isModifierHeld(e)) {
-                        guardMouseEvent(_ => startShowTimeout(), e)
-                    }
-                    if (props.onPointerOver !== undefined) props.onPointerOver(e)
-                }}
-                onPointerOut={e => {
-                    guardMouseEvent(_ => startHideTimeout(), e)
-                    if (props.onPointerOut !== undefined) props.onPointerOut(e)
-                }}
+                ref={ref}
+                onClick={e => ht.onClick(e)}
+                onPointerDown={e => ht.onPointerDown(e)}
+                onPointerOver={e => ht.onPointerOver(e)}
+                onPointerOut={e => ht.onPointerOut(e)}
             >
-                {shouldShow && (
-                    <TipChainContext.Provider value={newTipChainCtx}>
-                        <Tooltip reference={ref} onPointerEnter={onPointerEnter} onPointerLeave={onPointerLeave}>
-                            {tooltipChildren}
-                        </Tooltip>
-                    </TipChainContext.Provider>
-                )}
+                {ht.tooltip}
                 {props.children}
             </span>
         </LogicalDomContext.Provider>
