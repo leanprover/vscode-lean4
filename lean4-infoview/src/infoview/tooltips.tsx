@@ -64,15 +64,26 @@ export function Tooltip(props_: TooltipProps) {
     return ReactDOM.createPortal(floating, document.body)
 }
 
-export type WithToggleableTooltipProps = React.HTMLProps<HTMLSpanElement> & {
-    isTooltipShown: boolean
-    hideTooltip: () => void
-    tooltipChildren: React.ReactNode
+export interface ToggleableTooltip {
+    tooltip: JSX.Element
+    tooltipDisplayed: boolean
+    setTooltipDisplayed: (tooltipDisplayed: boolean) => void
+    onClick: () => void
+    onClickOutside: () => void
 }
 
-export function WithToggleableTooltip(props_: WithToggleableTooltipProps) {
-    const { isTooltipShown, hideTooltip, tooltipChildren, ...props } = props_
-    const [ref, setRef] = React.useState<HTMLSpanElement | null>(null)
+export function useToggleableTooltip(
+    ref: React.RefObject<HTMLSpanElement>,
+    tooltipChildren: React.ReactNode,
+): ToggleableTooltip {
+    const [anchor, setAnchor] = React.useState<HTMLSpanElement | null>(null)
+    const [tooltipDisplayed, setTooltipDisplayed_] = React.useState<boolean>(false)
+    const setTooltipDisplayed = (tooltipDisplayed: boolean) => {
+        setTooltipDisplayed_(tooltipDisplayed)
+        if (tooltipDisplayed) {
+            setAnchor(ref.current)
+        }
+    }
 
     // Since we do not want to hide the tooltip if the user is trying to select text in it,
     // we need both the "click outside" and "click inside" handlers here because they
@@ -84,26 +95,25 @@ export function WithToggleableTooltip(props_: WithToggleableTooltipProps) {
     // selections, whereas React ensures that only a selection in the tooltip itself can block
     // the inside click handler from hiding the tooltip, since the outer selection is removed
     // before the inside click handler fires.
-    const [logicalSpanElt, logicalDomStorage] = useLogicalDomObserver({ current: ref })
-    const onClickOutside = React.useCallback(() => {
-        hideTooltip()
-    }, [hideTooltip])
-    useOnClickOutside(logicalSpanElt, onClickOutside)
+    const onClickOutside = () => {
+        setTooltipDisplayed(false)
+    }
 
-    return (
-        <LogicalDomContext.Provider value={logicalDomStorage}>
-            <span
-                ref={setRef}
-                onClick={() => {
-                    if (!window.getSelection()?.toString()) hideTooltip()
-                }}
-                {...props}
-            >
-                {isTooltipShown && <Tooltip reference={ref}>{tooltipChildren}</Tooltip>}
-                {props.children}
-            </span>
-        </LogicalDomContext.Provider>
-    )
+    const onClick = () => {
+        if (!window.getSelection()?.toString()) {
+            setTooltipDisplayed(false)
+        }
+    }
+
+    const tooltip = <>{tooltipDisplayed && <Tooltip reference={anchor}>{tooltipChildren}</Tooltip>}</>
+
+    return {
+        tooltip,
+        tooltipDisplayed,
+        setTooltipDisplayed,
+        onClick,
+        onClickOutside,
+    }
 }
 
 /** Hover state of an element. The pointer can be

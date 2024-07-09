@@ -14,7 +14,7 @@ import { Location } from 'vscode-languageserver-protocol'
 import { ConfigContext, EditorContext } from './contexts'
 import { GoalsLocation, LocationsContext, SelectionSettings, useHighlightedLocation } from './goalLocation'
 import { useRpcSession } from './rpcSessions'
-import { TipChainContext, Tooltip } from './tooltips'
+import { TipChainContext, Tooltip, useToggleableTooltip } from './tooltips'
 import {
     genericMemo,
     LogicalDomContext,
@@ -160,17 +160,16 @@ function InteractiveCodeTag({ tag: ct, fmt }: InteractiveTagProps<SubexprInfo>) 
     const ec = React.useContext(EditorContext)
     const htRef = React.useRef<HTMLSpanElement>(null)
 
+    const [htLogicalSpanElt, htLogicalDomStorage] = useLogicalDomObserver(htRef)
+
+    const tt = useToggleableTooltip(htRef, <>{`No definition found for '${TaggedText_stripTags(fmt)}'`}</>)
+    const [setGoToDefErrorTooltipDisplayed, onClickOutsideGoToDefErrorTooltip] = [
+        tt.setTooltipDisplayed,
+        tt.onClickOutside,
+    ]
+
     // We mimick the VSCode ctrl-hover and ctrl-click UI for go-to-definition
     const [goToLoc, setGoToLoc] = React.useState<Location | undefined>(undefined)
-
-    const [goToDefErrorState, setGoToDefErrorState_] = React.useState<boolean>(false)
-    const [goToDefErrorTooltipAnchorRef, setGoToDefErrorTooltipAnchorRef] = React.useState<HTMLSpanElement | null>(null)
-    const setGoToDefErrorState: (isError: boolean) => void = React.useCallback(isError => {
-        setGoToDefErrorState_(isError)
-        if (isError) {
-            setGoToDefErrorTooltipAnchorRef(htRef.current)
-        }
-    }, [])
 
     const locs = React.useContext(LocationsContext)
     let selectionSettings: SelectionSettings
@@ -217,14 +216,13 @@ function InteractiveCodeTag({ tag: ct, fmt }: InteractiveTagProps<SubexprInfo>) 
             const loc = await fetchGoToLoc()
             if (loc === undefined) {
                 if (withError) {
-                    setGoToDefErrorState(true)
-                    setGoToDefErrorTooltipAnchorRef(htRef.current)
+                    setGoToDefErrorTooltipDisplayed(true)
                 }
                 return
             }
             await ec.revealPosition({ uri: loc.uri, ...loc.range.start })
         },
-        [fetchGoToLoc, ec, setGoToDefErrorState],
+        [fetchGoToLoc, ec, setGoToDefErrorTooltipDisplayed],
     )
 
     let className = hl.className
@@ -274,7 +272,6 @@ function InteractiveCodeTag({ tag: ct, fmt }: InteractiveTagProps<SubexprInfo>) 
     // hoverable area in the DOM tree. Thus the `contains` check fails for elements within tooltip
     // contents and succeeds for elements within the hoverable. We can use this to distinguish them.
     const htIsWithinHoverable = (el: EventTarget) => htRef.current && el instanceof Node && htRef.current.contains(el)
-    const [htLogicalSpanElt, htLogicalDomStorage] = useLogicalDomObserver(htRef)
 
     // We use timeouts for debouncing hover events.
     const htTimeout = React.useRef<number>()
@@ -298,9 +295,9 @@ function InteractiveCodeTag({ tag: ct, fmt }: InteractiveTagProps<SubexprInfo>) 
     const htOnClickOutside = React.useCallback(() => {
         htClearTimeout()
         setHTState('hide')
-        setGoToDefErrorState(false)
-    }, [setHTState, setGoToDefErrorState])
-    useOnClickOutside(htLogicalSpanElt, htOnClickOutside, htShouldShow)
+        onClickOutsideGoToDefErrorTooltip()
+    }, [setHTState, onClickOutsideGoToDefErrorTooltip])
+    useOnClickOutside(htLogicalSpanElt, htOnClickOutside, tt.tooltipDisplayed || htShouldShow)
 
     const htIsPointerOverTooltip = React.useRef<boolean>(false)
     const htStartShowTimeout = () => {
@@ -358,7 +355,7 @@ function InteractiveCodeTag({ tag: ct, fmt }: InteractiveTagProps<SubexprInfo>) 
                             void execGoToLoc(false)
                         } else if (!e.shiftKey) htOnClick(e)
                     }, e)
-                    if (!window.getSelection()?.toString()) setGoToDefErrorState(false)
+                    tt.onClick()
                 }}
                 onPointerDown={e => {
                     hl.onPointerDown(e)
@@ -393,11 +390,7 @@ function InteractiveCodeTag({ tag: ct, fmt }: InteractiveTagProps<SubexprInfo>) 
                     sel.selectAllChildren(e.currentTarget)
                 }}
             >
-                {goToDefErrorState && (
-                    <Tooltip
-                        reference={goToDefErrorTooltipAnchorRef}
-                    >{`No definition found for '${TaggedText_stripTags(fmt)}'`}</Tooltip>
-                )}
+                {tt.tooltip}
                 {htShouldShow && (
                     <TipChainContext.Provider value={newHTTipChainCtx}>
                         <Tooltip
