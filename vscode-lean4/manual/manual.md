@@ -311,6 +311,15 @@ When using Lean's math library, [Mathlib](https://github.com/leanprover-communit
 | :--: | 
 | *`simp?` 'Try this' widget* |
 
+#### Theming
+
+Some of the colors in the InfoView can be themed with a custom color theme or by configuring the 'Workbench: Color Customization' setting. The following components of the InfoView can be themed by setting one of the corresponding theme identifiers to the desired hex color code:
+- `lean4.infoView.hypothesisName`: Accessible hypothesis names
+- `lean4.infoView.inaccessibleHypothesisName`: Inaccessible hypothesis names
+- `lean4.infoView.goalCount`: Number of goals
+- `lean4.infoView.turnstile`: Turnstile (⊢) that separates hypotheses from the goal
+- `lean4.infoView.caseLabel`: Case labels (e.g. `case zero`)
+
 ### Hovers
 
 When hovering over parts of the code with the mouse pointer, VS Code will display additional information for that piece of code in a popup panel. Specifically:

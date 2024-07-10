@@ -20,5 +20,5 @@ In particular, `@leanprover/infoview` should not be transpiled into something li
 
 ## Editor support
 
-- VSCode via [`vscode-lean4`](https://github.com/leanprover-community/vscode-lean4)
-- Web playground via [`lean4web`](https://github.com/hhu-adam/lean4web)
+- VSCode via [`vscode-lean4`](https://github.com/leanprover/vscode-lean4)
+- Web playground via [`lean4web`](https://github.com/leanprover-community/lean4web)
