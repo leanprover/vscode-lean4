@@ -256,6 +256,8 @@ function InteractiveCodeTag({ tag: ct, fmt }: InteractiveTagProps<SubexprInfo>) 
         onClickOutsideHoverTooltip()
         onClickOutsideGoToDefErrorTooltip()
     }, [onClickOutsideHoverTooltip, onClickOutsideGoToDefErrorTooltip])
+    // The condition ensures that we only add the handler when a tooltip is displayed.
+    // These handlers can be expensive, so adding them lazily drastically improves performance.
     useOnClickOutside(logicalSpanElt, onClickOutside, tt.tooltipDisplayed || ht.state !== 'hide')
 
     return (

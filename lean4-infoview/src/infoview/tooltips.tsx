@@ -72,6 +72,9 @@ export interface ToggleableTooltip {
     onClickOutside: () => void
 }
 
+/**
+ * Provides handlers to show a tooltip when a state variable is changed. Hides the tooltip when clicking on it our outside of it.
+ */
 export function useToggleableTooltip(
     ref: React.RefObject<HTMLSpanElement>,
     tooltipChildren: React.ReactNode,
@@ -81,6 +84,8 @@ export function useToggleableTooltip(
     const setTooltipDisplayed = (tooltipDisplayed: boolean) => {
         setTooltipDisplayed_(tooltipDisplayed)
         if (tooltipDisplayed) {
+            // Setting the tooltip anchor lazily only when the tooltip is displayed avoids accidental
+            // re-renders induced by setting this state variable during the initial render of a component.
             setAnchor(ref.current)
         }
     }
@@ -143,6 +148,12 @@ export interface HoverTooltip {
     tooltip: JSX.Element
 }
 
+/** Provides handlers to show a tooltip when the children of a component are hovered over or clicked.
+ *
+ * A `guardedOnClick` middleware can optionally be given in order to control what happens when the
+ * hoverable area is clicked. The middleware can invoke `cont` to execute the default action,
+ * which is to pin the tooltip open.
+ */
 export function useHoverTooltip(
     ref: React.RefObject<HTMLSpanElement>,
     tooltipChildren: React.ReactNode,
@@ -303,6 +314,9 @@ export type WithTooltipOnHoverProps = React.HTMLProps<HTMLSpanElement> & {
     tooltipChildren: React.ReactNode
 }
 
+/**
+ * Span that uses the logic of {@link useHoverTooltip}.
+ */
 export function WithTooltipOnHover(props_: WithTooltipOnHoverProps) {
     const { tooltipChildren, ...props } = props_
 

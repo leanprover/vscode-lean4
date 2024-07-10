@@ -81,8 +81,17 @@ export type ModHoverSettings = { highlightOnModHover: true } | { highlightOnModH
 export type SelectionSettings = { highlightOnSelection: true; loc: GoalsLocation } | { highlightOnSelection: false }
 export interface LocationHighlightSettings {
     ref: React.RefObject<HTMLSpanElement>
+    /**
+     * Whether the span should be highlighted on hover.
+     */
     hoverSettings: HoverSettings
+    /**
+     * Whether the span should be highlighted on hover while holding `Ctrl` / `Meta`.
+     */
     modHoverSettings: ModHoverSettings
+    /**
+     * Whether the span should be highlighted when selected, and the current {@link GoalsLocation} that is selected.
+     */
     selectionSettings: SelectionSettings
 }
 export interface HighlightedLocation {
@@ -98,7 +107,7 @@ export interface HighlightedLocation {
 }
 
 /**
- * Logic for a `<span>` with a corresponding {@link GoalsLocation} which can be (un)selected using shift-click.
+ * Logic for a `<span>` with a corresponding {@link GoalsLocation} that can be (un)selected using shift-click.
  */
 export function useHighlightedLocation(settings: LocationHighlightSettings): HighlightedLocation {
     const { ref, hoverSettings, modHoverSettings, selectionSettings } = settings
@@ -124,17 +133,26 @@ export function useHighlightedLocation(settings: LocationHighlightSettings): Hig
         // tree and not just a logical React child (see useLogicalDom and
         // https://reactjs.org/docs/portals.html#event-bubbling-through-portals).
         if (ref.current && e.target instanceof Node && ref.current.contains(e.target)) {
-            if ('_DetectHoverSpanSeen' in e) return
+            if ('_DetectHoverSpanSeen' in e) {
+                return
+            }
             ;(e as any)._DetectHoverSpanSeen = {}
-            if (!b) setHoverState('off')
-            else if (e.ctrlKey || e.metaKey) setHoverState('ctrlOver')
-            else setHoverState('over')
+            if (!b) {
+                setHoverState('off')
+            } else if (e.ctrlKey || e.metaKey) {
+                setHoverState('ctrlOver')
+            } else {
+                setHoverState('over')
+            }
         }
     }
 
     const onPointerMove = (e: React.PointerEvent<HTMLSpanElement>) => {
-        if (e.ctrlKey || e.metaKey) setHoverState(st => (st === 'over' ? 'ctrlOver' : st))
-        else setHoverState(st => (st === 'ctrlOver' ? 'over' : st))
+        if (e.ctrlKey || e.metaKey) {
+            setHoverState(st => (st === 'over' ? 'ctrlOver' : st))
+        } else {
+            setHoverState(st => (st === 'ctrlOver' ? 'over' : st))
+        }
     }
 
     const onKeyDown = (e: React.KeyboardEvent<HTMLSpanElement>) => {
