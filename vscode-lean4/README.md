@@ -3,7 +3,7 @@ This extension provides VS Code support for the Lean 4 theorem prover and progra
 
 ## Installing Lean 4
 
-After installing the extension, a 'Welcome' page with a setup guide should open automatically. The setup guide provides information on the following topics:
+After installing the extension, a 'Welcome' page with a setup guide should open automatically. The setup guide provides platform-specific information on the following topics:
 - Books and documentation resources
 - Installing dependencies that are needed by Lean
 - Installing Lean's version manager Elan and a recent stable version of Lean 4
