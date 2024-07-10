@@ -11,12 +11,16 @@
         "Programming Languages"
     ],
     "keywords": [
-        "multi-root ready"
+        "Lean",
+        "Lean 4",
+        "Theorem Provers",
+        "InfoView"
     ],
     "repository": {
         "type": "git",
-        "url": "https://github.com/leanprover-community/vscode-lean4.git"
+        "url": "https://github.com/leanprover/vscode-lean4.git"
     },
+    "homepage": "https://lean-lang.org",
     "contributes": {
         "configuration": {
             "type": "object",

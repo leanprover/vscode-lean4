@@ -41,8 +41,8 @@ We include the following only in `surroundingPairs`:
     ...
     ["`", "`"],
     ["*", "*"],
-    ["_", "_"]
     ...
 ```
 
 This means that you can highlight text in comments and italicize, bold, or code-format it easily by typing the respective marker(s). We don't want to use these as actual brackets or autoclosing pairs, however, due to their use in Lean code.
+`_` is missing from this list because it would interfere with the common input of selecting a Lean subexpression and replacing it with `_`.
