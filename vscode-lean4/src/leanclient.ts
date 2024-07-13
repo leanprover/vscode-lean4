@@ -40,6 +40,7 @@ import {
 } from './config'
 import { logger } from './utils/logger'
 // @ts-ignore
+import path from 'path'
 import { SemVer } from 'semver'
 import { c2pConverter, p2cConverter, patchConverters, setDependencyBuildMode } from './utils/converters'
 import { ExtUri, parseExtUri, toExtUri } from './utils/exturi'
@@ -50,7 +51,6 @@ import {
     displayInformationWithOptionalInput,
 } from './utils/notifs'
 import { willUseLakeServer } from './utils/projectInfo'
-import path = require('path')
 
 const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
