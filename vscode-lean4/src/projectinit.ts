@@ -28,7 +28,6 @@ import { lake } from './utils/lake'
 import { LeanInstaller } from './utils/leanInstaller'
 import { displayError, displayInformationWithInput } from './utils/notifs'
 import { checkParentFoldersForLeanProject, isValidLeanProject } from './utils/projectInfo'
-import path = require('path')
 
 async function checkCreateLean4ProjectPreconditions(
     installer: LeanInstaller,

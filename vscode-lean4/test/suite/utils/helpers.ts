@@ -1,14 +1,13 @@
 import assert from 'assert'
 import * as fs from 'fs'
 import * as os from 'os'
-import { basename, join } from 'path'
+import path, { basename, join } from 'path'
 import * as vscode from 'vscode'
 import { AlwaysEnabledFeatures, EnabledFeatures, Exports } from '../../../src/exports'
 import { InfoProvider } from '../../../src/infoview'
 import { LeanClient } from '../../../src/leanclient'
 import { LeanClientProvider } from '../../../src/utils/clientProvider'
 import { logger } from '../../../src/utils/logger'
-import path = require('path')
 
 export function sleep(ms: number) {
     return new Promise(resolve => setTimeout(resolve, ms))
