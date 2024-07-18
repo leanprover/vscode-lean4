@@ -73,7 +73,8 @@ export interface ToggleableTooltip {
 }
 
 /**
- * Provides handlers to show a tooltip when a state variable is changed. Hides the tooltip when clicking on it our outside of it.
+ * Provides handlers to show a tooltip when a state variable is changed.
+ * The tooltip is hidden when a click is made anywhere (on or outside the tooltip).
  */
 export function useToggleableTooltip(
     ref: React.RefObject<HTMLSpanElement>,
