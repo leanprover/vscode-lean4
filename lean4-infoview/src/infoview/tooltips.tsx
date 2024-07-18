@@ -129,11 +129,11 @@ export function useToggleableTooltip(
 export type HoverState = 'off' | 'over' | 'ctrlOver'
 
 /** Pinning a child tooltip has to also pin all ancestors. This context supports that. */
-export interface TipChainContext {
+interface TipChainContext {
     pinParent(): void
 }
 
-export const TipChainContext = React.createContext<TipChainContext>({ pinParent: () => {} })
+const TipChainContext = React.createContext<TipChainContext>({ pinParent: () => {} })
 
 // We are pinned when clicked, shown when hovered over, and otherwise hidden.
 export type TooltipState = 'pin' | 'show' | 'hide'
