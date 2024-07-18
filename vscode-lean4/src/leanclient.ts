@@ -29,7 +29,11 @@ import {
 import * as ls from 'vscode-languageserver-protocol'
 
 import { LeanFileProgressParams, LeanFileProgressProcessingInfo, ServerStoppedReason } from '@leanprover/infoview-api'
-import { getElaborationDelay, getFallBackToStringOccurrenceHighlighting, shouldAutofocusOutput } from './config'
+import {
+    getElaborationDelay,
+    getFallBackToStringOccurrenceHighlighting,
+    shouldAutofocusOutput
+} from './config'
 import { logger } from './utils/logger'
 // @ts-ignore
 import { SemVer } from 'semver'
