@@ -49,12 +49,12 @@ body {
     font-weight: normal;
 }
 
-.highlight {
-    background-color: var(--vscode-editor-selectionBackground) !important;
-}
-
 .highlight-selected {
     background-color: var(--vscode-editorOverviewRuler-rangeHighlightForeground) !important;
+}
+
+.highlight {
+    background-color: var(--vscode-editor-selectionBackground) !important;
 }
 
 /* Interactive traces */

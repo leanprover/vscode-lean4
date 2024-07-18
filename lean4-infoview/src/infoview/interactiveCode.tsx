@@ -12,7 +12,8 @@ import {
 import { marked } from 'marked'
 import { Location } from 'vscode-languageserver-protocol'
 import { EditorContext } from './contexts'
-import { GoalsLocation, LocationsContext, SelectionSettings, useHighlightedLocation } from './goalLocation'
+import { GoalsLocation, LocationsContext, SelectableLocationSettings, useSelectableLocation } from './goalLocation'
+import { useHoverHighlight } from './hoverHighlight'
 import { useRpcSession } from './rpcSessions'
 import { useHoverTooltip, useToggleableTooltip } from './tooltips'
 import {
@@ -168,28 +169,28 @@ function InteractiveCodeTag({ tag: ct, fmt }: InteractiveTagProps<SubexprInfo>) 
         tt.onClickOutside,
     ]
 
-    const locs = React.useContext(LocationsContext)
-
     // We mimick the VSCode ctrl-hover and ctrl-click UI for go-to-definition
     const [goToLoc, setGoToLoc] = React.useState<Location | undefined>(undefined)
 
-    let selectionSettings: SelectionSettings
+    const hhl = useHoverHighlight({
+        ref,
+        highlightOnHover: true,
+        underlineOnModHover: goToLoc !== undefined,
+    })
+    const [hoverState, setHoverState] = [hhl.hoverState, hhl.setHoverState]
+
+    const locs = React.useContext(LocationsContext)
+
+    let selectableLocationSettings: SelectableLocationSettings
     if (locs && locs.subexprTemplate && ct.subexprPos) {
-        selectionSettings = {
-            highlightOnSelection: true,
+        selectableLocationSettings = {
+            isSelectable: true,
             loc: GoalsLocation.withSubexprPos(locs.subexprTemplate, ct.subexprPos),
         }
     } else {
-        selectionSettings = { highlightOnSelection: false }
+        selectableLocationSettings = { isSelectable: false }
     }
-
-    const hl = useHighlightedLocation({
-        ref,
-        hoverSettings: { highlightOnHover: true },
-        modHoverSettings: { highlightOnModHover: goToLoc !== undefined },
-        selectionSettings,
-    })
-    const [hoverState, setHoverState] = [hl.hoverState, hl.setHoverState]
+    const sl = useSelectableLocation(selectableLocationSettings)
 
     const fetchGoToLoc = React.useCallback(async () => {
         if (goToLoc !== undefined) return goToLoc
@@ -226,7 +227,7 @@ function InteractiveCodeTag({ tag: ct, fmt }: InteractiveTagProps<SubexprInfo>) 
         [fetchGoToLoc, ec, setGoToDefErrorTooltipDisplayed],
     )
 
-    let className = hl.className
+    let className = hhl.className + sl.className
     if (ct.diffStatus) {
         className += DIFF_TAG_TO_CLASS[ct.diffStatus] + ' '
     }
@@ -268,7 +269,7 @@ function InteractiveCodeTag({ tag: ct, fmt }: InteractiveTagProps<SubexprInfo>) 
                 data-vscode-context={JSON.stringify(vscodeContext)}
                 data-has-tooltip-on-hover
                 onClick={e => {
-                    const stopClick = hl.onClick(e)
+                    const stopClick = sl.onClick(e)
                     if (stopClick) {
                         return
                     }
@@ -276,20 +277,20 @@ function InteractiveCodeTag({ tag: ct, fmt }: InteractiveTagProps<SubexprInfo>) 
                     tt.onClick()
                 }}
                 onPointerDown={e => {
-                    hl.onPointerDown(e)
+                    sl.onPointerDown(e)
                     ht.onPointerDown(e)
                 }}
                 onPointerOver={e => {
-                    hl.onPointerEvent(true, e)
+                    hhl.onPointerOver(e)
                     ht.onPointerOver(e)
                 }}
                 onPointerOut={e => {
-                    hl.onPointerEvent(false, e)
+                    hhl.onPointerOut(e)
                     ht.onPointerOut(e)
                 }}
-                onPointerMove={e => hl.onPointerMove(e)}
-                onKeyDown={e => hl.onKeyDown(e)}
-                onKeyUp={e => hl.onKeyUp(e)}
+                onPointerMove={e => hhl.onPointerMove(e)}
+                onKeyDown={e => hhl.onKeyDown(e)}
+                onKeyUp={e => hhl.onKeyUp(e)}
                 onContextMenu={e => {
                     // Mark the event as seen so that parent handlers skip it.
                     // We cannot use `stopPropagation` as that prevents the VSC context menu from showing up.

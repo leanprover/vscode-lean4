@@ -10,7 +10,8 @@ import {
 import * as React from 'react'
 import { Details } from './collapsing'
 import { ConfigContext, EditorContext } from './contexts'
-import { Locations, LocationsContext, SelectionSettings, useHighlightedLocation } from './goalLocation'
+import { Locations, LocationsContext, SelectableLocationSettings, useSelectableLocation } from './goalLocation'
+import { useHoverHighlight } from './hoverHighlight'
 import { InteractiveCode } from './interactiveCode'
 import { WithTooltipOnHover } from './tooltips'
 import { useEvent } from './util'
@@ -85,39 +86,40 @@ interface HypNameProps {
 function HypName({ name, isInserted, isRemoved, mvarId, fvarId }: HypNameProps) {
     const ref = React.useRef<HTMLSpanElement>(null)
 
-    let selectionSettings: SelectionSettings
-    if (mvarId !== undefined && fvarId !== undefined) {
-        selectionSettings = { highlightOnSelection: true, loc: { mvarId, loc: { hyp: fvarId } } }
-    } else {
-        selectionSettings = { highlightOnSelection: false }
-    }
-
     const locs = React.useContext(LocationsContext)
 
-    const hl = useHighlightedLocation({
+    const hhl = useHoverHighlight({
         ref,
-        hoverSettings: { highlightOnHover: locs !== undefined && mvarId !== undefined && fvarId !== undefined },
-        modHoverSettings: { highlightOnModHover: false },
-        selectionSettings,
+        highlightOnHover: locs !== undefined && mvarId !== undefined && fvarId !== undefined,
+        underlineOnModHover: false,
     })
+
+    let selectableLocationSettings: SelectableLocationSettings
+    if (mvarId !== undefined && fvarId !== undefined) {
+        selectableLocationSettings = { isSelectable: true, loc: { mvarId, loc: { hyp: fvarId } } }
+    } else {
+        selectableLocationSettings = { isSelectable: false }
+    }
+    const sl = useSelectableLocation(selectableLocationSettings)
 
     const namecls: string =
         (isInserted ? 'inserted-text ' : '') +
         (isRemoved ? 'removed-text ' : '') +
         (isInaccessibleName(name) ? 'goal-inaccessible ' : '') +
-        hl.className
+        hhl.className +
+        sl.className
     return (
         <>
             <span
                 ref={ref}
                 className={namecls}
-                onPointerOver={e => hl.onPointerEvent(true, e)}
-                onPointerOut={e => hl.onPointerEvent(false, e)}
-                onPointerMove={e => hl.onPointerMove(e)}
-                onKeyDown={e => hl.onKeyDown(e)}
-                onKeyUp={e => hl.onKeyUp(e)}
-                onClick={e => hl.onClick(e)}
-                onPointerDown={e => hl.onPointerDown(e)}
+                onPointerOver={e => hhl.onPointerOver(e)}
+                onPointerOut={e => hhl.onPointerOut(e)}
+                onPointerMove={e => hhl.onPointerMove(e)}
+                onKeyDown={e => hhl.onKeyDown(e)}
+                onKeyUp={e => hhl.onKeyUp(e)}
+                onClick={e => sl.onClick(e)}
+                onPointerDown={e => sl.onPointerDown(e)}
             >
                 {name}
             </span>
