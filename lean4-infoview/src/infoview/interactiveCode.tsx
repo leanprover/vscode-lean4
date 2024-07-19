@@ -31,19 +31,21 @@ export interface InteractiveTaggedTextProps<T> extends InteractiveTextComponentP
 }
 
 // See https://github.com/leanprover/vscode-lean4/pull/500#discussion_r1681001815 for why `any` is used.
-const InteractiveTaggedText_ = React.memo(({ fmt, InnerTagUi }: InteractiveTaggedTextProps<any>) => {
+function InteractiveTaggedText__({ fmt, InnerTagUi }: InteractiveTaggedTextProps<any>) {
     if ('text' in fmt) return <>{fmt.text}</>
     else if ('append' in fmt)
         return (
             <>
                 {fmt.append.map((a, i) => (
-                    <InteractiveTaggedText key={i} fmt={a} InnerTagUi={InnerTagUi} />
+                    <InteractiveTaggedText__ key={i} fmt={a} InnerTagUi={InnerTagUi} />
                 ))}
             </>
         )
     else if ('tag' in fmt) return <InnerTagUi fmt={fmt.tag[1]} tag={fmt.tag[0]} />
     else throw new Error(`malformed 'TaggedText': '${fmt}'`)
-})
+}
+
+const InteractiveTaggedText_ = React.memo(InteractiveTaggedText__)
 
 /**
  * Core loop to display {@link TaggedText} objects. Invokes `InnerTagUi` on `tag` nodes in order to support
