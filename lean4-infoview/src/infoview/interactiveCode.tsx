@@ -289,8 +289,6 @@ function InteractiveCodeTag({ tag: ct, fmt }: InteractiveTagProps<SubexprInfo>) 
                     ht.onPointerOut(e)
                 }}
                 onPointerMove={e => hhl.onPointerMove(e)}
-                onKeyDown={e => hhl.onKeyDown(e)}
-                onKeyUp={e => hhl.onKeyUp(e)}
                 onContextMenu={e => {
                     // Mark the event as seen so that parent handlers skip it.
                     // We cannot use `stopPropagation` as that prevents the VSC context menu from showing up.

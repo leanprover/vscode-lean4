@@ -116,8 +116,6 @@ function HypName({ name, isInserted, isRemoved, mvarId, fvarId }: HypNameProps) 
                 onPointerOver={e => hhl.onPointerOver(e)}
                 onPointerOut={e => hhl.onPointerOut(e)}
                 onPointerMove={e => hhl.onPointerMove(e)}
-                onKeyDown={e => hhl.onKeyDown(e)}
-                onKeyUp={e => hhl.onKeyUp(e)}
                 onClick={e => sl.onClick(e)}
                 onPointerDown={e => sl.onPointerDown(e)}
             >

@@ -20,8 +20,6 @@ export interface HoverHighlight {
     onPointerOver: (e: React.PointerEvent<HTMLSpanElement>) => void
     onPointerOut: (e: React.PointerEvent<HTMLSpanElement>) => void
     onPointerMove: (e: React.PointerEvent<HTMLSpanElement>) => void
-    onKeyDown: (e: React.KeyboardEvent<HTMLSpanElement>) => void
-    onKeyUp: (e: React.KeyboardEvent<HTMLSpanElement>) => void
 }
 
 /**
@@ -32,9 +30,10 @@ export function useHoverHighlight(settings: HoverHighlightSettings): HoverHighli
     const { ref, highlightOnHover, underlineOnModHover } = settings
 
     const [hoverState, setHoverState] = React.useState<HoverState>('off')
+    const isHoveredOver = hoverState !== 'off'
 
     let className: string = ''
-    if (highlightOnHover && hoverState !== 'off') {
+    if (highlightOnHover && isHoveredOver) {
         className += 'highlight '
     }
     if (underlineOnModHover && hoverState === 'ctrlOver') {
@@ -73,17 +72,34 @@ export function useHoverHighlight(settings: HoverHighlightSettings): HoverHighli
         }
     }
 
-    const onKeyDown = (e: React.KeyboardEvent<HTMLSpanElement>) => {
+    const onKeyDown = React.useCallback((e: KeyboardEvent) => {
         if (e.key === 'Control' || e.key === 'Meta') {
             setHoverState(st => (st === 'over' ? 'ctrlOver' : st))
         }
-    }
+    }, [])
 
-    const onKeyUp = (e: React.KeyboardEvent<HTMLSpanElement>) => {
+    const onKeyUp = React.useCallback((e: KeyboardEvent) => {
         if (e.key === 'Control' || e.key === 'Meta') {
             setHoverState(st => (st === 'ctrlOver' ? 'over' : st))
         }
-    }
+    }, [])
+
+    React.useEffect(() => {
+        if (!isHoveredOver) {
+            // Avoid adding lots of expensive global event handlers for spans that are not being
+            // hovered over
+            return
+        }
+
+        // These event handlers do not fire when the InfoView is not focused.
+        document.addEventListener('keydown', onKeyDown)
+        document.addEventListener('keyup', onKeyUp)
+
+        return () => {
+            document.removeEventListener('keydown', onKeyDown)
+            document.removeEventListener('keyup', onKeyUp)
+        }
+    }, [onKeyDown, onKeyUp, isHoveredOver])
 
     return {
         hoverState,
@@ -92,7 +108,5 @@ export function useHoverHighlight(settings: HoverHighlightSettings): HoverHighli
         onPointerOver,
         onPointerOut,
         onPointerMove,
-        onKeyDown,
-        onKeyUp,
     }
 }
