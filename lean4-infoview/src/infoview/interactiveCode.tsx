@@ -16,15 +16,7 @@ import { GoalsLocation, LocationsContext, SelectableLocationSettings, useSelecta
 import { useHoverHighlight } from './hoverHighlight'
 import { useRpcSession } from './rpcSessions'
 import { useHoverTooltip, useToggleableTooltip } from './tooltips'
-import {
-    genericMemo,
-    LogicalDomContext,
-    mapRpcError,
-    useAsync,
-    useEvent,
-    useLogicalDomObserver,
-    useOnClickOutside,
-} from './util'
+import { LogicalDomContext, mapRpcError, useAsync, useEvent, useLogicalDomObserver, useOnClickOutside } from './util'
 
 export interface InteractiveTextComponentProps<T> {
     fmt: TaggedText<T>
@@ -38,11 +30,8 @@ export interface InteractiveTaggedTextProps<T> extends InteractiveTextComponentP
     InnerTagUi: (_: InteractiveTagProps<T>) => JSX.Element
 }
 
-/**
- * Core loop to display {@link TaggedText} objects. Invokes `InnerTagUi` on `tag` nodes in order to support
- * various embedded information, for example subexpression information stored in {@link CodeWithInfos}.
- * */
-export function InteractiveTaggedText<T>({ fmt, InnerTagUi }: InteractiveTaggedTextProps<T>) {
+// See https://github.com/leanprover/vscode-lean4/pull/500#discussion_r1681001815 for why `any` is used.
+const InteractiveTaggedText_ = React.memo(({ fmt, InnerTagUi }: InteractiveTaggedTextProps<any>) => {
     if ('text' in fmt) return <>{fmt.text}</>
     else if ('append' in fmt)
         return (
@@ -54,9 +43,15 @@ export function InteractiveTaggedText<T>({ fmt, InnerTagUi }: InteractiveTaggedT
         )
     else if ('tag' in fmt) return <InnerTagUi fmt={fmt.tag[1]} tag={fmt.tag[0]} />
     else throw new Error(`malformed 'TaggedText': '${fmt}'`)
-}
+})
 
-export const MemoedInteractiveTaggedText = genericMemo(InteractiveTaggedText)
+/**
+ * Core loop to display {@link TaggedText} objects. Invokes `InnerTagUi` on `tag` nodes in order to support
+ * various embedded information, for example subexpression information stored in {@link CodeWithInfos}.
+ */
+export function InteractiveTaggedText<T>({ fmt, InnerTagUi }: InteractiveTaggedTextProps<T>) {
+    return <InteractiveTaggedText_ fmt={fmt} InnerTagUi={InnerTagUi} />
+}
 
 interface TypePopupContentsProps {
     info: SubexprInfo
@@ -305,7 +300,7 @@ function InteractiveCodeTag({ tag: ct, fmt }: InteractiveTagProps<SubexprInfo>) 
             >
                 {tt.tooltip}
                 {ht.tooltip}
-                <MemoedInteractiveTaggedText fmt={fmt} InnerTagUi={InteractiveCodeTag} />
+                <InteractiveTaggedText fmt={fmt} InnerTagUi={InteractiveCodeTag} />
             </span>
         </LogicalDomContext.Provider>
     )
@@ -317,7 +312,7 @@ export type InteractiveCodeProps = InteractiveTextComponentProps<SubexprInfo>
 export function InteractiveCode(props: InteractiveCodeProps) {
     return (
         <span className="font-code">
-            <MemoedInteractiveTaggedText {...props} InnerTagUi={InteractiveCodeTag} />
+            <InteractiveTaggedText {...props} InnerTagUi={InteractiveCodeTag} />
         </span>
     )
 }
