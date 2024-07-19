@@ -4,11 +4,11 @@ import { HoverState } from './tooltips'
 export interface HoverHighlightSettings {
     ref: React.RefObject<HTMLSpanElement>
     /**
-     * Whether the span should be highlighted on hover.
+     * Whether to return the `highlight` CSS class on hover.
      */
     highlightOnHover: boolean
     /**
-     * Whether the span should be underlined on hover while holding `Ctrl` / `Meta`.
+     * Whether to return the `underline` CSS class on hover while holding `Ctrl` / `Meta`.
      */
     underlineOnModHover: boolean
 }
@@ -25,8 +25,12 @@ export interface HoverHighlight {
 }
 
 /**
- * Logic for a span that can be highlighted when hovering over it
- * and underlined when hovering over it while holding `Ctrl` / `Meta`.
+ * Logic for a component that is highlighted/underlined when hovered over.
+ * The component is passed in `settings.ref`.
+ *
+ * The hook returns the current hover state of the component,
+ * a string of CSS classes containing `highlight` and/or `underline` when appropriate,
+ * as well as event handlers which the the caller must attach to the component.
  */
 export function useHoverHighlight(settings: HoverHighlightSettings): HoverHighlight {
     const { ref, highlightOnHover, underlineOnModHover } = settings

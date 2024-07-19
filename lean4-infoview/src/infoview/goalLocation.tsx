@@ -90,7 +90,12 @@ export interface SelectableLocation {
     onPointerDown: (e: React.PointerEvent<HTMLSpanElement>) => void
 }
 
-/** Logic for a span that can be selected using Shift-click and is highlighted when selected. */
+/**
+ * Logic for a component that can be selected using Shift-click and is highlighted when selected.
+ *
+ * The hook returns a string of CSS classes containing `highlight-selected` when appropriate,
+ * as well as event handlers which the the caller must attach to the component.
+ */
 export function useSelectableLocation(settings: SelectableLocationSettings): SelectableLocation {
     const locs = React.useContext(LocationsContext)
     let className: string = ''
