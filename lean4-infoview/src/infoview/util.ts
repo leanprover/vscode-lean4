@@ -216,44 +216,6 @@ export function addUniqueKeys<T>(elems: T[], getId: (el: T) => string): Keyed<T>
     })
 }
 
-/** Like `React.forwardRef`, but also allows reading the ref inside the forwarding component.
- * Adapted from https://itnext.io/reusing-the-ref-from-forwardref-with-react-hooks-4ce9df693dd */
-export function forwardAndUseRef<T, P>(
-    render: (props: P, ref: React.RefObject<T>, setRef: (_: T | null) => void) => React.ReactElement | null,
-): React.ForwardRefExoticComponent<React.PropsWithoutRef<P> & React.RefAttributes<T>> {
-    return React.forwardRef<T, P>((props, ref) => {
-        const thisRef = React.useRef<T | null>(null)
-        return render(props, thisRef, v => {
-            thisRef.current = v
-            if (!ref) return
-            if (typeof ref === 'function') {
-                ref(v)
-            } else {
-                ref.current = v
-            }
-        })
-    })
-}
-
-/** Like `forwardAndUseRef`, but the ref is stored in state so that setting it triggers a render.
- * Should only be used if re-rendering is necessary. */
-export function forwardAndUseStateRef<T, P>(
-    render: (props: P, ref: T | null, setRef: (_: T | null) => void) => React.ReactElement | null,
-): React.ForwardRefExoticComponent<React.PropsWithoutRef<P> & React.RefAttributes<T>> {
-    return React.forwardRef<T, P>((props, ref) => {
-        const [thisRef, setThisRef] = React.useState<T | null>(null)
-        return render(props, thisRef, v => {
-            setThisRef(v)
-            if (!ref) return
-            if (typeof ref === 'function') {
-                ref(v)
-            } else {
-                ref.current = v
-            }
-        })
-    })
-}
-
 export interface LogicalDomElement {
     contains(el: Node): boolean
 }
@@ -325,9 +287,19 @@ export function useLogicalDomObserver(elt: React.RefObject<HTMLElement>): [Logic
 /**
  * An effect which calls `onClickOutside` whenever an element not logically descending from `ld`
  * (see {@link useLogicalDomObserver}) is clicked. Note that `onClickOutside` is not called on clicks
- * on the scrollbar since these should usually not impact the app's state. */
-export function useOnClickOutside(ld: LogicalDomElement, onClickOutside: (_: PointerEvent) => void) {
+ * on the scrollbar since these should usually not impact the app's state.
+ * `isActive` controls whether the `onClickOutside` handler is active. This can be useful for performance,
+ * since having lots of `onClickOutside` handlers when they are not needed can be expensive.
+ */
+export function useOnClickOutside(
+    ld: LogicalDomElement,
+    onClickOutside: (_: PointerEvent) => void,
+    isActive: boolean = true,
+) {
     React.useEffect(() => {
+        if (!isActive) {
+            return
+        }
         const onClickAnywhere = (e: PointerEvent) => {
             if (e.target instanceof Node && !ld.contains(e.target)) {
                 if (e.target instanceof Element && e.target.tagName === 'HTML') {
@@ -339,7 +311,7 @@ export function useOnClickOutside(ld: LogicalDomElement, onClickOutside: (_: Poi
 
         document.addEventListener('pointerdown', onClickAnywhere)
         return () => document.removeEventListener('pointerdown', onClickAnywhere)
-    }, [ld, onClickOutside])
+    }, [ld, onClickOutside, isActive])
 }
 
 /** Sends an exception object to a throwable error.

@@ -12,10 +12,11 @@ import {
 import { marked } from 'marked'
 import { Location } from 'vscode-languageserver-protocol'
 import { EditorContext } from './contexts'
-import { GoalsLocation, LocationsContext, SelectableLocation } from './goalLocation'
+import { GoalsLocation, LocationsContext, SelectableLocationSettings, useSelectableLocation } from './goalLocation'
+import { useHoverHighlight } from './hoverHighlight'
 import { useRpcSession } from './rpcSessions'
-import { HoverState, WithToggleableTooltip, WithTooltipOnHover } from './tooltips'
-import { mapRpcError, useAsync, useEvent } from './util'
+import { useHoverTooltip, useToggleableTooltip } from './tooltips'
+import { LogicalDomContext, mapRpcError, useAsync, useEvent, useLogicalDomObserver, useOnClickOutside } from './util'
 
 export interface InteractiveTextComponentProps<T> {
     fmt: TaggedText<T>
@@ -29,22 +30,29 @@ export interface InteractiveTaggedTextProps<T> extends InteractiveTextComponentP
     InnerTagUi: (_: InteractiveTagProps<T>) => JSX.Element
 }
 
-/**
- * Core loop to display {@link TaggedText} objects. Invokes `InnerTagUi` on `tag` nodes in order to support
- * various embedded information, for example subexpression information stored in {@link CodeWithInfos}.
- * */
-export function InteractiveTaggedText<T>({ fmt, InnerTagUi }: InteractiveTaggedTextProps<T>) {
+// See https://github.com/leanprover/vscode-lean4/pull/500#discussion_r1681001815 for why `any` is used.
+function InteractiveTaggedText__({ fmt, InnerTagUi }: InteractiveTaggedTextProps<any>) {
     if ('text' in fmt) return <>{fmt.text}</>
     else if ('append' in fmt)
         return (
             <>
                 {fmt.append.map((a, i) => (
-                    <InteractiveTaggedText key={i} fmt={a} InnerTagUi={InnerTagUi} />
+                    <InteractiveTaggedText__ key={i} fmt={a} InnerTagUi={InnerTagUi} />
                 ))}
             </>
         )
     else if ('tag' in fmt) return <InnerTagUi fmt={fmt.tag[1]} tag={fmt.tag[0]} />
     else throw new Error(`malformed 'TaggedText': '${fmt}'`)
+}
+
+const InteractiveTaggedText_ = React.memo(InteractiveTaggedText__)
+
+/**
+ * Core loop to display {@link TaggedText} objects. Invokes `InnerTagUi` on `tag` nodes in order to support
+ * various embedded information, for example subexpression information stored in {@link CodeWithInfos}.
+ */
+export function InteractiveTaggedText<T>({ fmt, InnerTagUi }: InteractiveTaggedTextProps<T>) {
+    return <InteractiveTaggedText_ fmt={fmt} InnerTagUi={InnerTagUi} />
 }
 
 interface TypePopupContentsProps {
@@ -148,11 +156,39 @@ const DIFF_TAG_TO_EXPLANATION: { [K in DiffTag]: string } = {
 function InteractiveCodeTag({ tag: ct, fmt }: InteractiveTagProps<SubexprInfo>) {
     const rs = useRpcSession()
     const ec = React.useContext(EditorContext)
-    const [hoverState, setHoverState] = React.useState<HoverState>('off')
-    const [goToDefErrorState, setGoToDefErrorState] = React.useState<boolean>(false)
+    const ref = React.useRef<HTMLSpanElement>(null)
+
+    const [logicalSpanElt, logicalDomStorage] = useLogicalDomObserver(ref)
+
+    const tt = useToggleableTooltip(ref, <>{`No definition found for '${TaggedText_stripTags(fmt)}'`}</>)
+    const [setGoToDefErrorTooltipDisplayed, onClickOutsideGoToDefErrorTooltip] = [
+        tt.setTooltipDisplayed,
+        tt.onClickOutside,
+    ]
 
     // We mimick the VSCode ctrl-hover and ctrl-click UI for go-to-definition
     const [goToLoc, setGoToLoc] = React.useState<Location | undefined>(undefined)
+
+    const hhl = useHoverHighlight({
+        ref,
+        highlightOnHover: true,
+        underlineOnModHover: goToLoc !== undefined,
+    })
+    const [hoverState, setHoverState] = [hhl.hoverState, hhl.setHoverState]
+
+    const locs = React.useContext(LocationsContext)
+
+    let selectableLocationSettings: SelectableLocationSettings
+    if (locs && locs.subexprTemplate && ct.subexprPos) {
+        selectableLocationSettings = {
+            isSelectable: true,
+            loc: GoalsLocation.withSubexprPos(locs.subexprTemplate, ct.subexprPos),
+        }
+    } else {
+        selectableLocationSettings = { isSelectable: false }
+    }
+    const sl = useSelectableLocation(selectableLocationSettings)
+
     const fetchGoToLoc = React.useCallback(async () => {
         if (goToLoc !== undefined) return goToLoc
         try {
@@ -167,6 +203,7 @@ function InteractiveCodeTag({ tag: ct, fmt }: InteractiveTagProps<SubexprInfo>) 
         }
         return undefined
     }, [rs, ct.info, goToLoc])
+
     // Eagerly fetch the location as soon as the pointer enters this area so that we can show
     // an underline if a jump target is available.
     React.useEffect(() => {
@@ -178,24 +215,18 @@ function InteractiveCodeTag({ tag: ct, fmt }: InteractiveTagProps<SubexprInfo>) 
             const loc = await fetchGoToLoc()
             if (loc === undefined) {
                 if (withError) {
-                    setGoToDefErrorState(true)
+                    setGoToDefErrorTooltipDisplayed(true)
                 }
                 return
             }
             await ec.revealPosition({ uri: loc.uri, ...loc.range.start })
         },
-        [fetchGoToLoc, ec],
+        [fetchGoToLoc, ec, setGoToDefErrorTooltipDisplayed],
     )
 
-    const locs = React.useContext(LocationsContext)
-    const ourLoc =
-        locs && locs.subexprTemplate && ct.subexprPos
-            ? GoalsLocation.withSubexprPos(locs.subexprTemplate, ct.subexprPos)
-            : undefined
-
-    let spanClassName: string = hoverState === 'ctrlOver' && goToLoc !== undefined ? 'underline ' : ''
+    let className = hhl.className + sl.className
     if (ct.diffStatus) {
-        spanClassName += DIFF_TAG_TO_CLASS[ct.diffStatus] + ' '
+        className += DIFF_TAG_TO_CLASS[ct.diffStatus] + ' '
     }
 
     // ID that we can use to identify the component that a context menu was opened in.
@@ -206,23 +237,55 @@ function InteractiveCodeTag({ tag: ct, fmt }: InteractiveTagProps<SubexprInfo>) 
     const vscodeContext = { interactiveCodeTagId }
     useEvent(ec.events.goToDefinition, async _ => void execGoToLoc(true), [execGoToLoc], interactiveCodeTagId)
 
+    const ht = useHoverTooltip(ref, <TypePopupContents info={ct} />, (e, cont) => {
+        // On ctrl-click or ⌘-click, if location is known, go to it in the editor
+        if (e.ctrlKey || e.metaKey) {
+            setHoverState(st => (st === 'over' ? 'ctrlOver' : st))
+            void execGoToLoc(false)
+            return
+        }
+        if (!e.shiftKey) {
+            cont(e)
+        }
+    })
+    const onClickOutsideHoverTooltip = ht.onClickOutside
+
+    const onClickOutside = React.useCallback(() => {
+        onClickOutsideHoverTooltip()
+        onClickOutsideGoToDefErrorTooltip()
+    }, [onClickOutsideHoverTooltip, onClickOutsideGoToDefErrorTooltip])
+    // The condition ensures that we only add the handler when a tooltip is displayed.
+    // These handlers can be expensive, so adding them lazily drastically improves performance.
+    useOnClickOutside(logicalSpanElt, onClickOutside, tt.tooltipDisplayed || ht.state !== 'hide')
+
     return (
-        <WithToggleableTooltip
-            tooltipChildren={`No definition found for '${TaggedText_stripTags(fmt)}'`}
-            isTooltipShown={goToDefErrorState}
-            hideTooltip={() => setGoToDefErrorState(false)}
-        >
-            <WithTooltipOnHover
+        <LogicalDomContext.Provider value={logicalDomStorage}>
+            <span
+                ref={ref}
+                className={className}
                 data-vscode-context={JSON.stringify(vscodeContext)}
                 data-has-tooltip-on-hover
-                tooltipChildren={<TypePopupContents info={ct} />}
-                onClick={(e, next) => {
-                    // On ctrl-click or ⌘-click, if location is known, go to it in the editor
-                    if (e.ctrlKey || e.metaKey) {
-                        setHoverState(st => (st === 'over' ? 'ctrlOver' : st))
-                        void execGoToLoc(false)
-                    } else if (!e.shiftKey) next(e)
+                onClick={e => {
+                    const stopClick = sl.onClick(e)
+                    if (stopClick) {
+                        return
+                    }
+                    ht.onClick(e)
+                    tt.onClick()
                 }}
+                onPointerDown={e => {
+                    sl.onPointerDown(e)
+                    ht.onPointerDown(e)
+                }}
+                onPointerOver={e => {
+                    hhl.onPointerOver(e)
+                    ht.onPointerOver(e)
+                }}
+                onPointerOut={e => {
+                    hhl.onPointerOut(e)
+                    ht.onPointerOut(e)
+                }}
+                onPointerMove={e => hhl.onPointerMove(e)}
                 onContextMenu={e => {
                     // Mark the event as seen so that parent handlers skip it.
                     // We cannot use `stopPropagation` as that prevents the VSC context menu from showing up.
@@ -237,17 +300,11 @@ function InteractiveCodeTag({ tag: ct, fmt }: InteractiveTagProps<SubexprInfo>) 
                     sel.selectAllChildren(e.currentTarget)
                 }}
             >
-                <SelectableLocation
-                    setHoverState={setHoverState}
-                    className={spanClassName}
-                    locs={locs}
-                    loc={ourLoc}
-                    alwaysHighlight={true}
-                >
-                    <InteractiveCode fmt={fmt} />
-                </SelectableLocation>
-            </WithTooltipOnHover>
-        </WithToggleableTooltip>
+                {tt.tooltip}
+                {ht.tooltip}
+                <InteractiveTaggedText fmt={fmt} InnerTagUi={InteractiveCodeTag} />
+            </span>
+        </LogicalDomContext.Provider>
     )
 }
 

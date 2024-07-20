@@ -15,6 +15,7 @@ import {
     UserWidgetInstance,
     Widget_getWidgets,
 } from '@leanprover/infoview-api'
+import { Details } from './collapsing'
 import { ConfigContext, EditorContext, EnvPosContext, LspDiagnosticsContext, ProgressContext } from './contexts'
 import { GoalsLocation, Locations, LocationsContext } from './goalLocation'
 import { FilteredGoals, goalsToString } from './goals'
@@ -116,28 +117,19 @@ const InfoStatusBar = React.memo((props: InfoStatusBarProps) => {
     )
 })
 
-interface InfoDisplayContentProps extends PausableProps {
+interface GoalInfoDisplayProps {
     pos: DocumentPosition
-    messages: InteractiveDiagnostic[]
     goals?: InteractiveGoals
     termGoal?: InteractiveTermGoal
-    error?: string
     userWidgets: UserWidgetInstance[]
-    triggerUpdate: () => Promise<void>
 }
 
-const InfoDisplayContent = React.memo((props: InfoDisplayContentProps) => {
-    const { pos, messages, goals, termGoal, error, userWidgets, triggerUpdate, isPaused, setPaused } = props
+function GoalInfoDisplay(props: GoalInfoDisplayProps) {
+    const { pos, goals, termGoal, userWidgets } = props
 
-    const hasWidget = userWidgets.length > 0
-    const hasError = !!error
-    const hasMessages = messages.length !== 0
     const config = React.useContext(ConfigContext)
 
-    const nothingToShow = !hasError && !goals && !termGoal && !hasMessages && !hasWidget
-
     const [selectedLocs, setSelectedLocs] = React.useState<GoalsLocation[]>([])
-    React.useEffect(() => setSelectedLocs([]), [pos.uri, pos.line, pos.character])
 
     const locs: Locations = React.useMemo(
         () => ({
@@ -157,24 +149,8 @@ const InfoDisplayContent = React.memo((props: InfoDisplayContentProps) => {
         [selectedLocs],
     )
 
-    /* Adding {' '} to manage string literals properly: https://reactjs.org/docs/jsx-in-depth.html#string-literals-1 */
     return (
         <>
-            {hasError && (
-                <div className="error" key="errors">
-                    Error updating: {error}.
-                    <a
-                        className="link pointer dim"
-                        onClick={e => {
-                            e.preventDefault()
-                            void triggerUpdate()
-                        }}
-                    >
-                        {' '}
-                        Try again.
-                    </a>
-                </div>
-            )}
             <LocationsContext.Provider value={locs}>
                 <FilteredGoals key="goals" headerChildren="Tactic state" initiallyOpen goals={goals} displayCount />
             </LocationsContext.Provider>
@@ -206,13 +182,56 @@ const InfoDisplayContent = React.memo((props: InfoDisplayContentProps) => {
                     )
                 else return inner
             })}
+        </>
+    )
+}
+
+interface InfoDisplayContentProps extends GoalInfoDisplayProps, PausableProps {
+    messages: InteractiveDiagnostic[]
+    error?: string
+    triggerUpdate: () => Promise<void>
+}
+
+const InfoDisplayContent = React.memo((props: InfoDisplayContentProps) => {
+    const { pos, messages, goals, termGoal, error, userWidgets, triggerUpdate, isPaused, setPaused } = props
+
+    const hasWidget = userWidgets.length > 0
+    const hasError = !!error
+    const hasMessages = messages.length !== 0
+    const nothingToShow = !hasError && !goals && !termGoal && !hasMessages && !hasWidget
+
+    /* Adding {' '} to manage string literals properly: https://reactjs.org/docs/jsx-in-depth.html#string-literals-1 */
+    return (
+        <>
+            {hasError && (
+                <div className="error" key="errors">
+                    Error updating: {error}.
+                    <a
+                        className="link pointer dim"
+                        onClick={e => {
+                            e.preventDefault()
+                            void triggerUpdate()
+                        }}
+                    >
+                        {' '}
+                        Try again.
+                    </a>
+                </div>
+            )}
+            <GoalInfoDisplay
+                key={DocumentPosition.toString(pos)}
+                pos={pos}
+                goals={goals}
+                termGoal={termGoal}
+                userWidgets={userWidgets}
+            />
             <div style={{ display: hasMessages ? 'block' : 'none' }} key="messages">
-                <details key="messages" open>
+                <Details initiallyOpen key="messages">
                     <summary className="mv2 pointer">Messages ({messages.length})</summary>
                     <div className="ml1">
                         <MessagesList uri={pos.uri} messages={messages} />
                     </div>
-                </details>
+                </Details>
             </div>
             {nothingToShow &&
                 (isPaused ? (

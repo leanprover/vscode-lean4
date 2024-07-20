@@ -52,7 +52,7 @@ const MessageView = React.memo(({ uri, diag }: MessageViewProps) => {
         [uri, diag.fullRange, diag.range],
     )
     return (
-        <details open>
+        <Details initiallyOpen>
             <summary className={severityClass + ' mv2 pointer'}>
                 {title}
                 <span className="fr" onClick={e => e.preventDefault()}>
@@ -87,7 +87,7 @@ const MessageView = React.memo(({ uri, diag }: MessageViewProps) => {
                     </EnvPosContext.Provider>
                 </pre>
             </div>
-        </details>
+        </Details>
     )
 }, fastIsEqual)
 

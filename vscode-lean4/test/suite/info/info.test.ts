@@ -190,7 +190,7 @@ suite('InfoView Test Suite', () => {
 
         logger.log('Opening tooltip in tooltip')
         await info.runTestScript(`
-          Array.from(document.querySelectorAll('.tooltip-content [data-has-tooltip-on-hover] *'))
+          Array.from(document.querySelectorAll('.tooltip-content *[data-has-tooltip-on-hover]'))
             .find(el => el.innerHTML === 'Type 4')
             .click()
         `)
@@ -198,7 +198,7 @@ suite('InfoView Test Suite', () => {
 
         logger.log('Opening tooltip in tooltip in tooltip')
         await info.runTestScript(`
-          Array.from(document.querySelectorAll('.tooltip-content [data-has-tooltip-on-hover] *'))
+          Array.from(document.querySelectorAll('.tooltip-content *[data-has-tooltip-on-hover]'))
             .find(el => el.innerHTML === 'Type 5')
             .click()
         `)

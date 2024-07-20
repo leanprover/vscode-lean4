@@ -10,7 +10,8 @@ import {
 import * as React from 'react'
 import { Details } from './collapsing'
 import { ConfigContext, EditorContext } from './contexts'
-import { Locations, LocationsContext, SelectableLocation } from './goalLocation'
+import { Locations, LocationsContext, SelectableLocationSettings, useSelectableLocation } from './goalLocation'
+import { useHoverHighlight } from './hoverHighlight'
 import { InteractiveCode } from './interactiveCode'
 import { WithTooltipOnHover } from './tooltips'
 import { useEvent } from './util'
@@ -74,6 +75,57 @@ function getFilteredHypotheses(
     }, [])
 }
 
+interface HypNameProps {
+    name: string
+    isInserted: boolean
+    isRemoved: boolean
+    mvarId?: string | undefined
+    fvarId?: string | undefined
+}
+
+function HypName({ name, isInserted, isRemoved, mvarId, fvarId }: HypNameProps) {
+    const ref = React.useRef<HTMLSpanElement>(null)
+
+    const locs = React.useContext(LocationsContext)
+
+    const hhl = useHoverHighlight({
+        ref,
+        highlightOnHover: locs !== undefined && mvarId !== undefined && fvarId !== undefined,
+        underlineOnModHover: false,
+    })
+
+    let selectableLocationSettings: SelectableLocationSettings
+    if (mvarId !== undefined && fvarId !== undefined) {
+        selectableLocationSettings = { isSelectable: true, loc: { mvarId, loc: { hyp: fvarId } } }
+    } else {
+        selectableLocationSettings = { isSelectable: false }
+    }
+    const sl = useSelectableLocation(selectableLocationSettings)
+
+    const namecls: string =
+        (isInserted ? 'inserted-text ' : '') +
+        (isRemoved ? 'removed-text ' : '') +
+        (isInaccessibleName(name) ? 'goal-inaccessible ' : '') +
+        hhl.className +
+        sl.className
+    return (
+        <>
+            <span
+                ref={ref}
+                className={namecls}
+                onPointerOver={e => hhl.onPointerOver(e)}
+                onPointerOut={e => hhl.onPointerOut(e)}
+                onPointerMove={e => hhl.onPointerMove(e)}
+                onClick={e => sl.onClick(e)}
+                onPointerDown={e => sl.onPointerDown(e)}
+            >
+                {name}
+            </span>
+            &nbsp;
+        </>
+    )
+}
+
 interface HypProps {
     hyp: InteractiveHypothesisBundle
     mvarId?: MVarId
@@ -82,19 +134,15 @@ interface HypProps {
 function Hyp({ hyp: h, mvarId }: HypProps) {
     const locs = React.useContext(LocationsContext)
 
-    const namecls: string = (h.isInserted ? 'inserted-text ' : '') + (h.isRemoved ? 'removed-text ' : '')
-
     const names = InteractiveHypothesisBundle_nonAnonymousNames(h).map((n, i) => (
-        <span className={namecls + (isInaccessibleName(n) ? 'goal-inaccessible ' : '')} key={i}>
-            <SelectableLocation
-                locs={locs}
-                loc={mvarId && h.fvarIds && h.fvarIds.length > i ? { mvarId, loc: { hyp: h.fvarIds[i] } } : undefined}
-                alwaysHighlight={false}
-            >
-                {n}
-            </SelectableLocation>
-            &nbsp;
-        </span>
+        <HypName
+            name={n}
+            isInserted={!!h.isInserted}
+            isRemoved={!!h.isRemoved}
+            mvarId={mvarId}
+            fvarId={h.fvarIds?.at(i)}
+            key={i}
+        ></HypName>
     ))
 
     const typeLocs: Locations | undefined = React.useMemo(
