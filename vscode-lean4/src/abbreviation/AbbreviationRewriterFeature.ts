@@ -1,5 +1,5 @@
-import { AbbreviationProvider } from '@leanprover/unicode-input'
-import { commands, Disposable, languages, OutputChannel, TextEditor, window, workspace } from 'vscode'
+import { AbbreviationProvider, SelectionMoveMode } from '@leanprover/unicode-input'
+import { Disposable, OutputChannel, TextEditor, commands, languages, window, workspace } from 'vscode'
 import { extUriEquals, toExtUri } from '../utils/exturi'
 import { VSCodeAbbreviationConfig } from './VSCodeAbbreviationConfig'
 import { VSCodeAbbreviationRewriter } from './VSCodeAbbreviationRewriter'
@@ -17,6 +17,7 @@ export class AbbreviationRewriterFeature {
         private readonly config: VSCodeAbbreviationConfig,
         private readonly abbreviationProvider: AbbreviationProvider,
         private readonly outputChannel: OutputChannel,
+        private readonly selectionMoveMove?: SelectionMoveMode,
     ) {
         void this.changedActiveTextEditor(window.activeTextEditor)
 
@@ -49,6 +50,7 @@ export class AbbreviationRewriterFeature {
                         abbreviationProvider,
                         outputChannel,
                         window.activeTextEditor,
+                        this.selectionMoveMove,
                     )
                 } else if (
                     this.activeAbbreviationRewriter !== undefined &&
@@ -86,6 +88,7 @@ export class AbbreviationRewriterFeature {
             this.abbreviationProvider,
             this.outputChannel,
             activeTextEditor,
+            this.selectionMoveMove,
         )
     }
 
