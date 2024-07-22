@@ -35,3 +35,11 @@ export function isFileInFolder(file: string, folder: string) {
     const isSubdir = relative.length > 0 && !relative.startsWith('..') && !path.isAbsolute(relative)
     return isSubdir
 }
+
+/** Computes the relative file path of `file` in `folder`. Returns `undefined` if `file` is not in `folder`. */
+export function relativeFilePathInFolder(file: string, folder: string): string | undefined {
+    if (!isFileInFolder(file, folder)) {
+        return undefined
+    }
+    return path.relative(folder, file)
+}

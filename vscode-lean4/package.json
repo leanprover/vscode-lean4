@@ -354,6 +354,12 @@
                 "category": "Lean 4",
                 "title": "Project: Fetch Mathlib Build Cache",
                 "description": "Downloads cached Mathlib build artifacts to avoid full elaboration"
+            },
+            {
+                "command": "lean4.project.fetchFileCache",
+                "category": "Lean 4",
+                "title": "Project: Fetch Mathlib Build Cache For Focused File",
+                "description": "Downloads cached Mathlib build artifacts of the focused file to avoid full elaboration"
             }
         ],
         "languages": [
@@ -584,6 +590,10 @@
                 {
                     "command": "lean4.project.fetchCache",
                     "when": "lean4.isLeanFeatureSetActive"
+                },
+                {
+                    "command": "lean4.project.fetchFileCache",
+                    "when": "lean4.isLeanFeatureSetActive"
                 }
             ],
             "editor/title": [
@@ -701,6 +711,11 @@
                     "command": "lean4.project.fetchCache",
                     "when": "lean4.isLeanFeatureSetActive",
                     "group": "2_mathlibActions@1"
+                },
+                {
+                    "command": "lean4.project.fetchFileCache",
+                    "when": "lean4.isLeanFeatureSetActive",
+                    "group": "2_mathlibActions@2"
                 }
             ],
             "lean4.titlebar.documentation": [
