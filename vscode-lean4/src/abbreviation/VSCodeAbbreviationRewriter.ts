@@ -43,6 +43,7 @@ export class VSCodeAbbreviationRewriter implements AbbreviationTextSource {
         readonly abbreviationProvider: AbbreviationProvider,
         private readonly outputChannel: OutputChannel,
         private readonly textEditor: TextEditor,
+        private selectionMoveMoveOverride?: SelectionMoveMode
     ) {
         this.rewriter = new AbbreviationRewriter(config, abbreviationProvider, this)
 
@@ -89,7 +90,7 @@ export class VSCodeAbbreviationRewriter implements AbbreviationTextSource {
     }
 
     selectionMoveMode(): SelectionMoveMode {
-        return { kind: 'OnlyMoveCursorSelections', updateUnchangedSelections: this.isVimExtensionInstalled }
+        return this.selectionMoveMoveOverride ?? { kind: 'OnlyMoveCursorSelections', updateUnchangedSelections: this.isVimExtensionInstalled }
     }
 
     collectSelections(): Range[] {
