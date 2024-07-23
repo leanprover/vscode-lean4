@@ -1,4 +1,13 @@
-import { commands, Disposable, OutputChannel, SaveDialogOptions, Uri, window, workspace } from 'vscode'
+import {
+    commands,
+    Disposable,
+    OutputChannel,
+    QuickPickItemKind,
+    SaveDialogOptions,
+    Uri,
+    window,
+    workspace,
+} from 'vscode'
 import {
     checkAll,
     checkAreDependenciesInstalled,
@@ -250,13 +259,46 @@ Open this project instead?`
     }
 
     private async cloneProject() {
-        const projectUri: string | undefined = await window.showInputBox({
-            title: 'URL Input',
-            value: 'https://github.com/leanprover-community/mathlib4',
-            prompt: 'URL of Git repository for existing Lean 4 project',
-        })
-        if (projectUri === undefined) {
+        const cloneItems = [
+            {
+                label: 'Git repository URL',
+                detail: 'Custom URL of Git repository to download the project from',
+                isPreset: false,
+            },
+            {
+                label: '',
+                kind: QuickPickItemKind.Separator,
+            },
+            {
+                label: 'Mathlib',
+                description: "Lean's math library",
+                detail: 'https://github.com/leanprover-community/mathlib4',
+                isPreset: true,
+            },
+            {
+                label: 'Mathematics in Lean',
+                description: 'Introduction to Lean for users with a mathematics background',
+                detail: 'https://github.com/leanprover-community/mathematics_in_lean',
+                isPreset: true,
+            },
+        ]
+        const cloneChoice = await window.showQuickPick(cloneItems, { title: 'Choose a project to download' })
+        if (cloneChoice === undefined) {
             return
+        }
+
+        let projectUri: string
+        if (cloneChoice.isPreset && cloneChoice.detail !== undefined) {
+            projectUri = cloneChoice.detail
+        } else {
+            const projectUriInput = await window.showInputBox({
+                title: 'URL Input',
+                prompt: 'URL of Git repository for existing Lean 4 project',
+            })
+            if (projectUriInput === undefined) {
+                return
+            }
+            projectUri = projectUriInput
         }
 
         const projectFolder: FileUri | undefined = await ProjectInitializationProvider.askForNewProjectFolderLocation({
