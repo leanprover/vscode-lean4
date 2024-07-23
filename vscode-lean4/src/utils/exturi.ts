@@ -1,5 +1,5 @@
 import { Uri, workspace } from 'vscode'
-import { isFileInFolder } from './fsHelper'
+import { isFileInFolder, relativeFilePathInFolder } from './fsHelper'
 
 function unsupportedSchemeError(uri: Uri): Error {
     return new Error(`Got URI with unsupported scheme '${uri.scheme}': '${uri}'`)
@@ -55,6 +55,14 @@ export class FileUri {
 
     isInFolder(folderUri: FileUri): boolean {
         return isFileInFolder(this.fsPath, folderUri.fsPath)
+    }
+
+    relativeTo(folderUri: FileUri): FileUri | undefined {
+        const relativePath: string | undefined = relativeFilePathInFolder(this.fsPath, folderUri.fsPath)
+        if (relativePath === undefined) {
+            return undefined
+        }
+        return new FileUri(relativePath)
     }
 }
 

@@ -600,6 +600,7 @@ The Lean 4 VS Code extension supports the following commands that can be run in 
 1. **['Project: Clean Project'](command:lean4.project.clean)**. Removes all build artifacts for the Lean project. If the project is [Mathlib](https://github.com/leanprover-community/mathlib4) or depends on it, it will also offer to download and install the current Mathlib build artifact cache after cleaning the project.
 1. **['Project: Update Dependency…'](command:lean4.project.updateDependency)**. Displays a list of all dependencies that can be updated. After selecting a dependency and updating it, if the project is [Mathlib](https://github.com/leanprover-community/mathlib4) or depends on it, it will also download and install the current Mathlib build artifact cache. At the end, if the Lean toolchain of the updated project differs from the Lean toolchain of the project, the command will offer to update the Lean toolchain of the project to that of the updated dependency.
 1. **['Project: Fetch Mathlib Build Cache'](command:lean4.project.fetchCache)**. Downloads and installs the current Mathlib build artifact cache if the project is [Mathlib](https://github.com/leanprover-community/mathlib4) or depends on it.
+1. **['Project: Fetch Mathlib Build Cache For Focused File'](command:lean4.project.fetchFileCache)**. Downloads and installs the current Mathlib build artifact for the focused file if the project is [Mathlib](https://github.com/leanprover-community/mathlib4).
 
 <br/>
 

@@ -16,23 +16,32 @@ export interface DirectGitDependency {
 }
 
 export interface Manifest {
+    name: string | undefined
+    version: SemVer
     packagesDir: string
     directGitDependencies: DirectGitDependency[]
 }
 
-type ManifestVersion = { kind: 'LegacyNumberVersion'; version: number } | { kind: 'SemVer'; version: SemVer }
+type ManifestVersion =
+    | { kind: 'LegacyNumberVersion'; version: number; versionAsSemVer: SemVer }
+    | { kind: 'SemVer'; version: SemVer }
 
 function asManifestVersion(versionField: number | string): ManifestVersion {
     switch (typeof versionField) {
         case 'string':
             return { kind: 'SemVer', version: new SemVer(versionField) }
         case 'number':
-            return { kind: 'LegacyNumberVersion', version: versionField }
+            return {
+                kind: 'LegacyNumberVersion',
+                version: versionField,
+                versionAsSemVer: new SemVer(`0.${versionField}.0`),
+            }
     }
 }
 
-function parseVersion1To6Manifest(parsedJson: any) {
+function parseVersion1To6Manifest(version: SemVer, parsedJson: any) {
     const version1To6ManifestSchema = z.object({
+        name: z.optional(z.string()),
         packagesDir: z.string(),
         packages: z.array(
             z.union([
@@ -57,7 +66,12 @@ function parseVersion1To6Manifest(parsedJson: any) {
         return undefined
     }
 
-    const manifest: Manifest = { packagesDir: result.data.packagesDir, directGitDependencies: [] }
+    const manifest: Manifest = {
+        name: result.data.name,
+        version,
+        packagesDir: result.data.packagesDir,
+        directGitDependencies: [],
+    }
 
     for (const pkg of result.data.packages) {
         if (!('git' in pkg)) {
@@ -78,8 +92,9 @@ function parseVersion1To6Manifest(parsedJson: any) {
     return manifest
 }
 
-function parseVersion7ToNManifest(parsedJson: any) {
+function parseVersion7ToNManifest(version: SemVer, parsedJson: any) {
     const version7ToNManifestSchema = z.object({
+        name: z.string(),
         packagesDir: z.string(),
         packages: z.array(
             z.union([
@@ -103,7 +118,12 @@ function parseVersion7ToNManifest(parsedJson: any) {
         return undefined
     }
 
-    const manifest: Manifest = { packagesDir: result.data.packagesDir, directGitDependencies: [] }
+    const manifest: Manifest = {
+        name: result.data.name,
+        version,
+        packagesDir: result.data.packagesDir,
+        directGitDependencies: [],
+    }
 
     for (const pkg of result.data.packages) {
         if (pkg.type !== 'git') {
@@ -141,11 +161,14 @@ export function parseAsManifest(jsonString: string): Manifest | undefined {
     }
     const version = asManifestVersion(versionResult.data.version)
 
-    if (version.kind === 'LegacyNumberVersion' && version.version <= 6) {
-        return parseVersion1To6Manifest(parsedJson)
-    } else {
-        return parseVersion7ToNManifest(parsedJson)
+    if (version.kind === 'LegacyNumberVersion') {
+        if (version.version <= 6) {
+            return parseVersion1To6Manifest(version.versionAsSemVer, parsedJson)
+        } else {
+            return parseVersion7ToNManifest(version.versionAsSemVer, parsedJson)
+        }
     }
+    return parseVersion7ToNManifest(version.version, parsedJson)
 }
 
 export type ManifestReadError = string
@@ -157,12 +180,12 @@ export async function parseManifestInFolder(folderUri: FileUri): Promise<Manifes
     try {
         jsonString = fs.readFileSync(manifestPath, 'utf8')
     } catch (e) {
-        return `Cannot read 'lake-manifest.json' file at ${manifestPath} to determine dependencies.`
+        return `Cannot read 'lake-manifest.json' file at ${manifestPath}.`
     }
 
     const manifest: Manifest | undefined = parseAsManifest(jsonString)
     if (!manifest) {
-        return `Cannot parse 'lake-manifest.json' file at ${manifestPath} to determine dependencies.`
+        return `Cannot parse 'lake-manifest.json' file at ${manifestPath}.`
     }
 
     return manifest
