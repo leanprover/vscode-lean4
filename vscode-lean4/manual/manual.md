@@ -590,8 +590,8 @@ There are two project creation commands that can be accessed using the [command 
 ### Opening projects
 
 There are two commands to open existing Lean projects that can be accessed using the [command palette](#command-palette) or by navigating to the 'Open Project…' submenu in the [command menu](#command-menu):
-1. **['Project: Open Local Project…'](command:lean4.project.open)**. This command will open a Lean 4 project in the folder specified by the folder selection dialog. This command is mostly identical to VS Code's own 'Open Folder…' command, but will also immediately ensure that the opened folder is actually a Lean 4 project.
-1. **['Project: Download Project…'](command:lean4.project.clone)**. This command will download a Lean 4 project from the given URL into the folder specified by the folder creation dialog. If the downloaded project is Lean's math library [Mathlib](https://github.com/leanprover-community/mathlib4) or depends on it, it will also download and install the current Mathlib build artifact cache.
+1. **['Project: Open Local Project…'](command:lean4.project.open)**. This command will open a Lean 4 project in the folder specified by a folder selection dialog. This command is mostly identical to VS Code's own 'Open Folder…' command, but will also immediately ensure that the opened folder is actually a Lean 4 project.
+1. **['Project: Download Project…'](command:lean4.project.clone)**. This command will download a Lean 4 project from a given URL into the folder specified by a folder creation dialog. If the downloaded project is Lean's math library [Mathlib](https://github.com/leanprover-community/mathlib4) or depends on it, it will also download and install the current Mathlib build artifact cache.
 
 ### Project actions
 
