@@ -37,12 +37,20 @@ export function Details({ initiallyOpen, children: [summary, ...children], setOp
     const [isOpen, setOpen] = React.useState<boolean>(initiallyOpen === undefined ? false : initiallyOpen)
     const setupEventListener = React.useCallback((node: HTMLDetailsElement | null) => {
         if (node !== undefined && node !== null) {
-            node.addEventListener('toggle', () => setOpen(node.open))
+            // Prevents the native click event from firing and opening/closing the tag.
+            // This is necessary because we do not want the `details` tag to react to
+            // clicks when we call `e.stopPropagation()` in a synthetic React click event further down in the DOM,
+            // since synthetic React events are only executed after the corresponding native event
+            // has already fully bubbled up the DOM, and so a synthetic React event cannot stop the propagation
+            // of the corresponding native event.
+            node.addEventListener('click', e => {
+                e.preventDefault()
+            })
         }
     }, [])
     if (setOpenRef) setOpenRef(setOpen)
     return (
-        <details ref={setupEventListener} open={isOpen}>
+        <details ref={setupEventListener} open={isOpen} onClick={_ => setOpen(!isOpen)}>
             {summary}
             {isOpen && children}
         </details>
