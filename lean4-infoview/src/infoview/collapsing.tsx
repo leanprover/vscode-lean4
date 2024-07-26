@@ -50,7 +50,14 @@ export function Details({ initiallyOpen, children: [summary, ...children], setOp
     }, [])
     if (setOpenRef) setOpenRef(setOpen)
     return (
-        <details ref={setupEventListener} open={isOpen} onClick={_ => setOpen(!isOpen)}>
+        <details
+            ref={setupEventListener}
+            open={isOpen}
+            onClick={e => {
+                setOpen(!isOpen)
+                e.stopPropagation()
+            }}
+        >
             {summary}
             {isOpen && children}
         </details>
