@@ -191,9 +191,12 @@ export class ProjectInitializationProvider implements Disposable {
             return 'GitAddFailed'
         }
 
+        const author = 'Lean 4 VS Code Extension'
+        const email = ''
+
         const gitCommitResult = await batchExecute(
             'git',
-            ['commit', '--author', 'Lean 4 VS Code Extension <>', '-m', 'Initial commit'],
+            ['-c', `user.name='${author}'`, '-c', `user.email='${email}'`, 'commit', '-m', 'Initial commit'],
             projectFolder.fsPath,
             { combined: this.channel },
         )
