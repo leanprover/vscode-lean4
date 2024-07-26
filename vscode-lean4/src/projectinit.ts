@@ -192,7 +192,7 @@ export class ProjectInitializationProvider implements Disposable {
         }
 
         const author = 'Lean 4 VS Code Extension'
-        const email = ''
+        const email = '<>'
 
         const gitCommitResult = await batchExecute(
             'git',
