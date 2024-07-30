@@ -53,7 +53,7 @@ const MessageView = React.memo(({ uri, diag }: MessageViewProps) => {
     )
     return (
         <Details initiallyOpen>
-            <summary className={severityClass + ' mv2 pointer'}>
+            <span className={severityClass}>
                 {title}
                 <span className="fr" onClick={e => e.preventDefault()}>
                     <a
@@ -79,7 +79,7 @@ const MessageView = React.memo(({ uri, diag }: MessageViewProps) => {
                         title="copy message to clipboard"
                     ></a>
                 </span>
-            </summary>
+            </span>
             <div className="ml1" ref={node}>
                 <pre className="font-code pre-wrap">
                     <EnvPosContext.Provider value={startPos}>
@@ -192,7 +192,7 @@ export function AllMessages({ uri: uri0 }: { uri: DocumentUri }) {
     return (
         <RpcContext.Provider value={rs}>
             <Details setOpenRef={r => (setOpenRef.current = r)} initiallyOpen={!config.autoOpenShowsGoal}>
-                <summary className="mv2 pointer">
+                <>
                     All Messages ({numDiags ?? diags.length})
                     <span
                         className="fr"
@@ -211,7 +211,7 @@ export function AllMessages({ uri: uri0 }: { uri: DocumentUri }) {
                             title={isPaused ? 'continue updating' : 'pause updating'}
                         ></a>
                     </span>
-                </summary>
+                </>
                 <AllMessagesBody uri={uri} messages={iDiags} setNumDiags={setNumDiags} />
             </Details>
         </RpcContext.Provider>

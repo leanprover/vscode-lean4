@@ -32,33 +32,23 @@ interface DetailsProps {
     setOpenRef?: (_: React.Dispatch<React.SetStateAction<boolean>>) => void
 }
 
-/** Like `<details>` but can be programatically revealed using `setOpenRef`. */
+/** Like `<details>` but can be programatically revealed using `setOpenRef`.
+ * The first child is placed inside the `<summary>` node. */
 export function Details({ initiallyOpen, children: [summary, ...children], setOpenRef }: DetailsProps): JSX.Element {
     const [isOpen, setOpen] = React.useState<boolean>(initiallyOpen === undefined ? false : initiallyOpen)
-    const setupEventListener = React.useCallback((node: HTMLDetailsElement | null) => {
-        if (node !== undefined && node !== null) {
-            // Prevents the native click event from firing and opening/closing the tag.
-            // This is necessary because we do not want the `details` tag to react to
-            // clicks when we call `e.stopPropagation()` in a synthetic React click event further down in the DOM,
-            // since synthetic React events are only executed after the corresponding native event
-            // has already fully bubbled up the DOM, and so a synthetic React event cannot stop the propagation
-            // of the corresponding native event.
-            node.addEventListener('click', e => {
-                e.preventDefault()
-            })
-        }
-    }, [])
     if (setOpenRef) setOpenRef(setOpen)
     return (
-        <details
-            ref={setupEventListener}
-            open={isOpen}
-            onClick={e => {
-                setOpen(!isOpen)
-                e.stopPropagation()
-            }}
-        >
-            {summary}
+        <details open={isOpen}>
+            <summary
+                className="mv2 pointer "
+                onClick={e => {
+                    if (!e.defaultPrevented) setOpen(!isOpen)
+                    // See https://github.com/facebook/react/issues/15486#issuecomment-873516817
+                    e.preventDefault()
+                }}
+            >
+                {summary}
+            </summary>
             {isOpen && children}
         </details>
     )
