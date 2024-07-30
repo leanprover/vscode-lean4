@@ -109,6 +109,7 @@ export function useSelectableLocation(settings: SelectableLocationSettings): Sel
         if (settings.isSelectable && locs && e.shiftKey) {
             locs.setSelected(settings.loc, on => !on)
             e.stopPropagation()
+            e.preventDefault()
             return true
         }
         return false

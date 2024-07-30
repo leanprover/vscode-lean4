@@ -44,6 +44,7 @@ function LazyTrace({ col, cls, msg }: { col: number; cls: string; msg: MessageDa
                     void fetchTrace()
                     setOpen(true)
                     ev.stopPropagation()
+                    ev.preventDefault()
                 }}
             >
                 [{cls}] &gt;
@@ -57,6 +58,7 @@ function LazyTrace({ col, cls, msg }: { col: number; cls: string; msg: MessageDa
                     onClick={ev => {
                         setOpen(false)
                         ev.stopPropagation()
+                        ev.preventDefault()
                     }}
                 >
                     [{cls}] ∨
@@ -72,6 +74,7 @@ function LazyTrace({ col, cls, msg }: { col: number; cls: string; msg: MessageDa
                     onClick={ev => {
                         void fetchTrace()
                         ev.stopPropagation()
+                        ev.preventDefault()
                     }}
                 >
                     [{cls}] Error (click to retry):
@@ -134,6 +137,7 @@ function CollapsibleTraceNode(traceEmbed: TraceEmbed) {
             // Don't handle clicks within React portals nested in this div (notably, tooltips).
             if (!ev.currentTarget.contains(ev.target)) return
             ev.stopPropagation()
+            ev.preventDefault()
             if (!open) void fetchChildren()
             setOpen(o => !o)
         },

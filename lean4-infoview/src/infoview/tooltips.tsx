@@ -251,6 +251,7 @@ export function useHoverTooltip(
         clearTimeout()
         setState(state === 'pin' ? 'hide' : 'pin')
         e.stopPropagation()
+        e.preventDefault()
     }
 
     const onClick = (e: React.MouseEvent<HTMLSpanElement>) => {
