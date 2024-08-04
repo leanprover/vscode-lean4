@@ -403,7 +403,7 @@ export const FilteredGoals = React.memo(
         return (
             <div style={{ display: goals !== undefined ? 'block' : 'none' }}>
                 <Details setOpenRef={r => (setOpenRef.current = r)} initiallyOpen={initiallyOpen}>
-                    <summary className="mv2 pointer">
+                    <>
                         {headerChildren}
                         <span
                             className="fr"
@@ -415,7 +415,7 @@ export const FilteredGoals = React.memo(
                             {sortButton}
                             {filterButton}
                         </span>
-                    </summary>
+                    </>
                     <div className="ml1">
                         {goals && <Goals goals={goals} filter={goalFilters} displayCount={displayCount}></Goals>}
                     </div>

@@ -227,7 +227,7 @@ const InfoDisplayContent = React.memo((props: InfoDisplayContentProps) => {
             />
             <div style={{ display: hasMessages ? 'block' : 'none' }} key="messages">
                 <Details initiallyOpen key="messages">
-                    <summary className="mv2 pointer">Messages ({messages.length})</summary>
+                    <>Messages ({messages.length})</>
                     <div className="ml1">
                         <MessagesList uri={pos.uri} messages={messages} />
                     </div>

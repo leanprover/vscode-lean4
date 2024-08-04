@@ -32,18 +32,23 @@ interface DetailsProps {
     setOpenRef?: (_: React.Dispatch<React.SetStateAction<boolean>>) => void
 }
 
-/** Like `<details>` but can be programatically revealed using `setOpenRef`. */
+/** Like `<details>` but can be programatically revealed using `setOpenRef`.
+ * The first child is placed inside the `<summary>` node. */
 export function Details({ initiallyOpen, children: [summary, ...children], setOpenRef }: DetailsProps): JSX.Element {
     const [isOpen, setOpen] = React.useState<boolean>(initiallyOpen === undefined ? false : initiallyOpen)
-    const setupEventListener = React.useCallback((node: HTMLDetailsElement | null) => {
-        if (node !== undefined && node !== null) {
-            node.addEventListener('toggle', () => setOpen(node.open))
-        }
-    }, [])
     if (setOpenRef) setOpenRef(setOpen)
     return (
-        <details ref={setupEventListener} open={isOpen}>
-            {summary}
+        <details open={isOpen}>
+            <summary
+                className="mv2 pointer "
+                onClick={e => {
+                    if (!e.defaultPrevented) setOpen(!isOpen)
+                    // See https://github.com/facebook/react/issues/15486#issuecomment-873516817
+                    e.preventDefault()
+                }}
+            >
+                {summary}
+            </summary>
             {isOpen && children}
         </details>
     )
