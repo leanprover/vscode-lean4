@@ -2,6 +2,7 @@ import { SemVer } from 'semver'
 import { OutputChannel, commands } from 'vscode'
 import { ExtUri, FileUri, extUriToCwdUri } from '../utils/exturi'
 import { LeanInstaller } from '../utils/leanInstaller'
+import { willUseLakeServer } from '../utils/projectInfo'
 import { diagnose } from './setupDiagnoser'
 import {
     PreconditionCheckResult,
@@ -234,4 +235,20 @@ export async function checkIsVSCodeUpToDate(): Promise<PreconditionCheckResult> 
         case 'UpToDate':
             return 'Fulfilled'
     }
+}
+
+export async function checkLean4ProjectPreconditions(
+    channel: OutputChannel,
+    folderUri: ExtUri,
+): Promise<PreconditionCheckResult> {
+    return await checkAll(
+        () => checkIsValidProjectFolder(channel, folderUri),
+        () => checkIsLeanVersionUpToDate(channel, folderUri, { modal: false }),
+        async () => {
+            if (!(await willUseLakeServer(folderUri))) {
+                return 'Fulfilled'
+            }
+            return await checkIsLakeInstalledCorrectly(channel, folderUri, {})
+        },
+    )
 }
