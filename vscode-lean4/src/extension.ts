@@ -11,11 +11,13 @@ import {
     checkIsElanUpToDate,
     checkIsLean4Installed,
     checkIsVSCodeUpToDate,
+    checkLean4ProjectPreconditions,
 } from './diagnostics/setupDiagnostics'
 import { PreconditionCheckResult } from './diagnostics/setupNotifs'
 import { AlwaysEnabledFeatures, Exports, Lean4EnabledFeatures } from './exports'
 import { InfoProvider } from './infoview'
 import { LeanClient } from './leanclient'
+import { setupClient } from './leanclientsetup'
 import { LoogleView } from './loogleview'
 import { ManualView } from './manualview'
 import { ProjectInitializationProvider } from './projectinit'
@@ -170,7 +172,12 @@ async function activateLean4Features(
         return undefined
     }
 
-    const clientProvider = new LeanClientProvider(installer, installer.getOutputChannel())
+    const clientProvider = new LeanClientProvider(
+        installer,
+        installer.getOutputChannel(),
+        checkLean4ProjectPreconditions,
+        setupClient
+    )
     context.subscriptions.push(clientProvider)
 
     const watchService = new LeanConfigWatchService()
