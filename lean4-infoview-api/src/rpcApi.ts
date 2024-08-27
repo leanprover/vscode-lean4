@@ -40,7 +40,7 @@ export type MVarId = string
 
 export interface InteractiveHypothesisBundle {
     /** The pretty names of the variables in the bundle. Anonymous names are rendered
-     * as `"[anonymous]"` whereas inaccessible ones have a `✝` appended at the end.
+     * as `"[anonymous]"` whereas inaccessible ones have a `✝︎` appended at the end.
      * Use `InteractiveHypothesisBundle_nonAnonymousNames` to filter anonymouse ones out. */
     names: string[]
     /** Present since server version 1.1.2. */

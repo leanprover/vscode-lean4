@@ -18,7 +18,7 @@ import { useEvent } from './util'
 
 /** Returns true if `h` is inaccessible according to Lean's default name rendering. */
 function isInaccessibleName(h: string): boolean {
-    return h.indexOf('✝') >= 0
+    return h.indexOf('✝︎') >= 0
 }
 
 function goalToString(g: InteractiveGoal): string {

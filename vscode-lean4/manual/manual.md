@@ -255,7 +255,7 @@ Disabling the 'Lean 4 > Infoview: Auto Open Shows Goal' setting will only displa
 
 Both the proof goals in the tactic state and the expected type display a list of assumptions and locally available identifiers in a `<name> : <type>` format. At the end of the list of assumptions, a `⊢` symbol indicates the proof goal or the expected type.
 
-Inaccessible names, i.e. names that have been automatically generated and cannot be used in a Lean program, are marked with a tombstome symbol (`✝`) and greyed out.
+Inaccessible names, i.e. names that have been automatically generated and cannot be used in a Lean program, are marked with a tombstome symbol (`✝︎`) and greyed out.
 
 When a proof goal changes as the result of a tactic operation, the corresponding part of the proof state that changes is highlighted using red or green depending on whether this part of the proof state is about to be removed or was just inserted.
 
