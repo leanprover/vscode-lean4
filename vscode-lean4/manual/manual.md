@@ -363,9 +363,9 @@ By default, VS Code will auto-complete the selected identifier when `Enter` or `
 
 Code actions are a mechanism for Lean to suggest changes to the code. When a code action is available at the current text cursor position, VS Code will display a light bulb icon. Clicking this icon or pressing `Ctrl+.` (`Cmd+.`) and then selecting one of the entries will apply the code action and make the suggested change to the code. In Lean, code actions can be defined in user code.
 
-For example, the built-in `#guard_msgs` command can be used to test that a declaration produces a specific [diagnostic](#errors-warnings-and-information), e.g. `/-- info: 2 -/ #guard_msgs (info) in #eval 1` produces ```❌ Docstring on `#guard_msgs` does not match generated message: info: 1```. When positioning the text cursor in the `#guard_msgs` line, a light bulb will pop up with an entry to replace the documentation above `#guard_msgs` with the actual output.
+For example, the built-in `#guard_msgs` command can be used to test that a declaration produces a specific [diagnostic](#errors-warnings-and-information), e.g. `/-- info: 2 -/ #guard_msgs (info) in #eval 1` produces ```❌️ Docstring on `#guard_msgs` does not match generated message: info: 1```. When positioning the text cursor in the `#guard_msgs` line, a light bulb will pop up with an entry to replace the documentation above `#guard_msgs` with the actual output.
 
-The [Batteries](https://github.com/leanprover-community/batteries) library also provides some additional useful code actions, for example: 
+The [Batteries](https://github.com/leanprover-community/batteries) library also provides some additional useful code actions, for example:
 - Typing `instance : <class> := _` will offer to generate a skeleton to implement an instance for `<class>`.
 - Typing `def f : <type1> → <type2> := _` will offer to generate a match on the value of `<type1>`.
 - Typing `induction x` or `cases x` will offer to generate the induction cases for `x`.
