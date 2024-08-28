@@ -1,6 +1,6 @@
 {
     "name": "lean4",
-    "displayName": "lean4",
+    "displayName": "Lean 4",
     "description": "Lean 4 language support for VS Code",
     "version": "0.0.176",
     "publisher": "leanprover",
@@ -13,6 +13,7 @@
     "keywords": [
         "Lean",
         "Lean 4",
+        "lean4",
         "Theorem Provers",
         "InfoView"
     ],
