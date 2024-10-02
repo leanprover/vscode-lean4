@@ -18,6 +18,7 @@ import { InfoProvider } from './infoview'
 import { LeanClient } from './leanclient'
 import { LoogleView } from './loogleview'
 import { ManualView } from './manualview'
+import { MoogleView } from './moogleview'
 import { ProjectInitializationProvider } from './projectinit'
 import { ProjectOperationProvider } from './projectoperations'
 import { LeanTaskGutter } from './taskgutter'
@@ -102,6 +103,9 @@ function activateAlwaysEnabledFeatures(context: ExtensionContext): AlwaysEnabled
 
     const loogleView = new LoogleView(extensionPath, context.extension.packageJSON.version)
     context.subscriptions.push(loogleView)
+
+    const moogleView = new MoogleView(extensionPath, context.extension.packageJSON.version)
+    context.subscriptions.push(moogleView)
 
     const outputChannel = window.createOutputChannel('Lean: Editor')
     context.subscriptions.push(

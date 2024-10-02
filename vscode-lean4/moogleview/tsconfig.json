@@ -1,0 +1,10 @@
+{
+    "extends": "../tsconfig",
+    "compilerOptions": {
+        "strict": true,
+        "lib": ["dom", "es6"],
+        "rootDir": "../",
+        "sourceMap": true
+    },
+    "include": ["./**/*"]
+}
