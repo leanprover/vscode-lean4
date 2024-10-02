@@ -22,9 +22,7 @@ interface MoogleHit {
 interface MoogleQueryResponse {
     data: MoogleHit[]
     error?: string
-    heartbeats?: number
     header?: string
-    count?: number
 }
 
 class MoogleQueryHistory {
@@ -207,30 +205,7 @@ class MoogleView {
             return
         }
 
-        const parser = new DOMParser()
-        const updatedHits = hits.map(hit => {
-            const doc = parser.parseFromString(hit.displayHtml, 'text/html')
-            const body = doc.body
-
-            // Find the span that ends with ":"
-            const colonSpan = body.querySelector('span[class="decl_args"]:last-of-type')
-            if (colonSpan) {
-                const nextElement = colonSpan.nextElementSibling
-                if (nextElement && nextElement.tagName === 'DIV') {
-                    const contentSpan = nextElement.querySelector('span')
-                    if (contentSpan) {
-                        contentSpan.textContent = '    ' + contentSpan.textContent
-                    }
-                }
-            }
-
-            return {
-                ...hit,
-                displayHtml: body.innerHTML,
-            }
-        })
-
-        updatedHits.forEach((hit, index) => {
+        hits.forEach((hit, index) => {
             const resultElement = document.createElement('div')
             resultElement.className = 'result-item'
 
@@ -255,7 +230,7 @@ class MoogleView {
             <div class="result-header">
                 <h3>${hit.declarationName}</h3>
             </div>
-            <div class="result-content theorem-result-content">
+            <div class="result-content">
                 ${declarationDocstring ? `<div class="display-html-container">${declarationDocstring}</div>` : ''}
                 <div class="display-html-container">${modifiedHtmlContent}</div>
                 <vscode-link href="${hit.sourceCodeUrl}">View source code</vscode-link>

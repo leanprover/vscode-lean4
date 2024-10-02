@@ -642,7 +642,12 @@
                 {
                     "command": "lean4.loogle.search",
                     "when": "config.lean4.alwaysShowTitleBarMenu || lean4.isLeanFeatureSetActive",
-                    "group": "4_loogle@1"
+                    "group": "4_search@2"
+                },
+                {
+                    "command": "lean4.moogle.search",
+                    "when": "config.lean4.alwaysShowTitleBarMenu || lean4.isLeanFeatureSetActive",
+                    "group": "4_search@2"
                 },
                 {
                     "command": "lean4.troubleshooting.showOutput",
@@ -668,11 +673,6 @@
                     "submenu": "lean4.titlebar.documentation",
                     "when": "config.lean4.alwaysShowTitleBarMenu || lean4.isLeanFeatureSetActive",
                     "group": "8_documentation@1"
-                },
-                {
-                    "command": "lean4.moogle.search",
-                    "when": "config.lean4.alwaysShowTitleBarMenu || lean4.isLeanFeatureSetActive",
-                    "group": "9_moogle@1"
                 }
             ],
             "lean4.titlebar.newProject": [

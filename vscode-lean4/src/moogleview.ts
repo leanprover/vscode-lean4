@@ -20,16 +20,12 @@ export class MoogleView implements Disposable {
     ) {
         this.subscriptions.push(
             commands.registerCommand('lean4.moogle.search', async () => {
-                let initialQuery: string | undefined
-                if (window.activeTextEditor !== undefined && window.activeTextEditor.selection !== undefined) {
-                    initialQuery = window.activeTextEditor.document.getText(window.activeTextEditor.selection)
-                }
-                await this.display(initialQuery)
+                await this.display()
             }),
         )
     }
 
-    async display(initialQuery?: string | undefined) {
+    async display() {
         let column =
             window.activeTextEditor && window.activeTextEditor?.viewColumn
                 ? window.activeTextEditor?.viewColumn + 1
@@ -58,10 +54,10 @@ export class MoogleView implements Disposable {
                 <meta
                     http-equiv="Content-Security-Policy"
                     content="
-                    default-src 'self' ${webviewPanel.webview.cspSource} https://loogle.lean-lang.org https://moogle.ai https://www.moogle.ai https://morph-cors-anywhere.pranavnt.workers.dev;
+                    default-src 'self' ${webviewPanel.webview.cspSource} https://moogle.ai https://www.moogle.ai https://morph-cors-anywhere.pranavnt.workers.dev;
                     script-src 'self' ${webviewPanel.webview.cspSource} 'nonce-inline';
                     style-src 'self' ${webviewPanel.webview.cspSource} 'unsafe-inline';
-                    connect-src 'self' ${webviewPanel.webview.cspSource} https://loogle.lean-lang.org https://moogle.ai https://www.moogle.ai https://morph-cors-anywhere.pranavnt.workers.dev;
+                    connect-src 'self' ${webviewPanel.webview.cspSource} https://moogle.ai https://www.moogle.ai https://morph-cors-anywhere.pranavnt.workers.dev;
                     "
                 />
                 <title>MoogleView</title>
@@ -78,7 +74,6 @@ export class MoogleView implements Disposable {
                     src="${this.webviewUri(webviewPanel, 'dist/moogleview.js')}"
                     data-id="moogleview-script"
                     abbreviation-config="${escapeHtml(JSON.stringify(new VSCodeAbbreviationConfig()))}"
-                    initial-query="${escapeHtml(initialQuery ?? '')}"
                     vscode-version="${escapeHtml(version)}"
                     extension-version="${escapeHtml(this.extensionVersion)}"></script>
             </body>
