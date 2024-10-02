@@ -44,7 +44,6 @@
 
     box-sizing: border-box;
     position: relative;
-    display: flex;
     flex-direction: row;
     color: var(--input-foreground);
     background: var(--input-background);
@@ -146,10 +145,6 @@ h2 {
     font-family: var(--vscode-editor-font-family);
 }
 
-.decl_type {
-    text-indent: 20px;
-}
-
 .display-html-container a {
     text-decoration: none;
     color: var(--vscode-editor-foreground);
@@ -188,6 +183,7 @@ vscode-link {
 
 .decl_type {
     color: var(--vscode-symbolIcon-typeParameterForeground);
+    text-indent: 20px;
 }
 
 .fn {
