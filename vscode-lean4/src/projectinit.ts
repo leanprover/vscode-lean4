@@ -1,13 +1,4 @@
-import {
-    commands,
-    Disposable,
-    OutputChannel,
-    QuickPickItemKind,
-    SaveDialogOptions,
-    Uri,
-    window,
-    workspace,
-} from 'vscode'
+import { commands, Disposable, OutputChannel, QuickPickItem, SaveDialogOptions, Uri, window, workspace } from 'vscode'
 import {
     checkAll,
     checkAreDependenciesInstalled,
@@ -262,16 +253,13 @@ Open this project instead?`
     }
 
     private async cloneProject() {
-        const cloneItems = [
-            {
-                label: 'Git repository URL',
-                detail: 'Custom URL of Git repository to download the project from',
-                isPreset: false,
-            },
-            {
-                label: '',
-                kind: QuickPickItemKind.Separator,
-            },
+        const quickPick = window.createQuickPick<QuickPickItem & { isPreset: boolean }>()
+        quickPick.title = "Enter a Git repository URL or choose a preset project to download (Press 'Escape' to cancel)"
+        quickPick.placeholder = 'URL of Git repository for existing Lean 4 project'
+        quickPick.ignoreFocusOut = true
+        quickPick.matchOnDescription = true
+        quickPick.matchOnDetail = true
+        const presets: (QuickPickItem & { isPreset: boolean })[] = [
             {
                 label: 'Mathlib',
                 description: "Lean's math library",
@@ -285,69 +273,82 @@ Open this project instead?`
                 isPreset: true,
             },
         ]
-        const cloneChoice = await window.showQuickPick(cloneItems, { title: 'Choose a project to download' })
-        if (cloneChoice === undefined) {
-            return
-        }
+        quickPick.items = presets
+        quickPick.onDidChangeValue(_ => {
+            if (
+                quickPick.activeItems.length === 0 ||
+                (quickPick.activeItems.length === 1 && !quickPick.activeItems[0].isPreset)
+            ) {
+                quickPick.items = presets.concat({
+                    label: 'Git repository URL',
+                    detail: quickPick.value,
+                    isPreset: false,
+                })
+            } else {
+                quickPick.items = presets
+            }
+        })
+        quickPick.onDidAccept(async () => {
+            const cloneChoices = quickPick.selectedItems
+            quickPick.dispose()
 
-        let projectUri: string
-        if (cloneChoice.isPreset && cloneChoice.detail !== undefined) {
-            projectUri = cloneChoice.detail
-        } else {
-            const projectUriInput = await window.showInputBox({
-                title: 'URL Input',
-                prompt: 'URL of Git repository for existing Lean 4 project',
-            })
-            if (projectUriInput === undefined) {
+            if (cloneChoices.length === 0) {
                 return
             }
-            projectUri = projectUriInput
-        }
+            const cloneChoice = cloneChoices[0]
+            if (cloneChoice.detail === undefined) {
+                return
+            }
+            const projectUri: string = cloneChoice.detail
 
-        const projectFolder: FileUri | undefined = await ProjectInitializationProvider.askForNewProjectFolderLocation({
-            saveLabel: 'Create project folder',
-            title: 'Create a new project folder to clone existing Lean 4 project into',
+            const projectFolder: FileUri | undefined =
+                await ProjectInitializationProvider.askForNewProjectFolderLocation({
+                    saveLabel: 'Create project folder',
+                    title: 'Create a new project folder to clone existing Lean 4 project into',
+                })
+            if (projectFolder === undefined) {
+                return
+            }
+
+            await workspace.fs.createDirectory(projectFolder.asUri())
+
+            const preCloneCheckResult = await checkPreCloneLean4ProjectPreconditions(
+                this.installer.getOutputChannel(),
+                projectFolder,
+            )
+            if (preCloneCheckResult === 'Fatal') {
+                return
+            }
+
+            const result: ExecutionResult = await batchExecuteWithProgress(
+                'git',
+                ['clone', projectUri, projectFolder.fsPath],
+                'Cloning project',
+                { channel: this.channel, allowCancellation: true },
+            )
+            if (result.exitCode === ExecutionExitCode.Cancelled) {
+                return
+            }
+            if (result.exitCode !== ExecutionExitCode.Success) {
+                displayResultError(result, 'Cannot download project.')
+                return
+            }
+
+            const postCloneCheckResult = await checkPostCloneLean4ProjectPreconditions(this.installer, projectFolder)
+            if (postCloneCheckResult === 'Fatal') {
+                return
+            }
+
+            // Try it. If this is not a mathlib project, it will fail silently. Otherwise, it will grab the cache.
+            const fetchResult: ExecutionResult = await lake(this.channel, projectFolder).fetchMathlibCache(true)
+            if (fetchResult.exitCode === ExecutionExitCode.Cancelled) {
+                return
+            }
+
+            await ProjectInitializationProvider.openNewFolder(projectFolder)
         })
-        if (projectFolder === undefined) {
-            return
-        }
 
-        await workspace.fs.createDirectory(projectFolder.asUri())
-
-        const preCloneCheckResult = await checkPreCloneLean4ProjectPreconditions(
-            this.installer.getOutputChannel(),
-            projectFolder,
-        )
-        if (preCloneCheckResult === 'Fatal') {
-            return
-        }
-
-        const result: ExecutionResult = await batchExecuteWithProgress(
-            'git',
-            ['clone', projectUri, projectFolder.fsPath],
-            'Cloning project',
-            { channel: this.channel, allowCancellation: true },
-        )
-        if (result.exitCode === ExecutionExitCode.Cancelled) {
-            return
-        }
-        if (result.exitCode !== ExecutionExitCode.Success) {
-            displayResultError(result, 'Cannot download project.')
-            return
-        }
-
-        const postCloneCheckResult = await checkPostCloneLean4ProjectPreconditions(this.installer, projectFolder)
-        if (postCloneCheckResult === 'Fatal') {
-            return
-        }
-
-        // Try it. If this is not a mathlib project, it will fail silently. Otherwise, it will grab the cache.
-        const fetchResult: ExecutionResult = await lake(this.channel, projectFolder).fetchMathlibCache(true)
-        if (fetchResult.exitCode === ExecutionExitCode.Cancelled) {
-            return
-        }
-
-        await ProjectInitializationProvider.openNewFolder(projectFolder)
+        quickPick.show()
     }
 
     private static async askForNewProjectFolderLocation(options: SaveDialogOptions): Promise<FileUri | undefined> {
