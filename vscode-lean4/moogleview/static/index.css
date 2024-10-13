@@ -99,12 +99,6 @@ h2 {
     color: var(--vscode-foreground);
     font-weight: normal;
 }
-.code {
-    font-family: var(--vscode-editor-font-family);
-    background-color: var(--vscode-textCodeBlock-background);
-    padding: 2px 4px;
-    border-radius: 3px;
-}
 
 .result-item {
     border: 1px solid rgba(209, 213, 219, 0.5);

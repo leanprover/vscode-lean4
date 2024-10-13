@@ -642,7 +642,7 @@
                 {
                     "command": "lean4.loogle.search",
                     "when": "config.lean4.alwaysShowTitleBarMenu || lean4.isLeanFeatureSetActive",
-                    "group": "4_search@2"
+                    "group": "4_search@1"
                 },
                 {
                     "command": "lean4.moogle.search",
