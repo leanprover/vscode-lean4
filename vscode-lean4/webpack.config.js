@@ -100,6 +100,49 @@ const getLoogleViewConfig = env => ({
 })
 
 /** @type {(env: Env) => import('webpack').Configuration} */
+const getMoogleViewConfig = env => ({
+    name: 'moogleview',
+    mode: prodOrDev(env),
+    entry: './moogleview/index.ts',
+    module: {
+        rules: [
+            {
+                test: /\.tsx?$/,
+                use: 'ts-loader',
+                exclude: /node_modules/,
+            },
+            {
+                test: /\.js$/,
+                enforce: 'pre',
+                use: ['source-map-loader'],
+            },
+        ],
+    },
+    resolve: {
+        extensions: ['.tsx', '.ts', '.js'],
+    },
+    devtool: env.production ? undefined : 'inline-source-map',
+    output: {
+        filename: 'moogleview.js',
+        path: path.resolve(__dirname, 'dist'),
+    },
+    plugins: [
+        new CopyPlugin({
+            patterns: [
+                {
+                    from: './moogleview/static',
+                    to: path.resolve(__dirname, 'dist', 'moogleview', 'static'),
+                },
+                {
+                    from: '../node_modules/@vscode/codicons/dist',
+                    to: path.resolve(__dirname, 'dist', 'moogleview', 'static', 'codicons'),
+                },
+            ],
+        }),
+    ],
+})
+
+/** @type {(env: Env) => import('webpack').Configuration} */
 const getAbbreviationViewConfig = env => ({
     name: 'abbreviationview',
     mode: prodOrDev(env),
@@ -164,5 +207,11 @@ const getExtensionConfig = env => ({
 module.exports = function (env) {
     env = env || {}
     env.production = !!env.production
-    return [getWebviewConfig(env), getLoogleViewConfig(env), getAbbreviationViewConfig(env), getExtensionConfig(env)]
+    return [
+        getWebviewConfig(env),
+        getLoogleViewConfig(env),
+        getMoogleViewConfig(env),
+        getAbbreviationViewConfig(env),
+        getExtensionConfig(env),
+    ]
 }
