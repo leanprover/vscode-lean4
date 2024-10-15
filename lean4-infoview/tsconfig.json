@@ -10,7 +10,7 @@
 
         /* Modules */
         "module": "esnext",
-        "moduleResolution": "node",
+        "moduleResolution": "bundler",
 
         /* Emit */
         "sourceMap": true,

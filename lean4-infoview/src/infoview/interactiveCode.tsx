@@ -9,7 +9,9 @@ import {
     TaggedText,
     TaggedText_stripTags,
 } from '@leanprover/infoview-api'
-import { marked } from 'marked'
+import ReactMarkdown from 'react-markdown'
+import rehypeMathjax from 'rehype-mathjax'
+import remarkMath from 'remark-math'
 import { Location } from 'vscode-languageserver-protocol'
 import { EditorContext } from './contexts'
 import { GoalsLocation, LocationsContext, SelectableLocationSettings, useSelectableLocation } from './goalLocation'
@@ -59,31 +61,31 @@ interface TypePopupContentsProps {
     info: SubexprInfo
 }
 
+/**
+ * Parse the `contents` as Markdown and render the result.
+ *
+ * This component applies some infoview-specific styling
+ * and then passes the content through to a Markdown renderer
+ * (currently `remark`).
+ */
 function Markdown({ contents }: { contents: string }): JSX.Element {
-    const renderer = new marked.Renderer()
-    renderer.code = (code, lang) => {
-        // todo: render Lean code blocks using the lean syntax.json
-        return `<div class="font-code pre-wrap">${code}</div>`
-    }
-    renderer.codespan = code => {
-        return `<code class="font-code">${code}</code>`
-    }
-
-    const markedOptions: marked.MarkedOptions = {}
-    markedOptions.sanitizer = (html: string): string => {
-        return ''
-    }
-    markedOptions.sanitize = true
-    markedOptions.silent = true
-    markedOptions.renderer = renderer
-
-    // todo: vscode also has lots of post render sanitization and hooking up of href clicks and so on.
-    // see https://github.com/microsoft/vscode/blob/main/src/vs/base/browser/markdownRenderer.ts
-
-    const renderedMarkdown = marked.parse(contents, markedOptions)
-    return <div dangerouslySetInnerHTML={{ __html: renderedMarkdown }} />
-    // handy for debugging:
-    // return <div>{ renderedMarkdown } </div>
+    return (
+        <ReactMarkdown
+            children={contents}
+            remarkPlugins={[remarkMath]}
+            rehypePlugins={[rehypeMathjax]}
+            components={{
+                code(props) {
+                    const { children, className, node, ...rest } = props
+                    return (
+                        <code {...rest} className={className + ' font-code pre-wrap'}>
+                            {children}
+                        </code>
+                    )
+                },
+            }}
+        />
+    )
 }
 
 /** Shows `explicitValue : itsType` and a docstring if there is one. */
