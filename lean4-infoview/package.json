@@ -9,7 +9,7 @@
         "test": "tsc -p test/tsconfig.json"
     },
     "exports": {
-        ".": "./dist/index.development.js",
+        ".": "./dist/index.production.min.js",
         "./loader": "./dist/loader.production.min.js",
         "./package.json": "./package.json"
     },
