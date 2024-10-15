@@ -9,7 +9,10 @@ import {
     TaggedText,
     TaggedText_stripTags,
 } from '@leanprover/infoview-api'
+// @ts-ignore
+import leanHljs from 'highlightjs-lean'
 import ReactMarkdown from 'react-markdown'
+import rehypeHighlight from 'rehype-highlight'
 import rehypeMathjax from 'rehype-mathjax'
 import remarkMath from 'remark-math'
 import { Location } from 'vscode-languageserver-protocol'
@@ -73,7 +76,12 @@ function Markdown({ contents }: { contents: string }): JSX.Element {
         <ReactMarkdown
             children={contents}
             remarkPlugins={[remarkMath]}
-            rehypePlugins={[rehypeMathjax]}
+            rehypePlugins={[
+                rehypeMathjax,
+                // NOTE: Instead of rehype-highlight,
+                // we could use rehype-starrynight with the TextMate grammar in this repo
+                opts => rehypeHighlight({ ...opts, languages: { lean: leanHljs } }),
+            ]}
             components={{
                 code(props) {
                     const { children, className, node, ...rest } = props

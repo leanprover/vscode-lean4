@@ -25,7 +25,7 @@ import { WithRpcSessions } from './rpcSessions'
 import { ServerVersion } from './serverVersion'
 import { useClientNotificationEffect, useEventResult, useServerNotificationState } from './util'
 
-function Main(props: {}) {
+function Main() {
     const ec = React.useContext(EditorContext)
 
     /* Set up updates to the global infoview state on editor events. */
