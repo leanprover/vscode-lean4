@@ -84,7 +84,7 @@ export function Infos() {
                 return newPin
             })
 
-            if (changed) return newPins.filter(p => p !== null) as Keyed<DocumentPosition>[]
+            if (changed) return newPins.filter(p => p !== null)
             return pinnedPositions
         },
         [],
