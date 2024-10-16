@@ -1,6 +1,6 @@
 {
     "name": "@leanprover/infoview",
-    "version": "0.7.4",
+    "version": "0.7.5",
     "description": "An interactive display for the Lean 4 theorem prover.",
     "scripts": {
         "watch": "rollup --config --environment NODE_ENV:development --watch",
@@ -9,19 +9,15 @@
         "test": "tsc -p test/tsconfig.json"
     },
     "exports": {
-        ".": "./dist/index.production.min.js",
-        "./loader": "./dist/loader.production.min.js",
+        ".": {
+            "default": "./dist/index.production.min.js",
+            "types": "./dist/index.d.ts"
+        },
+        "./loader": {
+            "default": "./dist/loader.production.min.js",
+            "types": "./dist/loader.d.ts"
+        },
         "./package.json": "./package.json"
-    },
-    "typesVersions": {
-        "*": {
-            "*": [
-                "dist/index.d.ts"
-            ],
-            "loader": [
-                "dist/loader.d.ts"
-            ]
-        }
     },
     "files": [
         "dist/*"

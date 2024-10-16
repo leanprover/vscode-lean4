@@ -5,7 +5,9 @@
         "strict": true,
         "lib": ["dom", "es6"],
         "rootDir": "../",
-        "sourceMap": true
+        "sourceMap": true,
+        "module": "esnext",
+        "moduleResolution": "bundler"
     },
     "include": ["./**/*"]
 }
