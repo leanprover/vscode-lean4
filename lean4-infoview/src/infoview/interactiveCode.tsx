@@ -12,7 +12,7 @@ import {
 // @ts-ignore
 import leanHljs from 'highlightjs-lean'
 import ReactMarkdown from 'react-markdown'
-import rehypeHighlight from 'rehype-highlight'
+import { Light as SyntaxHighlighter } from 'react-syntax-highlighter'
 import rehypeMathjax from 'rehype-mathjax'
 import remarkMath from 'remark-math'
 import { Location } from 'vscode-languageserver-protocol'
@@ -22,6 +22,8 @@ import { useHoverHighlight } from './hoverHighlight'
 import { useRpcSession } from './rpcSessions'
 import { useHoverTooltip, useToggleableTooltip } from './tooltips'
 import { LogicalDomContext, mapRpcError, useAsync, useEvent, useLogicalDomObserver, useOnClickOutside } from './util'
+
+SyntaxHighlighter.registerLanguage('lean', leanHljs)
 
 export interface InteractiveTextComponentProps<T> {
     fmt: TaggedText<T>
@@ -76,19 +78,28 @@ function Markdown({ contents }: { contents: string }): JSX.Element {
         <ReactMarkdown
             children={contents}
             remarkPlugins={[remarkMath]}
-            rehypePlugins={[
-                rehypeMathjax,
-                // NOTE: Instead of rehype-highlight,
-                // we could use rehype-starrynight with the TextMate grammar in this repo
-                opts => rehypeHighlight({ ...opts, languages: { lean: leanHljs } }),
-            ]}
+            rehypePlugins={[rehypeMathjax]}
             components={{
                 code(props) {
                     const { children, className, node, ...rest } = props
+                    if (!children) return <code {...rest} className={className} />
+                    const lang = /language-(\w+)/.exec(className || '')
+                    // NOTE: Instead of `react-syntax-highlighter`, we could use
+                    // - `rehype-starrynight` with the TextMate grammar in this repo
+                    // - the Lean server's semantic token capability,
+                    //   if we had code to highlight semantic tokens in the infoview
+                    //   (especially in the tactic state)
+                    // @ts-ignore
                     return (
-                        <code {...rest} className={className + ' font-code pre-wrap'}>
-                            {children}
-                        </code>
+                        <SyntaxHighlighter
+                            {...rest}
+                            language={lang ? lang[1] : 'lean'}
+                            children={String(children).replace(/\n$/, '')}
+                            codeTagProps={{ className: (className || '') + ' font-code overflow-x-auto' }}
+                            wrapLongLines={true}
+                            PreTag="span"
+                            useInlineStyles={false}
+                        />
                     )
                 },
             }}
