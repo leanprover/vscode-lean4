@@ -1,0 +1,210 @@
+/*
+This file contains syntax highlighting themes for highlight.js,
+taken from https://unpkg.com/browse/@highlightjs/cdn-assets@11.10.0/styles/github.css (light)
+and https://unpkg.com/browse/@highlightjs/cdn-assets@11.10.0/styles/github-dark.css (dark)
+
+Unfortunately there is no way to retrieve theme colors from VSCode:
+https://github.com/Microsoft/vscode/issues/32813
+*/
+
+pre code.hljs {
+    display: block;
+}
+
+/*!
+  Theme: GitHub
+  Description: Light theme as seen on github.com
+  Author: github.com
+  Maintainer: @Hirse
+  Updated: 2021-05-15
+
+  Outdated base version: https://github.com/primer/github-syntax-light
+  Current colors taken from GitHub's CSS
+*/
+
+.hljs-doctag,
+.hljs-keyword,
+.hljs-meta .hljs-keyword,
+.hljs-template-tag,
+.hljs-template-variable,
+.hljs-type,
+.hljs-variable.language_ {
+    /* prettylights-syntax-keyword */
+    color: #d73a49;
+}
+.hljs-title,
+.hljs-title.class_,
+.hljs-title.class_.inherited__,
+.hljs-title.function_ {
+    /* prettylights-syntax-entity */
+    color: #6f42c1;
+}
+.hljs-attr,
+.hljs-attribute,
+.hljs-literal,
+.hljs-meta,
+.hljs-number,
+.hljs-operator,
+.hljs-variable,
+.hljs-selector-attr,
+.hljs-selector-class,
+.hljs-selector-id {
+    /* prettylights-syntax-constant */
+    color: #005cc5;
+}
+.hljs-regexp,
+.hljs-string,
+.hljs-meta .hljs-string {
+    /* prettylights-syntax-string */
+    color: #032f62;
+}
+.hljs-built_in,
+.hljs-symbol {
+    /* prettylights-syntax-variable */
+    color: #e36209;
+}
+.hljs-comment,
+.hljs-code,
+.hljs-formula {
+    /* prettylights-syntax-comment */
+    color: #6a737d;
+}
+.hljs-name,
+.hljs-quote,
+.hljs-selector-tag,
+.hljs-selector-pseudo {
+    /* prettylights-syntax-entity-tag */
+    color: #22863a;
+}
+.hljs-subst {
+    /* prettylights-syntax-storage-modifier-import */
+    color: #24292e;
+}
+.hljs-section {
+    /* prettylights-syntax-markup-heading */
+    color: #005cc5;
+    font-weight: bold;
+}
+.hljs-bullet {
+    /* prettylights-syntax-markup-list */
+    color: #735c0f;
+}
+.hljs-emphasis {
+    /* prettylights-syntax-markup-italic */
+    color: #24292e;
+    font-style: italic;
+}
+.hljs-strong {
+    /* prettylights-syntax-markup-bold */
+    color: #24292e;
+    font-weight: bold;
+}
+.hljs-addition {
+    /* prettylights-syntax-markup-inserted */
+    color: #22863a;
+    background-color: #f0fff4;
+}
+.hljs-deletion {
+    /* prettylights-syntax-markup-deleted */
+    color: #b31d28;
+    background-color: #ffeef0;
+}
+
+/*!
+  Theme: GitHub Dark
+  Description: Dark theme as seen on github.com
+  Author: github.com
+  Maintainer: @Hirse
+  Updated: 2021-05-15
+
+  Outdated base version: https://github.com/primer/github-syntax-dark
+  Current colors taken from GitHub's CSS
+*/
+
+.vscode-dark .hljs-doctag,
+.vscode-dark .hljs-keyword,
+.vscode-dark .hljs-meta .hljs-keyword,
+.vscode-dark .hljs-template-tag,
+.vscode-dark .hljs-template-variable,
+.vscode-dark .hljs-type,
+.vscode-dark .hljs-variable.language_ {
+    /* prettylights-syntax-keyword */
+    color: #ff7b72;
+}
+.vscode-dark .hljs-title,
+.vscode-dark .hljs-title.class_,
+.vscode-dark .hljs-title.class_.inherited__,
+.vscode-dark .hljs-title.function_ {
+    /* prettylights-syntax-entity */
+    color: #d2a8ff;
+}
+.vscode-dark .hljs-attr,
+.vscode-dark .hljs-attribute,
+.vscode-dark .hljs-literal,
+.vscode-dark .hljs-meta,
+.vscode-dark .hljs-number,
+.vscode-dark .hljs-operator,
+.vscode-dark .hljs-variable,
+.vscode-dark .hljs-selector-attr,
+.vscode-dark .hljs-selector-class,
+.vscode-dark .hljs-selector-id {
+    /* prettylights-syntax-constant */
+    color: #79c0ff;
+}
+.vscode-dark .hljs-regexp,
+.vscode-dark .hljs-string,
+.vscode-dark .hljs-meta .hljs-string {
+    /* prettylights-syntax-string */
+    color: #a5d6ff;
+}
+.vscode-dark .hljs-built_in,
+.vscode-dark .hljs-symbol {
+    /* prettylights-syntax-variable */
+    color: #ffa657;
+}
+.vscode-dark .hljs-comment,
+.vscode-dark .hljs-code,
+.vscode-dark .hljs-formula {
+    /* prettylights-syntax-comment */
+    color: #8b949e;
+}
+.vscode-dark .hljs-name,
+.vscode-dark .hljs-quote,
+.vscode-dark .hljs-selector-tag,
+.vscode-dark .hljs-selector-pseudo {
+    /* prettylights-syntax-entity-tag */
+    color: #7ee787;
+}
+.vscode-dark .hljs-subst {
+    /* prettylights-syntax-storage-modifier-import */
+    color: #c9d1d9;
+}
+.vscode-dark .hljs-section {
+    /* prettylights-syntax-markup-heading */
+    color: #1f6feb;
+    font-weight: bold;
+}
+.vscode-dark .hljs-bullet {
+    /* prettylights-syntax-markup-list */
+    color: #f2cc60;
+}
+.vscode-dark .hljs-emphasis {
+    /* prettylights-syntax-markup-italic */
+    color: #c9d1d9;
+    font-style: italic;
+}
+.vscode-dark .hljs-strong {
+    /* prettylights-syntax-markup-bold */
+    color: #c9d1d9;
+    font-weight: bold;
+}
+.vscode-dark .hljs-addition {
+    /* prettylights-syntax-markup-inserted */
+    color: #aff5b4;
+    background-color: #033a16;
+}
+.vscode-dark .hljs-deletion {
+    /* prettylights-syntax-markup-deleted */
+    color: #ffdcd7;
+    background-color: #67060c;
+}
