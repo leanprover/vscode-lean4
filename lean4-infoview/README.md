@@ -22,3 +22,4 @@ In particular, `@leanprover/infoview` should not be transpiled into something li
 
 - VSCode via [`vscode-lean4`](https://github.com/leanprover/vscode-lean4)
 - Web playground via [`lean4web`](https://github.com/leanprover-community/lean4web)
+- IntelliJ via [`Lean4ij`](https://github.com/onriv/lean4ij)
