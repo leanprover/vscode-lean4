@@ -73,7 +73,7 @@ interface TypePopupContentsProps {
  * and then passes the content through to a Markdown renderer
  * (currently `remark`).
  */
-function Markdown({ contents }: { contents: string }): JSX.Element {
+export function Markdown({ contents }: { contents: string }): JSX.Element {
     return (
         <ReactMarkdown
             children={contents}
