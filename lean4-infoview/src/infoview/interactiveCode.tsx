@@ -89,8 +89,8 @@ function Markdown({ contents }: { contents: string }): JSX.Element {
                     // - the Lean server's semantic token capability,
                     //   if we had code to highlight semantic tokens in the infoview
                     //   (especially in the tactic state)
-                    // @ts-ignore
                     return (
+                        // @ts-ignore
                         <SyntaxHighlighter
                             {...rest}
                             language={lang ? lang[1] : 'lean'}
