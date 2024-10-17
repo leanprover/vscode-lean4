@@ -131,6 +131,13 @@ function GoalInfoDisplay(props: GoalInfoDisplayProps) {
 
     const [selectedLocs, setSelectedLocs] = React.useState<GoalsLocation[]>([])
 
+    // https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes
+    const [prevPos, setPrevPos] = React.useState<DocumentPosition>(pos)
+    if (!DocumentPosition.isEqual(pos, prevPos)) {
+        setPrevPos(pos)
+        setSelectedLocs([])
+    }
+
     const locs: Locations = React.useMemo(
         () => ({
             isSelected: (l: GoalsLocation) => selectedLocs.some(v => GoalsLocation.isEqual(v, l)),
@@ -218,12 +225,7 @@ const InfoDisplayContent = React.memo((props: InfoDisplayContentProps) => {
                     </a>
                 </div>
             )}
-            <GoalInfoDisplay
-                pos={pos}
-                goals={goals}
-                termGoal={termGoal}
-                userWidgets={userWidgets}
-            />
+            <GoalInfoDisplay pos={pos} goals={goals} termGoal={termGoal} userWidgets={userWidgets} />
             <div style={{ display: hasMessages ? 'block' : 'none' }} key="messages">
                 <Details initiallyOpen key="messages">
                     <>Messages ({messages.length})</>
