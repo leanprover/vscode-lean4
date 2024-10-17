@@ -9,7 +9,12 @@ import {
     TaggedText,
     TaggedText_stripTags,
 } from '@leanprover/infoview-api'
-import { marked } from 'marked'
+// @ts-ignore
+import leanHljs from 'highlightjs-lean'
+import ReactMarkdown from 'react-markdown'
+import { Light as SyntaxHighlighter } from 'react-syntax-highlighter'
+import rehypeMathjax from 'rehype-mathjax'
+import remarkMath from 'remark-math'
 import { Location } from 'vscode-languageserver-protocol'
 import { EditorContext } from './contexts'
 import { GoalsLocation, LocationsContext, SelectableLocationSettings, useSelectableLocation } from './goalLocation'
@@ -17,6 +22,8 @@ import { useHoverHighlight } from './hoverHighlight'
 import { useRpcSession } from './rpcSessions'
 import { useHoverTooltip, useToggleableTooltip } from './tooltips'
 import { LogicalDomContext, mapRpcError, useAsync, useEvent, useLogicalDomObserver, useOnClickOutside } from './util'
+
+SyntaxHighlighter.registerLanguage('lean', leanHljs)
 
 export interface InteractiveTextComponentProps<T> {
     fmt: TaggedText<T>
@@ -59,31 +66,45 @@ interface TypePopupContentsProps {
     info: SubexprInfo
 }
 
-function Markdown({ contents }: { contents: string }): JSX.Element {
-    const renderer = new marked.Renderer()
-    renderer.code = (code, lang) => {
-        // todo: render Lean code blocks using the lean syntax.json
-        return `<div class="font-code pre-wrap">${code}</div>`
-    }
-    renderer.codespan = code => {
-        return `<code class="font-code">${code}</code>`
-    }
-
-    const markedOptions: marked.MarkedOptions = {}
-    markedOptions.sanitizer = (html: string): string => {
-        return ''
-    }
-    markedOptions.sanitize = true
-    markedOptions.silent = true
-    markedOptions.renderer = renderer
-
-    // todo: vscode also has lots of post render sanitization and hooking up of href clicks and so on.
-    // see https://github.com/microsoft/vscode/blob/main/src/vs/base/browser/markdownRenderer.ts
-
-    const renderedMarkdown = marked.parse(contents, markedOptions)
-    return <div dangerouslySetInnerHTML={{ __html: renderedMarkdown }} />
-    // handy for debugging:
-    // return <div>{ renderedMarkdown } </div>
+/**
+ * Parse the `contents` as Markdown and render the result.
+ *
+ * This component applies some infoview-specific styling
+ * and then passes the content through to a Markdown renderer
+ * (currently `remark`).
+ */
+export function Markdown({ contents }: { contents: string }): JSX.Element {
+    return (
+        <ReactMarkdown
+            children={contents}
+            remarkPlugins={[remarkMath]}
+            rehypePlugins={[rehypeMathjax]}
+            components={{
+                code(props) {
+                    const { children, className, node, ...rest } = props
+                    if (!children) return <code {...rest} className={className} />
+                    const lang = /language-(\w+)/.exec(className || '')
+                    // NOTE: Instead of `react-syntax-highlighter`, we could use
+                    // - `rehype-starrynight` with the TextMate grammar in this repo
+                    // - the Lean server's semantic token capability,
+                    //   if we had code to highlight semantic tokens in the infoview
+                    //   (especially in the tactic state)
+                    return (
+                        // @ts-ignore
+                        <SyntaxHighlighter
+                            {...rest}
+                            language={lang ? lang[1] : 'lean'}
+                            children={String(children).replace(/\n$/, '')}
+                            codeTagProps={{ className: (className || '') + ' font-code overflow-x-auto' }}
+                            wrapLongLines={true}
+                            PreTag="span"
+                            useInlineStyles={false}
+                        />
+                    )
+                },
+            }}
+        />
+    )
 }
 
 /** Shows `explicitValue : itsType` and a docstring if there is one. */

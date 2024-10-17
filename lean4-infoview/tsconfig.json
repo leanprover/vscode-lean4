@@ -10,12 +10,16 @@
 
         /* Modules */
         "module": "esnext",
-        "moduleResolution": "node",
+        "moduleResolution": "bundler",
 
-        /* Emit */
+        /* Emit code */
         "sourceMap": true,
         "rootDir": "src",
         "outDir": "dist",
+
+        /* Emit declarations */
+        "declaration": true,
+        "declarationDir": "dist",
 
         /* Interop Constraints */
         "esModuleInterop": true,

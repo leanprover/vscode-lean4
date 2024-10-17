@@ -6,6 +6,7 @@ import type { DidCloseTextDocumentParams, DocumentUri, Location } from 'vscode-l
 import '@vscode/codicons/dist/codicon.css'
 import '@vscode/codicons/dist/codicon.ttf'
 import 'tachyons/css/tachyons.css'
+import './highlightjs.css'
 import './index.css'
 
 import {
@@ -25,7 +26,7 @@ import { WithRpcSessions } from './rpcSessions'
 import { ServerVersion } from './serverVersion'
 import { useClientNotificationEffect, useEventResult, useServerNotificationState } from './util'
 
-function Main(props: {}) {
+function Main() {
     const ec = React.useContext(EditorContext)
 
     /* Set up updates to the global infoview state on editor events. */
