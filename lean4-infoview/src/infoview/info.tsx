@@ -219,7 +219,6 @@ const InfoDisplayContent = React.memo((props: InfoDisplayContentProps) => {
                 </div>
             )}
             <GoalInfoDisplay
-                key={DocumentPosition.toString(pos)}
                 pos={pos}
                 goals={goals}
                 termGoal={termGoal}
