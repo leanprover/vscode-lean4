@@ -62,6 +62,17 @@ Settings of the Lean 4 VS Code extension and VS Code itself can be configured in
 
 The specific settings of the Lean 4 VS Code extension are described in detail in later sections.
 
+The Lean 4 VS Code extensions sets a number of default settings for Lean 4 documents:
+- **'Editor: Insert Spaces': true**. Pressing `Tab` will insert spaces.
+- **'Editor: Tab Size': 2**. Pressing `Tab` will insert two spaces.
+- **'Files: Encoding': UTF-8**. Files use the [UTF-8 encoding](https://en.wikipedia.org/wiki/UTF-8).
+- **'Files: Eol': \n**. All lines use `\n` as the line break symbol for consistency between Windows and Unix based operating systems.
+- **'Files: Insert Final Newline': true**. All files are terminated by an empty line.
+- **'Files: Trim Final Newlines': true**. There is only a single empty line at the end of each file.
+- **'Files: Trim Trailing Whitespace': true**. There is no redundant whitespace at the end of a line.
+
+It is recommended to leave these settings at their default. Nonetheless, these default settings can be overriden in the ['Settings' page of VS Code](command:workbench.action.openSettings2) by first entering `@lang:lean4` into the settings search bar and then changing the respective setting. 
+
 <br/>
 
 | ![](images/settings_page.png) | 
