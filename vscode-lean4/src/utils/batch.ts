@@ -147,18 +147,19 @@ interface ProgressExecutionOptions {
 export async function batchExecuteWithProgress(
     executablePath: string,
     args: string[],
+    context: string | undefined,
     title: string,
     options: ProgressExecutionOptions = {},
 ): Promise<ExecutionResult> {
-    const titleSuffix = options.channel ? ' [(Details)](command:lean4.troubleshooting.showOutput)' : ''
+    const titlePrefix = context ? `[${context}] ` : ''
+    const titleSuffix = options.channel ? ' [(Click for details)](command:lean4.troubleshooting.showOutput)' : ''
 
     const progressOptions: ProgressOptions = {
         location: ProgressLocation.Notification,
-        title: title + titleSuffix,
+        title: titlePrefix + title + titleSuffix,
         cancellable: options.allowCancellation === true,
     }
 
-    let inc = 0
     let lastReportedMessage: string | undefined
     let progress:
         | Progress<{
@@ -180,11 +181,8 @@ export async function batchExecuteWithProgress(
             if (options.channel) {
                 options.channel.appendLine(value.trimEnd())
             }
-            if (inc < 90) {
-                inc += 2
-            }
             if (progress !== undefined) {
-                progress.report({ increment: inc, message: value })
+                progress.report({ message: value })
             }
             lastReportedMessage = value
         },
@@ -227,7 +225,7 @@ export async function batchExecuteWithProgress(
     const result: ExecutionResult = await window.withProgress(progressOptions, (p, token) => {
         progress = p
         token.onCancellationRequested(() => proc.kill())
-        progress.report({ message: lastReportedMessage, increment: inc })
+        progress.report({ message: lastReportedMessage })
         return executionPromise
     })
     return result

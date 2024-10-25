@@ -116,6 +116,7 @@ export async function performFullDiagnosis(
     channel: OutputChannel,
     cwdUri: FileUri | undefined,
 ): Promise<FullDiagnostics> {
+    const showSetupInformationContext = 'Show Setup Information'
     const diagnose = new SetupDiagnoser(channel, cwdUri)
     return {
         systemInfo: diagnose.querySystemInformation(),
@@ -124,7 +125,7 @@ export async function performFullDiagnosis(
         isCurlAvailable: await diagnose.checkCurlAvailable(),
         isGitAvailable: await diagnose.checkGitAvailable(),
         elanVersionDiagnosis: await diagnose.elanVersion(),
-        leanVersionDiagnosis: await diagnose.leanVersion(),
+        leanVersionDiagnosis: await diagnose.leanVersion(showSetupInformationContext),
         projectSetupDiagnosis: await diagnose.projectSetup(),
         elanShowOutput: await diagnose.queryElanShow(),
     }

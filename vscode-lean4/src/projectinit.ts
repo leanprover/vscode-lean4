@@ -23,6 +23,7 @@ import path = require('path')
 
 async function checkCreateLean4ProjectPreconditions(
     installer: LeanInstaller,
+    context: string,
     folderUri: ExtUri,
     projectToolchain: string,
 ): Promise<PreconditionCheckResult> {
@@ -31,8 +32,12 @@ async function checkCreateLean4ProjectPreconditions(
     return await checkAll(
         () => checkAreDependenciesInstalled(channel, cwdUri),
         () => checkIsElanUpToDate(installer, cwdUri, { elanMustBeInstalled: true, modal: true }),
-        () => checkIsLeanVersionUpToDate(channel, folderUri, { toolchainOverride: projectToolchain, modal: true }),
-        () => checkIsLakeInstalledCorrectly(channel, folderUri, { toolchainOverride: projectToolchain }),
+        () =>
+            checkIsLeanVersionUpToDate(channel, context, folderUri, {
+                toolchainOverride: projectToolchain,
+                modal: true,
+            }),
+        () => checkIsLakeInstalledCorrectly(channel, context, folderUri, { toolchainOverride: projectToolchain }),
     )
 }
 
@@ -40,13 +45,13 @@ async function checkPreCloneLean4ProjectPreconditions(channel: OutputChannel, cw
     return await checkAll(() => checkAreDependenciesInstalled(channel, cwdUri))
 }
 
-async function checkPostCloneLean4ProjectPreconditions(installer: LeanInstaller, folderUri: ExtUri) {
+async function checkPostCloneLean4ProjectPreconditions(installer: LeanInstaller, context: string, folderUri: ExtUri) {
     const channel = installer.getOutputChannel()
     const cwdUri = extUriToCwdUri(folderUri)
     return await checkAll(
         () => checkIsElanUpToDate(installer, cwdUri, { elanMustBeInstalled: false, modal: true }),
-        () => checkIsLeanVersionUpToDate(channel, folderUri, { modal: true }),
-        () => checkIsLakeInstalledCorrectly(channel, folderUri, {}),
+        () => checkIsLeanVersionUpToDate(channel, context, folderUri, { modal: true }),
+        () => checkIsLakeInstalledCorrectly(channel, context, folderUri, {}),
     )
 }
 
@@ -66,13 +71,23 @@ export class ProjectInitializationProvider implements Disposable {
     }
 
     private async createStandaloneProject() {
+        const createStandaloneProjectContext = 'Create Standalone Project'
         const toolchain = 'leanprover/lean4:stable'
-        const projectFolder: FileUri | 'DidNotComplete' = await this.createProject(undefined, toolchain)
+        const projectFolder: FileUri | 'DidNotComplete' = await this.createProject(
+            createStandaloneProjectContext,
+            undefined,
+            toolchain,
+        )
         if (projectFolder === 'DidNotComplete') {
             return
         }
 
-        const buildResult: ExecutionResult = await lake(this.channel, projectFolder, toolchain).build()
+        const buildResult: ExecutionResult = await lake(
+            this.channel,
+            projectFolder,
+            createStandaloneProjectContext,
+            toolchain,
+        ).build()
         if (buildResult.exitCode === ExecutionExitCode.Cancelled) {
             return
         }
@@ -91,8 +106,13 @@ export class ProjectInitializationProvider implements Disposable {
     }
 
     private async createMathlibProject() {
+        const createMathlibProjectContext = 'Create Project Using Mathlib'
         const mathlibToolchain = 'leanprover-community/mathlib4:lean-toolchain'
-        const projectFolder: FileUri | 'DidNotComplete' = await this.createProject('math', mathlibToolchain)
+        const projectFolder: FileUri | 'DidNotComplete' = await this.createProject(
+            createMathlibProjectContext,
+            'math',
+            mathlibToolchain,
+        )
         if (projectFolder === 'DidNotComplete') {
             return
         }
@@ -100,6 +120,7 @@ export class ProjectInitializationProvider implements Disposable {
         const cacheGetResult: ExecutionResult = await lake(
             this.channel,
             projectFolder,
+            createMathlibProjectContext,
             mathlibToolchain,
         ).fetchMathlibCache()
         if (cacheGetResult.exitCode === ExecutionExitCode.Cancelled) {
@@ -110,7 +131,12 @@ export class ProjectInitializationProvider implements Disposable {
             return
         }
 
-        const buildResult: ExecutionResult = await lake(this.channel, projectFolder, mathlibToolchain).build()
+        const buildResult: ExecutionResult = await lake(
+            this.channel,
+            projectFolder,
+            createMathlibProjectContext,
+            mathlibToolchain,
+        ).build()
         if (buildResult.exitCode === ExecutionExitCode.Cancelled) {
             return
         }
@@ -129,6 +155,7 @@ export class ProjectInitializationProvider implements Disposable {
     }
 
     private async createProject(
+        context: string,
         kind?: string | undefined,
         toolchain: string = 'leanprover/lean4:stable',
     ): Promise<FileUri | 'DidNotComplete'> {
@@ -144,6 +171,7 @@ export class ProjectInitializationProvider implements Disposable {
 
         const preconditionCheckResult = await checkCreateLean4ProjectPreconditions(
             this.installer,
+            context,
             projectFolder,
             toolchain,
         )
@@ -152,7 +180,7 @@ export class ProjectInitializationProvider implements Disposable {
         }
 
         const projectName: string = path.basename(projectFolder.fsPath)
-        const result: ExecutionResult = await lake(this.channel, projectFolder, toolchain).initProject(
+        const result: ExecutionResult = await lake(this.channel, projectFolder, context, toolchain).initProject(
             projectName,
             kind,
         )
@@ -161,7 +189,12 @@ export class ProjectInitializationProvider implements Disposable {
             return 'DidNotComplete'
         }
 
-        const updateResult: ExecutionResult = await lake(this.channel, projectFolder, toolchain).updateDependencies()
+        const updateResult: ExecutionResult = await lake(
+            this.channel,
+            projectFolder,
+            context,
+            toolchain,
+        ).updateDependencies()
         if (updateResult.exitCode === ExecutionExitCode.Cancelled) {
             return 'DidNotComplete'
         }
@@ -253,6 +286,8 @@ Open this project instead?`
     }
 
     private async cloneProject() {
+        const downloadProjectContext = 'Download Project'
+
         const quickPick = window.createQuickPick<QuickPickItem & { isPreset: boolean }>()
         quickPick.title = "Enter a Git repository URL or choose a preset project to download (Press 'Escape' to cancel)"
         quickPick.placeholder = 'URL of Git repository for existing Lean 4 project'
@@ -323,6 +358,7 @@ Open this project instead?`
             const result: ExecutionResult = await batchExecuteWithProgress(
                 'git',
                 ['clone', projectUri, projectFolder.fsPath],
+                downloadProjectContext,
                 'Cloning project',
                 { channel: this.channel, allowCancellation: true },
             )
@@ -334,13 +370,21 @@ Open this project instead?`
                 return
             }
 
-            const postCloneCheckResult = await checkPostCloneLean4ProjectPreconditions(this.installer, projectFolder)
+            const postCloneCheckResult = await checkPostCloneLean4ProjectPreconditions(
+                this.installer,
+                downloadProjectContext,
+                projectFolder,
+            )
             if (postCloneCheckResult === 'Fatal') {
                 return
             }
 
             // Try it. If this is not a mathlib project, it will fail silently. Otherwise, it will grab the cache.
-            const fetchResult: ExecutionResult = await lake(this.channel, projectFolder).fetchMathlibCache(true)
+            const fetchResult: ExecutionResult = await lake(
+                this.channel,
+                projectFolder,
+                downloadProjectContext,
+            ).fetchMathlibCache(true)
             if (fetchResult.exitCode === ExecutionExitCode.Cancelled) {
                 return
             }
