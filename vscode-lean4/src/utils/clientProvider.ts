@@ -16,16 +16,17 @@ import { findLeanProjectRoot, willUseLakeServer } from './projectInfo'
 
 async function checkLean4ProjectPreconditions(
     channel: OutputChannel,
+    context: string,
     folderUri: ExtUri,
 ): Promise<PreconditionCheckResult> {
     return await checkAll(
         () => checkIsValidProjectFolder(channel, folderUri),
-        () => checkIsLeanVersionUpToDate(channel, folderUri, { modal: false }),
+        () => checkIsLeanVersionUpToDate(channel, context, folderUri, { modal: false }),
         async () => {
             if (!(await willUseLakeServer(folderUri))) {
                 return 'Fulfilled'
             }
-            return await checkIsLakeInstalledCorrectly(channel, folderUri, {})
+            return await checkIsLakeInstalledCorrectly(channel, context, folderUri, {})
         },
     )
 }
@@ -122,7 +123,11 @@ export class LeanClientProvider implements Disposable {
                     continue
                 }
 
-                const preconditionCheckResult = await checkLean4ProjectPreconditions(this.outputChannel, projectUri)
+                const preconditionCheckResult = await checkLean4ProjectPreconditions(
+                    this.outputChannel,
+                    'Restart Client',
+                    projectUri,
+                )
                 if (preconditionCheckResult !== 'Fatal') {
                     logger.log('[ClientProvider] got lean version 4')
                     const [cached, client] = await this.ensureClient(uri)
@@ -234,7 +239,11 @@ export class LeanClientProvider implements Disposable {
         }
         this.pending.set(key, true)
 
-        const preconditionCheckResult = await checkLean4ProjectPreconditions(this.outputChannel, folderUri)
+        const preconditionCheckResult = await checkLean4ProjectPreconditions(
+            this.outputChannel,
+            'Start Client',
+            folderUri,
+        )
         if (preconditionCheckResult === 'Fatal') {
             this.pending.delete(key)
             return [false, undefined]

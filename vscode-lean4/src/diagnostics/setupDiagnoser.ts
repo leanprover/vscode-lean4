@@ -140,13 +140,13 @@ export class SetupDiagnoser {
         return gitVersionResult.exitCode === ExecutionExitCode.Success
     }
 
-    async queryLakeVersion(): Promise<VersionQueryResult> {
-        const lakeVersionResult = await this.runLeanCommand('lake', ['--version'], 'Checking Lake version')
+    async queryLakeVersion(context: string): Promise<VersionQueryResult> {
+        const lakeVersionResult = await this.runLeanCommand('lake', ['--version'], context, 'Checking Lake version')
         return versionQueryResult(lakeVersionResult, /version (\d+\.\d+\.\d+(\w|-)*)/)
     }
 
-    async checkLakeAvailable(): Promise<boolean> {
-        const lakeVersionResult = await this.queryLakeVersion()
+    async checkLakeAvailable(context: string): Promise<boolean> {
+        const lakeVersionResult = await this.queryLakeVersion(context)
         return lakeVersionResult.kind === 'Success'
     }
 
@@ -191,8 +191,8 @@ export class SetupDiagnoser {
         return { kind: 'UpToDate', version: currentVSCodeVersion }
     }
 
-    async queryLeanVersion(): Promise<VersionQueryResult> {
-        const leanVersionResult = await this.runLeanCommand('lean', ['--version'], 'Checking Lean version')
+    async queryLeanVersion(context: string): Promise<VersionQueryResult> {
+        const leanVersionResult = await this.runLeanCommand('lean', ['--version'], context, 'Checking Lean version')
         return versionQueryResult(leanVersionResult, /version (\d+\.\d+\.\d+(\w|-)*)/)
     }
 
@@ -223,8 +223,8 @@ export class SetupDiagnoser {
         return { kind: 'ValidProjectSetup', projectFolder: this.cwdUri }
     }
 
-    async leanVersion(): Promise<LeanVersionDiagnosis> {
-        const leanVersionResult = await this.queryLeanVersion()
+    async leanVersion(context: string): Promise<LeanVersionDiagnosis> {
+        const leanVersionResult = await this.queryLeanVersion(context)
         return checkLeanVersion(leanVersionResult)
     }
 
@@ -232,19 +232,24 @@ export class SetupDiagnoser {
         return batchExecute(executablePath, args, this.cwdUri?.fsPath, { combined: this.channel })
     }
 
-    private async runWithProgress(executablePath: string, args: string[], title: string): Promise<ExecutionResult> {
-        return batchExecuteWithProgress(executablePath, args, title, {
+    private async runWithProgress(
+        executablePath: string,
+        args: string[],
+        context: string,
+        title: string,
+    ): Promise<ExecutionResult> {
+        return batchExecuteWithProgress(executablePath, args, context, title, {
             cwd: this.cwdUri?.fsPath,
             channel: this.channel,
         })
     }
 
-    private async runLeanCommand(executablePath: string, args: string[], title: string) {
+    private async runLeanCommand(executablePath: string, args: string[], context: string, title: string) {
         const leanArgs = [...args]
         if (this.toolchain !== undefined) {
             leanArgs.unshift(`+${this.toolchain}`)
         }
-        return await this.runWithProgress(executablePath, leanArgs, title)
+        return await this.runWithProgress(executablePath, leanArgs, context, title)
     }
 }
 

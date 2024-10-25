@@ -32,7 +32,7 @@ export class ProjectOperationProvider implements Disposable {
     }
 
     private async buildProject() {
-        await this.runOperation(async lakeRunner => {
+        await this.runOperation('Build Project', async lakeRunner => {
             const fetchResult: 'Success' | 'CacheNotAvailable' | 'Cancelled' = await this.tryFetchingCache(lakeRunner)
             if (fetchResult === 'Cancelled') {
                 return
@@ -62,7 +62,7 @@ export class ProjectOperationProvider implements Disposable {
             return
         }
 
-        await this.runOperation(async lakeRunner => {
+        await this.runOperation('Clean Project', async lakeRunner => {
             const cleanResult: ExecutionResult = await lakeRunner.clean()
             if (cleanResult.exitCode === ExecutionExitCode.Cancelled) {
                 return
@@ -101,7 +101,7 @@ export class ProjectOperationProvider implements Disposable {
     }
 
     private async fetchMathlibCache() {
-        await this.runOperation(async lakeRunner => {
+        await this.runOperation('Fetch Mathlib Build Cache', async lakeRunner => {
             const result: ExecutionResult = await lakeRunner.fetchMathlibCache()
             if (result.exitCode === ExecutionExitCode.Cancelled) {
                 return
@@ -120,7 +120,7 @@ export class ProjectOperationProvider implements Disposable {
     }
 
     private async fetchMathlibCacheForFocusedFile() {
-        await this.runOperation(async lakeRunner => {
+        await this.runOperation('Fetch Mathlib Build Cache For Focused File', async lakeRunner => {
             const projectUri = lakeRunner.cwdUri!
 
             if (!window.activeTextEditor || window.activeTextEditor.document.languageId !== 'lean4') {
@@ -246,7 +246,7 @@ export class ProjectOperationProvider implements Disposable {
             return
         }
 
-        await this.runOperation(async lakeRunner => {
+        await this.runOperation('Update Dependency', async lakeRunner => {
             const result: ExecutionResult = await lakeRunner.updateDependency(dependencyChoice.name)
             if (result.exitCode === ExecutionExitCode.Cancelled) {
                 return
@@ -386,7 +386,7 @@ export class ProjectOperationProvider implements Disposable {
         }
     }
 
-    private async runOperation(command: (lakeRunner: LakeRunner) => Promise<void>) {
+    private async runOperation(context: string, command: (lakeRunner: LakeRunner) => Promise<void>) {
         if (this.isRunningOperation) {
             displayError('Another project action is already being executed. Please wait for its completion.')
             return
@@ -412,7 +412,7 @@ export class ProjectOperationProvider implements Disposable {
             return
         }
 
-        const lakeRunner: LakeRunner = lake(this.channel, activeClient.folderUri)
+        const lakeRunner: LakeRunner = lake(this.channel, activeClient.folderUri, context)
 
         const result: 'Success' | 'IsRestarting' = await activeClient.withStoppedClient(() => command(lakeRunner))
         if (result === 'IsRestarting') {

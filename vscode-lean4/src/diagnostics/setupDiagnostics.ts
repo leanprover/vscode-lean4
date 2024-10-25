@@ -72,9 +72,10 @@ export async function checkAreDependenciesInstalled(
 
 export async function checkIsLean4Installed(
     installer: LeanInstaller,
+    context: string,
     cwdUri: FileUri | undefined,
 ): Promise<PreconditionCheckResult> {
-    const leanVersionResult = await diagnose(installer.getOutputChannel(), cwdUri).queryLeanVersion()
+    const leanVersionResult = await diagnose(installer.getOutputChannel(), cwdUri).queryLeanVersion(context)
     switch (leanVersionResult.kind) {
         case 'Success':
             return 'Fulfilled'
@@ -155,6 +156,7 @@ export async function checkIsValidProjectFolder(
 
 export async function checkIsLeanVersionUpToDate(
     channel: OutputChannel,
+    context: string,
     folderUri: ExtUri,
     options: { toolchainOverride?: string | undefined; modal: boolean },
 ): Promise<PreconditionCheckResult> {
@@ -170,7 +172,7 @@ export async function checkIsLeanVersionUpToDate(
         channel,
         extUriToCwdUri(folderUri),
         options.toolchainOverride,
-    ).leanVersion()
+    ).leanVersion(context)
     switch (projectLeanVersionDiagnosis.kind) {
         case 'NotInstalled':
             return displaySetupErrorWithOutput("Error while checking Lean version: 'lean' command was not found.")
@@ -198,6 +200,7 @@ export async function checkIsLeanVersionUpToDate(
 
 export async function checkIsLakeInstalledCorrectly(
     channel: OutputChannel,
+    context: string,
     folderUri: ExtUri,
     options: { toolchainOverride?: string | undefined },
 ): Promise<PreconditionCheckResult> {
@@ -205,7 +208,7 @@ export async function checkIsLakeInstalledCorrectly(
         channel,
         extUriToCwdUri(folderUri),
         options.toolchainOverride,
-    ).queryLakeVersion()
+    ).queryLakeVersion(context)
     switch (lakeVersionResult.kind) {
         case 'CommandNotFound':
             return displaySetupErrorWithOutput("Error while checking Lake version: 'lake' command was not found.")

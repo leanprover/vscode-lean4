@@ -9,11 +9,18 @@ export const cacheNotFoundExitError = '=> Operation failed. Exit Code: 1.'
 export class LakeRunner {
     channel: OutputChannel
     cwdUri: FileUri | undefined
+    context: string | undefined
     toolchain: string | undefined
 
-    constructor(channel: OutputChannel, cwdUri: FileUri | undefined, toolchain?: string | undefined) {
+    constructor(
+        channel: OutputChannel,
+        cwdUri: FileUri | undefined,
+        context: string | undefined,
+        toolchain?: string | undefined,
+    ) {
         this.channel = channel
         this.cwdUri = cwdUri
+        this.context = context
         this.toolchain = toolchain
     }
 
@@ -88,7 +95,7 @@ export class LakeRunner {
         if (this.toolchain) {
             args.unshift(`+${this.toolchain}`)
         }
-        return await batchExecuteWithProgress('lake', args, waitingPrompt, {
+        return await batchExecuteWithProgress('lake', args, this.context, waitingPrompt, {
             cwd: this.cwdUri?.fsPath,
             channel: this.channel,
             translator,
@@ -97,6 +104,11 @@ export class LakeRunner {
     }
 }
 
-export function lake(channel: OutputChannel, cwdUri: FileUri | undefined, toolchain?: string | undefined): LakeRunner {
-    return new LakeRunner(channel, cwdUri, toolchain)
+export function lake(
+    channel: OutputChannel,
+    cwdUri: FileUri | undefined,
+    context: string | undefined,
+    toolchain?: string | undefined,
+): LakeRunner {
+    return new LakeRunner(channel, cwdUri, context, toolchain)
 }

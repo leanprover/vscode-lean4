@@ -150,11 +150,12 @@ function activateAlwaysEnabledFeatures(context: ExtensionContext): AlwaysEnabled
 
 async function checkLean4FeaturePreconditions(
     installer: LeanInstaller,
+    context: string,
     cwdUri: FileUri | undefined,
 ): Promise<PreconditionCheckResult> {
     return await checkAll(
         () => checkAreDependenciesInstalled(installer.getOutputChannel(), cwdUri),
-        () => checkIsLean4Installed(installer, cwdUri),
+        () => checkIsLean4Installed(installer, context, cwdUri),
         () =>
             checkIsElanUpToDate(installer, cwdUri, {
                 elanMustBeInstalled: false,
@@ -169,7 +170,11 @@ async function activateLean4Features(
     installer: LeanInstaller,
     projectUri: FileUri | undefined,
 ): Promise<Lean4EnabledFeatures | undefined> {
-    const preconditionCheckResult = await checkLean4FeaturePreconditions(installer, projectUri)
+    const preconditionCheckResult = await checkLean4FeaturePreconditions(
+        installer,
+        'Activate Lean 4 Extension',
+        projectUri,
+    )
     if (preconditionCheckResult === 'Fatal') {
         return undefined
     }
