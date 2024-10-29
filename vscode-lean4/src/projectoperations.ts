@@ -33,7 +33,7 @@ export class ProjectOperationProvider implements Disposable {
             commands.registerCommand('lean4.project.clean', () => this.cleanProject()),
             commands.registerCommand('lean4.project.updateDependency', () => this.updateDependency()),
             commands.registerCommand('lean4.project.fetchCache', () => this.fetchMathlibCache()),
-            commands.registerCommand('lean4.project.fetchFileCache', () => this.fetchMathlibCacheForFocusedFile()),
+            commands.registerCommand('lean4.project.fetchFileCache', () => this.fetchMathlibCacheForCurrentImports()),
         )
     }
 
@@ -125,8 +125,8 @@ export class ProjectOperationProvider implements Disposable {
         })
     }
 
-    private async fetchMathlibCacheForFocusedFile() {
-        await this.runOperation('Fetch Mathlib Build Cache For Focused File', async lakeRunner => {
+    private async fetchMathlibCacheForCurrentImports() {
+        await this.runOperation('Fetch Mathlib Build Cache For Current Imports', async lakeRunner => {
             const projectUri = lakeRunner.cwdUri!
 
             if (!window.activeTextEditor || window.activeTextEditor.document.languageId !== 'lean4') {
