@@ -7,7 +7,13 @@ import { LeanClientProvider } from './utils/clientProvider'
 import { toExtUri } from './utils/exturi'
 import { cacheNotFoundError, lake, LakeRunner } from './utils/lake'
 import { DirectGitDependency, Manifest, ManifestReadError, parseManifestInFolder } from './utils/manifest'
-import { displayError, displayInformation, displayInformationWithInput, displayWarningWithInput } from './utils/notifs'
+import {
+    displayError,
+    displayInformation,
+    displayInformationWithInput,
+    displayInformationWithOptionalInput,
+    displayWarningWithInput,
+} from './utils/notifs'
 
 type DependencyToolchainResult =
     | { kind: 'Success'; dependencyToolchain: string }
@@ -27,7 +33,7 @@ export class ProjectOperationProvider implements Disposable {
             commands.registerCommand('lean4.project.clean', () => this.cleanProject()),
             commands.registerCommand('lean4.project.updateDependency', () => this.updateDependency()),
             commands.registerCommand('lean4.project.fetchCache', () => this.fetchMathlibCache()),
-            commands.registerCommand('lean4.project.fetchFileCache', () => this.fetchMathlibCacheForFocusedFile()),
+            commands.registerCommand('lean4.project.fetchFileCache', () => this.fetchMathlibCacheForCurrentImports()),
         )
     }
 
@@ -119,8 +125,8 @@ export class ProjectOperationProvider implements Disposable {
         })
     }
 
-    private async fetchMathlibCacheForFocusedFile() {
-        await this.runOperation('Fetch Mathlib Build Cache For Focused File', async lakeRunner => {
+    private async fetchMathlibCacheForCurrentImports() {
+        await this.runOperation('Fetch Mathlib Build Cache For Current Imports', async lakeRunner => {
             const projectUri = lakeRunner.cwdUri!
 
             if (!window.activeTextEditor || window.activeTextEditor.document.languageId !== 'lean4') {
@@ -182,8 +188,10 @@ export class ProjectOperationProvider implements Disposable {
                 return
             }
 
-            displayInformation(
+            displayInformationWithOptionalInput(
                 `Mathlib build artifact cache for '${relativeActiveFileUri.fsPath}' fetched successfully.`,
+                'Restart File',
+                () => this.clientProvider.restartFile(activeFileUri),
             )
         })
     }
@@ -392,34 +400,32 @@ export class ProjectOperationProvider implements Disposable {
             return
         }
         this.isRunningOperation = true
+        try {
+            if (!this.clientProvider) {
+                displayError('Lean client has not loaded yet.')
+                return
+            }
 
-        if (!this.clientProvider) {
-            displayError('Lean client has not loaded yet.')
+            const activeClient: LeanClient | undefined = this.clientProvider.getActiveClient()
+            if (!activeClient) {
+                displayError('No active client.')
+                return
+            }
+
+            if (activeClient.folderUri.scheme === 'untitled') {
+                displayError('Cannot run project action for untitled files.')
+                return
+            }
+
+            const lakeRunner: LakeRunner = lake(this.channel, activeClient.folderUri, context)
+
+            const result: 'Success' | 'IsRestarting' = await activeClient.withStoppedClient(() => command(lakeRunner))
+            if (result === 'IsRestarting') {
+                displayError('Cannot run project action while restarting the server.')
+            }
+        } finally {
             this.isRunningOperation = false
-            return
         }
-
-        const activeClient: LeanClient | undefined = this.clientProvider.getActiveClient()
-        if (!activeClient) {
-            displayError('No active client.')
-            this.isRunningOperation = false
-            return
-        }
-
-        if (activeClient.folderUri.scheme === 'untitled') {
-            displayError('Cannot run project action for untitled files.')
-            this.isRunningOperation = false
-            return
-        }
-
-        const lakeRunner: LakeRunner = lake(this.channel, activeClient.folderUri, context)
-
-        const result: 'Success' | 'IsRestarting' = await activeClient.withStoppedClient(() => command(lakeRunner))
-        if (result === 'IsRestarting') {
-            displayError('Cannot run project action while restarting the server.')
-        }
-
-        this.isRunningOperation = false
     }
 
     dispose() {

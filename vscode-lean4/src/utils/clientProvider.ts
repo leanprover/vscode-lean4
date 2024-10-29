@@ -1,4 +1,5 @@
 import { LeanFileProgressProcessingInfo, ServerStoppedReason } from '@leanprover/infoview-api'
+import path from 'path'
 import { Disposable, EventEmitter, OutputChannel, TextDocument, commands, window, workspace } from 'vscode'
 import {
     checkAll,
@@ -72,8 +73,8 @@ export class LeanClientProvider implements Disposable {
         )
 
         this.subscriptions.push(
-            commands.registerCommand('lean4.restartFile', () => this.restartFile()),
-            commands.registerCommand('lean4.refreshFileDependencies', () => this.restartFile()),
+            commands.registerCommand('lean4.restartFile', () => this.restartActiveFile()),
+            commands.registerCommand('lean4.refreshFileDependencies', () => this.restartActiveFile()),
             commands.registerCommand('lean4.restartServer', () => this.restartActiveClient()),
             commands.registerCommand('lean4.stopServer', () => this.stopActiveClient()),
         )
@@ -143,7 +144,25 @@ export class LeanClientProvider implements Disposable {
         this.processingInstallChanged = false
     }
 
-    private restartFile() {
+    restartFile(uri: ExtUri) {
+        const fileName = uri.scheme === 'file' ? path.basename(uri.fsPath) : 'untitled file'
+
+        const client: LeanClient | undefined = this.findClient(uri)
+        if (!client || !client.isRunning()) {
+            displayError(`No active client for '${fileName}'.`)
+            return
+        }
+
+        const doc = workspace.textDocuments.find(doc => uri.equalsUri(doc.uri))
+        if (!doc) {
+            displayError(`'${fileName}' was closed in the meantime.`)
+            return
+        }
+
+        void client.restartFile(doc)
+    }
+
+    restartActiveFile() {
         if (!this.activeClient || !this.activeClient.isRunning()) {
             displayError('No active client.')
             return

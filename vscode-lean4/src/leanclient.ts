@@ -188,7 +188,7 @@ export class LeanClient implements Disposable {
         // Should only be called from `restart`
 
         const startTime = Date.now()
-        progress.report({ increment: 0 })
+        progress.report({})
         this.client = await this.setupClient()
 
         let insideRestart = true
@@ -215,7 +215,6 @@ export class LeanClient implements Disposable {
                     }
                 }
             })
-            progress.report({ increment: 80 })
             await this.client.start()
             const version = this.client.initializeResult?.serverInfo?.version
             if (version && new SemVer(version).compare('0.2.0') < 0) {
@@ -314,14 +313,16 @@ export class LeanClient implements Disposable {
             return 'IsRestarting'
         }
         this.isRestarting = true // Ensure that client cannot be restarted in the mean-time
+        try {
+            if (this.isStarted()) {
+                await this.stop()
+            }
 
-        if (this.isStarted()) {
-            await this.stop()
+            await action()
+        } finally {
+            this.isRestarting = false
         }
 
-        await action()
-
-        this.isRestarting = false
         await this.restart()
 
         return 'Success'
