@@ -8,16 +8,16 @@ import { Rpc } from '../src/rpc'
 // Persisting the most important state necessary for rendering the InfoView ensures that it
 // can be rendered correctly when detaching it.
 // We persist this state by intercepting the Infoview API and load it when this script is initialized.
-export interface PersistentInfoViewState {
+interface PersistentInfoviewState {
     config?: InfoviewConfig
     cursorLoc?: Location
     initializeResult?: InitializeResult
     diags?: PublishDiagnosticsParams
 }
 
-const vscodeApi = acquireVsCodeApi<PersistentInfoViewState>()
+const vscodeApi = acquireVsCodeApi<PersistentInfoviewState>()
 
-function modifyState(f: (previousState: PersistentInfoViewState) => PersistentInfoViewState) {
+function modifyState(f: (previousState: PersistentInfoviewState) => PersistentInfoviewState) {
     vscodeApi.setState(f(vscodeApi.getState() ?? {}))
 }
 
@@ -35,7 +35,7 @@ if (div && script) {
         'react-dom': script.getAttribute('data-importmap-react-dom')!,
     }
     loadRenderInfoview(imports, [editorApi, div], async api => {
-        const previousState: PersistentInfoViewState | undefined = vscodeApi.getState()
+        const previousState: PersistentInfoviewState | undefined = vscodeApi.getState()
 
         const apiWithPersistedState: InfoviewApi = { ...api }
         apiWithPersistedState.initialize = async loc => {
