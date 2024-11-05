@@ -52,10 +52,21 @@ export class AbbreviationView implements Disposable {
                 <meta charset="UTF-8" />
                 <meta http-equiv="Content-type" content="text/html;charset=utf-8">
                 <title>AbbreviationView</title>
+                <script
+                    src="${this.webviewUri(this.webviewPanel, 'dist', 'abbreviationview', 'static', 'elements', 'bundled.js')}"
+                    type="module"
+                ></script>
                 <script defer data-id="abbreviationview-script" src="${this.webviewUri(this.webviewPanel, 'dist/abbreviationview.js')}" abbreviations="${escapeHtml(JSON.stringify(abbreviations))}"></script>
             </head>
             <body>
-                <vscode-data-grid id="abbreviation-grid" aria-label="Abbreviations" grid-template-columns="20em 1fr"></vscode-data-grid>
+                <vscode-table aria-label="Abbreviations" responsive resizable bordered zebra>
+                    <vscode-table-header slot="header">
+                        <vscode-table-header-cell>Abbreviation</vscode-table-header-cell>
+                        <vscode-table-header-cell>Unicode symbol</vscode-table-header-cell>
+                    </vscode-table-header>
+                    <vscode-table-body id="abbreviation-table" slot="body">
+                    </vscode-table-body>
+                </vscode-table>
             </body>
             </html>`
         this.webviewPanel.reveal()

@@ -177,6 +177,16 @@ const getAbbreviationViewConfig = env => ({
         filename: 'abbreviationview.js',
         path: path.resolve(__dirname, 'dist'),
     },
+    plugins: [
+        new CopyPlugin({
+            patterns: [
+                {
+                    from: '../node_modules/@vscode-elements/elements/dist',
+                    to: path.resolve(__dirname, 'dist', 'abbreviationview', 'static', 'elements'),
+                },
+            ],
+        }),
+    ],
 })
 
 /** @type {(env: Env) => import('webpack').Configuration} */
