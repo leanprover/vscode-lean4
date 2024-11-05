@@ -141,6 +141,10 @@ const getMoogleViewConfig = env => ({
                     from: '../node_modules/@vscode/codicons/dist',
                     to: path.resolve(__dirname, 'dist', 'moogleview', 'static', 'codicons'),
                 },
+                {
+                    from: '../node_modules/@vscode-elements/elements/dist',
+                    to: path.resolve(__dirname, 'dist', 'moogleview', 'static', 'elements'),
+                },
             ],
         }),
     ],

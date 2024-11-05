@@ -61,11 +61,15 @@ export class MoogleView implements Disposable {
                     "
                 />
                 <title>MoogleView</title>
+                <script
+                    src="${this.webviewUri(webviewPanel, 'dist', 'moogleview', 'static', 'elements', 'bundled.js')}"
+                    type="module"
+                ></script>
                 <script defer type="module" nonce="inline">
                     document.getElementById("moogleviewRoot").innerHTML = await (await fetch("${this.webviewUri(webviewPanel, 'dist', 'moogleview', 'static', 'index.html')}")).text()
                 </script>
                 <link rel="stylesheet" href="${this.webviewUri(webviewPanel, 'dist', 'moogleview', 'static', 'index.css')}">
-                <link rel="stylesheet" href="${this.webviewUri(webviewPanel, 'dist', 'moogleview', 'static', 'codicons', 'codicon.css')}">
+                <link rel="stylesheet" id="vscode-codicon-stylesheet" href="${this.webviewUri(webviewPanel, 'dist', 'moogleview', 'static', 'codicons', 'codicon.css')}">
             </head>
             <body>
                 <div id="moogleviewRoot" style="min-width: 50em"></div>
