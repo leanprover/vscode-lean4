@@ -94,6 +94,10 @@ const getLoogleViewConfig = env => ({
                     from: '../node_modules/@vscode/codicons/dist',
                     to: path.resolve(__dirname, 'dist', 'loogleview', 'static', 'codicons'),
                 },
+                {
+                    from: '../node_modules/@vscode-elements/elements/dist',
+                    to: path.resolve(__dirname, 'dist', 'loogleview', 'static', 'elements'),
+                },
             ],
         }),
     ],

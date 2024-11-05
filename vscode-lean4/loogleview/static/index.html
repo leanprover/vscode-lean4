@@ -2,9 +2,9 @@
 <div class="query-container">
     <div class="input-container">
         <div id="query-text-field" class="single-line" contenteditable="true"></div>
-        <vscode-button id="previous-query-button" appearance="icon" aria-label="Load Previous Query"><span class="codicon codicon-arrow-left"></span></vscode-button>
-        <vscode-button id="next-query-button" appearance="icon" aria-label="Load Next Query"><span class="codicon codicon-arrow-right"></span></vscode-button>
-        <vscode-button id="find-button" appearance="icon" aria-label="Send Loogle Query"><span class="codicon codicon-search"></span></vscode-button>
+        <vscode-icon id="previous-query-button" name="arrow-left" label="Load Previous Query" action-icon></vscode-icon>
+        <vscode-icon id="next-query-button" name="arrow-right" label="Load Next Query" action-icon></vscode-icon>
+        <vscode-icon id="find-button" name="search" label="Send Loogle Query" action-icon></vscode-icon>
     </div>
     <div id="spinner" class="loader hidden"></div>
 </div>
@@ -28,41 +28,41 @@
     <li>
         <p>
             By constant:<br>
-            <vscode-link class="query-suggestion">Real.sin</vscode-link> finds all lemmas whose statement somehow mentions the sinefunction.
+            <a href="javascript:void(0)" class="query-suggestion">Real.sin</a> finds all lemmas whose statement somehow mentions the sinefunction.
         </p>
     </li>
     <li>
         <p>
             By lemma name substring:<br>
-            <vscode-link class="query-suggestion">"differ"</vscode-link> finds all lemmas that have <code>"differ"</code> somewhere in their lemma <em>name</em>.
+            <a href="javascript:void(0)" class="query-suggestion">"differ"</a> finds all lemmas that have <code>"differ"</code> somewhere in their lemma <em>name</em>.
         </p>
     </li>
     <li>
         <p>
             By subexpression:<br>
-            <vscode-link class="query-suggestion">_ * (_ ^ _)</vscode-link> finds all lemmas whose statements somewhere include a product where the second argument is raised to some power.
+            <a href="javascript:void(0)" class="query-suggestion">_ * (_ ^ _)</a> finds all lemmas whose statements somewhere include a product where the second argument is raised to some power.
         </p>
         <p>
-            The pattern can also be non-linear, as in <vscode-link class="query-suggestion">Real.sqrt ?a * Real.sqrt ?a</vscode-link>
+            The pattern can also be non-linear, as in <a href="javascript:void(0)" class="query-suggestion">Real.sqrt ?a * Real.sqrt ?a</a>
         </p>
         <p>
             If the pattern has parameters, they are matched in any order. Both of these will find <code>List.map</code>:<br>
-            <vscode-link class="query-suggestion">(?a -&gt; ?b) -&gt; List ?a -&gt; List ?b</vscode-link><br>
-            <vscode-link class="query-suggestion">List ?a -&gt; (?a -&gt; ?b) -&gt; List ?b</vscode-link>
+            <a href="javascript:void(0)" class="query-suggestion">(?a -&gt; ?b) -&gt; List ?a -&gt; List ?b</a><br>
+            <a href="javascript:void(0)" class="query-suggestion">List ?a -&gt; (?a -&gt; ?b) -&gt; List ?b</a>
         </p>
     </li>
     <li>
         <p>
             By main conclusion:<br>
-            <vscode-link class="query-suggestion">|- tsum _ = _ * tsum _</vscode-link> finds all lemmas where the conclusion (the subexpression to the right of all <code>→</code> and <code>∀</code>) has the given shape.
+            <a href="javascript:void(0)" class="query-suggestion">|- tsum _ = _ * tsum _</a> finds all lemmas where the conclusion (the subexpression to the right of all <code>→</code> and <code>∀</code>) has the given shape.
         </p>
         <p>
-            As before, if the pattern has parameters, they are matched against the hypotheses of the lemma in any order; for example, <vscode-link class="query-suggestion">|- _ &lt; _ → tsum _ &lt; tsum _</vscode-link> will find <code>tsum_lt_tsum</code> even though the hypothesis <code>f i &lt; g i</code> is not the last.
+            As before, if the pattern has parameters, they are matched against the hypotheses of the lemma in any order; for example, <a href="javascript:void(0)" class="query-suggestion">|- _ &lt; _ → tsum _ &lt; tsum _</a> will find <code>tsum_lt_tsum</code> even though the hypothesis <code>f i &lt; g i</code> is not the last.
         </p>
     </li>
 </ol>
 <p>
-    If you pass more than one such search filter, separated by commas Loogle will return lemmas which match <em>all</em> of them. The search <vscode-link class="query-suggestion">Real.sin, "two", tsum, _ * _, _ ^ _, |- _ &lt; _ → _</vscode-link>
+    If you pass more than one such search filter, separated by commas Loogle will return lemmas which match <em>all</em> of them. The search <a href="javascript:void(0)" class="query-suggestion">Real.sin, "two", tsum, _ * _, _ ^ _, |- _ &lt; _ → _</a>
     would find all lemmas which mention the constants <code>Real.sin</code>
     and <code>tsum</code>, have <code>"two"</code> as a substring of the
     lemma name, include a product and a power somewhere in the type,
