@@ -200,12 +200,10 @@ class LoogleView {
     }
 
     private createQuerySuggestionNode(querySuggestion: string): HTMLElement {
-        //const paragraph = document.createElement('p')
         const link = document.createElement('a')
         link.href = 'javascript:void(0)'
         link.innerText = querySuggestion
         link.addEventListener('click', () => this.runSuggestion(querySuggestion))
-        //paragraph.appendChild(link)
         return link
     }
 

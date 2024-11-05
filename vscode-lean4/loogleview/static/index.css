@@ -44,7 +44,6 @@
 
     box-sizing: border-box;
     position: relative;
-    display: flex;
     flex-direction: row;
     color: var(--vscode-input-foreground);
     background: var(--vscode-input-background);
