@@ -63,11 +63,15 @@ export class LoogleView implements Disposable {
                         style-src ${webviewPanel.webview.cspSource} 'unsafe-inline'"
                 />
                 <title>LoogleView</title>
+                <script
+                    src="${this.webviewUri(webviewPanel, 'dist', 'loogleview', 'static', 'elements', 'bundled.js')}"
+                    type="module"
+                ></script>
                 <script defer type="module" nonce="inline">
                     document.getElementById("loogleviewRoot").innerHTML = await (await fetch("${this.webviewUri(webviewPanel, 'dist', 'loogleview', 'static', 'index.html')}")).text()
                 </script>
                 <link rel="stylesheet" href="${this.webviewUri(webviewPanel, 'dist', 'loogleview', 'static', 'index.css')}">
-                <link rel="stylesheet" href="${this.webviewUri(webviewPanel, 'dist', 'loogleview', 'static', 'codicons', 'codicon.css')}">
+                <link rel="stylesheet" id="vscode-codicon-stylesheet" href="${this.webviewUri(webviewPanel, 'dist', 'loogleview', 'static', 'codicons', 'codicon.css')}">
             </head>
             <body>
                 <div id="loogleviewRoot" style="min-width: 50em"></div>

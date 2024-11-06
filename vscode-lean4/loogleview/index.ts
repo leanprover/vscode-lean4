@@ -1,8 +1,5 @@
 import { AbbreviationConfig } from '@leanprover/unicode-input'
 import { InputAbbreviationRewriter } from '@leanprover/unicode-input-component'
-import { provideVSCodeDesignSystem, vsCodeButton, vsCodeLink, vsCodeTextField } from '@vscode/webview-ui-toolkit'
-
-provideVSCodeDesignSystem().register(vsCodeButton(), vsCodeTextField(), vsCodeLink())
 
 const vscodeApi = acquireVsCodeApi()
 
@@ -135,7 +132,7 @@ class LoogleView {
         })
 
         for (const querySuggestionElement of view.staticSuggestions) {
-            if (!(querySuggestionElement instanceof HTMLElement) || querySuggestionElement.tagName !== 'VSCODE-LINK') {
+            if (!(querySuggestionElement instanceof HTMLElement) || querySuggestionElement.tagName !== 'A') {
                 continue
             }
             const querySuggestion = querySuggestionElement.innerText
@@ -203,7 +200,8 @@ class LoogleView {
     }
 
     private createQuerySuggestionNode(querySuggestion: string): HTMLElement {
-        const link = document.createElement('vscode-link')
+        const link = document.createElement('a')
+        link.href = 'javascript:void(0)'
         link.innerText = querySuggestion
         link.addEventListener('click', () => this.runSuggestion(querySuggestion))
         return link
@@ -212,7 +210,7 @@ class LoogleView {
     private createHitNameNode(name: string, module: string): HTMLElement {
         // This is not correct (consider e.g. escaped dots in french quotes) but it should be good enough for now.
         const docUrl = `https://leanprover-community.github.io/mathlib4_docs/${encodeURIComponent(module.replace(new RegExp(/\./, 'g'), '/'))}.html#${encodeURIComponent(name)}`
-        const link = document.createElement('vscode-link')
+        const link = document.createElement('a')
         link.innerText = name
         link.setAttribute('href', `command:simpleBrowser.show?${encodeURIComponent(JSON.stringify([docUrl]))}`)
         return link
@@ -232,12 +230,12 @@ class LoogleView {
         this.resultHeader.hidden = hits.length === 0
         const resultNodes = hits.map(hit => {
             const entry = document.createElement('li')
-            const identifierNode = document.createElement('span')
-            identifierNode.appendChild(this.createHitNameNode(hit.name, hit.module))
-            identifierNode.appendChild(document.createTextNode(` @ ${hit.module}`))
-            entry.appendChild(identifierNode)
-            entry.appendChild(document.createElement('br'))
-            entry.appendChild(document.createTextNode(hit.type))
+            const paragraph = document.createElement('p')
+            paragraph.appendChild(this.createHitNameNode(hit.name, hit.module))
+            paragraph.appendChild(document.createTextNode(` @ ${hit.module}`))
+            paragraph.appendChild(document.createElement('br'))
+            paragraph.appendChild(document.createTextNode(hit.type))
+            entry.appendChild(paragraph)
             return entry
         })
         this.results.replaceChildren(...resultNodes)

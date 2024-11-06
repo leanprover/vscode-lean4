@@ -1,8 +1,5 @@
 import { AbbreviationConfig } from '@leanprover/unicode-input'
 import { InputAbbreviationRewriter } from '@leanprover/unicode-input-component'
-import { provideVSCodeDesignSystem, vsCodeButton, vsCodeLink, vsCodeTextField } from '@vscode/webview-ui-toolkit'
-
-provideVSCodeDesignSystem().register(vsCodeButton(), vsCodeTextField(), vsCodeLink())
 
 const vscodeApi = acquireVsCodeApi()
 
@@ -233,7 +230,7 @@ class MoogleView {
             <div class="result-content">
                 ${declarationDocstring ? `<div class="display-html-container">${declarationDocstring}</div>` : ''}
                 <div class="display-html-container">${modifiedHtmlContent}</div>
-                <vscode-link href="${hit.sourceCodeUrl}">View source code</vscode-link>
+                <a href="${hit.sourceCodeUrl}">View source code</a>
             </div>
             `
 

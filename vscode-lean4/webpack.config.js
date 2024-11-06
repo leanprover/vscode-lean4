@@ -94,6 +94,10 @@ const getLoogleViewConfig = env => ({
                     from: '../node_modules/@vscode/codicons/dist',
                     to: path.resolve(__dirname, 'dist', 'loogleview', 'static', 'codicons'),
                 },
+                {
+                    from: '../node_modules/@vscode-elements/elements/dist',
+                    to: path.resolve(__dirname, 'dist', 'loogleview', 'static', 'elements'),
+                },
             ],
         }),
     ],
@@ -137,6 +141,10 @@ const getMoogleViewConfig = env => ({
                     from: '../node_modules/@vscode/codicons/dist',
                     to: path.resolve(__dirname, 'dist', 'moogleview', 'static', 'codicons'),
                 },
+                {
+                    from: '../node_modules/@vscode-elements/elements/dist',
+                    to: path.resolve(__dirname, 'dist', 'moogleview', 'static', 'elements'),
+                },
             ],
         }),
     ],
@@ -169,6 +177,16 @@ const getAbbreviationViewConfig = env => ({
         filename: 'abbreviationview.js',
         path: path.resolve(__dirname, 'dist'),
     },
+    plugins: [
+        new CopyPlugin({
+            patterns: [
+                {
+                    from: '../node_modules/@vscode-elements/elements/dist',
+                    to: path.resolve(__dirname, 'dist', 'abbreviationview', 'static', 'elements'),
+                },
+            ],
+        }),
+    ],
 })
 
 /** @type {(env: Env) => import('webpack').Configuration} */
