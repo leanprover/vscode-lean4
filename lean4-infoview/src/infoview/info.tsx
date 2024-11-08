@@ -71,7 +71,7 @@ const InfoStatusBar = React.memo((props: InfoStatusBarProps) => {
         transitionProperty: 'opacity',
         transitionTimingFunction: 'ease-in',
         color: 'var(--vscode-editor-foreground)',
-        fontSize: '10px',
+        fontSize: 'calc(0.8 * var(--vscode-font-size))',
     }
 
     return (
