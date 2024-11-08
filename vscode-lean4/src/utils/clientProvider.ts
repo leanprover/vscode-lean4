@@ -1,18 +1,13 @@
 import { LeanFileProgressProcessingInfo, ServerStoppedReason } from '@leanprover/infoview-api'
 import path from 'path'
 import { Disposable, EventEmitter, OutputChannel, TextDocument, commands, window, workspace } from 'vscode'
-import {
-    checkAll,
-    checkIsLakeInstalledCorrectly,
-    checkIsLeanVersionUpToDate,
-    checkIsValidProjectFolder,
-} from '../diagnostics/setupDiagnostics'
-import { PreconditionCheckResult } from '../diagnostics/setupNotifs'
+import { SetupDiagnostics, checkAll } from '../diagnostics/setupDiagnostics'
+import { PreconditionCheckResult, SetupNotificationOptions } from '../diagnostics/setupNotifs'
 import { LeanClient } from '../leanclient'
 import { ExtUri, FileUri, UntitledUri, getWorkspaceFolderUri, toExtUri } from './exturi'
 import { LeanInstaller } from './leanInstaller'
 import { logger } from './logger'
-import { displayError } from './notifs'
+import { displayNotification } from './notifs'
 import { findLeanProjectRoot, willUseLakeServer } from './projectInfo'
 
 async function checkLean4ProjectPreconditions(
@@ -20,14 +15,19 @@ async function checkLean4ProjectPreconditions(
     context: string,
     folderUri: ExtUri,
 ): Promise<PreconditionCheckResult> {
+    const options: SetupNotificationOptions = {
+        errorMode: { mode: 'NonModal' },
+        warningMode: { modal: false, proceedByDefault: true },
+    }
+    const d = new SetupDiagnostics(options)
     return await checkAll(
-        () => checkIsValidProjectFolder(channel, folderUri),
-        () => checkIsLeanVersionUpToDate(channel, context, folderUri, { modal: false }),
+        () => d.checkIsValidProjectFolder(channel, folderUri),
+        () => d.checkIsLeanVersionUpToDate(channel, context, folderUri, {}),
         async () => {
             if (!(await willUseLakeServer(folderUri))) {
                 return 'Fulfilled'
             }
-            return await checkIsLakeInstalledCorrectly(channel, context, folderUri, {})
+            return await d.checkIsLakeInstalledCorrectly(channel, context, folderUri, {})
         },
     )
 }
@@ -149,13 +149,13 @@ export class LeanClientProvider implements Disposable {
 
         const client: LeanClient | undefined = this.findClient(uri)
         if (!client || !client.isRunning()) {
-            displayError(`No active client for '${fileName}'.`)
+            displayNotification('Error', `No active client for '${fileName}'.`)
             return
         }
 
         const doc = workspace.textDocuments.find(doc => uri.equalsUri(doc.uri))
         if (!doc) {
-            displayError(`'${fileName}' was closed in the meantime.`)
+            displayNotification('Error', `'${fileName}' was closed in the meantime.`)
             return
         }
 
@@ -164,12 +164,13 @@ export class LeanClientProvider implements Disposable {
 
     restartActiveFile() {
         if (!this.activeClient || !this.activeClient.isRunning()) {
-            displayError('No active client.')
+            displayNotification('Error', 'No active client.')
             return
         }
 
         if (!window.activeTextEditor || window.activeTextEditor.document.languageId !== 'lean4') {
-            displayError(
+            displayNotification(
+                'Error',
                 'No active Lean editor tab. Make sure to focus the Lean editor tab for which you want to issue a restart.',
             )
             return
@@ -278,7 +279,7 @@ export class LeanClientProvider implements Disposable {
         client.serverFailed(err => {
             this.clients.delete(key)
             client.dispose()
-            displayError(err)
+            displayNotification('Error', err)
         })
 
         client.stopped(reason => {

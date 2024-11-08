@@ -1,20 +1,21 @@
 import { SemVer } from 'semver'
+import { Disposable } from 'vscode'
 import { shouldShowSetupWarnings } from '../config'
 import { LeanInstaller } from '../utils/leanInstaller'
 import {
-    displayError,
-    displayErrorWithInput,
-    displayErrorWithOptionalInput,
-    displayErrorWithOutput,
-    displayErrorWithSetupGuide,
-    displayModalWarning,
-    displayModalWarningWithOutput,
-    displayModalWarningWithSetupGuide,
-    displayWarning,
-    displayWarningWithInput,
-    displayWarningWithOptionalInput,
-    displayWarningWithOutput,
-    displayWarningWithSetupGuide,
+    displayModalNotificationWithOutput,
+    displayModalNotificationWithSetupGuide,
+    displayNotification,
+    displayNotificationWithInput,
+    displayNotificationWithOptionalInput,
+    displayNotificationWithOutput,
+    displayNotificationWithSetupGuide,
+    displayStickyNotificationWithOptionalInput,
+    displayStickyNotificationWithOutput,
+    displayStickyNotificationWithSetupGuide,
+    Input,
+    StickyInput,
+    StickyNotificationOptions,
 } from '../utils/notifs'
 
 export type PreconditionCheckResult = 'Fulfilled' | 'Warning' | 'Fatal'
@@ -51,166 +52,296 @@ export function worstPreconditionViolation(...results: PreconditionCheckResult[]
     return worstViolation
 }
 
-export type SetupWarningOptions = { modal: true } | { modal: false; finalizer?: (() => void) | undefined }
+export type ModalSetupOptions = { modal: true } | { modal: false; finalizer?: (() => void) | undefined }
 
-export function displaySetupError(message: string, finalizer?: (() => void) | undefined): PreconditionCheckResult {
-    displayError(message, finalizer)
-    return 'Fatal'
+export type SetupNotificationOptions = {
+    errorMode: { mode: 'Sticky'; retry: () => Promise<void> } | { mode: 'Modal' } | { mode: 'NonModal' }
+    warningMode: { modal: boolean; proceedByDefault: boolean }
 }
 
-export async function displaySetupErrorWithInput<T extends string>(
-    message: string,
-    ...items: T[]
-): Promise<T | undefined> {
-    return await displayErrorWithInput(message, ...items)
+const proceedItem: string = 'Proceed Regardless'
+const retryItem: StickyInput<string> = {
+    input: 'Retry',
+    continueDisplaying: false,
+    action: async () => {},
 }
 
-export function displaySetupErrorWithOptionalInput<T extends string>(
-    message: string,
-    input: T,
-    action: () => void,
-    finalizer?: (() => void) | undefined,
-): PreconditionCheckResult {
-    displayErrorWithOptionalInput(message, input, action, finalizer)
-    return 'Fatal'
-}
+export class SetupNotifier {
+    private subscriptions: Disposable[] = []
 
-export function displaySetupErrorWithOutput(
-    message: string,
-    finalizer?: (() => void) | undefined,
-): PreconditionCheckResult {
-    displayErrorWithOutput(message, finalizer)
-    return 'Fatal'
-}
+    constructor(private options: SetupNotificationOptions) {}
 
-export function displaySetupErrorWithSetupGuide(
-    message: string,
-    finalizer?: (() => void) | undefined,
-): PreconditionCheckResult {
-    displayErrorWithSetupGuide(message, finalizer)
-    return 'Fatal'
-}
+    private async error(notifs: {
+        modal: () => Promise<PreconditionCheckResult>
+        nonModal?: () => PreconditionCheckResult
+        sticky: (options: StickyNotificationOptions<string>) => Promise<Disposable>
+    }): Promise<PreconditionCheckResult> {
+        const m = this.options.errorMode
+        if (m.mode === 'Modal') {
+            return await notifs.modal()
+        }
+        if (m.mode === 'NonModal') {
+            if (notifs.nonModal === undefined) {
+                return await notifs.modal()
+            }
+            return notifs.nonModal()
+        }
 
-export function displayDependencySetupError(missingDeps: string[]): PreconditionCheckResult {
-    if (missingDeps.length === 0) {
-        throw new Error()
+        const r = await notifs.modal()
+        if (r !== 'Fatal') {
+            return r
+        }
+        const options: StickyNotificationOptions<string> = {
+            onInput: async (_, continueDisplaying) => {
+                if (!continueDisplaying) {
+                    await m.retry()
+                }
+                return continueDisplaying
+            },
+            onDisplay: async () => {},
+        }
+        const d = await notifs.sticky(options)
+        this.subscriptions.push(d)
+        return 'Fatal'
     }
-    let missingDepMessage: string
-    if (missingDeps.length === 1) {
-        missingDepMessage = `One of Lean's dependencies ('${missingDeps.at(0)}') is missing`
-    } else {
-        missingDepMessage = `Multiple of Lean's dependencies (${missingDeps.map(dep => `'${dep}'`).join(', ')}) are missing`
+
+    private async warning(notifs: {
+        modalAskBeforeProceeding: () => Promise<PreconditionCheckResult>
+        modalProceedByDefault: () => Promise<PreconditionCheckResult>
+        nonModal?: () => PreconditionCheckResult
+    }) {
+        if (!shouldShowSetupWarnings()) {
+            return 'Warning'
+        }
+        if (this.options.warningMode.modal || notifs.nonModal === undefined) {
+            if (this.options.warningMode.proceedByDefault) {
+                return await notifs.modalProceedByDefault()
+            } else {
+                return await notifs.modalAskBeforeProceeding()
+            }
+        } else {
+            return notifs.nonModal()
+        }
     }
 
-    const errorMessage = `${missingDepMessage}. Please read the Setup Guide on how to install missing dependencies and set up Lean 4.`
-    displaySetupErrorWithSetupGuide(errorMessage)
-    return 'Fatal'
-}
+    async displaySetupError(message: string): Promise<PreconditionCheckResult> {
+        return await this.error({
+            modal: async () => {
+                await displayNotificationWithInput('Error', message)
+                return 'Fatal'
+            },
+            nonModal: () => {
+                displayNotification('Error', message)
+                return 'Fatal'
+            },
+            sticky: async options => displayStickyNotificationWithOptionalInput('Error', message, options, retryItem),
+        })
+    }
 
-export async function displayElanSetupError(
-    installer: LeanInstaller,
-    reason: string,
-): Promise<PreconditionCheckResult> {
-    const isElanInstalled = await installer.displayInstallElanPrompt('Error', reason)
-    return isElanInstalled ? 'Fulfilled' : 'Fatal'
-}
+    async displaySetupWarning(message: string): Promise<PreconditionCheckResult> {
+        return await this.warning({
+            modalProceedByDefault: async () => {
+                await displayNotificationWithInput('Warning', message)
+                return 'Warning'
+            },
+            modalAskBeforeProceeding: async () => {
+                const choice = await displayNotificationWithInput('Warning', message, proceedItem)
+                return choice === proceedItem ? 'Warning' : 'Fatal'
+            },
+            nonModal: () => {
+                displayNotification('Warning', message)
+                return 'Warning'
+            },
+        })
+    }
 
-export async function displayElanOutdatedSetupError(
-    installer: LeanInstaller,
-    currentVersion: SemVer,
-    recommendedVersion: SemVer,
-): Promise<PreconditionCheckResult> {
-    const isElanUpToDate = await installer.displayUpdateElanPrompt('Error', currentVersion, recommendedVersion)
-    return isElanUpToDate ? 'Fulfilled' : 'Fatal'
-}
+    async displaySetupErrorWithInput(
+        message: string,
+        ...inputs: StickyInput<string>[]
+    ): Promise<PreconditionCheckResult> {
+        return await this.error({
+            modal: async () => {
+                const choice = await displayNotificationWithInput('Error', message, ...inputs.map(i => i.input))
+                const chosenInput = inputs.find(i => i.input === choice)
+                await chosenInput?.action()
+                return 'Fatal'
+            },
+            nonModal: () => {
+                displayNotificationWithOptionalInput('Error', message, inputs)
+                return 'Fatal'
+            },
+            sticky: async options =>
+                displayStickyNotificationWithOptionalInput('Error', message, options, retryItem, ...inputs),
+        })
+    }
 
-export async function displaySetupWarning(
-    message: string,
-    options: SetupWarningOptions = { modal: false },
-): Promise<PreconditionCheckResult> {
-    if (!shouldShowSetupWarnings()) {
-        return 'Warning'
+    async displaySetupWarningWithInput(message: string, ...inputs: Input<string>[]): Promise<PreconditionCheckResult> {
+        return await this.warning({
+            modalProceedByDefault: async () => {
+                const choice = await displayNotificationWithInput('Warning', message, ...inputs.map(i => i.input))
+                const chosenInput = inputs.find(i => i.input === choice)
+                chosenInput?.action()
+                return 'Warning'
+            },
+            modalAskBeforeProceeding: async () => {
+                const choice = await displayNotificationWithInput(
+                    'Warning',
+                    message,
+                    proceedItem,
+                    ...inputs.map(i => i.input),
+                )
+                const chosenInput = inputs.find(i => i.input === choice)
+                chosenInput?.action()
+                return choice === proceedItem ? 'Warning' : 'Fatal'
+            },
+            nonModal: () => {
+                displayNotificationWithOptionalInput('Warning', message, inputs)
+                return 'Warning'
+            },
+        })
     }
-    if (options.modal) {
-        const choice = await displayModalWarning(message)
-        return choice === 'Proceed' ? 'Warning' : 'Fatal'
-    }
-    displayWarning(message, options.finalizer)
-    return 'Warning'
-}
 
-export async function displaySetupWarningWithInput<T extends string>(
-    message: string,
-    ...items: T[]
-): Promise<T | undefined> {
-    if (!shouldShowSetupWarnings()) {
-        return undefined
+    async displaySetupErrorWithOutput(message: string): Promise<PreconditionCheckResult> {
+        return await this.error({
+            modal: async () => {
+                await displayModalNotificationWithOutput('Error', message)
+                return 'Fatal'
+            },
+            nonModal: () => {
+                displayNotificationWithOutput('Error', message)
+                return 'Fatal'
+            },
+            sticky: async options => displayStickyNotificationWithOutput('Error', message, options, retryItem),
+        })
     }
-    return await displayWarningWithInput(message, ...items)
-}
 
-export function displaySetupWarningWithOptionalInput<T extends string>(
-    message: string,
-    input: T,
-    action: () => void,
-    finalizer?: (() => void) | undefined,
-): PreconditionCheckResult {
-    if (!shouldShowSetupWarnings()) {
-        return 'Warning'
+    async displaySetupWarningWithOutput(message: string): Promise<PreconditionCheckResult> {
+        return await this.warning({
+            modalProceedByDefault: async () => {
+                await displayModalNotificationWithOutput('Warning', message)
+                return 'Warning'
+            },
+            modalAskBeforeProceeding: async () => {
+                const choice = await displayModalNotificationWithOutput('Warning', message, proceedItem)
+                return choice === proceedItem ? 'Warning' : 'Fatal'
+            },
+            nonModal: () => {
+                displayNotificationWithOutput('Warning', message)
+                return 'Warning'
+            },
+        })
     }
-    displayWarningWithOptionalInput(message, input, action, finalizer)
-    return 'Warning'
-}
 
-export async function displaySetupWarningWithOutput(
-    message: string,
-    options: SetupWarningOptions = { modal: false },
-): Promise<PreconditionCheckResult> {
-    if (!shouldShowSetupWarnings()) {
-        return 'Warning'
+    async displaySetupErrorWithSetupGuide(message: string): Promise<PreconditionCheckResult> {
+        return await this.error({
+            modal: async () => {
+                await displayModalNotificationWithSetupGuide('Error', message)
+                return 'Fatal'
+            },
+            nonModal: () => {
+                displayNotificationWithSetupGuide('Error', message)
+                return 'Fatal'
+            },
+            sticky: async options => displayStickyNotificationWithSetupGuide('Error', message, options, retryItem),
+        })
     }
-    if (options.modal) {
-        const choice = await displayModalWarningWithOutput(message)
-        return choice === 'Proceed' ? 'Warning' : 'Fatal'
-    }
-    displayWarningWithOutput(message, options.finalizer)
-    return 'Warning'
-}
 
-export async function displaySetupWarningWithSetupGuide(
-    message: string,
-    options: SetupWarningOptions = { modal: false },
-): Promise<PreconditionCheckResult> {
-    if (!shouldShowSetupWarnings()) {
-        return 'Warning'
+    async displaySetupWarningWithSetupGuide(message: string): Promise<PreconditionCheckResult> {
+        return await this.warning({
+            modalProceedByDefault: async () => {
+                await displayModalNotificationWithSetupGuide('Warning', message)
+                return 'Warning'
+            },
+            modalAskBeforeProceeding: async () => {
+                const choice = await displayModalNotificationWithSetupGuide('Warning', message, proceedItem)
+                return choice === proceedItem ? 'Warning' : 'Fatal'
+            },
+            nonModal: () => {
+                displayNotificationWithSetupGuide('Warning', message)
+                return 'Warning'
+            },
+        })
     }
-    if (options.modal) {
-        const choice = await displayModalWarningWithSetupGuide(message)
-        return choice === 'Proceed' ? 'Warning' : 'Fatal'
-    }
-    displayWarningWithSetupGuide(message, options.finalizer)
-    return 'Warning'
-}
 
-export async function displayElanSetupWarning(
-    installer: LeanInstaller,
-    reason: string,
-): Promise<PreconditionCheckResult> {
-    if (!shouldShowSetupWarnings()) {
-        return 'Warning'
+    async displayElanSetupError(installer: LeanInstaller, reason: string): Promise<PreconditionCheckResult> {
+        return await this.error({
+            modal: async () => {
+                const isElanInstalled = await installer.displayInstallElanPrompt('Error', reason)
+                return isElanInstalled ? 'Fulfilled' : 'Fatal'
+            },
+            sticky: async options => installer.displayStickyInstallElanPrompt('Error', reason, options, retryItem),
+        })
     }
-    const isElanInstalled = await installer.displayInstallElanPrompt('Warning', reason)
-    return isElanInstalled ? 'Fulfilled' : 'Warning'
-}
 
-export async function displayElanOutdatedSetupWarning(
-    installer: LeanInstaller,
-    currentVersion: SemVer,
-    recommendedVersion: SemVer,
-): Promise<PreconditionCheckResult> {
-    if (!shouldShowSetupWarnings()) {
-        return 'Warning'
+    async displayElanSetupWarning(installer: LeanInstaller, reason: string): Promise<PreconditionCheckResult> {
+        return await this.warning({
+            modalProceedByDefault: async () => {
+                const success = await installer.displayInstallElanPrompt('Warning', reason)
+                return success ? 'Fulfilled' : 'Warning'
+            },
+            modalAskBeforeProceeding: async () => {
+                const r = await installer.displayInstallElanPromptWithItems('Warning', reason, proceedItem)
+                if (r === undefined) {
+                    return 'Fatal'
+                }
+                if (r.kind === 'InstallElan') {
+                    return r.success ? 'Fulfilled' : 'Warning'
+                }
+                return 'Warning'
+            },
+        })
     }
-    const isElanUpToDate = await installer.displayUpdateElanPrompt('Warning', currentVersion, recommendedVersion)
-    return isElanUpToDate ? 'Fulfilled' : 'Warning'
+
+    async displayElanOutdatedSetupError(
+        installer: LeanInstaller,
+        currentVersion: SemVer,
+        recommendedVersion: SemVer,
+    ): Promise<PreconditionCheckResult> {
+        return await this.error({
+            modal: async () => {
+                const isElanUpToDate = await installer.displayUpdateElanPrompt(
+                    'Error',
+                    currentVersion,
+                    recommendedVersion,
+                )
+                return isElanUpToDate ? 'Fulfilled' : 'Fatal'
+            },
+            sticky: async options =>
+                installer.displayStickyUpdateElanPrompt(
+                    'Error',
+                    currentVersion,
+                    recommendedVersion,
+                    options,
+                    retryItem,
+                ),
+        })
+    }
+
+    async displayElanOutdatedSetupWarning(
+        installer: LeanInstaller,
+        currentVersion: SemVer,
+        recommendedVersion: SemVer,
+    ): Promise<PreconditionCheckResult> {
+        return await this.warning({
+            modalProceedByDefault: async () => {
+                const success = await installer.displayUpdateElanPrompt('Warning', currentVersion, recommendedVersion)
+                return success ? 'Fulfilled' : 'Warning'
+            },
+            modalAskBeforeProceeding: async () => {
+                const r = await installer.displayUpdateElanPromptWithItems(
+                    'Warning',
+                    currentVersion,
+                    recommendedVersion,
+                    proceedItem,
+                )
+                if (r === undefined) {
+                    return 'Fatal'
+                }
+                if (r.kind === 'UpdateElan') {
+                    return r.success ? 'Fulfilled' : 'Warning'
+                }
+                return 'Warning'
+            },
+        })
+    }
 }

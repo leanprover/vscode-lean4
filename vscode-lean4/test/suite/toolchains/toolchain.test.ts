@@ -3,7 +3,7 @@ import * as fs from 'fs'
 import { suite } from 'mocha'
 import * as path from 'path'
 import { logger } from '../../../src/utils/logger'
-import { displayInformation } from '../../../src/utils/notifs'
+import { displayNotification } from '../../../src/utils/notifs'
 import {
     assertStringInInfoview,
     closeAllEditors,
@@ -17,7 +17,7 @@ import {
 suite('Toolchain Test Suite', () => {
     test('Edit lean-toolchain version', async () => {
         logger.log('=================== Edit lean-toolchain version ===================')
-        displayInformation('Running tests: ' + __dirname)
+        displayNotification('Information', 'Running tests: ' + __dirname)
 
         const testsRoot = path.join(__dirname, '..', '..', '..', '..', 'test', 'test-fixtures', 'simple')
 

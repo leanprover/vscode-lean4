@@ -1,4 +1,6 @@
-import { MessageOptions, commands, window } from 'vscode'
+/* eslint-disable @typescript-eslint/no-redundant-type-constituents */
+import { Disposable, MessageOptions, commands, window } from 'vscode'
+import { leanEditor } from './leanEditorProvider'
 
 // All calls to window.show(Error|Warning|Information)... should go through functions in this file
 // to prevent accidentally blocking the VS Code extension.
@@ -26,6 +28,74 @@ function toNotif(severity: NotificationSeverity): Notification {
     }
 }
 
+export type StickyNotificationOptions<T> = {
+    onInput: (lastChoice: T, continueDisplaying: boolean) => Promise<boolean>
+    onDisplay: () => Promise<void>
+}
+
+type StickyNotification<T> = {
+    displayNotification: () => Promise<T | undefined>
+    options: StickyNotificationOptions<T>
+}
+
+let activeStickyNotification: StickyNotification<any> | undefined
+let nextStickyNotification: StickyNotification<any> | undefined
+
+function makeSticky<T>(n: StickyNotification<T>): Disposable {
+    if (activeStickyNotification !== undefined) {
+        nextStickyNotification = n
+        return Disposable.from()
+    }
+    activeStickyNotification = n
+
+    let isDisplaying = false
+
+    // eslint-disable-next-line prefer-const
+    let d: Disposable | undefined
+
+    const display: () => Promise<void> = async () => {
+        if (isDisplaying) {
+            return
+        }
+        isDisplaying = true
+        try {
+            await activeStickyNotification?.options.onDisplay()
+            let gotNewStickyNotification: boolean = false
+            let r: any
+            let continueDisplaying: boolean
+            do {
+                gotNewStickyNotification = false
+                r = await activeStickyNotification?.displayNotification()
+                continueDisplaying =
+                    r === undefined || ((await activeStickyNotification?.options.onInput(r, true)) ?? false)
+                if (nextStickyNotification !== undefined) {
+                    activeStickyNotification = nextStickyNotification
+                    nextStickyNotification = undefined
+                    gotNewStickyNotification = true
+                    await activeStickyNotification?.options.onDisplay()
+                }
+            } while ((r !== undefined && continueDisplaying) || gotNewStickyNotification)
+            if (!continueDisplaying) {
+                activeStickyNotification = undefined
+                d?.dispose()
+            }
+        } catch (e) {
+            activeStickyNotification = undefined
+            nextStickyNotification = undefined
+            d?.dispose()
+            console.log(e)
+        } finally {
+            isDisplaying = false
+        }
+    }
+
+    d = leanEditor.onDidRevealLeanEditor(async () => await display())
+
+    void display()
+
+    return d
+}
+
 export function displayNotification(
     severity: NotificationSeverity,
     message: string,
@@ -39,6 +109,17 @@ export function displayNotification(
     })()
 }
 
+export function displayStickyNotification(
+    severity: NotificationSeverity,
+    message: string,
+    options: StickyNotificationOptions<void>,
+): Disposable {
+    return makeSticky({
+        displayNotification: async () => (await toNotif(severity)(message, {})) as undefined,
+        options,
+    })
+}
+
 export async function displayNotificationWithInput<T extends string>(
     severity: NotificationSeverity,
     message: string,
@@ -47,17 +128,20 @@ export async function displayNotificationWithInput<T extends string>(
     return await toNotif(severity)(message, { modal: true }, ...items)
 }
 
+export type Input<T> = { input: T; action: () => void }
+export type StickyInput<T> = { input: T; continueDisplaying: boolean; action: () => Promise<void> }
+
 export function displayNotificationWithOptionalInput<T extends string>(
     severity: NotificationSeverity,
     message: string,
-    input: T,
-    action: () => void,
+    inputs: Input<T>[],
     finalizer?: (() => void) | undefined,
 ) {
     void (async () => {
-        const choice = await toNotif(severity)(message, {}, input)
-        if (choice === input) {
-            action()
+        const choice = await toNotif(severity)(message, {}, ...inputs.map(i => i.input))
+        const chosenInput = inputs.find(i => i.input === choice)
+        if (chosenInput !== undefined) {
+            chosenInput.action()
         }
         if (finalizer) {
             finalizer()
@@ -65,140 +149,111 @@ export function displayNotificationWithOptionalInput<T extends string>(
     })()
 }
 
+export function displayStickyNotificationWithOptionalInput<T extends string>(
+    severity: NotificationSeverity,
+    message: string,
+    options: StickyNotificationOptions<T>,
+    ...inputs: StickyInput<T>[]
+): Disposable {
+    const updatedOptions: StickyNotificationOptions<T> = {
+        ...options,
+        onInput: async (lastChoice, continueDisplaying) => {
+            const chosenInput = inputs.find(i => i.input === lastChoice)
+            if (chosenInput !== undefined) {
+                await chosenInput.action()
+                continueDisplaying = chosenInput.continueDisplaying
+            }
+            return options.onInput(lastChoice, continueDisplaying)
+        },
+    }
+    return makeSticky({
+        displayNotification: async () => await toNotif(severity)(message, {}, ...inputs.map(i => i.input)),
+        options: updatedOptions,
+    })
+}
+
 export function displayNotificationWithOutput(
     severity: NotificationSeverity,
     message: string,
     finalizer?: (() => void) | undefined,
+    ...otherInputs: Input<string>[]
 ) {
     displayNotificationWithOptionalInput(
         severity,
         message,
-        'Show Output',
-        () => commands.executeCommand('lean4.troubleshooting.showOutput'),
+        [
+            { input: 'Show Output', action: () => commands.executeCommand('lean4.troubleshooting.showOutput') },
+            ...otherInputs,
+        ],
         finalizer,
     )
+}
+
+export async function displayModalNotificationWithOutput(
+    severity: NotificationSeverity,
+    message: string,
+    ...otherInputs: string[]
+): Promise<'Show Output' | string | undefined> {
+    const choice = await displayNotificationWithInput(severity, message, 'Show Output', ...otherInputs)
+    if (choice === 'Show Output') {
+        await commands.executeCommand('lean4.troubleshooting.showOutput')
+    }
+    return choice
+}
+
+export function displayStickyNotificationWithOutput(
+    severity: NotificationSeverity,
+    message: string,
+    options: StickyNotificationOptions<'Show Output' | string>,
+    ...otherItems: StickyInput<string>[]
+): Disposable {
+    const showOutputItem: StickyInput<'Show Output'> = {
+        input: 'Show Output',
+        continueDisplaying: true,
+        action: async () => await commands.executeCommand('lean4.troubleshooting.showOutput'),
+    }
+    return displayStickyNotificationWithOptionalInput(severity, message, options, showOutputItem, ...otherItems)
 }
 
 export function displayNotificationWithSetupGuide(
     severity: NotificationSeverity,
     message: string,
     finalizer?: (() => void) | undefined,
+    ...otherInputs: Input<string>[]
 ) {
     displayNotificationWithOptionalInput(
         severity,
         message,
-        'Open Setup Guide',
-        () => commands.executeCommand('lean4.docs.showSetupGuide'),
+        [
+            { input: 'Open Setup Guide', action: () => commands.executeCommand('lean4.docs.showSetupGuide') },
+            ...otherInputs,
+        ],
         finalizer,
     )
 }
 
-export function displayError(message: string, finalizer?: (() => void) | undefined) {
-    displayNotification('Error', message, finalizer)
-}
-
-export async function displayErrorWithInput<T extends string>(message: string, ...items: T[]): Promise<T | undefined> {
-    return await displayNotificationWithInput('Error', message, ...items)
-}
-
-export function displayErrorWithOptionalInput<T extends string>(
+export function displayStickyNotificationWithSetupGuide(
+    severity: NotificationSeverity,
     message: string,
-    input: T,
-    action: () => void,
-    finalizer?: (() => void) | undefined,
-) {
-    displayNotificationWithOptionalInput('Error', message, input, action, finalizer)
-}
-
-export function displayErrorWithOutput(message: string, finalizer?: (() => void) | undefined) {
-    displayNotificationWithOutput('Error', message, finalizer)
-}
-
-export function displayErrorWithSetupGuide(message: string, finalizer?: (() => void) | undefined) {
-    displayNotificationWithSetupGuide('Error', message, finalizer)
-}
-
-export function displayWarning(message: string, finalizer?: (() => void) | undefined) {
-    displayNotification('Warning', message, finalizer)
-}
-
-export async function displayModalWarning(message: string): Promise<'Proceed' | 'Abort'> {
-    const choice = await window.showWarningMessage(message, { modal: true }, 'Proceed Regardless')
-    return choice === 'Proceed Regardless' ? 'Proceed' : 'Abort'
-}
-
-export async function displayWarningWithInput<T extends string>(
-    message: string,
-    ...items: T[]
-): Promise<T | undefined> {
-    return await displayNotificationWithInput('Warning', message, ...items)
-}
-
-export function displayWarningWithOptionalInput<T extends string>(
-    message: string,
-    input: T,
-    action: () => void,
-    finalizer?: (() => void) | undefined,
-) {
-    displayNotificationWithOptionalInput('Warning', message, input, action, finalizer)
-}
-
-export function displayWarningWithOutput(message: string, finalizer?: (() => void) | undefined) {
-    displayNotificationWithOutput('Warning', message, finalizer)
-}
-
-export async function displayModalWarningWithOutput(message: string): Promise<'Proceed' | 'Abort'> {
-    const choice = await window.showWarningMessage(message, 'Show Output', 'Proceed Regardless')
-    if (choice === undefined) {
-        return 'Abort'
+    options: StickyNotificationOptions<'Open Setup Guide' | string>,
+    ...otherItems: StickyInput<string>[]
+): Disposable {
+    const openSetupGuideItem: StickyInput<'Open Setup Guide'> = {
+        input: 'Open Setup Guide',
+        continueDisplaying: true,
+        action: async () => await commands.executeCommand('lean4.docs.showSetupGuide'),
     }
-    if (choice === 'Proceed Regardless') {
-        return 'Proceed'
-    }
-    await commands.executeCommand('lean4.troubleshooting.showOutput')
-    return 'Abort'
+    return displayStickyNotificationWithOptionalInput(severity, message, options, openSetupGuideItem, ...otherItems)
 }
 
-export function displayWarningWithSetupGuide(message: string, finalizer?: (() => void) | undefined) {
-    displayNotificationWithSetupGuide('Warning', message, finalizer)
-}
-
-export async function displayModalWarningWithSetupGuide(message: string): Promise<'Proceed' | 'Abort'> {
-    const choice = await window.showWarningMessage(message, 'Open Setup Guide', 'Proceed Regardless')
-    if (choice === undefined) {
-        return 'Abort'
-    }
-    if (choice === 'Proceed Regardless') {
-        return 'Proceed'
-    }
-    await commands.executeCommand('lean4.docs.showSetupGuide')
-    return 'Abort'
-}
-
-export function displayInformation(message: string, finalizer?: (() => void) | undefined) {
-    displayNotification('Information', message, finalizer)
-}
-
-export async function displayInformationWithInput<T extends string>(
+export async function displayModalNotificationWithSetupGuide(
+    severity: NotificationSeverity,
     message: string,
-    ...items: T[]
-): Promise<T | undefined> {
-    return await displayNotificationWithInput('Information', message, ...items)
-}
-
-export function displayInformationWithOptionalInput<T extends string>(
-    message: string,
-    input: T,
-    action: () => void,
-    finalizer?: (() => void) | undefined,
-) {
-    displayNotificationWithOptionalInput('Information', message, input, action, finalizer)
-}
-
-export function displayInformationWithOutput(message: string, finalizer?: (() => void) | undefined) {
-    displayNotificationWithOutput('Information', message, finalizer)
-}
-
-export function displayInformationWithSetupGuide(message: string, finalizer?: (() => void) | undefined) {
-    displayNotificationWithSetupGuide('Information', message, finalizer)
+    ...otherInputs: string[]
+): Promise<'Open Setup Guide' | string | undefined> {
+    const choice = await displayNotificationWithInput(severity, message, 'Open Setup Guide', ...otherInputs)
+    if (choice === 'Open Setup Guide') {
+        await commands.executeCommand('lean4.docs.showSetupGuide')
+    }
+    return choice
 }

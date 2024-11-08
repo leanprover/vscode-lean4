@@ -1,7 +1,7 @@
 import assert from 'assert'
 import { suite } from 'mocha'
 import { logger } from '../../../src/utils/logger'
-import { displayInformation } from '../../../src/utils/notifs'
+import { displayNotification } from '../../../src/utils/notifs'
 import {
     cleanTempFolder,
     closeAllEditors,
@@ -16,7 +16,7 @@ import {
 suite('Lean4 Bootstrap Test Suite', () => {
     test('Install elan on demand', async () => {
         logger.log('=================== Install elan on demand ===================')
-        displayInformation('Running tests: ' + __dirname)
+        displayNotification('Information', 'Running tests: ' + __dirname)
 
         cleanTempFolder('elan')
 
@@ -66,7 +66,7 @@ suite('Lean4 Bootstrap Test Suite', () => {
         )
 
         logger.log(`=================== Install leanprover/lean4:${version} build on demand ===================`)
-        displayInformation('Running tests: ' + __dirname)
+        displayNotification('Information', 'Running tests: ' + __dirname)
 
         // Lean is already installed so this should be quick.
         const features = await initLean4Untitled('#eval Lean.versionString')
