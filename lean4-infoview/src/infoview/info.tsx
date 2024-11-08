@@ -63,12 +63,33 @@ const InfoStatusBar = React.memo((props: InfoStatusBarProps) => {
     const locationString = `${basename(pos.uri)}:${pos.line + 1}:${pos.character}`
     const isPinned = kind === 'pin'
 
+    const spinnerStyle: React.CSSProperties = {
+        opacity: status === 'updating' ? 1 : 0,
+        animationName: 'spin',
+        animationIterationCount: 'infinite',
+        transitionDuration: '0.15s',
+        transitionProperty: 'opacity',
+        transitionTimingFunction: 'ease-in',
+        color: 'var(--vscode-editor-foreground)',
+        fontSize: 'calc(0.8 * var(--vscode-font-size))',
+    }
+
     return (
         <summary style={{ transition: 'color 0.5s ease' }} className={'mv2 pointer ' + statusColor}>
             {locationString}
             {isPinned && !isPaused && ' (pinned)'}
             {!isPinned && isPaused && ' (paused)'}
             {isPinned && isPaused && ' (pinned and paused)'}
+            <span style={spinnerStyle} className="mh2 codicon codicon-loading" title="updating">
+                <style>
+                    {`
+                        @keyframes spin {
+                            0% { transform: rotate(0deg); }
+                            100% { transform: rotate(360deg); }
+                        }
+                    `}
+                </style>
+            </span>
             <span
                 className="fr"
                 onClick={e => {
