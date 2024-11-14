@@ -3,24 +3,43 @@ import { InputAbbreviationRewriter } from '@leanprover/unicode-input-component'
 
 const vscodeApi = acquireVsCodeApi()
 
-interface MoogleHit {
+interface BaseHit {
     id: string
     displayHtml: string
-    sourceCodeUrl: string
-    mathlibPath: string
-    moduleImports: string[]
-    moduleDocstring: string
-    declarationDocstring: string
-    declarationName: string
-    declarationCode: string
-    declarationType: string
 }
 
-interface MoogleQueryResponse {
-    data: MoogleHit[]
-    error?: string
-    header?: string
+interface TheoremHit extends BaseHit {
+    title: string
+    theorem: string
+    metadata: {
+        mathlib_path: string
+        declaration_name: string
+        declaration_type: string
+        declaration_code: string
+        module_docstring: string
+        declaration_docstring: string
+        fully_qualified_name: string
+        source_code_url: string
+        display_html: string
+        module_imports: {
+            url: string
+            name: string
+        }[]
+        commit_hash: string
+    }
 }
+
+interface DocHit extends BaseHit {
+    title: string
+    textbook: string
+    content?: string
+    displayHTML?: string
+}
+
+type MoogleHit = TheoremHit | DocHit
+
+type TheoremResponse = TheoremHit[]
+type DocResponse = DocHit[]
 
 class MoogleQueryHistory {
     private history: string[] = []
@@ -80,11 +99,14 @@ class MoogleView {
     private previousQueryButton = document.getElementById('previous-query-button')!
     private nextQueryButton = document.getElementById('next-query-button')!
     private closeTabTrigger = document.getElementById('close-tab')!
-    private header = document.getElementById('header')!
     private error = document.getElementById('error')!
     private resultHeader = document.getElementById('result-header')!
     private results = document.getElementById('results')!
     private spinner = document.getElementById('spinner')!
+    private searchMode = document.getElementById('mode-toggle') as HTMLInputElement
+    private theoremText = document.querySelector('.theorem-text') as HTMLElement
+    private docText = document.querySelector('.doc-text') as HTMLElement
+    private currentSearchMode: 'theorem' | 'doc' = 'theorem'
 
     private history: MoogleQueryHistory = new MoogleQueryHistory()
     private abbreviationConfig: AbbreviationConfig = JSON.parse(getScriptArg('abbreviation-config'))
@@ -136,8 +158,15 @@ class MoogleView {
             }
         })
 
-        view.queryInput.focus()
+        view.searchMode.addEventListener('change', (e: Event) => {
+            const target = e.target as HTMLInputElement
+            view.currentSearchMode = target.checked ? 'doc' : 'theorem'
+            view.theoremText.classList.toggle('active', !target.checked)
+            view.docText.classList.toggle('active', target.checked)
+            view.results.innerHTML = ''
+        })
 
+        view.queryInput.focus()
         return view
     }
 
@@ -148,44 +177,42 @@ class MoogleView {
 
     private async runMoogleQuery(query: string) {
         this.history.add(query)
-        const response: MoogleQueryResponse = await this.withSpinner(async () => {
+        const response = await this.withSpinner(async () => {
             try {
                 const headers = new Headers({
                     'User-Agent': `Code/${this.vscodeVersion} lean4/${this.extensionVersion}`,
                     accept: '*/*',
                     'content-type': 'application/json',
                 })
-                const moogle_url =
-                    'https://morph-cors-anywhere.pranavnt.workers.dev/?' + 'https://www.moogle.ai/api/search'
 
-                const result = await fetch(moogle_url, {
-                    headers,
-                    body: JSON.stringify([{ isFind: false, contents: query }]),
-                    method: 'POST',
-                })
+                const baseUrl = 'https://morph-cors-anywhere.pranavnt.workers.dev/?https://www.moogle.ai/api'
 
-                return await result.json()
+                if (this.currentSearchMode === 'theorem') {
+                    const result = await fetch(`${baseUrl}/moogle2?query=${query}`, {
+                        headers,
+                        method: 'GET',
+                    })
+                    const hits: TheoremResponse = await result.json()
+                    const theoremHits = hits.map(hit => ({ ...hit, displayHtml: hit.metadata.display_html }))
+                    return { data: theoremHits }
+                } else {
+                    const params = new URLSearchParams({ query })
+                    const result = await fetch(`${baseUrl}/docSearch?${params}`, {
+                        headers,
+                        method: 'GET',
+                    })
+                    const hits: DocResponse = await result.json()
+                    return { data: hits }
+                }
             } catch (e) {
                 this.displayError(`Cannot fetch Moogle data: ${e}`)
                 return undefined
             }
         })
-        if (response === undefined) {
-            return
-        }
 
-        response.data = response.data ?? []
-        response.error = response.error ?? ''
-        response.header = response.header ?? ''
+        if (response === undefined) return
 
-        this.displayHeader(response.header)
-        this.displayError(response.error)
-        this.displayResults(response.data)
-    }
-
-    private displayHeader(headerText: string) {
-        this.header.hidden = headerText.length === 0
-        this.header.innerText = headerText
+        this.displayResults(response.data ?? [])
     }
 
     private displayError(errorText: string) {
@@ -195,7 +222,7 @@ class MoogleView {
 
     private displayResults(hits: MoogleHit[]) {
         this.resultHeader.hidden = hits.length === 0
-        this.results.innerHTML = '' // Clear previous results
+        this.results.innerHTML = ''
 
         if (hits.length === 0) {
             this.results.innerHTML = '<p>No results found.</p>'
@@ -206,47 +233,92 @@ class MoogleView {
             const resultElement = document.createElement('div')
             resultElement.className = 'result-item'
 
-            // Create a temporary element to parse the HTML string
-            const tempElement = document.createElement('div')
-            tempElement.innerHTML = hit.displayHtml
-
-            // Modify links in the parsed content
-            const links = tempElement.getElementsByTagName('a')
-            Array.from(links).forEach(link => {
-                link.setAttribute(
-                    'href',
-                    `command:simpleBrowser.show?${encodeURIComponent(JSON.stringify([link.href]))}`,
-                )
-            })
-
-            // Get the modified HTML content
-            const modifiedHtmlContent = tempElement.innerHTML
-            const declarationDocstring = hit.declarationDocstring
-
-            resultElement.innerHTML = `
-            <div class="result-header">
-                <h3>${hit.declarationName}</h3>
-            </div>
-            <div class="result-content">
-                ${declarationDocstring ? `<div class="display-html-container">${declarationDocstring}</div>` : ''}
-                <div class="display-html-container">${modifiedHtmlContent}</div>
-                <a href="${hit.sourceCodeUrl}">View source code</a>
-            </div>
-            `
-
-            this.results.appendChild(resultElement)
-
-            const header = resultElement.querySelector('.result-header')
-            const content = resultElement.querySelector('.result-content')
-
-            // Open the first result by default
-            if (index === 0) {
-                content?.classList.add('open')
+            if ('metadata' in hit) {
+                this.displayTheoremHit(resultElement, hit)
+            } else {
+                this.displayDocHit(resultElement, hit)
             }
 
-            header?.addEventListener('click', () => {
-                content?.classList.toggle('open')
-            })
+            if (index === 0) {
+                resultElement.querySelector('.result-content')?.classList.add('open')
+            }
+
+            this.results.appendChild(resultElement)
+        })
+    }
+
+    private displayTheoremHit(element: HTMLElement, hit: TheoremHit) {
+        const tempElement = document.createElement('div')
+        tempElement.innerHTML = hit.metadata.display_html
+
+        const links = tempElement.getElementsByTagName('a')
+        Array.from(links).forEach(link => {
+            link.setAttribute('href', `command:simpleBrowser.show?${encodeURIComponent(JSON.stringify([link.href]))}`)
+        })
+
+        element.innerHTML = `
+            <div class="result-header">
+                <h3>${hit.metadata.declaration_name}</h3>
+            </div>
+            <div class="result-content">
+                ${hit.metadata.declaration_docstring ? `<div class="display-html-container">${hit.metadata.declaration_docstring}</div>` : ''}
+                <div class="display-html-container">${tempElement.innerHTML}</div>
+                <a href="${hit.metadata.source_code_url}">View source code</a>
+            </div>
+        `
+
+        this.setupResultToggle(element)
+    }
+
+    private transformDisplayHTML(input: string): string {
+        // Replace <code>lean with <pre><code class="language-lean">
+        let result = input.replace(/<code>lean\n/g, '<pre><code class="language-lean">')
+        // Replace <code>output info with <pre><code class="language-text">
+        result = result.replace(/<code>output info\n/g, '<pre><code class="language-text">')
+        // Replace standalone </code> with </code></pre>
+        result = result.replace(/<\/code>(?!<\/pre>)/g, '</code></pre>')
+        // Replace {{#example_in ...}} and {{#example_out ...}} with placeholders
+        result = result.replace(/{{#example_in [\w/.]+}}/g, '<span class="example-in">[Example Input]</span>')
+        result = result.replace(/{{#example_out [\w/.]+}}/g, '<span class="example-out">[Example Output]</span>')
+        // Replace {{#example_decl ...}} with a placeholder
+        result = result.replace(/{{#example_decl [\w/.]+}}/g, '<span class="example-decl">[Example Declaration]</span>')
+        // Replace {{#example_eval ...}} with a placeholder
+        result = result.replace(/{{#example_eval [\w/.]+}}/g, '<span class="example-eval">[Example Evaluation]</span>')
+        // Remove any remaining newline character immediately after opening <code> tags
+        result = result.replace(/<code>(\s*)\n/g, '<code>')
+        return result
+    }
+
+    private displayDocHit(element: HTMLElement, hit: DocHit) {
+        const modifiedHtmlContent = this.transformDisplayHTML(hit.displayHTML ?? '')
+        element.innerHTML = `
+            <div class="result-header">
+                <h3>${hit.title}</h3>
+            </div>
+            <div class="result-content">
+                <a href="${hit.textbook}">View online</a>
+                <div class="display-html-container">${modifiedHtmlContent}</div>
+            </div>
+        `
+
+        // Add Lean syntax highlighting
+        element.querySelectorAll('code.language-lean').forEach(block => {
+            const code = block.innerHTML
+            block.innerHTML = code
+                .replace(/\b(def|fun|let|structure|where|match|with|Type|class)\b/g, '<span class="keyword">$1</span>')
+                .replace(/\b(Nat|String|Bool|List|Option|Type)\b/g, '<span class="type">$1</span>')
+                .replace(/(:=|-&gt;|→|←|↔|⟹|⟸|⟺)/g, '<span class="symbol">$1</span>')
+        })
+
+        this.setupResultToggle(element)
+    }
+
+    private setupResultToggle(element: HTMLElement) {
+        const header = element.querySelector('.result-header')
+        const content = element.querySelector('.result-content')
+
+        header?.addEventListener('click', () => {
+            content?.classList.toggle('open')
         })
     }
 

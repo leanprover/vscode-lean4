@@ -4,7 +4,18 @@
         <div id="query-text-field" class="single-line" contenteditable="true"></div>
         <vscode-icon id="previous-query-button" name="arrow-left" label="Load Previous Query" action-icon></vscode-icon>
         <vscode-icon id="next-query-button" name="arrow-right" label="Load Next Query" action-icon></vscode-icon>
-        <vscode-icon id="find-button" name="search" label="Send Loogle Query" action-icon></vscode-icon>
+        <vscode-icon id="find-button" name="search" label="Send Moogle Query" action-icon></vscode-icon>
+    </div>
+    <div class="mode-select">
+        <div id="search-mode" class="toggle-switch">
+            <span>Searching:</span>
+            <span class="toggle-text theorem-text active">Theorems</span>
+            <label class="switch">
+                <input type="checkbox" id="mode-toggle" />
+                <span class="slider"></span>
+            </label>
+            <span class="toggle-text doc-text">Docs</span>
+        </div>
     </div>
     <div id="spinner" class="loader hidden"></div>
 </div>
@@ -18,7 +29,10 @@
 
 <h1>Moogle — Find theorems, faster</h1>
 
-<p>Moogle is a semantic search engine designed to help you find theorems and definitions in Mathlib4 quickly. It is the result of a collaboration between Morph Labs and the Lean community.</p>
+<p>
+    Moogle is a semantic search engine designed to help you find theorems and definitions in Mathlib4 quickly. It is the
+    result of a collaboration between Morph Labs and the Lean community.
+</p>
 
 <p>For a web version of this tool, visit <a href="https://www.moogle.ai" target="_blank">moogle.ai</a>.</p>
 
