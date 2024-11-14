@@ -27,52 +27,64 @@
 <ol type="1">
     <li>
         <p>
-            By constant:<br>
-            <a href="javascript:void(0)" class="query-suggestion">Real.sin</a> finds all lemmas whose statement somehow mentions the sinefunction.
+            By constant:<br />
+            <a href="javascript:void(0)" class="query-suggestion">Real.sin</a> finds all lemmas whose statement somehow
+            mentions the sinefunction.
         </p>
     </li>
     <li>
         <p>
-            By lemma name substring:<br>
-            <a href="javascript:void(0)" class="query-suggestion">"differ"</a> finds all lemmas that have <code>"differ"</code> somewhere in their lemma <em>name</em>.
+            By lemma name substring:<br />
+            <a href="javascript:void(0)" class="query-suggestion">"differ"</a> finds all lemmas that have
+            <code>"differ"</code> somewhere in their lemma <em>name</em>.
         </p>
     </li>
     <li>
         <p>
-            By subexpression:<br>
-            <a href="javascript:void(0)" class="query-suggestion">_ * (_ ^ _)</a> finds all lemmas whose statements somewhere include a product where the second argument is raised to some power.
+            By subexpression:<br />
+            <a href="javascript:void(0)" class="query-suggestion">_ * (_ ^ _)</a> finds all lemmas whose statements
+            somewhere include a product where the second argument is raised to some power.
         </p>
         <p>
-            The pattern can also be non-linear, as in <a href="javascript:void(0)" class="query-suggestion">Real.sqrt ?a * Real.sqrt ?a</a>
+            The pattern can also be non-linear, as in
+            <a href="javascript:void(0)" class="query-suggestion">Real.sqrt ?a * Real.sqrt ?a</a>
         </p>
         <p>
-            If the pattern has parameters, they are matched in any order. Both of these will find <code>List.map</code>:<br>
-            <a href="javascript:void(0)" class="query-suggestion">(?a -&gt; ?b) -&gt; List ?a -&gt; List ?b</a><br>
+            If the pattern has parameters, they are matched in any order. Both of these will find
+            <code>List.map</code>:<br />
+            <a href="javascript:void(0)" class="query-suggestion">(?a -&gt; ?b) -&gt; List ?a -&gt; List ?b</a><br />
             <a href="javascript:void(0)" class="query-suggestion">List ?a -&gt; (?a -&gt; ?b) -&gt; List ?b</a>
         </p>
     </li>
     <li>
         <p>
-            By main conclusion:<br>
-            <a href="javascript:void(0)" class="query-suggestion">|- tsum _ = _ * tsum _</a> finds all lemmas where the conclusion (the subexpression to the right of all <code>→</code> and <code>∀</code>) has the given shape.
+            By main conclusion:<br />
+            <a href="javascript:void(0)" class="query-suggestion">|- tsum _ = _ * tsum _</a> finds all lemmas where the
+            conclusion (the subexpression to the right of all <code>→</code> and <code>∀</code>) has the given shape.
         </p>
         <p>
-            As before, if the pattern has parameters, they are matched against the hypotheses of the lemma in any order; for example, <a href="javascript:void(0)" class="query-suggestion">|- _ &lt; _ → tsum _ &lt; tsum _</a> will find <code>tsum_lt_tsum</code> even though the hypothesis <code>f i &lt; g i</code> is not the last.
+            As before, if the pattern has parameters, they are matched against the hypotheses of the lemma in any order;
+            for example, <a href="javascript:void(0)" class="query-suggestion">|- _ &lt; _ → tsum _ &lt; tsum _</a> will
+            find <code>tsum_lt_tsum</code> even though the hypothesis <code>f i &lt; g i</code> is not the last.
         </p>
     </li>
 </ol>
 <p>
-    If you pass more than one such search filter, separated by commas Loogle will return lemmas which match <em>all</em> of them. The search <a href="javascript:void(0)" class="query-suggestion">Real.sin, "two", tsum, _ * _, _ ^ _, |- _ &lt; _ → _</a>
-    would find all lemmas which mention the constants <code>Real.sin</code>
-    and <code>tsum</code>, have <code>"two"</code> as a substring of the
-    lemma name, include a product and a power somewhere in the type,
-    <em>and</em> have a hypothesis of the form <code>_ &lt; _</code> (if
-    there were any such lemmas). Metavariables (<code>?a</code>) are
-    assigned independently in each filter.
+    If you pass more than one such search filter, separated by commas Loogle will return lemmas which match
+    <em>all</em> of them. The search
+    <a href="javascript:void(0)" class="query-suggestion">Real.sin, "two", tsum, _ * _, _ ^ _, |- _ &lt; _ → _</a> would
+    find all lemmas which mention the constants <code>Real.sin</code> and <code>tsum</code>, have <code>"two"</code> as
+    a substring of the lemma name, include a product and a power somewhere in the type, <em>and</em> have a hypothesis
+    of the form <code>_ &lt; _</code> (if there were any such lemmas). Metavariables (<code>?a</code>) are assigned
+    independently in each filter.
 </p>
 
 <h2 id="source-code">Source code</h2>
-<p>You can find the source code for this service at <a href="https://github.com/nomeata/loogle" class="uri">https://github.com/nomeata/loogle</a>. The <a href="https://loogle.lean-lang.org/" class="uri">https://loogle.lean-lang.org/</a> service is currently
-provided by Joachim Breitner &lt;<a href="mailto:mail@joachim-breitner.de" class="email">mail@joachim-breitner.de</a>&gt;.</p>
+<p>
+    You can find the source code for this service at
+    <a href="https://github.com/nomeata/loogle" class="uri">https://github.com/nomeata/loogle</a>. The
+    <a href="https://loogle.lean-lang.org/" class="uri">https://loogle.lean-lang.org/</a> service is currently provided
+    by Joachim Breitner &lt;<a href="mailto:mail@joachim-breitner.de" class="email">mail@joachim-breitner.de</a>&gt;.
+</p>
 
 <a id="close-tab" href="command:workbench.action.closeActiveEditor" hidden />
