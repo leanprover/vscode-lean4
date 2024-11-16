@@ -298,6 +298,7 @@ class MoogleView {
                 <h3>${hit.title}</h3>
             </div>
             <div class="result-content">
+                <a href="${hit.textbook}">View online</a>
                 <div class="display-html-container">${modifiedHtmlContent}</div>
             </div>
         `
