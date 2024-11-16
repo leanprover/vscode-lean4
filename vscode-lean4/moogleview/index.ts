@@ -9,13 +9,24 @@ interface BaseHit {
 }
 
 interface TheoremHit extends BaseHit {
-    sourceCodeUrl: string
-    mathlibPath: string
-    moduleImports: string[]
-    moduleDocstring: string
-    declarationDocstring: string
-    declarationName: string
-    declarationType: string
+    title: string
+    theorem: string
+    metadata: {
+        mathlib_path: string
+        declaration_name: string
+        declaration_type: string
+        declaration_code: string
+        module_docstring: string
+        declaration_docstring: string
+        fully_qualified_name: string
+        source_code_url: string
+        display_html: string
+        module_imports: {
+            url: string
+            name: string
+        }[]
+        commit_hash: string
+    }
 }
 
 interface DocHit extends BaseHit {
@@ -27,12 +38,7 @@ interface DocHit extends BaseHit {
 
 type MoogleHit = TheoremHit | DocHit
 
-interface TheoremResponse {
-    data: TheoremHit[]
-    error?: string
-    header?: string
-}
-
+type TheoremResponse = TheoremHit[]
 type DocResponse = DocHit[]
 
 class MoogleQueryHistory {
@@ -93,7 +99,6 @@ class MoogleView {
     private previousQueryButton = document.getElementById('previous-query-button')!
     private nextQueryButton = document.getElementById('next-query-button')!
     private closeTabTrigger = document.getElementById('close-tab')!
-    private header = document.getElementById('header')!
     private error = document.getElementById('error')!
     private resultHeader = document.getElementById('result-header')!
     private results = document.getElementById('results')!
@@ -183,13 +188,13 @@ class MoogleView {
                 const baseUrl = 'https://morph-cors-anywhere.pranavnt.workers.dev/?https://www.moogle.ai/api'
 
                 if (this.currentSearchMode === 'theorem') {
-                    const result = await fetch(`${baseUrl}/search`, {
+                    const result = await fetch(`${baseUrl}/moogle2?query=${query}`, {
                         headers,
-                        method: 'POST',
-                        body: JSON.stringify([{ isFind: false, contents: query }]),
+                        method: 'GET',
                     })
-                    const data: TheoremResponse = await result.json()
-                    return { data: data.data ?? [], error: data.error, header: data.header }
+                    const hits: TheoremResponse = await result.json()
+                    const theoremHits = hits.map(hit => ({ ...hit, displayHtml: hit.metadata.display_html }))
+                    return { data: theoremHits }
                 } else {
                     const params = new URLSearchParams({ query })
                     const result = await fetch(`${baseUrl}/docSearch?${params}`, {
@@ -197,7 +202,7 @@ class MoogleView {
                         method: 'GET',
                     })
                     const hits: DocResponse = await result.json()
-                    return { data: hits, error: '', header: '' }
+                    return { data: hits }
                 }
             } catch (e) {
                 this.displayError(`Cannot fetch Moogle data: ${e}`)
@@ -207,14 +212,7 @@ class MoogleView {
 
         if (response === undefined) return
 
-        this.displayHeader(response.header ?? '')
-        this.displayError(response.error ?? '')
         this.displayResults(response.data ?? [])
-    }
-
-    private displayHeader(headerText: string) {
-        this.header.hidden = headerText.length === 0
-        this.header.innerText = headerText
     }
 
     private displayError(errorText: string) {
@@ -235,7 +233,7 @@ class MoogleView {
             const resultElement = document.createElement('div')
             resultElement.className = 'result-item'
 
-            if ('declarationName' in hit) {
+            if ('metadata' in hit) {
                 this.displayTheoremHit(resultElement, hit)
             } else {
                 this.displayDocHit(resultElement, hit)
@@ -251,7 +249,7 @@ class MoogleView {
 
     private displayTheoremHit(element: HTMLElement, hit: TheoremHit) {
         const tempElement = document.createElement('div')
-        tempElement.innerHTML = hit.displayHtml
+        tempElement.innerHTML = hit.metadata.display_html
 
         const links = tempElement.getElementsByTagName('a')
         Array.from(links).forEach(link => {
@@ -260,12 +258,12 @@ class MoogleView {
 
         element.innerHTML = `
             <div class="result-header">
-                <h3>${hit.declarationName}</h3>
+                <h3>${hit.metadata.declaration_name}</h3>
             </div>
             <div class="result-content">
-                ${hit.declarationDocstring ? `<div class="display-html-container">${hit.declarationDocstring}</div>` : ''}
+                ${hit.metadata.declaration_docstring ? `<div class="display-html-container">${hit.metadata.declaration_docstring}</div>` : ''}
                 <div class="display-html-container">${tempElement.innerHTML}</div>
-                <a href="${hit.sourceCodeUrl}">View source code</a>
+                <a href="${hit.metadata.source_code_url}">View source code</a>
             </div>
         `
 
