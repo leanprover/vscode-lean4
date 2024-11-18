@@ -85,10 +85,6 @@ export class LeanEditorProvider implements Disposable {
     private visibleLeanEditorsByUri: TextEditorIndex
     private readonly onDidChangeVisibleLeanEditorsEmitter = new EventEmitter<readonly TextEditor[]>()
     readonly onDidChangeVisibleLeanEditors = this.onDidChangeVisibleLeanEditorsEmitter.event
-    private readonly onDidRevealLeanEditorEmitter = new EventEmitter<TextEditor>()
-    readonly onDidRevealLeanEditor = this.onDidRevealLeanEditorEmitter.event
-    private readonly onDidConcealLeanEditorEmitter = new EventEmitter<TextEditor>()
-    readonly onDidConcealLeanEditor = this.onDidConcealLeanEditorEmitter.event
 
     private _activeLeanEditor: TextEditor | undefined
     private readonly onDidChangeActiveLeanEditorEmitter = new EventEmitter<TextEditor | undefined>()
@@ -111,27 +107,18 @@ export class LeanEditorProvider implements Disposable {
     private readonly onDidChangeLastActiveLeanDocumentEmitter = new EventEmitter<TextDocument | undefined>()
     readonly onDidChangeLastActiveLeanDocument = this.onDidChangeLastActiveLeanDocumentEmitter.event
 
+    private readonly onDidRevealLeanEditorEmitter = new EventEmitter<TextEditor>()
+    readonly onDidRevealLeanEditor = this.onDidRevealLeanEditorEmitter.event
+    private readonly onDidConcealLeanEditorEmitter = new EventEmitter<TextEditor>()
+    readonly onDidConcealLeanEditor = this.onDidConcealLeanEditorEmitter.event
+
     constructor() {
         this._visibleLeanEditors = filterLeanEditors(window.visibleTextEditors)
         this.visibleLeanEditorsByUri = new TextEditorIndex(this._visibleLeanEditors)
-        this.subscriptions.push(
-            window.onDidChangeVisibleTextEditors(editors => {
-                const oldVisibleLeanEditors = [...this._visibleLeanEditors]
-                this.updateVisibleLeanEditors(editors)
-                this.revealLeanEditors(oldVisibleLeanEditors, editors)
-                this.concealLeanEditors(oldVisibleLeanEditors, editors)
-                this.invalidateInvisibleLastActiveLeanEditor(editors)
-            }),
-        )
+        this.subscriptions.push(window.onDidChangeVisibleTextEditors(editors => this.updateVisibleTextEditors(editors)))
 
         this._activeLeanEditor = filterLeanEditor(window.activeTextEditor)
-        this.subscriptions.push(
-            window.onDidChangeActiveTextEditor(editor => {
-                this.updateActiveLeanEditor(editor)
-                this.updateLastActiveLeanEditor(editor)
-                this.updateLastActiveLeanDocument(editor)
-            }),
-        )
+        this.subscriptions.push(window.onDidChangeActiveTextEditor(editor => this.updateActiveTextEditor(editor)))
 
         this._leanDocuments = filterLeanDocuments(workspace.textDocuments)
         this.leanDocumentsByUri = new TextDocumentIndex(this._leanDocuments)
@@ -139,6 +126,10 @@ export class LeanEditorProvider implements Disposable {
             workspace.onDidOpenTextDocument(doc => {
                 this.updateLeanDocuments(workspace.textDocuments)
                 this.openLeanDocument(doc)
+                // Update visible and active editors in case this `onDidOpenTextDocument` call was
+                // triggered by a changed language ID.
+                this.updateVisibleTextEditors(window.visibleTextEditors)
+                this.updateActiveTextEditor(window.activeTextEditor)
             }),
         )
         this.subscriptions.push(
@@ -146,8 +137,26 @@ export class LeanEditorProvider implements Disposable {
                 this.updateLeanDocuments(workspace.textDocuments)
                 this.closeLeanDocument(doc)
                 this.invalidateClosedLastActiveLeanDocument(doc)
+                // Update visible and active editors in case this `onDidCloseTextDocument` call was
+                // triggered by a changed language ID.
+                this.updateVisibleTextEditors(window.visibleTextEditors)
+                this.updateActiveTextEditor(window.activeTextEditor)
             }),
         )
+    }
+
+    private updateVisibleTextEditors(visibleTextEditors: readonly TextEditor[]) {
+        const oldVisibleLeanEditors = [...this._visibleLeanEditors]
+        this.updateVisibleLeanEditors(visibleTextEditors)
+        this.invalidateInvisibleLastActiveLeanEditor(visibleTextEditors)
+        this.revealLeanEditors(oldVisibleLeanEditors, visibleTextEditors)
+        this.concealLeanEditors(oldVisibleLeanEditors, visibleTextEditors)
+    }
+
+    private updateActiveTextEditor(activeTextEditor: TextEditor | undefined) {
+        this.updateActiveLeanEditor(activeTextEditor)
+        this.updateLastActiveLeanEditor(activeTextEditor)
+        this.updateLastActiveLeanDocument(activeTextEditor)
     }
 
     private updateVisibleLeanEditors(visibleTextEditors: readonly TextEditor[]) {
