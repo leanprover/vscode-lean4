@@ -1,7 +1,7 @@
 import { ChildProcessWithoutNullStreams, spawn } from 'child_process'
 import { OutputChannel, Progress, ProgressLocation, ProgressOptions, window } from 'vscode'
 import { logger } from './logger'
-import { displayErrorWithOutput } from './notifs'
+import { displayNotificationWithOutput } from './notifs'
 
 export interface ExecutionChannel {
     combined?: OutputChannel | undefined
@@ -255,7 +255,7 @@ export function displayResultError(result: ExecutionResult, message: string) {
         throw Error()
     }
     const errorMessage: string = formatErrorMessage(result, message)
-    displayErrorWithOutput(errorMessage)
+    displayNotificationWithOutput('Error', errorMessage)
 }
 
 function formatErrorMessage(error: ExecutionResult, message: string): string {

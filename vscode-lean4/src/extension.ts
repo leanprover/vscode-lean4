@@ -1,18 +1,12 @@
 import * as os from 'os'
 import * as path from 'path'
-import { commands, Disposable, ExtensionContext, extensions, TextDocument, window, workspace } from 'vscode'
+import { commands, ExtensionContext, extensions, TextDocument, window, workspace } from 'vscode'
 import { AbbreviationFeature } from './abbreviation/AbbreviationFeature'
 import { AbbreviationView } from './abbreviationview'
 import { getDefaultLeanVersion } from './config'
 import { FullDiagnosticsProvider } from './diagnostics/fullDiagnostics'
-import {
-    checkAll,
-    checkAreDependenciesInstalled,
-    checkIsElanUpToDate,
-    checkIsLean4Installed,
-    checkIsVSCodeUpToDate,
-} from './diagnostics/setupDiagnostics'
-import { PreconditionCheckResult } from './diagnostics/setupNotifs'
+import { checkAll, SetupDiagnostics } from './diagnostics/setupDiagnostics'
+import { PreconditionCheckResult, SetupNotificationOptions } from './diagnostics/setupNotifs'
 import { AlwaysEnabledFeatures, Exports, Lean4EnabledFeatures } from './exports'
 import { InfoProvider } from './infoview'
 import { LeanClient } from './leanclient'
@@ -25,10 +19,12 @@ import { LeanTaskGutter } from './taskgutter'
 import { LeanClientProvider } from './utils/clientProvider'
 import { LeanConfigWatchService } from './utils/configwatchservice'
 import { PATH, setProcessEnvPATH } from './utils/envPath'
+import { onEventWhile, withoutReentrancy } from './utils/events'
 import { FileUri, toExtUri } from './utils/exturi'
 import { displayInternalErrorsIn } from './utils/internalErrors'
+import { leanEditor, registerLeanEditor } from './utils/leanEditorProvider'
 import { LeanInstaller } from './utils/leanInstaller'
-import { displayWarning } from './utils/notifs'
+import { displayNotification, displayNotificationWithInput } from './utils/notifs'
 import { PathExtensionProvider } from './utils/pathExtensionProvider'
 import { findLeanProjectRoot } from './utils/projectInfo'
 
@@ -48,7 +44,7 @@ async function findLean4DocumentProjectUri(doc: TextDocument): Promise<FileUri |
     return projectUri
 }
 
-async function findOpenLeanProjectUri(): Promise<FileUri | undefined> {
+async function findOpenLeanProjectUri(): Promise<FileUri | undefined | 'NoValidDocument'> {
     const activeEditor = window.activeTextEditor
     if (activeEditor) {
         const projectUri = await findLean4DocumentProjectUri(activeEditor.document)
@@ -66,7 +62,7 @@ async function findOpenLeanProjectUri(): Promise<FileUri | undefined> {
         }
     }
 
-    return undefined
+    return 'NoValidDocument'
 }
 
 function getElanPath(): string {
@@ -126,7 +122,8 @@ function activateAlwaysEnabledFeatures(context: ExtensionContext): AlwaysEnabled
     const checkForExtensionConflict = (doc: TextDocument) => {
         const isLean3ExtensionInstalled = extensions.getExtension('jroesch.lean') !== undefined
         if (isLean3ExtensionInstalled && (doc.languageId === 'lean' || doc.languageId === 'lean4')) {
-            displayWarning(
+            displayNotification(
+                'Error',
                 "The Lean 3 and the Lean 4 VS Code extension are enabled at the same time. Since both extensions act on .lean files, this can lead to issues with either extension. Please disable the extension for the Lean major version that you do not want to use ('Extensions' in the left sidebar > Cog icon > 'Disable').",
             )
         }
@@ -152,33 +149,23 @@ async function checkLean4FeaturePreconditions(
     installer: LeanInstaller,
     context: string,
     cwdUri: FileUri | undefined,
+    d: SetupDiagnostics,
 ): Promise<PreconditionCheckResult> {
     return await checkAll(
-        () => checkAreDependenciesInstalled(installer.getOutputChannel(), cwdUri),
-        () => checkIsLean4Installed(installer, context, cwdUri),
+        () => d.checkAreDependenciesInstalled(installer.getOutputChannel(), cwdUri),
+        () => d.checkIsLean4Installed(installer, context, cwdUri),
         () =>
-            checkIsElanUpToDate(installer, cwdUri, {
+            d.checkIsElanUpToDate(installer, cwdUri, {
                 elanMustBeInstalled: false,
-                modal: false,
             }),
-        () => checkIsVSCodeUpToDate(),
+        () => d.checkIsVSCodeUpToDate(),
     )
 }
 
 async function activateLean4Features(
     context: ExtensionContext,
     installer: LeanInstaller,
-    projectUri: FileUri | undefined,
-): Promise<Lean4EnabledFeatures | undefined> {
-    const preconditionCheckResult = await checkLean4FeaturePreconditions(
-        installer,
-        'Activate Lean 4 Extension',
-        projectUri,
-    )
-    if (preconditionCheckResult === 'Fatal') {
-        return undefined
-    }
-
+): Promise<Lean4EnabledFeatures> {
     const clientProvider = new LeanClientProvider(installer, installer.getOutputChannel())
     context.subscriptions.push(clientProvider)
 
@@ -211,51 +198,83 @@ async function activateLean4Features(
     return { clientProvider, infoProvider, projectOperationProvider }
 }
 
+async function tryActivatingLean4FeaturesInProject(
+    context: ExtensionContext,
+    installer: LeanInstaller,
+    resolve: (value: Lean4EnabledFeatures) => void,
+    d: SetupDiagnostics,
+    projectUri: FileUri | undefined,
+) {
+    const preconditionCheckResult = await checkLean4FeaturePreconditions(
+        installer,
+        'Activate Lean 4 Extension',
+        projectUri,
+        d,
+    )
+    if (preconditionCheckResult === 'Fatal') {
+        return
+    }
+    const lean4EnabledFeatures: Lean4EnabledFeatures = await displayInternalErrorsIn('activating Lean 4 features', () =>
+        activateLean4Features(context, installer),
+    )
+    resolve(lean4EnabledFeatures)
+}
+
+async function tryActivatingLean4Features(
+    context: ExtensionContext,
+    installer: LeanInstaller,
+    resolve: (value: Lean4EnabledFeatures) => void,
+    d: SetupDiagnostics,
+    warnAboutNoValidDocument: boolean,
+) {
+    const projectUri = await findOpenLeanProjectUri()
+    if (projectUri !== 'NoValidDocument') {
+        await tryActivatingLean4FeaturesInProject(context, installer, resolve, d, projectUri)
+        return
+    }
+    if (warnAboutNoValidDocument) {
+        await displayNotificationWithInput(
+            'Error',
+            'No visible Lean document - cannot retry activating the extension. Please select a Lean document.',
+        )
+    }
+    context.subscriptions.push(
+        onEventWhile(
+            leanEditor.onDidRevealLeanEditor,
+            withoutReentrancy('Continue', async editor => {
+                const projectUri = await findLean4DocumentProjectUri(editor.document)
+                if (projectUri === 'InvalidDocument') {
+                    return 'Continue'
+                }
+                await tryActivatingLean4FeaturesInProject(context, installer, resolve, d, projectUri)
+                return 'Stop'
+            }),
+        ),
+    )
+}
+
 export async function activate(context: ExtensionContext): Promise<Exports> {
     await setLeanFeatureSetActive(false)
+    registerLeanEditor(context)
+
     const alwaysEnabledFeatures: AlwaysEnabledFeatures = await displayInternalErrorsIn(
         'activating Lean 4 extension',
         async () => activateAlwaysEnabledFeatures(context),
     )
 
     const lean4EnabledFeatures: Promise<Lean4EnabledFeatures> = new Promise(async (resolve, _) => {
-        const projectUri: FileUri | undefined = await findOpenLeanProjectUri()
-        if (projectUri) {
-            const lean4EnabledFeatures: Lean4EnabledFeatures | undefined = await displayInternalErrorsIn(
-                'activating Lean 4 features',
-                () => activateLean4Features(context, alwaysEnabledFeatures.installer, projectUri),
-            )
-            if (lean4EnabledFeatures) {
-                resolve(lean4EnabledFeatures)
-                return
-            }
+        // eslint-disable-next-line prefer-const
+        let d: SetupDiagnostics
+        const options: SetupNotificationOptions = {
+            errorMode: {
+                mode: 'Sticky',
+                retry: async () =>
+                    tryActivatingLean4Features(context, alwaysEnabledFeatures.installer, resolve, d, true),
+            },
+            warningMode: { modal: true, proceedByDefault: true },
         }
-
-        // No Lean 4 document yet => Load remaining features when one is open
-        let isActivatingLean4Features = false
-        const disposeActivationListener: Disposable = workspace.onDidOpenTextDocument(async doc => {
-            if (isActivatingLean4Features) {
-                return
-            }
-            isActivatingLean4Features = true
-            try {
-                const projectUri = await findLean4DocumentProjectUri(doc)
-                if (projectUri === 'InvalidDocument') {
-                    return
-                }
-                const lean4EnabledFeatures: Lean4EnabledFeatures | undefined = await displayInternalErrorsIn(
-                    'activating Lean 4 features after startup',
-                    () => activateLean4Features(context, alwaysEnabledFeatures.installer, projectUri),
-                )
-                if (!lean4EnabledFeatures) {
-                    return
-                }
-                disposeActivationListener.dispose()
-                resolve(lean4EnabledFeatures)
-            } finally {
-                isActivatingLean4Features = false
-            }
-        }, context.subscriptions)
+        d = new SetupDiagnostics(options)
+        await tryActivatingLean4Features(context, alwaysEnabledFeatures.installer, resolve, d, false)
     })
 
     return new Exports(alwaysEnabledFeatures, lean4EnabledFeatures)

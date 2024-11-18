@@ -1,12 +1,6 @@
 import { commands, Disposable, OutputChannel, QuickPickItem, SaveDialogOptions, Uri, window, workspace } from 'vscode'
-import {
-    checkAll,
-    checkAreDependenciesInstalled,
-    checkIsElanUpToDate,
-    checkIsLakeInstalledCorrectly,
-    checkIsLeanVersionUpToDate,
-} from './diagnostics/setupDiagnostics'
-import { PreconditionCheckResult } from './diagnostics/setupNotifs'
+import { checkAll, SetupDiagnostics } from './diagnostics/setupDiagnostics'
+import { PreconditionCheckResult, SetupNotificationOptions } from './diagnostics/setupNotifs'
 import {
     batchExecute,
     batchExecuteWithProgress,
@@ -17,9 +11,14 @@ import {
 import { ExtUri, extUriToCwdUri, FileUri } from './utils/exturi'
 import { lake } from './utils/lake'
 import { LeanInstaller } from './utils/leanInstaller'
-import { displayError, displayInformationWithInput } from './utils/notifs'
+import { displayNotification, displayNotificationWithInput } from './utils/notifs'
 import { checkParentFoldersForLeanProject, isValidLeanProject } from './utils/projectInfo'
 import path = require('path')
+
+const projectInitNotificationOptions: SetupNotificationOptions = {
+    errorMode: { mode: 'NonModal' },
+    warningMode: { modal: true, proceedByDefault: false },
+}
 
 async function checkCreateLean4ProjectPreconditions(
     installer: LeanInstaller,
@@ -29,29 +28,31 @@ async function checkCreateLean4ProjectPreconditions(
 ): Promise<PreconditionCheckResult> {
     const channel = installer.getOutputChannel()
     const cwdUri = extUriToCwdUri(folderUri)
+    const d = new SetupDiagnostics(projectInitNotificationOptions)
     return await checkAll(
-        () => checkAreDependenciesInstalled(channel, cwdUri),
-        () => checkIsElanUpToDate(installer, cwdUri, { elanMustBeInstalled: true, modal: true }),
+        () => d.checkAreDependenciesInstalled(channel, cwdUri),
+        () => d.checkIsElanUpToDate(installer, cwdUri, { elanMustBeInstalled: true }),
         () =>
-            checkIsLeanVersionUpToDate(channel, context, folderUri, {
+            d.checkIsLeanVersionUpToDate(channel, context, folderUri, {
                 toolchainOverride: projectToolchain,
-                modal: true,
             }),
-        () => checkIsLakeInstalledCorrectly(channel, context, folderUri, { toolchainOverride: projectToolchain }),
+        () => d.checkIsLakeInstalledCorrectly(channel, context, folderUri, { toolchainOverride: projectToolchain }),
     )
 }
 
 async function checkPreCloneLean4ProjectPreconditions(channel: OutputChannel, cwdUri: FileUri | undefined) {
-    return await checkAll(() => checkAreDependenciesInstalled(channel, cwdUri))
+    const d = new SetupDiagnostics(projectInitNotificationOptions)
+    return await checkAll(() => d.checkAreDependenciesInstalled(channel, cwdUri))
 }
 
 async function checkPostCloneLean4ProjectPreconditions(installer: LeanInstaller, context: string, folderUri: ExtUri) {
     const channel = installer.getOutputChannel()
     const cwdUri = extUriToCwdUri(folderUri)
+    const d = new SetupDiagnostics(projectInitNotificationOptions)
     return await checkAll(
-        () => checkIsElanUpToDate(installer, cwdUri, { elanMustBeInstalled: false, modal: true }),
-        () => checkIsLeanVersionUpToDate(channel, context, folderUri, { modal: true }),
-        () => checkIsLakeInstalledCorrectly(channel, context, folderUri, {}),
+        () => d.checkIsElanUpToDate(installer, cwdUri, { elanMustBeInstalled: false }),
+        () => d.checkIsLeanVersionUpToDate(channel, context, folderUri, {}),
+        () => d.checkIsLakeInstalledCorrectly(channel, context, folderUri, {}),
     )
 }
 
@@ -269,7 +270,7 @@ export class ProjectInitializationProvider implements Disposable {
             const message = `The selected folder is not a valid Lean 4 project folder.
 Please make sure to select a folder containing a \'lean-toolchain\' file.
 Click the following link to learn how to set up Lean projects: [(Show Setup Guide)](command:lean4.docs.showSetupGuide)`
-            displayError(message)
+            displayNotification('Error', message)
             return undefined
         }
 
@@ -277,7 +278,7 @@ Click the following link to learn how to set up Lean projects: [(Show Setup Guid
 However, a valid Lean 4 project folder was found in one of the parent directories at '${parentProjectFolder.fsPath}'.
 Open this project instead?`
         const input = 'Open parent directory project'
-        const choice: string | undefined = await displayInformationWithInput(message, input)
+        const choice: string | undefined = await displayNotificationWithInput('Information', message, input)
         if (choice !== input) {
             return undefined
         }
@@ -407,7 +408,7 @@ Open this project instead?`
         if (projectFolder.scheme === 'file') {
             return true
         } else {
-            displayError('Project folder must be created in a file system.')
+            displayNotification('Error', 'Project folder must be created in a file system.')
             return false
         }
     }
@@ -415,7 +416,7 @@ Open this project instead?`
     private static async openNewFolder(projectFolder: FileUri) {
         const message = `Project initialized. Open new project folder '${path.basename(projectFolder.fsPath)}'?`
         const input = 'Open project folder'
-        const choice: string | undefined = await displayInformationWithInput(message, input)
+        const choice: string | undefined = await displayNotificationWithInput('Information', message, input)
         if (choice === input) {
             // This kills the extension host, so it has to be the last command
             await commands.executeCommand('vscode.openFolder', projectFolder.asUri())

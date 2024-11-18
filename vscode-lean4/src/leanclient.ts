@@ -44,10 +44,9 @@ import { SemVer } from 'semver'
 import { c2pConverter, p2cConverter, patchConverters, setDependencyBuildMode } from './utils/converters'
 import { ExtUri, parseExtUri, toExtUri } from './utils/exturi'
 import {
-    displayError,
-    displayErrorWithOptionalInput,
-    displayErrorWithOutput,
-    displayInformationWithOptionalInput,
+    displayNotification,
+    displayNotificationWithOptionalInput,
+    displayNotificationWithOutput,
 } from './utils/notifs'
 import { willUseLakeServer } from './utils/projectInfo'
 import path = require('path')
@@ -142,26 +141,31 @@ export class LeanClient implements Disposable {
             restartItem = 'Restart Lean Server on this file'
             messageTitle = 'The Lean Server has stopped processing this file.'
         }
-        displayErrorWithOptionalInput(
+        displayNotificationWithOptionalInput(
+            'Error',
             messageTitle,
-            restartItem,
-            () => {
-                if (restartFile && uri !== undefined) {
-                    const document = workspace.textDocuments.find(doc => uri.equalsUri(doc.uri))
-                    if (document) {
-                        void this.restartFile(document)
-                    }
-                } else {
-                    void this.start()
-                }
-            },
+            [
+                {
+                    input: restartItem,
+                    action: () => {
+                        if (restartFile && uri !== undefined) {
+                            const document = workspace.textDocuments.find(doc => uri.equalsUri(doc.uri))
+                            if (document) {
+                                void this.restartFile(document)
+                            }
+                        } else {
+                            void this.start()
+                        }
+                    },
+                },
+            ],
             finalizer,
         )
     }
 
     async restart(): Promise<void> {
         if (this.isRestarting) {
-            displayError('Client is already being started.')
+            displayNotification('Error', 'Client is already being started.')
             return
         }
         this.isRestarting = true
@@ -267,7 +271,7 @@ export class LeanClient implements Disposable {
                 const finalizer = () => {
                     stderrMsgBoxVisible = false
                 }
-                displayErrorWithOutput(`Lean server printed an error:\n${chunk.toString()}`, finalizer)
+                displayNotificationWithOutput('Error', `Lean server printed an error:\n${chunk.toString()}`, finalizer)
             }
         })
 
@@ -297,15 +301,23 @@ export class LeanClient implements Disposable {
 
         const message = `Imports of '${fileName}' are out of date and must be rebuilt. Restarting the file will rebuild them.`
         const input = 'Restart File'
-        displayInformationWithOptionalInput(message, input, () => {
-            const document = workspace.textDocuments.find(doc => fileUri.equalsUri(doc.uri))
-            if (!document || document.isClosed) {
-                displayError(`'${fileName}' was closed in the meantime. Imports will not be rebuilt.`)
-                return
-            }
+        displayNotificationWithOptionalInput('Information', message, [
+            {
+                input,
+                action: () => {
+                    const document = workspace.textDocuments.find(doc => fileUri.equalsUri(doc.uri))
+                    if (!document || document.isClosed) {
+                        displayNotification(
+                            'Error',
+                            `'${fileName}' was closed in the meantime. Imports will not be rebuilt.`,
+                        )
+                        return
+                    }
 
-            void this.restartFile(document)
-        })
+                    void this.restartFile(document)
+                },
+            },
+        ])
     }
 
     async withStoppedClient(action: () => Promise<void>): Promise<'Success' | 'IsRestarting'> {
