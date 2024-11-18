@@ -52,8 +52,6 @@ export function worstPreconditionViolation(...results: PreconditionCheckResult[]
     return worstViolation
 }
 
-export type ModalSetupOptions = { modal: true } | { modal: false; finalizer?: (() => void) | undefined }
-
 export type SetupNotificationOptions = {
     errorMode: { mode: 'Sticky'; retry: () => Promise<void> } | { mode: 'Modal' } | { mode: 'NonModal' }
     warningMode: { modal: boolean; proceedByDefault: boolean }

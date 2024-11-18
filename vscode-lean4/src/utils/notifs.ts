@@ -72,7 +72,6 @@ function makeSticky<T>(n: StickyNotification<T>): Disposable {
                     activeStickyNotification = nextStickyNotification
                     nextStickyNotification = undefined
                     gotNewStickyNotification = true
-                    await activeStickyNotification?.options.onDisplay()
                 }
             } while ((r !== undefined && continueDisplaying) || gotNewStickyNotification)
             if (!continueDisplaying) {
@@ -129,7 +128,6 @@ export async function displayNotificationWithInput<T extends string>(
 }
 
 export type Input<T> = { input: T; action: () => void }
-export type StickyInput<T> = { input: T; continueDisplaying: boolean; action: () => Promise<void> }
 
 export function displayNotificationWithOptionalInput<T extends string>(
     severity: NotificationSeverity,
@@ -148,6 +146,8 @@ export function displayNotificationWithOptionalInput<T extends string>(
         }
     })()
 }
+
+export type StickyInput<T> = { input: T; continueDisplaying: boolean; action: () => Promise<void> }
 
 export function displayStickyNotificationWithOptionalInput<T extends string>(
     severity: NotificationSeverity,
@@ -192,9 +192,9 @@ export function displayNotificationWithOutput(
 export async function displayModalNotificationWithOutput(
     severity: NotificationSeverity,
     message: string,
-    ...otherInputs: string[]
+    ...otherItems: string[]
 ): Promise<'Show Output' | string | undefined> {
-    const choice = await displayNotificationWithInput(severity, message, 'Show Output', ...otherInputs)
+    const choice = await displayNotificationWithInput(severity, message, 'Show Output', ...otherItems)
     if (choice === 'Show Output') {
         await commands.executeCommand('lean4.troubleshooting.showOutput')
     }
@@ -205,14 +205,14 @@ export function displayStickyNotificationWithOutput(
     severity: NotificationSeverity,
     message: string,
     options: StickyNotificationOptions<'Show Output' | string>,
-    ...otherItems: StickyInput<string>[]
+    ...otherInputs: StickyInput<string>[]
 ): Disposable {
     const showOutputItem: StickyInput<'Show Output'> = {
         input: 'Show Output',
         continueDisplaying: true,
         action: async () => await commands.executeCommand('lean4.troubleshooting.showOutput'),
     }
-    return displayStickyNotificationWithOptionalInput(severity, message, options, showOutputItem, ...otherItems)
+    return displayStickyNotificationWithOptionalInput(severity, message, options, showOutputItem, ...otherInputs)
 }
 
 export function displayNotificationWithSetupGuide(
@@ -236,22 +236,22 @@ export function displayStickyNotificationWithSetupGuide(
     severity: NotificationSeverity,
     message: string,
     options: StickyNotificationOptions<'Open Setup Guide' | string>,
-    ...otherItems: StickyInput<string>[]
+    ...otherInputs: StickyInput<string>[]
 ): Disposable {
     const openSetupGuideItem: StickyInput<'Open Setup Guide'> = {
         input: 'Open Setup Guide',
         continueDisplaying: true,
         action: async () => await commands.executeCommand('lean4.docs.showSetupGuide'),
     }
-    return displayStickyNotificationWithOptionalInput(severity, message, options, openSetupGuideItem, ...otherItems)
+    return displayStickyNotificationWithOptionalInput(severity, message, options, openSetupGuideItem, ...otherInputs)
 }
 
 export async function displayModalNotificationWithSetupGuide(
     severity: NotificationSeverity,
     message: string,
-    ...otherInputs: string[]
+    ...otherItems: string[]
 ): Promise<'Open Setup Guide' | string | undefined> {
-    const choice = await displayNotificationWithInput(severity, message, 'Open Setup Guide', ...otherInputs)
+    const choice = await displayNotificationWithInput(severity, message, 'Open Setup Guide', ...otherItems)
     if (choice === 'Open Setup Guide') {
         await commands.executeCommand('lean4.docs.showSetupGuide')
     }
