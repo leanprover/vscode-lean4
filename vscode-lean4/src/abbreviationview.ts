@@ -1,6 +1,7 @@
 import { AbbreviationProvider } from '@leanprover/unicode-input'
-import { Disposable, ViewColumn, WebviewPanel, commands, window } from 'vscode'
+import { Disposable, WebviewPanel, commands, window } from 'vscode'
 import { FileUri } from './utils/exturi'
+import { viewColumnOfInfoView } from './utils/viewColumn'
 
 function escapeHtml(s: string) {
     return s
@@ -29,7 +30,7 @@ export class AbbreviationView implements Disposable {
         this.webviewPanel = window.createWebviewPanel(
             'lean4_abbreviationview',
             'AbbreviationView',
-            { viewColumn: ViewColumn.Beside },
+            { viewColumn: viewColumnOfInfoView() },
             {
                 enableScripts: true,
                 enableFindWidget: true,

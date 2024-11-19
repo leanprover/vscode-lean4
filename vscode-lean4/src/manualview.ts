@@ -1,8 +1,9 @@
 import { promises as fs } from 'fs'
 import markdownit from 'markdown-it'
 import anchor from 'markdown-it-anchor'
-import { Disposable, Uri, ViewColumn, WebviewPanel, commands, window } from 'vscode'
+import { Disposable, Uri, WebviewPanel, commands, window } from 'vscode'
 import { FileUri } from './utils/exturi'
+import { viewColumnOfActiveTextEditor } from './utils/viewColumn'
 
 export class ManualView implements Disposable {
     private subscriptions: Disposable[] = []
@@ -25,7 +26,7 @@ export class ManualView implements Disposable {
         this.webviewPanel = window.createWebviewPanel(
             'lean4_manualview',
             'Lean 4 VS Code Extension Manual',
-            { viewColumn: window.activeTextEditor?.viewColumn ?? ViewColumn.One },
+            { viewColumn: viewColumnOfActiveTextEditor() },
             {
                 enableFindWidget: true,
                 enableCommandUris: true,

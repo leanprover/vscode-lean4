@@ -1,7 +1,8 @@
 import { SemVer } from 'semver'
-import { Disposable, OutputChannel, TextDocument, commands, env, window, workspace } from 'vscode'
+import { Disposable, OutputChannel, commands, env } from 'vscode'
 import { ExecutionExitCode, ExecutionResult } from '../utils/batch'
-import { ExtUri, FileUri, extUriEquals, toExtUri } from '../utils/exturi'
+import { FileUri } from '../utils/exturi'
+import { lean } from '../utils/leanEditorProvider'
 import { displayNotification, displayNotificationWithInput } from '../utils/notifs'
 import { findLeanProjectRoot } from '../utils/projectInfo'
 import {
@@ -134,45 +135,9 @@ export async function performFullDiagnosis(
 export class FullDiagnosticsProvider implements Disposable {
     private subscriptions: Disposable[] = []
     private outputChannel: OutputChannel
-    // Under normal circumstances, we would use the last active `LeanClient` from `LeanClientProvider.getActiveClient()`
-    // to determine the document that the user is currently working on.
-    // However, when providing setup diagnostics, there might not be an active client due to errors in the user's setup,
-    // in which case we still want to provide adequate diagnostics. Hence, we track the last active lean document
-    // separately, regardless of whether there is an actual `LeanClient` managing it.
-    private lastActiveLeanDocumentUri: ExtUri | undefined
 
     constructor(outputChannel: OutputChannel) {
         this.outputChannel = outputChannel
-
-        if (window.activeTextEditor !== undefined) {
-            this.lastActiveLeanDocumentUri = FullDiagnosticsProvider.getLean4DocUri(window.activeTextEditor.document)
-        }
-
-        window.onDidChangeActiveTextEditor(e => {
-            if (e === undefined) {
-                return
-            }
-            const docUri = FullDiagnosticsProvider.getLean4DocUri(e.document)
-            if (docUri === undefined) {
-                return
-            }
-
-            this.lastActiveLeanDocumentUri = docUri
-        }, this.subscriptions)
-        workspace.onDidCloseTextDocument(doc => {
-            if (this.lastActiveLeanDocumentUri === undefined) {
-                return
-            }
-
-            const docUri = FullDiagnosticsProvider.getLean4DocUri(doc)
-            if (docUri === undefined) {
-                return
-            }
-
-            if (extUriEquals(docUri, this.lastActiveLeanDocumentUri)) {
-                this.lastActiveLeanDocumentUri = undefined
-            }
-        }, this.subscriptions)
 
         this.subscriptions.push(
             commands.registerCommand('lean4.troubleshooting.showSetupInformation', () =>
@@ -182,14 +147,20 @@ export class FullDiagnosticsProvider implements Disposable {
     }
 
     async performAndDisplayFullDiagnosis() {
+        // Under normal circumstances, we would use the last active `LeanClient` from `LeanClientProvider.getActiveClient()`
+        // to determine the document that the user is currently working on.
+        // However, when providing setup diagnostics, there might not be an active client due to errors in the user's setup,
+        // in which case we still want to provide adequate diagnostics. Hence, we use the last active Lean document,
+        // regardless of whether there is an actual `LeanClient` managing it.
+        const lastActiveLeanDocumentUri = lean.lastActiveLeanDocument?.extUri
         const projectUri =
-            this.lastActiveLeanDocumentUri !== undefined && this.lastActiveLeanDocumentUri.scheme === 'file'
-                ? await findLeanProjectRoot(this.lastActiveLeanDocumentUri)
+            lastActiveLeanDocumentUri !== undefined && lastActiveLeanDocumentUri.scheme === 'file'
+                ? await findLeanProjectRoot(lastActiveLeanDocumentUri)
                 : undefined
         if (projectUri === 'FileNotFound') {
             displayNotification(
                 'Error',
-                `Cannot display setup information for file that does not exist in the file system: ${this.lastActiveLeanDocumentUri}. Please choose a different file to display the setup information for.`,
+                `Cannot display setup information for file that does not exist in the file system: ${lastActiveLeanDocumentUri}. Please choose a different file to display the setup information for.`,
             )
             return
         }
@@ -200,13 +171,6 @@ export class FullDiagnosticsProvider implements Disposable {
         if (choice === copyToClipboardInput) {
             await env.clipboard.writeText(formattedFullDiagnostics)
         }
-    }
-
-    private static getLean4DocUri(doc: TextDocument): ExtUri | undefined {
-        if (doc.languageId !== 'lean4') {
-            return undefined
-        }
-        return toExtUri(doc.uri)
     }
 
     dispose() {

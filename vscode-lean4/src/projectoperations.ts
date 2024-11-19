@@ -4,8 +4,8 @@ import { commands, Disposable, OutputChannel, QuickPickItem, window } from 'vsco
 import { LeanClient } from './leanclient'
 import { batchExecute, displayResultError, ExecutionExitCode, ExecutionResult } from './utils/batch'
 import { LeanClientProvider } from './utils/clientProvider'
-import { toExtUri } from './utils/exturi'
 import { cacheNotFoundError, lake, LakeRunner } from './utils/lake'
+import { lean } from './utils/leanEditorProvider'
 import { DirectGitDependency, Manifest, ManifestReadError, parseManifestInFolder } from './utils/manifest'
 import { displayNotification, displayNotificationWithInput, displayNotificationWithOptionalInput } from './utils/notifs'
 
@@ -128,23 +128,17 @@ export class ProjectOperationProvider implements Disposable {
         await this.runOperation('Fetch Mathlib Build Cache For Current Imports', async lakeRunner => {
             const projectUri = lakeRunner.cwdUri!
 
-            if (!window.activeTextEditor || window.activeTextEditor.document.languageId !== 'lean4') {
+            const doc = lean.lastActiveLeanDocument
+            if (doc === undefined) {
                 displayNotification(
                     'Error',
                     'No active Lean editor tab. Make sure to focus the Lean editor tab for which you want to fetch the cache.',
                 )
                 return
             }
+            const docUri = doc.extUri
 
-            const activeFileUri = toExtUri(window.activeTextEditor.document.uri)
-            if (activeFileUri === undefined) {
-                displayNotification(
-                    'Error',
-                    `Cannot fetch cache of file with invalid URI kind: ${window.activeTextEditor.document.uri}`,
-                )
-                return
-            }
-            if (activeFileUri.scheme === 'untitled') {
+            if (docUri.scheme === 'untitled') {
                 displayNotification('Error', 'Cannot fetch cache of untitled files.')
                 return
             }
@@ -166,36 +160,33 @@ export class ProjectOperationProvider implements Disposable {
             if (projectName !== 'mathlib') {
                 displayNotification(
                     'Error',
-                    "Cache of focused file can only be fetched in Mathlib itself. Use the 'Project: Fetch Mathlib Build Cache' command for fetching the full Mathlib build cache in projects depending on Mathlib.",
+                    "Cache for current imports can only be fetched in Mathlib itself. Use the 'Project: Fetch Mathlib Build Cache' command for fetching the full Mathlib build cache in projects depending on Mathlib.",
                 )
                 return
             }
 
-            const relativeActiveFileUri = activeFileUri.relativeTo(projectUri)
-            if (relativeActiveFileUri === undefined) {
+            const relativeDocUri = docUri.relativeTo(projectUri)
+            if (relativeDocUri === undefined) {
                 displayNotification(
                     'Error',
-                    `Cannot fetch cache of focused file: focused file (${activeFileUri.fsPath}) is not contained in active project folder (${projectUri.fsPath}).`,
+                    `Cannot fetch cache for current imports: active file (${docUri.fsPath}) is not contained in active project folder (${projectUri.fsPath}).`,
                 )
                 return
             }
 
-            const result: ExecutionResult = await lakeRunner.fetchMathlibCacheForFile(relativeActiveFileUri)
+            const result: ExecutionResult = await lakeRunner.fetchMathlibCacheForFile(relativeDocUri)
             if (result.exitCode === ExecutionExitCode.Cancelled) {
                 return
             }
             if (result.exitCode !== ExecutionExitCode.Success) {
-                displayResultError(
-                    result,
-                    `Cannot fetch Mathlib build artifact cache for '${relativeActiveFileUri.fsPath}'.`,
-                )
+                displayResultError(result, `Cannot fetch Mathlib build artifact cache for '${relativeDocUri.fsPath}'.`)
                 return
             }
 
             displayNotificationWithOptionalInput(
                 'Information',
-                `Mathlib build artifact cache for '${relativeActiveFileUri.fsPath}' fetched successfully.`,
-                [{ input: 'Restart File', action: () => this.clientProvider.restartFile(activeFileUri) }],
+                `Mathlib build artifact cache for '${relativeDocUri.fsPath}' fetched successfully.`,
+                [{ input: 'Restart File', action: () => this.clientProvider.restartFile(relativeDocUri) }],
             )
         })
     }

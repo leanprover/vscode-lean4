@@ -14,17 +14,14 @@ import {
     commands,
     Diagnostic,
     Disposable,
-    DocumentSelector,
     env,
     ExtensionContext,
-    languages,
     Position,
     Range,
     Selection,
     TextEditor,
     TextEditorRevealType,
     Uri,
-    ViewColumn,
     WebviewPanel,
     window,
     workspace,
@@ -51,8 +48,10 @@ import { Rpc } from './rpc'
 import { LeanClientProvider } from './utils/clientProvider'
 import { c2pConverter, p2cConverter } from './utils/converters'
 import { ExtUri, parseExtUri, toExtUri } from './utils/exturi'
+import { lean, LeanEditor } from './utils/leanEditorProvider'
 import { logger } from './utils/logger'
 import { displayNotification } from './utils/notifs'
+import { viewColumnOfActiveTextEditor, viewColumnOfInfoView } from './utils/viewColumn'
 
 const keepAlivePeriodMs = 10000
 
@@ -97,7 +96,6 @@ export class InfoProvider implements Disposable {
 
     private stylesheet: string = ''
     private autoOpened: boolean = false
-    private clientProvider: LeanClientProvider
 
     // Subscriptions are counted and only disposed of when count becomes 0.
     private serverNotifSubscriptions: Map<string, [number, Disposable[]]> = new Map()
@@ -288,18 +286,7 @@ export class InfoProvider implements Disposable {
             if (extUri === undefined) {
                 return
             }
-
-            const client = this.clientProvider.findClient(extUri)
-            if (!client) {
-                return
-            }
-
-            const document = workspace.textDocuments.find(doc => extUri.equalsUri(doc.uri))
-            if (!document || document.isClosed) {
-                return
-            }
-
-            await client.restartFile(document)
+            this.clientProvider.restartFile(extUri)
         },
 
         createRpcSession: async uri => {
@@ -329,28 +316,26 @@ export class InfoProvider implements Disposable {
     }
 
     constructor(
-        private provider: LeanClientProvider,
-        private readonly leanDocs: DocumentSelector,
+        private clientProvider: LeanClientProvider,
         private context: ExtensionContext,
     ) {
-        this.clientProvider = provider
         this.updateStylesheet()
 
-        provider.clientAdded(client => {
+        clientProvider.clientAdded(client => {
             void this.onClientAdded(client)
         })
 
-        provider.clientRemoved(client => {
+        clientProvider.clientRemoved(client => {
             void this.onClientRemoved(client)
         })
 
-        provider.clientStopped(([client, activeClient, reason]) => {
+        clientProvider.clientStopped(([client, activeClient, reason]) => {
             void this.onActiveClientStopped(client, activeClient, reason)
         })
 
         this.subscriptions.push(
-            window.onDidChangeActiveTextEditor(() => this.sendPosition()),
-            window.onDidChangeTextEditorSelection(() => this.sendPosition()),
+            lean.onDidChangeActiveLeanEditor(() => this.sendPosition()),
+            lean.onDidChangeLeanEditorSelection(() => this.sendPosition()),
             workspace.onDidChangeConfiguration(async _e => {
                 // regression; changing the style needs a reload. :/
                 this.updateStylesheet()
@@ -359,13 +344,13 @@ export class InfoProvider implements Disposable {
             workspace.onDidChangeTextDocument(async () => {
                 await this.sendPosition()
             }),
-            commands.registerTextEditorCommand('lean4.displayGoal', editor => this.openPreview(editor)),
+            lean.registerLeanEditorCommand('lean4.displayGoal', leanEditor => this.openPreview(leanEditor)),
             commands.registerCommand('lean4.toggleInfoview', () => this.toggleInfoview()),
-            commands.registerTextEditorCommand('lean4.displayList', async editor => {
-                await this.openPreview(editor)
+            lean.registerLeanEditorCommand('lean4.displayList', async leanEditor => {
+                await this.openPreview(leanEditor)
                 await this.webviewPanel?.api.requestedAction({ kind: 'toggleAllMessages' })
             }),
-            commands.registerTextEditorCommand('lean4.infoView.copyToComment', () =>
+            lean.registerLeanEditorCommand('lean4.infoView.copyToComment', () =>
                 this.webviewPanel?.api.requestedAction({ kind: 'copyToComment' }),
             ),
             commands.registerCommand('lean4.infoView.toggleUpdating', () =>
@@ -374,7 +359,7 @@ export class InfoProvider implements Disposable {
             commands.registerCommand('lean4.infoView.toggleExpectedType', () =>
                 this.webviewPanel?.api.requestedAction({ kind: 'toggleExpectedType' }),
             ),
-            commands.registerTextEditorCommand('lean4.infoView.toggleStickyPosition', () =>
+            lean.registerLeanEditorCommand('lean4.infoView.toggleStickyPosition', () =>
                 this.webviewPanel?.api.requestedAction({ kind: 'togglePin' }),
             ),
             commands.registerCommand('lean4.infoview.goToDefinition', args =>
@@ -414,7 +399,7 @@ export class InfoProvider implements Disposable {
         if (this.clientsFailed.has(folderUri.toString())) {
             this.clientsFailed.delete(folderUri.toString())
         }
-        await this.initInfoView(window.activeTextEditor, client)
+        await this.initInfoView(lean.activeLeanEditor, client)
     }
 
     private async onClientAdded(client: LeanClient) {
@@ -549,13 +534,10 @@ export class InfoProvider implements Disposable {
     }
 
     private async autoOpen(): Promise<boolean> {
-        if (!this.webviewPanel && !this.autoOpened && getInfoViewAutoOpen() && window.activeTextEditor) {
-            // only auto-open for lean files, not for markdown.
-            if (languages.match(this.leanDocs, window.activeTextEditor.document)) {
-                // remember we've auto opened during this session so if user closes it it remains closed.
-                this.autoOpened = true
-                return await this.openPreview(window.activeTextEditor)
-            }
+        if (!this.webviewPanel && !this.autoOpened && getInfoViewAutoOpen() && lean.activeLeanEditor !== undefined) {
+            // remember we've auto opened during this session so if user closes it it remains closed.
+            this.autoOpened = true
+            return await this.openPreview(lean.activeLeanEditor)
         }
         return false
     }
@@ -583,8 +565,8 @@ export class InfoProvider implements Disposable {
         if (this.webviewPanel) {
             this.webviewPanel.dispose()
             // the onDispose handler sets this.webviewPanel = undefined
-        } else if (window.activeTextEditor && window.activeTextEditor.document.languageId === 'lean4') {
-            await this.openPreview(window.activeTextEditor)
+        } else if (lean.activeLeanEditor !== undefined) {
+            await this.openPreview(lean.activeLeanEditor)
         } else {
             displayNotification(
                 'Error',
@@ -593,23 +575,14 @@ export class InfoProvider implements Disposable {
         }
     }
 
-    private async openPreview(editor: TextEditor): Promise<boolean> {
-        const docUri = toExtUri(editor.document.uri)
-        if (docUri === undefined) {
-            return false
-        }
-
-        let column = editor && editor.viewColumn ? editor.viewColumn + 1 : ViewColumn.Two
-        if (column === 4) {
-            column = ViewColumn.Three
-        }
+    private async openPreview(leanEditor: LeanEditor): Promise<boolean> {
         if (this.webviewPanel) {
-            this.webviewPanel.reveal(column, true)
+            this.webviewPanel.reveal(undefined, true)
         } else {
             const webviewPanel = window.createWebviewPanel(
                 'lean4_infoview',
                 'Lean Infoview',
-                { viewColumn: column, preserveFocus: true },
+                { viewColumn: viewColumnOfInfoView(), preserveFocus: true },
                 {
                     enableFindWidget: true,
                     retainContextWhenHidden: true,
@@ -649,15 +622,15 @@ export class InfoProvider implements Disposable {
             this.webviewPanel = webviewPanel
             webviewPanel.webview.html = this.initialHtml()
 
-            const client = this.clientProvider.findClient(docUri)
-            await this.initInfoView(editor, client)
+            const client = this.clientProvider.findClient(leanEditor.documentExtUri)
+            await this.initInfoView(leanEditor, client)
         }
         return true
     }
 
-    private async initInfoView(editor: TextEditor | undefined, client: LeanClient | undefined) {
-        if (editor) {
-            const loc = this.getLocation(editor)
+    private async initInfoView(leanEditor: LeanEditor | undefined, client: LeanClient | undefined) {
+        if (leanEditor !== undefined) {
+            const loc = this.getLocation(leanEditor)
             if (loc) {
                 await this.webviewPanel?.api.initialize(loc)
             }
@@ -737,12 +710,10 @@ export class InfoProvider implements Disposable {
             .catch(() => {})
     }
 
-    private getLocation(editor: TextEditor): ls.Location | undefined {
-        if (!editor) return undefined
-        const uri = editor.document.uri
-        const selection = editor.selection
+    private getLocation(leanEditor: LeanEditor): ls.Location | undefined {
+        const selection = leanEditor.editor.selection
         return {
-            uri: uri.toString(),
+            uri: leanEditor.documentExtUri.toString(),
             range: {
                 start: selection.start,
                 end: selection.end,
@@ -751,20 +722,12 @@ export class InfoProvider implements Disposable {
     }
 
     private async sendPosition() {
-        const editor = window.activeTextEditor
-        if (!editor) return
+        const editor = lean.activeLeanEditor
+        if (editor === undefined) {
+            return
+        }
         const loc = this.getLocation(editor)
-        if (languages.match(this.leanDocs, editor.document) === 0) {
-            // language is not yet 'lean4', but the LeanClient will fire the didSetLanguage event
-            // in openLean4Document and that's when we can send the position to update the
-            // InfoView for the newly opened document.
-            return
-        }
-        const uri = toExtUri(editor.document.uri)
-        if (uri === undefined) {
-            return
-        }
-        // actual editor
+        const uri = editor.documentExtUri
         if (this.clientsFailed.size > 0 || this.workersFailed.size > 0) {
             const client = this.clientProvider.findClient(uri)
             const uriKey = uri.toString()
@@ -799,16 +762,12 @@ export class InfoProvider implements Disposable {
     }
 
     private async revealEditorSelection(uri: ExtUri, selection?: Range) {
-        let editor: TextEditor | undefined
-        for (const e of window.visibleTextEditors) {
-            if (uri.equalsUri(e.document.uri)) {
-                editor = e
-                break
-            }
-        }
-        if (!editor) {
-            const c = window.activeTextEditor ? window.activeTextEditor.viewColumn : ViewColumn.One
-            editor = await window.showTextDocument(uri.asUri(), { viewColumn: c, preserveFocus: false })
+        let editor: TextEditor | undefined = lean.getVisibleLeanEditorsByUri(uri).at(0)?.editor
+        if (editor === undefined) {
+            editor = await window.showTextDocument(uri.asUri(), {
+                viewColumn: viewColumnOfActiveTextEditor(),
+                preserveFocus: false,
+            })
         }
         if (selection !== undefined) {
             editor.revealRange(selection, TextEditorRevealType.InCenterIfOutsideViewport)
@@ -824,22 +783,16 @@ export class InfoProvider implements Disposable {
         uri?: ExtUri | undefined,
         pos?: Position | undefined,
     ) {
-        let editor: TextEditor | undefined
+        let leanEditor: LeanEditor | undefined
         if (uri) {
-            editor = window.visibleTextEditors.find(e => uri.equalsUri(e.document.uri))
+            leanEditor = lean.getVisibleLeanEditorsByUri(uri).at(0)
         } else {
-            editor = window.activeTextEditor
-            if (!editor) {
-                // sometimes activeTextEditor is null.
-                editor = window.visibleTextEditors.find(e => e.document.languageId === 'lean4')
-            }
+            leanEditor = lean.activeLeanEditor
         }
-        if (!editor) {
-            // user must have switch away from any lean source file in which case we don't know
-            // what to do here.  TODO: show a popup error?  Or should we use the last uri used in
-            // sendPosition and automatically activate that editor?
+        if (leanEditor === undefined) {
             return
         }
+        const editor = leanEditor.editor
         pos = pos ? pos : editor.selection.active
         if (kind === 'above') {
             // in this case, assume that we actually want to insert at the same

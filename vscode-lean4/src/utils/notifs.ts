@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-redundant-type-constituents */
 import { Disposable, MessageOptions, commands, window } from 'vscode'
-import { leanEditor } from './leanEditorProvider'
+import { lean } from './leanEditorProvider'
 
 // All calls to window.show(Error|Warning|Information)... should go through functions in this file
 // to prevent accidentally blocking the VS Code extension.
@@ -88,7 +88,7 @@ function makeSticky<T>(n: StickyNotification<T>): Disposable {
         }
     }
 
-    d = leanEditor.onDidRevealLeanEditor(async () => await display())
+    d = lean.onDidRevealLeanEditor(async () => await display())
 
     void display()
 

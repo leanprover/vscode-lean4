@@ -9,9 +9,7 @@ import {
     ProgressLocation,
     ProgressOptions,
     Range,
-    TextDocument,
     window,
-    workspace,
     WorkspaceFolder,
 } from 'vscode'
 import {
@@ -43,6 +41,7 @@ import { logger } from './utils/logger'
 import { SemVer } from 'semver'
 import { c2pConverter, p2cConverter, patchConverters, setDependencyBuildMode } from './utils/converters'
 import { ExtUri, parseExtUri, toExtUri } from './utils/exturi'
+import { lean, LeanDocument } from './utils/leanEditorProvider'
 import {
     displayNotification,
     displayNotificationWithOptionalInput,
@@ -149,8 +148,8 @@ export class LeanClient implements Disposable {
                     input: restartItem,
                     action: () => {
                         if (restartFile && uri !== undefined) {
-                            const document = workspace.textDocuments.find(doc => uri.equalsUri(doc.uri))
-                            if (document) {
+                            const document = lean.getLeanDocumentByUri(uri)
+                            if (document !== undefined) {
                                 void this.restartFile(document)
                             }
                         } else {
@@ -305,8 +304,8 @@ export class LeanClient implements Disposable {
             {
                 input,
                 action: () => {
-                    const document = workspace.textDocuments.find(doc => fileUri.equalsUri(doc.uri))
-                    if (!document || document.isClosed) {
+                    const document = lean.getLeanDocumentByUri(fileUri)
+                    if (document === undefined) {
                         displayNotification(
                             'Error',
                             `'${fileName}' was closed in the meantime. Imports will not be rebuilt.`,
@@ -388,26 +387,21 @@ export class LeanClient implements Disposable {
         this.running = false
     }
 
-    async restartFile(doc: TextDocument): Promise<void> {
+    async restartFile(leanDoc: LeanDocument): Promise<void> {
         if (this.client === undefined || !this.running) return // there was a problem starting lean server.
 
-        const docUri = toExtUri(doc.uri)
-        if (docUri === undefined) {
+        if (!this.isInFolderManagedByThisClient(leanDoc.extUri)) {
             return
         }
 
-        if (!this.isInFolderManagedByThisClient(docUri)) {
-            return
-        }
-
-        const uri = docUri.toString()
+        const uri = leanDoc.extUri.toString()
         if (!this.openServerDocuments.delete(uri)) {
             return
         }
         logger.log(`[LeanClient] Restarting File: ${uri}`)
         await this.client.sendNotification(
             'textDocument/didClose',
-            this.client.code2ProtocolConverter.asCloseTextDocumentParams(doc),
+            this.client.code2ProtocolConverter.asCloseTextDocumentParams(leanDoc.doc),
         )
 
         if (this.openServerDocuments.has(uri)) {
@@ -416,7 +410,7 @@ export class LeanClient implements Disposable {
         this.openServerDocuments.add(uri)
         await this.client.sendNotification(
             'textDocument/didOpen',
-            setDependencyBuildMode(this.client.code2ProtocolConverter.asOpenTextDocumentParams(doc), 'once'),
+            setDependencyBuildMode(this.client.code2ProtocolConverter.asOpenTextDocumentParams(leanDoc.doc), 'once'),
         )
 
         this.restartedWorkerEmitter.fire(uri)
