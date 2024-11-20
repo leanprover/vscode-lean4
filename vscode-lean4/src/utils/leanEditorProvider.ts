@@ -423,7 +423,7 @@ export class LeanEditorProvider implements Disposable {
 export let lean: LeanEditorProvider
 
 /** Must be called at the very start when the extension is activated so that `lean` is defined. */
-export function registerLeanEditor(context: ExtensionContext) {
+export function registerLeanEditorProvider(context: ExtensionContext) {
     lean = new LeanEditorProvider()
     context.subscriptions.push(lean)
 }

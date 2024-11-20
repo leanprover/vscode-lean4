@@ -22,7 +22,7 @@ import { PATH, setProcessEnvPATH } from './utils/envPath'
 import { onEventWhile, withoutReentrancy } from './utils/events'
 import { FileUri } from './utils/exturi'
 import { displayInternalErrorsIn } from './utils/internalErrors'
-import { lean, LeanEditor, registerLeanEditor } from './utils/leanEditorProvider'
+import { lean, LeanEditor, registerLeanEditorProvider } from './utils/leanEditorProvider'
 import { LeanInstaller } from './utils/leanInstaller'
 import { displayNotification, displayNotificationWithInput } from './utils/notifs'
 import { PathExtensionProvider } from './utils/pathExtensionProvider'
@@ -252,7 +252,7 @@ async function tryActivatingLean4Features(
 
 export async function activate(context: ExtensionContext): Promise<Exports> {
     await setLeanFeatureSetActive(false)
-    registerLeanEditor(context)
+    registerLeanEditorProvider(context)
 
     const alwaysEnabledFeatures: AlwaysEnabledFeatures = await displayInternalErrorsIn(
         'activating Lean 4 extension',
