@@ -1,12 +1,14 @@
 import { LeanFileProgressKind, LeanFileProgressProcessingInfo } from '@leanprover/infoview-api'
 import { Disposable, ExtensionContext, OverviewRulerLane, Range, TextEditorDecorationType, window } from 'vscode'
 import { LeanClientProvider } from './utils/clientProvider'
+import { ExtUri } from './utils/exturi'
+import { lean } from './utils/leanEditorProvider'
 
 class LeanFileTaskGutter {
     private timeout?: NodeJS.Timeout
 
     constructor(
-        private uri: string,
+        private uri: ExtUri,
         private decorations: Map<LeanFileProgressKind, [TextEditorDecorationType, string]>,
         private processed: LeanFileProgressProcessingInfo[],
     ) {
@@ -41,22 +43,19 @@ class LeanFileTaskGutter {
     }
 
     private updateDecos() {
-        for (const editor of window.visibleTextEditors) {
-            if (editor.document.uri.toString() === this.uri) {
-                for (const [kind, [decoration, message]] of this.decorations) {
-                    editor.setDecorations(
-                        decoration,
-                        this.processed
-                            .filter(
-                                info =>
-                                    (info.kind === undefined ? LeanFileProgressKind.Processing : info.kind) === kind,
-                            )
-                            .map(info => ({
-                                range: new Range(info.range.start.line, 0, info.range.end.line, 0),
-                                hoverMessage: message,
-                            })),
-                    )
-                }
+        for (const leanEditor of lean.getVisibleLeanEditorsByUri(this.uri)) {
+            for (const [kind, [decoration, message]] of this.decorations) {
+                leanEditor.editor.setDecorations(
+                    decoration,
+                    this.processed
+                        .filter(
+                            info => (info.kind === undefined ? LeanFileProgressKind.Processing : info.kind) === kind,
+                        )
+                        .map(info => ({
+                            range: new Range(info.range.start.line, 0, info.range.end.line, 0),
+                            hoverMessage: message,
+                        })),
+                )
             }
         }
     }
@@ -106,7 +105,7 @@ export class LeanTaskGutter implements Disposable {
         ])
 
         this.subscriptions.push(
-            window.onDidChangeVisibleTextEditors(() => this.updateDecos()),
+            lean.onDidChangeVisibleLeanEditors(() => this.updateDecos()),
             client.progressChanged(([uri, processing]) => {
                 this.status[uri] = processing
                 this.updateDecos()
@@ -116,16 +115,15 @@ export class LeanTaskGutter implements Disposable {
 
     private updateDecos() {
         const uris: { [uri: string]: boolean } = {}
-        for (const editor of window.visibleTextEditors) {
-            if (editor.document.languageId !== 'lean4') continue
-            const uri = editor.document.uri.toString()
+        for (const editor of lean.visibleLeanEditors) {
+            const uri = editor.documentExtUri.toString()
             uris[uri] = true
             const processed = uri in this.status ? this.status[uri] : []
             if (this.gutters[uri]) {
                 const gutter = this.gutters[uri]
                 if (gutter) gutter.setProcessed(processed)
             } else {
-                this.gutters[uri] = new LeanFileTaskGutter(uri, this.decorations, processed)
+                this.gutters[uri] = new LeanFileTaskGutter(editor.documentExtUri, this.decorations, processed)
             }
         }
         for (const uri of Object.getOwnPropertyNames(this.gutters)) {

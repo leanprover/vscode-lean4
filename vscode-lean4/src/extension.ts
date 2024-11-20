@@ -20,9 +20,9 @@ import { LeanClientProvider } from './utils/clientProvider'
 import { LeanConfigWatchService } from './utils/configwatchservice'
 import { PATH, setProcessEnvPATH } from './utils/envPath'
 import { onEventWhile, withoutReentrancy } from './utils/events'
-import { FileUri, toExtUri } from './utils/exturi'
+import { FileUri } from './utils/exturi'
 import { displayInternalErrorsIn } from './utils/internalErrors'
-import { leanEditor, registerLeanEditor } from './utils/leanEditorProvider'
+import { lean, LeanEditor, registerLeanEditorProvider } from './utils/leanEditorProvider'
 import { LeanInstaller } from './utils/leanInstaller'
 import { displayNotification, displayNotificationWithInput } from './utils/notifs'
 import { PathExtensionProvider } from './utils/pathExtensionProvider'
@@ -32,32 +32,29 @@ async function setLeanFeatureSetActive(isActive: boolean) {
     await commands.executeCommand('setContext', 'lean4.isLeanFeatureSetActive', isActive)
 }
 
-async function findLean4DocumentProjectUri(doc: TextDocument): Promise<FileUri | undefined | 'InvalidDocument'> {
-    const docUri = toExtUri(doc.uri)
-    if (docUri === undefined || doc.languageId !== 'lean4') {
-        return 'InvalidDocument'
-    }
+async function findLeanEditorProjectUri(editor: LeanEditor): Promise<FileUri | undefined | 'InvalidProject'> {
+    const docUri = editor.documentExtUri
     const projectUri = docUri.scheme === 'file' ? await findLeanProjectRoot(docUri) : undefined
     if (projectUri === 'FileNotFound') {
-        return 'InvalidDocument'
+        return 'InvalidProject'
     }
     return projectUri
 }
 
 async function findOpenLeanProjectUri(): Promise<FileUri | undefined | 'NoValidDocument'> {
-    const activeEditor = window.activeTextEditor
-    if (activeEditor) {
-        const projectUri = await findLean4DocumentProjectUri(activeEditor.document)
-        if (projectUri !== 'InvalidDocument') {
+    const activeEditor = lean.activeLeanEditor
+    if (activeEditor !== undefined) {
+        const projectUri = await findLeanEditorProjectUri(activeEditor)
+        if (projectUri !== 'InvalidProject') {
             return projectUri
         }
     }
 
     // This happens if vscode starts with a lean file open
     // but the "Getting Started" page is active.
-    for (const editor of window.visibleTextEditors) {
-        const projectUri = await findLean4DocumentProjectUri(editor.document)
-        if (projectUri !== 'InvalidDocument') {
+    for (const editor of lean.visibleLeanEditors) {
+        const projectUri = await findLeanEditorProjectUri(editor)
+        if (projectUri !== 'InvalidProject') {
             return projectUri
         }
     }
@@ -183,7 +180,7 @@ async function activateLean4Features(
     watchService.lakeFileChanged(packageUri => installer.handleLakeFileChanged(packageUri))
     context.subscriptions.push(watchService)
 
-    const infoProvider = new InfoProvider(clientProvider, { language: 'lean4' }, context)
+    const infoProvider = new InfoProvider(clientProvider, context)
     context.subscriptions.push(infoProvider)
 
     context.subscriptions.push(new LeanTaskGutter(clientProvider, context))
@@ -240,10 +237,10 @@ async function tryActivatingLean4Features(
     }
     context.subscriptions.push(
         onEventWhile(
-            leanEditor.onDidRevealLeanEditor,
+            lean.onDidRevealLeanEditor,
             withoutReentrancy('Continue', async editor => {
-                const projectUri = await findLean4DocumentProjectUri(editor.document)
-                if (projectUri === 'InvalidDocument') {
+                const projectUri = await findLeanEditorProjectUri(editor)
+                if (projectUri === 'InvalidProject') {
                     return 'Continue'
                 }
                 await tryActivatingLean4FeaturesInProject(context, installer, resolve, d, projectUri)
@@ -255,7 +252,7 @@ async function tryActivatingLean4Features(
 
 export async function activate(context: ExtensionContext): Promise<Exports> {
     await setLeanFeatureSetActive(false)
-    registerLeanEditor(context)
+    registerLeanEditorProvider(context)
 
     const alwaysEnabledFeatures: AlwaysEnabledFeatures = await displayInternalErrorsIn(
         'activating Lean 4 extension',

@@ -1,10 +1,11 @@
 import { LeanFileProgressProcessingInfo, ServerStoppedReason } from '@leanprover/infoview-api'
 import path from 'path'
-import { Disposable, EventEmitter, OutputChannel, TextDocument, commands, window, workspace } from 'vscode'
+import { Disposable, EventEmitter, OutputChannel, commands, workspace } from 'vscode'
 import { SetupDiagnostics, checkAll } from '../diagnostics/setupDiagnostics'
 import { PreconditionCheckResult, SetupNotificationOptions } from '../diagnostics/setupNotifs'
 import { LeanClient } from '../leanclient'
-import { ExtUri, FileUri, UntitledUri, getWorkspaceFolderUri, toExtUri } from './exturi'
+import { ExtUri, FileUri, UntitledUri, getWorkspaceFolderUri } from './exturi'
+import { lean } from './leanEditorProvider'
 import { LeanInstaller } from './leanInstaller'
 import { logger } from './logger'
 import { displayNotification } from './notifs'
@@ -62,13 +63,14 @@ export class LeanClientProvider implements Disposable {
         // we must setup the installChanged event handler first before any didOpenEditor calls.
         this.subscriptions.push(installer.installChanged(async (uri: FileUri) => await this.onInstallChanged(uri)))
 
-        window.visibleTextEditors.forEach(e => this.didOpenEditor(e.document))
+        lean.visibleLeanEditors.forEach(e => this.ensureClient(e.documentExtUri))
+
         this.subscriptions.push(
-            window.onDidChangeActiveTextEditor(async e => {
-                if (!e) {
+            lean.onDidChangeActiveLeanEditor(async e => {
+                if (e === undefined) {
                     return
                 }
-                await this.didOpenEditor(e.document)
+                await this.ensureClient(e.documentExtUri)
             }),
         )
 
@@ -79,7 +81,7 @@ export class LeanClientProvider implements Disposable {
             commands.registerCommand('lean4.stopServer', () => this.stopActiveClient()),
         )
 
-        this.subscriptions.push(workspace.onDidOpenTextDocument(document => this.didOpenEditor(document)))
+        this.subscriptions.push(lean.onDidOpenLeanDocument(document => this.ensureClient(document.extUri)))
 
         this.subscriptions.push(
             workspace.onDidChangeWorkspaceFolders(event => {
@@ -155,8 +157,8 @@ export class LeanClientProvider implements Disposable {
             return
         }
 
-        const doc = workspace.textDocuments.find(doc => uri.equalsUri(doc.uri))
-        if (!doc) {
+        const doc = lean.getLeanDocumentByUri(uri)
+        if (doc === undefined) {
             displayNotification('Error', `'${fileName}' was closed in the meantime.`)
             return
         }
@@ -165,20 +167,15 @@ export class LeanClientProvider implements Disposable {
     }
 
     restartActiveFile() {
-        if (!this.activeClient || !this.activeClient.isRunning()) {
-            displayNotification('Error', 'No active client.')
-            return
-        }
-
-        if (!window.activeTextEditor || window.activeTextEditor.document.languageId !== 'lean4') {
+        const doc = lean.lastActiveLeanDocument
+        if (doc === undefined) {
             displayNotification(
                 'Error',
                 'No active Lean editor tab. Make sure to focus the Lean editor tab for which you want to issue a restart.',
             )
             return
         }
-
-        void this.activeClient.restartFile(window.activeTextEditor.document)
+        this.restartFile(doc.extUri)
     }
 
     private stopActiveClient() {
@@ -193,20 +190,6 @@ export class LeanClientProvider implements Disposable {
 
     clientIsStarted() {
         void this.activeClient?.isStarted()
-    }
-
-    async didOpenEditor(document: TextDocument) {
-        // bail as quickly as possible on non-lean files.
-        if (document.languageId !== 'lean4') {
-            return
-        }
-
-        const uri = toExtUri(document.uri)
-        if (uri === undefined) {
-            return
-        }
-
-        await this.ensureClient(uri)
     }
 
     // Find the client for a given document.

@@ -1,6 +1,7 @@
-import { Disposable, ViewColumn, WebviewPanel, commands, version, window } from 'vscode'
+import { Disposable, WebviewPanel, commands, version, window } from 'vscode'
 import { VSCodeAbbreviationConfig } from './abbreviation/VSCodeAbbreviationConfig'
 import { FileUri } from './utils/exturi'
+import { viewColumnOfInfoView } from './utils/viewColumn'
 
 function escapeHtml(s: string) {
     return s
@@ -30,17 +31,10 @@ export class LoogleView implements Disposable {
     }
 
     async display(initialQuery?: string | undefined) {
-        let column =
-            window.activeTextEditor && window.activeTextEditor?.viewColumn
-                ? window.activeTextEditor?.viewColumn + 1
-                : ViewColumn.Two
-        if (column === 4) {
-            column = ViewColumn.Three
-        }
         const webviewPanel = window.createWebviewPanel(
             'lean4_loogleview',
             'LoogleView',
-            { viewColumn: column },
+            { viewColumn: viewColumnOfInfoView() },
             {
                 enableScripts: true,
                 enableFindWidget: true,
