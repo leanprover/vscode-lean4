@@ -239,6 +239,8 @@ The InfoView is the main interactive component of Lean. It can be used to inspec
 
 When a Lean document is opened, the InfoView is automatically displayed next to the text document. It can always be toggled using the ['Infoview: Toggle Infoview'](command:lean4.toggleInfoview) command or by using `Ctrl+Shift+Enter` (`Cmd+Shift+Enter`). To stop the InfoView from automatically opening, the 'Lean 4 > Infoview: Auto Open' setting can be disabled. 
 
+The InfoView can be moved into a seperate window for use on a second monitor by right-clicking the InfoView tab and clicking 'Move into New Window'.
+
 The [CSS style](https://github.com/leanprover/vscode-lean4/blob/master/lean4-infoview/src/infoview/index.css) of the InfoView can be configured using the 'Lean 4 > Infoview: Style' setting.
 
 #### Sections
@@ -362,7 +364,9 @@ There are three different kinds of auto-completion in Lean 4:
 
 Next to the currently selected identifier in the completion menu, VS Code displays the type of the identifier and a small caret. Clicking this caret or hitting `Ctrl+Space` (`Option+Esc`) again will also display the documentation associated with the currently selected identifier.
 
-By default, VS Code will auto-complete the selected identifier when `Enter` or `Tab` are pressed. Since `Enter` is also used to move the cursor to a new line, some users find this behavior to be irritating. This behavior can be disabled by setting the 'Accept Suggestion On Enter' configuration option to `off`.
+By default, VS Code will auto-complete the selected identifier when `Enter` or `Tab` are pressed. Since `Enter` is also used to move the cursor to a new line, some users find this behavior to be irritating. This behavior can be disabled by setting the 'Accept Suggestion On Enter' configuration option to 'off'.
+
+Additionally, by default, VS Code will display so-called word auto-completions that are based on the text in all files that are currently open whenever Lean provides no auto-completions itself. Word auto-completions can be disabled by setting the 'Editor: Word Based Suggestions' configuration option to 'off'.
 
 <br/>
 
@@ -680,7 +684,7 @@ The Lean 4 VS Code extension checks that the user's Lean setup is well-founded b
   1. Whether the project associated with the file is using a Lean version from before the first Lean 4 stable release (Warning)
   1. Whether some version of Lean's package manager [Lake](https://github.com/leanprover/lean4/blob/master/src/lake/README.md) can be found (Error)
 
-If there is a global-level setup diagnostic error, re-opening the Lean file will make the Lean 4 VS Code extension check the setup again. For project-level setup diagnostic errors, switching to a different file tab and switching back is sufficient to re-check the setup.
+If there is a global-level setup diagnostic error, pressing the 'Retry' button of the notification in the bottom right corner will attempt to restart the extension and retry the setup check. For project-level setup diagnostic errors, switching to a different file tab and switching back is sufficient to re-check the setup.
 
 All setup warnings can be disabled using the 'Lean 4: Show Setup Warnings' setting.
 
@@ -691,6 +695,8 @@ Executing the ['Troubleshooting: Show Setup Information'](command:lean4.troubles
 1. CPU architecture
 1. CPU model
 1. Total available RAM
+1. VS Code version
+1. Lean 4 VS Code extension version
 1. Whether [Curl](https://curl.se/) is installed
 1. Whether [Git](https://git-scm.com/) is installed
 1. Whether Lean's version manager [Elan](https://github.com/leanprover/elan/blob/master/README.md) is installed and reasonably up-to-date, as well as the Elan version
