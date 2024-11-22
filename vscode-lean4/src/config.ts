@@ -1,4 +1,4 @@
-import { workspace } from 'vscode'
+import { ConfigurationTarget, workspace } from 'vscode'
 import { PATH } from './utils/envPath'
 
 // TODO: does currently not contain config options for `./abbreviation`
@@ -15,6 +15,20 @@ export function automaticallyBuildDependencies(): boolean {
 
 export function envPathExtensions(): PATH {
     return new PATH(workspace.getConfiguration('lean4').get('envPathExtensions', []))
+}
+
+export function alwaysAskBeforeInstallingLeanVersions(): boolean {
+    return workspace.getConfiguration('lean4').get('alwaysAskBeforeInstallingLeanVersions', false)
+}
+
+export async function setAlwaysAskBeforeInstallingLeanVersions(alwaysAskBeforeInstallingLeanVersions: boolean) {
+    await workspace
+        .getConfiguration('lean4')
+        .update(
+            'alwaysAskBeforeInstallingLeanVersions',
+            alwaysAskBeforeInstallingLeanVersions,
+            ConfigurationTarget.Global,
+        )
 }
 
 export function serverArgs(): string[] {
