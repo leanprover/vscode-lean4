@@ -1,9 +1,9 @@
 import { SemVer } from 'semver'
 import { Disposable, EventEmitter, OutputChannel, TerminalOptions, window } from 'vscode'
-import { getPowerShellPath, isRunningTest } from '../config'
-import { ExecutionExitCode, batchExecute, displayResultError } from './batch'
-import { elanSelfUpdate } from './elan'
-import { ExtUri, FileUri } from './exturi'
+import { getPowerShellPath, isRunningTest, setAlwaysAskBeforeInstallingLeanVersions } from '../config'
+import { ExecutionExitCode, displayResultError } from './batch'
+import { elanSelfUninstall, elanSelfUpdate, elanVersion, isElanEagerToolchainResolutionVersion } from './elan'
+import { FileUri } from './exturi'
 import { logger } from './logger'
 import {
     NotificationSeverity,
@@ -20,6 +20,16 @@ export class LeanVersion {
     error: string | undefined
 }
 
+export type UpdateElanMode =
+    | {
+          kind: 'Outdated'
+          versions: { currentVersion: SemVer; recommendedVersion: SemVer }
+      }
+    | {
+          kind: 'Manual'
+          versions: { currentVersion: SemVer }
+      }
+
 export class LeanInstaller {
     private leanInstallerLinux = 'https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh'
     private leanInstallerWindows = 'https://raw.githubusercontent.com/leanprover/elan/master/elan-init.ps1'
@@ -27,9 +37,6 @@ export class LeanInstaller {
     private prompting: boolean = false
     private installing: boolean = false
     private freshInstallDefaultToolchain: string
-    private elanDefaultToolchain: string = '' // the default toolchain according to elan (toolchain marked with '(default)')
-    private workspaceSuffix: string = '(workspace override)'
-    private defaultSuffix: string = '(default)'
     private promptUser: boolean = true
 
     // This event is raised whenever a version change happens.
@@ -90,68 +97,6 @@ export class LeanInstaller {
         void this.showRestartPromptAndRestart('Lake file configuration changed', packageUri)
     }
 
-    private removeSuffix(version: string): string {
-        let s = version
-        const suffixes = [this.defaultSuffix, this.workspaceSuffix]
-        suffixes.forEach(suffix => {
-            if (s.endsWith(suffix)) {
-                s = s.substr(0, s.length - suffix.length)
-            }
-        })
-        return s.trim()
-    }
-
-    async getElanDefaultToolchain(packageUri: ExtUri): Promise<string> {
-        if (this.elanDefaultToolchain) {
-            return this.elanDefaultToolchain
-        }
-
-        const toolChains = await this.elanListToolChains(packageUri)
-        let result: string = ''
-        toolChains.forEach(s => {
-            if (s.endsWith(this.defaultSuffix)) {
-                result = this.removeSuffix(s)
-            }
-        })
-
-        this.elanDefaultToolchain = result
-        return result
-    }
-
-    async elanListToolChains(packageUri: ExtUri): Promise<string[]> {
-        try {
-            const cmd = 'elan'
-            const options = ['toolchain', 'list']
-            const cwd = packageUri.scheme === 'file' ? packageUri.fsPath : undefined
-            const stdout = (await batchExecute(cmd, options, cwd)).stdout
-            if (!stdout) {
-                throw new Error('elan toolchain list returned no output.')
-            }
-            const result: string[] = []
-            stdout.split(/\r?\n/).forEach(s => {
-                s = s.trim()
-                if (s !== '') {
-                    result.push(s)
-                }
-            })
-            return result
-        } catch (err) {
-            return [`${err}`]
-        }
-    }
-
-    async hasElan(): Promise<boolean> {
-        try {
-            const options = ['--version']
-            const result = await batchExecute('elan', options)
-            const filterVersion = /elan (\d+)\.\d+\..+/
-            const match = filterVersion.exec(result.stdout)
-            return match !== null
-        } catch (err) {
-            return false
-        }
-    }
-
     private installElanPrompt(reason: string | undefined): { message: string; item: 'Install Elan and Lean 4' } {
         const reasonPrefix = reason ? reason + ' ' : ''
         const message =
@@ -163,7 +108,8 @@ export class LeanInstaller {
     async displayInstallElanPromptWithItems(
         severity: NotificationSeverity,
         reason: string | undefined,
-        ...otherItems: string[]
+        otherItems: string[] = [],
+        defaultItem?: string | undefined,
     ): Promise<{ kind: 'InstallElan'; success: boolean } | { kind: 'OtherItem'; choice: string } | undefined> {
         if (!this.getPromptUser()) {
             // Used in tests
@@ -172,7 +118,7 @@ export class LeanInstaller {
         }
 
         const p = this.installElanPrompt(reason)
-        const choice = await displayNotificationWithInput(severity, p.message, p.item, ...otherItems)
+        const choice = await displayNotificationWithInput(severity, p.message, [p.item, ...otherItems], defaultItem)
         if (choice === undefined) {
             return undefined
         }
@@ -195,7 +141,7 @@ export class LeanInstaller {
         reason: string | undefined,
         // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
         options: StickyNotificationOptions<'Install Elan and Lean 4' | string>,
-        ...otherItems: StickyInput<string>[]
+        otherItems: StickyInput<string>[] = [],
     ): Disposable {
         const p = this.installElanPrompt(reason)
         const installElanItem: StickyInput<'Install Elan and Lean 4'> = {
@@ -205,16 +151,51 @@ export class LeanInstaller {
                 await this.installElan()
             },
         }
-        return displayStickyNotificationWithOptionalInput(severity, p.message, options, installElanItem, ...otherItems)
+        return displayStickyNotificationWithOptionalInput(severity, p.message, options, [
+            installElanItem,
+            ...otherItems,
+        ])
     }
 
-    private updateElanPrompt(
-        currentVersion: SemVer,
-        recommendedVersion: SemVer,
-    ): { message: string; item: 'Update Elan' } {
-        return {
-            message: `Lean's version manager Elan is outdated: the installed version is ${currentVersion.toString()}, but a version of ${recommendedVersion.toString()} is recommended. Do you want to update Elan?`,
-            item: 'Update Elan',
+    private updateElanPrompt(mode: UpdateElanMode): { message: string; item: 'Update Elan' } {
+        switch (mode.kind) {
+            case 'Manual':
+                return {
+                    message: 'Do you want to update Elan?',
+                    item: 'Update Elan',
+                }
+            case 'Outdated':
+                return {
+                    message: `Lean's version manager Elan is outdated: the installed version is ${mode.versions.currentVersion.toString()}, but a version of ${mode.versions.recommendedVersion.toString()} is recommended. Do you want to update Elan?`,
+                    item: 'Update Elan',
+                }
+        }
+    }
+
+    private async displayElanUpdateSuccessfulPrompt(currentVersion: SemVer) {
+        if (!isElanEagerToolchainResolutionVersion(currentVersion)) {
+            displayNotification('Information', 'Elan update successful!')
+            return
+        }
+
+        const prompt =
+            'Elan update successful!' +
+            '\n\n' +
+            'Do you want Elan in VS Code to download and install Lean versions automatically, or would you prefer it to ask for confirmation before downloading and installing new Lean versions?' +
+            '\n' +
+            'Asking for confirmation is especially desirable if you are ever using a limited internet data plan or your internet connection tends to be slow, whereas automatic installs are less tedious on fast and unlimited internet connections.'
+
+        const choice = await displayNotificationWithInput(
+            'Information',
+            prompt,
+            ['Always Ask For Confirmation'],
+            'Install Lean Versions Automatically',
+        )
+        if (choice === 'Always Ask For Confirmation') {
+            await setAlwaysAskBeforeInstallingLeanVersions(true)
+        }
+        if (choice === 'Install Lean Versions Automatically') {
+            await setAlwaysAskBeforeInstallingLeanVersions(false)
         }
     }
 
@@ -222,10 +203,14 @@ export class LeanInstaller {
         if (currentVersion.compare('3.1.0') === 0) {
             // `elan self update` was broken in elan 3.1.0, so we need to take a different approach to updating elan here.
             const installElanResult = await this.installElan()
-            return installElanResult === 'Success'
+            if (installElanResult !== 'Success') {
+                return false
+            }
+            await this.displayElanUpdateSuccessfulPrompt(currentVersion)
+            return true
         }
 
-        const elanSelfUpdateResult = await elanSelfUpdate(this.outputChannel)
+        const elanSelfUpdateResult = await elanSelfUpdate(this.outputChannel, 'Update Elan')
         if (elanSelfUpdateResult.exitCode !== ExecutionExitCode.Success) {
             displayResultError(
                 elanSelfUpdateResult,
@@ -234,32 +219,30 @@ export class LeanInstaller {
             return false
         }
 
+        await this.displayElanUpdateSuccessfulPrompt(currentVersion)
+
         return true
     }
 
     async displayUpdateElanPromptWithItems(
         severity: NotificationSeverity,
-        currentVersion: SemVer,
-        recommendedVersion: SemVer,
-        ...otherItems: string[]
+        mode: UpdateElanMode,
+        otherItems: string[] = [],
+        defaultItem?: string | undefined,
     ): Promise<{ kind: 'UpdateElan'; success: boolean } | { kind: 'OtherItem'; choice: string } | undefined> {
-        const p = this.updateElanPrompt(currentVersion, recommendedVersion)
-        const choice = await displayNotificationWithInput(severity, p.message, p.item, ...otherItems)
+        const p = this.updateElanPrompt(mode)
+        const choice = await displayNotificationWithInput(severity, p.message, [p.item, ...otherItems], defaultItem)
         if (choice === undefined) {
             return undefined
         }
         if (choice === p.item) {
-            return { kind: 'UpdateElan', success: await this.updateElan(currentVersion) }
+            return { kind: 'UpdateElan', success: await this.updateElan(mode.versions.currentVersion) }
         }
         return { kind: 'OtherItem', choice }
     }
 
-    async displayUpdateElanPrompt(
-        severity: NotificationSeverity,
-        currentVersion: SemVer,
-        recommendedVersion: SemVer,
-    ): Promise<boolean> {
-        const r = await this.displayUpdateElanPromptWithItems(severity, currentVersion, recommendedVersion)
+    async displayUpdateElanPrompt(severity: NotificationSeverity, mode: UpdateElanMode): Promise<boolean> {
+        const r = await this.displayUpdateElanPromptWithItems(severity, mode)
         if (r !== undefined && r.kind === 'UpdateElan') {
             return r.success
         }
@@ -268,21 +251,38 @@ export class LeanInstaller {
 
     displayStickyUpdateElanPrompt(
         severity: NotificationSeverity,
-        currentVersion: SemVer,
-        recommendedVersion: SemVer,
+        mode: UpdateElanMode,
         // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
         options: StickyNotificationOptions<'Update Elan' | string>,
-        ...otherItems: StickyInput<string>[]
+        otherItems: StickyInput<string>[] = [],
     ): Disposable {
-        const p = this.updateElanPrompt(currentVersion, recommendedVersion)
+        const p = this.updateElanPrompt(mode)
         const updateElanItem: StickyInput<'Update Elan'> = {
             input: p.item,
             continueDisplaying: false,
             action: async () => {
-                await this.updateElan(currentVersion)
+                await this.updateElan(mode.versions.currentVersion)
             },
         }
-        return displayStickyNotificationWithOptionalInput(severity, p.message, options, updateElanItem, ...otherItems)
+        return displayStickyNotificationWithOptionalInput(severity, p.message, options, [updateElanItem, ...otherItems])
+    }
+
+    async displayManualUpdateElanPrompt() {
+        const versionResult = await elanVersion()
+        switch (versionResult.kind) {
+            case 'Success':
+                await this.displayUpdateElanPrompt('Information', {
+                    kind: 'Manual',
+                    versions: { currentVersion: versionResult.version },
+                })
+                break
+            case 'ElanNotInstalled':
+                displayNotification('Error', 'Elan is not installed.')
+                break
+            case 'ExecutionError':
+                displayNotification('Error', `Error while determining current Elan version: ${versionResult.message}`)
+                break
+        }
     }
 
     private async autoInstall(): Promise<void> {
@@ -345,15 +345,59 @@ export class LeanInstaller {
             }
 
             const result = await resultPromise
-            this.elanDefaultToolchain = this.freshInstallDefaultToolchain
             if (!result) {
                 displayNotification('Error', 'Elan installation failed. Check the terminal output for details.')
                 return 'InstallationFailed'
             }
 
+            const prompt =
+                'Elan installation successful!' +
+                '\n\n' +
+                'Do you want Elan in VS Code to download and install Lean versions automatically, or would you prefer it to ask for confirmation before downloading and installing new Lean versions?' +
+                '\n' +
+                'Asking for confirmation is especially desirable if you are ever using a limited internet data plan or your internet connection tends to be slow, whereas automatic installs are less tedious on fast and unlimited internet connections.'
+
+            const choice = await displayNotificationWithInput(
+                'Information',
+                prompt,
+                ['Always Ask For Confirmation'],
+                'Install Lean Versions Automatically',
+            )
+            if (choice === 'Always Ask For Confirmation') {
+                await setAlwaysAskBeforeInstallingLeanVersions(true)
+            }
+            if (choice === 'Install Lean Versions Automatically') {
+                await setAlwaysAskBeforeInstallingLeanVersions(false)
+            }
+
             return 'Success'
         } finally {
             this.installing = false
+        }
+    }
+
+    async uninstallElan() {
+        const prompt =
+            "This command will uninstall Lean's version manager Elan and all installed Lean version.\n" +
+            'Do you wish to proceed?'
+        const choice = await displayNotificationWithInput('Information', prompt, ['Proceed'])
+        if (choice !== 'Proceed') {
+            return
+        }
+
+        const r = await elanSelfUninstall(this.outputChannel, 'Uninstall Elan')
+        switch (r.exitCode) {
+            case ExecutionExitCode.Success:
+                displayNotification('Information', 'Elan uninstalled successfully.')
+                break
+            case ExecutionExitCode.CannotLaunch:
+                displayNotification('Error', 'Elan is not installed.')
+                break
+            case ExecutionExitCode.ExecutionError:
+                displayNotification('Error', `Error while installing Elan: ${r.combined}`)
+                break
+            case ExecutionExitCode.Cancelled:
+                displayNotification('Information', 'Uninstalling Elan cancelled.')
         }
     }
 }
