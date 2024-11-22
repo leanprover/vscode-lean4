@@ -40,7 +40,9 @@ import { logger } from './utils/logger'
 // @ts-ignore
 import { SemVer } from 'semver'
 import { c2pConverter, p2cConverter, patchConverters, setDependencyBuildMode } from './utils/converters'
+import { elanInstalledToolchains } from './utils/elan'
 import { ExtUri, parseExtUri, toExtUri } from './utils/exturi'
+import { leanRunner } from './utils/leanCmdRunner'
 import { lean, LeanDocument } from './utils/leanEditorProvider'
 import {
     displayNotification,
@@ -62,7 +64,6 @@ export class LeanClient implements Disposable {
     private subscriptions: Disposable[] = []
     private noPrompt: boolean = false
     private showingRestartMessage: boolean = false
-    private elanDefaultToolchain: string
     private isRestarting: boolean = false
     private staleDepNotifier: Disposable | undefined
 
@@ -105,17 +106,10 @@ export class LeanClient implements Disposable {
     private serverFailedEmitter = new EventEmitter<string>()
     serverFailed = this.serverFailedEmitter.event
 
-    constructor(folderUri: ExtUri, outputChannel: OutputChannel, elanDefaultToolchain: string) {
-        this.outputChannel = outputChannel // can be null when opening adhoc files.
+    constructor(folderUri: ExtUri, outputChannel: OutputChannel) {
+        this.outputChannel = outputChannel
         this.folderUri = folderUri
-        this.elanDefaultToolchain = elanDefaultToolchain
-        this.subscriptions.push(
-            new Disposable(() => {
-                if (this.staleDepNotifier) {
-                    this.staleDepNotifier.dispose()
-                }
-            }),
-        )
+        this.subscriptions.push(new Disposable(() => this.staleDepNotifier?.dispose()))
     }
 
     dispose(): void {
@@ -169,6 +163,30 @@ export class LeanClient implements Disposable {
         }
         this.isRestarting = true
         try {
+            let defaultToolchain: string | undefined
+            if (this.folderUri.scheme === 'untitled') {
+                const installedToolchainsResult = await elanInstalledToolchains()
+                switch (installedToolchainsResult.kind) {
+                    case 'Success':
+                        if (installedToolchainsResult.defaultToolchain === undefined) {
+                            this.serverFailedEmitter.fire(
+                                'No default Lean version set - cannot launch client for untitled file.',
+                            )
+                            return
+                        }
+                        defaultToolchain = installedToolchainsResult.defaultToolchain
+                        break
+                    case 'ElanNotFound':
+                        defaultToolchain = undefined
+                        break
+                    case 'ExecutionError':
+                        this.serverFailedEmitter.fire(
+                            `Cannot determine Lean version information for launching a client for an untitled file: ${installedToolchainsResult.message}`,
+                        )
+                        return
+                }
+            }
+
             logger.log('[LeanClient] Restarting Lean Server')
             if (this.isStarted()) {
                 await this.stop()
@@ -178,21 +196,64 @@ export class LeanClient implements Disposable {
 
             const progressOptions: ProgressOptions = {
                 location: ProgressLocation.Notification,
-                title: 'Starting Lean language client',
+                title: '[Server Startup] Starting Lean language client',
                 cancellable: false,
             }
-            await window.withProgress(progressOptions, async progress => await this.startClient(progress))
+            await window.withProgress(
+                progressOptions,
+                async progress => await this.startClient(progress, defaultToolchain),
+            )
         } finally {
             this.isRestarting = false
         }
     }
 
-    private async startClient(progress: Progress<{ message?: string; increment?: number }>) {
+    private async determineToolchainOverride(
+        defaultToolchain: string | undefined,
+    ): Promise<{ kind: 'Override'; toolchain: string } | { kind: 'NoOverride' } | { kind: 'Error'; message: string }> {
+        const cwdUri = this.folderUri.scheme === 'file' ? this.folderUri : undefined
+        const toolchainDecision = await leanRunner.decideToolchain({
+            channel: this.outputChannel,
+            context: 'Server Startup',
+            cwdUri,
+            toolchainUpdateMode: 'PromptAboutUpdate',
+        })
+
+        if (toolchainDecision.kind === 'Error') {
+            return toolchainDecision
+        }
+
+        if (toolchainDecision.kind === 'RunWithSpecificToolchain') {
+            return { kind: 'Override', toolchain: toolchainDecision.toolchain }
+        }
+
+        toolchainDecision.kind satisfies 'RunWithActiveToolchain'
+
+        if (this.folderUri.scheme === 'untitled' && defaultToolchain !== undefined) {
+            // Fixes issue #227, for adhoc files it would pick up the cwd from the open folder
+            // which is not what we want.  For adhoc files we want the (default) toolchain instead.
+            return { kind: 'Override', toolchain: defaultToolchain }
+        }
+        return { kind: 'NoOverride' }
+    }
+
+    private async startClient(
+        progress: Progress<{ message?: string; increment?: number }>,
+        defaultToolchain: string | undefined,
+    ): Promise<void> {
         // Should only be called from `restart`
 
         const startTime = Date.now()
         progress.report({})
-        this.client = await this.setupClient()
+        const toolchainOverrideResult = await this.determineToolchainOverride(defaultToolchain)
+        if (toolchainOverrideResult.kind === 'Error') {
+            this.serverFailedEmitter.fire(`Error while starting client: ${toolchainOverrideResult.message}`)
+            return
+        }
+        const toolchainOverride: string | undefined =
+            toolchainOverrideResult.kind === 'Override' ? toolchainOverrideResult.toolchain : undefined
+
+        this.client = await this.setupClient(toolchainOverride)
 
         let insideRestart = true
         try {
@@ -235,7 +296,6 @@ export class LeanClient implements Disposable {
             this.outputChannel.appendLine(msg)
             this.serverFailedEmitter.fire(msg)
             insideRestart = false
-            return
         }
 
         // HACK(WN): Register a default notification handler to fire on custom notifications.
@@ -270,7 +330,12 @@ export class LeanClient implements Disposable {
                 const finalizer = () => {
                     stderrMsgBoxVisible = false
                 }
-                displayNotificationWithOutput('Error', `Lean server printed an error:\n${chunk.toString()}`, finalizer)
+                displayNotificationWithOutput(
+                    'Error',
+                    `Lean server printed an error:\n${chunk.toString()}`,
+                    [],
+                    finalizer,
+                )
             }
         })
 
@@ -335,7 +400,6 @@ export class LeanClient implements Disposable {
         }
 
         await this.restart()
-
         return 'Success'
     }
 
@@ -438,22 +502,22 @@ export class LeanClient implements Disposable {
         return this.running ? this.client?.initializeResult : undefined
     }
 
-    private async determineServerOptions(): Promise<ServerOptions> {
+    private async determineServerOptions(toolchainOverride: string | undefined): Promise<ServerOptions> {
         const env = Object.assign({}, process.env)
         if (serverLoggingEnabled()) {
             env.LEAN_SERVER_LOG_DIR = serverLoggingPath()
         }
 
         const [serverExecutable, options] = await this.determineExecutable()
+        if (toolchainOverride) {
+            options.unshift('+' + toolchainOverride)
+        }
 
         const cwd = this.folderUri.scheme === 'file' ? this.folderUri.fsPath : undefined
         if (cwd) {
             // Add folder name to command-line so that it shows up in `ps aux`.
             options.push(cwd)
         } else {
-            // Fixes issue #227, for adhoc files it would pick up the cwd from the open folder
-            // which is not what we want.  For adhoc files we want the (default) toolchain instead.
-            options.unshift('+' + this.elanDefaultToolchain)
             options.push('untitled')
         }
 
@@ -604,8 +668,8 @@ export class LeanClient implements Disposable {
         }
     }
 
-    private async setupClient(): Promise<LanguageClient> {
-        const serverOptions: ServerOptions = await this.determineServerOptions()
+    private async setupClient(toolchainOverride: string | undefined): Promise<LanguageClient> {
+        const serverOptions: ServerOptions = await this.determineServerOptions(toolchainOverride)
         const clientOptions: LanguageClientOptions = this.obtainClientOptions()
 
         const client = new LanguageClient('lean4', 'Lean 4', serverOptions, clientOptions)

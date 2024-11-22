@@ -18,16 +18,18 @@ import { ProjectOperationProvider } from './projectoperations'
 import { LeanTaskGutter } from './taskgutter'
 import { LeanClientProvider } from './utils/clientProvider'
 import { LeanConfigWatchService } from './utils/configwatchservice'
+import { ElanCommandProvider } from './utils/elanCommands'
 import { PATH, setProcessEnvPATH } from './utils/envPath'
 import { onEventWhile, withoutReentrancy } from './utils/events'
 import { FileUri } from './utils/exturi'
 import { displayInternalErrorsIn } from './utils/internalErrors'
+import { registerLeanCommandRunner } from './utils/leanCmdRunner'
 import { lean, LeanEditor, registerLeanEditorProvider } from './utils/leanEditorProvider'
 import { LeanInstaller } from './utils/leanInstaller'
 import {
     displayActiveStickyNotification,
+    displayModalNotification,
     displayNotification,
-    displayNotificationWithInput,
     setStickyNotificationActiveButHidden,
 } from './utils/notifs'
 import { PathExtensionProvider } from './utils/pathExtensionProvider'
@@ -113,9 +115,12 @@ function activateAlwaysEnabledFeatures(context: ExtensionContext): AlwaysEnabled
     const defaultToolchain = getDefaultLeanVersion()
     const installer = new LeanInstaller(outputChannel, defaultToolchain)
     context.subscriptions.push(
-        commands.registerCommand('lean4.setup.installElan', () =>
-            installer.displayInstallElanPrompt('Information', undefined),
+        commands.registerCommand(
+            'lean4.setup.installElan',
+            async () => await installer.displayInstallElanPrompt('Information', undefined),
         ),
+        commands.registerCommand('lean4.setup.updateElan', async () => await installer.displayManualUpdateElanPrompt()),
+        commands.registerCommand('lean4.setup.uninstallElan', async () => await installer.uninstallElan()),
     )
 
     const projectInitializationProvider = new ProjectInitializationProvider(outputChannel, installer)
@@ -144,7 +149,10 @@ function activateAlwaysEnabledFeatures(context: ExtensionContext): AlwaysEnabled
     const abbreviationView = new AbbreviationView(extensionPath, abbreviationFeature.abbreviations)
     context.subscriptions.push(abbreviationView)
 
-    return { projectInitializationProvider, outputChannel, installer, fullDiagnosticsProvider }
+    const elanCommandProvider = new ElanCommandProvider(outputChannel)
+    context.subscriptions.push(elanCommandProvider)
+
+    return { projectInitializationProvider, outputChannel, installer, fullDiagnosticsProvider, elanCommandProvider }
 }
 
 async function checkLean4FeaturePreconditions(
@@ -155,7 +163,7 @@ async function checkLean4FeaturePreconditions(
 ): Promise<PreconditionCheckResult> {
     return await checkAll(
         () => d.checkAreDependenciesInstalled(installer.getOutputChannel(), cwdUri),
-        () => d.checkIsLean4Installed(installer, context, cwdUri),
+        () => d.checkIsLean4Installed(installer, context, cwdUri, 'PromptAboutUpdate'),
         () =>
             d.checkIsElanUpToDate(installer, cwdUri, {
                 elanMustBeInstalled: false,
@@ -167,8 +175,10 @@ async function checkLean4FeaturePreconditions(
 async function activateLean4Features(
     context: ExtensionContext,
     installer: LeanInstaller,
+    elanCommandProvider: ElanCommandProvider,
 ): Promise<Lean4EnabledFeatures> {
     const clientProvider = new LeanClientProvider(installer, installer.getOutputChannel())
+    elanCommandProvider.setClientProvider(clientProvider)
     context.subscriptions.push(clientProvider)
 
     const watchService = new LeanConfigWatchService()
@@ -203,6 +213,7 @@ async function activateLean4Features(
 async function tryActivatingLean4FeaturesInProject(
     context: ExtensionContext,
     installer: LeanInstaller,
+    elanCommandProvider: ElanCommandProvider,
     resolve: (value: Lean4EnabledFeatures) => void,
     d: SetupDiagnostics,
     projectUri: FileUri | undefined,
@@ -217,7 +228,7 @@ async function tryActivatingLean4FeaturesInProject(
         return
     }
     const lean4EnabledFeatures: Lean4EnabledFeatures = await displayInternalErrorsIn('activating Lean 4 features', () =>
-        activateLean4Features(context, installer),
+        activateLean4Features(context, installer, elanCommandProvider),
     )
     resolve(lean4EnabledFeatures)
 }
@@ -225,17 +236,18 @@ async function tryActivatingLean4FeaturesInProject(
 async function tryActivatingLean4Features(
     context: ExtensionContext,
     installer: LeanInstaller,
+    elanCommandProvider: ElanCommandProvider,
     resolve: (value: Lean4EnabledFeatures) => void,
     d: SetupDiagnostics,
     warnAboutNoValidDocument: boolean,
 ) {
     const projectUri = await findOpenLeanProjectUri()
     if (projectUri !== 'NoValidDocument') {
-        await tryActivatingLean4FeaturesInProject(context, installer, resolve, d, projectUri)
+        await tryActivatingLean4FeaturesInProject(context, installer, elanCommandProvider, resolve, d, projectUri)
         return
     }
     if (warnAboutNoValidDocument) {
-        await displayNotificationWithInput(
+        await displayModalNotification(
             'Error',
             'No visible Lean document - cannot retry activating the extension. Please select a Lean document.',
         )
@@ -248,7 +260,14 @@ async function tryActivatingLean4Features(
                 if (projectUri === 'InvalidProject') {
                     return 'Continue'
                 }
-                await tryActivatingLean4FeaturesInProject(context, installer, resolve, d, projectUri)
+                await tryActivatingLean4FeaturesInProject(
+                    context,
+                    installer,
+                    elanCommandProvider,
+                    resolve,
+                    d,
+                    projectUri,
+                )
                 return 'Stop'
             }),
         ),
@@ -262,6 +281,7 @@ export async function activate(context: ExtensionContext): Promise<Exports> {
     context.subscriptions.push(
         commands.registerCommand('lean4.redisplaySetupError', async () => displayActiveStickyNotification()),
     )
+    registerLeanCommandRunner(context)
 
     const alwaysEnabledFeatures: AlwaysEnabledFeatures = await displayInternalErrorsIn(
         'activating Lean 4 extension',
@@ -275,12 +295,26 @@ export async function activate(context: ExtensionContext): Promise<Exports> {
             errorMode: {
                 mode: 'Sticky',
                 retry: async () =>
-                    tryActivatingLean4Features(context, alwaysEnabledFeatures.installer, resolve, d, true),
+                    tryActivatingLean4Features(
+                        context,
+                        alwaysEnabledFeatures.installer,
+                        alwaysEnabledFeatures.elanCommandProvider,
+                        resolve,
+                        d,
+                        true,
+                    ),
             },
             warningMode: { modal: true, proceedByDefault: true },
         }
         d = new SetupDiagnostics(options)
-        await tryActivatingLean4Features(context, alwaysEnabledFeatures.installer, resolve, d, false)
+        await tryActivatingLean4Features(
+            context,
+            alwaysEnabledFeatures.installer,
+            alwaysEnabledFeatures.elanCommandProvider,
+            resolve,
+            d,
+            false,
+        )
     })
 
     return new Exports(alwaysEnabledFeatures, lean4EnabledFeatures)

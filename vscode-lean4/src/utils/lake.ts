@@ -1,28 +1,22 @@
 import path from 'path'
 import { OutputChannel } from 'vscode'
-import { batchExecute, batchExecuteWithProgress, ExecutionExitCode, ExecutionResult } from './batch'
+import { ExecutionExitCode, ExecutionResult } from './batch'
 import { FileUri } from './exturi'
+import { leanRunner, ToolchainUpdateMode } from './leanCmdRunner'
 
 export const cacheNotFoundError = 'unknown executable `cache`'
 export const cacheNotFoundExitError = '=> Operation failed. Exit Code: 1.'
 
-export class LakeRunner {
+export type LakeRunnerOptions = {
     channel: OutputChannel
     cwdUri: FileUri | undefined
     context: string | undefined
-    toolchain: string | undefined
+    toolchain?: string | undefined
+    toolchainUpdateMode: ToolchainUpdateMode
+}
 
-    constructor(
-        channel: OutputChannel,
-        cwdUri: FileUri | undefined,
-        context: string | undefined,
-        toolchain?: string | undefined,
-    ) {
-        this.channel = channel
-        this.cwdUri = cwdUri
-        this.context = context
-        this.toolchain = toolchain
-    }
+export class LakeRunner {
+    constructor(readonly options: LakeRunnerOptions) {}
 
     async initProject(name: string, kind?: string | undefined): Promise<ExecutionResult> {
         const args = kind ? [name, kind] : [name]
@@ -75,40 +69,24 @@ export class LakeRunner {
         return 'No'
     }
 
-    private async runLakeCommandSilently(subCommand: string, args: string[]): Promise<ExecutionResult> {
-        args = args.slice()
-        args.unshift(subCommand)
-        if (this.toolchain) {
-            args.unshift(`+${this.toolchain}`)
-        }
-        return await batchExecute('lake', args, this.cwdUri?.fsPath)
-    }
-
     private async runLakeCommandWithProgress(
         subCommand: string,
         args: string[],
         waitingPrompt: string,
         translator?: ((line: string) => string | undefined) | undefined,
     ): Promise<ExecutionResult> {
-        args = args.slice()
-        args.unshift(subCommand)
-        if (this.toolchain) {
-            args.unshift(`+${this.toolchain}`)
-        }
-        return await batchExecuteWithProgress('lake', args, this.context, waitingPrompt, {
-            cwd: this.cwdUri?.fsPath,
-            channel: this.channel,
+        return await leanRunner.runLeanCommand('lake', [subCommand, ...args], {
+            channel: this.options.channel,
+            context: this.options.context,
+            cwdUri: this.options.cwdUri,
+            waitingPrompt,
+            toolchain: this.options.toolchain,
+            toolchainUpdateMode: this.options.toolchainUpdateMode,
             translator,
-            allowCancellation: true,
         })
     }
 }
 
-export function lake(
-    channel: OutputChannel,
-    cwdUri: FileUri | undefined,
-    context: string | undefined,
-    toolchain?: string | undefined,
-): LakeRunner {
-    return new LakeRunner(channel, cwdUri, context, toolchain)
+export function lake(options: LakeRunnerOptions): LakeRunner {
+    return new LakeRunner(options)
 }

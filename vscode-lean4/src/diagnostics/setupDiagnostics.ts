@@ -1,6 +1,7 @@
 import { SemVer } from 'semver'
 import { OutputChannel, commands } from 'vscode'
 import { ExtUri, FileUri, extUriToCwdUri } from '../utils/exturi'
+import { ToolchainUpdateMode } from '../utils/leanCmdRunner'
 import { LeanInstaller } from '../utils/leanInstaller'
 import { diagnose } from './setupDiagnoser'
 import {
@@ -43,10 +44,10 @@ export class SetupDiagnostics {
         cwdUri: FileUri | undefined,
     ): Promise<PreconditionCheckResult> {
         const missingDeps = []
-        if (!(await diagnose(channel, cwdUri).checkCurlAvailable())) {
+        if (!(await diagnose({ channel, cwdUri }).checkCurlAvailable())) {
             missingDeps.push('curl')
         }
-        if (!(await diagnose(channel, cwdUri).checkGitAvailable())) {
+        if (!(await diagnose({ channel, cwdUri }).checkGitAvailable())) {
             missingDeps.push('git')
         }
         if (missingDeps.length === 0) {
@@ -67,8 +68,14 @@ export class SetupDiagnostics {
         installer: LeanInstaller,
         context: string,
         cwdUri: FileUri | undefined,
+        toolchainUpdateMode: ToolchainUpdateMode,
     ): Promise<PreconditionCheckResult> {
-        const leanVersionResult = await diagnose(installer.getOutputChannel(), cwdUri).queryLeanVersion(context)
+        const leanVersionResult = await diagnose({
+            channel: installer.getOutputChannel(),
+            cwdUri,
+            context,
+            toolchainUpdateMode,
+        }).queryLeanVersion()
         switch (leanVersionResult.kind) {
             case 'Success':
                 return 'Fulfilled'
@@ -77,6 +84,9 @@ export class SetupDiagnostics {
                 return this.n.displaySetupErrorWithOutput(
                     `Error while checking Lean version: ${leanVersionResult.message}`,
                 )
+
+            case 'Cancelled':
+                return this.n.displaySetupErrorWithOutput('Error while checking Lean version: Operation cancelled.')
 
             case 'InvalidVersion':
                 return this.n.displaySetupErrorWithOutput(
@@ -93,7 +103,7 @@ export class SetupDiagnostics {
         cwdUri: FileUri | undefined,
         options: { elanMustBeInstalled: boolean },
     ): Promise<PreconditionCheckResult> {
-        const elanDiagnosis = await diagnose(installer.getOutputChannel(), cwdUri).elanVersion()
+        const elanDiagnosis = await diagnose({ channel: installer.getOutputChannel(), cwdUri }).elanVersion()
 
         switch (elanDiagnosis.kind) {
             case 'NotInstalled':
@@ -126,7 +136,7 @@ export class SetupDiagnostics {
     }
 
     async checkIsValidProjectFolder(channel: OutputChannel, folderUri: ExtUri): Promise<PreconditionCheckResult> {
-        const projectSetupDiagnosis = await diagnose(channel, extUriToCwdUri(folderUri)).projectSetup()
+        const projectSetupDiagnosis = await diagnose({ channel, cwdUri: extUriToCwdUri(folderUri) }).projectSetup()
         switch (projectSetupDiagnosis.kind) {
             case 'SingleFile':
                 return await this.n.displaySetupWarning(singleFileWarningMessage)
@@ -138,11 +148,13 @@ export class SetupDiagnostics {
                 } else {
                     return this.n.displaySetupWarningWithInput(
                         missingLeanToolchainWithParentProjectWarningMessage(parentProjectFolder),
-                        {
-                            input: 'Open Parent Directory Project',
-                            // this kills the extension host
-                            action: () => commands.executeCommand('vscode.openFolder', parentProjectFolder),
-                        },
+                        [
+                            {
+                                input: 'Open Parent Directory Project',
+                                // this kills the extension host
+                                action: () => commands.executeCommand('vscode.openFolder', parentProjectFolder),
+                            },
+                        ],
                     )
                 }
 
@@ -155,7 +167,7 @@ export class SetupDiagnostics {
         channel: OutputChannel,
         context: string,
         folderUri: ExtUri,
-        options: { toolchainOverride?: string | undefined },
+        options: { toolchainOverride?: string | undefined; toolchainUpdateMode: ToolchainUpdateMode },
     ): Promise<PreconditionCheckResult> {
         let origin: string
         if (options.toolchainOverride !== undefined) {
@@ -165,11 +177,13 @@ export class SetupDiagnostics {
         } else {
             origin = 'Opened project'
         }
-        const projectLeanVersionDiagnosis = await diagnose(
+        const projectLeanVersionDiagnosis = await diagnose({
             channel,
-            extUriToCwdUri(folderUri),
-            options.toolchainOverride,
-        ).leanVersion(context)
+            cwdUri: extUriToCwdUri(folderUri),
+            toolchain: options.toolchainOverride,
+            context,
+            toolchainUpdateMode: options.toolchainUpdateMode,
+        }).leanVersion()
         switch (projectLeanVersionDiagnosis.kind) {
             case 'NotInstalled':
                 return this.n.displaySetupErrorWithOutput(
@@ -180,6 +194,9 @@ export class SetupDiagnostics {
                 return this.n.displaySetupErrorWithOutput(
                     `Error while checking Lean version: ${projectLeanVersionDiagnosis.message}`,
                 )
+
+            case 'Cancelled':
+                return this.n.displaySetupErrorWithOutput('Error while checking Lean version: Operation cancelled.')
 
             case 'IsLean3Version':
                 return this.n.displaySetupError(lean3ProjectErrorMessage(origin, projectLeanVersionDiagnosis.version))
@@ -198,13 +215,15 @@ export class SetupDiagnostics {
         channel: OutputChannel,
         context: string,
         folderUri: ExtUri,
-        options: { toolchainOverride?: string | undefined },
+        options: { toolchainOverride?: string | undefined; toolchainUpdateMode: ToolchainUpdateMode },
     ): Promise<PreconditionCheckResult> {
-        const lakeVersionResult = await diagnose(
+        const lakeVersionResult = await diagnose({
             channel,
-            extUriToCwdUri(folderUri),
-            options.toolchainOverride,
-        ).queryLakeVersion(context)
+            cwdUri: extUriToCwdUri(folderUri),
+            toolchain: options.toolchainOverride,
+            context,
+            toolchainUpdateMode: options.toolchainUpdateMode,
+        }).queryLakeVersion()
         switch (lakeVersionResult.kind) {
             case 'CommandNotFound':
                 return this.n.displaySetupErrorWithOutput(
@@ -215,6 +234,9 @@ export class SetupDiagnostics {
                 return this.n.displaySetupErrorWithOutput(
                     `Error while checking Lake version: ${lakeVersionResult.message}`,
                 )
+
+            case 'Cancelled':
+                return this.n.displaySetupErrorWithOutput('Error while checking Lake version: Operation cancelled.')
 
             case 'InvalidVersion':
                 return this.n.displaySetupErrorWithOutput(
@@ -227,7 +249,7 @@ export class SetupDiagnostics {
     }
 
     async checkIsVSCodeUpToDate(): Promise<PreconditionCheckResult> {
-        const vscodeVersionResult = diagnose(undefined, undefined).queryVSCodeVersion()
+        const vscodeVersionResult = diagnose({ channel: undefined, cwdUri: undefined }).queryVSCodeVersion()
         switch (vscodeVersionResult.kind) {
             case 'Outdated':
                 return await this.n.displaySetupWarning(

@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-redundant-type-constituents */
-import { Disposable, MessageOptions, commands, window } from 'vscode'
+import { Disposable, MessageItem, MessageOptions, commands, window } from 'vscode'
 import { lean } from './leanEditorProvider'
 
 // All calls to window.show(Error|Warning|Information)... should go through functions in this file
@@ -146,9 +146,48 @@ export function displayStickyNotification(
 export async function displayNotificationWithInput<T extends string>(
     severity: NotificationSeverity,
     message: string,
-    ...items: T[]
+    items: T[],
+    defaultItem?: T | undefined,
 ): Promise<T | undefined> {
-    return await toNotif(severity)(message, { modal: true }, ...items)
+    if (defaultItem === undefined) {
+        // VS Code renders buttons for modal notifications in the reverse order (which it doesn't do for non-modal notifications),
+        // so we reverse them for consistency.
+        // The close button is placed to the left of the primary button.
+        return await toNotif(severity)(message, { modal: true }, ...[...items].reverse())
+    }
+
+    let notif: <V extends MessageItem>(
+        message: string,
+        options: MessageOptions,
+        ...items: V[]
+    ) => Thenable<V | undefined>
+    switch (severity) {
+        case 'Information':
+            notif = window.showInformationMessage
+            break
+        case 'Warning':
+            notif = window.showWarningMessage
+            break
+        case 'Error':
+            notif = window.showErrorMessage
+            break
+    }
+    const messageItems = items.map(item => ({
+        title: item,
+        isCloseAffordance: false,
+    }))
+    // VS Code always moves the `isCloseAffordance: true` button to the left of the primary button.
+    messageItems.push({
+        title: defaultItem,
+        isCloseAffordance: true,
+    })
+    messageItems.reverse()
+    const choice = await notif(message, { modal: true }, ...messageItems)
+    return choice?.title
+}
+
+export async function displayModalNotification(severity: NotificationSeverity, message: string) {
+    await displayNotificationWithInput(severity, message, [], 'Close')
 }
 
 export type Input<T> = { input: T; action: () => void }
@@ -177,7 +216,7 @@ export function displayStickyNotificationWithOptionalInput<T extends string>(
     severity: NotificationSeverity,
     message: string,
     options: StickyNotificationOptions<T>,
-    ...inputs: StickyInput<T>[]
+    inputs: StickyInput<T>[],
 ): Disposable {
     const updatedOptions: StickyNotificationOptions<T> = {
         ...options,
@@ -199,8 +238,8 @@ export function displayStickyNotificationWithOptionalInput<T extends string>(
 export function displayNotificationWithOutput(
     severity: NotificationSeverity,
     message: string,
+    otherInputs: Input<string>[] = [],
     finalizer?: (() => void) | undefined,
-    ...otherInputs: Input<string>[]
 ) {
     displayNotificationWithOptionalInput(
         severity,
@@ -216,9 +255,10 @@ export function displayNotificationWithOutput(
 export async function displayModalNotificationWithOutput(
     severity: NotificationSeverity,
     message: string,
-    ...otherItems: string[]
+    otherItems: string[] = [],
+    defaultItem?: string | undefined,
 ): Promise<'Show Output' | string | undefined> {
-    const choice = await displayNotificationWithInput(severity, message, 'Show Output', ...otherItems)
+    const choice = await displayNotificationWithInput(severity, message, ['Show Output', ...otherItems], defaultItem)
     if (choice === 'Show Output') {
         await commands.executeCommand('lean4.troubleshooting.showOutput')
     }
@@ -229,21 +269,21 @@ export function displayStickyNotificationWithOutput(
     severity: NotificationSeverity,
     message: string,
     options: StickyNotificationOptions<'Show Output' | string>,
-    ...otherInputs: StickyInput<string>[]
+    otherInputs: StickyInput<string>[] = [],
 ): Disposable {
     const showOutputItem: StickyInput<'Show Output'> = {
         input: 'Show Output',
         continueDisplaying: true,
         action: async () => await commands.executeCommand('lean4.troubleshooting.showOutput'),
     }
-    return displayStickyNotificationWithOptionalInput(severity, message, options, showOutputItem, ...otherInputs)
+    return displayStickyNotificationWithOptionalInput(severity, message, options, [showOutputItem, ...otherInputs])
 }
 
 export function displayNotificationWithSetupGuide(
     severity: NotificationSeverity,
     message: string,
+    otherInputs: Input<string>[] = [],
     finalizer?: (() => void) | undefined,
-    ...otherInputs: Input<string>[]
 ) {
     displayNotificationWithOptionalInput(
         severity,
@@ -260,22 +300,28 @@ export function displayStickyNotificationWithSetupGuide(
     severity: NotificationSeverity,
     message: string,
     options: StickyNotificationOptions<'Open Setup Guide' | string>,
-    ...otherInputs: StickyInput<string>[]
+    otherInputs: StickyInput<string>[] = [],
 ): Disposable {
     const openSetupGuideItem: StickyInput<'Open Setup Guide'> = {
         input: 'Open Setup Guide',
         continueDisplaying: true,
         action: async () => await commands.executeCommand('lean4.docs.showSetupGuide'),
     }
-    return displayStickyNotificationWithOptionalInput(severity, message, options, openSetupGuideItem, ...otherInputs)
+    return displayStickyNotificationWithOptionalInput(severity, message, options, [openSetupGuideItem, ...otherInputs])
 }
 
 export async function displayModalNotificationWithSetupGuide(
     severity: NotificationSeverity,
     message: string,
-    ...otherItems: string[]
+    otherItems: string[] = [],
+    defaultItem?: string | undefined,
 ): Promise<'Open Setup Guide' | string | undefined> {
-    const choice = await displayNotificationWithInput(severity, message, 'Open Setup Guide', ...otherItems)
+    const choice = await displayNotificationWithInput(
+        severity,
+        message,
+        ['Open Setup Guide', ...otherItems],
+        defaultItem,
+    )
     if (choice === 'Open Setup Guide') {
         await commands.executeCommand('lean4.docs.showSetupGuide')
     }

@@ -8,6 +8,7 @@ import {
     ExecutionExitCode,
     ExecutionResult,
 } from './utils/batch'
+import { elanStableChannel } from './utils/elan'
 import { ExtUri, extUriToCwdUri, FileUri } from './utils/exturi'
 import { lake } from './utils/lake'
 import { LeanInstaller } from './utils/leanInstaller'
@@ -34,9 +35,14 @@ async function checkCreateLean4ProjectPreconditions(
         () => d.checkIsElanUpToDate(installer, cwdUri, { elanMustBeInstalled: true }),
         () =>
             d.checkIsLeanVersionUpToDate(channel, context, folderUri, {
+                toolchainUpdateMode: 'UpdateAutomatically',
                 toolchainOverride: projectToolchain,
             }),
-        () => d.checkIsLakeInstalledCorrectly(channel, context, folderUri, { toolchainOverride: projectToolchain }),
+        () =>
+            d.checkIsLakeInstalledCorrectly(channel, context, folderUri, {
+                toolchainOverride: projectToolchain,
+                toolchainUpdateMode: 'UpdateAutomatically',
+            }),
     )
 }
 
@@ -51,8 +57,11 @@ async function checkPostCloneLean4ProjectPreconditions(installer: LeanInstaller,
     const d = new SetupDiagnostics(projectInitNotificationOptions)
     return await checkAll(
         () => d.checkIsElanUpToDate(installer, cwdUri, { elanMustBeInstalled: false }),
-        () => d.checkIsLeanVersionUpToDate(channel, context, folderUri, {}),
-        () => d.checkIsLakeInstalledCorrectly(channel, context, folderUri, {}),
+        () => d.checkIsLeanVersionUpToDate(channel, context, folderUri, { toolchainUpdateMode: 'UpdateAutomatically' }),
+        () =>
+            d.checkIsLakeInstalledCorrectly(channel, context, folderUri, {
+                toolchainUpdateMode: 'UpdateAutomatically',
+            }),
     )
 }
 
@@ -73,7 +82,7 @@ export class ProjectInitializationProvider implements Disposable {
 
     private async createStandaloneProject() {
         const createStandaloneProjectContext = 'Create Standalone Project'
-        const toolchain = 'leanprover/lean4:stable'
+        const toolchain = elanStableChannel
         const projectFolder: FileUri | 'DidNotComplete' = await this.createProject(
             createStandaloneProjectContext,
             undefined,
@@ -83,12 +92,13 @@ export class ProjectInitializationProvider implements Disposable {
             return
         }
 
-        const buildResult: ExecutionResult = await lake(
-            this.channel,
-            projectFolder,
-            createStandaloneProjectContext,
+        const buildResult: ExecutionResult = await lake({
+            channel: this.channel,
+            cwdUri: projectFolder,
+            context: createStandaloneProjectContext,
             toolchain,
-        ).build()
+            toolchainUpdateMode: 'UpdateAutomatically',
+        }).build()
         if (buildResult.exitCode === ExecutionExitCode.Cancelled) {
             return
         }
@@ -118,12 +128,13 @@ export class ProjectInitializationProvider implements Disposable {
             return
         }
 
-        const cacheGetResult: ExecutionResult = await lake(
-            this.channel,
-            projectFolder,
-            createMathlibProjectContext,
-            mathlibToolchain,
-        ).fetchMathlibCache()
+        const cacheGetResult: ExecutionResult = await lake({
+            channel: this.channel,
+            cwdUri: projectFolder,
+            context: createMathlibProjectContext,
+            toolchain: mathlibToolchain,
+            toolchainUpdateMode: 'UpdateAutomatically',
+        }).fetchMathlibCache()
         if (cacheGetResult.exitCode === ExecutionExitCode.Cancelled) {
             return
         }
@@ -132,12 +143,13 @@ export class ProjectInitializationProvider implements Disposable {
             return
         }
 
-        const buildResult: ExecutionResult = await lake(
-            this.channel,
-            projectFolder,
-            createMathlibProjectContext,
-            mathlibToolchain,
-        ).build()
+        const buildResult: ExecutionResult = await lake({
+            channel: this.channel,
+            cwdUri: projectFolder,
+            context: createMathlibProjectContext,
+            toolchain: mathlibToolchain,
+            toolchainUpdateMode: 'UpdateAutomatically',
+        }).build()
         if (buildResult.exitCode === ExecutionExitCode.Cancelled) {
             return
         }
@@ -158,7 +170,7 @@ export class ProjectInitializationProvider implements Disposable {
     private async createProject(
         context: string,
         kind?: string | undefined,
-        toolchain: string = 'leanprover/lean4:stable',
+        toolchain: string = elanStableChannel,
     ): Promise<FileUri | 'DidNotComplete'> {
         const projectFolder: FileUri | undefined = await ProjectInitializationProvider.askForNewProjectFolderLocation({
             saveLabel: 'Create project folder',
@@ -181,21 +193,25 @@ export class ProjectInitializationProvider implements Disposable {
         }
 
         const projectName: string = path.basename(projectFolder.fsPath)
-        const result: ExecutionResult = await lake(this.channel, projectFolder, context, toolchain).initProject(
-            projectName,
-            kind,
-        )
+        const result: ExecutionResult = await lake({
+            channel: this.channel,
+            cwdUri: projectFolder,
+            context,
+            toolchain,
+            toolchainUpdateMode: 'UpdateAutomatically',
+        }).initProject(projectName, kind)
         if (result.exitCode !== ExecutionExitCode.Success) {
             displayResultError(result, 'Cannot initialize project.')
             return 'DidNotComplete'
         }
 
-        const updateResult: ExecutionResult = await lake(
-            this.channel,
-            projectFolder,
+        const updateResult: ExecutionResult = await lake({
+            channel: this.channel,
+            cwdUri: projectFolder,
             context,
             toolchain,
-        ).updateDependencies()
+            toolchainUpdateMode: 'UpdateAutomatically',
+        }).updateDependencies()
         if (updateResult.exitCode === ExecutionExitCode.Cancelled) {
             return 'DidNotComplete'
         }
@@ -278,7 +294,7 @@ Click the following link to learn how to set up Lean projects: [(Show Setup Guid
 However, a valid Lean 4 project folder was found in one of the parent directories at '${parentProjectFolder.fsPath}'.
 Open this project instead?`
         const input = 'Open parent directory project'
-        const choice: string | undefined = await displayNotificationWithInput('Information', message, input)
+        const choice: string | undefined = await displayNotificationWithInput('Information', message, [input])
         if (choice !== input) {
             return undefined
         }
@@ -381,11 +397,12 @@ Open this project instead?`
             }
 
             // Try it. If this is not a mathlib project, it will fail silently. Otherwise, it will grab the cache.
-            const fetchResult: ExecutionResult = await lake(
-                this.channel,
-                projectFolder,
-                downloadProjectContext,
-            ).fetchMathlibCache(true)
+            const fetchResult: ExecutionResult = await lake({
+                channel: this.channel,
+                cwdUri: projectFolder,
+                context: downloadProjectContext,
+                toolchainUpdateMode: 'UpdateAutomatically',
+            }).fetchMathlibCache(true)
             if (fetchResult.exitCode === ExecutionExitCode.Cancelled) {
                 return
             }
@@ -416,7 +433,7 @@ Open this project instead?`
     private static async openNewFolder(projectFolder: FileUri) {
         const message = `Project initialized. Open new project folder '${path.basename(projectFolder.fsPath)}'?`
         const input = 'Open project folder'
-        const choice: string | undefined = await displayNotificationWithInput('Information', message, input)
+        const choice: string | undefined = await displayNotificationWithInput('Information', message, [input])
         if (choice === input) {
             // This kills the extension host, so it has to be the last command
             await commands.executeCommand('vscode.openFolder', projectFolder.asUri())
