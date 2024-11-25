@@ -10,12 +10,12 @@
     },
     "exports": {
         ".": {
-            "default": "./dist/index.production.min.js",
-            "types": "./dist/index.d.ts"
+            "types": "./dist/index.d.ts",
+            "default": "./dist/index.production.min.js"
         },
         "./loader": {
-            "default": "./dist/loader.production.min.js",
-            "types": "./dist/loader.d.ts"
+            "types": "./dist/loader.d.ts",
+            "default": "./dist/loader.production.min.js"
         },
         "./package.json": "./package.json"
     },

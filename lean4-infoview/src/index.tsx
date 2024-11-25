@@ -8,7 +8,7 @@ export { EditorContext, EnvPosContext, VersionContext } from './infoview/context
 export { EditorConnection } from './infoview/editorConnection'
 export { GoalLocation, GoalsLocation, LocationsContext } from './infoview/goalLocation'
 export { InteractiveCode, InteractiveCodeProps, Markdown } from './infoview/interactiveCode'
-export { renderInfoview } from './infoview/main'
+export { renderInfoview, InfoviewFc } from './infoview/main'
 export { RpcContext, useRpcSession } from './infoview/rpcSessions'
 export { ServerVersion } from './infoview/serverVersion'
 export { DynamicComponent, DynamicComponentProps, PanelWidgetProps, importWidgetModule } from './infoview/userWidget'

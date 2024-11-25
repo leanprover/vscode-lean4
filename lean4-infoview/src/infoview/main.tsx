@@ -175,3 +175,77 @@ export function renderInfoview(editorApi: EditorApi, uiElement: HTMLElement): In
 
     return infoviewApi
 }
+
+export const InfoviewFc: React.FC<
+    {
+        mkEditorApi: (infoviewApi: InfoviewApi) => EditorApi;
+        setInfoviewApi: (infoviewApi: InfoviewApi) => void;
+        setEditorConnection: (editorConnection: EditorConnection) => void;
+    }> =
+    ({
+        mkEditorApi,
+        setInfoviewApi,
+        setEditorConnection,
+    }) => {
+        const [ec, setEc] = React.useState<EditorConnection>()
+
+        React.useEffect(
+            () => {
+                const editorEvents: EditorEvents = {
+                    initialize: new EventEmitter(),
+                    gotServerNotification: new EventEmitter(),
+                    sentClientNotification: new EventEmitter(),
+                    serverRestarted: new EventEmitter(),
+                    serverStopped: new EventEmitter(),
+                    changedCursorLocation: new EventEmitter(),
+                    changedInfoviewConfig: new EventEmitter(),
+                    runTestScript: new EventEmitter(),
+                    requestedAction: new EventEmitter(),
+                    goToDefinition: new EventEmitter(),
+                }
+
+                // Challenge: write a type-correct fn from `Eventify<T>` to `T` without using `any`
+                const infoviewApi: InfoviewApi = {
+                    initialize: async l => editorEvents.initialize.fire(l),
+                    gotServerNotification: async (method, params) => {
+                        editorEvents.gotServerNotification.fire([method, params])
+                    },
+                    sentClientNotification: async (method, params) => {
+                        editorEvents.sentClientNotification.fire([method, params])
+                    },
+                    serverRestarted: async r => editorEvents.serverRestarted.fire(r),
+                    serverStopped: async serverStoppedReason => {
+                        editorEvents.serverStopped.fire(serverStoppedReason)
+                    },
+                    changedCursorLocation: async loc => editorEvents.changedCursorLocation.fire(loc),
+                    changedInfoviewConfig: async conf => editorEvents.changedInfoviewConfig.fire(conf),
+                    requestedAction: async action => editorEvents.requestedAction.fire(action, action.kind),
+                    goToDefinition: async id => editorEvents.goToDefinition.fire(id, id),
+                    // See https://rollupjs.org/guide/en/#avoiding-eval
+                    // eslint-disable-next-line @typescript-eslint/no-implied-eval
+                    runTestScript: async script => new Function(script)(),
+                    getInfoviewHtml: async () => document.body.innerHTML,
+                }
+
+                const editorApi = mkEditorApi(infoviewApi)
+                const ec = new EditorConnection(editorApi, editorEvents)
+
+                editorEvents.initialize.on((loc: Location) => ec.events.changedCursorLocation.fire(loc))
+
+                setEc(ec)
+                setInfoviewApi(infoviewApi)
+                setEditorConnection(ec)
+            },
+            [setInfoviewApi, setEditorConnection, setEc, mkEditorApi],
+        )
+
+        if (!ec) {
+            return <></>
+        }
+
+    return (
+            <EditorContext.Provider value={ec}>
+                <Main />
+            </EditorContext.Provider>
+    )
+}
