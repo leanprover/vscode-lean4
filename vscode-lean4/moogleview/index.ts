@@ -3,12 +3,8 @@ import { InputAbbreviationRewriter } from '@leanprover/unicode-input-component'
 
 const vscodeApi = acquireVsCodeApi()
 
-interface BaseHit {
+interface TheoremHit {
     id: string
-    displayHtml: string
-}
-
-interface TheoremHit extends BaseHit {
     title: string
     theorem: string
     metadata: {
@@ -29,7 +25,8 @@ interface TheoremHit extends BaseHit {
     }
 }
 
-interface DocHit extends BaseHit {
+interface DocHit {
+    id: string
     title: string
     textbook: string
     content?: string
@@ -37,9 +34,6 @@ interface DocHit extends BaseHit {
 }
 
 type MoogleHit = TheoremHit | DocHit
-
-type TheoremResponse = TheoremHit[]
-type DocResponse = DocHit[]
 
 class MoogleQueryHistory {
     private history: string[] = []
@@ -186,22 +180,26 @@ class MoogleView {
                 })
 
                 const baseUrl = 'https://morph-cors-anywhere.pranavnt.workers.dev/?https://www.moogle.ai/api'
+                const encodedQuery = encodeURIComponent(query)
 
                 if (this.currentSearchMode === 'theorem') {
-                    const result = await fetch(`${baseUrl}/moogle2?query=${query}`, {
+                    const result = await fetch(`${baseUrl}/moogle2?query=${encodedQuery}`, {
                         headers,
                         method: 'GET',
                     })
-                    const hits: TheoremResponse = await result.json()
-                    const theoremHits = hits.map(hit => ({ ...hit, displayHtml: hit.metadata.display_html }))
+                    const data = await result.json()
+                    if (!Array.isArray(data)) {
+                        this.displayError('Invalid response from server')
+                        return undefined
+                    }
+                    const theoremHits = data.map(hit => ({ ...hit, displayHtml: hit.metadata.display_html }))
                     return { data: theoremHits }
                 } else {
-                    const params = new URLSearchParams({ query })
-                    const result = await fetch(`${baseUrl}/docSearch?${params}`, {
+                    const result = await fetch(`${baseUrl}/docSearch?query=${encodedQuery}`, {
                         headers,
                         method: 'GET',
                     })
-                    const hits: DocResponse = await result.json()
+                    const hits: DocHit[] = await result.json()
                     return { data: hits }
                 }
             } catch (e) {
@@ -221,6 +219,8 @@ class MoogleView {
     }
 
     private displayResults(hits: MoogleHit[]) {
+        this.displayError('')
+
         this.resultHeader.hidden = hits.length === 0
         this.results.innerHTML = ''
 
