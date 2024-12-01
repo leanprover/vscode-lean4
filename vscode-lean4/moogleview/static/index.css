@@ -134,7 +134,7 @@ h2 {
 }
 
 .display-html-container {
-    font-family: var(--vscode-editor-font-family);
+    font-family: var(--vscode-font-family);
 }
 
 .display-html-container a {
@@ -250,4 +250,22 @@ input:checked + .slider {
 
 input:checked + .slider:before {
     transform: translateX(20px);
+}
+
+.doc-source {
+    font-size: 0.75rem;
+    color: var(--vscode-descriptionForeground);
+    font-weight: normal;
+}
+
+.display-html-container.doc-text {
+    font-family: var(--vscode-font-family);
+}
+
+.display-html-container.code-text {
+    font-family: var(--vscode-editor-font-family);
+}
+
+.display-html-container code {
+    font-family: var(--vscode-editor-font-family);
 }

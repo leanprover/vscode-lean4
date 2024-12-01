@@ -98,8 +98,8 @@ class MoogleView {
     private results = document.getElementById('results')!
     private spinner = document.getElementById('spinner')!
     private searchMode = document.getElementById('mode-toggle') as HTMLInputElement
-    private theoremText = document.querySelector('.theorem-text') as HTMLElement
-    private docText = document.querySelector('.doc-text') as HTMLElement
+    private theoremText = document.getElementById('theorem-text')!
+    private docText = document.getElementById('doc-text')!
     private currentSearchMode: 'theorem' | 'doc' = 'theorem'
 
     private history: MoogleQueryHistory = new MoogleQueryHistory()
@@ -261,8 +261,12 @@ class MoogleView {
                 <h3>${hit.metadata.declaration_name}</h3>
             </div>
             <div class="result-content">
-                ${hit.metadata.declaration_docstring ? `<div class="display-html-container">${hit.metadata.declaration_docstring}</div>` : ''}
-                <div class="display-html-container">${tempElement.innerHTML}</div>
+                ${
+                    hit.metadata.declaration_docstring
+                        ? `<div class="display-html-container doc-text">${hit.metadata.declaration_docstring}</div>`
+                        : ''
+                }
+                <div class="display-html-container code-text">${tempElement.innerHTML}</div>
                 <a href="${hit.metadata.source_code_url}">View source code</a>
             </div>
         `
@@ -289,11 +293,24 @@ class MoogleView {
         return result
     }
 
+    private getStringTextbook(url: string): string {
+        if (url.includes('functional_programming_in_lean')) {
+            return 'Functional Programming in Lean'
+        } else if (url.includes('theorem_proving_in_lean4')) {
+            return 'Theorem Proving in Lean 4'
+        } else if (url.includes('type_checking_in_lean4')) {
+            return 'Type Checking in Lean 4'
+        } else if (url.includes('lean4-metaprogramming-book')) {
+            return 'Lean 4 Metaprogramming'
+        }
+        return ''
+    }
+
     private displayDocHit(element: HTMLElement, hit: DocHit) {
         const modifiedHtmlContent = this.transformDisplayHTML(hit.displayHTML ?? '')
         element.innerHTML = `
             <div class="result-header">
-                <h3>${hit.title}</h3>
+                <h3>${hit.title} <span class="doc-source">(${this.getStringTextbook(hit.textbook)})</span></h3>
             </div>
             <div class="result-content">
                 <a href="${hit.textbook}">View online</a>
