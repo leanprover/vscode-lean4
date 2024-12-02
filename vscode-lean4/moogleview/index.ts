@@ -311,27 +311,24 @@ class MoogleView {
         }
 
         const processed = tokens.map(token => {
+            const codeStyle =
+                'color: black !important; background: transparent !important; font-family: var(--vscode-editor-font-family);'
+
             if (token.type === 'code') {
-                return `<pre><code style="color: black !important; background: transparent !important; font-family: var(--vscode-editor-font-family); white-space: pre;">${token.content}</code></pre>`
+                return `<pre><code style="${codeStyle}" white-space: pre;">${token.content}</code></pre>`
             } else {
                 let html = token.content
 
                 html = html.replace(/\[(.*?)\]\(.*?\)/g, '$1')
 
                 if (isTheoremProving) {
-                    html = html.replace(
-                        /``([^`]+)``/g,
-                        '<code style="color: black !important; background: transparent !important; font-family: var(--vscode-editor-font-family);">$1</code>',
-                    )
+                    html = html.replace(/``([^`]+)``/g, `<code style="${codeStyle}">$1</code>`)
                 }
 
                 html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
                 html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>')
 
-                html = html.replace(
-                    /`([^`]+)`/g,
-                    '<code style="color: black !important; background: transparent !important; font-family: var(--vscode-editor-font-family);">$1</code>',
-                )
+                html = html.replace(/`([^`]+)`/g, `<code style="${codeStyle}">$1</code>`)
 
                 html = html.replace(/^###### (.*$)/gm, '<h6>$1</h6>')
                 html = html.replace(/^##### (.*$)/gm, '<h5>$1</h5>')
