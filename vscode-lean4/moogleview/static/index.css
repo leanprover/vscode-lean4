@@ -207,7 +207,15 @@ vscode-link {
     gap: 8px;
 }
 
-.switch {
+<<<<<<< HEAD ======= .toggle-text {
+    font-weight: normal;
+}
+
+.toggle-text.active {
+    font-weight: bold;
+}
+
+>>>>>>>b9fbe2e78aecde8a3bd226c026da4e50de639811 .switch {
     position: relative;
     display: inline-block;
     width: 40px;
