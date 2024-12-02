@@ -283,7 +283,8 @@ class MoogleView {
         let lastIndex = 0
         let match
 
-        const codeBlockRegex = /```([\s\S]*?)```/g
+        // Updated regex to capture the first line separately
+        const codeBlockRegex = /```(?:.*)\n([\s\S]*?)```/g
 
         while ((match = codeBlockRegex.exec(markdown)) !== null) {
             if (match.index > lastIndex) {
@@ -295,6 +296,7 @@ class MoogleView {
 
             tokens.push({
                 type: 'code',
+                // Only use the content after the first line
                 content: match[1],
             })
 
@@ -331,6 +333,9 @@ class MoogleView {
                     '<code style="color: black !important; background: transparent !important; font-family: var(--vscode-editor-font-family);">$1</code>',
                 )
 
+                html = html.replace(/^###### (.*$)/gm, '<h6>$1</h6>')
+                html = html.replace(/^##### (.*$)/gm, '<h5>$1</h5>')
+                html = html.replace(/^#### (.*$)/gm, '<h4>$1</h4>')
                 html = html.replace(/^### (.*$)/gm, '<h3>$1</h3>')
                 html = html.replace(/^## (.*$)/gm, '<h2>$1</h2>')
                 html = html.replace(/^# (.*$)/gm, '<h1>$1</h1>')
