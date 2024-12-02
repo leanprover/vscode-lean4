@@ -179,7 +179,7 @@ class MoogleView {
                     'content-type': 'application/json',
                 })
 
-                const baseUrl = 'https://morph-cors-anywhere.pranavnt.workers.dev/?https://www.moogle.ai/api'
+                const baseUrl = 'https://www.moogle.ai/api'
                 const encodedQuery = encodeURIComponent(query)
 
                 if (this.currentSearchMode === 'theorem') {
@@ -274,58 +274,93 @@ class MoogleView {
         this.setupResultToggle(element)
     }
 
-    private transformDisplayHTML(input: string): string {
-        // Replace <code>lean with <pre><code class="language-lean">
-        let result = input.replace(/<code>lean\n/g, '<pre><code class="language-lean">')
-        // Replace <code>output info with <pre><code class="language-text">
-        result = result.replace(/<code>output info\n/g, '<pre><code class="language-text">')
-        // Replace standalone </code> with </code></pre>
-        result = result.replace(/<\/code>(?!<\/pre>)/g, '</code></pre>')
-        // Replace {{#example_in ...}} and {{#example_out ...}} with placeholders
-        result = result.replace(/{{#example_in [\w/.]+}}/g, '<span class="example-in">[Example Input]</span>')
-        result = result.replace(/{{#example_out [\w/.]+}}/g, '<span class="example-out">[Example Output]</span>')
-        // Replace {{#example_decl ...}} with a placeholder
-        result = result.replace(/{{#example_decl [\w/.]+}}/g, '<span class="example-decl">[Example Declaration]</span>')
-        // Replace {{#example_eval ...}} with a placeholder
-        result = result.replace(/{{#example_eval [\w/.]+}}/g, '<span class="example-eval">[Example Evaluation]</span>')
-        // Remove any remaining newline character immediately after opening <code> tags
-        result = result.replace(/<code>(\s*)\n/g, '<code>')
-        return result
-    }
+    private transformMarkdownToHTML(markdown: string, hit?: DocHit): string {
+        if (!markdown) return ''
 
-    private getStringTextbook(url: string): string {
-        if (url.includes('functional_programming_in_lean')) {
-            return 'Functional Programming in Lean'
-        } else if (url.includes('theorem_proving_in_lean4')) {
-            return 'Theorem Proving in Lean 4'
-        } else if (url.includes('type_checking_in_lean4')) {
-            return 'Type Checking in Lean 4'
-        } else if (url.includes('lean4-metaprogramming-book')) {
-            return 'Lean 4 Metaprogramming'
+        const isTheoremProving = hit?.textbook?.includes('theorem_proving_in_lean4')
+
+        const tokens: { type: 'code' | 'text'; content: string }[] = []
+        let lastIndex = 0
+        let match
+
+        const codeBlockRegex = /```([\s\S]*?)```/g
+
+        while ((match = codeBlockRegex.exec(markdown)) !== null) {
+            if (match.index > lastIndex) {
+                tokens.push({
+                    type: 'text',
+                    content: markdown.slice(lastIndex, match.index),
+                })
+            }
+
+            tokens.push({
+                type: 'code',
+                content: match[1],
+            })
+
+            lastIndex = match.index + match[0].length
         }
-        return ''
+
+        if (lastIndex < markdown.length) {
+            tokens.push({
+                type: 'text',
+                content: markdown.slice(lastIndex),
+            })
+        }
+
+        const processed = tokens.map(token => {
+            if (token.type === 'code') {
+                return `<pre><code style="color: black !important; background: transparent !important; font-family: var(--vscode-editor-font-family); white-space: pre;">${token.content}</code></pre>`
+            } else {
+                let html = token.content
+
+                html = html.replace(/\[(.*?)\]\(.*?\)/g, '$1')
+
+                if (isTheoremProving) {
+                    html = html.replace(
+                        /``([^`]+)``/g,
+                        '<code style="color: black !important; background: transparent !important; font-family: var(--vscode-editor-font-family);">$1</code>',
+                    )
+                }
+
+                html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+                html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>')
+
+                html = html.replace(
+                    /`([^`]+)`/g,
+                    '<code style="color: black !important; background: transparent !important; font-family: var(--vscode-editor-font-family);">$1</code>',
+                )
+
+                html = html.replace(/^### (.*$)/gm, '<h3>$1</h3>')
+                html = html.replace(/^## (.*$)/gm, '<h2>$1</h2>')
+                html = html.replace(/^# (.*$)/gm, '<h1>$1</h1>')
+
+                html = html.replace(/^\s*[-*]\s+(.*)/gm, '<li>$1</li>')
+                html = html.replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>')
+
+                html = html
+                    .split(/\n\n+/)
+                    .map(para => (para.trim() && !para.startsWith('<') ? `<p>${para.trim()}</p>` : para))
+                    .join('\n')
+
+                return html
+            }
+        })
+
+        return processed.join('')
     }
 
     private displayDocHit(element: HTMLElement, hit: DocHit) {
-        const modifiedHtmlContent = this.transformDisplayHTML(hit.displayHTML ?? '')
+        const htmlContent = this.transformMarkdownToHTML(hit.content ?? '', hit)
         element.innerHTML = `
             <div class="result-header">
                 <h3>${hit.title} <span class="doc-source">(${this.getStringTextbook(hit.textbook)})</span></h3>
             </div>
             <div class="result-content">
                 <a href="${hit.textbook}">View online</a>
-                <div class="display-html-container">${modifiedHtmlContent}</div>
+                <div class="display-html-container">${htmlContent}</div>
             </div>
         `
-
-        // Add Lean syntax highlighting
-        element.querySelectorAll('code.language-lean').forEach(block => {
-            const code = block.innerHTML
-            block.innerHTML = code
-                .replace(/\b(def|fun|let|structure|where|match|with|Type|class)\b/g, '<span class="keyword">$1</span>')
-                .replace(/\b(Nat|String|Bool|List|Option|Type)\b/g, '<span class="type">$1</span>')
-                .replace(/(:=|-&gt;|→|←|↔|⟹|⟸|⟺)/g, '<span class="symbol">$1</span>')
-        })
 
         this.setupResultToggle(element)
     }
@@ -347,6 +382,19 @@ class MoogleView {
         } finally {
             this.spinner.classList.add('hidden')
         }
+    }
+
+    private getStringTextbook(url: string): string {
+        if (url.includes('functional_programming_in_lean')) {
+            return 'Functional Programming in Lean'
+        } else if (url.includes('theorem_proving_in_lean4')) {
+            return 'Theorem Proving in Lean 4'
+        } else if (url.includes('type_checking_in_lean4')) {
+            return 'Type Checking in Lean 4'
+        } else if (url.includes('lean4-metaprogramming-book')) {
+            return 'Lean 4 Metaprogramming'
+        }
+        return ''
     }
 }
 
