@@ -28,6 +28,10 @@ function toNotif(severity: NotificationSeverity): Notification {
     }
 }
 
+export async function setStickyNotificationActiveButHidden(isActiveButHidden: boolean) {
+    await commands.executeCommand('setContext', 'lean4.isStickyNotificationActiveButHidden', isActiveButHidden)
+}
+
 export type StickyNotificationOptions<T> = {
     onInput: (lastChoice: T, continueDisplaying: boolean) => Promise<boolean>
     onDisplay: () => Promise<void>
@@ -40,6 +44,7 @@ type StickyNotification<T> = {
 
 let activeStickyNotification: StickyNotification<any> | undefined
 let nextStickyNotification: StickyNotification<any> | undefined
+let activeDisplayFn: (() => Promise<void>) | undefined
 
 function makeSticky<T>(n: StickyNotification<T>): Disposable {
     if (activeStickyNotification !== undefined) {
@@ -57,6 +62,7 @@ function makeSticky<T>(n: StickyNotification<T>): Disposable {
         if (isDisplaying) {
             return
         }
+        await setStickyNotificationActiveButHidden(false)
         isDisplaying = true
         try {
             await activeStickyNotification?.options.onDisplay()
@@ -76,23 +82,41 @@ function makeSticky<T>(n: StickyNotification<T>): Disposable {
             } while ((r !== undefined && continueDisplaying) || gotNewStickyNotification)
             if (!continueDisplaying) {
                 activeStickyNotification = undefined
+                await setStickyNotificationActiveButHidden(false)
                 d?.dispose()
+            } else {
+                await setStickyNotificationActiveButHidden(true)
             }
         } catch (e) {
             activeStickyNotification = undefined
             nextStickyNotification = undefined
+            await setStickyNotificationActiveButHidden(false)
             d?.dispose()
             console.log(e)
         } finally {
             isDisplaying = false
         }
     }
+    activeDisplayFn = display
 
-    d = lean.onDidRevealLeanEditor(async () => await display())
-
+    d = Disposable.from(
+        lean.onDidRevealLeanEditor(async () => await display()),
+        {
+            dispose: () => {
+                activeStickyNotification = undefined
+                activeDisplayFn = undefined
+            },
+        },
+    )
     void display()
 
     return d
+}
+
+export function displayActiveStickyNotification() {
+    if (activeDisplayFn !== undefined) {
+        void activeDisplayFn()
+    }
 }
 
 export function displayNotification(

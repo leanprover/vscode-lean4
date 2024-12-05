@@ -199,6 +199,12 @@
                 "description": "Restarts the Lean server for the file that is currently focused to refresh the dependencies."
             },
             {
+                "command": "lean4.redisplaySetupError",
+                "category": "Lean 4",
+                "title": "Re-Display Active Setup Error",
+                "description": "Re-displays the currently active setup error if it was closed previously."
+            },
+            {
                 "command": "lean4.input.convert",
                 "category": "Lean 4",
                 "title": "Input: Convert Current Abbreviation",
@@ -511,6 +517,10 @@
                     "when": "lean4.isLeanFeatureSetActive"
                 },
                 {
+                    "command": "lean4.redisplaySetupError",
+                    "when": "lean4.isStickyNotificationActiveButHidden"
+                },
+                {
                     "command": "lean4.input.convert",
                     "when": "lean4.isLeanFeatureSetActive && lean4.input.isActive"
                 },
@@ -673,6 +683,11 @@
                     "submenu": "lean4.titlebar.documentation",
                     "when": "config.lean4.alwaysShowTitleBarMenu || lean4.isLeanFeatureSetActive",
                     "group": "8_documentation@1"
+                },
+                {
+                    "command": "lean4.redisplaySetupError",
+                    "when": "lean4.isStickyNotificationActiveButHidden",
+                    "group": "9_setupError@1"
                 }
             ],
             "lean4.titlebar.newProject": [

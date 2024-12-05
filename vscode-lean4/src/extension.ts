@@ -24,7 +24,12 @@ import { FileUri } from './utils/exturi'
 import { displayInternalErrorsIn } from './utils/internalErrors'
 import { lean, LeanEditor, registerLeanEditorProvider } from './utils/leanEditorProvider'
 import { LeanInstaller } from './utils/leanInstaller'
-import { displayNotification, displayNotificationWithInput } from './utils/notifs'
+import {
+    displayActiveStickyNotification,
+    displayNotification,
+    displayNotificationWithInput,
+    setStickyNotificationActiveButHidden,
+} from './utils/notifs'
 import { PathExtensionProvider } from './utils/pathExtensionProvider'
 import { findLeanProjectRoot } from './utils/projectInfo'
 
@@ -253,6 +258,10 @@ async function tryActivatingLean4Features(
 export async function activate(context: ExtensionContext): Promise<Exports> {
     await setLeanFeatureSetActive(false)
     registerLeanEditorProvider(context)
+    await setStickyNotificationActiveButHidden(false)
+    context.subscriptions.push(
+        commands.registerCommand('lean4.redisplaySetupError', async () => displayActiveStickyNotification()),
+    )
 
     const alwaysEnabledFeatures: AlwaysEnabledFeatures = await displayInternalErrorsIn(
         'activating Lean 4 extension',
