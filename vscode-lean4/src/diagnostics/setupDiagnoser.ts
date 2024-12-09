@@ -1,8 +1,16 @@
 import * as os from 'os'
 import { SemVer } from 'semver'
 import { OutputChannel, extensions, version } from 'vscode'
-import { ExecutionExitCode, ExecutionResult, batchExecute, batchExecuteWithProgress } from '../utils/batch'
+import { ExecutionExitCode, ExecutionResult, batchExecute } from '../utils/batch'
+import {
+    ElanDumpStateWithNetResult,
+    ElanDumpStateWithoutNetResult,
+    elanDumpStateWithNet,
+    elanDumpStateWithoutNet,
+    isElanEagerResolutionVersion,
+} from '../utils/elan'
 import { FileUri } from '../utils/exturi'
+import { ToolchainUpdateMode, leanRunner } from '../utils/leanCmdRunner'
 import { checkParentFoldersForLeanProject, isValidLeanProject } from '../utils/projectInfo'
 
 export type SystemQueryResult = {
@@ -16,7 +24,11 @@ export type VersionQueryResult =
     | { kind: 'Success'; version: SemVer }
     | { kind: 'CommandNotFound' }
     | { kind: 'CommandError'; message: string }
+    | { kind: 'Cancelled' }
     | { kind: 'InvalidVersion'; versionResult: string }
+
+export type ElanDumpStateWithoutNetQueryResult = ElanDumpStateWithoutNetResult | { kind: 'PreEagerResolutionVersion' }
+export type ElanDumpStateWithNetQueryResult = ElanDumpStateWithNetResult | { kind: 'PreEagerResolutionVersion' }
 
 const recommendedElanVersion = new SemVer('3.1.1')
 // Should be bumped in a release *before* we bump the version requirement of the VS Code extension so that
@@ -39,6 +51,7 @@ export type LeanVersionDiagnosis =
     | { kind: 'IsLean3Version'; version: SemVer }
     | { kind: 'IsAncientLean4Version'; version: SemVer }
     | { kind: 'NotInstalled' }
+    | { kind: 'Cancelled' }
     | { kind: 'ExecutionError'; message: string }
 
 export type VSCodeVersionDiagnosis =
@@ -52,6 +65,10 @@ export function versionQueryResult(executionResult: ExecutionResult, versionRege
 
     if (executionResult.exitCode === ExecutionExitCode.ExecutionError) {
         return { kind: 'CommandError', message: executionResult.combined }
+    }
+
+    if (executionResult.exitCode === ExecutionExitCode.Cancelled) {
+        return { kind: 'Cancelled' }
     }
 
     const match = versionRegex.exec(executionResult.stdout)
@@ -75,6 +92,9 @@ export function checkElanVersion(elanVersionResult: VersionQueryResult): ElanVer
                 kind: 'ExecutionError',
                 message: `Invalid Elan version format: '${elanVersionResult.versionResult}'`,
             }
+
+        case 'Cancelled':
+            throw new Error('Unexpected cancellation of `elan --version` query.')
 
         case 'Success':
             if (elanVersionResult.version.compare(recommendedElanVersion) < 0) {
@@ -107,6 +127,10 @@ export function checkLeanVersion(leanVersionResult: VersionQueryResult): LeanVer
         }
     }
 
+    if (leanVersionResult.kind === 'Cancelled') {
+        return { kind: 'Cancelled' }
+    }
+
     const leanVersion = leanVersionResult.version
     if (leanVersion.major === 3) {
         return { kind: 'IsLean3Version', version: leanVersion }
@@ -119,15 +143,27 @@ export function checkLeanVersion(leanVersionResult: VersionQueryResult): LeanVer
     return { kind: 'UpToDate', version: leanVersion }
 }
 
+export type SetupDiagnoserOptions = {
+    channel: OutputChannel | undefined
+    cwdUri: FileUri | undefined
+    context?: string | undefined
+    toolchain?: string | undefined
+    toolchainUpdateMode?: ToolchainUpdateMode | undefined
+}
+
 export class SetupDiagnoser {
     readonly channel: OutputChannel | undefined
     readonly cwdUri: FileUri | undefined
+    readonly context: string | undefined
     readonly toolchain: string | undefined
+    readonly toolchainUpdateMode: ToolchainUpdateMode | undefined
 
-    constructor(channel: OutputChannel | undefined, cwdUri: FileUri | undefined, toolchain?: string | undefined) {
-        this.channel = channel
-        this.cwdUri = cwdUri
-        this.toolchain = toolchain
+    constructor(options: SetupDiagnoserOptions) {
+        this.channel = options.channel
+        this.cwdUri = options.cwdUri
+        this.context = options.context
+        this.toolchain = options.toolchain
+        this.toolchainUpdateMode = options.toolchainUpdateMode
     }
 
     async checkCurlAvailable(): Promise<boolean> {
@@ -140,13 +176,13 @@ export class SetupDiagnoser {
         return gitVersionResult.exitCode === ExecutionExitCode.Success
     }
 
-    async queryLakeVersion(context: string): Promise<VersionQueryResult> {
-        const lakeVersionResult = await this.runLeanCommand('lake', ['--version'], context, 'Checking Lake version')
+    async queryLakeVersion(): Promise<VersionQueryResult> {
+        const lakeVersionResult = await this.runLeanCommand('lake', ['--version'], 'Checking Lake version')
         return versionQueryResult(lakeVersionResult, /version (\d+\.\d+\.\d+(\w|-)*)/)
     }
 
-    async checkLakeAvailable(context: string): Promise<boolean> {
-        const lakeVersionResult = await this.queryLakeVersion(context)
+    async checkLakeAvailable(): Promise<boolean> {
+        const lakeVersionResult = await this.queryLakeVersion()
         return lakeVersionResult.kind === 'Success'
     }
 
@@ -191,8 +227,8 @@ export class SetupDiagnoser {
         return { kind: 'UpToDate', version: currentVSCodeVersion }
     }
 
-    async queryLeanVersion(context: string): Promise<VersionQueryResult> {
-        const leanVersionResult = await this.runLeanCommand('lean', ['--version'], context, 'Checking Lean version')
+    async queryLeanVersion(): Promise<VersionQueryResult> {
+        const leanVersionResult = await this.runLeanCommand('lean', ['--version'], 'Checking Lean version')
         return versionQueryResult(leanVersionResult, /version (\d+\.\d+\.\d+(\w|-)*)/)
     }
 
@@ -203,6 +239,28 @@ export class SetupDiagnoser {
 
     async queryElanShow(): Promise<ExecutionResult> {
         return await this.runSilently('elan', ['show'])
+    }
+
+    async queryElanStateDumpWithoutNet(): Promise<ElanDumpStateWithoutNetQueryResult> {
+        const dumpStateResult = await elanDumpStateWithoutNet(this.cwdUri, this.toolchain)
+        if (dumpStateResult.kind === 'ExecutionError') {
+            const versionResult = await this.queryElanVersion()
+            if (versionResult.kind === 'Success' && !isElanEagerResolutionVersion(versionResult.version)) {
+                return { kind: 'PreEagerResolutionVersion' }
+            }
+        }
+        return dumpStateResult
+    }
+
+    async queryElanStateDumpWithNet(): Promise<ElanDumpStateWithNetQueryResult> {
+        const dumpStateResult = await elanDumpStateWithNet(this.cwdUri, this.toolchain)
+        if (dumpStateResult.kind === 'ExecutionError') {
+            const versionResult = await this.queryElanVersion()
+            if (versionResult.kind === 'Success' && !isElanEagerResolutionVersion(versionResult.version)) {
+                return { kind: 'PreEagerResolutionVersion' }
+            }
+        }
+        return dumpStateResult
     }
 
     async elanVersion(): Promise<ElanVersionDiagnosis> {
@@ -223,8 +281,8 @@ export class SetupDiagnoser {
         return { kind: 'ValidProjectSetup', projectFolder: this.cwdUri }
     }
 
-    async leanVersion(context: string): Promise<LeanVersionDiagnosis> {
-        const leanVersionResult = await this.queryLeanVersion(context)
+    async leanVersion(): Promise<LeanVersionDiagnosis> {
+        const leanVersionResult = await this.queryLeanVersion()
         return checkLeanVersion(leanVersionResult)
     }
 
@@ -232,31 +290,18 @@ export class SetupDiagnoser {
         return batchExecute(executablePath, args, this.cwdUri?.fsPath, { combined: this.channel })
     }
 
-    private async runWithProgress(
-        executablePath: string,
-        args: string[],
-        context: string,
-        title: string,
-    ): Promise<ExecutionResult> {
-        return batchExecuteWithProgress(executablePath, args, context, title, {
-            cwd: this.cwdUri?.fsPath,
+    private async runLeanCommand(executablePath: string, args: string[], title: string): Promise<ExecutionResult> {
+        return await leanRunner.runLeanCommand(executablePath, args, {
             channel: this.channel,
+            context: this.context,
+            cwdUri: this.cwdUri,
+            waitingPrompt: title,
+            toolchain: this.toolchain,
+            toolchainUpdateMode: this.toolchainUpdateMode ?? 'UpdateAutomatically',
         })
-    }
-
-    private async runLeanCommand(executablePath: string, args: string[], context: string, title: string) {
-        const leanArgs = [...args]
-        if (this.toolchain !== undefined) {
-            leanArgs.unshift(`+${this.toolchain}`)
-        }
-        return await this.runWithProgress(executablePath, leanArgs, context, title)
     }
 }
 
-export function diagnose(
-    channel: OutputChannel | undefined,
-    cwdUri: FileUri | undefined,
-    toolchain?: string | undefined,
-): SetupDiagnoser {
-    return new SetupDiagnoser(channel, cwdUri, toolchain)
+export function diagnose(options: SetupDiagnoserOptions): SetupDiagnoser {
+    return new SetupDiagnoser(options)
 }
