@@ -1,0 +1,111 @@
+{
+	"namespace": {
+		"prefix": "namespace",
+		"body": [
+			"namespace ${1:name}",
+			"$0",
+			"end $1"
+		]
+	},
+	"section": {
+		"prefix": "section",
+		"body": [
+			"section ${1:name}",
+			"$0",
+			"end $1"
+		]
+	},
+	"anonymous section": {
+		"prefix": "section",
+		"body": [
+			"section",
+			"$0",
+			"end"
+		]
+	},
+	"match .. with": {
+		"prefix": "match",
+		"body": [
+			"match ${1:scrutinee} with",
+			"| ${2:pattern} => ${0:value}"
+		]
+	},
+	"inductive type": {
+		"prefix": "inductive",
+		"body": [
+			"inductive ${1:name} where",
+			"\t| ${0:constructor} : $1"
+		]
+	},
+	"structure definition": {
+		"prefix": "structure",
+		"body": [
+			"structure ${1:name} where",
+			"\t${2:field} : ${0:type}"
+		]
+	},
+	"eval": {
+		"prefix": "eval",
+		"body": "#eval ${0:expression}"
+	},
+	"check": {
+		"prefix": "check",
+		"body": "#check ${0:expression}"
+	},
+	"example": {
+		"prefix": "example",
+		"body": "example : ${1:type} := ${0:expression}"
+	},
+	"variant pattern": {
+		"prefix": "|",
+		"body": "| ${1:_} => $0"
+	},
+	"let .. := ..": {
+		"prefix": "let",
+		"body": "let ${1:name} := ${0:expression}"
+	},
+	"let .. : .. := ..": {
+		"prefix": "let",
+		"body": "let ${1:name} : ${2:type} := ${0:expression}"
+	},
+	"let .. ← ..": {
+		"prefix": "let",
+		"body": "let ${1:name} ← ${0:expression}"
+	},
+	"value definition": {
+		"prefix": "def",
+		"body": [
+			"def ${1:name} : ${2:type} := $0"
+		]
+	},
+	"function definition": {
+		"prefix": "def",
+		"body": [
+			"def ${1:name} ${2:args} : ${3:type} := $0"
+		]
+	},
+	"partial function definition": {
+		"prefix": "partial def",
+		"body": [
+			"partial def ${1:name} ${2:args} : ${3:type} := $0"
+		]
+	},
+	"type class": {
+		"prefix": "class",
+		"body": [
+			"class ${1:name} ${2:args} where",
+			"\t${3:method} : ${0:type}"
+		]
+	},
+	"instance": {
+		"prefix": "instance",
+		"body": [
+			"instance ${1:args} : ${2:type} where",
+			"\t$0"
+		]
+	},
+	"lambda": {
+		"prefix": "fun",
+		"body": "fun ${1:pattern} => ${0:body}"
+	}
+}
