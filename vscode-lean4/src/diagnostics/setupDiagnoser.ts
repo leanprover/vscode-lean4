@@ -7,7 +7,7 @@ import {
     ElanDumpStateWithoutNetResult,
     elanDumpStateWithNet,
     elanDumpStateWithoutNet,
-    isElanDumpStateVersion,
+    isElanEagerResolutionVersion,
 } from '../utils/elan'
 import { FileUri } from '../utils/exturi'
 import { ToolchainUpdateMode, leanRunner } from '../utils/leanCmdRunner'
@@ -245,7 +245,7 @@ export class SetupDiagnoser {
         const dumpStateResult = await elanDumpStateWithoutNet(this.cwdUri, this.toolchain)
         if (dumpStateResult.kind === 'ExecutionError') {
             const versionResult = await this.queryElanVersion()
-            if (versionResult.kind === 'Success' && !isElanDumpStateVersion(versionResult.version)) {
+            if (versionResult.kind === 'Success' && !isElanEagerResolutionVersion(versionResult.version)) {
                 return { kind: 'PreEagerResolutionVersion' }
             }
         }
@@ -256,7 +256,7 @@ export class SetupDiagnoser {
         const dumpStateResult = await elanDumpStateWithNet(this.cwdUri, this.toolchain)
         if (dumpStateResult.kind === 'ExecutionError') {
             const versionResult = await this.queryElanVersion()
-            if (versionResult.kind === 'Success' && !isElanDumpStateVersion(versionResult.version)) {
+            if (versionResult.kind === 'Success' && !isElanEagerResolutionVersion(versionResult.version)) {
                 return { kind: 'PreEagerResolutionVersion' }
             }
         }

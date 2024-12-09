@@ -2,7 +2,7 @@ import { SemVer } from 'semver'
 import { Disposable, EventEmitter, OutputChannel, TerminalOptions, window } from 'vscode'
 import { getPowerShellPath, isRunningTest, setAlwaysAskBeforeInstallingLeanVersions } from '../config'
 import { ExecutionExitCode, displayResultError } from './batch'
-import { elanSelfUninstall, elanSelfUpdate, elanVersion, isElanEagerToolchainResolutionVersion } from './elan'
+import { elanSelfUninstall, elanSelfUpdate, elanVersion, isElanEagerResolutionVersion } from './elan'
 import { FileUri } from './exturi'
 import { logger } from './logger'
 import {
@@ -173,7 +173,7 @@ export class LeanInstaller {
     }
 
     private async displayElanUpdateSuccessfulPrompt(currentVersion: SemVer) {
-        if (!isElanEagerToolchainResolutionVersion(currentVersion)) {
+        if (isElanEagerResolutionVersion(currentVersion)) {
             displayNotification('Information', 'Elan update successful!')
             return
         }
@@ -385,7 +385,7 @@ export class LeanInstaller {
 
     async uninstallElan() {
         const prompt =
-            "This command will uninstall Lean's version manager Elan and all installed Lean version.\n" +
+            "This command will uninstall Lean's version manager Elan and all installed Lean versions.\n" +
             'Do you wish to proceed?'
         const choice = await displayNotificationWithInput('Information', prompt, ['Proceed'])
         if (choice !== 'Proceed') {

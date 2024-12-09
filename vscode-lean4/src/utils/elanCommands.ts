@@ -5,13 +5,14 @@ import { LeanClientProvider } from './clientProvider'
 import {
     ActiveToolchainInfo,
     elanActiveToolchain,
+    elanEagerResolutionMajorVersion,
     elanInstalledToolchains,
     elanInstallToolchain,
     elanQueryGc,
     elanSetDefaultToolchain,
     elanUninstallToolchains,
     elanVersion,
-    isElanDumpStateVersion,
+    isElanEagerResolutionVersion,
     toolchainVersion,
 } from './elan'
 import { FileUri, UntitledUri } from './exturi'
@@ -66,13 +67,9 @@ export class ElanCommandProvider implements Disposable {
             return
         }
 
-        const setDefaultToolchainResult = await elanSetDefaultToolchain(
-            this.channel,
-            selectDefaultToolchainContext,
-            selectedDefaultToolchain,
-        )
-        switch (setDefaultToolchainResult.exitCode) {
-            case ExecutionExitCode.Success:
+        const setDefaultToolchainResult = await elanSetDefaultToolchain(this.channel, selectedDefaultToolchain)
+        switch (setDefaultToolchainResult.kind) {
+            case 'Success':
                 displayNotification(
                     'Information',
                     `Default Lean version '${selectedDefaultToolchain}' set successfully.`,
@@ -80,17 +77,11 @@ export class ElanCommandProvider implements Disposable {
                 const clientForUntitledFiles = this.clientProvider?.findClient(new UntitledUri())
                 await clientForUntitledFiles?.restart()
                 break
-            case ExecutionExitCode.CannotLaunch:
+            case 'ElanNotFound':
                 displayNotification('Error', 'Cannot set Lean default version: Elan is not installed.')
                 break
-            case ExecutionExitCode.ExecutionError:
-                displayNotification('Error', `Cannot set Lean default version: ${setDefaultToolchainResult.combined}`)
-                break
-            case ExecutionExitCode.Cancelled:
-                displayNotification(
-                    'Information',
-                    'Default Lean version selection cancelled. Default Lean version has not been set.',
-                )
+            case 'Error':
+                displayNotification('Error', `Cannot set Lean default version: ${setDefaultToolchainResult.message}`)
                 break
         }
     }
@@ -330,11 +321,12 @@ export class ElanCommandProvider implements Disposable {
         }
 
         const prompt =
-            `This operation will set '${selectedProjectToolchain}' to be the Lean version of the Lean project at '${activeClientUri.fsPath}'. It is only intended to be used by maintainers of the project.\n\n` +
-            'After setting the Lean version of the project, Lean code in this project that worked before may be incompatible with the new Lean version.\n' +
-            "Additionally, if your project has a 'lakefile.lean' or a 'lakefile.toml', the project configuration may be incompatible with the new version.\n" +
-            'Finally, Lake project dependencies that worked before may also be incompatible with the new version and may potentially need to be updated to a version that supports the new Lean version of this project. ' +
-            "If you simply want to update a dependency and use its Lean version to ensure that the Lean version of the dependency is compatible with the Lean version of this project, it is preferable to use the 'Project: Update Dependency' command.\n\n" +
+            `This operation will set '${selectedProjectToolchain}' to be the Lean version of the Lean project at '${activeClientUri.fsPath}'. It is only intended to be used by maintainers of this project.\n\n` +
+            'Changing the Lean version of this project may lead to breakages induced by incompatibilities with the new Lean version. For example, the following components of this project may end up being incompatible with the new Lean version:\n' +
+            '- The Lean code in this project\n' +
+            "- The 'lakefile.toml' or 'lakefile.lean' configuring this project\n" +
+            '- Lake dependencies of this project\n\n' +
+            "If you simply want to update a Lake dependency of this project and use its Lean version to ensure that the Lean version of the dependency is compatible with the Lean version of this project, it is preferable to use the 'Project: Update Dependency' command instead of this one.\n\n" +
             'Do you wish to proceed?'
         const choice = await displayNotificationWithInput('Information', prompt, ['Proceed'])
         if (choice !== 'Proceed') {
@@ -382,6 +374,9 @@ export class ElanCommandProvider implements Disposable {
                 'Warning',
                 "Could not fetch Lean versions: Cannot parse response from 'https://release.lean-lang.org/'.",
             )
+        }
+        if (leanReleasesQueryResult.kind === 'CannotFetch') {
+            displayNotification('Warning', `Could not fetch Lean versions: ${leanReleasesQueryResult.error}`)
         }
         const toToolchainNames = (channel: LeanReleaseChannel) =>
             channel.map(t => `leanprover/lean4:${t.name}`).filter(t => !installedToolchainIndex.has(t))
@@ -466,6 +461,7 @@ export class ElanCommandProvider implements Disposable {
             }
             return undefined
         }
+        r.kind satisfies 'Success'
         return r.info
     }
 
@@ -492,10 +488,10 @@ export class ElanCommandProvider implements Disposable {
         const r = await elanVersion()
         switch (r.kind) {
             case 'Success':
-                if (!isElanDumpStateVersion(r.version)) {
+                if (!isElanEagerResolutionVersion(r.version)) {
                     displayNotification(
                         'Error',
-                        `This command can only be used with Elan versions >= 4.0.0, but the installed Elan version is ${r.version.toString()}.`,
+                        `This command can only be used with Elan versions >= ${elanEagerResolutionMajorVersion}.0.0, but the installed Elan version is ${r.version.toString()}.`,
                     )
                     return false
                 }

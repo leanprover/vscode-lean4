@@ -5,6 +5,12 @@ import { batchExecute, batchExecuteWithProgress, ExecutionExitCode, ExecutionRes
 import { FileUri } from './exturi'
 import { groupByUniqueKey } from './groupBy'
 
+export const elanEagerResolutionMajorVersion = 3 // TODO: for debugging purposes. Change to 4 before merge
+
+export function isElanEagerResolutionVersion(version: SemVer) {
+    return version.major >= elanEagerResolutionMajorVersion
+}
+
 // Suggested at https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string
 
 const semVerRegex =
@@ -147,10 +153,10 @@ function convertElanResult<T, V>(
     if ('Ok' in zodResult) {
         return { kind: 'Ok', value: f(zodResult.Ok) }
     }
-    if ('Err' in zodResult) {
-        return { kind: 'Error', message: zodResult.Err }
+    zodResult satisfies {
+        Err: string
     }
-    return zodResult
+    return { kind: 'Error', message: zodResult.Err }
 }
 
 function convertElanOption<T, V>(zodNullable: T | null, f: (v: T) => V): ElanOption<V> {
@@ -178,15 +184,19 @@ function convertElanUnresolvedToolchain(
     if ('Local' in zodElanUnresolvedToolchain) {
         return { kind: 'Local', toolchain: zodElanUnresolvedToolchain.Local.name }
     }
-    if ('Remote' in zodElanUnresolvedToolchain) {
-        return {
-            kind: 'Remote',
-            githubRepoOrigin: zodElanUnresolvedToolchain.Remote.origin,
-            release: zodElanUnresolvedToolchain.Remote.release,
-            fromChannel: convertElanOption(zodElanUnresolvedToolchain.Remote.from_channel, c => c),
+    zodElanUnresolvedToolchain satisfies {
+        Remote: {
+            origin: string
+            release: string
+            from_channel: string | null
         }
     }
-    return zodElanUnresolvedToolchain
+    return {
+        kind: 'Remote',
+        githubRepoOrigin: zodElanUnresolvedToolchain.Remote.origin,
+        release: zodElanUnresolvedToolchain.Remote.release,
+        fromChannel: convertElanOption(zodElanUnresolvedToolchain.Remote.from_channel, c => c),
+    }
 }
 
 function convertElanOverrideReason(
@@ -217,10 +227,8 @@ function convertElanOverrideReason(
     if ('LeanpkgFile' in zodElanOverrideReason) {
         return { kind: 'LeanpkgFile', leanpkgPath: new FileUri(zodElanOverrideReason.LeanpkgFile) }
     }
-    if ('InToolchainDirectory' in zodElanOverrideReason) {
-        return { kind: 'ToolchainDirectory', directoryPath: new FileUri(zodElanOverrideReason.InToolchainDirectory) }
-    }
-    return zodElanOverrideReason
+    zodElanOverrideReason satisfies { InToolchainDirectory: string }
+    return { kind: 'ToolchainDirectory', directoryPath: new FileUri(zodElanOverrideReason.InToolchainDirectory) }
 }
 
 function parseElanStateDump(elanDumpStateOutput: string): ElanStateDump | undefined {
@@ -361,18 +369,6 @@ export async function elanDumpStateWithNet(
         case ExecutionExitCode.Cancelled:
             return { kind: 'Cancelled' }
     }
-}
-
-export function isElanEagerToolchainResolutionVersion(elanVersion: SemVer): boolean {
-    return elanVersion.major >= 3
-}
-
-export function isElanDumpStateVersion(elanVersion: SemVer): boolean {
-    return elanVersion.major >= 3
-}
-
-export function isElanGcVersion(elanVersion: SemVer): boolean {
-    return elanVersion.major >= 3
 }
 
 export type ElanInstalledToolchainsResult =
@@ -573,15 +569,26 @@ export async function elanSelfUninstall(
     })
 }
 
+export type ElanSetDefaultToolchainResult =
+    | { kind: 'Success' }
+    | { kind: 'ElanNotFound' }
+    | { kind: 'Error'; message: string }
+
 export async function elanSetDefaultToolchain(
     channel: OutputChannel | undefined,
-    context: string | undefined,
     toolchain: string,
-) {
-    return await batchExecuteWithProgress('elan', ['default', toolchain], context, 'Setting default Lean version', {
-        channel,
-        allowCancellation: true,
-    })
+): Promise<ElanSetDefaultToolchainResult> {
+    const r = await batchExecute('elan', ['default', toolchain], undefined, { combined: channel })
+    switch (r.exitCode) {
+        case ExecutionExitCode.Success:
+            return { kind: 'Success' }
+        case ExecutionExitCode.CannotLaunch:
+            return { kind: 'ElanNotFound' }
+        case ExecutionExitCode.ExecutionError:
+            return { kind: 'Error', message: r.combined }
+        case ExecutionExitCode.Cancelled:
+            throw new Error('Unexpected cancellation of `elan default <toolchain>`')
+    }
 }
 
 export type ElanUsedToolchain = {

@@ -203,10 +203,9 @@ export class LeanCommandRunner {
                     message: leanNotInstalledError(elanState.toolchains.activeOverride?.reason, unresolvedToolchain),
                 }
             }
-            if (choice === 'Install Version') {
-                return await installNewToolchain()
-            }
-            return choice
+            choice satisfies 'Install Version'
+
+            return await installNewToolchain()
         }
 
         if (unresolvedToolchain.fromChannel === undefined) {
@@ -323,10 +322,8 @@ export class LeanCommandRunner {
         if (choice === undefined || choice === 'Use Old Version') {
             return runWithCachedToolchain(undefined)
         }
-        if (choice === 'Update Lean Version') {
-            return await updateToolchain()
-        }
-        return choice
+        choice satisfies 'Update Lean Version'
+        return await updateToolchain()
     }
 
     async decideToolchain(
@@ -370,7 +367,7 @@ export class LeanCommandRunner {
         )
         if (withNetAnalysisResult.kind === 'RunWithCachedToolchain') {
             this.stickyUpdateDecisions.set(key, 'DoNotUpdate')
-            if (withNetAnalysisResult.warning) {
+            if (withNetAnalysisResult.warning !== undefined) {
                 displayNotification('Warning', withNetAnalysisResult.warning)
             }
             return { kind: 'RunWithSpecificToolchain', toolchain: cachedToolchain }
@@ -395,10 +392,8 @@ export class LeanCommandRunner {
         if (toolchainDecision.kind === 'RunWithActiveToolchain') {
             return await this.runCmd(executablePath, args, options, undefined)
         }
-        if (toolchainDecision.kind === 'RunWithSpecificToolchain') {
-            return await this.runCmd(executablePath, args, options, toolchainDecision.toolchain)
-        }
-        return toolchainDecision
+        toolchainDecision.kind satisfies 'RunWithSpecificToolchain'
+        return await this.runCmd(executablePath, args, options, toolchainDecision.toolchain)
     }
 }
 
