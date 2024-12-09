@@ -123,7 +123,7 @@ export class LeanInstaller {
             return undefined
         }
         if (choice === p.item) {
-            return { kind: 'InstallElan', success: (await this.installElan()) === 'Success' }
+            return { kind: 'InstallElan', success: (await this.installElanAndDisplaySettingPrompt()) === 'Success' }
         }
         return { kind: 'OtherItem', choice }
     }
@@ -148,7 +148,7 @@ export class LeanInstaller {
             input: p.item,
             continueDisplaying: false,
             action: async () => {
-                await this.installElan()
+                await this.installElanAndDisplaySettingPrompt()
             },
         }
         return displayStickyNotificationWithOptionalInput(severity, p.message, options, [
@@ -202,7 +202,7 @@ export class LeanInstaller {
     private async updateElan(currentVersion: SemVer): Promise<boolean> {
         if (currentVersion.compare('3.1.0') === 0) {
             // `elan self update` was broken in elan 3.1.0, so we need to take a different approach to updating elan here.
-            const installElanResult = await this.installElan()
+            const installElanResult = await this.installElanAndDisplaySettingPrompt()
             if (installElanResult !== 'Success') {
                 return false
             }
@@ -291,6 +291,34 @@ export class LeanInstaller {
         logger.log('[LeanInstaller] Elan installed')
     }
 
+    private async installElanAndDisplaySettingPrompt(): Promise<
+        'Success' | 'InstallationFailed' | 'PendingInstallation'
+    > {
+        const r = await this.installElan()
+
+        const prompt =
+            'Elan installation successful!' +
+            '\n\n' +
+            'Do you want Elan in VS Code to download and install Lean versions automatically, or would you prefer it to ask for confirmation before downloading and installing new Lean versions?' +
+            '\n' +
+            'Asking for confirmation is especially desirable if you are ever using a limited internet data plan or your internet connection tends to be slow, whereas automatic installs are less tedious on fast and unlimited internet connections.'
+
+        const choice = await displayNotificationWithInput(
+            'Information',
+            prompt,
+            ['Always Ask For Confirmation'],
+            'Install Lean Versions Automatically',
+        )
+        if (choice === 'Always Ask For Confirmation') {
+            await setAlwaysAskBeforeInstallingLeanVersions(true)
+        }
+        if (choice === 'Install Lean Versions Automatically') {
+            await setAlwaysAskBeforeInstallingLeanVersions(false)
+        }
+
+        return r
+    }
+
     private async installElan(): Promise<'Success' | 'InstallationFailed' | 'PendingInstallation'> {
         if (this.installing) {
             displayNotification(
@@ -349,27 +377,6 @@ export class LeanInstaller {
                 displayNotification('Error', 'Elan installation failed. Check the terminal output for details.')
                 return 'InstallationFailed'
             }
-
-            const prompt =
-                'Elan installation successful!' +
-                '\n\n' +
-                'Do you want Elan in VS Code to download and install Lean versions automatically, or would you prefer it to ask for confirmation before downloading and installing new Lean versions?' +
-                '\n' +
-                'Asking for confirmation is especially desirable if you are ever using a limited internet data plan or your internet connection tends to be slow, whereas automatic installs are less tedious on fast and unlimited internet connections.'
-
-            const choice = await displayNotificationWithInput(
-                'Information',
-                prompt,
-                ['Always Ask For Confirmation'],
-                'Install Lean Versions Automatically',
-            )
-            if (choice === 'Always Ask For Confirmation') {
-                await setAlwaysAskBeforeInstallingLeanVersions(true)
-            }
-            if (choice === 'Install Lean Versions Automatically') {
-                await setAlwaysAskBeforeInstallingLeanVersions(false)
-            }
-
             return 'Success'
         } finally {
             this.installing = false
