@@ -8,6 +8,7 @@ import {
     ExecutionExitCode,
     ExecutionResult,
 } from './utils/batch'
+import { elanStableChannel } from './utils/elan'
 import { ExtUri, extUriToCwdUri, FileUri } from './utils/exturi'
 import { lake } from './utils/lake'
 import { LeanInstaller } from './utils/leanInstaller'
@@ -81,7 +82,7 @@ export class ProjectInitializationProvider implements Disposable {
 
     private async createStandaloneProject() {
         const createStandaloneProjectContext = 'Create Standalone Project'
-        const toolchain = 'leanprover/lean4:stable'
+        const toolchain = elanStableChannel
         const projectFolder: FileUri | 'DidNotComplete' = await this.createProject(
             createStandaloneProjectContext,
             undefined,
@@ -169,7 +170,7 @@ export class ProjectInitializationProvider implements Disposable {
     private async createProject(
         context: string,
         kind?: string | undefined,
-        toolchain: string = 'leanprover/lean4:stable',
+        toolchain: string = elanStableChannel,
     ): Promise<FileUri | 'DidNotComplete'> {
         const projectFolder: FileUri | undefined = await ProjectInitializationProvider.askForNewProjectFolderLocation({
             saveLabel: 'Create project folder',

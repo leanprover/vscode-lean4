@@ -84,7 +84,7 @@
                 "lean4.alwaysAskBeforeInstallingLeanVersions": {
                     "type": "boolean",
                     "default": false,
-                    "markdownDescription": "Enable to display a confirmation prompt whenever Elan is about to download and install a new Lean version"
+                    "markdownDescription": "Enable to display a confirmation prompt whenever Elan is about to download and install a new Lean version. Needs Elan >= 4.0.0."
                 },
                 "lean4.serverArgs": {
                     "type": "array",

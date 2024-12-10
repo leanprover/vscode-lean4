@@ -8,8 +8,10 @@ import {
     elanEagerResolutionMajorVersion,
     elanInstalledToolchains,
     elanInstallToolchain,
+    elanNightlyChannel,
     elanQueryGc,
     elanSetDefaultToolchain,
+    elanStableChannel,
     elanUninstallToolchains,
     elanVersion,
     isElanEagerResolutionVersion,
@@ -58,10 +60,19 @@ export class ElanCommandProvider implements Disposable {
             return
         }
 
-        const prompt =
-            `This operation will set '${selectedDefaultToolchain}' to be the global default Lean version.\n` +
-            'This means that it will be used for files in VS Code that do not belong to a Lean project, as well as for Lean commands on the command line outside of Lean projects.\n\n' +
-            'Do you wish to proceed?'
+        let prompt: string
+        if (selectedDefaultToolchain === elanStableChannel) {
+            prompt =
+                `This operation will set the '${selectedDefaultToolchain}' Lean release channel to be the global default Lean release channel.\n` +
+                'This means that the most recent stable Lean version at any given time will be used for files in VS Code that do not belong to a Lean project, as well as for Lean commands on the command line outside of Lean projects.\n' +
+                'When a new stable Lean version becomes available, VS Code will issue a prompt about whether to update to the most recent Lean version. On the command line, the new stable Lean version will be downloaded automatically without a prompt.\n\n' +
+                'Do you wish to proceed?'
+        } else {
+            prompt =
+                `This operation will set '${selectedDefaultToolchain}' to be the global default Lean version.\n` +
+                'This means that it will be used for files in VS Code that do not belong to a Lean project, as well as for Lean commands on the command line outside of Lean projects.\n\n' +
+                'Do you wish to proceed?'
+        }
         const promptChoice = await displayNotificationWithInput('Information', prompt, ['Proceed'])
         if (promptChoice !== 'Proceed') {
             return
@@ -95,11 +106,11 @@ export class ElanCommandProvider implements Disposable {
         const channels = [
             {
                 name: 'Stable',
-                identifier: 'leanprover/lean4:stable',
+                identifier: elanStableChannel,
             },
             {
                 name: 'Nightly',
-                identifier: 'leanprover/lean4:nightly',
+                identifier: elanNightlyChannel,
             },
         ]
 
@@ -201,9 +212,9 @@ export class ElanCommandProvider implements Disposable {
         if (toolchainInfo === undefined) {
             return
         }
-        const installedToolchains = toolchainInfo.toolchains.filter(t => t !== toolchainInfo.defaultToolchain)
+        const installedToolchains = toolchainInfo.toolchains
         if (installedToolchains.length === 0) {
-            displayNotification('Information', 'No non-default Lean version installed.')
+            displayNotification('Information', 'No Lean versions installed.')
             return
         }
         const installedToolchainItems = installedToolchains.map(t => {
@@ -357,7 +368,6 @@ export class ElanCommandProvider implements Disposable {
         title: string,
         includeStable: boolean,
     ): Promise<string | undefined> {
-        const stableChannel = 'leanprover/lean4:stable'
         const toolchainInfo = await this.installedToolchains()
         if (toolchainInfo === undefined) {
             return undefined
@@ -389,7 +399,7 @@ export class ElanCommandProvider implements Disposable {
 
         const stableItem: QuickPickItem = {
             label: 'Always use most recent stable version',
-            description: stableChannel,
+            description: elanStableChannel,
             picked: true,
         }
         const installedToolchainSeparator: QuickPickItem = { label: '', kind: QuickPickItemKind.Separator }
@@ -427,8 +437,8 @@ export class ElanCommandProvider implements Disposable {
         if (choice === undefined) {
             return undefined
         }
-        if (choice.description === stableChannel) {
-            return stableChannel
+        if (choice.description === elanStableChannel) {
+            return elanStableChannel
         } else {
             return choice.label
         }

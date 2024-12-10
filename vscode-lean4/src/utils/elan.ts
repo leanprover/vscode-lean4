@@ -5,7 +5,10 @@ import { batchExecute, batchExecuteWithProgress, ExecutionExitCode, ExecutionRes
 import { FileUri } from './exturi'
 import { groupByUniqueKey } from './groupBy'
 
-export const elanEagerResolutionMajorVersion = 3 // TODO: for debugging purposes. Change to 4 before merge
+export const elanStableChannel = 'leanprover/lean4:stable'
+export const elanNightlyChannel = 'leanprover/lean4:nightly'
+
+export const elanEagerResolutionMajorVersion = 4
 
 export function isElanEagerResolutionVersion(version: SemVer) {
     return version.major >= elanEagerResolutionMajorVersion
@@ -83,9 +86,14 @@ export namespace ElanUnresolvedToolchain {
     }
 }
 
+export type ElanToolchainResolution = {
+    resolvedToolchain: ElanResult<string>
+    cachedToolchain: ElanOption<string>
+}
+
 export type ElanDefaultToolchain = {
     unresolved: ElanUnresolvedToolchain
-    resolved: ElanResult<string>
+    resolved: ElanToolchainResolution
 }
 
 export type ElanOverrideReason =
@@ -104,7 +112,21 @@ export type ElanToolchains = {
     installed: Map<string, ElanInstalledToolchain>
     default: ElanOption<ElanDefaultToolchain>
     activeOverride: ElanOption<ElanOverride>
-    resolvedActive: ElanOption<ElanResult<string>>
+    resolvedActive: ElanOption<ElanToolchainResolution>
+}
+
+export namespace ElanToolchains {
+    export function unresolvedToolchain(toolchains: ElanToolchains): ElanOption<ElanUnresolvedToolchain> {
+        return toolchains.activeOverride?.unresolved ?? toolchains.default?.unresolved
+    }
+
+    export function unresolvedToolchainName(toolchains: ElanToolchains): ElanOption<string> {
+        const unresolvedToolchain = ElanToolchains.unresolvedToolchain(toolchains)
+        if (unresolvedToolchain === undefined) {
+            return undefined
+        }
+        return ElanUnresolvedToolchain.toolchainName(unresolvedToolchain)
+    }
 }
 
 export type ElanStateDump = {
@@ -138,6 +160,13 @@ function zodElanUnresolvedToolchain() {
             }),
         }),
     ])
+}
+
+function zodElanToolchainResolution() {
+    return z.object({
+        live: zodElanResult(z.string()),
+        cached: z.nullable(z.string()),
+    })
 }
 
 function convertElanResult<T, V>(
@@ -199,6 +228,29 @@ function convertElanUnresolvedToolchain(
     }
 }
 
+function covertElanToolchainResolution(
+    installed: Map<string, ElanInstalledToolchain>,
+    zodElanToolchainResolution: {
+        live:
+            | {
+                  Ok: string
+              }
+            | {
+                  Err: string
+              }
+        cached: string | null
+    },
+): ElanToolchainResolution {
+    let cachedToolchain = convertElanOption(zodElanToolchainResolution.cached, t => t)
+    if (cachedToolchain !== undefined && !installed.has(cachedToolchain)) {
+        cachedToolchain = undefined
+    }
+    return {
+        resolvedToolchain: convertElanResult(zodElanToolchainResolution.live, t => t),
+        cachedToolchain,
+    }
+}
+
 function convertElanOverrideReason(
     zodElanOverrideReason:
         | 'Environment'
@@ -254,7 +306,7 @@ function parseElanStateDump(elanDumpStateOutput: string): ElanStateDump | undefi
             default: z.nullable(
                 z.object({
                     unresolved: zodElanUnresolvedToolchain(),
-                    resolved: zodElanResult(z.string()),
+                    resolved: zodElanToolchainResolution(),
                 }),
             ),
             active_override: z.nullable(
@@ -269,7 +321,7 @@ function parseElanStateDump(elanDumpStateOutput: string): ElanStateDump | undefi
                     ]),
                 }),
             ),
-            resolved_active: z.nullable(zodElanResult(z.string())),
+            resolved_active: z.nullable(zodElanToolchainResolution()),
         }),
     })
     const stateDumpResult = stateDumpSchema.safeParse(parsedJson)
@@ -278,25 +330,29 @@ function parseElanStateDump(elanDumpStateOutput: string): ElanStateDump | undefi
     }
     const s = stateDumpResult.data
 
+    const installed = groupByUniqueKey(
+        s.toolchains.installed.map(i => ({ resolvedName: i.resolved_name, path: new FileUri(i.path) })),
+        i => i.resolvedName,
+    )
+
     const stateDump: ElanStateDump = {
         elanVersion: {
             current: new SemVer(s.elan_version.current),
             newest: convertElanResult(s.elan_version.newest, version => new SemVer(version)),
         },
         toolchains: {
-            installed: groupByUniqueKey(
-                s.toolchains.installed.map(i => ({ resolvedName: i.resolved_name, path: new FileUri(i.path) })),
-                i => i.resolvedName,
-            ),
+            installed,
             default: convertElanOption(s.toolchains.default, d => ({
                 unresolved: convertElanUnresolvedToolchain(d.unresolved),
-                resolved: convertElanResult(d.resolved, r => r),
+                resolved: covertElanToolchainResolution(installed, d.resolved),
             })),
             activeOverride: convertElanOption(s.toolchains.active_override, r => ({
                 reason: convertElanOverrideReason(r.reason),
                 unresolved: convertElanUnresolvedToolchain(r.unresolved),
             })),
-            resolvedActive: convertElanOption(s.toolchains.resolved_active, r => convertElanResult(r, a => a)),
+            resolvedActive: convertElanOption(s.toolchains.resolved_active, r =>
+                covertElanToolchainResolution(installed, r),
+            ),
         },
     }
     return stateDump
@@ -444,50 +500,30 @@ export async function elanActiveToolchain(
     context: string | undefined,
     toolchain?: string | undefined,
 ): Promise<ElanActiveToolchainResult> {
-    const stateDumpWithoutNetResult = await elanDumpStateWithoutNet(cwdUri, toolchain)
-    if (stateDumpWithoutNetResult.kind !== 'Success') {
-        return stateDumpWithoutNetResult
+    const stateDumpResult = await elanDumpStateWithNet(cwdUri, context, toolchain)
+    if (stateDumpResult.kind !== 'Success') {
+        return stateDumpResult
     }
 
-    const cachedToolchainInfo = stateDumpWithoutNetResult.state.toolchains.resolvedActive
-    if (cachedToolchainInfo === undefined) {
+    const unresolvedToolchain = ElanToolchains.unresolvedToolchainName(stateDumpResult.state.toolchains)
+    if (unresolvedToolchain === undefined) {
         return { kind: 'NoActiveToolchain' }
     }
-    let cachedToolchain: string | undefined
-    if (
-        cachedToolchainInfo.kind === 'Ok' &&
-        stateDumpWithoutNetResult.state.toolchains.installed.has(cachedToolchainInfo.value)
-    ) {
-        cachedToolchain = cachedToolchainInfo.value
-    }
 
-    const stateDumpWithNetResult = await elanDumpStateWithNet(cwdUri, context, toolchain)
-    if (stateDumpWithNetResult.kind !== 'Success') {
-        return stateDumpWithNetResult
-    }
-
-    const overrideInfo = stateDumpWithNetResult.state.toolchains.activeOverride
-    let unresolvedToolchain: string
-    if (overrideInfo === undefined) {
-        const defaultToolchainInfo = stateDumpWithNetResult.state.toolchains.default
-        if (defaultToolchainInfo === undefined) {
-            return { kind: 'NoActiveToolchain' }
-        }
-        unresolvedToolchain = ElanUnresolvedToolchain.toolchainName(defaultToolchainInfo.unresolved)
-    } else {
-        unresolvedToolchain = ElanUnresolvedToolchain.toolchainName(overrideInfo.unresolved)
-    }
-
-    const resolvedToolchainInfo = stateDumpWithNetResult.state.toolchains.resolvedActive
-    if (resolvedToolchainInfo === undefined) {
+    const toolchainResolution = stateDumpResult.state.toolchains.resolvedActive
+    if (toolchainResolution === undefined) {
         return { kind: 'NoActiveToolchain' }
     }
-    if (resolvedToolchainInfo.kind === 'Error') {
-        return { kind: 'ExecutionError', message: resolvedToolchainInfo.message }
-    }
-    const resolvedToolchain = resolvedToolchainInfo.value
 
-    const overrideReason = overrideInfo?.reason
+    const cachedToolchain = toolchainResolution.cachedToolchain
+    const resolvedToolchainResult = toolchainResolution.resolvedToolchain
+
+    if (resolvedToolchainResult.kind === 'Error') {
+        return { kind: 'ExecutionError', message: resolvedToolchainResult.message }
+    }
+    const resolvedToolchain = resolvedToolchainResult.value
+
+    const overrideReason = stateDumpResult.state.toolchains.activeOverride?.reason
     const origin: ElanOverrideReason | { kind: 'Default' } =
         overrideReason !== undefined ? overrideReason : { kind: 'Default' }
 
@@ -563,7 +599,7 @@ export async function elanSelfUninstall(
     channel: OutputChannel | undefined,
     context: string | undefined,
 ): Promise<ExecutionResult> {
-    return await batchExecuteWithProgress('elan', ['self', 'uninstall'], context, 'Uninstalling Elan', {
+    return await batchExecuteWithProgress('elan', ['self', 'uninstall', '-y'], context, 'Uninstalling Elan', {
         channel,
         allowCancellation: true,
     })

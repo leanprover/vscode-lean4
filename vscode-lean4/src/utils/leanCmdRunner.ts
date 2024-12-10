@@ -11,6 +11,7 @@ import {
     ElanOverrideReason,
     ElanRemoteUnresolvedToolchain,
     ElanStateDump,
+    ElanToolchains,
     ElanUnresolvedToolchain,
 } from './elan'
 import { FileUri } from './exturi'
@@ -59,7 +60,7 @@ function leanNotInstalledError(
     let toolchainName: string
     if (unresolvedActiveToolchain.fromChannel !== undefined) {
         const prefix = activeOverride === undefined ? 'default ' : ''
-        toolchainName = `Lean version for ${prefix}release channel '${unresolvedActiveToolchain.fromChannel}'`
+        toolchainName = `Lean version for ${prefix}release channel '${ElanUnresolvedToolchain.toolchainName(unresolvedActiveToolchain)}'`
     } else {
         const prefix = activeOverride === undefined ? 'Default ' : ''
         toolchainName = `${prefix}Lean version '${ElanUnresolvedToolchain.toolchainName(unresolvedActiveToolchain)}'`
@@ -130,10 +131,9 @@ export class LeanCommandRunner {
                 return runWithActiveToolchain
         }
 
-        const unresolvedToolchain =
-            elanState.toolchains.activeOverride?.unresolved ?? elanState.toolchains.default?.unresolved
-        const resolvedToolchainResult = elanState.toolchains.resolvedActive
-        if (unresolvedToolchain === undefined || resolvedToolchainResult === undefined) {
+        const unresolvedToolchain = ElanToolchains.unresolvedToolchain(elanState.toolchains)
+        const toolchainResolutionResult = elanState.toolchains.resolvedActive
+        if (unresolvedToolchain === undefined || toolchainResolutionResult === undefined) {
             return runWithActiveToolchain
         }
 
@@ -141,20 +141,7 @@ export class LeanCommandRunner {
             return runWithActiveToolchain
         }
 
-        let cachedToolchain: string | undefined
-        switch (resolvedToolchainResult.kind) {
-            case 'Error':
-                cachedToolchain = undefined
-                break
-            case 'Ok':
-                if (elanState.toolchains.installed.has(resolvedToolchainResult.value)) {
-                    cachedToolchain = resolvedToolchainResult.value
-                } else {
-                    cachedToolchain = undefined
-                }
-                break
-        }
-
+        const cachedToolchain = toolchainResolutionResult.cachedToolchain
         if (cachedToolchain === undefined) {
             const installNewToolchain: () => Promise<
                 { kind: 'RunWithActiveToolchain' } | { kind: 'Error'; message: string }
@@ -250,10 +237,9 @@ export class LeanCommandRunner {
                 )
         }
 
-        const unresolvedToolchain =
-            elanState.toolchains.activeOverride?.unresolved ?? elanState.toolchains.default?.unresolved
-        const resolvedToolchainResult = elanState.toolchains.resolvedActive
-        if (unresolvedToolchain === undefined || resolvedToolchainResult === undefined) {
+        const unresolvedToolchain = ElanToolchains.unresolvedToolchain(elanState.toolchains)
+        const toolchainResolutionResult = elanState.toolchains.resolvedActive
+        if (unresolvedToolchain === undefined || toolchainResolutionResult === undefined) {
             return runWithActiveToolchain
         }
 
@@ -261,6 +247,7 @@ export class LeanCommandRunner {
             return runWithActiveToolchain
         }
 
+        const resolvedToolchainResult = toolchainResolutionResult.resolvedToolchain
         let resolvedToolchain: string
         switch (resolvedToolchainResult.kind) {
             case 'Error':
@@ -312,7 +299,7 @@ export class LeanCommandRunner {
             'Information',
             updatePrompt(
                 elanState.toolchains.activeOverride?.reason,
-                unresolvedToolchain.fromChannel,
+                ElanUnresolvedToolchain.toolchainName(unresolvedToolchain),
                 cachedToolchain,
                 resolvedToolchain,
             ),

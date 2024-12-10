@@ -1,4 +1,5 @@
 import { ConfigurationTarget, workspace } from 'vscode'
+import { elanStableChannel } from './utils/elan'
 import { PATH } from './utils/envPath'
 
 // TODO: does currently not contain config options for `./abbreviation`
@@ -119,7 +120,7 @@ export function getTestFolder(): string {
 export function getDefaultLeanVersion(): string {
     return typeof process.env.DEFAULT_LEAN_TOOLCHAIN === 'string'
         ? process.env.DEFAULT_LEAN_TOOLCHAIN
-        : 'leanprover/lean4:stable'
+        : elanStableChannel
 }
 
 /** The editor line height, in pixels. */
