@@ -23,12 +23,14 @@ async function checkLean4ProjectPreconditions(
     const d = new SetupDiagnostics(options)
     return await checkAll(
         () => d.checkIsValidProjectFolder(channel, folderUri),
-        () => d.checkIsLeanVersionUpToDate(channel, context, folderUri, {}),
+        () => d.checkIsLeanVersionUpToDate(channel, context, folderUri, { toolchainUpdateMode: 'PromptAboutUpdate' }),
         async () => {
             if (!(await willUseLakeServer(folderUri))) {
                 return 'Fulfilled'
             }
-            return await d.checkIsLakeInstalledCorrectly(channel, context, folderUri, {})
+            return await d.checkIsLakeInstalledCorrectly(channel, context, folderUri, {
+                toolchainUpdateMode: 'PromptAboutUpdate',
+            })
         },
     )
 }
@@ -130,7 +132,7 @@ export class LeanClientProvider implements Disposable {
 
                 const preconditionCheckResult = await checkLean4ProjectPreconditions(
                     this.outputChannel,
-                    'Restart Client',
+                    'Client Restart',
                     projectUri,
                 )
                 if (preconditionCheckResult !== 'Fatal') {
@@ -224,9 +226,6 @@ export class LeanClientProvider implements Disposable {
         return this.clients.get(folder.toString())
     }
 
-    // Starts a LeanClient if the given file is in a new workspace we haven't seen before.
-    // Returns a boolean "true" if the LeanClient was already created.
-    // Returns a null client if it turns out the new workspace is a lean3 workspace.
     async ensureClient(uri: ExtUri): Promise<[boolean, LeanClient | undefined]> {
         const folderUri = uri.scheme === 'file' ? await findLeanProjectRoot(uri) : new UntitledUri()
         if (folderUri === 'FileNotFound') {
@@ -246,7 +245,7 @@ export class LeanClientProvider implements Disposable {
 
         const preconditionCheckResult = await checkLean4ProjectPreconditions(
             this.outputChannel,
-            'Start Client',
+            'Client Startup',
             folderUri,
         )
         if (preconditionCheckResult === 'Fatal') {
@@ -255,9 +254,7 @@ export class LeanClientProvider implements Disposable {
         }
 
         logger.log('[ClientProvider] Creating LeanClient for ' + folderUri.toString())
-        const elanDefaultToolchain = await this.installer.getElanDefaultToolchain(folderUri)
-
-        client = new LeanClient(folderUri, this.outputChannel, elanDefaultToolchain)
+        client = new LeanClient(folderUri, this.outputChannel)
         this.subscriptions.push(client)
         this.clients.set(key, client)
 
@@ -276,12 +273,13 @@ export class LeanClientProvider implements Disposable {
             this.progressChangedEmitter.fire(arg)
         })
 
-        this.pending.delete(key)
+        // Fired before starting the client because the InfoView uses this to register
+        // events on `client` that fire during `start`.
         this.clientAddedEmitter.fire(client)
 
         await client.start()
 
-        // tell the InfoView about this activated client.
+        this.pending.delete(key)
         this.activeClient = client
 
         return [false, client]
