@@ -1,7 +1,7 @@
 import * as fs from 'fs'
 import { ExtUri, FileUri, getWorkspaceFolderUri } from './exturi'
 import { dirExists, fileExists } from './fsHelper'
-import path = require('path')
+import path from 'path'
 
 // Detect lean4 root directory (works for both lean4 repo and nightly distribution)
 

@@ -48,7 +48,7 @@ import {
     displayNotificationWithOutput,
 } from './utils/notifs'
 import { willUseLakeServer } from './utils/projectInfo'
-import path = require('path')
+import path from 'path'
 
 const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 

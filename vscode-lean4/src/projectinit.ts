@@ -13,7 +13,7 @@ import { lake } from './utils/lake'
 import { LeanInstaller } from './utils/leanInstaller'
 import { displayNotification, displayNotificationWithInput } from './utils/notifs'
 import { checkParentFoldersForLeanProject, isValidLeanProject } from './utils/projectInfo'
-import path = require('path')
+import path from 'path'
 
 const projectInitNotificationOptions: SetupNotificationOptions = {
     errorMode: { mode: 'NonModal' },
