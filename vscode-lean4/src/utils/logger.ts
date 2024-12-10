@@ -1,10 +1,4 @@
-import { Console } from 'console'
-
-class Logger extends Console {
-    constructor(stdout: NodeJS.WritableStream, stderr?: NodeJS.WritableStream) {
-        super(stdout, stderr)
-    }
-
+class Logger {
     private static now(): string {
         const now = new Date()
         return (
@@ -19,13 +13,13 @@ class Logger extends Console {
     }
 
     log(msg: string) {
-        super.log(Logger.now(), '-', msg)
+        console.log(Logger.now(), '-', msg)
     }
 
     error(msg: string) {
-        super.error(Logger.now(), '-', msg)
+        console.error(Logger.now(), '-', msg)
     }
 }
 
-const logger = new Logger(process.stdout, process.stderr)
+const logger = new Logger()
 export { logger }
