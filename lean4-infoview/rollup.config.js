@@ -74,7 +74,9 @@ const configs = [
     {
         output: {
             ...output,
-            // Put `es-module-shims` in shim mode with support for dynamic `import`
+            // Put `es-module-shims` in shim mode, needed to support dynamic `import`s.
+            // This code has to be set before `es-module-shims` is loaded,
+            // so we put it in the Rollup intro.
             intro: 'window.esmsInitOptions = { shimMode: true }',
         },
         plugins,

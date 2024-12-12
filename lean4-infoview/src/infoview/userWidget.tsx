@@ -1,3 +1,4 @@
+import * as esmlexer from 'es-module-lexer'
 import * as React from 'react'
 
 import {
@@ -13,27 +14,82 @@ import { GoalsLocation } from './goalLocation'
 import { useRpcSession } from './rpcSessions'
 import { DocumentPosition, mapRpcError, useAsyncPersistent } from './util'
 
-async function dynamicallyLoadModule(hash: string, code: string): Promise<any> {
+async function dynamicallyLoadModule(hash: string, code: string): Promise<[any, string]> {
     const file = new File([code], `widget_${hash}.js`, { type: 'text/javascript' })
     const url = URL.createObjectURL(file)
-    return await import(url)
+    return [await import(url), url]
 }
 
-const moduleCache = new Map<string, any>()
+/** Maps module hash to (loaded module, its URI). */
+const moduleCache = new Map<string, [any, string]>()
 
 /**
  * Fetch source code from Lean and dynamically import it as a JS module.
  *
- * The source must hash to `hash` (in Lean) and must have been annotated with `@[widget]`
- * or `@[widget_module]` at some point before `pos`. */
+ * The source must hash to `hash` (in Lean)
+ * and must have been annotated with `@[widget]` or `@[widget_module]`
+ * at some point before `pos`.
+ *
+ * #### Experimental `import` support for widget modules
+ *
+ * The module may import other `@[widget_module]`s by hash
+ * using the URI scheme `'widget_module:hash,<hash>'`
+ * where `<hash>` is a decimal representation
+ * of the hash stored in `Lean.Widget.Module.javascriptHash`.
+ *
+ * In the future,
+ * we may support importing widget modules by their fully qualified Lean name
+ * (e.g. `'widget_module:name,Lean.Meta.Tactic.TryThis.tryThisWidget'`),
+ * or some way to assign widget modules a more NPM-friendly name
+ * so that the usual URIs (e.g. `'@leanprover-community/pro-widgets'`) work.
+ */
 export async function importWidgetModule(rs: RpcSessionAtPos, pos: DocumentPosition, hash: string): Promise<any> {
     if (moduleCache.has(hash)) {
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        return moduleCache.get(hash)!
+        const [mod, _] = moduleCache.get(hash)!
+        return mod
     }
     const resp = await Widget_getWidgetSource(rs, pos, hash)
-    const mod = await dynamicallyLoadModule(hash, resp.sourcetext)
-    moduleCache.set(hash, mod)
+    let src = resp.sourcetext
+
+    /*
+     * Now we want to handle imports of other `@[widget_module]`s in `src`.
+     * At least two ways of doing this are possible:
+     * 1. Set a module resolution hook in `es-module-shims` to look through a global list of resolvers,
+     *    and register such a resolver here before loading a new module.
+     *    The resolver would add appropriate entries into the import map
+     *    before `src` is loaded and makes use of those entries.
+     *    However, resolution hooking and dynamic import maps are not standard features
+     *    so necessarily require `es-module-shims`;
+     *    they would not work with any current browser's ES module implementation.
+     *    Furthermore, this variant involves complex global state.
+     * 2. Before loading the module, parse its imports,
+     *    recursively import any widget modules,
+     *    and replace widget module imports with `blob:` URIs.
+     *    We do this as it is independent of `es-module-shims`.
+     *    A disadvantage is that this variant does not modify the global import map,
+     *    so any module that is not imported as a widget module (e.g. is imported from NPM)
+     *    cannot import widget modules.
+     */
+
+    await esmlexer.init
+    const [imports] = esmlexer.parse(src)
+    for (const i of imports) {
+        const HASH_URI_SCHEME = 'widget_module:hash,'
+        if (i.n?.startsWith(HASH_URI_SCHEME)) {
+            const h = i.n.substring(HASH_URI_SCHEME.length)
+            await importWidgetModule(rs, pos, h)
+            // `moduleCache.has(h)` is a postcondition of `importWidgetModule`
+            const [_, uri] = moduleCache.get(h)!
+            /* HACK: `es-module-lexer` doesn't provide indices of `import`s into the module source,
+             * so just replace the `import`ed name wholesale wherever it appears.
+             * It will break any module that relies on having that string literal intact,
+             * but such modules ought to be extremely unusual. */
+            src = src.replace(i.n, uri)
+        }
+    }
+    const [mod, uri] = await dynamicallyLoadModule(hash, src)
+    moduleCache.set(hash, [mod, uri])
     return mod
 }
 
