@@ -30,6 +30,9 @@ const moduleCache = new Map<string, [any, string]>()
  * and must have been annotated with `@[widget]` or `@[widget_module]`
  * at some point before `pos`.
  *
+ * If `hash` does not correspond to a registered module,
+ * the promise is rejected with an error.
+ *
  * #### Experimental `import` support for widget modules
  *
  * The module may import other `@[widget_module]`s by hash
@@ -81,11 +84,8 @@ export async function importWidgetModule(rs: RpcSessionAtPos, pos: DocumentPosit
             await importWidgetModule(rs, pos, h)
             // `moduleCache.has(h)` is a postcondition of `importWidgetModule`
             const [_, uri] = moduleCache.get(h)!
-            /* HACK: `es-module-lexer` doesn't provide indices of `import`s into the module source,
-             * so just replace the `import`ed name wholesale wherever it appears.
-             * It will break any module that relies on having that string literal intact,
-             * but such modules ought to be extremely unusual. */
-            src = src.replace(i.n, uri)
+            // Replace imported module name with the new URI
+            src = src.substring(0, i.s) + uri + src.substring(i.e)
         }
     }
     const [mod, uri] = await dynamicallyLoadModule(hash, src)
