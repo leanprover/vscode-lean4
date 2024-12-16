@@ -77,6 +77,9 @@ export async function importWidgetModule(rs: RpcSessionAtPos, pos: DocumentPosit
 
     await esmlexer.init
     const [imports] = esmlexer.parse(src)
+    // How far indices into `src` after the last-processed `import`
+    // are offset from indices into `resp.sourcetext`
+    let off = 0
     for (const i of imports) {
         const HASH_URI_SCHEME = 'widget_module:hash,'
         if (i.n?.startsWith(HASH_URI_SCHEME)) {
@@ -85,7 +88,8 @@ export async function importWidgetModule(rs: RpcSessionAtPos, pos: DocumentPosit
             // `moduleCache.has(h)` is a postcondition of `importWidgetModule`
             const [_, uri] = moduleCache.get(h)!
             // Replace imported module name with the new URI
-            src = src.substring(0, i.s) + uri + src.substring(i.e)
+            src = src.substring(0, i.s + off) + uri + src.substring(i.e + off)
+            off += uri.length - i.n.length
         }
     }
     const [mod, uri] = await dynamicallyLoadModule(hash, src)
