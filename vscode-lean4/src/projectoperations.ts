@@ -57,7 +57,7 @@ export class ProjectOperationProvider implements Disposable {
         const deleteChoice: string | undefined = await displayNotificationWithInput(
             'Information',
             'Delete all build artifacts?',
-            deleteInput,
+            [deleteInput],
         )
         if (deleteChoice !== deleteInput) {
             return
@@ -82,12 +82,13 @@ export class ProjectOperationProvider implements Disposable {
                 return
             }
 
-            const fetchMessage = "Project cleaned successfully. Do you want to fetch Mathlib's build artifact cache?"
+            const fetchMessage = "Project cleaned successfully. Do you wish to fetch Mathlib's build artifact cache?"
             const fetchInput = 'Fetch Cache'
             const fetchChoice: string | undefined = await displayNotificationWithInput(
                 'Information',
                 fetchMessage,
-                fetchInput,
+                [fetchInput],
+                'Do Not Fetch Cache',
             )
             if (fetchChoice !== fetchInput) {
                 return
@@ -126,7 +127,7 @@ export class ProjectOperationProvider implements Disposable {
 
     private async fetchMathlibCacheForCurrentImports() {
         await this.runOperation('Fetch Mathlib Build Cache For Current Imports', async lakeRunner => {
-            const projectUri = lakeRunner.cwdUri!
+            const projectUri = lakeRunner.options.cwdUri!
 
             const doc = lean.lastActiveLeanDocument
             if (doc === undefined) {
@@ -244,7 +245,7 @@ export class ProjectOperationProvider implements Disposable {
 
         const warningMessage = `This command will update ${dependencyChoice.name} to its most recent version. It is only intended to be used by maintainers of this project. If the updated version of ${dependencyChoice.name} is incompatible with any other dependency or the code in this project, this project may not successfully build anymore. Are you sure you want to proceed?`
         const warningInput = 'Proceed'
-        const warningChoice = await displayNotificationWithInput('Warning', warningMessage, warningInput)
+        const warningChoice = await displayNotificationWithInput('Warning', warningMessage, [warningInput])
         if (warningChoice !== warningInput) {
             return
         }
@@ -331,9 +332,9 @@ export class ProjectOperationProvider implements Disposable {
                 toolchainResult === 'CannotReadLocalToolchain'
                     ? `Could not read Lean version of open project at '${localToolchainPath}'`
                     : `Could not read Lean version of ${dependencyName} at ${dependencyToolchainPath}`
-            const message = `${errorFlavor}. Do you want to update ${dependencyName} without updating the Lean version of the open project to that of ${dependencyName} regardless?`
+            const message = `${errorFlavor}. Do you wish to update ${dependencyName} without updating the Lean version of the open project to that of ${dependencyName} regardless?`
             const input = 'Proceed'
-            const choice: string | undefined = await displayNotificationWithInput('Information', message, input)
+            const choice: string | undefined = await displayNotificationWithInput('Information', message, [input])
             return choice === 'input' ? { kind: 'DoNotUpdate' } : { kind: 'Cancelled' }
         }
         const [localToolchain, dependencyToolchain]: [string, string] = toolchainResult
@@ -342,14 +343,14 @@ export class ProjectOperationProvider implements Disposable {
             return { kind: 'DoNotUpdate' }
         }
 
-        const message = `The Lean version '${localToolchain}' of the open project differs from the Lean version '${dependencyToolchain}' of ${dependencyName}. Do you want to update the Lean version of the open project to the Lean version of ${dependencyName}?`
-        const input1 = 'Update Lean Version'
-        const input2 = 'Keep Lean Version'
-        const choice = await displayNotificationWithInput('Information', message, input1, input2)
+        const message = `The Lean version '${localToolchain}' of the open project differs from the Lean version '${dependencyToolchain}' of ${dependencyName}. Do you wish to update the Lean version of the open project to the Lean version of ${dependencyName}?`
+        const updateInput = 'Update Lean Version'
+        const keepInput = 'Keep Lean Version'
+        const choice = await displayNotificationWithInput('Information', message, [keepInput, updateInput])
         if (choice === undefined) {
             return { kind: 'Cancelled' }
         }
-        if (choice !== input1) {
+        if (choice !== updateInput) {
             return { kind: 'DoNotUpdate' }
         }
 
@@ -415,7 +416,12 @@ export class ProjectOperationProvider implements Disposable {
                 return
             }
 
-            const lakeRunner: LakeRunner = lake(this.channel, activeClient.folderUri, context)
+            const lakeRunner: LakeRunner = lake({
+                channel: this.channel,
+                cwdUri: activeClient.folderUri,
+                context,
+                toolchainUpdateMode: 'DoNotUpdate',
+            })
 
             const result: 'Success' | 'IsRestarting' = await activeClient.withStoppedClient(() => command(lakeRunner))
             if (result === 'IsRestarting') {

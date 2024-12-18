@@ -2,7 +2,7 @@ import assert from 'assert'
 import { suite } from 'mocha'
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { UntitledUri } from '../../../src/utils/exturi'
+import { elanInstalledToolchains } from '../../../src/utils/elan'
 import { logger } from '../../../src/utils/logger'
 import { displayNotification } from '../../../src/utils/notifs'
 import {
@@ -64,17 +64,16 @@ suite('Lean4 Basics Test Suite', () => {
 
         const installer = features.installer
         assert(installer, 'No LeanInstaller export')
-        const toolChains = await installer.elanListToolChains(new UntitledUri())
-        let defaultToolChain = toolChains.find(tc => tc.indexOf('default') > 0)
-        if (defaultToolChain) {
+        const defaultToolchainResult = await elanInstalledToolchains()
+        if (defaultToolchainResult.kind === 'Success' && defaultToolchainResult.defaultToolchain !== undefined) {
+            let defaultToolchain = defaultToolchainResult.defaultToolchain
             // the IO.appPath should output something like this:
             // FilePath.mk "/home/.elan/toolchains/leanprover--lean4---nightly/bin/lean.exe"
             // So let's try and find the 'leanprover--lean4---nightly' part.
-            defaultToolChain = defaultToolChain.replace(' (default)', '').trim()
-            defaultToolChain = defaultToolChain.replace('/', '--')
-            defaultToolChain = defaultToolChain.replace(':', '---')
+            defaultToolchain = defaultToolchain.replace('/', '--')
+            defaultToolchain = defaultToolchain.replace(':', '---')
             // make sure this string exists in the info view.
-            await waitForInfoviewHtml(info, defaultToolChain)
+            await waitForInfoviewHtml(info, defaultToolchain)
         }
 
         // make sure test is always run in predictable state, which is no file or folder open

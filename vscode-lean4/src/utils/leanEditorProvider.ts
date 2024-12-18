@@ -11,25 +11,7 @@ import {
     workspace,
 } from 'vscode'
 import { ExtUri, isExtUri, toExtUriOrError } from './exturi'
-
-function groupByKey<K, V>(values: V[], key: (value: V) => K): Map<K, V[]> {
-    const r = new Map<K, V[]>()
-    for (const v of values) {
-        const k = key(v)
-        const group = r.get(k) ?? []
-        group.push(v)
-        r.set(k, group)
-    }
-    return r
-}
-
-function groupByUniqueKey<K, V>(values: V[], key: (value: V) => K): Map<K, V> {
-    const r = new Map<K, V>()
-    for (const v of values) {
-        r.set(key(v), v)
-    }
-    return r
-}
+import { groupByKey, groupByUniqueKey } from './groupBy'
 
 export class LeanDocument {
     constructor(
@@ -426,4 +408,11 @@ export let lean: LeanEditorProvider
 export function registerLeanEditorProvider(context: ExtensionContext) {
     lean = new LeanEditorProvider()
     context.subscriptions.push(lean)
+    context.subscriptions.push({
+        dispose: () => {
+            const u: any = undefined
+            // Implicit invariant: When the extension deactivates, `lean` is not called after this assignment.
+            lean = u
+        },
+    })
 }

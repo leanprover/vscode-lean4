@@ -39,7 +39,10 @@ This manual covers how to interact with the most recent version of Lean 4 using 
     - [Project actions](#project-actions)
     - [Terminal](#terminal)
 1. [Managing Lean versions](#managing-lean-versions)
-    - [Installing and updating Elan](#installing-and-updating-elan)
+    - [Elan](#elan)
+    - [Selecting default Lean versions](#selecting-default-lean-versions)
+    - [Updating Lean release channels](#updating-lean-release-channels)
+    - [Uninstalling Lean versions](#uninstalling-lean-versions)
 1. [Finding definitions and theorems](#finding-definitions-and-theorems)
     - [LoogleView](#loogleview)
 1. [Troubleshooting issues](#troubleshooting-issues)
@@ -599,8 +602,8 @@ This section describes how to manage Lean projects using the Lean 4 VS Code exte
 ### Creating projects
 
 There are two project creation commands that can be accessed using the [command palette](#command-palette) or by navigating to the 'New Project…' submenu in the [command menu](#command-menu):
-1. **['Project: Create Standalone Project…'](command:lean4.project.createStandaloneProject)**. This command will create a new Lean 4 project with the name specified in the folder creation dialog and without any additional dependencies. It will use the `leanprover/lean4:stable` toolchain for the Lean version of the project, initialize a [Git](https://git-scm.com/) repository and create an initial commit with all the files in the fresh project.
-1. **['Project: Create Project Using Mathlib…'](command:lean4.project.createMathlibProject)**. This command will create a new Lean 4 project with the name specified in the folder creation dialog that depends on Lean's math library, [Mathlib](https://github.com/leanprover-community/mathlib4). It will use Mathlib's Lean toolchain for the Lean version of the project, download and install the current Mathlib build artifact cache, initialize a [Git](https://git-scm.com/) repository and create an initial commit with all the files in the fresh project.
+1. **['Project: Create Standalone Project…'](command:lean4.project.createStandaloneProject)**. This command will create a new Lean 4 project with the name specified in the folder creation dialog and without any additional dependencies. It will use the `leanprover/lean4:stable` Lean release channel for the Lean version of the project, initialize a [Git](https://git-scm.com/) repository and create an initial commit with all the files in the fresh project.
+1. **['Project: Create Project Using Mathlib…'](command:lean4.project.createMathlibProject)**. This command will create a new Lean 4 project with the name specified in the folder creation dialog that depends on Lean's math library, [Mathlib](https://github.com/leanprover-community/mathlib4). It will use Mathlib's Lean version for the project, download and install the current Mathlib build artifact cache, initialize a [Git](https://git-scm.com/) repository and create an initial commit with all the files in the fresh project.
 
 ### Opening projects
 
@@ -613,15 +616,22 @@ There are two commands to open existing Lean projects that can be accessed using
 The Lean 4 VS Code extension supports the following commands that can be run in existing Lean projects and that can be accessed using the [command palette](#command-palette) or by navigating to the 'Project Actions…' submenu in the [command menu](#command-menu):
 1. **['Project: Build Project'](command:lean4.project.build)**. Builds the full Lean project. If the project is Lean's math library [Mathlib](https://github.com/leanprover-community/mathlib4) or depends on it, it will also download and install the current Mathlib build artifact cache before trying to build the project.
 1. **['Project: Clean Project'](command:lean4.project.clean)**. Removes all build artifacts for the Lean project. If the project is [Mathlib](https://github.com/leanprover-community/mathlib4) or depends on it, it will also offer to download and install the current Mathlib build artifact cache after cleaning the project.
-1. **['Project: Update Dependency…'](command:lean4.project.updateDependency)**. Displays a list of all dependencies that can be updated. After selecting a dependency and updating it, if the project is [Mathlib](https://github.com/leanprover-community/mathlib4) or depends on it, it will also download and install the current Mathlib build artifact cache. At the end, if the Lean toolchain of the updated project differs from the Lean toolchain of the project, the command will offer to update the Lean toolchain of the project to that of the updated dependency.
+1. **['Project: Update Dependency…'](command:lean4.project.updateDependency)**. Displays a list of all dependencies that can be updated. After selecting a dependency and updating it, if the project is [Mathlib](https://github.com/leanprover-community/mathlib4) or depends on it, it will also download and install the current Mathlib build artifact cache. At the end, if the Lean version of the updated project differs from the Lean version of the project, the command will offer to update the Lean version of the project to that of the updated dependency.
 1. **['Project: Fetch Mathlib Build Cache'](command:lean4.project.fetchCache)**. Downloads and installs the current Mathlib build artifact cache if the project is [Mathlib](https://github.com/leanprover-community/mathlib4) or depends on it.
 1. **['Project: Fetch Mathlib Build Cache For Current Imports'](command:lean4.project.fetchFileCache)**. Downloads and installs the current Mathlib build artifact for the focused file and all of its imports if the project is [Mathlib](https://github.com/leanprover-community/mathlib4).
+1. **['Project: Select Project Lean Version…'](command:lean4.project.selectProjectToolchain)**. Displays a list of all available Lean versions. After selecting a Lean version, the command writes the selected Lean version to the `lean-toolchain` file of the given project.
 
 <br/>
 
 | ![](images/update-dependency.png) | 
 | :--: | 
 | *'Project: Update Dependency…' selection dialog* |
+
+<br/>
+
+| ![](images/select-project-lean-version.png) | 
+| :--: | 
+| *'Project: Select Project Lean Version…' selection dialog* |
 
 ### Terminal
 
@@ -637,11 +647,56 @@ If the commands provided by the Lean 4 VS Code extension are not sufficient to m
 
 ## Managing Lean versions
 
-This section covers how to manage different Lean versions. All of these commands provide a frontend for Lean's version manager [Elan](https://github.com/leanprover/elan/blob/master/README.md). At the moment, the VS Code extension does not support many Elan commands yet.
+This section covers how to manage different Lean versions. All of these commands provide a frontend for Lean's version manager [Elan](https://github.com/leanprover/elan/blob/master/README.md) and can be found using the [command palette](#command-palette) or by navigating to the 'Version Management…' submenu in the [command menu](#command-menu).
 
-### Installing and updating Elan
+### Elan
 
-Lean's version manager [Elan](https://github.com/leanprover/elan/blob/master/README.md) can be installed or updated using the ['Setup: Install Elan'](command:lean4.setup.installElan) command that can be found using the [command palette](#command-palette) or by navigating to the 'Version Management…' submenu in the [command menu](#command-menu).
+[Elan](https://github.com/leanprover/elan/blob/master/README.md) is Lean's version manager. It automatically installs Lean versions when a Lean command like `lean` or `lake` is used depending on the current working directory of the command.
+
+When used inside of a Lean project with a `lean-toolchain` file, Elan will use the Lean version denoted in the `lean-toolchain` file. Outside of a Lean project, Elan will use the default Lean version that can be configured using the `elan default <version>` command. 
+
+Lean versions can either be specific Lean versions, like `leanprover/lean4:v4.14.0`, or release channels, like `leanprover/lean4:stable`, which is Elan's default Lean version when Elan is first installed. Elan's release channels resolve to the most recent specific Lean version in a given release channel. 
+Before Elan 4.0.0, release channels were explicitly installed in Elan, would resolve to the most recent version at the point of installation and could be manually updated to the most recent version in the release channel using the `elan toolchain update <release channel>` command. 
+Since Elan 4.0.0, release channels cannot be installed anymore, but whenever they are used anywhere, e.g. when running `lean` with a default Lean version of `leanprover/lean4:stable`, they will automatically resolve to the most recent Lean version for that release channel. This means that since Elan 4.0.0, release channels are updated on-the-go and do not need to be kept up-to-date manually. When Elan cannot resolve a release channel, e.g. because the machine it runs on has no network connection, it will attempt to fall back to the last installed Lean version of that release channel. 
+
+Before Elan 4.0.0, the Lean 4 VS Code extension would always automatically install missing Lean versions as it encountered them by using Elan in exactly the same way as it works on the command line. 
+Since Elan 4.0.0, the Lean 4 VS Code extension now has a 'Lean 4: Always Ask Before Installing Lean Versions' setting that can be enabled to issue a confirmation prompt every time before a Lean version is installed by Elan. Additionally, regardless of this setting, the Lean 4 VS Code extension will always issue a confirmation prompt when opening a Lean file that is using a release channel for its version if there is a new Lean version for the release channel available.
+
+### Selecting default Lean versions
+
+Elan's default Lean version can be selected using the ['Setup: Select Default Lean Version…'](command:lean4.setup.selectDefaultToolchain) command. The command queries all installed Lean version and fetches all available Lean versions from [https://release.lean-lang.org/](https://release.lean-lang.org/) to present them in a selection dialog.
+
+<br/>
+
+| ![](images/select-default-lean-version.png) | 
+| :--: | 
+| *'Setup: Select Default Lean Version…' selection dialog* |
+
+### Updating Lean release channels
+
+The newest versions of the `leanprover/lean4:stable` and `leanprover/lean4:nightly` release channels can be installed manually using the 'Setup: Update Release Channel Lean Version…' command. The command uses Elan to resolve `leanprover/lean4:stable` and `leanprover/lean4:nightly` to determine their most recent versions and displays them in a selection dialog if an update for the respective Lean release channel is available.
+
+<br/>
+
+| ![](images/update-release-channel.png) | 
+| :--: | 
+| *'Setup: Update Release Channel Lean Version…' selection dialog* |
+
+### Uninstalling Lean versions
+
+Installed Lean versions can be uninstalled using the 'Setup: Uninstall Lean Versions…' command. The command determines all unused Lean versions using Elan's Lean version garbage collector and displays a selection dialog for uninstalling all unused Lean versions, as well as additional individual Lean versions and the projects they are used in.
+
+<br/>
+
+| ![](images/uninstall-lean-versions.png) | 
+| :--: | 
+| *'Setup: Uninstall Lean Versions……' selection dialog* |
+
+### Installing, updating and uninstalling Elan
+
+Elan can be installed using the ['Setup: Install Elan'](command:lean4.setup.installElan) command. Similarly, the ['Setup: Update Elan'](command:lean4.setup.updateElan) command can be used to update Elan to the newest version and the ['Setup: Uninstall Elan'](command:lean4.setup.uninstallElan) command can be used to remove Elan and all installed Lean versions from the machine.
+
+After installing Elan or updating it from a pre-4.0.0 version, the Lean 4 VS Code extension will also prompt users about whether they want to set the ['Lean 4: Always Ask Before Installing Lean Versions' setting](#elan).
 
 ---
 
@@ -702,7 +757,7 @@ Executing the ['Troubleshooting: Show Setup Information'](command:lean4.troubles
 1. Whether Lean's version manager [Elan](https://github.com/leanprover/elan/blob/master/README.md) is installed and reasonably up-to-date, as well as the Elan version
 1. Whether Lean is installed and reasonably up-to-date, as well as the Lean version
 1. Whether a Lean project with a lean-toolchain has been opened, as well as the path to the project
-1. Available Elan toolchains
+1. Available Elan Lean versions
 
 The output is formatted using Markdown and will produce a nicely rendered output when copied to a Markdown-supporting tool, e.g. [the Lean Zulip](https://leanprover.zulipchat.com).
 
