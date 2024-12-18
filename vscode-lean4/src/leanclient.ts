@@ -38,6 +38,7 @@ import {
 } from './config'
 import { logger } from './utils/logger'
 // @ts-ignore
+import path from 'path'
 import { SemVer } from 'semver'
 import { c2pConverter, p2cConverter, patchConverters, setDependencyBuildMode } from './utils/converters'
 import { ExtUri, parseExtUri, toExtUri } from './utils/exturi'
@@ -48,7 +49,6 @@ import {
     displayNotificationWithOutput,
 } from './utils/notifs'
 import { willUseLakeServer } from './utils/projectInfo'
-import path from 'path'
 
 const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
@@ -421,7 +421,7 @@ export class LeanClient implements Disposable {
         return this.running && this.client
             ? this.client.sendRequest(method, params)
             : new Promise<any>((_, reject) => {
-                  reject('Client is not running')
+                  reject('No connection to Lean')
               })
     }
 
