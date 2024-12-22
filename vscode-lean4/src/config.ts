@@ -82,6 +82,10 @@ export function getInfoViewShowTooltipOnHover(): boolean {
     return workspace.getConfiguration('lean4.infoview').get('showTooltipOnHover', true)
 }
 
+export function getInfoViewDisableLoadingSpinner(): boolean {
+    return workspace.getConfiguration('lean4.infoview').get('disableLoadingSpinner', false)
+}
+
 export function getElaborationDelay(): number {
     return workspace.getConfiguration('lean4').get('elaborationDelay', 200)
 }

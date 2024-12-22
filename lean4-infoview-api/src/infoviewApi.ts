@@ -86,6 +86,7 @@ export interface InfoviewConfig {
     emphasizeFirstGoal: boolean
     reverseTacticState: boolean
     showTooltipOnHover: boolean
+    disableLoadingSpinner: boolean
 }
 
 export const defaultInfoviewConfig: InfoviewConfig = {
@@ -97,6 +98,7 @@ export const defaultInfoviewConfig: InfoviewConfig = {
     emphasizeFirstGoal: false,
     reverseTacticState: false,
     showTooltipOnHover: true,
+    disableLoadingSpinner: false,
 }
 
 export type InfoviewActionKind =
