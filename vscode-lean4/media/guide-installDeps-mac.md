@@ -6,7 +6,7 @@
 ## Installing Required Dependencies
 1. [Open a new terminal](command:workbench.action.terminal.new).
 2. Type in `/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"` and press Enter to install [Homebrew](https://brew.sh/), a package manager for macOS.
-3. Follow the instructions in the terminal.
+3. Follow the instructions in the terminal. Make sure to add `brew` to your PATH as instructed.
 4. Type in `brew install curl git` and press Enter.
 5. Wait until the installation has completed.
 

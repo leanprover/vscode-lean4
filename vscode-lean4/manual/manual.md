@@ -343,6 +343,8 @@ When hovering over parts of the code with the mouse pointer, VS Code will displa
 1. **Errors, warnings and information**. When hovering over a piece of code that is [underlined with a squiggly line](#errors-warnings-and-information), VS Code will display the error, warning or information associated with the squiggly line.
 1. **Unicode symbols**. When hovering over a unicode symbol, VS Code will provide all available [abbreviation identifiers](#unicode-input) to input the symbol.
 
+Automatic hovers can be disabled by un-ticking the 'Editor › Hover: Enabled' configuration option. This is especially helpful when presenting Lean 4 code to an audience.
+
 Hovers can also be triggered at the current text cursor position using the keyboard with the `Ctrl+K Ctrl+I` (`Cmd+K Cmd+I`) [chord](#chords) or the ['Show or Focus Hover'](command:editor.action.showHover) command.
 
 Moving the mouse away from the hover popup panel will immediately collapse it. Clicking on the hover popup panel will pin it so that it remains open when the mouse is moved away from the hover popup panel.
