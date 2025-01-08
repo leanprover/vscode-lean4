@@ -1,3 +1,10 @@
+## Antivirus Software
+Some users have reported that overly aggressive antivirus software will interfere with all secure network connections in certain Lean commands, leading to errors like the following:
+```
+curl: (35) schannel: next InitializeSecurityContext failed: Unknown error (0x80092012) - The revocation function was unable to check revocation for the certificate
+```
+If you encounter this issue, you can try disabling your antivirus, re-run the command that failed and re-enable it afterwards. If you are uncomfortable with disabling your antivirus software altogether, you can also try disabling the specific antivirus feature that is typically causing these issues, commonly known as 'encrypted connection scanning' or 'HTTPS scanning'. You can disable HTTPS scanning as follows in certain common antivirus software: [Kaspersky](https://support.kaspersky.com/KESWin/11.6.0/en-US/175124.htm), [AVG](https://support.avg.com/SupportArticleView?l=en&urlName=Use-AVG-Antivirus-HTTPS-scan&supportType=home), [Avast](https://support.avast.com/en-us/article/use-antivirus-https-scan/#pc).
+
 ## Collecting VS Code Output
 If you are encountering an issue with Lean or this VS Code extension, copying the output from the 'Troubleshooting: Show Setup Information' and 'Troubleshooting: Show Output' commands can be helpful for others who are trying to help you. 
 You can run these commands by clicking on the ∀-symbol in the top right and selecting 'Troubleshooting: Show Setup Information' and 'Troubleshooting: Show Output'.

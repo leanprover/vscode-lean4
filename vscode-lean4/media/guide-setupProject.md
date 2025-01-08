@@ -1,5 +1,5 @@
 ## Creating a Project
-Below, you will find links that create new projects or download projects for you. After creating or downloading a project, you can re-open the project in the future by clicking the ∀-symbol in the top right, choosing 'Open Project…' > 'Open Local Project…' and selecting the project you created.  
+Below, you will find links that create new projects or download projects for you. After creating or downloading a project, you can re-open the project in the future by clicking the ∀-symbol in the top right, choosing 'Open Project…' > 'Open Local Project…' and selecting the project you created. If possible, you should avoid creating projects on network drives or in directories indexed by cloud storage, e.g. OneDrive.
 Completing the project creation process and choosing to open the new project will close this guide. You can re-open it later by clicking the ∀-symbol in the top right and selecting 'Documentation…' > 'Docs: Show Setup Guide'.
 
   ![∀-symbol buttons](open-local-project_show-setup_buttons.png)
