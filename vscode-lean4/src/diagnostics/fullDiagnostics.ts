@@ -1,11 +1,13 @@
 import { SemVer } from 'semver'
 import { Disposable, OutputChannel, commands, env } from 'vscode'
 import { ExecutionExitCode, ExecutionResult } from '../utils/batch'
+import { ElanInstalledToolchain, ElanToolchains, ElanUnresolvedToolchain } from '../utils/elan'
 import { FileUri } from '../utils/exturi'
 import { lean } from '../utils/leanEditorProvider'
 import { displayNotification, displayNotificationWithInput } from '../utils/notifs'
 import { findLeanProjectRoot } from '../utils/projectInfo'
 import {
+    ElanDumpStateWithoutNetQueryResult,
     ElanVersionDiagnosis,
     LeanVersionDiagnosis,
     ProjectSetupDiagnosis,
@@ -24,6 +26,7 @@ export type FullDiagnostics = {
     leanVersionDiagnosis: LeanVersionDiagnosis
     projectSetupDiagnosis: ProjectSetupDiagnosis
     elanShowOutput: ExecutionResult
+    elanDumpStateOutput: ElanDumpStateWithoutNetQueryResult
 }
 
 function formatCommandOutput(cmdOutput: string): string {
@@ -62,6 +65,8 @@ function formatLeanVersionDiagnosis(d: LeanVersionDiagnosis): string {
             return `Pre-stable-release Lean 4 version (version: ${d.version})`
         case 'ExecutionError':
             return 'Execution error: ' + formatCommandOutput(d.message)
+        case 'Cancelled':
+            return 'Operation cancelled'
         case 'NotInstalled':
             return 'Not installed'
     }
@@ -92,6 +97,74 @@ function formatElanShowOutput(r: ExecutionResult): string {
     return formatCommandOutput(r.stdout)
 }
 
+function formatElanActiveToolchain(r: ElanToolchains): string {
+    if (r.activeOverride !== undefined) {
+        const toolchain = r.activeOverride.unresolved
+        const overrideReason = r.activeOverride.reason
+        let formattedOverrideReason: string
+        switch (overrideReason.kind) {
+            case 'Environment':
+                formattedOverrideReason = 'set by `ELAN_TOOLCHAIN`'
+                break
+            case 'Manual':
+                formattedOverrideReason = `set by \`elan override\` in \`${overrideReason.directoryPath}\``
+                break
+            case 'ToolchainFile':
+                formattedOverrideReason = `set by \`${overrideReason.toolchainPath}\``
+                break
+            case 'LeanpkgFile':
+                formattedOverrideReason = `set by Leanpkg file in \`${overrideReason.leanpkgPath}\``
+                break
+            case 'ToolchainDirectory':
+                formattedOverrideReason = `of core toolchain directory at \`${overrideReason.directoryPath}\``
+                break
+        }
+        return `${ElanUnresolvedToolchain.toolchainName(toolchain)} (${formattedOverrideReason})`
+    }
+    if (r.default !== undefined) {
+        return `${ElanUnresolvedToolchain.toolchainName(r.default.unresolved)} (default Lean version)`
+    }
+    return 'No active Lean version'
+}
+
+function formatElanInstalledToolchains(toolchains: Map<string, ElanInstalledToolchain>) {
+    const installed = [...toolchains.values()].map(t => t.resolvedName)
+    if (installed.length > 20) {
+        return `${installed.slice(0, 20).join(', ')} ...`
+    }
+    return installed.join(', ')
+}
+
+function formatElanDumpState(r: ElanDumpStateWithoutNetQueryResult): string {
+    if (r.kind === 'ElanNotFound') {
+        return '**Elan**: Elan not installed'
+    }
+    if (r.kind === 'ExecutionError') {
+        return `**Elan**: Execution error: ${r.message}`
+    }
+    if (r.kind === 'PreEagerResolutionVersion') {
+        return '**Elan**: Pre-4.0.0 version'
+    }
+    r.kind satisfies 'Success'
+    const stateDump = r.state
+    return [
+        `**Active Lean version**: ${formatElanActiveToolchain(stateDump.toolchains)}`,
+        `**Installed Lean versions**: ${formatElanInstalledToolchains(stateDump.toolchains.installed)}`,
+    ].join('\n')
+}
+
+function formatElanInfo(d: FullDiagnostics): string {
+    if (d.elanDumpStateOutput.kind === 'PreEagerResolutionVersion') {
+        return [
+            '',
+            '-------------------------------------',
+            '',
+            `**Elan toolchains**: ${formatElanShowOutput(d.elanShowOutput)}`,
+        ].join('\n')
+    }
+    return formatElanDumpState(d.elanDumpStateOutput)
+}
+
 export function formatFullDiagnostics(d: FullDiagnostics): string {
     return [
         `**Operating system**: ${d.systemInfo.operatingSystem}`,
@@ -106,10 +179,7 @@ export function formatFullDiagnostics(d: FullDiagnostics): string {
         `**Elan**: ${formatElanVersionDiagnosis(d.elanVersionDiagnosis)}`,
         `**Lean**: ${formatLeanVersionDiagnosis(d.leanVersionDiagnosis)}`,
         `**Project**: ${formatProjectSetupDiagnosis(d.projectSetupDiagnosis)}`,
-        '',
-        '-------------------------------------',
-        '',
-        `**Elan toolchains**: ${formatElanShowOutput(d.elanShowOutput)}`,
+        formatElanInfo(d),
     ].join('\n')
 }
 
@@ -117,8 +187,12 @@ export async function performFullDiagnosis(
     channel: OutputChannel,
     cwdUri: FileUri | undefined,
 ): Promise<FullDiagnostics> {
-    const showSetupInformationContext = 'Show Setup Information'
-    const diagnose = new SetupDiagnoser(channel, cwdUri)
+    const diagnose = new SetupDiagnoser({
+        channel,
+        cwdUri,
+        context: 'Show Setup Information',
+        toolchainUpdateMode: 'DoNotUpdate',
+    })
     return {
         systemInfo: diagnose.querySystemInformation(),
         vscodeVersionDiagnosis: diagnose.queryVSCodeVersion(),
@@ -126,9 +200,10 @@ export async function performFullDiagnosis(
         isCurlAvailable: await diagnose.checkCurlAvailable(),
         isGitAvailable: await diagnose.checkGitAvailable(),
         elanVersionDiagnosis: await diagnose.elanVersion(),
-        leanVersionDiagnosis: await diagnose.leanVersion(showSetupInformationContext),
+        leanVersionDiagnosis: await diagnose.leanVersion(),
         projectSetupDiagnosis: await diagnose.projectSetup(),
         elanShowOutput: await diagnose.queryElanShow(),
+        elanDumpStateOutput: await diagnose.queryElanStateDumpWithoutNet(),
     }
 }
 
@@ -167,7 +242,12 @@ export class FullDiagnosticsProvider implements Disposable {
         const fullDiagnostics = await performFullDiagnosis(this.outputChannel, projectUri)
         const formattedFullDiagnostics = formatFullDiagnostics(fullDiagnostics)
         const copyToClipboardInput = 'Copy to Clipboard'
-        const choice = await displayNotificationWithInput('Information', formattedFullDiagnostics, copyToClipboardInput)
+        const choice = await displayNotificationWithInput(
+            'Information',
+            formattedFullDiagnostics,
+            [copyToClipboardInput],
+            'Close',
+        )
         if (choice === copyToClipboardInput) {
             await env.clipboard.writeText(formattedFullDiagnostics)
         }

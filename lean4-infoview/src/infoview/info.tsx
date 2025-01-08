@@ -498,6 +498,8 @@ function InfoAux(props: InfoProps) {
                             errorString = mapRpcError(ex).message
                         } else if (ex instanceof Error) {
                             errorString = ex.toString()
+                        } else if ('message' in ex && typeof ex.message === 'string') {
+                            errorString = ex.message
                         } else {
                             errorString = `Unrecognized error: ${JSON.stringify(ex)}`
                         }

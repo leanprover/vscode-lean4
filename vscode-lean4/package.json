@@ -81,6 +81,11 @@
                         "description": "Entry to add to the PATH variable"
                     }
                 },
+                "lean4.alwaysAskBeforeInstallingLeanVersions": {
+                    "type": "boolean",
+                    "default": false,
+                    "markdownDescription": "Enable to display a confirmation prompt whenever Elan is about to download and install a new Lean version. Needs Elan >= 4.0.0."
+                },
                 "lean4.serverArgs": {
                     "type": "array",
                     "default": [],
@@ -321,6 +326,36 @@
                 "description": "Install Lean's version manager 'Elan'"
             },
             {
+                "command": "lean4.setup.updateElan",
+                "category": "Lean 4",
+                "title": "Setup: Update Elan",
+                "description": "Update Lean's version manager 'Elan' to the most recent version"
+            },
+            {
+                "command": "lean4.setup.uninstallElan",
+                "category": "Lean 4",
+                "title": "Setup: Uninstall Elan",
+                "description": "Uninstall Lean's version manager 'Elan' and all installed Lean versions"
+            },
+            {
+                "command": "lean4.setup.selectDefaultToolchain",
+                "category": "Lean 4",
+                "title": "Setup: Select Default Lean Version…",
+                "description": "Sets a given Lean version to be the default for non-project files and command-line operations outside of projects"
+            },
+            {
+                "command": "lean4.setup.updateReleaseChannel",
+                "category": "Lean 4",
+                "title": "Setup: Update Release Channel Lean Version…",
+                "description": "Updates the Lean version for a given release channel"
+            },
+            {
+                "command": "lean4.setup.uninstallToolchains",
+                "category": "Lean 4",
+                "title": "Setup: Uninstall Lean Versions…",
+                "description": "Uninstalls given Lean versions"
+            },
+            {
                 "command": "lean4.project.createStandaloneProject",
                 "category": "Lean 4",
                 "title": "Project: Create Standalone Project…",
@@ -373,6 +408,12 @@
                 "category": "Lean 4",
                 "title": "Project: Fetch Mathlib Build Cache For Current Imports",
                 "description": "Downloads cached Mathlib build artifacts of the focused file and all of its imports to avoid full elaboration"
+            },
+            {
+                "command": "lean4.project.selectProjectToolchain",
+                "category": "Lean 4",
+                "title": "Project: Select Project Lean Version…",
+                "description": "Updates the 'lean-toolchain' file of the currently focused project with a given Lean version"
             }
         ],
         "languages": [
@@ -584,6 +625,21 @@
                     "command": "lean4.setup.installElan"
                 },
                 {
+                    "command": "lean4.setup.updateElan"
+                },
+                {
+                    "command": "lean4.setup.uninstallElan"
+                },
+                {
+                    "command": "lean4.setup.selectDefaultToolchain"
+                },
+                {
+                    "command": "lean4.setup.updateReleaseChannel"
+                },
+                {
+                    "command": "lean4.setup.uninstallToolchains"
+                },
+                {
                     "command": "lean4.project.createStandaloneProject"
                 },
                 {
@@ -613,6 +669,10 @@
                 },
                 {
                     "command": "lean4.project.fetchFileCache",
+                    "when": "lean4.isLeanFeatureSetActive"
+                },
+                {
+                    "command": "lean4.project.selectProjectToolchain",
                     "when": "lean4.isLeanFeatureSetActive"
                 }
             ],
@@ -716,9 +776,34 @@
             ],
             "lean4.titlebar.versions": [
                 {
+                    "command": "lean4.setup.selectDefaultToolchain",
+                    "when": "config.lean4.alwaysShowTitleBarMenu || lean4.isLeanFeatureSetActive",
+                    "group": "1_toolchains@1"
+                },
+                {
+                    "command": "lean4.setup.updateReleaseChannel",
+                    "when": "config.lean4.alwaysShowTitleBarMenu || lean4.isLeanFeatureSetActive",
+                    "group": "1_toolchains@2"
+                },
+                {
+                    "command": "lean4.setup.uninstallToolchains",
+                    "when": "config.lean4.alwaysShowTitleBarMenu || lean4.isLeanFeatureSetActive",
+                    "group": "1_toolchains@3"
+                },
+                {
                     "command": "lean4.setup.installElan",
                     "when": "config.lean4.alwaysShowTitleBarMenu || lean4.isLeanFeatureSetActive",
-                    "group": "1_setup@1"
+                    "group": "2_elan@1"
+                },
+                {
+                    "command": "lean4.setup.updateElan",
+                    "when": "config.lean4.alwaysShowTitleBarMenu || lean4.isLeanFeatureSetActive",
+                    "group": "2_elan@2"
+                },
+                {
+                    "command": "lean4.setup.uninstallElan",
+                    "when": "config.lean4.alwaysShowTitleBarMenu || lean4.isLeanFeatureSetActive",
+                    "group": "2_elan@3"
                 }
             ],
             "lean4.titlebar.projectActions": [
@@ -746,6 +831,11 @@
                     "command": "lean4.project.fetchFileCache",
                     "when": "lean4.isLeanFeatureSetActive",
                     "group": "2_mathlibActions@2"
+                },
+                {
+                    "command": "lean4.project.selectProjectToolchain",
+                    "when": "lean4.isLeanFeatureSetActive",
+                    "group": "3_projectToolchains@1"
                 }
             ],
             "lean4.titlebar.documentation": [

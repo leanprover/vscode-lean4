@@ -10,6 +10,7 @@
         "alwaysStrict": true,
         "rootDir": "./",
         "noImplicitAny": true,
+        "noFallthroughCasesInSwitch": true,
         "strictNullChecks": true,
         "esModuleInterop": true
     },

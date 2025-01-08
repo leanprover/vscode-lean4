@@ -142,7 +142,7 @@ export class InfoProvider implements Disposable {
         sendClientRequest: async (uri: string, method: string, params: any): Promise<any> => {
             const extUri = parseExtUri(uri)
             if (extUri === undefined) {
-                return undefined
+                throw Error(`Unexpected URI scheme: ${Uri.parse(uri).scheme}`)
             }
 
             const client = this.clientProvider.findClient(extUri)
@@ -162,7 +162,7 @@ export class InfoProvider implements Disposable {
                     throw ex
                 }
             }
-            return undefined
+            throw Error('No active Lean client.')
         },
         sendClientNotification: async (uri: string, method: string, params: any): Promise<void> => {
             const extUri = parseExtUri(uri)
@@ -292,15 +292,17 @@ export class InfoProvider implements Disposable {
         createRpcSession: async uri => {
             const extUri = parseExtUri(uri)
             if (extUri === undefined) {
-                return ''
+                throw Error(`Unexpected URI scheme: ${Uri.parse(uri).scheme}`)
             }
             const client = this.clientProvider.findClient(extUri)
-            if (!client) return ''
+            if (client === undefined) {
+                throw Error('No active Lean client.')
+            }
             const sessionId = await rpcConnect(client, uri)
             const session = new RpcSessionAtPos(client, sessionId, uri)
             if (!this.webviewPanel) {
                 session.dispose()
-                throw Error('infoview disconnect while connecting to RPC session')
+                throw Error('InfoView disconnected while connecting to RPC session.')
             } else {
                 this.rpcSessions.set(sessionId, session)
                 return sessionId

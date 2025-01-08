@@ -37,6 +37,7 @@ export function batchExecuteWithProc(
     args: string[],
     workingDirectory?: string | undefined,
     channel?: ExecutionChannel | undefined,
+    envExtensions?: { [key: string]: string } | undefined,
 ): [ChildProcessWithoutNullStreams | 'CannotLaunch', Promise<ExecutionResult>] {
     let stdout: string = ''
     let stderr: string = ''
@@ -44,6 +45,13 @@ export function batchExecuteWithProc(
     let options = {}
     if (workingDirectory !== undefined) {
         options = { cwd: workingDirectory }
+    }
+    if (envExtensions !== undefined) {
+        const env = Object.assign({}, process.env)
+        for (const [key, value] of Object.entries(envExtensions)) {
+            env[key] = value
+        }
+        options = { ...options, env }
     }
     if (channel?.combined) {
         const formattedCwd = workingDirectory ? `${workingDirectory}` : ''
@@ -132,15 +140,17 @@ export async function batchExecute(
     args: string[],
     workingDirectory?: string | undefined,
     channel?: ExecutionChannel | undefined,
+    envExtensions?: { [key: string]: string } | undefined,
 ): Promise<ExecutionResult> {
-    const [_, execPromise] = batchExecuteWithProc(executablePath, args, workingDirectory, channel)
+    const [_, execPromise] = batchExecuteWithProc(executablePath, args, workingDirectory, channel, envExtensions)
     return execPromise
 }
 
-interface ProgressExecutionOptions {
+export interface ProgressExecutionOptions {
     cwd?: string | undefined
     channel?: OutputChannel | undefined
     translator?: ((line: string) => string | undefined) | undefined
+    envExtensions?: { [key: string]: string } | undefined
     allowCancellation?: boolean
 }
 
@@ -160,7 +170,6 @@ export async function batchExecuteWithProgress(
         cancellable: options.allowCancellation === true,
     }
 
-    let lastReportedMessage: string | undefined
     let progress:
         | Progress<{
               message?: string | undefined
@@ -180,11 +189,8 @@ export async function batchExecuteWithProgress(
             }
             if (options.channel) {
                 options.channel.appendLine(value.trimEnd())
+                progress?.report({ message: value })
             }
-            if (progress !== undefined) {
-                progress.report({ message: value })
-            }
-            lastReportedMessage = value
         },
         appendLine(value: string) {
             this.append(value + '\n')
@@ -209,9 +215,15 @@ export async function batchExecuteWithProgress(
     const expensiveExecutionTimeoutPromise: Promise<ExecutionResult | undefined> = new Promise((resolve, _) =>
         setTimeout(() => resolve(undefined), 250),
     )
-    const [proc, executionPromise] = batchExecuteWithProc(executablePath, args, options.cwd, {
-        combined: progressChannel,
-    })
+    const [proc, executionPromise] = batchExecuteWithProc(
+        executablePath,
+        args,
+        options.cwd,
+        {
+            combined: progressChannel,
+        },
+        options.envExtensions,
+    )
     if (proc === 'CannotLaunch') {
         return executionPromise // resolves to a 'CannotLaunch' ExecutionResult
     }
@@ -225,7 +237,6 @@ export async function batchExecuteWithProgress(
     const result: ExecutionResult = await window.withProgress(progressOptions, (p, token) => {
         progress = p
         token.onCancellationRequested(() => proc.kill())
-        progress.report({ message: lastReportedMessage })
         return executionPromise
     })
     return result
