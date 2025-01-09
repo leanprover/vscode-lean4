@@ -17,7 +17,11 @@ const output =
               compact: true,
               entryFileNames: '[name].production.min.js',
               chunkFileNames: '[name]-[hash].production.min.js',
-              plugins: [terser()],
+              plugins: [terser({
+                format: {
+                    comments: /webpackIgnore/,
+                }
+            })],
           }
         : {
               dir: 'dist',
