@@ -279,16 +279,24 @@ export async function checkAll(
 
 export async function checkLean4ProjectPreconditions(
     channel: OutputChannel,
+    context: string,
     folderUri: ExtUri,
 ): Promise<PreconditionCheckResult> {
+    const options: SetupNotificationOptions = {
+        errorMode: { mode: 'NonModal' },
+        warningMode: { modal: false, proceedByDefault: true },
+    }
+    const d = new SetupDiagnostics(options)
     return await checkAll(
-        () => checkIsValidProjectFolder(channel, folderUri),
-        () => checkIsLeanVersionUpToDate(channel, folderUri, { modal: false }),
+        () => d.checkIsValidProjectFolder(channel, folderUri),
+        () => d.checkIsLeanVersionUpToDate(channel, context, folderUri, { toolchainUpdateMode: 'PromptAboutUpdate' }),
         async () => {
             if (!(await willUseLakeServer(folderUri))) {
                 return 'Fulfilled'
             }
-            return await checkIsLakeInstalledCorrectly(channel, folderUri, {})
+            return await d.checkIsLakeInstalledCorrectly(channel, context, folderUri, {
+                toolchainUpdateMode: 'PromptAboutUpdate',
+            })
         },
     )
 }

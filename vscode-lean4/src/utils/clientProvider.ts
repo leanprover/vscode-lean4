@@ -42,6 +42,7 @@ export class LeanClientProvider implements Disposable {
         outputChannel: OutputChannel,
         private checkLean4ProjectPreconditions: (
             channel: OutputChannel,
+            context: string,
             folderUri: ExtUri,
         ) => Promise<PreconditionCheckResult>,
     ) {
@@ -119,6 +120,7 @@ export class LeanClientProvider implements Disposable {
 
                 const preconditionCheckResult = await this.checkLean4ProjectPreconditions(
                     this.outputChannel,
+                    'Client Restart',
                     projectUri,
                 )
                 if (preconditionCheckResult !== 'Fatal') {
@@ -244,6 +246,7 @@ export class LeanClientProvider implements Disposable {
 
         const preconditionCheckResult = await this.checkLean4ProjectPreconditions(
             this.outputChannel,
+            'Client Startup',
             folderUri,
         )
         if (preconditionCheckResult === 'Fatal') {
