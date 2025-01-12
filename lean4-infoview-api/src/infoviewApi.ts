@@ -108,6 +108,18 @@ export type InfoviewActionKind =
 
 export type InfoviewAction = { kind: InfoviewActionKind }
 
+export type ContextMenuEntry = 'goToDefinition' | 'select' | 'unselect' | 'unselectAll'
+
+export interface ContextMenuAction {
+    entry: ContextMenuEntry
+    /**
+     * An entry-specific identifier extracted from `data-vscode-context`.
+     * For example, for `goToDefinition` it is the value of `interactiveCodeTagId`.
+     * See https://code.visualstudio.com/api/extension-guides/webview#context-menus.
+     */
+    id: string
+}
+
 /** Interface the hosting editor uses to talk to the InfoView WebView. */
 export interface InfoviewApi {
     /** Must be called exactly once on initialization with the current cursor position. */
@@ -147,11 +159,9 @@ export interface InfoviewApi {
     requestedAction(action: InfoviewAction): Promise<void>
 
     /**
-     * Must fire whenever the user requests to go to a definition using the infoview context menu.
-     * `interactiveCodeTagId` is obtainable from the `data-vscode-context` field in
-     * `InteractiveCodeTag`s in the InfoView. See https://code.visualstudio.com/api/extension-guides/webview#context-menus.
-     */
-    goToDefinition(interactiveCodeTagId: string): Promise<void>
+     * Must fire whenever the user clicks an infoview-specific context menu entry.
+     **/
+    clickedContextMenu(action: ContextMenuAction): Promise<void>
 
     /**
      * Execute the given JavaScript code inside the infoview. Must not be used

@@ -255,8 +255,12 @@ function InteractiveCodeTag({ tag: ct, fmt }: InteractiveTagProps<SubexprInfo>) 
     // parameterized with `data-vscode-context`. We then use this context to execute the
     // command in the context of the correct interactive code tag in the InfoView.
     const interactiveCodeTagId = React.useId()
-    const vscodeContext = { interactiveCodeTagId }
-    useEvent(ec.events.goToDefinition, async _ => void execGoToLoc(true), [execGoToLoc], interactiveCodeTagId)
+    useEvent(
+        ec.events.clickedContextMenu,
+        async _ => void execGoToLoc(true),
+        [execGoToLoc],
+        `goToDefinition:${interactiveCodeTagId}`,
+    )
 
     const ht = useHoverTooltip(ref, <TypePopupContents info={ct} />, (e, cont) => {
         // On ctrl-click or ⌘-click, if location is known, go to it in the editor
@@ -284,7 +288,7 @@ function InteractiveCodeTag({ tag: ct, fmt }: InteractiveTagProps<SubexprInfo>) 
             <span
                 ref={ref}
                 className={className}
-                data-vscode-context={JSON.stringify(vscodeContext)}
+                data-vscode-context={JSON.stringify({ ...sl.dataVscodeContext, interactiveCodeTagId })}
                 data-has-tooltip-on-hover
                 onClick={e => {
                     const stopClick = sl.onClick(e)

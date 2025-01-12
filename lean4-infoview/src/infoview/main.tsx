@@ -128,7 +128,7 @@ export function renderInfoview(editorApi: EditorApi, uiElement: HTMLElement): In
         changedInfoviewConfig: new EventEmitter(),
         runTestScript: new EventEmitter(),
         requestedAction: new EventEmitter(),
-        goToDefinition: new EventEmitter(),
+        clickedContextMenu: new EventEmitter(),
     }
 
     // Challenge: write a type-correct fn from `Eventify<T>` to `T` without using `any`
@@ -147,7 +147,8 @@ export function renderInfoview(editorApi: EditorApi, uiElement: HTMLElement): In
         changedCursorLocation: async loc => editorEvents.changedCursorLocation.fire(loc),
         changedInfoviewConfig: async conf => editorEvents.changedInfoviewConfig.fire(conf),
         requestedAction: async action => editorEvents.requestedAction.fire(action, action.kind),
-        goToDefinition: async id => editorEvents.goToDefinition.fire(id, id),
+        clickedContextMenu: async action =>
+            editorEvents.clickedContextMenu.fire(action, `${action.entry}:${action.id}`),
         // See https://rollupjs.org/guide/en/#avoiding-eval
         // eslint-disable-next-line @typescript-eslint/no-implied-eval
         runTestScript: async script => new Function(script)(),

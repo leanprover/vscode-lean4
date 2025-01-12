@@ -272,6 +272,24 @@
                 "description": "This command is an implementation detail of the 'Go to Definition' context menu option in the infoview."
             },
             {
+                "command": "lean4.infoview.select",
+                "category": "Lean 4",
+                "title": "Select",
+                "description": "This command is an implementation detail of the 'Select' context menu option in the infoview."
+            },
+            {
+                "command": "lean4.infoview.unselect",
+                "category": "Lean 4",
+                "title": "Unselect",
+                "description": "This command is an implementation detail of the 'Unselect' context menu option in the infoview."
+            },
+            {
+                "command": "lean4.infoview.unselectAll",
+                "category": "Lean 4",
+                "title": "Unselect All",
+                "description": "This command is an implementation detail of the 'Unselect All' context menu option in the infoview."
+            },
+            {
                 "command": "lean4.loogle.search",
                 "category": "Lean 4",
                 "title": "Loogle: Search",
@@ -876,6 +894,18 @@
                 {
                     "command": "lean4.infoview.goToDefinition",
                     "when": "webviewId == 'lean4_infoview' && interactiveCodeTagId"
+                },
+                {
+                    "command": "lean4.infoview.select",
+                    "when": "webviewId == 'lean4_infoview' && locationSelectId"
+                },
+                {
+                    "command": "lean4.infoview.unselect",
+                    "when": "webviewId == 'lean4_infoview' && locationUnselectId"
+                },
+                {
+                    "command": "lean4.infoview.unselectAll",
+                    "when": "webviewId == 'lean4_infoview' && selectedLocationsId"
                 }
             ]
         },
