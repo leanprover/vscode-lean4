@@ -1,3 +1,4 @@
+import * as glob from 'glob'
 import {
     DiagnosticCollection,
     Disposable,
@@ -547,7 +548,7 @@ export class LeanClient implements Disposable {
         let workspaceFolder: WorkspaceFolder | undefined
         documentSelector.scheme = this.folderUri.scheme
         if (this.folderUri.scheme === 'file') {
-            documentSelector.pattern = `${this.folderUri.fsPath}/**/*`
+            documentSelector.pattern = `${glob.escape(this.folderUri.fsPath, { windowsPathsNoEscape: true })}/**/*`
             workspaceFolder = {
                 uri: this.folderUri.asUri(),
                 name: path.basename(this.folderUri.fsPath),
