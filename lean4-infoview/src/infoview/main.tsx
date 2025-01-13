@@ -147,8 +147,13 @@ export function renderInfoview(editorApi: EditorApi, uiElement: HTMLElement): In
         changedCursorLocation: async loc => editorEvents.changedCursorLocation.fire(loc),
         changedInfoviewConfig: async conf => editorEvents.changedInfoviewConfig.fire(conf),
         requestedAction: async action => editorEvents.requestedAction.fire(action, action.kind),
-        clickedContextMenu: async action =>
-            editorEvents.clickedContextMenu.fire(action, `${action.entry}:${action.id}`),
+        clickedContextMenu: async action => {
+            editorEvents.clickedContextMenu.fire(action, `${action.entry}:${action.id}`)
+            // See comments on `InteractiveCodeTag`.
+            const sel = window.getSelection()
+            if (sel && 0 < sel.rangeCount && '_InteractiveCodeTagAutoSelection' in sel.getRangeAt(0))
+                sel.removeAllRanges()
+        },
         // See https://rollupjs.org/guide/en/#avoiding-eval
         // eslint-disable-next-line @typescript-eslint/no-implied-eval
         runTestScript: async script => new Function(script)(),

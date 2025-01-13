@@ -320,11 +320,17 @@ function InteractiveCodeTag({ tag: ct, fmt }: InteractiveTagProps<SubexprInfo>) 
                     ;(e as any)._InteractiveCodeTagSeen = {}
                     if (!(e.target instanceof Node)) return
                     if (!e.currentTarget.contains(e.target)) return
-                    // Select the pretty-printed code.
+
+                    // Select the pretty-printed code (see issue #311).
                     const sel = window.getSelection()
                     if (!sel) return
-                    sel.removeAllRanges()
                     sel.selectAllChildren(e.currentTarget)
+
+                    // If a context menu action other than cut/copy is chosen,
+                    // the auto-selection we made above should be removed.
+                    // We hack this by tagging the first auto-selected range with a special identifier,
+                    // and remove any selection on which the identifier is present in a global handler.
+                    if (0 < sel.rangeCount) (sel.getRangeAt(0) as any)._InteractiveCodeTagAutoSelection = {}
                 }}
             >
                 {tt.tooltip}
