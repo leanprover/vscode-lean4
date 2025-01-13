@@ -121,6 +121,8 @@ function TypePopupContents({ info }: TypePopupContentsProps) {
     // so let's not add it until someone really wants it.
     return (
         <LocationsContext.Provider value={undefined}>
+            {/* NOTE: we don't have to unset locations in `data-vscode-context` here
+            because popup contents are not DOM children, only React children. */}
             <div className="tooltip-code-content">
                 {interactive.state === 'resolved' ? (
                     <>
@@ -255,8 +257,12 @@ function InteractiveCodeTag({ tag: ct, fmt }: InteractiveTagProps<SubexprInfo>) 
     // parameterized with `data-vscode-context`. We then use this context to execute the
     // command in the context of the correct interactive code tag in the InfoView.
     const interactiveCodeTagId = React.useId()
-    const vscodeContext = { interactiveCodeTagId }
-    useEvent(ec.events.goToDefinition, async _ => void execGoToLoc(true), [execGoToLoc], interactiveCodeTagId)
+    useEvent(
+        ec.events.clickedContextMenu,
+        async _ => void execGoToLoc(true),
+        [execGoToLoc],
+        `goToDefinition:${interactiveCodeTagId}`,
+    )
 
     const ht = useHoverTooltip(ref, <TypePopupContents info={ct} />, (e, cont) => {
         // On ctrl-click or ⌘-click, if location is known, go to it in the editor
@@ -284,7 +290,7 @@ function InteractiveCodeTag({ tag: ct, fmt }: InteractiveTagProps<SubexprInfo>) 
             <span
                 ref={ref}
                 className={className}
-                data-vscode-context={JSON.stringify(vscodeContext)}
+                data-vscode-context={JSON.stringify({ ...sl.dataVscodeContext, interactiveCodeTagId })}
                 data-has-tooltip-on-hover
                 onClick={e => {
                     const stopClick = sl.onClick(e)
@@ -314,11 +320,21 @@ function InteractiveCodeTag({ tag: ct, fmt }: InteractiveTagProps<SubexprInfo>) 
                     ;(e as any)._InteractiveCodeTagSeen = {}
                     if (!(e.target instanceof Node)) return
                     if (!e.currentTarget.contains(e.target)) return
-                    // Select the pretty-printed code.
+
+                    // Select the pretty-printed code (see issue #311).
                     const sel = window.getSelection()
                     if (!sel) return
-                    sel.removeAllRanges()
                     sel.selectAllChildren(e.currentTarget)
+
+                    // If a context menu action other than cut/copy is chosen,
+                    // the auto-selection we made above should be removed.
+                    // We hack this by tagging the first auto-selected range with a special property,
+                    // and removing any selection on which the identifier is present in a global handler.
+                    if (0 < sel.rangeCount) (sel.getRangeAt(0) as any)._InteractiveCodeTagAutoSelection = {}
+
+                    // Hide the tooltip when a context menu is opened
+                    // by simulating a click-outside.
+                    ht.onClickOutside()
                 }}
             >
                 {tt.tooltip}

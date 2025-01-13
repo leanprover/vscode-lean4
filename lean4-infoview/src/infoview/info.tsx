@@ -147,10 +147,20 @@ interface GoalInfoDisplayProps {
 
 function GoalInfoDisplay(props: GoalInfoDisplayProps) {
     const { pos, goals, termGoal, userWidgets } = props
+    const ec = React.useContext(EditorContext)
 
     const config = React.useContext(ConfigContext)
 
     const [selectedLocs, setSelectedLocs] = React.useState<GoalsLocation[]>([])
+    const selectedLocationsId = React.useId()
+    useEvent(
+        ec.events.clickedContextMenu,
+        _ => {
+            setSelectedLocs([])
+        },
+        [setSelectedLocs],
+        `unselectAll:${selectedLocationsId}`,
+    )
 
     // https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes
     const [prevPos, setPrevPos] = React.useState<DocumentPosition>(pos)
@@ -180,7 +190,9 @@ function GoalInfoDisplay(props: GoalInfoDisplayProps) {
     return (
         <>
             <LocationsContext.Provider value={locs}>
-                <FilteredGoals key="goals" headerChildren="Tactic state" initiallyOpen goals={goals} displayCount />
+                <span data-vscode-context={JSON.stringify({ selectedLocationsId })}>
+                    <FilteredGoals key="goals" headerChildren="Tactic state" initiallyOpen goals={goals} displayCount />
+                </span>
             </LocationsContext.Provider>
             <FilteredGoals
                 key="term-goal"

@@ -272,6 +272,24 @@
                 "description": "This command is an implementation detail of the 'Go to Definition' context menu option in the infoview."
             },
             {
+                "command": "lean4.infoview.select",
+                "category": "Lean 4",
+                "title": "Select",
+                "description": "This command is an implementation detail of the 'Select' context menu option in the infoview."
+            },
+            {
+                "command": "lean4.infoview.unselect",
+                "category": "Lean 4",
+                "title": "Unselect",
+                "description": "This command is an implementation detail of the 'Unselect' context menu option in the infoview."
+            },
+            {
+                "command": "lean4.infoview.unselectAll",
+                "category": "Lean 4",
+                "title": "Unselect All",
+                "description": "This command is an implementation detail of the 'Unselect All' context menu option in the infoview."
+            },
+            {
                 "command": "lean4.loogle.search",
                 "category": "Lean 4",
                 "title": "Loogle: Search",
@@ -598,6 +616,18 @@
                     "when": "false"
                 },
                 {
+                    "command": "lean4.infoview.select",
+                    "when": "false"
+                },
+                {
+                    "command": "lean4.infoview.unselect",
+                    "when": "false"
+                },
+                {
+                    "command": "lean4.infoview.unselectAll",
+                    "when": "false"
+                },
+                {
                     "command": "lean4.loogle.search"
                 },
                 {
@@ -876,6 +906,18 @@
                 {
                     "command": "lean4.infoview.goToDefinition",
                     "when": "webviewId == 'lean4_infoview' && interactiveCodeTagId"
+                },
+                {
+                    "command": "lean4.infoview.select",
+                    "when": "webviewId == 'lean4_infoview' && selectableLocationId"
+                },
+                {
+                    "command": "lean4.infoview.unselect",
+                    "when": "webviewId == 'lean4_infoview' && unselectableLocationId"
+                },
+                {
+                    "command": "lean4.infoview.unselectAll",
+                    "when": "webviewId == 'lean4_infoview' && selectedLocationsId"
                 }
             ]
         },
@@ -1039,8 +1081,8 @@
         "test": "node ./out/test/suite/runTest.js"
     },
     "dependencies": {
-        "@leanprover/infoview": "~0.7.0",
-        "@leanprover/infoview-api": "~0.4.0",
+        "@leanprover/infoview": "~0.8.0",
+        "@leanprover/infoview-api": "~0.5.0",
         "@leanprover/unicode-input": "~0.1.0",
         "@leanprover/unicode-input-component": "~0.1.0",
         "@vscode/codicons": "^0.0.36",

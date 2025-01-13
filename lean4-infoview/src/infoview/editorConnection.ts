@@ -1,6 +1,7 @@
 import type { Location, ShowDocumentParams } from 'vscode-languageserver-protocol'
 
 import {
+    ContextMenuAction,
     EditorApi,
     InfoviewAction,
     InfoviewActionKind,
@@ -12,9 +13,14 @@ import {
 import { EventEmitter, Eventify } from './event'
 import { DocumentPosition } from './util'
 
-export type EditorEvents = Omit<Eventify<InfoviewApi>, 'requestedAction' | 'goToDefinition'> & {
+export type EditorEvents = Omit<Eventify<InfoviewApi>, 'requestedAction' | 'clickedContextMenu'> & {
     requestedAction: EventEmitter<InfoviewAction, InfoviewActionKind>
-    goToDefinition: EventEmitter<string, string>
+    /**
+     * Must fire whenever the user clicks an infoview-specific context menu entry.
+     *
+     * Keys for this event are of the form `` `${action.entry}:${action.id}` ``.
+     */
+    clickedContextMenu: EventEmitter<ContextMenuAction, string>
 }
 
 /** Provides higher-level wrappers around functionality provided by the editor,

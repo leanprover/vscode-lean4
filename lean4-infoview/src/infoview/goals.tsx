@@ -113,6 +113,7 @@ function HypName({ name, isInserted, isRemoved, mvarId, fvarId }: HypNameProps) 
             <span
                 ref={ref}
                 className={namecls}
+                data-vscode-context={JSON.stringify(sl.dataVscodeContext)}
                 onPointerOver={e => hhl.onPointerOver(e)}
                 onPointerOut={e => hhl.onPointerOut(e)}
                 onPointerMove={e => hhl.onPointerMove(e)}

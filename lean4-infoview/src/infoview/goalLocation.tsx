@@ -5,6 +5,8 @@ Authors: E.W.Ayers, Wojciech Nawrocki
 */
 import { FVarId, MVarId, SubexprPos } from '@leanprover/infoview-api'
 import * as React from 'react'
+import { EditorContext } from './contexts'
+import { useEvent } from './util'
 
 /**
  * A location within a goal. It is either:
@@ -60,16 +62,19 @@ export namespace GoalsLocation {
 }
 
 /**
- * An interface available through a React context in components where selecting subexpressions
- * makes sense. Currently this is only the goal state display. There, {@link GoalLocation}s can be
- * selected. */
+ * An interface available through a React context in components
+ * where selecting subexpressions makes sense.
+ * Currently, subexpressions can only be selected in the tactic state.
+ * We use {@link GoalsLocation} to represent subexpression positions in a goal.
+ */
 export interface Locations {
     isSelected: (l: GoalsLocation) => boolean
     setSelected: (l: GoalsLocation, fn: React.SetStateAction<boolean>) => void
     /**
-     * A template for the location of the current component. It is defined if and only if the current
-     * component is a subexpression of a selectable expression. We use
-     * {@link GoalsLocation.withSubexprPos} to map this template to a complete location. */
+     * A template for the location of the current component.
+     * It is defined if and only if the current component is a subexpression of a selectable expression.
+     * We use {@link GoalsLocation.withSubexprPos} to map this template to a complete location.
+     */
     subexprTemplate?: GoalsLocation
 }
 
@@ -88,16 +93,23 @@ export interface SelectableLocation {
     /** Returns whether propagation of the click event within the same handler should be stopped. */
     onClick: (e: React.MouseEvent<HTMLSpanElement, MouseEvent>) => boolean
     onPointerDown: (e: React.PointerEvent<HTMLSpanElement>) => void
+    /** An object that should be spliced into `data-vscode-context`. */
+    dataVscodeContext: object
 }
 
 /**
  * Logic for a component that can be selected using Shift-click and is highlighted when selected.
  *
- * The hook returns a string of CSS classes containing `highlight-selected` when appropriate,
- * as well as event handlers which the the caller must attach to the component.
+ * The hook returns
+ * - a string of CSS classes containing `highlight-selected` when appropriate; and
+ * - event handlers which the the caller must attach to the component; and
+ * - an object to append to `data-vscode-context`
+ *   in order to display context menu entries to (un)select this location in VSCode.
  */
 export function useSelectableLocation(settings: SelectableLocationSettings): SelectableLocation {
     const locs = React.useContext(LocationsContext)
+    const ec = React.useContext(EditorContext)
+
     let className: string = ''
     if (settings.isSelectable && locs && locs.isSelected(settings.loc)) {
         className += 'highlight-selected '
@@ -123,9 +135,42 @@ export function useSelectableLocation(settings: SelectableLocationSettings): Sel
         }
     }
 
+    const dataVscodeContext = {
+        // We set both IDs to an invalid value by default
+        // in order to clear ancestors' locations in this span
+        // (`data-vscode-context` fields are overridden by child components).
+        // The value can be anything that will not be returned from `useId`.
+        selectableLocationId: '',
+        unselectableLocationId: '',
+    }
+    const id = React.useId()
+    if (settings.isSelectable && locs) {
+        if (locs.isSelected(settings.loc)) dataVscodeContext.unselectableLocationId = id
+        else dataVscodeContext.selectableLocationId = id
+    }
+    useEvent(
+        ec.events.clickedContextMenu,
+        _ => {
+            if (!settings.isSelectable || !locs) return
+            locs.setSelected(settings.loc, true)
+        },
+        [locs, settings],
+        `select:${id}`,
+    )
+    useEvent(
+        ec.events.clickedContextMenu,
+        _ => {
+            if (!settings.isSelectable || !locs) return
+            locs.setSelected(settings.loc, false)
+        },
+        [locs, settings],
+        `unselect:${id}`,
+    )
+
     return {
         className,
         onClick,
         onPointerDown,
+        dataVscodeContext,
     }
 }
