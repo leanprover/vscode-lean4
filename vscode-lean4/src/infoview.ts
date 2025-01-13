@@ -368,10 +368,10 @@ export class InfoProvider implements Disposable {
                 this.webviewPanel?.api.clickedContextMenu({ entry: 'goToDefinition', id: args.interactiveCodeTagId }),
             ),
             commands.registerCommand('lean4.infoview.select', args =>
-                this.webviewPanel?.api.clickedContextMenu({ entry: 'select', id: args.locationSelectId }),
+                this.webviewPanel?.api.clickedContextMenu({ entry: 'select', id: args.selectableLocationId }),
             ),
             commands.registerCommand('lean4.infoview.unselect', args =>
-                this.webviewPanel?.api.clickedContextMenu({ entry: 'unselect', id: args.locationUnselectId }),
+                this.webviewPanel?.api.clickedContextMenu({ entry: 'unselect', id: args.unselectableLocationId }),
             ),
             commands.registerCommand('lean4.infoview.unselectAll', args =>
                 this.webviewPanel?.api.clickedContextMenu({ entry: 'unselectAll', id: args.selectedLocationsId }),

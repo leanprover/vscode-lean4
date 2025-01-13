@@ -121,6 +121,8 @@ function TypePopupContents({ info }: TypePopupContentsProps) {
     // so let's not add it until someone really wants it.
     return (
         <LocationsContext.Provider value={undefined}>
+            {/* NOTE: we don't have to unset locations in `data-vscode-context` here
+            because popup contents are not DOM children, only React children. */}
             <div className="tooltip-code-content">
                 {interactive.state === 'resolved' ? (
                     <>

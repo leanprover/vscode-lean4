@@ -93,7 +93,8 @@ export interface SelectableLocation {
     /** Returns whether propagation of the click event within the same handler should be stopped. */
     onClick: (e: React.MouseEvent<HTMLSpanElement, MouseEvent>) => boolean
     onPointerDown: (e: React.PointerEvent<HTMLSpanElement>) => void
-    dataVscodeContext: any
+    /** An object that should be spliced into `data-vscode-context`. */
+    dataVscodeContext: object
 }
 
 /**
@@ -134,18 +135,18 @@ export function useSelectableLocation(settings: SelectableLocationSettings): Sel
         }
     }
 
-    const dataVscodeContext: any = {
+    const dataVscodeContext = {
         // We set both IDs to an invalid value by default
         // in order to clear ancestors' locations in this span
         // (`data-vscode-context` fields are overridden by child components).
         // The value can be anything that will not be returned from `useId`.
-        locationSelectId: '',
-        locationUnselectId: '',
+        selectableLocationId: '',
+        unselectableLocationId: '',
     }
     const id = React.useId()
     if (settings.isSelectable && locs) {
-        if (locs.isSelected(settings.loc)) dataVscodeContext.locationUnselectId = id
-        else dataVscodeContext.locationSelectId = id
+        if (locs.isSelected(settings.loc)) dataVscodeContext.unselectableLocationId = id
+        else dataVscodeContext.selectableLocationId = id
     }
     useEvent(
         ec.events.clickedContextMenu,

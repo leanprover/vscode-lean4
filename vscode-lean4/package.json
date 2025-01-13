@@ -616,6 +616,18 @@
                     "when": "false"
                 },
                 {
+                    "command": "lean4.infoview.select",
+                    "when": "false"
+                },
+                {
+                    "command": "lean4.infoview.unselect",
+                    "when": "false"
+                },
+                {
+                    "command": "lean4.infoview.unselectAll",
+                    "when": "false"
+                },
+                {
                     "command": "lean4.loogle.search"
                 },
                 {
@@ -897,11 +909,11 @@
                 },
                 {
                     "command": "lean4.infoview.select",
-                    "when": "webviewId == 'lean4_infoview' && locationSelectId"
+                    "when": "webviewId == 'lean4_infoview' && selectableLocationId"
                 },
                 {
                     "command": "lean4.infoview.unselect",
-                    "when": "webviewId == 'lean4_infoview' && locationUnselectId"
+                    "when": "webviewId == 'lean4_infoview' && unselectableLocationId"
                 },
                 {
                     "command": "lean4.infoview.unselectAll",
