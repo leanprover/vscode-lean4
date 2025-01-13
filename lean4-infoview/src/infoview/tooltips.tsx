@@ -22,8 +22,9 @@ export function Tooltip(props_: TooltipProps) {
                 padding: 10,
             }),
             size({
-                apply({ availableHeight, elements }) {
+                apply({ availableHeight, availableWidth, elements }) {
                     elements.floating.style.maxHeight = `${Math.min(availableHeight, 300)}px`
+                    elements.floating.style.maxWidth = `${Math.min(availableWidth, 400)}px`
                 },
                 padding: 10,
             }),
@@ -33,6 +34,11 @@ export function Tooltip(props_: TooltipProps) {
         ],
         whileElementsMounted: autoUpdate,
     })
+
+    const adjustedFloatingStyles = {
+        ...floatingStyles,
+        left: `calc(${floatingStyles.left || 0}px - 16rem)`,
+    }
 
     const logicalDom = React.useContext(LogicalDomContext)
     const logicalDomCleanupFn = React.useRef<() => void>(() => {})
@@ -44,7 +50,7 @@ export function Tooltip(props_: TooltipProps) {
                 if (node) logicalDomCleanupFn.current = logicalDom.registerDescendant(node)
                 else logicalDomCleanupFn.current = () => {}
             }}
-            style={{ ...style, ...floatingStyles }}
+            style={{ ...style, ...adjustedFloatingStyles }}
             className="tooltip"
             {...props}
         >
