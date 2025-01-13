@@ -328,9 +328,13 @@ function InteractiveCodeTag({ tag: ct, fmt }: InteractiveTagProps<SubexprInfo>) 
 
                     // If a context menu action other than cut/copy is chosen,
                     // the auto-selection we made above should be removed.
-                    // We hack this by tagging the first auto-selected range with a special identifier,
-                    // and remove any selection on which the identifier is present in a global handler.
+                    // We hack this by tagging the first auto-selected range with a special property,
+                    // and removing any selection on which the identifier is present in a global handler.
                     if (0 < sel.rangeCount) (sel.getRangeAt(0) as any)._InteractiveCodeTagAutoSelection = {}
+
+                    // Hide the tooltip when a context menu is opened
+                    // by simulating a click-outside.
+                    ht.onClickOutside()
                 }}
             >
                 {tt.tooltip}
