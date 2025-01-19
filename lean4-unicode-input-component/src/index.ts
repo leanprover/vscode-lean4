@@ -187,9 +187,12 @@ export class InputAbbreviationRewriter implements AbbreviationTextSource {
         })
 
         textInput.addEventListener('keydown', async (ev: KeyboardEvent) => {
-            if (ev.key === 'Tab') {
+            if (ev.key === 'Tab' && this.rewriter.getTrackedAbbreviations().size > 0) {
                 await this.rewriter.replaceAllTrackedAbbreviations()
                 this.updateState()
+                // Don't send event to any other listeners, it was handled here.
+                ev.stopImmediatePropagation()
+                // Don't move focus to the next element.
                 ev.preventDefault()
             }
         })
