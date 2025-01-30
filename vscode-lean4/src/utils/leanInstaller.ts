@@ -97,16 +97,14 @@ export class LeanInstaller {
         void this.showRestartPromptAndRestart('Lake file configuration changed', packageUri)
     }
 
-    private installElanPrompt(reason: string | undefined): { message: string; item: 'Install Elan and Lean 4' } {
+    private installElanPrompt(reason: string | undefined): { message: string; item: 'Install Elan' } {
         let message: string
         if (reason !== undefined) {
-            message = `${reason} Do you wish to install Lean's version manager Elan and a recent stable version of Lean 4?`
+            message = `${reason} Do you wish to install Lean's version manager Elan?`
         } else {
-            message =
-                "This command will install Lean's version manager Elan and a recent stable version of Lean 4.\n\n" +
-                'Do you wish to proceed?'
+            message = "This command will install Lean's version manager Elan.\n\n" + 'Do you wish to proceed?'
         }
-        const item = 'Install Elan and Lean 4'
+        const item = 'Install Elan'
         return { message, item }
     }
 
@@ -145,11 +143,11 @@ export class LeanInstaller {
         severity: NotificationSeverity,
         reason: string | undefined,
         // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
-        options: StickyNotificationOptions<'Install Elan and Lean 4' | string>,
+        options: StickyNotificationOptions<'Install Elan' | string>,
         otherItems: StickyInput<string>[] = [],
     ): Disposable {
         const p = this.installElanPrompt(reason)
-        const installElanItem: StickyInput<'Install Elan and Lean 4'> = {
+        const installElanItem: StickyInput<'Install Elan'> = {
             input: p.item,
             continueDisplaying: false,
             action: async () => {
