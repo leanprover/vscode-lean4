@@ -313,7 +313,7 @@ export class LeanInstaller {
 
         const prompt =
             'Elan installation successful!\n\n' +
-            'Do you want Elan in VS Code to continue downloading and installing Lean versions automatically, or would you prefer it to ask for confirmation before downloading and installing new Lean versions?\n' +
+            'Do you want Elan in VS Code to download and install Lean versions automatically, or would you prefer it to ask for confirmation before downloading and installing new Lean versions?\n' +
             'Asking for confirmation is especially desirable if you are ever using a limited internet data plan or your internet connection tends to be slow, whereas automatic installs are less tedious on fast and unlimited internet connections.'
 
         const choice = await displayNotificationWithInput(
