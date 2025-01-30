@@ -2,7 +2,7 @@
     "name": "lean4",
     "displayName": "Lean 4",
     "description": "Lean 4 language support for VS Code",
-    "version": "0.0.193",
+    "version": "0.0.194",
     "publisher": "leanprover",
     "engines": {
         "vscode": "^1.75.0"
