@@ -58,9 +58,6 @@ body {
 }
 
 /* Interactive traces */
-.trace-line {
-    display: inline-block;
-}
 .trace-line:hover {
     background-color: #dbeeff;
 }
