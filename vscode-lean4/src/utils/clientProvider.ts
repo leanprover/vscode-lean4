@@ -1,6 +1,7 @@
 import { LeanFileProgressProcessingInfo, ServerStoppedReason } from '@leanprover/infoview-api'
 import path from 'path'
 import { Disposable, EventEmitter, OutputChannel, commands, workspace } from 'vscode'
+import { PublishDiagnosticsParams } from 'vscode-languageclient'
 import { SetupDiagnostics, checkAll } from '../diagnostics/setupDiagnostics'
 import { PreconditionCheckResult, SetupNotificationOptions } from '../diagnostics/setupNotifs'
 import { LeanClient } from '../leanclient'
@@ -48,6 +49,9 @@ export class LeanClientProvider implements Disposable {
 
     private progressChangedEmitter = new EventEmitter<[string, LeanFileProgressProcessingInfo[]]>()
     progressChanged = this.progressChangedEmitter.event
+
+    private diagnosticsChangedEmitter = new EventEmitter<PublishDiagnosticsParams>()
+    diagnosticsChanged = this.diagnosticsChangedEmitter.event
 
     private clientAddedEmitter = new EventEmitter<LeanClient>()
     clientAdded = this.clientAddedEmitter.event
@@ -289,6 +293,10 @@ export class LeanClientProvider implements Disposable {
         // aggregate progress changed events.
         client.progressChanged(arg => {
             this.progressChangedEmitter.fire(arg)
+        })
+
+        client.diagnostics(p => {
+            this.diagnosticsChangedEmitter.fire(p)
         })
 
         // Fired before starting the client because the InfoView uses this to register

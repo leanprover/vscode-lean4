@@ -109,6 +109,10 @@ export function getFallBackToStringOccurrenceHighlighting(): boolean {
     return workspace.getConfiguration('lean4').get('fallBackToStringOccurrenceHighlighting', false)
 }
 
+export function showDiagnosticGutterDecorations(): boolean {
+    return workspace.getConfiguration('lean4').get('showDiagnosticGutterDecorations', true)
+}
+
 export function isRunningTest(): boolean {
     return typeof process.env.LEAN4_TEST_FOLDER === 'string'
 }

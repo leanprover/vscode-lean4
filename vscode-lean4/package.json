@@ -175,6 +175,11 @@
                     "type": "boolean",
                     "default": true,
                     "markdownDescription": "Always display the Lean extension title bar menu in the top right. This helps beginners create and open Lean projects after launching an empty instance of VS Code, but may not be desirable for anyone who uses VS Code for things other than Lean."
+                },
+                "lean4.showDiagnosticGutterDecorations": {
+                    "type": "boolean",
+                    "default": true,
+                    "markdownDescription": "Display icons for errors and warnings and error ranges in the gutter."
                 }
             }
         },
