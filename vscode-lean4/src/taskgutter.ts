@@ -238,9 +238,13 @@ function determineDiagnosticDecoKind(d: DiagnosticDeco): DiagnosticDecoKind | un
                 r satisfies never
             }
             if (c && !e) {
+                // All designs I can think of that would distinguish `SingleLine` and `MultiLine` in this case
+                // have too much visual complexity for the small gutter.
                 return 'error-i-passthrough'
             }
             if (c && e) {
+                // All designs I can think of that would distinguish `SingleLine` and `MultiLine` in this case
+                // have too much visual complexity for the small gutter.
                 return 'error-t-passthrough'
             }
             assert(false)
