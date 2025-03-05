@@ -12,22 +12,48 @@ import {
     workspace,
 } from 'vscode'
 import { Diagnostic, DiagnosticSeverity, Range as LspRange } from 'vscode-languageclient'
-import { showDiagnosticGutterDecorations } from './config'
+import {
+    showDiagnosticGutterDecorations,
+    showUnsolvedGoalsDecoration,
+    unsolvedGoalsDecorationDarkThemeColor,
+    unsolvedGoalsDecorationLightThemeColor,
+} from './config'
 import { LeanClientProvider } from './utils/clientProvider'
 import { ExtUri, parseExtUri } from './utils/exturi'
 import { lean, LeanEditor } from './utils/leanEditorProvider'
 
+type DecorationStateKind = 'EditDelayed' | 'Instantaneous'
+
 interface DecorationState {
     type: TextEditorDecorationType
     prio: number
+    kind: DecorationStateKind
     decos: DecorationOptions[]
 }
 
 class LeanFileTaskGutter implements Disposable {
+    private readonly editDelayMs: number = 3000
     private timeout: NodeJS.Timeout | undefined
+    private editDelayTimeout: NodeJS.Timeout | undefined
+    private subscriptions: Disposable[] = []
     private decorationStates: DecorationState[] = []
 
-    constructor(private uri: ExtUri) {}
+    constructor(private uri: ExtUri) {
+        workspace.onDidChangeTextDocument(e => {
+            if (!uri.equalsUri(e.document.uri)) {
+                return
+            }
+            this.onDidChange()
+        }, this.subscriptions)
+    }
+
+    private onDidChange() {
+        clearTimeout(this.editDelayTimeout)
+        this.editDelayTimeout = setTimeout(() => {
+            this.editDelayTimeout = undefined
+            this.displayDecorations('EditDelayed')
+        }, this.editDelayMs)
+    }
 
     onDidReveal() {
         this.scheduleUpdate([], 100)
@@ -50,6 +76,19 @@ class LeanFileTaskGutter implements Disposable {
     }
 
     private scheduleUpdate(newDecorationStates: DecorationState[], ms: number) {
+        this.updateDecorationStates(newDecorationStates)
+        if (this.timeout === undefined) {
+            this.timeout = setTimeout(() => {
+                this.timeout = undefined
+                this.displayDecorations('Instantaneous')
+            }, ms)
+        }
+        if (this.editDelayTimeout === undefined) {
+            this.displayDecorations('EditDelayed')
+        }
+    }
+
+    private updateDecorationStates(newDecorationStates: DecorationState[]) {
         for (const newState of newDecorationStates) {
             const idx = this.decorationStates.findIndex(oldState => oldState.type.key === newState.type.key)
             if (idx === -1) {
@@ -59,23 +98,23 @@ class LeanFileTaskGutter implements Disposable {
             }
         }
         this.decorationStates.sort((a, b) => a.prio - b.prio)
-        if (this.timeout !== undefined) {
-            return
-        }
-        this.timeout = setTimeout(() => {
-            this.timeout = undefined
-            for (const leanEditor of lean.getVisibleLeanEditorsByUri(this.uri)) {
-                for (const state of this.decorationStates) {
+    }
+
+    private displayDecorations(kind: DecorationStateKind) {
+        for (const leanEditor of lean.getVisibleLeanEditorsByUri(this.uri)) {
+            for (const state of this.decorationStates) {
+                if (state.kind === kind) {
                     leanEditor.editor.setDecorations(state.type, state.decos)
                 }
             }
-        }, ms)
+        }
     }
 
     dispose() {
-        if (this.timeout !== undefined) {
-            clearTimeout(this.timeout)
-            this.timeout = undefined
+        clearTimeout(this.timeout)
+        clearTimeout(this.editDelayTimeout)
+        for (const s of this.subscriptions) {
+            s.dispose()
         }
     }
 }
@@ -112,14 +151,14 @@ function mergeDiagStarts(a: DiagStart, b: DiagStart): DiagStart {
     }
 }
 
-interface DiagnosticDeco {
+interface DiagnosticGutterDeco {
     line: number
     diagStart: DiagStart
     isPreviousDiagContinue: boolean
     isPreviousDiagEnd: boolean
 }
 
-function mergeDiagnosticDecos(a: DiagnosticDeco, b: DiagnosticDeco): DiagnosticDeco {
+function mergeDiagnosticGutterDecos(a: DiagnosticGutterDeco, b: DiagnosticGutterDeco): DiagnosticGutterDeco {
     assert(a.line === b.line)
     const line = a.line
     const diagStart = mergeDiagStarts(a.diagStart, b.diagStart)
@@ -152,7 +191,12 @@ function determineDiagStart(d: Diagnostic, startLine: number, endLine: number, l
     }
 }
 
-function determineDiagnosticDeco(d: Diagnostic, startLine: number, endLine: number, line: number): DiagnosticDeco {
+function determineDiagnosticGutterDeco(
+    d: Diagnostic,
+    startLine: number,
+    endLine: number,
+    line: number,
+): DiagnosticGutterDeco {
     const diagStart = determineDiagStart(d, startLine, endLine, line)
     if (diagStart !== 'None') {
         return {
@@ -170,8 +214,8 @@ function determineDiagnosticDeco(d: Diagnostic, startLine: number, endLine: numb
     }
 }
 
-function computeDiagnosticDecos(diagnostics: Diagnostic[]): DiagnosticDeco[] {
-    const decos: Map<number, DiagnosticDeco> = new Map()
+function computeDiagnosticGutterDecos(diagnostics: Diagnostic[]): DiagnosticGutterDeco[] {
+    const decos: Map<number, DiagnosticGutterDeco> = new Map()
     for (const d of diagnostics) {
         if (d.severity !== DiagnosticSeverity.Error && d.severity !== DiagnosticSeverity.Warning) {
             continue
@@ -180,22 +224,22 @@ function computeDiagnosticDecos(diagnostics: Diagnostic[]): DiagnosticDeco[] {
         const startLine = range.start.line
         const endLine = range.end.line
         for (let line = startLine; line <= endLine; line++) {
-            const deco = determineDiagnosticDeco(d, startLine, endLine, line)
+            const deco = determineDiagnosticGutterDeco(d, startLine, endLine, line)
             const oldDeco = decos.get(deco.line)
             if (oldDeco === undefined) {
                 decos.set(deco.line, deco)
             } else {
-                const mergedDeco = mergeDiagnosticDecos(oldDeco, deco)
+                const mergedDeco = mergeDiagnosticGutterDecos(oldDeco, deco)
                 decos.set(deco.line, mergedDeco)
             }
         }
     }
-    const result: DiagnosticDeco[] = [...decos.values()]
+    const result: DiagnosticGutterDeco[] = [...decos.values()]
     result.sort((a, b) => a.line - b.line)
     return result
 }
 
-const diagnosticDecoKinds = [
+const diagnosticGutterDecoKinds = [
     'error',
     'error-init',
     'error-i',
@@ -209,9 +253,9 @@ const diagnosticDecoKinds = [
     'warning-l-passthrough',
     'warning-t-passthrough',
 ] as const
-type DiagnosticDecoKind = (typeof diagnosticDecoKinds)[number]
+type DiagnosticGutterDecoKind = (typeof diagnosticGutterDecoKinds)[number]
 
-function determineDiagnosticDecoKind(d: DiagnosticDeco): DiagnosticDecoKind | undefined {
+function determineDiagnosticGutterDecoKind(d: DiagnosticGutterDeco): DiagnosticGutterDecoKind | undefined {
     const s = d.diagStart
     const c = d.isPreviousDiagContinue
     const e = d.isPreviousDiagEnd
@@ -285,11 +329,13 @@ function determineDiagnosticDecoKind(d: DiagnosticDeco): DiagnosticDecoKind | un
 export class LeanTaskGutter implements Disposable {
     private processingDecorationType: TextEditorDecorationType
     private fatalErrorDecorationType: TextEditorDecorationType
-    private diagnosticDecorationTypes: Map<DiagnosticDecoKind, TextEditorDecorationType> = new Map()
+    private unsolvedGoalsDecorationType: TextEditorDecorationType
+    private diagnosticGutterDecorationTypes: Map<DiagnosticGutterDecoKind, TextEditorDecorationType> = new Map()
 
     private gutters: Map<string, LeanFileTaskGutter> = new Map()
     private subscriptions: Disposable[] = []
     private showDiagnosticGutterDecorations: boolean = true
+    private showUnsolvedGoalsDecoration: boolean = true
 
     constructor(
         client: LeanClientProvider,
@@ -319,8 +365,25 @@ export class LeanTaskGutter implements Disposable {
                 gutterIconSize: 'contain',
             },
         })
-        for (const kind of diagnosticDecoKinds) {
-            this.diagnosticDecorationTypes.set(
+        this.unsolvedGoalsDecorationType = window.createTextEditorDecorationType({
+            dark: {
+                after: {
+                    contentText: '🛠',
+                    color: unsolvedGoalsDecorationDarkThemeColor(),
+                    margin: '0 0 0 1em',
+                },
+            },
+            light: {
+                after: {
+                    contentText: '🛠',
+                    color: unsolvedGoalsDecorationLightThemeColor(),
+                    margin: '0 0 0 1em',
+                },
+            },
+            isWholeLine: true,
+        })
+        for (const kind of diagnosticGutterDecoKinds) {
+            this.diagnosticGutterDecorationTypes.set(
                 kind,
                 window.createTextEditorDecorationType({
                     dark: {
@@ -340,7 +403,12 @@ export class LeanTaskGutter implements Disposable {
         this.subscriptions.push(
             this.processingDecorationType,
             this.fatalErrorDecorationType,
-            lean.onDidCloseLeanDocument(doc => this.gutters.delete(doc.extUri.toString())),
+            this.unsolvedGoalsDecorationType,
+            lean.onDidCloseLeanDocument(doc => {
+                const uri = doc.extUri.toString()
+                this.gutters.get(uri)?.dispose()
+                this.gutters.delete(uri)
+            }),
             lean.onDidRevealLeanEditor(editor => this.onDidReveal(editor)),
             window.onDidChangeActiveColorTheme(() => this.onDidChangeColorTheme()),
             extensions.onDidChange(() => this.checkContext()),
@@ -370,9 +438,15 @@ export class LeanTaskGutter implements Disposable {
             errorLensExtensions.isActive &&
             workspace.getConfiguration('errorLens').get('gutterIconsEnabled', false)
         this.showDiagnosticGutterDecorations = !isErrorLensGutterEnabled && showDiagnosticGutterDecorations()
+        this.showUnsolvedGoalsDecoration = showUnsolvedGoalsDecoration()
         if (!this.showDiagnosticGutterDecorations) {
             for (const gutter of this.gutters.values()) {
-                gutter.clear([...this.diagnosticDecorationTypes.values()])
+                gutter.clear([...this.diagnosticGutterDecorationTypes.values()])
+            }
+        }
+        if (!this.showUnsolvedGoalsDecoration) {
+            for (const gutter of this.gutters.values()) {
+                gutter.clear([this.unsolvedGoalsDecorationType])
             }
         }
     }
@@ -400,7 +474,8 @@ export class LeanTaskGutter implements Disposable {
     private onProgressChanged(uri: ExtUri, processingInfos: LeanFileProgressProcessingInfo[]) {
         const processingState: DecorationState = {
             type: this.processingDecorationType,
-            prio: 0,
+            prio: 1,
+            kind: 'Instantaneous',
             decos: processingInfos
                 .filter(i => i.kind === undefined || i.kind === LeanFileProgressKind.Processing)
                 .map(i => ({
@@ -410,7 +485,8 @@ export class LeanTaskGutter implements Disposable {
         }
         const fatalErrorState: DecorationState = {
             type: this.fatalErrorDecorationType,
-            prio: 0,
+            prio: 1,
+            kind: 'Instantaneous',
             decos: processingInfos
                 .filter(i => i.kind === LeanFileProgressKind.FatalError)
                 .map(i => ({
@@ -422,25 +498,29 @@ export class LeanTaskGutter implements Disposable {
     }
 
     private onDiagnosticsChanged(uri: ExtUri, diagnostics: Diagnostic[]) {
-        if (!this.showDiagnosticGutterDecorations) {
-            return
+        const decoStates: DecorationState[] = []
+        if (this.showDiagnosticGutterDecorations) {
+            decoStates.push(...this.computeDiagnosticGutterDecoStates(diagnostics))
         }
-        const decoStates = this.computeDiagnosticDecoStates(diagnostics)
+        if (this.showUnsolvedGoalsDecoration) {
+            decoStates.push(this.computeUnsolvedGoalsDecoState(diagnostics))
+        }
         this.getGutter(uri).onDidUpdateState(decoStates)
     }
 
-    private computeDiagnosticDecoStates(diagnostics: Diagnostic[]): DecorationState[] {
-        const decoStates: Map<DiagnosticDecoKind, DecorationState> = new Map()
-        for (const [kind, type] of this.diagnosticDecorationTypes.entries()) {
+    private computeDiagnosticGutterDecoStates(diagnostics: Diagnostic[]): DecorationState[] {
+        const decoStates: Map<DiagnosticGutterDecoKind, DecorationState> = new Map()
+        for (const [kind, type] of this.diagnosticGutterDecorationTypes.entries()) {
             decoStates.set(kind, {
                 type,
-                prio: 1,
+                prio: 0,
+                kind: 'Instantaneous',
                 decos: [],
             })
         }
-        const decos = computeDiagnosticDecos(diagnostics)
+        const decos = computeDiagnosticGutterDecos(diagnostics)
         for (const deco of decos) {
-            const kind = determineDiagnosticDecoKind(deco)
+            const kind = determineDiagnosticGutterDecoKind(deco)
             if (kind === undefined) {
                 continue
             }
@@ -451,11 +531,34 @@ export class LeanTaskGutter implements Disposable {
         return [...decoStates.values()]
     }
 
+    private computeUnsolvedGoalsDecoState(diagnostics: Diagnostic[]): DecorationState {
+        const unsolvedGoalsLines = diagnostics
+            .filter(d => {
+                if (!('leanTags' in d)) {
+                    return false
+                }
+                const leanTags = d.leanTags as number[] | undefined
+                return leanTags?.some(t => t === 1)
+            })
+            .map(d => {
+                const range = 'fullRange' in d ? (d.fullRange as LspRange) : d.range
+                return range.end.line
+            })
+        return {
+            type: this.unsolvedGoalsDecorationType,
+            prio: 0,
+            kind: 'EditDelayed',
+            decos: unsolvedGoalsLines.map(line => ({
+                range: new CodeRange(line, 0, line, 0),
+            })),
+        }
+    }
+
     dispose(): void {
         for (const gutter of this.gutters.values()) {
             gutter.dispose()
         }
-        for (const t of this.diagnosticDecorationTypes.values()) {
+        for (const t of this.diagnosticGutterDecorationTypes.values()) {
             t.dispose()
         }
         for (const s of this.subscriptions) {

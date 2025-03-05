@@ -180,6 +180,21 @@
                     "type": "boolean",
                     "default": true,
                     "markdownDescription": "Display icons for errors and warnings and error ranges in the gutter."
+                },
+                "lean4.showUnsolvedGoalsDecoration": {
+                    "type": "boolean",
+                    "default": true,
+                    "markdownDescription": "Display an icon at the end of the line where an 'unsolved goals' error ends."
+                },
+                "lean4.unsolvedGoalsDecorationLightThemeColor": {
+                    "type": "string",
+                    "default": "#1A85FF88",
+                    "markdownDescription": "Color used in unsolved goal decorations when using a light theme."
+                },
+                "lean4.unsolvedGoalsDecorationDarkThemeColor": {
+                    "type": "string",
+                    "default": "#3794FF88",
+                    "markdownDescription": "Color used in unsolved goal decorations when using a dark theme."
                 }
             }
         },
