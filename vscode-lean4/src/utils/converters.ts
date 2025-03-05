@@ -20,10 +20,12 @@ import { automaticallyBuildDependencies } from '../config'
 
 enum Lean4Tag {
     UnsolvedGoals = 1,
+    GoalsAccomplished = 2,
 }
 
 interface Lean4Diagnostic extends ls.Diagnostic {
     fullRange: ls.Range
+    isSilent?: boolean
     leanTags?: Lean4Tag[]
 }
 
@@ -66,6 +68,7 @@ export function patchConverters(p2cConverter: Protocol2CodeConverter, c2pConvert
         const diag = oldP2cAsDiagnostic.apply(this, [protDiag])
         diag.fullRange = p2cConverter.asRange(protDiag.fullRange)
         diag.leanTags = protDiag.leanTags
+        diag.isSilent = protDiag.isSilent
         return diag
     }
     // The original definition refers to `asDiagnostic` as a local function
@@ -76,11 +79,12 @@ export function patchConverters(p2cConverter: Protocol2CodeConverter, c2pConvert
     // eslint-disable-next-line @typescript-eslint/unbound-method
     const oldC2pAsDiagnostic = c2pConverter.asDiagnostic
     c2pConverter.asDiagnostic = function (
-        diag: code.Diagnostic & { fullRange: code.Range; leanTags?: Lean4Tag[] },
+        diag: code.Diagnostic & { fullRange: code.Range; isSilent?: boolean; leanTags?: Lean4Tag[] },
     ): Lean4Diagnostic {
         const protDiag = oldC2pAsDiagnostic.apply(this, [diag])
         protDiag.fullRange = c2pConverter.asRange(diag.fullRange)
         protDiag.leanTags = diag.leanTags
+        protDiag.isSilent = diag.isSilent
         return protDiag
     }
     c2pConverter.asDiagnostics = async (diags, token) => async.map(diags, d => c2pConverter.asDiagnostic(d), token)

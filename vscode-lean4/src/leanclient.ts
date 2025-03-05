@@ -571,7 +571,8 @@ export class LeanClient implements Disposable {
             },
             middleware: {
                 handleDiagnostics: (uri, diagnostics, next) => {
-                    next(uri, diagnostics)
+                    const diagnosticsInVsCode = diagnostics.filter(d => !('isSilent' in d && d.isSilent))
+                    next(uri, diagnosticsInVsCode)
                     const uri_ = c2pConverter.asUri(uri)
                     const diagnostics_ = []
                     for (const d of diagnostics) {

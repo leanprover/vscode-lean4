@@ -125,6 +125,10 @@ export function unsolvedGoalsDecorationDarkThemeColor(): string {
     return workspace.getConfiguration('lean4').get('unsolvedGoalsDecorationDarkThemeColor', '#3794FF88')
 }
 
+export function goalsAccomplishedDecorationKind(): string {
+    return workspace.getConfiguration('lean4').get('goalsAccomplishedDecorationKind', 'Double Checkmark')
+}
+
 export function isRunningTest(): boolean {
     return typeof process.env.LEAN4_TEST_FOLDER === 'string'
 }

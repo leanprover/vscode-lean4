@@ -8,9 +8,16 @@ import type {
 
 // Lean 4 extensions to LSP.
 
+export enum Lean4Tag {
+    UnsolvedGoals = 1, // introduced in 2025-03-05
+    GoalsAccomplished = 2, // introduced in 2025-03-05
+}
+
 /** Used in place of {@link Diagnostic} within `textDocument/publishDiagnostics`. */
 export interface LeanDiagnostic extends Diagnostic {
     fullRange?: Range // introduced in 2021-03-10
+    isSilent?: boolean // introduced in 2025-03-05
+    leanTags?: Lean4Tag[] // introduced in 2025-03-05
 }
 
 export interface PlainGoal {

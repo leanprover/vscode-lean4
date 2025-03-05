@@ -195,6 +195,17 @@
                     "type": "string",
                     "default": "#3794FF88",
                     "markdownDescription": "Color used in unsolved goal decorations when using a dark theme."
+                },
+                "lean4.goalsAccomplishedDecorationKind": {
+                    "type": "string",
+                    "enum": [
+                        "Double Checkmark",
+                        "Circled Checkmark",
+                        "Octopus",
+                        "Tada"
+                    ],
+                    "default": "Double Checkmark",
+                    "markdownDescription": "Style of icon used in 'Goals accomplished' decoration."
                 }
             }
         },

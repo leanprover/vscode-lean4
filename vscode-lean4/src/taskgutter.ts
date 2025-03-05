@@ -13,6 +13,7 @@ import {
 } from 'vscode'
 import { Diagnostic, DiagnosticSeverity, Range as LspRange } from 'vscode-languageclient'
 import {
+    goalsAccomplishedDecorationKind,
     showDiagnosticGutterDecorations,
     showUnsolvedGoalsDecoration,
     unsolvedGoalsDecorationDarkThemeColor,
@@ -119,10 +120,50 @@ class LeanFileTaskGutter implements Disposable {
     }
 }
 
+function diagRange(d: Diagnostic): LspRange {
+    if (d.severity !== DiagnosticSeverity.Error) {
+        return d.range
+    }
+    if (!('fullRange' in d)) {
+        return d.range
+    }
+    return d.fullRange as LspRange
+}
+
+function inclusiveEndLine(r: LspRange): number {
+    if (r.start.line === r.end.line) {
+        return r.end.line
+    }
+    if (r.end.character === 0) {
+        return r.end.line - 1
+    }
+    return r.end.line
+}
+
+function diagStartKindPrio(kind: 'Error' | 'Warning' | 'GoalsAccomplished'): number {
+    switch (kind) {
+        case 'Error':
+            return 2
+        case 'Warning':
+            return 1
+        case 'GoalsAccomplished':
+            return 0
+    }
+}
+
+function diagStartRangePrio(range: 'SingleLine' | 'MultiLine'): number {
+    switch (range) {
+        case 'SingleLine':
+            return 0
+        case 'MultiLine':
+            return 1
+    }
+}
+
 type DiagStart =
     | 'None'
     | {
-          kind: 'Error' | 'Warning'
+          kind: 'Error' | 'Warning' | 'GoalsAccomplished'
           range: 'SingleLine' | 'MultiLine'
       }
 
@@ -133,18 +174,10 @@ function mergeDiagStarts(a: DiagStart, b: DiagStart): DiagStart {
     if (b === 'None') {
         return a
     }
-    let kind: 'Error' | 'Warning'
-    if (a.kind === 'Warning' && b.kind === 'Warning') {
-        kind = 'Warning'
-    } else {
-        kind = 'Error'
-    }
-    let range: 'SingleLine' | 'MultiLine'
-    if (a.range === 'SingleLine' && b.range === 'SingleLine') {
-        range = 'SingleLine'
-    } else {
-        range = 'MultiLine'
-    }
+    const kind: 'Error' | 'Warning' | 'GoalsAccomplished' =
+        diagStartKindPrio(a.kind) >= diagStartKindPrio(b.kind) ? a.kind : b.kind
+    const range: 'SingleLine' | 'MultiLine' =
+        diagStartRangePrio(a.range) >= diagStartRangePrio(b.range) ? a.range : b.range
     return {
         kind,
         range,
@@ -172,6 +205,22 @@ function mergeDiagnosticGutterDecos(a: DiagnosticGutterDeco, b: DiagnosticGutter
     }
 }
 
+function isGoalsAccomplishedDiagnostic(d: Diagnostic): boolean {
+    if (!('leanTags' in d)) {
+        return false
+    }
+    const leanTags = d.leanTags as number[] | undefined
+    return leanTags !== undefined && leanTags.some(t => t === 2)
+}
+
+function isGutterDecoDiagnostic(d: Diagnostic): boolean {
+    return (
+        d.severity === DiagnosticSeverity.Error ||
+        d.severity === DiagnosticSeverity.Warning ||
+        isGoalsAccomplishedDiagnostic(d)
+    )
+}
+
 function determineDiagStart(d: Diagnostic, startLine: number, endLine: number, line: number): DiagStart {
     if (line !== startLine) {
         return 'None'
@@ -184,6 +233,11 @@ function determineDiagStart(d: Diagnostic, startLine: number, endLine: number, l
     } else if (d.severity === DiagnosticSeverity.Warning) {
         return {
             kind: 'Warning',
+            range: 'SingleLine',
+        }
+    } else if (isGoalsAccomplishedDiagnostic(d)) {
+        return {
+            kind: 'GoalsAccomplished',
             range: 'SingleLine',
         }
     } else {
@@ -217,12 +271,12 @@ function determineDiagnosticGutterDeco(
 function computeDiagnosticGutterDecos(diagnostics: Diagnostic[]): DiagnosticGutterDeco[] {
     const decos: Map<number, DiagnosticGutterDeco> = new Map()
     for (const d of diagnostics) {
-        if (d.severity !== DiagnosticSeverity.Error && d.severity !== DiagnosticSeverity.Warning) {
+        if (!isGutterDecoDiagnostic(d)) {
             continue
         }
-        const range = 'fullRange' in d ? (d.fullRange as LspRange) : d.range
+        const range = diagRange(d)
         const startLine = range.start.line
-        const endLine = range.end.line
+        const endLine = inclusiveEndLine(range)
         for (let line = startLine; line <= endLine; line++) {
             const deco = determineDiagnosticGutterDeco(d, startLine, endLine, line)
             const oldDeco = decos.get(deco.line)
@@ -252,8 +306,59 @@ const diagnosticGutterDecoKinds = [
     'warning-i-passthrough',
     'warning-l-passthrough',
     'warning-t-passthrough',
+    'goals-accomplished-checkmark',
+    'goals-accomplished-checkmark-i-passthrough',
+    'goals-accomplished-checkmark-l-passthrough',
+    'goals-accomplished-checkmark-t-passthrough',
+    'goals-accomplished-circled-checkmark',
+    'goals-accomplished-circled-checkmark-i-passthrough',
+    'goals-accomplished-circled-checkmark-l-passthrough',
+    'goals-accomplished-circled-checkmark-t-passthrough',
+    'goals-accomplished-octopus',
+    'goals-accomplished-octopus-i-passthrough',
+    'goals-accomplished-octopus-l-passthrough',
+    'goals-accomplished-octopus-t-passthrough',
+    'goals-accomplished-tada',
+    'goals-accomplished-tada-i-passthrough',
+    'goals-accomplished-tada-l-passthrough',
+    'goals-accomplished-tada-t-passthrough',
 ] as const
 type DiagnosticGutterDecoKind = (typeof diagnosticGutterDecoKinds)[number]
+
+function getGoalsAccomplishedDiagnosticGutterDecoKindName(): string {
+    const configName = goalsAccomplishedDecorationKind()
+    if (configName === 'Double Checkmark') {
+        return 'goals-accomplished-checkmark'
+    }
+    if (configName === 'Circled Checkmark') {
+        return 'goals-accomplished-circled-checkmark'
+    }
+    if (configName === 'Octopus') {
+        return 'goals-accomplished-octopus'
+    }
+    if (configName === 'Tada') {
+        return 'goals-accomplished-tada'
+    }
+    return 'goals-accomplished-checkmark'
+}
+
+function determineSingleLineDiagnosticGutterDecoKind(d: DiagnosticGutterDeco, name: string): DiagnosticGutterDecoKind {
+    const c = d.isPreviousDiagContinue
+    const e = d.isPreviousDiagEnd
+    if (!c && !e) {
+        return name as DiagnosticGutterDecoKind
+    }
+    if (!c && e) {
+        return `${name}-l-passthrough` as DiagnosticGutterDecoKind
+    }
+    if (c && !e) {
+        return `${name}-i-passthrough` as DiagnosticGutterDecoKind
+    }
+    if (c && e) {
+        return `${name}-t-passthrough` as DiagnosticGutterDecoKind
+    }
+    assert(false)
+}
 
 function determineDiagnosticGutterDecoKind(d: DiagnosticGutterDeco): DiagnosticGutterDecoKind | undefined {
     const s = d.diagStart
@@ -294,19 +399,10 @@ function determineDiagnosticGutterDecoKind(d: DiagnosticGutterDeco): DiagnosticG
             assert(false)
         }
         if (k === 'Warning') {
-            if (!c && !e) {
-                return 'warning'
-            }
-            if (!c && e) {
-                return 'warning-l-passthrough'
-            }
-            if (c && !e) {
-                return 'warning-i-passthrough'
-            }
-            if (c && e) {
-                return 'warning-t-passthrough'
-            }
-            assert(false)
+            return determineSingleLineDiagnosticGutterDecoKind(d, 'warning')
+        }
+        if (k === 'GoalsAccomplished') {
+            return determineSingleLineDiagnosticGutterDecoKind(d, getGoalsAccomplishedDiagnosticGutterDecoKindName())
         }
         k satisfies never
     }
@@ -541,8 +637,8 @@ export class LeanTaskGutter implements Disposable {
                 return leanTags?.some(t => t === 1)
             })
             .map(d => {
-                const range = 'fullRange' in d ? (d.fullRange as LspRange) : d.range
-                return range.end.line
+                const range = diagRange(d)
+                return inclusiveEndLine(range)
             })
         return {
             type: this.unsolvedGoalsDecorationType,

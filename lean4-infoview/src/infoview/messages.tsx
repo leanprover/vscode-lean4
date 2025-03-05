@@ -135,7 +135,9 @@ export function AllMessages({ uri: uri0 }: { uri: DocumentUri }) {
     const rs0 = useRpcSessionAtPos({ uri: uri0, line: 0, character: 0 })
     const dc = React.useContext(LspDiagnosticsContext)
     const config = React.useContext(ConfigContext)
-    const diags0 = React.useMemo(() => dc.get(uri0) || [], [dc, uri0])
+    const diags0 = React.useMemo(() => dc.get(uri0) || [], [dc, uri0]).filter(
+        diag => !('isSilent' in diag && diag.isSilent),
+    )
 
     const iDiags0 = React.useMemo(
         () =>
@@ -145,7 +147,8 @@ export function AllMessages({ uri: uri0 }: { uri: DocumentUri }) {
                 // ensures that the call doesn't block until the whole file is elaborated.
                 const maxLine = diags0.reduce((ln, d) => Math.max(ln, d.range.end.line), 0) + 1
                 try {
-                    const diags = await getInteractiveDiagnostics(rs0, { start: 0, end: maxLine })
+                    let diags = await getInteractiveDiagnostics(rs0, { start: 0, end: maxLine })
+                    diags = diags.filter(d => !d.isSilent)
                     if (diags.length > 0) {
                         return diags
                     }
