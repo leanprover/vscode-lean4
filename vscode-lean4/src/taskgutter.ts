@@ -11,7 +11,7 @@ import {
     window,
     workspace,
 } from 'vscode'
-import { Diagnostic, DiagnosticSeverity, Range as LspRange } from 'vscode-languageclient'
+import { DiagnosticSeverity, Range as LspRange } from 'vscode-languageclient'
 import {
     goalsAccomplishedDecorationKind,
     showDiagnosticGutterDecorations,
@@ -20,6 +20,7 @@ import {
     unsolvedGoalsDecorationLightThemeColor,
 } from './config'
 import { LeanClientProvider } from './utils/clientProvider'
+import { LeanDiagnostic, LeanTag } from './utils/converters'
 import { ExtUri, parseExtUri } from './utils/exturi'
 import { lean, LeanEditor } from './utils/leanEditorProvider'
 
@@ -120,14 +121,14 @@ class LeanFileTaskGutter implements Disposable {
     }
 }
 
-function diagRange(d: Diagnostic): LspRange {
+function diagRange(d: LeanDiagnostic): LspRange {
     if (d.severity !== DiagnosticSeverity.Error) {
         return d.range
     }
-    if (!('fullRange' in d)) {
+    if (d.fullRange === undefined) {
         return d.range
     }
-    return d.fullRange as LspRange
+    return d.fullRange
 }
 
 function inclusiveEndLine(r: LspRange): number {
@@ -205,15 +206,15 @@ function mergeDiagnosticGutterDecos(a: DiagnosticGutterDeco, b: DiagnosticGutter
     }
 }
 
-function isGoalsAccomplishedDiagnostic(d: Diagnostic): boolean {
-    if (!('leanTags' in d)) {
-        return false
-    }
-    const leanTags = d.leanTags as number[] | undefined
-    return leanTags !== undefined && leanTags.some(t => t === 2) && goalsAccomplishedDecorationKind() !== 'Off'
+function isGoalsAccomplishedDiagnostic(d: LeanDiagnostic): boolean {
+    return (
+        d.leanTags !== undefined &&
+        d.leanTags.some(t => t === LeanTag.GoalsAccomplished) &&
+        goalsAccomplishedDecorationKind() !== 'Off'
+    )
 }
 
-function isGutterDecoDiagnostic(d: Diagnostic): boolean {
+function isGutterDecoDiagnostic(d: LeanDiagnostic): boolean {
     return (
         d.severity === DiagnosticSeverity.Error ||
         d.severity === DiagnosticSeverity.Warning ||
@@ -221,7 +222,7 @@ function isGutterDecoDiagnostic(d: Diagnostic): boolean {
     )
 }
 
-function determineDiagStart(d: Diagnostic, startLine: number, endLine: number, line: number): DiagStart {
+function determineDiagStart(d: LeanDiagnostic, startLine: number, endLine: number, line: number): DiagStart {
     if (line !== startLine) {
         return 'None'
     }
@@ -246,7 +247,7 @@ function determineDiagStart(d: Diagnostic, startLine: number, endLine: number, l
 }
 
 function determineDiagnosticGutterDeco(
-    d: Diagnostic,
+    d: LeanDiagnostic,
     startLine: number,
     endLine: number,
     line: number,
@@ -268,7 +269,7 @@ function determineDiagnosticGutterDeco(
     }
 }
 
-function computeDiagnosticGutterDecos(diagnostics: Diagnostic[]): DiagnosticGutterDeco[] {
+function computeDiagnosticGutterDecos(diagnostics: LeanDiagnostic[]): DiagnosticGutterDeco[] {
     const decos: Map<number, DiagnosticGutterDeco> = new Map()
     for (const d of diagnostics) {
         if (!isGutterDecoDiagnostic(d)) {
@@ -593,7 +594,7 @@ export class LeanTaskGutter implements Disposable {
         this.getGutter(uri).onDidUpdateState([processingState, fatalErrorState])
     }
 
-    private onDiagnosticsChanged(uri: ExtUri, diagnostics: Diagnostic[]) {
+    private onDiagnosticsChanged(uri: ExtUri, diagnostics: LeanDiagnostic[]) {
         const decoStates: DecorationState[] = []
         if (this.showDiagnosticGutterDecorations) {
             decoStates.push(...this.computeDiagnosticGutterDecoStates(diagnostics))
@@ -604,7 +605,7 @@ export class LeanTaskGutter implements Disposable {
         this.getGutter(uri).onDidUpdateState(decoStates)
     }
 
-    private computeDiagnosticGutterDecoStates(diagnostics: Diagnostic[]): DecorationState[] {
+    private computeDiagnosticGutterDecoStates(diagnostics: LeanDiagnostic[]): DecorationState[] {
         const decoStates: Map<DiagnosticGutterDecoKind, DecorationState> = new Map()
         for (const [kind, type] of this.diagnosticGutterDecorationTypes.entries()) {
             decoStates.set(kind, {
@@ -627,14 +628,10 @@ export class LeanTaskGutter implements Disposable {
         return [...decoStates.values()]
     }
 
-    private computeUnsolvedGoalsDecoState(diagnostics: Diagnostic[]): DecorationState {
+    private computeUnsolvedGoalsDecoState(diagnostics: LeanDiagnostic[]): DecorationState {
         const unsolvedGoalsLines = diagnostics
             .filter(d => {
-                if (!('leanTags' in d)) {
-                    return false
-                }
-                const leanTags = d.leanTags as number[] | undefined
-                return leanTags?.some(t => t === 1)
+                return d.leanTags?.some(t => t === LeanTag.UnsolvedGoals)
             })
             .map(d => {
                 const range = diagRange(d)

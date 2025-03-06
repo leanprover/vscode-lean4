@@ -26,7 +26,6 @@ import {
     window,
     workspace,
 } from 'vscode'
-import { PublishDiagnosticsParams } from 'vscode-languageclient'
 import * as ls from 'vscode-languageserver-protocol'
 import {
     getEditorLineHeight,
@@ -46,7 +45,7 @@ import {
 import { LeanClient } from './leanclient'
 import { Rpc } from './rpc'
 import { LeanClientProvider } from './utils/clientProvider'
-import { c2pConverter, p2cConverter } from './utils/converters'
+import { c2pConverter, LeanPublishDiagnosticsParams, p2cConverter } from './utils/converters'
 import { ExtUri, parseExtUri, toExtUri } from './utils/exturi'
 import { lean, LeanEditor } from './utils/leanEditorProvider'
 import { logger } from './utils/logger'
@@ -681,8 +680,8 @@ export class InfoProvider implements Disposable {
     private static async getDiagnosticParams(
         uri: Uri,
         diagnostics: readonly Diagnostic[],
-    ): Promise<PublishDiagnosticsParams> {
-        const params: PublishDiagnosticsParams = {
+    ): Promise<LeanPublishDiagnosticsParams> {
+        const params: LeanPublishDiagnosticsParams = {
             uri: c2pConverter.asUri(uri),
             diagnostics: await c2pConverter.asDiagnostics(diagnostics as Diagnostic[]),
         }

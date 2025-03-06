@@ -18,15 +18,21 @@ import * as async from 'vscode-languageclient/lib/common/utils/async'
 import * as ls from 'vscode-languageserver-protocol'
 import { automaticallyBuildDependencies } from '../config'
 
-enum Lean4Tag {
+export enum LeanTag {
     UnsolvedGoals = 1,
     GoalsAccomplished = 2,
 }
 
-interface Lean4Diagnostic extends ls.Diagnostic {
-    fullRange: ls.Range
+export interface LeanDiagnostic extends ls.Diagnostic {
+    fullRange?: ls.Range
     isSilent?: boolean
-    leanTags?: Lean4Tag[]
+    leanTags?: LeanTag[]
+}
+
+export interface LeanPublishDiagnosticsParams {
+    uri: ls.DocumentUri
+    version?: ls.integer
+    diagnostics: LeanDiagnostic[]
 }
 
 interface SnippetTextEdit extends ls.TextEdit {
@@ -60,7 +66,7 @@ export const c2pConverter = createC2PConverter(undefined)
 export function patchConverters(p2cConverter: Protocol2CodeConverter, c2pConverter: Code2ProtocolConverter) {
     // eslint-disable-next-line @typescript-eslint/unbound-method
     const oldP2cAsDiagnostic = p2cConverter.asDiagnostic
-    p2cConverter.asDiagnostic = function (protDiag: Lean4Diagnostic): code.Diagnostic {
+    p2cConverter.asDiagnostic = function (protDiag: LeanDiagnostic): code.Diagnostic {
         if (!protDiag.message) {
             // Fixes: Notification handler 'textDocument/publishDiagnostics' failed with message: message must be set
             protDiag.message = ' '
@@ -79,8 +85,8 @@ export function patchConverters(p2cConverter: Protocol2CodeConverter, c2pConvert
     // eslint-disable-next-line @typescript-eslint/unbound-method
     const oldC2pAsDiagnostic = c2pConverter.asDiagnostic
     c2pConverter.asDiagnostic = function (
-        diag: code.Diagnostic & { fullRange: code.Range; isSilent?: boolean; leanTags?: Lean4Tag[] },
-    ): Lean4Diagnostic {
+        diag: code.Diagnostic & { fullRange?: code.Range; isSilent?: boolean; leanTags?: LeanTag[] },
+    ): LeanDiagnostic {
         const protDiag = oldC2pAsDiagnostic.apply(this, [diag])
         protDiag.fullRange = c2pConverter.asRange(diag.fullRange)
         protDiag.leanTags = diag.leanTags

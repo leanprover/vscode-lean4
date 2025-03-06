@@ -1,14 +1,8 @@
 import * as React from 'react'
 import fastIsEqual from 'react-fast-compare'
-import {
-    Diagnostic,
-    DiagnosticSeverity,
-    DocumentUri,
-    Location,
-    PublishDiagnosticsParams,
-} from 'vscode-languageserver-protocol'
+import { Diagnostic, DiagnosticSeverity, DocumentUri, Location } from 'vscode-languageserver-protocol'
 
-import { LeanDiagnostic, RpcErrorCode } from '@leanprover/infoview-api'
+import { LeanDiagnostic, LeanPublishDiagnosticsParams, RpcErrorCode } from '@leanprover/infoview-api'
 
 import { getInteractiveDiagnostics, InteractiveDiagnostic } from '@leanprover/infoview-api'
 import { Details } from './collapsing'
@@ -136,7 +130,7 @@ export function AllMessages({ uri: uri0 }: { uri: DocumentUri }) {
     const dc = React.useContext(LspDiagnosticsContext)
     const config = React.useContext(ConfigContext)
     const diags0 = React.useMemo(() => dc.get(uri0) || [], [dc, uri0]).filter(
-        diag => !('isSilent' in diag && diag.isSilent),
+        diag => diag.isSilent === undefined || !diag.isSilent,
     )
 
     const iDiags0 = React.useMemo(
@@ -162,7 +156,7 @@ export function AllMessages({ uri: uri0 }: { uri: DocumentUri }) {
                         console.log('getInteractiveDiagnostics error ', err)
                     }
                 }
-                return diags0.map(d => ({ ...(d as LeanDiagnostic), message: { text: d.message } }))
+                return diags0.map(d => ({ ...d, message: { text: d.message } }))
             }),
         [rs0, diags0],
     )
@@ -250,8 +244,8 @@ function AllMessagesBody({ uri, messages, setNumDiags }: AllMessagesBodyProps) {
 export function WithLspDiagnosticsContext({ children }: React.PropsWithChildren<{}>) {
     const [allDiags, _0] = useServerNotificationState(
         'textDocument/publishDiagnostics',
-        new Map<DocumentUri, Diagnostic[]>(),
-        async (params: PublishDiagnosticsParams) => diags => new Map(diags).set(params.uri, params.diagnostics),
+        new Map<DocumentUri, LeanDiagnostic[]>(),
+        async (params: LeanPublishDiagnosticsParams) => diags => new Map(diags).set(params.uri, params.diagnostics),
         [],
     )
 

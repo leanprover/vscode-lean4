@@ -1,10 +1,10 @@
 import { LeanFileProgressProcessingInfo, ServerStoppedReason } from '@leanprover/infoview-api'
 import path from 'path'
 import { Disposable, EventEmitter, OutputChannel, commands, workspace } from 'vscode'
-import { PublishDiagnosticsParams } from 'vscode-languageclient'
 import { SetupDiagnostics, checkAll } from '../diagnostics/setupDiagnostics'
 import { PreconditionCheckResult, SetupNotificationOptions } from '../diagnostics/setupNotifs'
 import { LeanClient } from '../leanclient'
+import { LeanPublishDiagnosticsParams } from './converters'
 import { ExtUri, FileUri, UntitledUri, getWorkspaceFolderUri } from './exturi'
 import { lean } from './leanEditorProvider'
 import { LeanInstaller } from './leanInstaller'
@@ -50,7 +50,7 @@ export class LeanClientProvider implements Disposable {
     private progressChangedEmitter = new EventEmitter<[string, LeanFileProgressProcessingInfo[]]>()
     progressChanged = this.progressChangedEmitter.event
 
-    private diagnosticsChangedEmitter = new EventEmitter<PublishDiagnosticsParams>()
+    private diagnosticsChangedEmitter = new EventEmitter<LeanPublishDiagnosticsParams>()
     diagnosticsChanged = this.diagnosticsChangedEmitter.event
 
     private clientAddedEmitter = new EventEmitter<LeanClient>()

@@ -1,6 +1,7 @@
 import type {
     Diagnostic,
     DocumentUri,
+    integer,
     Range,
     TextDocumentPositionParams,
     VersionedTextDocumentIdentifier,
@@ -8,7 +9,7 @@ import type {
 
 // Lean 4 extensions to LSP.
 
-export enum Lean4Tag {
+export enum LeanTag {
     UnsolvedGoals = 1, // introduced in 2025-03-05
     GoalsAccomplished = 2, // introduced in 2025-03-05
 }
@@ -17,7 +18,13 @@ export enum Lean4Tag {
 export interface LeanDiagnostic extends Diagnostic {
     fullRange?: Range // introduced in 2021-03-10
     isSilent?: boolean // introduced in 2025-03-05
-    leanTags?: Lean4Tag[] // introduced in 2025-03-05
+    leanTags?: LeanTag[] // introduced in 2025-03-05
+}
+
+export interface LeanPublishDiagnosticsParams {
+    uri: DocumentUri
+    version?: integer
+    diagnostics: LeanDiagnostic[]
 }
 
 export interface PlainGoal {
