@@ -148,7 +148,7 @@ export function AllMessages({ uri: uri0 }: { uri: DocumentUri }) {
                 const maxLine = diags0.reduce((ln, d) => Math.max(ln, d.range.end.line), 0) + 1
                 try {
                     let diags = await getInteractiveDiagnostics(rs0, { start: 0, end: maxLine })
-                    diags = diags.filter(d => !d.isSilent)
+                    diags = diags.filter(d => d.isSilent === undefined || !d.isSilent)
                     if (diags.length > 0) {
                         return diags
                     }

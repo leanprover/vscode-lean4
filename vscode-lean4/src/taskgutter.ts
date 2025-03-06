@@ -210,7 +210,7 @@ function isGoalsAccomplishedDiagnostic(d: Diagnostic): boolean {
         return false
     }
     const leanTags = d.leanTags as number[] | undefined
-    return leanTags !== undefined && leanTags.some(t => t === 2)
+    return leanTags !== undefined && leanTags.some(t => t === 2) && goalsAccomplishedDecorationKind() !== 'Off'
 }
 
 function isGutterDecoDiagnostic(d: Diagnostic): boolean {

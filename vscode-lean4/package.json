@@ -199,6 +199,7 @@
                 "lean4.goalsAccomplishedDecorationKind": {
                     "type": "string",
                     "enum": [
+                        "Off",
                         "Double Checkmark",
                         "Circled Checkmark",
                         "Octopus",
