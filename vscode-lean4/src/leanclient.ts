@@ -13,6 +13,7 @@ import {
     WorkspaceFolder,
 } from 'vscode'
 import {
+    ClientCapabilities,
     DiagnosticSeverity,
     DidChangeTextDocumentParams,
     DidCloseTextDocumentParams,
@@ -20,14 +21,18 @@ import {
     InitializeResult,
     LanguageClient,
     LanguageClientOptions,
-    PublishDiagnosticsParams,
     RevealOutputChannelOn,
     ServerOptions,
     State,
+    StaticFeature,
 } from 'vscode-languageclient/node'
-import * as ls from 'vscode-languageserver-protocol'
 
-import { LeanFileProgressParams, LeanFileProgressProcessingInfo, ServerStoppedReason } from '@leanprover/infoview-api'
+import {
+    LeanDiagnostic,
+    LeanFileProgressParams,
+    LeanFileProgressProcessingInfo,
+    ServerStoppedReason,
+} from '@leanprover/infoview-api'
 import {
     getElaborationDelay,
     getFallBackToStringOccurrenceHighlighting,
@@ -40,7 +45,13 @@ import { logger } from './utils/logger'
 // @ts-ignore
 import path from 'path'
 import { SemVer } from 'semver'
-import { c2pConverter, p2cConverter, patchConverters, setDependencyBuildMode } from './utils/converters'
+import {
+    c2pConverter,
+    LeanPublishDiagnosticsParams,
+    p2cConverter,
+    patchConverters,
+    setDependencyBuildMode,
+} from './utils/converters'
 import { elanInstalledToolchains } from './utils/elan'
 import { ExtUri, parseExtUri, toExtUri } from './utils/exturi'
 import { leanRunner } from './utils/leanCmdRunner'
@@ -51,6 +62,14 @@ import {
     displayNotificationWithOutput,
 } from './utils/notifs'
 import { willUseLakeServer } from './utils/projectInfo'
+
+interface LeanClientCapabilties {
+    silentDiagnosticSupport?: boolean | undefined
+}
+
+const leanClientCapabilities: LeanClientCapabilties = {
+    silentDiagnosticSupport: true,
+}
 
 const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
@@ -72,7 +91,7 @@ export class LeanClient implements Disposable {
     private didChangeEmitter = new EventEmitter<DidChangeTextDocumentParams>()
     didChange = this.didChangeEmitter.event
 
-    private diagnosticsEmitter = new EventEmitter<PublishDiagnosticsParams>()
+    private diagnosticsEmitter = new EventEmitter<LeanPublishDiagnosticsParams>()
     diagnostics = this.diagnosticsEmitter.event
 
     private didSetLanguageEmitter = new EventEmitter<string>()
@@ -343,7 +362,7 @@ export class LeanClient implements Disposable {
         insideRestart = false
     }
 
-    private checkForImportsOutdatedError(params: PublishDiagnosticsParams) {
+    private checkForImportsOutdatedError(params: LeanPublishDiagnosticsParams) {
         const fileUri = parseExtUri(params.uri)
         if (fileUri === undefined) {
             return
@@ -571,11 +590,12 @@ export class LeanClient implements Disposable {
             },
             middleware: {
                 handleDiagnostics: (uri, diagnostics, next) => {
-                    next(uri, diagnostics)
+                    const diagnosticsInVsCode = diagnostics.filter(d => !('isSilent' in d && d.isSilent))
+                    next(uri, diagnosticsInVsCode)
                     const uri_ = c2pConverter.asUri(uri)
-                    const diagnostics_ = []
+                    const diagnostics_: LeanDiagnostic[] = []
                     for (const d of diagnostics) {
-                        const d_: ls.Diagnostic = {
+                        const d_: LeanDiagnostic = {
                             ...c2pConverter.asDiagnostic(d),
                         }
                         diagnostics_.push(d_)
@@ -674,6 +694,17 @@ export class LeanClient implements Disposable {
         const clientOptions: LanguageClientOptions = this.obtainClientOptions()
 
         const client = new LanguageClient('lean4', 'Lean 4', serverOptions, clientOptions)
+        const leanCapabilityFeature: StaticFeature = {
+            initialize(_1, _2) {},
+            getState() {
+                return { kind: 'static' }
+            },
+            fillClientCapabilities(capabilities: ClientCapabilities & { lean?: LeanClientCapabilties | undefined }) {
+                capabilities.lean = leanClientCapabilities
+            },
+            dispose() {},
+        }
+        client.registerFeature(leanCapabilityFeature)
 
         patchConverters(client.protocol2CodeConverter, client.code2ProtocolConverter)
         return client

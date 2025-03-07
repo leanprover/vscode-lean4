@@ -1,6 +1,6 @@
-import type { EditorApi, InfoviewApi, InfoviewConfig } from '@leanprover/infoview'
+import type { EditorApi, InfoviewApi, InfoviewConfig, LeanPublishDiagnosticsParams } from '@leanprover/infoview'
 import { loadRenderInfoview } from '@leanprover/infoview/loader'
-import type { InitializeResult, Location, PublishDiagnosticsParams } from 'vscode-languageserver-protocol'
+import type { InitializeResult, Location } from 'vscode-languageserver-protocol'
 import { Rpc } from '../src/rpc'
 
 // Even when the Infoview is loaded in a webview panel with the `retainContextWhenHidden` set,
@@ -12,7 +12,7 @@ interface PersistentInfoviewState {
     config?: InfoviewConfig
     cursorLoc?: Location
     initializeResult?: InitializeResult
-    diags?: PublishDiagnosticsParams
+    diags?: LeanPublishDiagnosticsParams
 }
 
 const vscodeApi = acquireVsCodeApi<PersistentInfoviewState>()

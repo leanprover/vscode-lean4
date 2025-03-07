@@ -109,6 +109,26 @@ export function getFallBackToStringOccurrenceHighlighting(): boolean {
     return workspace.getConfiguration('lean4').get('fallBackToStringOccurrenceHighlighting', false)
 }
 
+export function showDiagnosticGutterDecorations(): boolean {
+    return workspace.getConfiguration('lean4').get('showDiagnosticGutterDecorations', true)
+}
+
+export function showUnsolvedGoalsDecoration(): boolean {
+    return workspace.getConfiguration('lean4').get('showUnsolvedGoalsDecoration', true)
+}
+
+export function unsolvedGoalsDecorationLightThemeColor(): string {
+    return workspace.getConfiguration('lean4').get('unsolvedGoalsDecorationLightThemeColor', '#1A85FF88')
+}
+
+export function unsolvedGoalsDecorationDarkThemeColor(): string {
+    return workspace.getConfiguration('lean4').get('unsolvedGoalsDecorationDarkThemeColor', '#3794FF88')
+}
+
+export function goalsAccomplishedDecorationKind(): string {
+    return workspace.getConfiguration('lean4').get('goalsAccomplishedDecorationKind', 'Double Checkmark')
+}
+
 export function isRunningTest(): boolean {
     return typeof process.env.LEAN4_TEST_FOLDER === 'string'
 }

@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="16"
+   height="16"
+   viewBox="0 0 16 16"
+   fill="currentColor"
+   version="1.1"
+   id="svg1"
+   sodipodi:docname="warning-t-passthrough-light.svg"
+   inkscape:version="1.4 (e7c3feb100, 2024-10-09)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs1">
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath2">
+      <rect
+         style="fill:none"
+         id="rect4"
+         width="16"
+         height="16"
+         x="0"
+         y="0" />
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath4">
+      <rect
+         style="fill:none"
+         id="rect5"
+         width="16"
+         height="16"
+         x="0"
+         y="0" />
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath5">
+      <rect
+         style="fill:none"
+         id="rect6"
+         width="16"
+         height="16"
+         x="0"
+         y="0" />
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath6">
+      <rect
+         style="fill:none"
+         id="rect7"
+         width="16"
+         height="16"
+         x="0"
+         y="0" />
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath15">
+      <rect
+         style="display:inline;fill:none;stroke-width:1.00098"
+         id="rect15"
+         width="16"
+         height="16"
+         x="0"
+         y="0" />
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath14">
+      <rect
+         style="display:inline;fill:none;stroke-width:1.00098"
+         id="rect14"
+         width="16"
+         height="16"
+         x="0"
+         y="0" />
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath13">
+      <rect
+         style="display:inline;fill:none;stroke-width:1.00098"
+         id="rect13"
+         width="16"
+         height="16"
+         x="0"
+         y="0" />
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath12">
+      <rect
+         style="display:inline;fill:none;stroke-width:1.00098"
+         id="rect12"
+         width="16"
+         height="16"
+         x="0"
+         y="0" />
+    </clipPath>
+  </defs>
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:zoom="45.254834"
+     inkscape:cx="2.8615728"
+     inkscape:cy="8.010194"
+     inkscape:window-width="1918"
+     inkscape:window-height="2128"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="0"
+     inkscape:current-layer="svg1" />
+  <rect
+     style="fill:#e51400;fill-opacity:1;stroke-width:1.30379"
+     id="rect1-7"
+     width="1"
+     height="2.3373294"
+     x="7.5"
+     y="-0.082031257"
+     inkscape:transform-center-x="-0.3125"
+     inkscape:transform-center-y="3.6613784"
+     clip-path="url(#clipPath6)"
+     transform="scale(1,1.1935077)" />
+  <rect
+     style="fill:#e51400;fill-opacity:1;stroke-width:1.45406"
+     id="rect3"
+     width="5.2857399"
+     height="1"
+     x="11.357333"
+     y="7.5"
+     clip-path="url(#clipPath5)"
+     transform="matrix(1.0511654,0,0,1,-0.81864564,0)" />
+  <rect
+     style="fill:#e51400;fill-opacity:1;stroke-width:1.6605"
+     id="rect1"
+     width="1"
+     height="3.7912476"
+     x="7.5"
+     y="13.002536"
+     inkscape:transform-center-x="-0.3125"
+     inkscape:transform-center-y="5.676359"
+     clip-path="url(#clipPath4)"
+     transform="matrix(1,0,0,1.140744,0,-2.2519035)" />
+  <path
+     fill-rule="evenodd"
+     clip-rule="evenodd"
+     d="M 7.5699999,0.99447573 H 8.45 l 6.54,12.26000027 -0.44,0.74 H 1.4499999 L 1.01,13.254476 Z m 0.44,1.27999997 -5.72,10.7200003 H 13.71 Z m 0.625,9.7200003 v -1 h -1.25 v 1 z m -1.25,-2.0000003 v -4 h 1.25 v 4 z"
+     id="path1"
+     style="fill:#bf8803;fill-opacity:1;stroke:none;stroke-opacity:1"
+     clip-path="url(#clipPath2)"
+     transform="matrix(0.91780769,0,0,0.91780769,0.65753849,0.6159883)" />
+</svg>

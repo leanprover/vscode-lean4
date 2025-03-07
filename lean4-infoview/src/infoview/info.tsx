@@ -1,5 +1,5 @@
 import * as React from 'react'
-import type { Diagnostic, Location } from 'vscode-languageserver-protocol'
+import type { Location } from 'vscode-languageserver-protocol'
 
 import {
     getInteractiveDiagnostics,
@@ -415,13 +415,13 @@ function InfoAux(props: InfoProps) {
     // Compute the LSP diagnostics at this info's position. We try to ensure that if these remain
     // the same, then so does the identity of `lspDiagsHere` so that it can be used as a dep.
     const lspDiags = React.useContext(LspDiagnosticsContext)
-    const [lspDiagsHere, setLspDiagsHere] = React.useState<Diagnostic[]>([])
+    const [lspDiagsHere, setLspDiagsHere] = React.useState<LeanDiagnostic[]>([])
     React.useEffect(() => {
         // Note: the curly braces are important. https://medium.com/geekculture/react-uncaught-typeerror-destroy-is-not-a-function-192738a6e79b
         setLspDiagsHere(diags0 => {
-            const diagPred = (d: Diagnostic) =>
+            const diagPred = (d: LeanDiagnostic) =>
                 RangeHelpers.contains(
-                    (d as LeanDiagnostic).fullRange || d.range,
+                    d.fullRange || d.range,
                     { line: pos.line, character: pos.character },
                     config.allErrorsOnLine,
                 )

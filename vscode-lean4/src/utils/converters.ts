@@ -18,8 +18,21 @@ import * as async from 'vscode-languageclient/lib/common/utils/async'
 import * as ls from 'vscode-languageserver-protocol'
 import { automaticallyBuildDependencies } from '../config'
 
-interface Lean4Diagnostic extends ls.Diagnostic {
-    fullRange: ls.Range
+export enum LeanTag {
+    UnsolvedGoals = 1,
+    GoalsAccomplished = 2,
+}
+
+export interface LeanDiagnostic extends ls.Diagnostic {
+    fullRange?: ls.Range
+    isSilent?: boolean
+    leanTags?: LeanTag[]
+}
+
+export interface LeanPublishDiagnosticsParams {
+    uri: ls.DocumentUri
+    version?: ls.integer
+    diagnostics: LeanDiagnostic[]
 }
 
 interface SnippetTextEdit extends ls.TextEdit {
@@ -53,13 +66,15 @@ export const c2pConverter = createC2PConverter(undefined)
 export function patchConverters(p2cConverter: Protocol2CodeConverter, c2pConverter: Code2ProtocolConverter) {
     // eslint-disable-next-line @typescript-eslint/unbound-method
     const oldP2cAsDiagnostic = p2cConverter.asDiagnostic
-    p2cConverter.asDiagnostic = function (protDiag: Lean4Diagnostic): code.Diagnostic {
+    p2cConverter.asDiagnostic = function (protDiag: LeanDiagnostic): code.Diagnostic {
         if (!protDiag.message) {
             // Fixes: Notification handler 'textDocument/publishDiagnostics' failed with message: message must be set
             protDiag.message = ' '
         }
         const diag = oldP2cAsDiagnostic.apply(this, [protDiag])
         diag.fullRange = p2cConverter.asRange(protDiag.fullRange)
+        diag.leanTags = protDiag.leanTags
+        diag.isSilent = protDiag.isSilent
         return diag
     }
     // The original definition refers to `asDiagnostic` as a local function
@@ -69,9 +84,13 @@ export function patchConverters(p2cConverter: Protocol2CodeConverter, c2pConvert
 
     // eslint-disable-next-line @typescript-eslint/unbound-method
     const oldC2pAsDiagnostic = c2pConverter.asDiagnostic
-    c2pConverter.asDiagnostic = function (diag: code.Diagnostic & { fullRange: code.Range }): Lean4Diagnostic {
+    c2pConverter.asDiagnostic = function (
+        diag: code.Diagnostic & { fullRange?: code.Range; isSilent?: boolean; leanTags?: LeanTag[] },
+    ): LeanDiagnostic {
         const protDiag = oldC2pAsDiagnostic.apply(this, [diag])
         protDiag.fullRange = c2pConverter.asRange(diag.fullRange)
+        protDiag.leanTags = diag.leanTags
+        protDiag.isSilent = diag.isSilent
         return protDiag
     }
     c2pConverter.asDiagnostics = async (diags, token) => async.map(diags, d => c2pConverter.asDiagnostic(d), token)

@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="16"
+   height="16"
+   viewBox="0 0 16 16"
+   fill="currentColor"
+   version="1.1"
+   id="svg1"
+   sodipodi:docname="error-i-light.svg"
+   inkscape:version="1.4 (e7c3feb100, 2024-10-09)"
+   inkscape:export-filename="error-t-passthrough-light-2.svg"
+   inkscape:export-xdpi="96"
+   inkscape:export-ydpi="96"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs1">
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath12">
+      <rect
+         style="display:inline;fill:none;stroke-width:1.00098"
+         id="rect12"
+         width="16"
+         height="16"
+         x="0"
+         y="0" />
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath13">
+      <rect
+         style="display:inline;fill:none;stroke-width:1.00098"
+         id="rect13"
+         width="16"
+         height="16"
+         x="0"
+         y="0" />
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath14">
+      <rect
+         style="display:inline;fill:none;stroke-width:1.00098"
+         id="rect14"
+         width="16"
+         height="16"
+         x="0"
+         y="0" />
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath15">
+      <rect
+         style="display:inline;fill:none;stroke-width:1.00098"
+         id="rect15"
+         width="16"
+         height="16"
+         x="0"
+         y="0" />
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath16">
+      <rect
+         style="fill:none;stroke-width:0.58283"
+         id="rect17"
+         width="5.4350572"
+         height="16"
+         x="10.564943"
+         y="0" />
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath17">
+      <rect
+         style="fill:none;stroke-width:0.43627"
+         id="rect18"
+         width="16"
+         height="3.0452998"
+         x="0"
+         y="0" />
+    </clipPath>
+  </defs>
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:zoom="45.254834"
+     inkscape:cx="-5.9662135"
+     inkscape:cy="12.761068"
+     inkscape:window-width="3838"
+     inkscape:window-height="2128"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="0"
+     inkscape:current-layer="svg1" />
+  <rect
+     style="fill:#e51400;fill-opacity:1;stroke-width:1.58139"
+     id="rect2-5"
+     width="1.001"
+     height="4.0295243"
+     x="7.4994497"
+     y="-0.93362951"
+     clip-path="url(#clipPath17)"
+     transform="scale(1,5.2539984)" />
+</svg>

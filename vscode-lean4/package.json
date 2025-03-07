@@ -175,6 +175,38 @@
                     "type": "boolean",
                     "default": true,
                     "markdownDescription": "Always display the Lean extension title bar menu in the top right. This helps beginners create and open Lean projects after launching an empty instance of VS Code, but may not be desirable for anyone who uses VS Code for things other than Lean."
+                },
+                "lean4.showDiagnosticGutterDecorations": {
+                    "type": "boolean",
+                    "default": true,
+                    "markdownDescription": "Display icons for errors and warnings and error ranges in the gutter."
+                },
+                "lean4.showUnsolvedGoalsDecoration": {
+                    "type": "boolean",
+                    "default": true,
+                    "markdownDescription": "Display an icon at the end of the line where an 'unsolved goals' error ends."
+                },
+                "lean4.unsolvedGoalsDecorationLightThemeColor": {
+                    "type": "string",
+                    "default": "#1A85FF88",
+                    "markdownDescription": "Color used in unsolved goal decorations when using a light theme."
+                },
+                "lean4.unsolvedGoalsDecorationDarkThemeColor": {
+                    "type": "string",
+                    "default": "#3794FF88",
+                    "markdownDescription": "Color used in unsolved goal decorations when using a dark theme."
+                },
+                "lean4.goalsAccomplishedDecorationKind": {
+                    "type": "string",
+                    "enum": [
+                        "Off",
+                        "Double Checkmark",
+                        "Circled Checkmark",
+                        "Octopus",
+                        "Tada"
+                    ],
+                    "default": "Double Checkmark",
+                    "markdownDescription": "Style of icon used in 'Goals accomplished' decoration."
                 }
             }
         },
@@ -1081,8 +1113,8 @@
         "test": "node ./out/test/suite/runTest.js"
     },
     "dependencies": {
-        "@leanprover/infoview": "~0.8.0",
-        "@leanprover/infoview-api": "~0.5.0",
+        "@leanprover/infoview": "~0.8.3",
+        "@leanprover/infoview-api": "~0.6.0",
         "@leanprover/unicode-input": "~0.1.2",
         "@leanprover/unicode-input-component": "~0.1.2",
         "@vscode/codicons": "^0.0.36",
