@@ -13,6 +13,7 @@ import {
     WorkspaceFolder,
 } from 'vscode'
 import {
+    ClientCapabilities,
     DiagnosticSeverity,
     DidChangeTextDocumentParams,
     DidCloseTextDocumentParams,
@@ -23,6 +24,7 @@ import {
     RevealOutputChannelOn,
     ServerOptions,
     State,
+    StaticFeature,
 } from 'vscode-languageclient/node'
 
 import {
@@ -60,6 +62,14 @@ import {
     displayNotificationWithOutput,
 } from './utils/notifs'
 import { willUseLakeServer } from './utils/projectInfo'
+
+interface LeanClientCapabilties {
+    silentDiagnosticSupport?: boolean | undefined
+}
+
+const leanClientCapabilities: LeanClientCapabilties = {
+    silentDiagnosticSupport: true,
+}
 
 const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
@@ -684,6 +694,17 @@ export class LeanClient implements Disposable {
         const clientOptions: LanguageClientOptions = this.obtainClientOptions()
 
         const client = new LanguageClient('lean4', 'Lean 4', serverOptions, clientOptions)
+        const leanCapabilityFeature: StaticFeature = {
+            initialize(_1, _2) {},
+            getState() {
+                return { kind: 'static' }
+            },
+            fillClientCapabilities(capabilities: ClientCapabilities & { lean?: LeanClientCapabilties | undefined }) {
+                capabilities.lean = leanClientCapabilities
+            },
+            dispose() {},
+        }
+        client.registerFeature(leanCapabilityFeature)
 
         patchConverters(client.protocol2CodeConverter, client.code2ProtocolConverter)
         return client
