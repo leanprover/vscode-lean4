@@ -60,7 +60,7 @@ async function rpcConnect(client: LeanClient, uri: ls.DocumentUri): Promise<stri
     return result.sessionId
 }
 
-class RpcSessionAtPos implements Disposable {
+export class RpcSessionAtPos implements Disposable {
     keepAliveInterval?: NodeJS.Timeout
     client: LeanClient
 
