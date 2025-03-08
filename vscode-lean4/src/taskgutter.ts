@@ -467,14 +467,14 @@ export class LeanTaskGutter implements Disposable {
                 after: {
                     contentText: '🛠',
                     color: unsolvedGoalsDecorationDarkThemeColor(),
-                    margin: '0 0 0 1em',
+                    margin: '0 0 0 1ch',
                 },
             },
             light: {
                 after: {
                     contentText: '🛠',
                     color: unsolvedGoalsDecorationLightThemeColor(),
-                    margin: '0 0 0 1em',
+                    margin: '0 0 0 1ch',
                 },
             },
             isWholeLine: true,
