@@ -1,6 +1,6 @@
 {
     "name": "@leanprover/unicode-input",
-    "version": "0.1.2",
+    "version": "0.1.3",
     "description": "Unicode input mechanism for the Lean 4 theorem prover",
     "scripts": {
         "watch": "tsc --watch",
