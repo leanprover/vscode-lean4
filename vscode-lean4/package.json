@@ -95,6 +95,17 @@
                         "description": "an argument to pass to the server"
                     }
                 },
+                "lean4.trace.server": {
+                    "type": "string",
+                    "default": "off",
+                    "enum": [
+                        "off",
+                        "messages",
+                        "compact",
+                        "verbose"
+                    ],
+                    "markdownDescription": "Whether to enable client-side logging for language server messages."
+                },
                 "lean4.serverLogging.enabled": {
                     "type": "boolean",
                     "default": false,
