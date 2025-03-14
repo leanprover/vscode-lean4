@@ -9,12 +9,12 @@ import {
     ServerStoppedReason,
     TextInsertKind,
 } from '@leanprover/infoview-api'
-import { join } from 'path'
 import {
     commands,
     Diagnostic,
     Disposable,
     env,
+    Event,
     ExtensionContext,
     Position,
     Range,
@@ -22,7 +22,7 @@ import {
     TextEditor,
     TextEditorRevealType,
     Uri,
-    WebviewPanel,
+    ViewColumn,
     window,
     workspace,
 } from 'vscode'
@@ -39,8 +39,6 @@ import {
     getInfoViewShowGoalNames,
     getInfoViewShowTooltipOnHover,
     getInfoViewStyle,
-    minIfProd,
-    prodOrDev,
 } from './config'
 import { LeanClient } from './leanclient'
 import { Rpc } from './rpc'
@@ -50,7 +48,20 @@ import { ExtUri, parseExtUri, toExtUri } from './utils/exturi'
 import { lean, LeanEditor } from './utils/leanEditorProvider'
 import { logger } from './utils/logger'
 import { displayNotification } from './utils/notifs'
-import { viewColumnOfActiveTextEditor, viewColumnOfInfoView } from './utils/viewColumn'
+import { viewColumnOfActiveTextEditor } from './utils/viewColumn'
+
+export interface InfoWebview {
+    readonly api: InfoviewApi
+    readonly rpc: Rpc
+    readonly visible: boolean
+    dispose(): any
+    reveal(viewColumn?: ViewColumn, preserveFocus?: boolean): void
+    onDidDispose: Event<void>
+}
+
+export interface InfoWebviewFactory {
+    make(editorApi: EditorApi, stylesheet: string): InfoWebview
+}
 
 const keepAlivePeriodMs = 10000
 
@@ -89,7 +100,7 @@ class RpcSessionAtPos implements Disposable {
 
 export class InfoProvider implements Disposable {
     /** Instance of the panel, if it is open. Otherwise `undefined`. */
-    private webviewPanel?: WebviewPanel & { rpc: Rpc; api: InfoviewApi }
+    private webviewPanel?: InfoWebview
     private subscriptions: Disposable[] = []
     private clientSubscriptions: Disposable[] = []
 
@@ -319,6 +330,7 @@ export class InfoProvider implements Disposable {
     constructor(
         private clientProvider: LeanClientProvider,
         private context: ExtensionContext,
+        private infoWebviewFactory: InfoWebviewFactory,
     ) {
         this.updateStylesheet()
 
@@ -590,48 +602,14 @@ export class InfoProvider implements Disposable {
         if (this.webviewPanel) {
             this.webviewPanel.reveal(undefined, true)
         } else {
-            const webviewPanel = window.createWebviewPanel(
-                'lean4_infoview',
-                'Lean Infoview',
-                { viewColumn: viewColumnOfInfoView(), preserveFocus: true },
-                {
-                    enableFindWidget: true,
-                    retainContextWhenHidden: true,
-                    enableScripts: true,
-                    enableCommandUris: true,
-                },
-            ) as WebviewPanel & { rpc: Rpc; api: InfoviewApi }
+            const webviewPanel = this.infoWebviewFactory.make(this.editorApi, this.stylesheet)
 
-            // Note that an extension can send data to its webviews using webview.postMessage().
-            // This method sends any JSON serializable data to the webview. The message is received
-            // inside the webview through the standard message event.
-            // The receiving of these messages is done inside webview\index.ts where it
-            // calls window.addEventListener('message',...
-            webviewPanel.rpc = new Rpc(m => {
-                try {
-                    void webviewPanel.webview.postMessage(m)
-                } catch (e) {
-                    // ignore any disposed object exceptions
-                }
-            })
-            webviewPanel.rpc.register(this.editorApi)
-
-            // Similarly, we can received data from the webview by listening to onDidReceiveMessage.
-            webviewPanel.webview.onDidReceiveMessage(m => {
-                try {
-                    webviewPanel.rpc.messageReceived(m)
-                } catch {
-                    // ignore any disposed object exceptions
-                }
-            })
-            webviewPanel.api = webviewPanel.rpc.getApi()
             webviewPanel.onDidDispose(() => {
                 this.webviewPanel = undefined
                 this.clearNotificationHandlers()
                 this.clearRpcSessions(null) // should be after `webviewPanel = undefined`
             })
             this.webviewPanel = webviewPanel
-            webviewPanel.webview.html = this.initialHtml()
 
             const client = this.clientProvider.findClient(leanEditor.documentExtUri)
             await this.initInfoView(leanEditor, client)
@@ -826,36 +804,5 @@ export class InfoProvider implements Disposable {
         }
         // ensure the text document has the keyboard focus.
         await window.showTextDocument(editor.document, { viewColumn: editor.viewColumn, preserveFocus: false })
-    }
-
-    private getLocalPath(path: string): string | undefined {
-        if (this.webviewPanel) {
-            return this.webviewPanel.webview.asWebviewUri(Uri.file(join(this.context.extensionPath, path))).toString()
-        }
-        return undefined
-    }
-
-    private initialHtml() {
-        const libPostfix = `.${prodOrDev}${minIfProd}.js`
-        return `
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <meta charset="UTF-8" />
-                <meta http-equiv="Content-type" content="text/html;charset=utf-8">
-                <title>Infoview</title>
-                <style>${this.stylesheet}</style>
-                <link rel="stylesheet" href="${this.getLocalPath('dist/lean4-infoview/index.css')}">
-            </head>
-            <body>
-                <div id="react_root"></div>
-                <script
-                    data-importmap-leanprover-infoview="${this.getLocalPath(`dist/lean4-infoview/index${libPostfix}`)}"
-                    data-importmap-react="${this.getLocalPath(`dist/lean4-infoview/react${libPostfix}`)}"
-                    data-importmap-react-jsx-runtime="${this.getLocalPath(`dist/lean4-infoview/react-jsx-runtime${libPostfix}`)}"
-                    data-importmap-react-dom="${this.getLocalPath(`dist/lean4-infoview/react-dom${libPostfix}`)}"
-                    src="${this.getLocalPath('dist/webview.js')}"></script>
-            </body>
-            </html>`
     }
 }
