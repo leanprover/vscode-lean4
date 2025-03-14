@@ -33,6 +33,7 @@ import {
     getInfoViewAutoOpen,
     getInfoViewAutoOpenShowsGoal,
     getInfoViewDebounceTime,
+    getInfoViewDisableLoadingSpinner,
     getInfoViewEmphasizeFirstGoal,
     getInfoViewReverseTacticState,
     getInfoViewShowExpectedType,
@@ -674,6 +675,7 @@ export class InfoProvider implements Disposable {
             emphasizeFirstGoal: getInfoViewEmphasizeFirstGoal(),
             reverseTacticState: getInfoViewReverseTacticState(),
             showTooltipOnHover: getInfoViewShowTooltipOnHover(),
+            disableLoadingSpinner: getInfoViewDisableLoadingSpinner(),
         })
     }
 
