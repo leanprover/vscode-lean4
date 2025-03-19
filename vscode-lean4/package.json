@@ -218,6 +218,11 @@
                     ],
                     "default": "Double Checkmark",
                     "markdownDescription": "Style of icon used in 'Goals accomplished' decoration."
+                },
+                "lean4.decorationEditDelay": {
+                    "type": "number",
+                    "default": 750,
+                    "markdownDescription": "Delay after an edit in milliseconds until certain editor decorations (like the 'unsolved goals' decoration) update."
                 }
             }
         },

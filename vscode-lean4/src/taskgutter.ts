@@ -13,6 +13,7 @@ import {
 } from 'vscode'
 import { DiagnosticSeverity, Range as LspRange } from 'vscode-languageclient'
 import {
+    decorationEditDelay,
     goalsAccomplishedDecorationKind,
     showDiagnosticGutterDecorations,
     showUnsolvedGoalsDecoration,
@@ -34,9 +35,10 @@ interface DecorationState {
 }
 
 class LeanFileTaskGutter implements Disposable {
-    private readonly editDelayMs: number = 3000
+    private readonly editDelayMs: number = decorationEditDelay()
     private timeout: NodeJS.Timeout | undefined
     private editDelayTimeout: NodeJS.Timeout | undefined
+    private lastEditTimestampMs: number | undefined
     private subscriptions: Disposable[] = []
     private decorationStates: DecorationState[] = []
 
@@ -51,10 +53,7 @@ class LeanFileTaskGutter implements Disposable {
 
     private onDidChange() {
         clearTimeout(this.editDelayTimeout)
-        this.editDelayTimeout = setTimeout(() => {
-            this.editDelayTimeout = undefined
-            this.displayDecorations('EditDelayed')
-        }, this.editDelayMs)
+        this.lastEditTimestampMs = Date.now()
     }
 
     onDidReveal() {
@@ -85,9 +84,17 @@ class LeanFileTaskGutter implements Disposable {
                 this.displayDecorations('Instantaneous')
             }, ms)
         }
-        if (this.editDelayTimeout === undefined) {
-            this.displayDecorations('EditDelayed')
+        if (this.editDelayTimeout !== undefined) {
+            clearTimeout(this.editDelayTimeout)
         }
+        const remainingDelayMs =
+            this.lastEditTimestampMs !== undefined
+                ? Math.max(0, this.editDelayMs - (Date.now() - this.lastEditTimestampMs))
+                : 0
+        this.editDelayTimeout = setTimeout(() => {
+            this.editDelayTimeout = undefined
+            this.displayDecorations('EditDelayed')
+        }, remainingDelayMs)
     }
 
     private updateDecorationStates(newDecorationStates: DecorationState[]) {
