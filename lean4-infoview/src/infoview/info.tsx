@@ -50,6 +50,7 @@ interface InfoStatusBarProps extends InfoPinnable, PausableProps {
 }
 
 const InfoStatusBar = React.memo((props: InfoStatusBarProps) => {
+    const config = React.useContext(ConfigContext)
     const { kind, onPin, status, pos, isPaused, setPaused, triggerUpdate } = props
 
     const ec = React.useContext(EditorContext)
@@ -80,16 +81,19 @@ const InfoStatusBar = React.memo((props: InfoStatusBarProps) => {
             {isPinned && !isPaused && ' (pinned)'}
             {!isPinned && isPaused && ' (paused)'}
             {isPinned && isPaused && ' (pinned and paused)'}
-            <span style={spinnerStyle} className="mh2 codicon codicon-loading" title="updating">
-                <style>
-                    {`
-                        @keyframes spin {
-                            0% { transform: rotate(0deg); }
-                            100% { transform: rotate(360deg); }
-                        }
-                    `}
-                </style>
-            </span>
+            {!config.disableLoadingSpinner && (
+                <span style={spinnerStyle} className="mh2 codicon codicon-loading" title="updating">
+                    <style>
+                        {`
+                            @keyframes spin {
+                                0% { transform: rotate(0deg); }
+                                100% { transform: rotate(360deg); }
+                            }
+                        `}
+                    </style>
+                </span>
+            )}
+
             <span
                 className="fr"
                 onClick={e => {
