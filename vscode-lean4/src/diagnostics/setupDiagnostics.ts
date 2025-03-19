@@ -3,6 +3,7 @@ import { OutputChannel, commands } from 'vscode'
 import { ExtUri, FileUri, extUriToCwdUri } from '../utils/exturi'
 import { ToolchainUpdateMode } from '../utils/leanCmdRunner'
 import { LeanInstaller } from '../utils/leanInstaller'
+import { willUseLakeServer } from '../utils/projectInfo'
 import { diagnose } from './setupDiagnoser'
 import {
     PreconditionCheckResult,
@@ -274,4 +275,28 @@ export async function checkAll(
         }
     }
     return worstViolation
+}
+
+export async function checkLean4ProjectPreconditions(
+    channel: OutputChannel,
+    context: string,
+    folderUri: ExtUri,
+): Promise<PreconditionCheckResult> {
+    const options: SetupNotificationOptions = {
+        errorMode: { mode: 'NonModal' },
+        warningMode: { modal: false, proceedByDefault: true },
+    }
+    const d = new SetupDiagnostics(options)
+    return await checkAll(
+        () => d.checkIsValidProjectFolder(channel, folderUri),
+        () => d.checkIsLeanVersionUpToDate(channel, context, folderUri, { toolchainUpdateMode: 'PromptAboutUpdate' }),
+        async () => {
+            if (!(await willUseLakeServer(folderUri))) {
+                return 'Fulfilled'
+            }
+            return await d.checkIsLakeInstalledCorrectly(channel, context, folderUri, {
+                toolchainUpdateMode: 'PromptAboutUpdate',
+            })
+        },
+    )
 }
