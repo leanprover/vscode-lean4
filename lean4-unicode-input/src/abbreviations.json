@@ -1830,5 +1830,7 @@
     "goal": "⊢",
     "Vdash": "⊩",
     "Vert": "‖",
-    "Vvdash": "⊪"
+    "Vvdash": "⊪",
+    "tiny": "⧾",
+    "miny": "⧿"
 }
