@@ -188,6 +188,7 @@ export type ServerProgress = Map<ExtUri, LeanFileProgressProcessingInfo[]>
 export class LeanClient implements Disposable {
     running: boolean
     private client: LanguageClient | undefined
+    private client_web: LanguageClient | undefined
     private outputChannel: OutputChannel
     folderUri: ExtUri
     private subscriptions: Disposable[] = []
@@ -384,6 +385,10 @@ export class LeanClient implements Disposable {
 
         this.client = await this.setupClient(toolchainOverride)
 
+        this.client_web = await this.setupClient(toolchainOverride)
+
+        await this.client_web.start()
+
         let insideRestart = true
         try {
             this.client.onDidChangeState(async s => {
@@ -468,8 +473,7 @@ export class LeanClient implements Disposable {
             }
         })
 
-        const serverProcess = (this.client as any)._serverProcess
-        console.log(`Socket`, serverProcess)
+        const serverProcess = (this.client_web as any)._serverProcess
 
         wss.addListener('connection', function (ws, req) {
             console.log(`Socket opened`, serverProcess)
@@ -502,7 +506,7 @@ export class LeanClient implements Disposable {
 
             if (serverConnection) {
                 socketConnection.reader.listen(message => {
-                    console.log('Received message:', message)
+                    console.debug('Received message:', message)
 
                     if ((message as any).method === 'initialize') {
                         socketConnection.writer.write(initResponse)
@@ -536,17 +540,11 @@ export class LeanClient implements Disposable {
 
             ws.on('error', error => {
                 console.error(`WebSocket error: ${error.message}`)
-                // ws.close();
             })
 
             ws.on('close', () => {
                 console.log(`[${new Date()}] Socket closed`)
             })
-
-            if (serverConnection) {
-                // socketConnection.onClose(() => serverConnection.dispose());
-                // serverConnection.onClose(() => socketConnection.dispose());
-            }
             console.log('server connection success')
         })
 
