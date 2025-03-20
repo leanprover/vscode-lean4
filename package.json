@@ -17,6 +17,8 @@
         "vscode-lean4"
     ],
     "devDependencies": {
+        "@types/express": "^5.0.1",
+        "@types/ws": "^8.18.0",
         "@typescript-eslint/eslint-plugin": "^7.9.0",
         "@typescript-eslint/parser": "^7.9.0",
         "eslint": "^8.45.0",
@@ -35,5 +37,11 @@
             "prettier --write"
         ],
         "*.{json,css}": "prettier --write"
+    },
+    "dependencies": {
+        "bufferutil": "^4.0.9",
+        "express": "^4.21.2",
+        "utf-8-validate": "^6.0.5",
+        "vscode-ws-jsonrpc": "^3.4.0"
     }
 }

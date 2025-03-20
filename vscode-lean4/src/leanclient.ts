@@ -71,6 +71,116 @@ const leanClientCapabilities: LeanClientCapabilties = {
     silentDiagnosticSupport: true,
 }
 
+import { ChildProcess } from 'child_process'
+import express from 'express'
+import * as rpc from 'vscode-ws-jsonrpc'
+import * as jsonrpcserver from 'vscode-ws-jsonrpc/server'
+import { WebSocketServer } from 'ws'
+
+const app = express()
+
+const PORT = 8080
+
+const initResponse = {
+    result: {
+        serverInfo: {
+            version: '0.2.0',
+            name: 'Lean 4 Server',
+        },
+        capabilities: {
+            workspaceSymbolProvider: true,
+            typeDefinitionProvider: true,
+            textDocumentSync: {
+                willSaveWaitUntil: false,
+                willSave: false,
+                save: {
+                    includeText: true,
+                },
+                openClose: true,
+                change: 2,
+            },
+            semanticTokensProvider: {
+                range: true,
+                legend: {
+                    tokenTypes: [
+                        'keyword',
+                        'variable',
+                        'property',
+                        'function',
+                        'namespace',
+                        'type',
+                        'class',
+                        'enum',
+                        'interface',
+                        'struct',
+                        'typeParameter',
+                        'parameter',
+                        'enumMember',
+                        'event',
+                        'method',
+                        'macro',
+                        'modifier',
+                        'comment',
+                        'string',
+                        'number',
+                        'regexp',
+                        'operator',
+                        'decorator',
+                        'leanSorryLike',
+                    ],
+                    tokenModifiers: [
+                        'declaration',
+                        'definition',
+                        'readonly',
+                        'static',
+                        'deprecated',
+                        'abstract',
+                        'async',
+                        'modification',
+                        'documentation',
+                        'defaultLibrary',
+                    ],
+                },
+                full: true,
+            },
+            renameProvider: { prepareProvider: true },
+            referencesProvider: true,
+            inlayHintProvider: { workDoneProgress: false, resolveProvider: false },
+            hoverProvider: true,
+            foldingRangeProvider: true,
+            documentSymbolProvider: true,
+            documentHighlightProvider: true,
+            definitionProvider: true,
+            declarationProvider: true,
+            completionProvider: { triggerCharacters: ['.'], resolveProvider: true },
+            codeActionProvider: {
+                workDoneProgress: false,
+                resolveProvider: true,
+                codeActionKinds: ['quickfix', 'refactor'],
+            },
+            callHierarchyProvider: true,
+        },
+    },
+    jsonrpc: '2.0',
+    id: 0,
+}
+
+const server = app.listen(PORT, () => console.log(`Listening on ${PORT}`))
+
+const wss = new WebSocketServer({ server })
+
+function startServerProcess(serverProcess: ChildProcess) {
+    serverProcess.on('error', error => console.error(`Launching Lean Server failed: ${error}`))
+
+    if (serverProcess.stderr !== null) {
+        serverProcess.stderr.on('data', data => {
+            console.error(`Lean Server: ${data}`)
+        })
+    }
+
+    return serverProcess
+}
+
 const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
 export type ServerProgress = Map<ExtUri, LeanFileProgressProcessingInfo[]>
@@ -358,6 +468,88 @@ export class LeanClient implements Disposable {
             }
         })
 
+        const serverProcess = (this.client as any)._serverProcess
+        console.log(`Socket`, serverProcess)
+
+        wss.addListener('connection', function (ws, req) {
+            console.log(`Socket opened`, serverProcess)
+
+            const ps = startServerProcess(serverProcess)
+
+            const socket: rpc.IWebSocket = {
+                onMessage: cb => {
+                    ws.on('message', cb)
+                },
+                onError: cb => {
+                    ws.on('error', cb)
+                },
+                onClose: cb => {
+                    ws.on('close', cb)
+                },
+                send: data => {
+                    ws.send(data)
+                },
+                dispose: function (): void {
+                    throw new Error('Function not implemented.')
+                },
+            }
+
+            const reader = new rpc.WebSocketMessageReader(socket)
+            const writer = new rpc.WebSocketMessageWriter(socket)
+
+            const socketConnection = jsonrpcserver.createConnection(reader, writer, () => ws.close())
+            const serverConnection = jsonrpcserver.createProcessStreamConnection(ps)
+
+            if (serverConnection) {
+                socketConnection.reader.listen(message => {
+                    console.log('Received message:', message)
+
+                    if ((message as any).method === 'initialize') {
+                        socketConnection.writer.write(initResponse)
+                    } else if ((message as any).method === "shutdown") {
+                        const response = { jsonrpc: "2.0", id: (message as any).id, result: null };
+                        socketConnection.writer.write(response);
+                    } else if ((message as any).method === "exit") {
+
+                    } else {
+                        serverConnection.writer.write(message)
+                    }
+                })
+
+                socketConnection.forward(serverConnection, message => message)
+                serverConnection.forward(socketConnection, message => message)
+            }
+
+            if (ps.stderr) {
+                ps.stderr.on('data', data => {
+                    let msg = {
+                        jsonrpc: '2.0',
+                        id: '1',
+                        error: {
+                            message: data.toString(),
+                            code: '-1',
+                        },
+                    }
+                    ws.send(JSON.stringify(msg))
+                })
+            }
+
+            ws.on('error', error => {
+                console.error(`WebSocket error: ${error.message}`)
+                // ws.close();
+            })
+
+            ws.on('close', () => {
+                console.log(`[${new Date()}] Socket closed`)
+            })
+
+            if (serverConnection) {
+                // socketConnection.onClose(() => serverConnection.dispose());
+                // serverConnection.onClose(() => socketConnection.dispose());
+            }
+            console.log('server connection success')
+        })
+
         this.restartedEmitter.fire(undefined)
         insideRestart = false
     }
@@ -471,6 +663,8 @@ export class LeanClient implements Disposable {
     }
 
     async restartFile(leanDoc: LeanDocument): Promise<void> {
+        console.log('(this.client as any)._serverProcess', (this.client as any)._serverProcess)
+
         if (this.client === undefined || !this.running) return // there was a problem starting lean server.
 
         if (!this.isInFolderManagedByThisClient(leanDoc.extUri)) {
