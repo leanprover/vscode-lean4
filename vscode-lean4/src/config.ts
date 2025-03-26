@@ -1,9 +1,13 @@
-import { ConfigurationTarget, workspace } from 'vscode'
+import { ConfigurationTarget, ThemeColor, workspace } from 'vscode'
 import { elanStableChannel } from './utils/elan'
 import { PATH } from './utils/envPath'
 
-// TODO: does currently not contain config options for `./abbreviation`
-// so that it is easy to keep it in sync with vscode-lean.
+function processConfigColor(c: string): ThemeColor | string {
+    if (c.match(/^(#|rgb\(|rgba\(|hsl\(|hsla\()/)) {
+        return c
+    }
+    return new ThemeColor(c)
+}
 
 export function getPowerShellPath(): string {
     const windir = process.env.windir
@@ -117,12 +121,16 @@ export function showUnsolvedGoalsDecoration(): boolean {
     return workspace.getConfiguration('lean4').get('showUnsolvedGoalsDecoration', true)
 }
 
-export function unsolvedGoalsDecorationLightThemeColor(): string {
-    return workspace.getConfiguration('lean4').get('unsolvedGoalsDecorationLightThemeColor', '#1A85FF88')
+export function unsolvedGoalsDecorationLightThemeColor(): ThemeColor | string {
+    return processConfigColor(
+        workspace.getConfiguration('lean4').get('unsolvedGoalsDecorationLightThemeColor', 'editorInfo.foreground'),
+    )
 }
 
-export function unsolvedGoalsDecorationDarkThemeColor(): string {
-    return workspace.getConfiguration('lean4').get('unsolvedGoalsDecorationDarkThemeColor', '#3794FF88')
+export function unsolvedGoalsDecorationDarkThemeColor(): ThemeColor | string {
+    return processConfigColor(
+        workspace.getConfiguration('lean4').get('unsolvedGoalsDecorationDarkThemeColor', 'editorInfo.foreground'),
+    )
 }
 
 export function goalsAccomplishedDecorationKind(): string {
