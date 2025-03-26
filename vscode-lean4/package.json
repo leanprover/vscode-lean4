@@ -199,13 +199,13 @@
                 },
                 "lean4.unsolvedGoalsDecorationLightThemeColor": {
                     "type": "string",
-                    "default": "#1A85FF88",
-                    "markdownDescription": "Color used in unsolved goal decorations when using a light theme."
+                    "default": "editorInfo.foreground",
+                    "markdownDescription": "Color used in unsolved goal decorations when using a light theme. Can either denote a CSS color or a [VS Code theme color](https://code.visualstudio.com/api/references/theme-color)."
                 },
                 "lean4.unsolvedGoalsDecorationDarkThemeColor": {
                     "type": "string",
-                    "default": "#3794FF88",
-                    "markdownDescription": "Color used in unsolved goal decorations when using a dark theme."
+                    "default": "editorInfo.foreground",
+                    "markdownDescription": "Color used in unsolved goal decorations when using a dark theme. Can either denote a CSS color or a [VS Code theme color](https://code.visualstudio.com/api/references/theme-color)."
                 },
                 "lean4.goalsAccomplishedDecorationKind": {
                     "type": "string",
