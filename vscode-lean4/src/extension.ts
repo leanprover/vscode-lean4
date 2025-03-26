@@ -5,7 +5,7 @@ import { AbbreviationFeature } from './abbreviation/AbbreviationFeature'
 import { AbbreviationView } from './abbreviationview'
 import { getDefaultLeanVersion } from './config'
 import { FullDiagnosticsProvider } from './diagnostics/fullDiagnostics'
-import { checkAll, SetupDiagnostics } from './diagnostics/setupDiagnostics'
+import { checkAll, SetupDiagnostics, checkLean4ProjectPreconditions } from './diagnostics/setupDiagnostics'
 import { PreconditionCheckResult, SetupNotificationOptions } from './diagnostics/setupNotifs'
 import { AlwaysEnabledFeatures, Exports, Lean4EnabledFeatures } from './exports'
 import { InfoProvider } from './infoview'
@@ -177,7 +177,7 @@ async function activateLean4Features(
     installer: LeanInstaller,
     elanCommandProvider: ElanCommandProvider,
 ): Promise<Lean4EnabledFeatures> {
-    const clientProvider = new LeanClientProvider(installer, installer.getOutputChannel())
+    const clientProvider = new LeanClientProvider(installer, installer.getOutputChannel(), checkLean4ProjectPreconditions)
     elanCommandProvider.setClientProvider(clientProvider)
     context.subscriptions.push(clientProvider)
 
