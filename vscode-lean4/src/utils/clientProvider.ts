@@ -1,6 +1,7 @@
 import { LeanFileProgressProcessingInfo, ServerStoppedReason } from '@leanprover/infoview-api'
 import path from 'path'
 import { Disposable, EventEmitter, OutputChannel, commands, workspace } from 'vscode'
+import { BaseLanguageClient, LanguageClientOptions } from 'vscode-languageclient/node'
 import { SetupDiagnostics, checkAll } from '../diagnostics/setupDiagnostics'
 import { PreconditionCheckResult, SetupNotificationOptions } from '../diagnostics/setupNotifs'
 import { LeanClient } from '../leanclient'
@@ -62,7 +63,15 @@ export class LeanClientProvider implements Disposable {
     private clientStoppedEmitter = new EventEmitter<[LeanClient, boolean, ServerStoppedReason]>()
     clientStopped = this.clientStoppedEmitter.event
 
-    constructor(installer: LeanInstaller, outputChannel: OutputChannel) {
+    constructor(
+        installer: LeanInstaller,
+        outputChannel: OutputChannel,
+        private setupClient: (
+            toolchainOverride: string | undefined,
+            folderUri: ExtUri,
+            clientOptions: LanguageClientOptions,
+        ) => Promise<BaseLanguageClient>,
+    ) {
         this.outputChannel = outputChannel
         this.installer = installer
 
@@ -273,7 +282,7 @@ export class LeanClientProvider implements Disposable {
         }
 
         logger.log('[ClientProvider] Creating LeanClient for ' + folderUri.toString())
-        client = new LeanClient(folderUri, this.outputChannel)
+        client = new LeanClient(folderUri, this.outputChannel, this.setupClient)
         this.subscriptions.push(client)
         this.clients.set(key, client)
 

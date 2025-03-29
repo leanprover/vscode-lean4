@@ -13,18 +13,15 @@ import {
     WorkspaceFolder,
 } from 'vscode'
 import {
-    ClientCapabilities,
+    BaseLanguageClient,
     DiagnosticSeverity,
     DidChangeTextDocumentParams,
     DidCloseTextDocumentParams,
     DocumentFilter,
     InitializeResult,
-    LanguageClient,
     LanguageClientOptions,
     RevealOutputChannelOn,
-    ServerOptions,
     State,
-    StaticFeature,
 } from 'vscode-languageclient/node'
 
 import {
@@ -33,25 +30,13 @@ import {
     LeanFileProgressProcessingInfo,
     ServerStoppedReason,
 } from '@leanprover/infoview-api'
-import {
-    getElaborationDelay,
-    getFallBackToStringOccurrenceHighlighting,
-    serverArgs,
-    serverLoggingEnabled,
-    serverLoggingPath,
-    shouldAutofocusOutput,
-} from './config'
+import { getElaborationDelay, getFallBackToStringOccurrenceHighlighting, shouldAutofocusOutput } from './config'
 import { logger } from './utils/logger'
 // @ts-ignore
 import path from 'path'
 import { SemVer } from 'semver'
-import {
-    c2pConverter,
-    LeanPublishDiagnosticsParams,
-    p2cConverter,
-    patchConverters,
-    setDependencyBuildMode,
-} from './utils/converters'
+import { setupClient } from './leanclientsetup'
+import { c2pConverter, LeanPublishDiagnosticsParams, p2cConverter, setDependencyBuildMode } from './utils/converters'
 import { elanInstalledToolchains } from './utils/elan'
 import { ExtUri, parseExtUri, toExtUri } from './utils/exturi'
 import { leanRunner } from './utils/leanCmdRunner'
@@ -61,15 +46,6 @@ import {
     displayNotificationWithOptionalInput,
     displayNotificationWithOutput,
 } from './utils/notifs'
-import { willUseLakeServer } from './utils/projectInfo'
-
-interface LeanClientCapabilties {
-    silentDiagnosticSupport?: boolean | undefined
-}
-
-const leanClientCapabilities: LeanClientCapabilties = {
-    silentDiagnosticSupport: true,
-}
 
 const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
@@ -77,7 +53,7 @@ export type ServerProgress = Map<ExtUri, LeanFileProgressProcessingInfo[]>
 
 export class LeanClient implements Disposable {
     running: boolean
-    private client: LanguageClient | undefined
+    private client: BaseLanguageClient | undefined
     private outputChannel: OutputChannel
     folderUri: ExtUri
     private subscriptions: Disposable[] = []
@@ -125,7 +101,15 @@ export class LeanClient implements Disposable {
     private serverFailedEmitter = new EventEmitter<string>()
     serverFailed = this.serverFailedEmitter.event
 
-    constructor(folderUri: ExtUri, outputChannel: OutputChannel) {
+    constructor(
+        folderUri: ExtUri,
+        outputChannel: OutputChannel,
+        private setupClient: (
+            toolchainOverride: string | undefined,
+            folderUri: ExtUri,
+            clientOptions: LanguageClientOptions,
+        ) => Promise<BaseLanguageClient>,
+    ) {
         this.outputChannel = outputChannel
         this.folderUri = folderUri
         this.subscriptions.push(new Disposable(() => this.staleDepNotifier?.dispose()))
@@ -272,7 +256,7 @@ export class LeanClient implements Disposable {
         const toolchainOverride: string | undefined =
             toolchainOverrideResult.kind === 'Override' ? toolchainOverrideResult.toolchain : undefined
 
-        this.client = await this.setupClient(toolchainOverride)
+        this.client = await setupClient(toolchainOverride, this.folderUri, this.obtainClientOptions())
 
         let insideRestart = true
         try {
@@ -521,43 +505,6 @@ export class LeanClient implements Disposable {
         return this.running ? this.client?.initializeResult : undefined
     }
 
-    private async determineServerOptions(toolchainOverride: string | undefined): Promise<ServerOptions> {
-        const env = Object.assign({}, process.env)
-        if (serverLoggingEnabled()) {
-            env.LEAN_SERVER_LOG_DIR = serverLoggingPath()
-        }
-
-        const [serverExecutable, options] = await this.determineExecutable()
-        if (toolchainOverride) {
-            options.unshift('+' + toolchainOverride)
-        }
-
-        const cwd = this.folderUri.scheme === 'file' ? this.folderUri.fsPath : undefined
-        if (cwd) {
-            // Add folder name to command-line so that it shows up in `ps aux`.
-            options.push(cwd)
-        } else {
-            options.push('untitled')
-        }
-
-        return {
-            command: serverExecutable,
-            args: options.concat(serverArgs()),
-            options: {
-                cwd,
-                env,
-            },
-        }
-    }
-
-    private async determineExecutable(): Promise<[string, string[]]> {
-        if (await willUseLakeServer(this.folderUri)) {
-            return ['lake', ['serve', '--']]
-        } else {
-            return ['lean', ['--server']]
-        }
-    }
-
     private obtainClientOptions(): LanguageClientOptions {
         const documentSelector: DocumentFilter = {
             language: 'lean4',
@@ -687,26 +634,5 @@ export class LeanClient implements Disposable {
                 },
             },
         }
-    }
-
-    private async setupClient(toolchainOverride: string | undefined): Promise<LanguageClient> {
-        const serverOptions: ServerOptions = await this.determineServerOptions(toolchainOverride)
-        const clientOptions: LanguageClientOptions = this.obtainClientOptions()
-
-        const client = new LanguageClient('lean4', 'Lean 4', serverOptions, clientOptions)
-        const leanCapabilityFeature: StaticFeature = {
-            initialize(_1, _2) {},
-            getState() {
-                return { kind: 'static' }
-            },
-            fillClientCapabilities(capabilities: ClientCapabilities & { lean?: LeanClientCapabilties | undefined }) {
-                capabilities.lean = leanClientCapabilities
-            },
-            dispose() {},
-        }
-        client.registerFeature(leanCapabilityFeature)
-
-        patchConverters(client.protocol2CodeConverter, client.code2ProtocolConverter)
-        return client
     }
 }
