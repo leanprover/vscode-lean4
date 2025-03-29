@@ -1,6 +1,6 @@
 import * as os from 'os'
 import * as path from 'path'
-import { commands, ExtensionContext, extensions, TextDocument, Uri, window, workspace } from 'vscode'
+import { commands, ExtensionContext, extensions, TextDocument, window, workspace } from 'vscode'
 import { AbbreviationFeature } from './abbreviation/AbbreviationFeature'
 import { AbbreviationView } from './abbreviationview'
 import { getDefaultLeanVersion } from './config'
@@ -34,6 +34,7 @@ import {
 } from './utils/notifs'
 import { PathExtensionProvider } from './utils/pathExtensionProvider'
 import { findLeanProjectRoot } from './utils/projectInfo'
+import { UriHandlerService } from './utils/uriHandlerService'
 
 async function setLeanFeatureSetActive(isActive: boolean) {
     await commands.executeCommand('setContext', 'lean4.isLeanFeatureSetActive', isActive)
@@ -152,13 +153,8 @@ function activateAlwaysEnabledFeatures(context: ExtensionContext): AlwaysEnabled
     const elanCommandProvider = new ElanCommandProvider(outputChannel)
     context.subscriptions.push(elanCommandProvider)
 
-    window.registerUriHandler({
-        async handleUri(uri: Uri) {
-            if (uri.path === '/setup-guide') {
-                await commands.executeCommand('lean4.docs.showSetupGuide')
-            }
-        },
-    })
+    const uriHandlerService = new UriHandlerService()
+    context.subscriptions.push(uriHandlerService)
 
     return { projectInitializationProvider, outputChannel, installer, fullDiagnosticsProvider, elanCommandProvider }
 }
