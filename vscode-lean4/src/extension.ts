@@ -34,6 +34,7 @@ import {
 } from './utils/notifs'
 import { PathExtensionProvider } from './utils/pathExtensionProvider'
 import { findLeanProjectRoot } from './utils/projectInfo'
+import { UriHandlerService } from './utils/uriHandlerService'
 
 async function setLeanFeatureSetActive(isActive: boolean) {
     await commands.executeCommand('setContext', 'lean4.isLeanFeatureSetActive', isActive)
@@ -151,6 +152,9 @@ function activateAlwaysEnabledFeatures(context: ExtensionContext): AlwaysEnabled
 
     const elanCommandProvider = new ElanCommandProvider(outputChannel)
     context.subscriptions.push(elanCommandProvider)
+
+    const uriHandlerService = new UriHandlerService()
+    context.subscriptions.push(uriHandlerService)
 
     return { projectInitializationProvider, outputChannel, installer, fullDiagnosticsProvider, elanCommandProvider }
 }
