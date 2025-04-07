@@ -5,12 +5,12 @@ import * as path from 'path'
 import { logger } from '../../../src/utils/logger'
 import { displayNotification } from '../../../src/utils/notifs'
 import {
-    assertStringInInfoview,
+    assertStringInInfoviewAt,
     closeAllEditors,
     extractPhrase,
     getAltBuildVersion,
     initLean4,
-    waitForInfoviewHtml,
+    waitForInfoviewHtmlAt,
 } from '../utils/helpers'
 
 // Expects to be launched with folder: ${workspaceFolder}/vscode-lean4/test/suite/simple
@@ -30,11 +30,11 @@ suite('Toolchain Test Suite', () => {
         assert(installer, 'No LeanInstaller export')
 
         // wait for info view to show up.
-        await assertStringInInfoview(info, 'Hello')
+        await assertStringInInfoviewAt('#eval main', info, 'Hello')
 
         // verify we have a nightly build running in this folder.
         const expectedVersion = '4.0.0-nightly-'
-        const html = await waitForInfoviewHtml(info, expectedVersion)
+        const html = await waitForInfoviewHtmlAt('#eval main', info, expectedVersion)
         const foundVersion = extractPhrase(html, expectedVersion, '\n')
 
         // Now edit the lean-toolchain file.
@@ -48,7 +48,7 @@ suite('Toolchain Test Suite', () => {
 
         try {
             logger.log(`verify that we switched to alt version ${version}`)
-            const html = await assertStringInInfoview(info, version)
+            const html = await assertStringInInfoviewAt('#eval main', info, version)
 
             // check the path to lean.exe from the `eval IO.appPath`
             const leanPath = extractPhrase(html, 'FilePath.mk', '<').trim()
@@ -61,7 +61,7 @@ suite('Toolchain Test Suite', () => {
         }
 
         logger.log(`Wait for version to appear, it should be ${foundVersion}`)
-        await assertStringInInfoview(info, foundVersion)
+        await assertStringInInfoviewAt('#eval main', info, foundVersion)
 
         // make sure test is always run in predictable state, which is no file or folder open
         await closeAllEditors()

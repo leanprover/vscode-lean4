@@ -6,7 +6,7 @@ import { elanInstalledToolchains } from '../../../src/utils/elan'
 import { logger } from '../../../src/utils/logger'
 import { displayNotification } from '../../../src/utils/notifs'
 import {
-    assertStringInInfoview,
+    assertStringInInfoviewAt,
     closeAllEditors,
     extractPhrase,
     gotoDefinition,
@@ -14,6 +14,7 @@ import {
     initLean4Untitled,
     waitForActiveEditor,
     waitForInfoviewHtml,
+    waitForInfoviewHtmlAt,
 } from '../utils/helpers'
 
 suite('Lean4 Basics Test Suite', () => {
@@ -25,7 +26,7 @@ suite('Lean4 Basics Test Suite', () => {
         const info = features.infoProvider
         assert(info, 'No InfoProvider export')
 
-        await assertStringInInfoview(info, '4.0.0-nightly-')
+        await assertStringInInfoviewAt('#eval', info, '4.0.0-nightly-')
 
         // test goto definition to lean toolchain works
         await waitForActiveEditor()
@@ -60,7 +61,7 @@ suite('Lean4 Basics Test Suite', () => {
         const info = features.infoProvider
         assert(info, 'No InfoProvider export')
         const expectedVersion = '5040' // the factorial function works.
-        const html = await waitForInfoviewHtml(info, expectedVersion)
+        const html = await waitForInfoviewHtmlAt('#eval factorial 7', info, expectedVersion)
 
         const installer = features.installer
         assert(installer, 'No LeanInstaller export')
@@ -73,7 +74,7 @@ suite('Lean4 Basics Test Suite', () => {
             defaultToolchain = defaultToolchain.replace('/', '--')
             defaultToolchain = defaultToolchain.replace(':', '---')
             // make sure this string exists in the info view.
-            await waitForInfoviewHtml(info, defaultToolchain)
+            await waitForInfoviewHtmlAt('#eval IO.appPath', info, defaultToolchain)
         }
 
         // make sure test is always run in predictable state, which is no file or folder open
@@ -97,7 +98,7 @@ suite('Lean4 Basics Test Suite', () => {
         const info = features.infoProvider
         assert(info, 'No InfoProvider export')
         let expectedVersion = 'Hello:'
-        let html = await waitForInfoviewHtml(info, expectedVersion)
+        let html = await waitForInfoviewHtmlAt('#eval main', info, expectedVersion)
         const versionString = extractPhrase(html, 'Hello:', '<').trim()
         logger.log(`>>> Found "${versionString}" in infoview`)
 

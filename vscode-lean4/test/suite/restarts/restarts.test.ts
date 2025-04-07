@@ -7,12 +7,14 @@ import { logger } from '../../../src/utils/logger'
 import { displayNotification } from '../../../src/utils/notifs'
 import {
     assertStringInInfoview,
+    assertStringInInfoviewAt,
     closeAllEditors,
     deleteAllText,
     extractPhrase,
     initLean4,
     initLean4Untitled,
     insertText,
+    insertTextAfter,
     restartFile,
     restartLeanServer,
     waitForActiveClient,
@@ -29,18 +31,19 @@ suite('Lean Server Restart Test Suite', () => {
 
         // add normal values to initialize lean4 file
         const hello = 'Hello World'
-        const features = await initLean4Untitled(`#eval "${hello}"`)
+        const evalLine = `#eval "${hello}"`
+        const features = await initLean4Untitled(evalLine)
         const info = features.infoProvider
         assert(info, 'No InfoProvider export')
 
         logger.log('make sure language server is up and running.')
-        await assertStringInInfoview(info, hello)
+        await assertStringInInfoviewAt('#eval', info, hello)
 
         const clients = features.clientProvider
         assert(clients, 'No LeanClientProvider export')
 
         logger.log('Insert eval that causes crash.')
-        await insertText('\n\n#eval (unsafeCast 0 : String)')
+        await insertTextAfter(evalLine, '\n\n#eval (unsafeCast 0 : String)')
 
         const expectedMessage = 'The Lean Server has stopped processing this file'
         await assertStringInInfoview(info, expectedMessage)
@@ -60,7 +63,7 @@ suite('Lean Server Restart Test Suite', () => {
         await restartLeanServer(client)
 
         logger.log('checking that Hello World comes back after restart')
-        await assertStringInInfoview(info, hello)
+        await assertStringInInfoviewAt('#eval', info, hello)
 
         // make sure test is always run in predictable state, which is no file or folder open
         await closeAllEditors()
@@ -74,18 +77,19 @@ suite('Lean Server Restart Test Suite', () => {
 
         // add normal values to initialize lean4 file
         const hello = 'Hello World'
-        const features = await initLean4Untitled(`#eval "${hello}"`)
+        const evalLine = `#eval "${hello}"`
+        const features = await initLean4Untitled(evalLine)
         const info = features.infoProvider
         assert(info, 'No InfoProvider export')
 
         logger.log('make sure language server is up and running.')
-        await assertStringInInfoview(info, hello)
+        await assertStringInInfoviewAt('#eval', info, hello)
 
         const clients = features.clientProvider
         assert(clients, 'No LeanClientProvider export')
 
         logger.log('Insert eval that causes crash.')
-        await insertText('\n\n#eval (unsafeCast 0 : String)')
+        await insertTextAfter(evalLine, '\n\n#eval (unsafeCast 0 : String)')
 
         const expectedMessage = 'The Lean Server has stopped processing this file'
         await assertStringInInfoview(info, expectedMessage)
@@ -105,7 +109,7 @@ suite('Lean Server Restart Test Suite', () => {
         await restartFile()
 
         logger.log('checking that Hello World comes back after restart')
-        await assertStringInInfoview(info, hello)
+        await assertStringInInfoviewAt('#eval', info, hello)
 
         // make sure test is always run in predictable state, which is no file or folder open
         await closeAllEditors()
