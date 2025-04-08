@@ -172,6 +172,11 @@
                     "default": true,
                     "markdownDescription": "Show the tooltip for an interactive element (e.g. a subexpression) when the pointer hovers over that element. When disabled, the element must be clicked for the tooltip to show up."
                 },
+                "lean4.infoview.disableLoadingSpinner": {
+                    "type": "boolean",
+                    "default": false,
+                    "markdownDescription": "Disable the loading spinner on the infoview."
+                },
                 "lean4.elaborationDelay": {
                     "type": "number",
                     "default": 200,
