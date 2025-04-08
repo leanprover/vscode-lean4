@@ -10,7 +10,7 @@ import {
     initLean4Untitled,
     waitForActiveClient,
     waitForActiveClientRunning,
-    waitForInfoviewHtml,
+    waitForInfoviewHtmlAt,
 } from '../utils/helpers'
 
 suite('Lean4 Bootstrap Test Suite', () => {
@@ -32,20 +32,7 @@ suite('Lean4 Bootstrap Test Suite', () => {
         await waitForActiveClient(features.clientProvider, 120)
         await waitForActiveClientRunning(features.clientProvider, 300)
 
-        const hackNeeded = false
-        if (hackNeeded) {
-            // this is a hack we can do if it turns out this bootstrap test is unreliable.
-            // The hack would be covering a product bug, which is why we'd prefer not to use it.
-            // if it times out at 600 seconds then waitForInfoviewHtml prints the contents of the InfoView so we can see what happened.
-            // await waitForInfoviewHtml(info, expected, 10, 60000, true, async () => {
-            //     // 60 seconds elapsed, and infoview is not updating, try and re-edit
-            //     // the file to force the LSP to update.
-            //     await deleteAllText();
-            //     await insertText('#eval Lean.versionString');
-            // });
-        } else {
-            await waitForInfoviewHtml(info, expected, 600)
-        }
+        await waitForInfoviewHtmlAt('#eval', info, expected, 600)
 
         logger.log('Lean installation is complete.')
 
@@ -74,7 +61,7 @@ suite('Lean4 Bootstrap Test Suite', () => {
         assert(info, 'No InfoProvider export')
 
         logger.log('Wait for Lean nightly build server to start...')
-        await waitForInfoviewHtml(info, '4.0.0-nightly-', 120)
+        await waitForInfoviewHtmlAt('#eval', info, '4.0.0-nightly-', 120)
         logger.log('Lean nightly build server is running.')
 
         // make sure test is always run in predictable state, which is no file or folder open

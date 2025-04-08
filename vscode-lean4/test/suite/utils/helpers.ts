@@ -90,11 +90,21 @@ export async function deleteAllText(): Promise<void> {
     })
 }
 
-export function gotoPosition(line: number, character: number): void {
+export function gotoPosition(searchString: string, after: boolean = false): void {
     const editor = vscode.window.activeTextEditor
     assertAndLog(editor !== undefined, 'no active editor')
-    const position = new vscode.Position(line, character)
+    const text = editor.document.getText()
+    let offset = text.indexOf(searchString)
+    if (after) {
+        offset += searchString.length
+    }
+    const position = editor.document.positionAt(offset)
     editor.selection = new vscode.Selection(position, position)
+}
+
+export async function insertTextAfter(searchString: string, text: string): Promise<void> {
+    gotoPosition(searchString, true)
+    await insertText(text)
 }
 
 export async function initLean4Untitled(contents: string): Promise<EnabledFeatures> {
@@ -371,6 +381,19 @@ export async function waitForInfoviewHtml(
     assertAndLog(false, `Missing "${toFind}" in infoview after ${timeout} seconds`)
 }
 
+export async function waitForInfoviewHtmlAt(
+    positionSearchString: string,
+    infoView: InfoProvider,
+    toFind: string,
+    retries = 60,
+    delay = 1000,
+    expand = true,
+    retryHandler = nullHandler,
+): Promise<string> {
+    gotoPosition(positionSearchString)
+    return await waitForInfoviewHtml(infoView, toFind, retries, delay, expand, retryHandler)
+}
+
 export async function waitForInfoviewNotHtml(
     infoView: InfoProvider,
     toFind: string,
@@ -497,6 +520,14 @@ export async function restartLeanServer(client: LeanClient, retries = 60, delay 
 
 export async function assertStringInInfoview(infoView: InfoProvider, expectedVersion: string): Promise<string> {
     return await waitForInfoviewHtml(infoView, expectedVersion)
+}
+
+export async function assertStringInInfoviewAt(
+    positionSearchString: string,
+    infoView: InfoProvider,
+    expectedVersion: string,
+): Promise<string> {
+    return await waitForInfoviewHtmlAt(positionSearchString, infoView, expectedVersion)
 }
 
 export async function clickInfoViewButton(info: InfoProvider, name: string): Promise<void> {

@@ -4,7 +4,7 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 import { logger } from '../../../src/utils/logger'
 import { displayNotification } from '../../../src/utils/notifs'
-import { assertStringInInfoview, closeAllEditors, getAltBuildVersion, initLean4 } from '../utils/helpers'
+import { assertStringInInfoviewAt, closeAllEditors, getAltBuildVersion, initLean4 } from '../utils/helpers'
 
 suite('Multi-Folder Test Suite', () => {
     test('Load a multi-project workspace', async () => {
@@ -19,7 +19,7 @@ suite('Multi-Folder Test Suite', () => {
         // verify we have a nightly build running in this folder.
         const info = features.infoProvider
         assert(info, 'No InfoProvider export')
-        await assertStringInInfoview(info, '4.0.0-nightly-')
+        await assertStringInInfoviewAt('#eval Lean.versionString', info, '4.0.0-nightly-')
 
         // Now open a file from the other project
         const doc2 = await vscode.workspace.openTextDocument(path.join(multiRoot, 'foo', 'Foo.lean'))
@@ -28,7 +28,7 @@ suite('Multi-Folder Test Suite', () => {
         await vscode.window.showTextDocument(doc2, options)
 
         logger.log(`wait for version ${version} to load...`)
-        await assertStringInInfoview(info, version)
+        await assertStringInInfoviewAt('#eval', info, version)
 
         // Now verify we have 2 LeanClients running.
         const clients = features.clientProvider
