@@ -26,7 +26,7 @@ export function useIsVisible(): [(element: HTMLElement) => void, boolean] {
     return [node, isVisible]
 }
 
-interface DetailsProps {
+interface DetailsProps extends React.PropsWithoutRef<React.HTMLProps<HTMLDetailsElement>> {
     initiallyOpen?: boolean
     children: [React.ReactNode, ...React.ReactNode[]]
     setOpenRef?: (_: React.Dispatch<React.SetStateAction<boolean>>) => void
@@ -34,11 +34,16 @@ interface DetailsProps {
 
 /** Like `<details>` but can be programatically revealed using `setOpenRef`.
  * The first child is placed inside the `<summary>` node. */
-export function Details({ initiallyOpen, children: [summary, ...children], setOpenRef }: DetailsProps): JSX.Element {
+export function Details({
+    initiallyOpen,
+    children: [summary, ...children],
+    setOpenRef,
+    ...props
+}: DetailsProps): JSX.Element {
     const [isOpen, setOpen] = React.useState<boolean>(initiallyOpen === undefined ? false : initiallyOpen)
     if (setOpenRef) setOpenRef(setOpen)
     return (
-        <details open={isOpen}>
+        <details open={isOpen} {...props}>
             <summary
                 className="mv2 pointer "
                 onClick={e => {

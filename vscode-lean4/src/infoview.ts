@@ -1,6 +1,7 @@
 import {
     EditorApi,
     InfoviewApi,
+    InfoviewConfig,
     LeanFileProgressParams,
     RpcConnected,
     RpcConnectParams,
@@ -12,6 +13,7 @@ import {
 import { join } from 'path'
 import {
     commands,
+    ConfigurationTarget,
     Diagnostic,
     Disposable,
     env,
@@ -34,8 +36,12 @@ import {
     getInfoViewAutoOpenShowsGoal,
     getInfoViewDebounceTime,
     getInfoViewEmphasizeFirstGoal,
+    getInfoViewExpectedTypeVisibility,
+    getInfoViewFilterHiddenAssumptions,
+    getInfoViewFilterInstances,
+    getInfoViewFilterLetValues,
+    getInfoViewFilterTypes,
     getInfoViewReverseTacticState,
-    getInfoViewShowExpectedType,
     getInfoViewShowGoalNames,
     getInfoViewShowTooltipOnHover,
     getInfoViewStyle,
@@ -138,6 +144,44 @@ export class InfoProvider implements Disposable {
     }
 
     private editorApi: EditorApi = {
+        saveConfig: async (config: InfoviewConfig) => {
+            await workspace
+                .getConfiguration('lean4.infoview')
+                .update('allErrorsOnLine', config.allErrorsOnLine, ConfigurationTarget.Global)
+            await workspace
+                .getConfiguration('lean4.infoview')
+                .update('autoOpenShowsGoal', config.autoOpenShowsGoal, ConfigurationTarget.Global)
+            await workspace
+                .getConfiguration('lean4.infoview')
+                .update('debounceTime', config.debounceTime, ConfigurationTarget.Global)
+            await workspace
+                .getConfiguration('lean4.infoview')
+                .update('expectedTypeVisibility', config.expectedTypeVisibility, ConfigurationTarget.Global)
+            await workspace
+                .getConfiguration('lean4.infoview')
+                .update('showGoalNames', config.showGoalNames, ConfigurationTarget.Global)
+            await workspace
+                .getConfiguration('lean4.infoview')
+                .update('emphasizeFirstGoal', config.emphasizeFirstGoal, ConfigurationTarget.Global)
+            await workspace
+                .getConfiguration('lean4.infoview')
+                .update('reverseTacticState', config.reverseTacticState, ConfigurationTarget.Global)
+            await workspace
+                .getConfiguration('lean4.infoview')
+                .update('filterTypes', config.filterTypes, ConfigurationTarget.Global)
+            await workspace
+                .getConfiguration('lean4.infoview')
+                .update('filterInstances', config.filterInstances, ConfigurationTarget.Global)
+            await workspace
+                .getConfiguration('lean4.infoview')
+                .update('filterHiddenAssumptions', config.filterHiddenAssumptions, ConfigurationTarget.Global)
+            await workspace
+                .getConfiguration('lean4.infoview')
+                .update('filterLetValues', config.filterLetValues, ConfigurationTarget.Global)
+            await workspace
+                .getConfiguration('lean4.infoview')
+                .update('showTooltipOnHover', config.showTooltipOnHover, ConfigurationTarget.Global)
+        },
         sendClientRequest: async (uri: string, method: string, params: any): Promise<any> => {
             const extUri = parseExtUri(uri)
             if (extUri === undefined) {
@@ -375,6 +419,114 @@ export class InfoProvider implements Disposable {
             commands.registerCommand('lean4.infoview.unselectAll', args =>
                 this.webviewPanel?.api.clickedContextMenu({ entry: 'unselectAll', id: args.selectedLocationsId }),
             ),
+            commands.registerCommand('lean4.infoview.pause', args =>
+                this.webviewPanel?.api.clickedContextMenu({ entry: 'pause', id: args.pauseId }),
+            ),
+            commands.registerCommand('lean4.infoview.unpause', args =>
+                this.webviewPanel?.api.clickedContextMenu({ entry: 'unpause', id: args.unpauseId }),
+            ),
+            commands.registerCommand('lean4.infoview.pin', args =>
+                this.webviewPanel?.api.clickedContextMenu({ entry: 'pin', id: args.pinId }),
+            ),
+            commands.registerCommand('lean4.infoview.unpin', args =>
+                this.webviewPanel?.api.clickedContextMenu({ entry: 'unpin', id: args.unpinId }),
+            ),
+            commands.registerCommand('lean4.infoview.refresh', args =>
+                this.webviewPanel?.api.clickedContextMenu({ entry: 'refresh', id: args.refreshId }),
+            ),
+            commands.registerCommand('lean4.infoview.pauseAllMessages', args =>
+                this.webviewPanel?.api.clickedContextMenu({
+                    entry: 'pauseAllMessages',
+                    id: args.pauseAllMessagesId,
+                }),
+            ),
+            commands.registerCommand('lean4.infoview.unpauseAllMessages', args =>
+                this.webviewPanel?.api.clickedContextMenu({
+                    entry: 'unpauseAllMessages',
+                    id: args.unpauseAllMessagesId,
+                }),
+            ),
+            commands.registerCommand('lean4.infoview.goToPinnedLocation', args =>
+                this.webviewPanel?.api.clickedContextMenu({
+                    entry: 'goToPinnedLocation',
+                    id: args.goToPinnedLocationId,
+                }),
+            ),
+            commands.registerCommand('lean4.infoview.goToMessageLocation', args =>
+                this.webviewPanel?.api.clickedContextMenu({
+                    entry: 'goToMessageLocation',
+                    id: args.goToMessageLocationId,
+                }),
+            ),
+            commands.registerCommand('lean4.infoview.displayTargetBeforeAssumptions', args =>
+                this.webviewPanel?.api.clickedContextMenu({
+                    entry: 'displayTargetBeforeAssumptions',
+                    id: args.displayTargetBeforeAssumptionsId,
+                }),
+            ),
+            commands.registerCommand('lean4.infoview.displayAssumptionsBeforeTarget', args =>
+                this.webviewPanel?.api.clickedContextMenu({
+                    entry: 'displayAssumptionsBeforeTarget',
+                    id: args.displayAssumptionsBeforeTargetId,
+                }),
+            ),
+            commands.registerCommand('lean4.infoview.hideGoalNames', args =>
+                this.webviewPanel?.api.clickedContextMenu({
+                    entry: 'hideGoalNames',
+                    id: args.hideGoalNamesId,
+                }),
+            ),
+            commands.registerCommand('lean4.infoview.showGoalNames', args =>
+                this.webviewPanel?.api.clickedContextMenu({
+                    entry: 'showGoalNames',
+                    id: args.showGoalNamesId,
+                }),
+            ),
+            commands.registerCommand('lean4.infoview.emphasizeFirstGoal', args =>
+                this.webviewPanel?.api.clickedContextMenu({
+                    entry: 'emphasizeFirstGoal',
+                    id: args.emphasizeFirstGoalId,
+                }),
+            ),
+            commands.registerCommand('lean4.infoview.deemphasizeFirstGoal', args =>
+                this.webviewPanel?.api.clickedContextMenu({
+                    entry: 'deemphasizeFirstGoal',
+                    id: args.deemphasizeFirstGoalId,
+                }),
+            ),
+            commands.registerCommand('lean4.infoview.filterTypes', args =>
+                this.webviewPanel?.api.clickedContextMenu({ entry: 'filterTypes', id: args.filterTypesId }),
+            ),
+            commands.registerCommand('lean4.infoview.showTypes', args =>
+                this.webviewPanel?.api.clickedContextMenu({ entry: 'showTypes', id: args.showTypesId }),
+            ),
+            commands.registerCommand('lean4.infoview.filterInstances', args =>
+                this.webviewPanel?.api.clickedContextMenu({ entry: 'filterInstances', id: args.filterInstancesId }),
+            ),
+            commands.registerCommand('lean4.infoview.showInstances', args =>
+                this.webviewPanel?.api.clickedContextMenu({ entry: 'showInstances', id: args.showInstancesId }),
+            ),
+            commands.registerCommand('lean4.infoview.filterHiddenAssumptions', args =>
+                this.webviewPanel?.api.clickedContextMenu({
+                    entry: 'filterHiddenAssumptions',
+                    id: args.filterHiddenAssumptionsId,
+                }),
+            ),
+            commands.registerCommand('lean4.infoview.showHiddenAssumptions', args =>
+                this.webviewPanel?.api.clickedContextMenu({
+                    entry: 'showHiddenAssumptions',
+                    id: args.showHiddenAssumptionsId,
+                }),
+            ),
+            commands.registerCommand('lean4.infoview.filterLetValues', args =>
+                this.webviewPanel?.api.clickedContextMenu({ entry: 'filterLetValues', id: args.filterLetValuesId }),
+            ),
+            commands.registerCommand('lean4.infoview.showLetValues', args =>
+                this.webviewPanel?.api.clickedContextMenu({ entry: 'showLetValues', id: args.showLetValuesId }),
+            ),
+            commands.registerCommand('lean4.infoview.saveSettings', args =>
+                this.webviewPanel?.api.clickedContextMenu({ entry: 'saveSettings', id: args.saveSettingsId }),
+            ),
         )
     }
 
@@ -592,7 +744,7 @@ export class InfoProvider implements Disposable {
         } else {
             const webviewPanel = window.createWebviewPanel(
                 'lean4_infoview',
-                'Lean Infoview',
+                'Lean InfoView',
                 { viewColumn: viewColumnOfInfoView(), preserveFocus: true },
                 {
                     enableFindWidget: true,
@@ -669,10 +821,14 @@ export class InfoProvider implements Disposable {
             allErrorsOnLine: getInfoViewAllErrorsOnLine(),
             autoOpenShowsGoal: getInfoViewAutoOpenShowsGoal(),
             debounceTime: getInfoViewDebounceTime(),
-            showExpectedType: getInfoViewShowExpectedType(),
+            expectedTypeVisibility: getInfoViewExpectedTypeVisibility(),
             showGoalNames: getInfoViewShowGoalNames(),
             emphasizeFirstGoal: getInfoViewEmphasizeFirstGoal(),
             reverseTacticState: getInfoViewReverseTacticState(),
+            filterTypes: getInfoViewFilterTypes(),
+            filterInstances: getInfoViewFilterInstances(),
+            filterHiddenAssumptions: getInfoViewFilterHiddenAssumptions(),
+            filterLetValues: getInfoViewFilterLetValues(),
             showTooltipOnHover: getInfoViewShowTooltipOnHover(),
         })
     }

@@ -175,8 +175,10 @@ function InteractiveMessageTag({ tag: embed }: InteractiveTagProps<MsgEmbed>): J
         return (
             <Goal
                 goal={embed.goal}
-                filter={{
+                settings={{
                     reverse: false,
+                    hideGoalNames: false,
+                    emphasizeFirstGoal: false,
                     showType: true,
                     showInstance: true,
                     showHiddenAssumption: true,

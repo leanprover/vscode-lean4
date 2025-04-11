@@ -8,7 +8,6 @@ import {
     clickInfoViewButton,
     closeActiveEditor,
     closeAllEditors,
-    findWord,
     gotoDefinition,
     gotoPosition,
     initLean4Untitled,
@@ -21,30 +20,6 @@ import {
 } from '../utils/helpers'
 
 suite('InfoView Test Suite', () => {
-    test('Copy to Comment', async () => {
-        logger.log('=================== Copy to Comment ===================')
-
-        const a = 37
-        const b = 22
-        const expectedEval1 = (a * b).toString()
-
-        const features = await initLean4Untitled(`#eval ${a}*${b}`)
-        const info = features.infoProvider
-        assert(info, 'No InfoProvider export')
-
-        await assertStringInInfoviewAt('#eval', info, expectedEval1)
-
-        logger.log('Clicking copyToComment button in InfoView')
-        await clickInfoViewButton(info, 'copy-to-comment')
-
-        logger.log(`Checking editor contains ${expectedEval1}`)
-        const editor = vscode.window.activeTextEditor
-        assert(editor !== undefined, 'no active editor')
-        await findWord(editor, expectedEval1)
-
-        await closeAllEditors()
-    }).timeout(60000)
-
     test('Pinning and unpinning', async () => {
         logger.log('=================== Pinning and unpinning ===================')
 

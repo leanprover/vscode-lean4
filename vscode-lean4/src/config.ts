@@ -81,8 +81,17 @@ export function getInfoViewDebounceTime(): number {
     return workspace.getConfiguration('lean4.infoview').get('debounceTime', 50)
 }
 
-export function getInfoViewShowExpectedType(): boolean {
+function getInfoViewShowExpectedType(): boolean {
     return workspace.getConfiguration('lean4.infoview').get('showExpectedType', true)
+}
+
+export function getInfoViewExpectedTypeVisibility(): 'Expanded by default' | 'Collapsed by default' | 'Hidden' {
+    const show = getInfoViewShowExpectedType()
+    const visibility = workspace.getConfiguration('lean4.infoview').get('expectedTypeVisibility', 'Expanded by default')
+    if (!show && visibility === 'Expanded by default') {
+        return 'Collapsed by default'
+    }
+    return visibility
 }
 
 export function getInfoViewShowGoalNames(): boolean {
@@ -95,6 +104,22 @@ export function getInfoViewEmphasizeFirstGoal(): boolean {
 
 export function getInfoViewReverseTacticState(): boolean {
     return workspace.getConfiguration('lean4.infoview').get('reverseTacticState', false)
+}
+
+export function getInfoViewFilterTypes(): boolean {
+    return workspace.getConfiguration('lean4.infoview').get('filterTypes', false)
+}
+
+export function getInfoViewFilterInstances(): boolean {
+    return workspace.getConfiguration('lean4.infoview').get('filterInstances', false)
+}
+
+export function getInfoViewFilterHiddenAssumptions(): boolean {
+    return workspace.getConfiguration('lean4.infoview').get('filterHiddenAssumptions', false)
+}
+
+export function getInfoViewFilterLetValues(): boolean {
+    return workspace.getConfiguration('lean4.infoview').get('filterLetValues', false)
 }
 
 export function getInfoViewShowTooltipOnHover(): boolean {
