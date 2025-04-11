@@ -107,7 +107,7 @@ suite('Lean4 Basics Test Suite', () => {
 
         // if goto definition worked, then we are in Version.lean and we should see the Lake version string.
         expectedVersion = 'Lake Version:'
-        html = await waitForInfoviewHtml(info, expectedVersion)
+        html = await waitForInfoviewHtmlAt('#eval s!"Lake', info, expectedVersion)
 
         // make sure test is always run in predictable state, which is no file or folder open
         await closeAllEditors()
