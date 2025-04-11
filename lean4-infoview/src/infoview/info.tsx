@@ -192,7 +192,7 @@ function GoalInfoDisplay(props: GoalInfoDisplayProps) {
     return (
         <>
             <LocationsContext.Provider value={locs}>
-                <span data-vscode-context={JSON.stringify({ selectedLocationsId })}>
+                <span data-vscode-context={JSON.stringify(selectedLocs.length === 0 ? {} : { selectedLocationsId })}>
                     <FilteredGoals key="goals" headerChildren="Tactic state" initiallyOpen goals={goals} displayCount />
                 </span>
             </LocationsContext.Provider>
