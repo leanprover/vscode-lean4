@@ -66,16 +66,15 @@ export class FileUri {
     }
 }
 
-export function getWorkspaceFolderUri(uri: FileUri): FileUri | undefined {
-    const folder = workspace.getWorkspaceFolder(uri.asUri())
-    if (folder === undefined) {
-        return undefined
+export function isInWorkspaceFolder(uri: FileUri): boolean {
+    return workspace.getWorkspaceFolder(uri.asUri()) !== undefined
+}
+
+export function isWorkspaceFolder(uri: FileUri): boolean {
+    if (workspace.workspaceFolders === undefined) {
+        return false
     }
-    const folderUri = FileUri.fromUri(folder.uri)
-    if (folderUri === undefined) {
-        return undefined
-    }
-    return folderUri
+    return workspace.workspaceFolders.some(folder => uri.equalsUri(folder.uri))
 }
 
 export class UntitledUri {
