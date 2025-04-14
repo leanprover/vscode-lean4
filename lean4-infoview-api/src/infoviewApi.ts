@@ -19,7 +19,7 @@ export interface InfoviewConfig {
     reverseTacticState: boolean
     hideTypeAssumptions: boolean
     hideInstanceAssumptions: boolean
-    hideHiddenAssumptions: boolean
+    hideInaccessibleAssumptions: boolean
     hideLetValues: boolean
     showTooltipOnHover: boolean
 }
@@ -106,7 +106,7 @@ export const defaultInfoviewConfig: InfoviewConfig = {
     reverseTacticState: false,
     hideTypeAssumptions: false,
     hideInstanceAssumptions: false,
-    hideHiddenAssumptions: false,
+    hideInaccessibleAssumptions: false,
     hideLetValues: false,
     showTooltipOnHover: true,
 }
@@ -140,8 +140,8 @@ export type ContextMenuEntry =
     | 'showTypeAssumptions'
     | 'hideInstanceAssumptions'
     | 'showInstanceAssumptions'
-    | 'hideHiddenAssumptions'
-    | 'showHiddenAssumptions'
+    | 'hideInaccessibleAssumptions'
+    | 'showInaccessibleAssumptions'
     | 'hideLetValues'
     | 'showLetValues'
     | 'hideGoalNames'

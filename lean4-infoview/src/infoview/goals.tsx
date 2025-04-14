@@ -71,7 +71,7 @@ function goalSettingsStateOfConfig(config: InfoviewConfig): GoalSettingsState {
         emphasizeFirstGoal: config.emphasizeFirstGoal,
         showType: !config.hideTypeAssumptions,
         showInstance: !config.hideInstanceAssumptions,
-        showHiddenAssumption: !config.hideHiddenAssumptions,
+        showHiddenAssumption: !config.hideInaccessibleAssumptions,
         showLetValue: !config.hideLetValues,
     }
 }
@@ -328,7 +328,7 @@ export const FilteredGoals = React.memo(
                 emphasizeFirstGoal: goalSettings.emphasizeFirstGoal,
                 hideTypeAssumptions: !goalSettings.showType,
                 hideInstanceAssumptions: !goalSettings.showInstance,
-                hideHiddenAssumptions: !goalSettings.showHiddenAssumption,
+                hideInaccessibleAssumptions: !goalSettings.showHiddenAssumption,
                 hideLetValues: !goalSettings.showLetValue,
             })
         }, [config, ec.api, goalSettings])
@@ -377,7 +377,7 @@ export const FilteredGoals = React.memo(
                 {mkSettingButton(
                     s => ({ ...s, showHiddenAssumption: !s.showHiddenAssumption }),
                     gs => !gs.showHiddenAssumption,
-                    'Hide hidden assumptions',
+                    'Hide inaccessible assumptions',
                 )}
                 <br />
                 {mkSettingButton(
@@ -438,12 +438,12 @@ export const FilteredGoals = React.memo(
         useSettingsContextMenuEvent('hideInstanceAssumptions', { showInstance: false }, goalSettings.showInstance)
         useSettingsContextMenuEvent('showInstanceAssumptions', { showInstance: true }, !goalSettings.showInstance)
         useSettingsContextMenuEvent(
-            'hideHiddenAssumptions',
+            'hideInaccessibleAssumptions',
             { showHiddenAssumption: false },
             goalSettings.showHiddenAssumption,
         )
         useSettingsContextMenuEvent(
-            'showHiddenAssumptions',
+            'showInaccessibleAssumptions',
             { showHiddenAssumption: true },
             !goalSettings.showHiddenAssumption,
         )

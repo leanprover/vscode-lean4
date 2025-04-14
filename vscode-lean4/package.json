@@ -189,7 +189,7 @@
                     "default": false,
                     "markdownDescription": "Default to filtering instance assumptions from the local context."
                 },
-                "lean4.infoview.hideHiddenAssumptions": {
+                "lean4.infoview.hideInaccessibleAssumptions": {
                     "type": "boolean",
                     "default": false,
                     "markdownDescription": "Default to filtering hidden assumptions from the local context."
@@ -460,16 +460,16 @@
                 "description": "This command is an implementation detail of the 'Show Instance Assumptions' context menu option in the infoview."
             },
             {
-                "command": "lean4.infoview.hideHiddenAssumptions",
+                "command": "lean4.infoview.hideInaccessibleAssumptions",
                 "category": "Lean 4",
-                "title": "Hide Hidden Assumptions",
-                "description": "This command is an implementation detail of the 'Hide Hidden Assumptions' context menu option in the infoview."
+                "title": "Hide Inaccessible Assumptions",
+                "description": "This command is an implementation detail of the 'Hide Inaccessible Assumptions' context menu option in the infoview."
             },
             {
-                "command": "lean4.infoview.showHiddenAssumptions",
+                "command": "lean4.infoview.showInaccessibleAssumptions",
                 "category": "Lean 4",
-                "title": "Show Hidden Assumptions",
-                "description": "This command is an implementation detail of the 'Show Hidden Assumptions' context menu option in the infoview."
+                "title": "Show Inaccessible Assumptions",
+                "description": "This command is an implementation detail of the 'Show Inaccessible Assumptions' context menu option in the infoview."
             },
             {
                 "command": "lean4.infoview.hideLetValues",
@@ -912,11 +912,11 @@
                     "when": "false"
                 },
                 {
-                    "command": "lean4.infoview.hideHiddenAssumptions",
+                    "command": "lean4.infoview.hideInaccessibleAssumptions",
                     "when": "false"
                 },
                 {
-                    "command": "lean4.infoview.showHiddenAssumptions",
+                    "command": "lean4.infoview.showInaccessibleAssumptions",
                     "when": "false"
                 },
                 {
@@ -1326,13 +1326,13 @@
                     "group": "0_settings@6"
                 },
                 {
-                    "command": "lean4.infoview.hideHiddenAssumptions",
-                    "when": "webviewId == 'lean4_infoview' && hideHiddenAssumptionsId",
+                    "command": "lean4.infoview.hideInaccessibleAssumptions",
+                    "when": "webviewId == 'lean4_infoview' && hideInaccessibleAssumptionsId",
                     "group": "0_settings@7"
                 },
                 {
-                    "command": "lean4.infoview.showHiddenAssumptions",
-                    "when": "webviewId == 'lean4_infoview' && showHiddenAssumptionsId",
+                    "command": "lean4.infoview.showInaccessibleAssumptions",
+                    "when": "webviewId == 'lean4_infoview' && showInaccessibleAssumptionsId",
                     "group": "0_settings@8"
                 },
                 {

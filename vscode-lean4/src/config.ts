@@ -114,8 +114,8 @@ export function getInfoViewHideInstanceAssumptions(): boolean {
     return workspace.getConfiguration('lean4.infoview').get('hideInstanceAssumptions', false)
 }
 
-export function getInfoViewHideHiddenAssumptions(): boolean {
-    return workspace.getConfiguration('lean4.infoview').get('hideHiddenAssumptions', false)
+export function getInfoViewHideInaccessibleAssumptions(): boolean {
+    return workspace.getConfiguration('lean4.infoview').get('hideInaccessibleAssumptions', false)
 }
 
 export function getInfoViewHideLetValues(): boolean {

@@ -37,7 +37,7 @@ import {
     getInfoViewDebounceTime,
     getInfoViewEmphasizeFirstGoal,
     getInfoViewExpectedTypeVisibility,
-    getInfoViewHideHiddenAssumptions,
+    getInfoViewHideInaccessibleAssumptions,
     getInfoViewHideInstanceAssumptions,
     getInfoViewHideLetValues,
     getInfoViewHideTypeAssumptions,
@@ -174,7 +174,7 @@ export class InfoProvider implements Disposable {
                 .update('hideInstanceAssumptions', config.hideInstanceAssumptions, ConfigurationTarget.Global)
             await workspace
                 .getConfiguration('lean4.infoview')
-                .update('hideHiddenAssumptions', config.hideHiddenAssumptions, ConfigurationTarget.Global)
+                .update('hideInaccessibleAssumptions', config.hideInaccessibleAssumptions, ConfigurationTarget.Global)
             await workspace
                 .getConfiguration('lean4.infoview')
                 .update('hideLetValues', config.hideLetValues, ConfigurationTarget.Global)
@@ -494,16 +494,16 @@ export class InfoProvider implements Disposable {
                     id: args.showInstanceAssumptionsId,
                 }),
             ),
-            commands.registerCommand('lean4.infoview.hideHiddenAssumptions', args =>
+            commands.registerCommand('lean4.infoview.hideInaccessibleAssumptions', args =>
                 this.webviewPanel?.api.clickedContextMenu({
-                    entry: 'hideHiddenAssumptions',
-                    id: args.hideHiddenAssumptionsId,
+                    entry: 'hideInaccessibleAssumptions',
+                    id: args.hideInaccessibleAssumptionsId,
                 }),
             ),
-            commands.registerCommand('lean4.infoview.showHiddenAssumptions', args =>
+            commands.registerCommand('lean4.infoview.showInaccessibleAssumptions', args =>
                 this.webviewPanel?.api.clickedContextMenu({
-                    entry: 'showHiddenAssumptions',
-                    id: args.showHiddenAssumptionsId,
+                    entry: 'showInaccessibleAssumptions',
+                    id: args.showInaccessibleAssumptionsId,
                 }),
             ),
             commands.registerCommand('lean4.infoview.hideLetValues', args =>
@@ -839,7 +839,7 @@ export class InfoProvider implements Disposable {
             reverseTacticState: getInfoViewReverseTacticState(),
             hideTypeAssumptions: getInfoViewHideTypeAssumptions(),
             hideInstanceAssumptions: getInfoViewHideInstanceAssumptions(),
-            hideHiddenAssumptions: getInfoViewHideHiddenAssumptions(),
+            hideInaccessibleAssumptions: getInfoViewHideInaccessibleAssumptions(),
             hideLetValues: getInfoViewHideLetValues(),
             showTooltipOnHover: getInfoViewShowTooltipOnHover(),
         })
