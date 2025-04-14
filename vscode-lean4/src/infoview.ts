@@ -37,10 +37,10 @@ import {
     getInfoViewDebounceTime,
     getInfoViewEmphasizeFirstGoal,
     getInfoViewExpectedTypeVisibility,
-    getInfoViewFilterHiddenAssumptions,
-    getInfoViewFilterInstances,
-    getInfoViewFilterLetValues,
-    getInfoViewFilterTypes,
+    getInfoViewHideHiddenAssumptions,
+    getInfoViewHideInstanceAssumptions,
+    getInfoViewHideLetValues,
+    getInfoViewHideTypeAssumptions,
     getInfoViewReverseTacticState,
     getInfoViewShowGoalNames,
     getInfoViewShowTooltipOnHover,
@@ -168,16 +168,16 @@ export class InfoProvider implements Disposable {
                 .update('reverseTacticState', config.reverseTacticState, ConfigurationTarget.Global)
             await workspace
                 .getConfiguration('lean4.infoview')
-                .update('filterTypes', config.filterTypes, ConfigurationTarget.Global)
+                .update('hideTypeAssumptions', config.hideTypeAssumptions, ConfigurationTarget.Global)
             await workspace
                 .getConfiguration('lean4.infoview')
-                .update('filterInstances', config.filterInstances, ConfigurationTarget.Global)
+                .update('hideInstanceAssumptions', config.hideInstanceAssumptions, ConfigurationTarget.Global)
             await workspace
                 .getConfiguration('lean4.infoview')
-                .update('filterHiddenAssumptions', config.filterHiddenAssumptions, ConfigurationTarget.Global)
+                .update('hideHiddenAssumptions', config.hideHiddenAssumptions, ConfigurationTarget.Global)
             await workspace
                 .getConfiguration('lean4.infoview')
-                .update('filterLetValues', config.filterLetValues, ConfigurationTarget.Global)
+                .update('hideLetValues', config.hideLetValues, ConfigurationTarget.Global)
             await workspace
                 .getConfiguration('lean4.infoview')
                 .update('showTooltipOnHover', config.showTooltipOnHover, ConfigurationTarget.Global)
@@ -470,6 +470,48 @@ export class InfoProvider implements Disposable {
                     id: args.displayAssumptionsBeforeTargetId,
                 }),
             ),
+            commands.registerCommand('lean4.infoview.hideTypeAssumptions', args =>
+                this.webviewPanel?.api.clickedContextMenu({
+                    entry: 'hideTypeAssumptions',
+                    id: args.hideTypeAssumptionsId,
+                }),
+            ),
+            commands.registerCommand('lean4.infoview.showTypeAssumptions', args =>
+                this.webviewPanel?.api.clickedContextMenu({
+                    entry: 'showTypeAssumptions',
+                    id: args.showTypeAssumptionsId,
+                }),
+            ),
+            commands.registerCommand('lean4.infoview.hideInstanceAssumptions', args =>
+                this.webviewPanel?.api.clickedContextMenu({
+                    entry: 'hideInstanceAssumptions',
+                    id: args.hideInstanceAssumptionsId,
+                }),
+            ),
+            commands.registerCommand('lean4.infoview.showInstanceAssumptions', args =>
+                this.webviewPanel?.api.clickedContextMenu({
+                    entry: 'showInstanceAssumptions',
+                    id: args.showInstanceAssumptionsId,
+                }),
+            ),
+            commands.registerCommand('lean4.infoview.hideHiddenAssumptions', args =>
+                this.webviewPanel?.api.clickedContextMenu({
+                    entry: 'hideHiddenAssumptions',
+                    id: args.hideHiddenAssumptionsId,
+                }),
+            ),
+            commands.registerCommand('lean4.infoview.showHiddenAssumptions', args =>
+                this.webviewPanel?.api.clickedContextMenu({
+                    entry: 'showHiddenAssumptions',
+                    id: args.showHiddenAssumptionsId,
+                }),
+            ),
+            commands.registerCommand('lean4.infoview.hideLetValues', args =>
+                this.webviewPanel?.api.clickedContextMenu({ entry: 'hideLetValues', id: args.hideLetValuesId }),
+            ),
+            commands.registerCommand('lean4.infoview.showLetValues', args =>
+                this.webviewPanel?.api.clickedContextMenu({ entry: 'showLetValues', id: args.showLetValuesId }),
+            ),
             commands.registerCommand('lean4.infoview.hideGoalNames', args =>
                 this.webviewPanel?.api.clickedContextMenu({
                     entry: 'hideGoalNames',
@@ -493,36 +535,6 @@ export class InfoProvider implements Disposable {
                     entry: 'deemphasizeFirstGoal',
                     id: args.deemphasizeFirstGoalId,
                 }),
-            ),
-            commands.registerCommand('lean4.infoview.filterTypes', args =>
-                this.webviewPanel?.api.clickedContextMenu({ entry: 'filterTypes', id: args.filterTypesId }),
-            ),
-            commands.registerCommand('lean4.infoview.showTypes', args =>
-                this.webviewPanel?.api.clickedContextMenu({ entry: 'showTypes', id: args.showTypesId }),
-            ),
-            commands.registerCommand('lean4.infoview.filterInstances', args =>
-                this.webviewPanel?.api.clickedContextMenu({ entry: 'filterInstances', id: args.filterInstancesId }),
-            ),
-            commands.registerCommand('lean4.infoview.showInstances', args =>
-                this.webviewPanel?.api.clickedContextMenu({ entry: 'showInstances', id: args.showInstancesId }),
-            ),
-            commands.registerCommand('lean4.infoview.filterHiddenAssumptions', args =>
-                this.webviewPanel?.api.clickedContextMenu({
-                    entry: 'filterHiddenAssumptions',
-                    id: args.filterHiddenAssumptionsId,
-                }),
-            ),
-            commands.registerCommand('lean4.infoview.showHiddenAssumptions', args =>
-                this.webviewPanel?.api.clickedContextMenu({
-                    entry: 'showHiddenAssumptions',
-                    id: args.showHiddenAssumptionsId,
-                }),
-            ),
-            commands.registerCommand('lean4.infoview.filterLetValues', args =>
-                this.webviewPanel?.api.clickedContextMenu({ entry: 'filterLetValues', id: args.filterLetValuesId }),
-            ),
-            commands.registerCommand('lean4.infoview.showLetValues', args =>
-                this.webviewPanel?.api.clickedContextMenu({ entry: 'showLetValues', id: args.showLetValuesId }),
             ),
             commands.registerCommand('lean4.infoview.saveSettings', args =>
                 this.webviewPanel?.api.clickedContextMenu({ entry: 'saveSettings', id: args.saveSettingsId }),
@@ -825,10 +837,10 @@ export class InfoProvider implements Disposable {
             showGoalNames: getInfoViewShowGoalNames(),
             emphasizeFirstGoal: getInfoViewEmphasizeFirstGoal(),
             reverseTacticState: getInfoViewReverseTacticState(),
-            filterTypes: getInfoViewFilterTypes(),
-            filterInstances: getInfoViewFilterInstances(),
-            filterHiddenAssumptions: getInfoViewFilterHiddenAssumptions(),
-            filterLetValues: getInfoViewFilterLetValues(),
+            hideTypeAssumptions: getInfoViewHideTypeAssumptions(),
+            hideInstanceAssumptions: getInfoViewHideInstanceAssumptions(),
+            hideHiddenAssumptions: getInfoViewHideHiddenAssumptions(),
+            hideLetValues: getInfoViewHideLetValues(),
             showTooltipOnHover: getInfoViewShowTooltipOnHover(),
         })
     }

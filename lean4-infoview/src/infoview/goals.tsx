@@ -69,10 +69,10 @@ function goalSettingsStateOfConfig(config: InfoviewConfig): GoalSettingsState {
         reverse: config.reverseTacticState,
         hideGoalNames: !config.showGoalNames,
         emphasizeFirstGoal: config.emphasizeFirstGoal,
-        showType: !config.filterTypes,
-        showInstance: !config.filterInstances,
-        showHiddenAssumption: !config.filterHiddenAssumptions,
-        showLetValue: !config.filterLetValues,
+        showType: !config.hideTypeAssumptions,
+        showInstance: !config.hideInstanceAssumptions,
+        showHiddenAssumption: !config.hideHiddenAssumptions,
+        showLetValue: !config.hideLetValues,
     }
 }
 
@@ -326,10 +326,10 @@ export const FilteredGoals = React.memo(
                 reverseTacticState: goalSettings.reverse,
                 showGoalNames: !goalSettings.hideGoalNames,
                 emphasizeFirstGoal: goalSettings.emphasizeFirstGoal,
-                filterTypes: !goalSettings.showType,
-                filterInstances: !goalSettings.showInstance,
-                filterHiddenAssumptions: !goalSettings.showHiddenAssumption,
-                filterLetValues: !goalSettings.showLetValue,
+                hideTypeAssumptions: !goalSettings.showType,
+                hideInstanceAssumptions: !goalSettings.showInstance,
+                hideHiddenAssumptions: !goalSettings.showHiddenAssumption,
+                hideLetValues: !goalSettings.showLetValue,
             })
         }, [config, ec.api, goalSettings])
 
@@ -363,6 +363,30 @@ export const FilteredGoals = React.memo(
                 )}
                 <br />
                 {mkSettingButton(
+                    s => ({ ...s, showType: !s.showType }),
+                    gs => !gs.showType,
+                    'Hide type assumptions',
+                )}
+                <br />
+                {mkSettingButton(
+                    s => ({ ...s, showInstance: !s.showInstance }),
+                    gs => !gs.showInstance,
+                    'Hide instance assumptions',
+                )}
+                <br />
+                {mkSettingButton(
+                    s => ({ ...s, showHiddenAssumption: !s.showHiddenAssumption }),
+                    gs => !gs.showHiddenAssumption,
+                    'Hide hidden assumptions',
+                )}
+                <br />
+                {mkSettingButton(
+                    s => ({ ...s, showLetValue: !s.showLetValue }),
+                    gs => !gs.showLetValue,
+                    'Hide let-values',
+                )}
+                <br />
+                {mkSettingButton(
                     s => ({ ...s, hideGoalNames: !s.hideGoalNames }),
                     gs => gs.hideGoalNames,
                     'Hide goal names',
@@ -372,30 +396,6 @@ export const FilteredGoals = React.memo(
                     s => ({ ...s, emphasizeFirstGoal: !s.emphasizeFirstGoal }),
                     gs => gs.emphasizeFirstGoal,
                     'Emphasize first goal',
-                )}
-                <br />
-                {mkSettingButton(
-                    s => ({ ...s, showType: !s.showType }),
-                    gs => !gs.showType,
-                    'Filter types',
-                )}
-                <br />
-                {mkSettingButton(
-                    s => ({ ...s, showInstance: !s.showInstance }),
-                    gs => !gs.showInstance,
-                    'Filter instances',
-                )}
-                <br />
-                {mkSettingButton(
-                    s => ({ ...s, showHiddenAssumption: !s.showHiddenAssumption }),
-                    gs => !gs.showHiddenAssumption,
-                    'Filter hidden assumptions',
-                )}
-                <br />
-                {mkSettingButton(
-                    s => ({ ...s, showLetValue: !s.showLetValue }),
-                    gs => !gs.showLetValue,
-                    'Filter let-values',
                 )}
                 <br className="saveConfigLineBreak" style={disabledSaveStyle} />
                 <a
@@ -433,6 +433,22 @@ export const FilteredGoals = React.memo(
 
         useSettingsContextMenuEvent('displayTargetBeforeAssumptions', { reverse: true }, !goalSettings.reverse)
         useSettingsContextMenuEvent('displayAssumptionsBeforeTarget', { reverse: false }, goalSettings.reverse)
+        useSettingsContextMenuEvent('hideTypeAssumptions', { showType: false }, goalSettings.showType)
+        useSettingsContextMenuEvent('showTypeAssumptions', { showType: true }, !goalSettings.showType)
+        useSettingsContextMenuEvent('hideInstanceAssumptions', { showInstance: false }, goalSettings.showInstance)
+        useSettingsContextMenuEvent('showInstanceAssumptions', { showInstance: true }, !goalSettings.showInstance)
+        useSettingsContextMenuEvent(
+            'hideHiddenAssumptions',
+            { showHiddenAssumption: false },
+            goalSettings.showHiddenAssumption,
+        )
+        useSettingsContextMenuEvent(
+            'showHiddenAssumptions',
+            { showHiddenAssumption: true },
+            !goalSettings.showHiddenAssumption,
+        )
+        useSettingsContextMenuEvent('hideLetValues', { showLetValues: false }, goalSettings.showLetValue)
+        useSettingsContextMenuEvent('showLetValues', { showLetValues: true }, !goalSettings.showLetValue)
         useSettingsContextMenuEvent('hideGoalNames', { hideGoalNames: true }, !goalSettings.hideGoalNames)
         useSettingsContextMenuEvent('showGoalNames', { hideGoalNames: false }, goalSettings.hideGoalNames)
         useSettingsContextMenuEvent(
@@ -445,22 +461,6 @@ export const FilteredGoals = React.memo(
             { emphasizeFirstGoal: false },
             goalSettings.emphasizeFirstGoal,
         )
-        useSettingsContextMenuEvent('filterTypes', { showType: false }, goalSettings.showType)
-        useSettingsContextMenuEvent('showTypes', { showType: true }, !goalSettings.showType)
-        useSettingsContextMenuEvent('filterInstances', { showInstance: false }, goalSettings.showInstance)
-        useSettingsContextMenuEvent('showInstances', { showInstance: true }, !goalSettings.showInstance)
-        useSettingsContextMenuEvent(
-            'filterHiddenAssumptions',
-            { showHiddenAssumption: false },
-            goalSettings.showHiddenAssumption,
-        )
-        useSettingsContextMenuEvent(
-            'showHiddenAssumptions',
-            { showHiddenAssumption: true },
-            !goalSettings.showHiddenAssumption,
-        )
-        useSettingsContextMenuEvent('filterLetValues', { showLetValues: false }, goalSettings.showLetValue)
-        useSettingsContextMenuEvent('showLetValues', { showLetValues: true }, !goalSettings.showLetValue)
         useContextMenuEvent('saveSettings', () => saveConfig(), goalSettingsDifferFromDefaultConfig, [saveConfig])
 
         const setOpenRef = React.useRef<React.Dispatch<React.SetStateAction<boolean>>>()

@@ -179,22 +179,22 @@
                     "default": false,
                     "markdownDescription": "Default to showing the goal type first and then the local context."
                 },
-                "lean4.infoview.filterTypes": {
+                "lean4.infoview.hideTypeAssumptions": {
                     "type": "boolean",
                     "default": false,
-                    "markdownDescription": "Default to filtering type assumptions from the local context."
+                    "markdownDescription": "Default to hiding type assumptions from the local context."
                 },
-                "lean4.infoview.filterInstances": {
+                "lean4.infoview.hideInstanceAssumptions": {
                     "type": "boolean",
                     "default": false,
                     "markdownDescription": "Default to filtering instance assumptions from the local context."
                 },
-                "lean4.infoview.filterHiddenAssumptions": {
+                "lean4.infoview.hideHiddenAssumptions": {
                     "type": "boolean",
                     "default": false,
                     "markdownDescription": "Default to filtering hidden assumptions from the local context."
                 },
-                "lean4.infoview.filterLetValues": {
+                "lean4.infoview.hideLetValues": {
                     "type": "boolean",
                     "default": false,
                     "markdownDescription": "Default to filtering type assumptions from the local context."
@@ -436,6 +436,54 @@
                 "description": "This command is an implementation detail of the 'Display Assumptions Before Target' context menu option in the infoview."
             },
             {
+                "command": "lean4.infoview.hideTypeAssumptions",
+                "category": "Lean 4",
+                "title": "Hide Type Assumptions",
+                "description": "This command is an implementation detail of the 'Hide Type Assumptions' context menu option in the infoview."
+            },
+            {
+                "command": "lean4.infoview.showTypeAssumptions",
+                "category": "Lean 4",
+                "title": "Show Type Assumptions",
+                "description": "This command is an implementation detail of the 'Show Type Assumptions' context menu option in the infoview."
+            },
+            {
+                "command": "lean4.infoview.hideInstanceAssumptions",
+                "category": "Lean 4",
+                "title": "Hide Instance Assumptions",
+                "description": "This command is an implementation detail of the 'Hide Instance Assumptions' context menu option in the infoview."
+            },
+            {
+                "command": "lean4.infoview.showInstanceAssumptions",
+                "category": "Lean 4",
+                "title": "Show Instance Assumptions",
+                "description": "This command is an implementation detail of the 'Show Instance Assumptions' context menu option in the infoview."
+            },
+            {
+                "command": "lean4.infoview.hideHiddenAssumptions",
+                "category": "Lean 4",
+                "title": "Hide Hidden Assumptions",
+                "description": "This command is an implementation detail of the 'Hide Hidden Assumptions' context menu option in the infoview."
+            },
+            {
+                "command": "lean4.infoview.showHiddenAssumptions",
+                "category": "Lean 4",
+                "title": "Show Hidden Assumptions",
+                "description": "This command is an implementation detail of the 'Show Hidden Assumptions' context menu option in the infoview."
+            },
+            {
+                "command": "lean4.infoview.hideLetValues",
+                "category": "Lean 4",
+                "title": "Hide Let-Values",
+                "description": "This command is an implementation detail of the 'Hide Let-Values' context menu option in the infoview."
+            },
+            {
+                "command": "lean4.infoview.showLetValues",
+                "category": "Lean 4",
+                "title": "Show Let-Values",
+                "description": "This command is an implementation detail of the 'Show Let-Values' context menu option in the infoview."
+            },
+            {
                 "command": "lean4.infoview.hideGoalNames",
                 "category": "Lean 4",
                 "title": "Hide Goal Names",
@@ -458,54 +506,6 @@
                 "category": "Lean 4",
                 "title": "De-Emphasize First Goal",
                 "description": "This command is an implementation detail of the 'De-Emphasize First Goal' context menu option in the infoview."
-            },
-            {
-                "command": "lean4.infoview.filterTypes",
-                "category": "Lean 4",
-                "title": "Filter Types",
-                "description": "This command is an implementation detail of the 'Filter Types' context menu option in the infoview."
-            },
-            {
-                "command": "lean4.infoview.showTypes",
-                "category": "Lean 4",
-                "title": "Show Types",
-                "description": "This command is an implementation detail of the 'Show Types' context menu option in the infoview."
-            },
-            {
-                "command": "lean4.infoview.filterInstances",
-                "category": "Lean 4",
-                "title": "Filter Instances",
-                "description": "This command is an implementation detail of the 'Filter Instances' context menu option in the infoview."
-            },
-            {
-                "command": "lean4.infoview.showInstances",
-                "category": "Lean 4",
-                "title": "Show Instances",
-                "description": "This command is an implementation detail of the 'Show Instances' context menu option in the infoview."
-            },
-            {
-                "command": "lean4.infoview.filterHiddenAssumptions",
-                "category": "Lean 4",
-                "title": "Filter Hidden Assumptions",
-                "description": "This command is an implementation detail of the 'Filter Hidden Assumptions' context menu option in the infoview."
-            },
-            {
-                "command": "lean4.infoview.showHiddenAssumptions",
-                "category": "Lean 4",
-                "title": "Show Hidden Assumptions",
-                "description": "This command is an implementation detail of the 'Show Hidden Assumptions' context menu option in the infoview."
-            },
-            {
-                "command": "lean4.infoview.filterLetValues",
-                "category": "Lean 4",
-                "title": "Filter Let-Values",
-                "description": "This command is an implementation detail of the 'Filter Let-Values' context menu option in the infoview."
-            },
-            {
-                "command": "lean4.infoview.showLetValues",
-                "category": "Lean 4",
-                "title": "Show Let-Values",
-                "description": "This command is an implementation detail of the 'Show Let-Values' context menu option in the infoview."
             },
             {
                 "command": "lean4.infoview.saveSettings",
@@ -896,6 +896,38 @@
                     "when": "false"
                 },
                 {
+                    "command": "lean4.infoview.hideTypeAssumptions",
+                    "when": "false"
+                },
+                {
+                    "command": "lean4.infoview.showTypeAssumptions",
+                    "when": "false"
+                },
+                {
+                    "command": "lean4.infoview.hideInstanceAssumptions",
+                    "when": "false"
+                },
+                {
+                    "command": "lean4.infoview.showInstanceAssumptions",
+                    "when": "false"
+                },
+                {
+                    "command": "lean4.infoview.hideHiddenAssumptions",
+                    "when": "false"
+                },
+                {
+                    "command": "lean4.infoview.showHiddenAssumptions",
+                    "when": "false"
+                },
+                {
+                    "command": "lean4.infoview.hideLetValues",
+                    "when": "false"
+                },
+                {
+                    "command": "lean4.infoview.showLetValues",
+                    "when": "false"
+                },
+                {
                     "command": "lean4.infoview.hideGoalNames",
                     "when": "false"
                 },
@@ -909,38 +941,6 @@
                 },
                 {
                     "command": "lean4.infoview.deemphasizeFirstGoal",
-                    "when": "false"
-                },
-                {
-                    "command": "lean4.infoview.filterTypes",
-                    "when": "false"
-                },
-                {
-                    "command": "lean4.infoview.showTypes",
-                    "when": "false"
-                },
-                {
-                    "command": "lean4.infoview.filterInstances",
-                    "when": "false"
-                },
-                {
-                    "command": "lean4.infoview.showInstances",
-                    "when": "false"
-                },
-                {
-                    "command": "lean4.infoview.filterHiddenAssumptions",
-                    "when": "false"
-                },
-                {
-                    "command": "lean4.infoview.showHiddenAssumptions",
-                    "when": "false"
-                },
-                {
-                    "command": "lean4.infoview.filterLetValues",
-                    "when": "false"
-                },
-                {
-                    "command": "lean4.infoview.showLetValues",
                     "when": "false"
                 },
                 {
@@ -1306,63 +1306,63 @@
                     "group": "0_settings@2"
                 },
                 {
-                    "command": "lean4.infoview.hideGoalNames",
-                    "when": "webviewId == 'lean4_infoview' && hideGoalNamesId",
+                    "command": "lean4.infoview.hideTypeAssumptions",
+                    "when": "webviewId == 'lean4_infoview' && hideTypeAssumptionsId",
                     "group": "0_settings@3"
                 },
                 {
-                    "command": "lean4.infoview.showGoalNames",
-                    "when": "webviewId == 'lean4_infoview' && showGoalNamesId",
+                    "command": "lean4.infoview.showTypeAssumptions",
+                    "when": "webviewId == 'lean4_infoview' && showTypeAssumptionsId",
                     "group": "0_settings@4"
                 },
                 {
-                    "command": "lean4.infoview.emphasizeFirstGoal",
-                    "when": "webviewId == 'lean4_infoview' && emphasizeFirstGoalId",
+                    "command": "lean4.infoview.hideInstanceAssumptions",
+                    "when": "webviewId == 'lean4_infoview' && hideInstanceAssumptionsId",
                     "group": "0_settings@5"
                 },
                 {
-                    "command": "lean4.infoview.deemphasizeFirstGoal",
-                    "when": "webviewId == 'lean4_infoview' && deemphasizeFirstGoalId",
+                    "command": "lean4.infoview.showInstanceAssumptions",
+                    "when": "webviewId == 'lean4_infoview' && showInstanceAssumptionsId",
                     "group": "0_settings@6"
                 },
                 {
-                    "command": "lean4.infoview.filterTypes",
-                    "when": "webviewId == 'lean4_infoview' && filterTypesId",
+                    "command": "lean4.infoview.hideHiddenAssumptions",
+                    "when": "webviewId == 'lean4_infoview' && hideHiddenAssumptionsId",
                     "group": "0_settings@7"
-                },
-                {
-                    "command": "lean4.infoview.showTypes",
-                    "when": "webviewId == 'lean4_infoview' && showTypesId",
-                    "group": "0_settings@8"
-                },
-                {
-                    "command": "lean4.infoview.filterInstances",
-                    "when": "webviewId == 'lean4_infoview' && filterInstancesId",
-                    "group": "0_settings@9"
-                },
-                {
-                    "command": "lean4.infoview.showInstances",
-                    "when": "webviewId == 'lean4_infoview' && showInstancesId",
-                    "group": "0_settings@10"
-                },
-                {
-                    "command": "lean4.infoview.filterHiddenAssumptions",
-                    "when": "webviewId == 'lean4_infoview' && filterHiddenAssumptionsId",
-                    "group": "0_settings@11"
                 },
                 {
                     "command": "lean4.infoview.showHiddenAssumptions",
                     "when": "webviewId == 'lean4_infoview' && showHiddenAssumptionsId",
-                    "group": "0_settings@12"
+                    "group": "0_settings@8"
                 },
                 {
-                    "command": "lean4.infoview.filterLetValues",
-                    "when": "webviewId == 'lean4_infoview' && filterLetValuesId",
-                    "group": "0_settings@13"
+                    "command": "lean4.infoview.hideLetValues",
+                    "when": "webviewId == 'lean4_infoview' && hideLetValuesId",
+                    "group": "0_settings@9"
                 },
                 {
                     "command": "lean4.infoview.showLetValues",
                     "when": "webviewId == 'lean4_infoview' && showLetValuesId",
+                    "group": "0_settings@10"
+                },
+                {
+                    "command": "lean4.infoview.hideGoalNames",
+                    "when": "webviewId == 'lean4_infoview' && hideGoalNamesId",
+                    "group": "0_settings@11"
+                },
+                {
+                    "command": "lean4.infoview.showGoalNames",
+                    "when": "webviewId == 'lean4_infoview' && showGoalNamesId",
+                    "group": "0_settings@12"
+                },
+                {
+                    "command": "lean4.infoview.emphasizeFirstGoal",
+                    "when": "webviewId == 'lean4_infoview' && emphasizeFirstGoalId",
+                    "group": "0_settings@13"
+                },
+                {
+                    "command": "lean4.infoview.deemphasizeFirstGoal",
+                    "when": "webviewId == 'lean4_infoview' && deemphasizeFirstGoalId",
                     "group": "0_settings@14"
                 },
                 {

@@ -17,10 +17,10 @@ export interface InfoviewConfig {
     showGoalNames: boolean
     emphasizeFirstGoal: boolean
     reverseTacticState: boolean
-    filterTypes: boolean
-    filterInstances: boolean
-    filterHiddenAssumptions: boolean
-    filterLetValues: boolean
+    hideTypeAssumptions: boolean
+    hideInstanceAssumptions: boolean
+    hideHiddenAssumptions: boolean
+    hideLetValues: boolean
     showTooltipOnHover: boolean
 }
 
@@ -104,10 +104,10 @@ export const defaultInfoviewConfig: InfoviewConfig = {
     showGoalNames: true,
     emphasizeFirstGoal: false,
     reverseTacticState: false,
-    filterTypes: false,
-    filterInstances: false,
-    filterHiddenAssumptions: false,
-    filterLetValues: false,
+    hideTypeAssumptions: false,
+    hideInstanceAssumptions: false,
+    hideHiddenAssumptions: false,
+    hideLetValues: false,
     showTooltipOnHover: true,
 }
 
@@ -136,18 +136,18 @@ export type ContextMenuEntry =
     | 'goToMessageLocation'
     | 'displayTargetBeforeAssumptions'
     | 'displayAssumptionsBeforeTarget'
+    | 'hideTypeAssumptions'
+    | 'showTypeAssumptions'
+    | 'hideInstanceAssumptions'
+    | 'showInstanceAssumptions'
+    | 'hideHiddenAssumptions'
+    | 'showHiddenAssumptions'
+    | 'hideLetValues'
+    | 'showLetValues'
     | 'hideGoalNames'
     | 'showGoalNames'
     | 'emphasizeFirstGoal'
     | 'deemphasizeFirstGoal'
-    | 'filterTypes'
-    | 'showTypes'
-    | 'filterInstances'
-    | 'showInstances'
-    | 'filterHiddenAssumptions'
-    | 'showHiddenAssumptions'
-    | 'filterLetValues'
-    | 'showLetValues'
     | 'saveSettings'
 
 export interface ContextMenuAction {

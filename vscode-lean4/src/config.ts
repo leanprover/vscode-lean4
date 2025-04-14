@@ -106,20 +106,20 @@ export function getInfoViewReverseTacticState(): boolean {
     return workspace.getConfiguration('lean4.infoview').get('reverseTacticState', false)
 }
 
-export function getInfoViewFilterTypes(): boolean {
-    return workspace.getConfiguration('lean4.infoview').get('filterTypes', false)
+export function getInfoViewHideTypeAssumptions(): boolean {
+    return workspace.getConfiguration('lean4.infoview').get('hideTypeAssumptions', false)
 }
 
-export function getInfoViewFilterInstances(): boolean {
-    return workspace.getConfiguration('lean4.infoview').get('filterInstances', false)
+export function getInfoViewHideInstanceAssumptions(): boolean {
+    return workspace.getConfiguration('lean4.infoview').get('hideInstanceAssumptions', false)
 }
 
-export function getInfoViewFilterHiddenAssumptions(): boolean {
-    return workspace.getConfiguration('lean4.infoview').get('filterHiddenAssumptions', false)
+export function getInfoViewHideHiddenAssumptions(): boolean {
+    return workspace.getConfiguration('lean4.infoview').get('hideHiddenAssumptions', false)
 }
 
-export function getInfoViewFilterLetValues(): boolean {
-    return workspace.getConfiguration('lean4.infoview').get('filterLetValues', false)
+export function getInfoViewHideLetValues(): boolean {
+    return workspace.getConfiguration('lean4.infoview').get('hideLetValues', false)
 }
 
 export function getInfoViewShowTooltipOnHover(): boolean {
