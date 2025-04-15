@@ -1,11 +1,11 @@
 import { LeanFileProgressProcessingInfo, ServerStoppedReason } from '@leanprover/infoview-api'
 import path from 'path'
-import { Disposable, EventEmitter, OutputChannel, Uri, commands } from 'vscode'
+import { Disposable, EventEmitter, OutputChannel, commands } from 'vscode'
 import { SetupDiagnostics, checkAll } from '../diagnostics/setupDiagnostics'
 import { PreconditionCheckResult, SetupNotificationOptions } from '../diagnostics/setupNotifs'
 import { LeanClient } from '../leanclient'
 import { LeanPublishDiagnosticsParams } from './converters'
-import { ExtUri, FileUri, UntitledUri, toExtUri } from './exturi'
+import { ExtUri, FileUri, UntitledUri } from './exturi'
 import { lean } from './leanEditorProvider'
 import { LeanInstaller } from './leanInstaller'
 import { logger } from './logger'
@@ -88,17 +88,7 @@ export class LeanClientProvider implements Disposable {
             commands.registerCommand('lean4.restartFile', () => this.restartActiveFile()),
             commands.registerCommand('lean4.refreshFileDependencies', () => this.restartActiveFile()),
             commands.registerCommand('lean4.restartServer', () => this.restartActiveClient()),
-            commands.registerCommand('lean4.stopServer', async (folderUri?: Uri | undefined) => {
-                if (folderUri === undefined) {
-                    await this.stopClient(undefined)
-                    return
-                }
-                const folderExtUri = toExtUri(folderUri)
-                if (folderExtUri === undefined) {
-                    return
-                }
-                await this.stopClient(folderExtUri)
-            }),
+            commands.registerCommand('lean4.stopServer', () => this.stopClient(undefined)),
         )
 
         this.subscriptions.push(lean.onDidOpenLeanDocument(document => this.ensureClient(document.extUri)))
