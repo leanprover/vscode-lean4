@@ -1,7 +1,7 @@
 import * as fs from 'fs'
-import { ExtUri, FileUri, getWorkspaceFolderUri } from './exturi'
-import { dirExists, fileExists } from './fsHelper'
 import path from 'path'
+import { ExtUri, FileUri, isWorkspaceFolder } from './exturi'
+import { dirExists, fileExists } from './fsHelper'
 
 // Detect lean4 root directory (works for both lean4 repo and nightly distribution)
 
@@ -42,8 +42,6 @@ export async function findLeanProjectRootInfo(uri: FileUri): Promise<ProjectRoot
     const toolchainFileName = 'lean-toolchain'
 
     let path = uri
-    const containingWsFolderUri = getWorkspaceFolderUri(uri)
-
     try {
         if ((await fs.promises.stat(path.fsPath)).isFile()) {
             path = uri.join('..')
@@ -65,7 +63,7 @@ export async function findLeanProjectRootInfo(uri: FileUri): Promise<ProjectRoot
             // Stop searching in case users accidentally created a lean-toolchain file above the core directory
             break
         }
-        if (containingWsFolderUri !== undefined && path.equals(containingWsFolderUri)) {
+        if (isWorkspaceFolder(path)) {
             if (bestLeanToolchain === undefined) {
                 // If we haven't found a toolchain yet, prefer the workspace folder as the project scope for the file,
                 // but keep looking in case there is a lean-toolchain above the workspace folder

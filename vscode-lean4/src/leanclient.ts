@@ -471,14 +471,32 @@ export class LeanClient implements Disposable {
     }
 
     async restartFile(leanDoc: LeanDocument): Promise<void> {
-        if (this.client === undefined || !this.running) return // there was a problem starting lean server.
-
-        if (!this.isInFolderManagedByThisClient(leanDoc.extUri)) {
+        const extUri = leanDoc.extUri
+        const formattedFileName = extUri.scheme === 'file' ? path.basename(extUri.fsPath) : extUri.toString()
+        const formattedProjectName =
+            this.folderUri.scheme === 'file' ? this.folderUri.fsPath : this.folderUri.toString()
+        if (this.client === undefined || !this.running) {
+            displayNotification(
+                'Error',
+                `Cannot restart '${formattedFileName}': The language server for the project at '${formattedProjectName}' is stopped.`,
+            )
             return
         }
 
-        const uri = leanDoc.extUri.toString()
+        if (!this.isInFolderManagedByThisClient(extUri)) {
+            displayNotification(
+                'Error',
+                `Cannot restart '${formattedFileName}': The project at '${formattedProjectName}' does not contain the file.`,
+            )
+            return
+        }
+
+        const uri = extUri.toString()
         if (!this.openServerDocuments.delete(uri)) {
+            displayNotification(
+                'Error',
+                `Cannot restart '${formattedFileName}': The file has never been opened in the language server for the project at '${formattedProjectName}'.`,
+            )
             return
         }
         logger.log(`[LeanClient] Restarting File: ${uri}`)
@@ -488,6 +506,10 @@ export class LeanClient implements Disposable {
         )
 
         if (this.openServerDocuments.has(uri)) {
+            displayNotification(
+                'Error',
+                `Cannot restart '${formattedFileName}': The file has already been opened in the language server for the project at '${formattedProjectName}' since initiating the restart.`,
+            )
             return
         }
         this.openServerDocuments.add(uri)

@@ -231,13 +231,13 @@
                 "command": "lean4.restartServer",
                 "category": "Lean 4",
                 "title": "Server: Restart Server",
-                "description": "Restart the Lean server (for all files)."
+                "description": "Restarts the Lean server (for all files)."
             },
             {
                 "command": "lean4.stopServer",
                 "category": "Lean 4",
                 "title": "Server: Stop Server",
-                "description": "Stop the Lean server (for all files)."
+                "description": "Stops the Lean server (for all files)."
             },
             {
                 "command": "lean4.restartFile",

@@ -1,11 +1,11 @@
 import { LeanFileProgressProcessingInfo, ServerStoppedReason } from '@leanprover/infoview-api'
 import path from 'path'
-import { Disposable, EventEmitter, OutputChannel, commands, workspace } from 'vscode'
+import { Disposable, EventEmitter, OutputChannel, commands } from 'vscode'
 import { SetupDiagnostics, checkAll } from '../diagnostics/setupDiagnostics'
 import { PreconditionCheckResult, SetupNotificationOptions } from '../diagnostics/setupNotifs'
 import { LeanClient } from '../leanclient'
 import { LeanPublishDiagnosticsParams } from './converters'
-import { ExtUri, FileUri, UntitledUri, getWorkspaceFolderUri } from './exturi'
+import { ExtUri, FileUri, UntitledUri } from './exturi'
 import { lean } from './leanEditorProvider'
 import { LeanInstaller } from './leanInstaller'
 import { logger } from './logger'
@@ -15,7 +15,10 @@ import { findLeanProjectRoot, willUseLakeServer } from './projectInfo'
 async function checkLean4ProjectPreconditions(
     channel: OutputChannel,
     context: string,
+    existingFolderUris: ExtUri[],
     folderUri: ExtUri,
+    fileUri: ExtUri,
+    stopOtherServer: (folderUri: FileUri) => Promise<void>,
 ): Promise<PreconditionCheckResult> {
     const options: SetupNotificationOptions = {
         errorMode: { mode: 'NonModal' },
@@ -33,6 +36,7 @@ async function checkLean4ProjectPreconditions(
                 toolchainUpdateMode: 'PromptAboutUpdate',
             })
         },
+        () => d.checkIsNestedProjectFolder(existingFolderUris, folderUri, fileUri, stopOtherServer),
     )
 }
 
@@ -84,29 +88,10 @@ export class LeanClientProvider implements Disposable {
             commands.registerCommand('lean4.restartFile', () => this.restartActiveFile()),
             commands.registerCommand('lean4.refreshFileDependencies', () => this.restartActiveFile()),
             commands.registerCommand('lean4.restartServer', () => this.restartActiveClient()),
-            commands.registerCommand('lean4.stopServer', () => this.stopActiveClient()),
+            commands.registerCommand('lean4.stopServer', () => this.stopClient(undefined)),
         )
 
         this.subscriptions.push(lean.onDidOpenLeanDocument(document => this.ensureClient(document.extUri)))
-
-        this.subscriptions.push(
-            workspace.onDidChangeWorkspaceFolders(event => {
-                // Remove all clients that are not referenced by any folder anymore
-                if (event.removed.length === 0) {
-                    return
-                }
-                this.clients.forEach((client, key) => {
-                    if (client.folderUri.scheme === 'untitled' || getWorkspaceFolderUri(client.folderUri)) {
-                        return
-                    }
-
-                    logger.log(`[ClientProvider] onDidChangeWorkspaceFolders removing client for ${key}`)
-                    this.clients.delete(key)
-                    client.dispose()
-                    this.clientRemovedEmitter.fire(client)
-                })
-            }),
-        )
     }
 
     getActiveClient(): LeanClient | undefined {
@@ -115,8 +100,6 @@ export class LeanClientProvider implements Disposable {
     }
 
     private async onInstallChanged(uri: FileUri) {
-        // Uri is a package Uri in the case a lean package file was changed.
-        logger.log(`[ClientProvider] installChanged for ${uri}`)
         this.pendingInstallChanged.push(uri)
         if (this.processingInstallChanged) {
             // avoid re-entrancy.
@@ -135,18 +118,9 @@ export class LeanClientProvider implements Disposable {
                     continue
                 }
 
-                const preconditionCheckResult = await checkLean4ProjectPreconditions(
-                    this.outputChannel,
-                    'Client Restart',
-                    projectUri,
-                )
-                if (preconditionCheckResult !== 'Fatal') {
-                    logger.log('[ClientProvider] got lean version 4')
-                    const [cached, client] = await this.ensureClient(uri)
-                    if (cached && client) {
-                        await client.restart()
-                        logger.log('[ClientProvider] restart complete')
-                    }
+                const [cached, client] = await this.ensureClient(uri)
+                if (cached && client) {
+                    await client.restart()
                 }
             } catch (e) {
                 logger.log(`[ClientProvider] Exception checking lean version: ${e}`)
@@ -185,9 +159,33 @@ export class LeanClientProvider implements Disposable {
         this.restartFile(doc.extUri)
     }
 
-    private async stopActiveClient() {
-        if (this.activeClient && this.activeClient.isStarted()) {
-            await this.activeClient?.stop()
+    private async stopClient(folderUri: ExtUri | undefined) {
+        let clientToStop: LeanClient
+        if (folderUri === undefined) {
+            if (this.activeClient === undefined) {
+                displayNotification('Error', 'Cannot stop language server: No active client.')
+                return
+            }
+            clientToStop = this.activeClient
+        } else {
+            const foundClient = this.getClientForFolder(folderUri)
+            if (foundClient === undefined) {
+                displayNotification(
+                    'Error',
+                    `Cannot stop language server: No client for project at '${folderUri.toString()}'.`,
+                )
+                return
+            }
+            clientToStop = foundClient
+        }
+        if (clientToStop.isStarted()) {
+            await clientToStop.stop()
+        }
+        const key = clientToStop.folderUri.toString()
+        this.clients.delete(key)
+        this.pending.delete(key)
+        if (clientToStop === this.activeClient) {
+            this.activeClient = undefined
         }
     }
 
@@ -264,7 +262,13 @@ export class LeanClientProvider implements Disposable {
         const preconditionCheckResult = await checkLean4ProjectPreconditions(
             this.outputChannel,
             'Client Startup',
+            this.getClients().map(client => client.folderUri),
             folderUri,
+            uri,
+            async (folderUriToStop: FileUri) => {
+                await this.stopClient(folderUriToStop)
+                await this.ensureClient(uri)
+            },
         )
         if (preconditionCheckResult === 'Fatal') {
             this.pending.delete(key)
