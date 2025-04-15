@@ -5,7 +5,7 @@ import { SetupDiagnostics, checkAll } from '../diagnostics/setupDiagnostics'
 import { PreconditionCheckResult, SetupNotificationOptions } from '../diagnostics/setupNotifs'
 import { LeanClient } from '../leanclient'
 import { LeanPublishDiagnosticsParams } from './converters'
-import { ExtUri, FileUri, UntitledUri } from './exturi'
+import { ExtUri, FileUri, ServerUri, UntitledUri } from './exturi'
 import { lean } from './leanEditorProvider'
 import { LeanInstaller } from './leanInstaller'
 import { logger } from './logger'
@@ -130,6 +130,14 @@ export class LeanClientProvider implements Disposable {
     }
 
     restartFile(uri: ExtUri) {
+        if (uri.scheme === 'vsls') {
+            displayNotification(
+                'Error',
+                `Cannot restart '${path.basename(uri.syntheticPath)}': Restarting files is not possible as a guest in LiveShare.`,
+            )
+            return
+        }
+
         const fileName = uri.scheme === 'file' ? path.basename(uri.fsPath) : 'untitled file'
 
         const client: LeanClient | undefined = this.findClient(uri)
@@ -211,7 +219,7 @@ export class LeanClientProvider implements Disposable {
     }
 
     // Find the client for a given document.
-    findClient(path: ExtUri) {
+    findClient(path: ServerUri) {
         const candidates = this.getClients().filter(client => client.isInFolderManagedByThisClient(path))
         // All candidate folders are a prefix of `path`, so they must necessarily be prefixes of one another
         // => the best candidate (the most top-level client folder) is just the one with the shortest path

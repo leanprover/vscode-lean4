@@ -144,6 +144,11 @@ export class ProjectOperationProvider implements Disposable {
                 return
             }
 
+            if (docUri.scheme === 'vsls') {
+                displayNotification('Error', 'Cannot fetch cache of LiveShare files.')
+                return
+            }
+
             const manifestResult: Manifest | ManifestReadError = await parseManifestInFolder(projectUri)
             if (typeof manifestResult === 'string') {
                 displayNotification('Error', manifestResult)

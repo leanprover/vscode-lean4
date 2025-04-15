@@ -53,7 +53,7 @@ import {
     setDependencyBuildMode,
 } from './utils/converters'
 import { elanInstalledToolchains } from './utils/elan'
-import { ExtUri, parseExtUri, toExtUri } from './utils/exturi'
+import { parseServerUri, ServerUri, toServerUri } from './utils/exturi'
 import { leanRunner } from './utils/leanCmdRunner'
 import { lean, LeanDocument } from './utils/leanEditorProvider'
 import {
@@ -73,13 +73,13 @@ const leanClientCapabilities: LeanClientCapabilties = {
 
 const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
-export type ServerProgress = Map<ExtUri, LeanFileProgressProcessingInfo[]>
+export type ServerProgress = Map<ServerUri, LeanFileProgressProcessingInfo[]>
 
 export class LeanClient implements Disposable {
     running: boolean
     private client: LanguageClient | undefined
     private outputChannel: OutputChannel
-    folderUri: ExtUri
+    folderUri: ServerUri
     private subscriptions: Disposable[] = []
     private noPrompt: boolean = false
     private showingRestartMessage: boolean = false
@@ -125,7 +125,7 @@ export class LeanClient implements Disposable {
     private serverFailedEmitter = new EventEmitter<string>()
     serverFailed = this.serverFailedEmitter.event
 
-    constructor(folderUri: ExtUri, outputChannel: OutputChannel) {
+    constructor(folderUri: ServerUri, outputChannel: OutputChannel) {
         this.outputChannel = outputChannel
         this.folderUri = folderUri
         this.subscriptions.push(new Disposable(() => this.staleDepNotifier?.dispose()))
@@ -136,7 +136,7 @@ export class LeanClient implements Disposable {
         if (this.isStarted()) void this.stop()
     }
 
-    showRestartMessage(restartFile: boolean = false, uri?: ExtUri | undefined) {
+    showRestartMessage(restartFile: boolean = false, uri?: ServerUri | undefined) {
         if (this.showingRestartMessage) {
             return
         }
@@ -325,7 +325,7 @@ export class LeanClient implements Disposable {
         const starHandler = (method: string, params_: any) => {
             if (method === '$/lean/fileProgress' && this.client) {
                 const params = params_ as LeanFileProgressParams
-                const uri = toExtUri(p2cConverter.asUri(params.textDocument.uri))
+                const uri = toServerUri(p2cConverter.asUri(params.textDocument.uri))
                 if (uri !== undefined) {
                     this.progressChangedEmitter.fire([uri.toString(), params.processing])
                     // save the latest progress on this Uri in case infoview needs it later.
@@ -363,7 +363,7 @@ export class LeanClient implements Disposable {
     }
 
     private checkForImportsOutdatedError(params: LeanPublishDiagnosticsParams) {
-        const fileUri = parseExtUri(params.uri)
+        const fileUri = parseServerUri(params.uri)
         if (fileUri === undefined) {
             return
         }
@@ -422,7 +422,7 @@ export class LeanClient implements Disposable {
         return 'Success'
     }
 
-    isInFolderManagedByThisClient(uri: ExtUri): boolean {
+    isInFolderManagedByThisClient(uri: ServerUri): boolean {
         if (this.folderUri.scheme === 'untitled' && uri.scheme === 'untitled') {
             return true
         }
@@ -432,7 +432,7 @@ export class LeanClient implements Disposable {
         return false
     }
 
-    getClientFolder(): ExtUri {
+    getClientFolder(): ServerUri {
         return this.folderUri
     }
 
@@ -471,8 +471,15 @@ export class LeanClient implements Disposable {
     }
 
     async restartFile(leanDoc: LeanDocument): Promise<void> {
-        const extUri = leanDoc.extUri
-        const formattedFileName = extUri.scheme === 'file' ? path.basename(extUri.fsPath) : extUri.toString()
+        if (leanDoc.extUri.scheme === 'vsls') {
+            displayNotification(
+                'Error',
+                `Cannot restart '${path.basename(leanDoc.extUri.syntheticPath)}': Restarting files is not possible as a guest in LiveShare.`,
+            )
+            return
+        }
+        const docUri = leanDoc.extUri
+        const formattedFileName = docUri.scheme === 'file' ? path.basename(docUri.fsPath) : docUri.toString()
         const formattedProjectName =
             this.folderUri.scheme === 'file' ? this.folderUri.fsPath : this.folderUri.toString()
         if (this.client === undefined || !this.running) {
@@ -483,7 +490,7 @@ export class LeanClient implements Disposable {
             return
         }
 
-        if (!this.isInFolderManagedByThisClient(extUri)) {
+        if (!this.isInFolderManagedByThisClient(docUri)) {
             displayNotification(
                 'Error',
                 `Cannot restart '${formattedFileName}': The project at '${formattedProjectName}' does not contain the file.`,
@@ -491,7 +498,7 @@ export class LeanClient implements Disposable {
             return
         }
 
-        const uri = extUri.toString()
+        const uri = docUri.toString()
         if (!this.openServerDocuments.delete(uri)) {
             displayNotification(
                 'Error',
@@ -626,9 +633,9 @@ export class LeanClient implements Disposable {
                 },
 
                 didOpen: async (doc, next) => {
-                    const docUri = toExtUri(doc.uri)
+                    const docUri = toServerUri(doc.uri)
                     if (!docUri) {
-                        return // This should never happen since the glob we launch the client for ensures that all uris are ext uris
+                        return // This should never happen since the glob we launch the client for ensures that all uris are server uris
                     }
 
                     // This will sometimes open invisible documents in the language server
@@ -659,9 +666,9 @@ export class LeanClient implements Disposable {
                 },
 
                 didClose: async (doc, next) => {
-                    const docUri = toExtUri(doc.uri)
+                    const docUri = toServerUri(doc.uri)
                     if (!docUri) {
-                        return // This should never happen since the glob we launch the client for ensures that all uris are ext uris
+                        return // This should never happen since the glob we launch the client for ensures that all uris are server uris
                     }
 
                     if (!this.openServerDocuments.delete(docUri.toString())) {

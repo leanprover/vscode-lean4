@@ -46,7 +46,7 @@ import { LeanClient } from './leanclient'
 import { Rpc } from './rpc'
 import { LeanClientProvider } from './utils/clientProvider'
 import { c2pConverter, LeanPublishDiagnosticsParams, p2cConverter } from './utils/converters'
-import { ExtUri, parseExtUri, toExtUri } from './utils/exturi'
+import { ExtUri, parseExtUri, parseServerUri, toExtUri } from './utils/exturi'
 import { lean, LeanEditor } from './utils/leanEditorProvider'
 import { logger } from './utils/logger'
 import { displayNotification } from './utils/notifs'
@@ -139,12 +139,12 @@ export class InfoProvider implements Disposable {
 
     private editorApi: EditorApi = {
         sendClientRequest: async (uri: string, method: string, params: any): Promise<any> => {
-            const extUri = parseExtUri(uri)
-            if (extUri === undefined) {
+            const workerUri = parseServerUri(uri)
+            if (workerUri === undefined) {
                 throw Error(`Unexpected URI scheme: ${Uri.parse(uri).scheme}`)
             }
 
-            const client = this.clientProvider.findClient(extUri)
+            const client = this.clientProvider.findClient(workerUri)
             if (client) {
                 try {
                     const result = await client.sendRequest(method, params)
@@ -164,12 +164,12 @@ export class InfoProvider implements Disposable {
             throw Error('No active Lean client.')
         },
         sendClientNotification: async (uri: string, method: string, params: any): Promise<void> => {
-            const extUri = parseExtUri(uri)
-            if (extUri === undefined) {
+            const workerUri = parseServerUri(uri)
+            if (workerUri === undefined) {
                 return
             }
 
-            const client = this.clientProvider.findClient(extUri)
+            const client = this.clientProvider.findClient(workerUri)
             if (client) {
                 await client.sendNotification(method, params)
             }
@@ -281,19 +281,19 @@ export class InfoProvider implements Disposable {
             void this.revealEditorSelection(uri, p2cConverter.asRange(show.selection))
         },
         restartFile: async uri => {
-            const extUri = parseExtUri(uri)
-            if (extUri === undefined) {
+            const workerUri = parseServerUri(uri)
+            if (workerUri === undefined) {
                 return
             }
-            this.clientProvider.restartFile(extUri)
+            this.clientProvider.restartFile(workerUri)
         },
 
         createRpcSession: async uri => {
-            const extUri = parseExtUri(uri)
-            if (extUri === undefined) {
+            const workerUri = parseServerUri(uri)
+            if (workerUri === undefined) {
                 throw Error(`Unexpected URI scheme: ${Uri.parse(uri).scheme}`)
             }
-            const client = this.clientProvider.findClient(extUri)
+            const client = this.clientProvider.findClient(workerUri)
             if (client === undefined) {
                 throw Error('No active Lean client.')
             }
@@ -400,7 +400,7 @@ export class InfoProvider implements Disposable {
         await this.webviewPanel?.api.serverStopped(undefined) // clear any server stopped state
         const folderUri = client.getClientFolder()
         for (const worker of this.workersFailed.keys()) {
-            const workerUri = parseExtUri(worker)
+            const workerUri = parseServerUri(worker)
             if (workerUri !== undefined && client.isInFolderManagedByThisClient(workerUri)) {
                 this.workersFailed.delete(worker)
             }
@@ -451,8 +451,8 @@ export class InfoProvider implements Disposable {
     async onWorkerStopped(uri: string, client: LeanClient, reason: ServerStoppedReason) {
         await this.webviewPanel?.api.serverStopped(reason)
 
-        const extUri = parseExtUri(uri)
-        if (extUri === undefined) {
+        const workerUri = parseServerUri(uri)
+        if (workerUri === undefined) {
             return
         }
 
@@ -460,7 +460,7 @@ export class InfoProvider implements Disposable {
             this.workersFailed.set(uri, reason)
         }
         logger.log(`[InfoProvider]client crashed: ${uri}`)
-        client.showRestartMessage(true, extUri)
+        client.showRestartMessage(true, workerUri)
     }
 
     onClientRemoved(client: LeanClient) {
@@ -587,6 +587,10 @@ export class InfoProvider implements Disposable {
     }
 
     private async openPreview(leanEditor: LeanEditor): Promise<boolean> {
+        const uri = leanEditor.documentExtUri
+        if (uri.scheme === 'vsls') {
+            return false
+        }
         if (this.webviewPanel) {
             this.webviewPanel.reveal(undefined, true)
         } else {
@@ -633,7 +637,7 @@ export class InfoProvider implements Disposable {
             this.webviewPanel = webviewPanel
             webviewPanel.webview.html = this.initialHtml()
 
-            const client = this.clientProvider.findClient(leanEditor.documentExtUri)
+            const client = this.clientProvider.findClient(uri)
             await this.initInfoView(leanEditor, client)
         }
         return true
@@ -739,6 +743,9 @@ export class InfoProvider implements Disposable {
         }
         const loc = this.getLocation(editor)
         const uri = editor.documentExtUri
+        if (uri.scheme === 'vsls') {
+            return
+        }
         if (this.clientsFailed.size > 0 || this.workersFailed.size > 0) {
             const client = this.clientProvider.findClient(uri)
             const uriKey = uri.toString()

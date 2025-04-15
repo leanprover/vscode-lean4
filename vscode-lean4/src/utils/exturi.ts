@@ -79,11 +79,11 @@ export function isWorkspaceFolder(uri: FileUri): boolean {
 
 export class UntitledUri {
     scheme: 'untitled'
-    path: string
+    name: string
 
-    constructor(path?: string | undefined) {
+    constructor(name?: string | undefined) {
         this.scheme = 'untitled'
-        this.path = path ?? ''
+        this.name = name ?? ''
     }
 
     static fromUri(uri: Uri): UntitledUri | undefined {
@@ -102,11 +102,11 @@ export class UntitledUri {
     }
 
     asUri(): Uri {
-        return Uri.from({ scheme: 'untitled', path: this.path })
+        return Uri.from({ scheme: 'untitled', path: this.name })
     }
 
     equals(other: UntitledUri): boolean {
-        return this.path === other.path
+        return this.name === other.name
     }
 
     equalsUri(other: Uri): boolean {
@@ -122,11 +122,109 @@ export class UntitledUri {
     }
 }
 
+export class LiveShareUri {
+    scheme: 'vsls'
+    syntheticPath: string
+
+    constructor(syntheticPath: string) {
+        this.scheme = 'vsls'
+        this.syntheticPath = syntheticPath
+    }
+
+    static fromUri(uri: Uri): LiveShareUri | undefined {
+        if (uri.scheme !== 'vsls') {
+            return undefined
+        }
+        return new LiveShareUri(uri.path)
+    }
+
+    static fromUriOrError(uri: Uri): LiveShareUri {
+        const liveShareUri = LiveShareUri.fromUri(uri)
+        if (liveShareUri === undefined) {
+            throw unsupportedSchemeError(uri)
+        }
+        return liveShareUri
+    }
+
+    asUri(): Uri {
+        return Uri.from({
+            scheme: this.scheme,
+            path: this.syntheticPath,
+        })
+    }
+
+    equals(other: LiveShareUri): boolean {
+        return this.syntheticPath === other.syntheticPath
+    }
+
+    equalsUri(other: Uri): boolean {
+        const otherLiveShareUri = LiveShareUri.fromUri(other)
+        if (otherLiveShareUri === undefined) {
+            return false
+        }
+        return this.equals(otherLiveShareUri)
+    }
+
+    toString(): string {
+        return this.asUri().toString()
+    }
+}
+
+/** Uris in which a language server can be launched. */
+export type ServerUri = FileUri | UntitledUri
+
+export function isServerUri(uri: Uri): boolean {
+    return uri.scheme === 'untitled' || uri.scheme === 'file'
+}
+
+export function toServerUri(uri: Uri): ServerUri | undefined {
+    if (uri.scheme === 'untitled') {
+        return new UntitledUri(uri.path)
+    }
+    if (uri.scheme === 'file') {
+        return new FileUri(uri.fsPath)
+    }
+    return undefined
+}
+
+export function toServerUriOrError(uri: Uri): ServerUri {
+    const result: ServerUri | undefined = toServerUri(uri)
+    if (result === undefined) {
+        throw unsupportedSchemeError(uri)
+    }
+    return result
+}
+
+export function parseServerUri(uriString: string): ServerUri | undefined {
+    return toServerUri(Uri.parse(uriString))
+}
+
+export function parseServerUriOrError(uriString: string): ServerUri {
+    return toServerUriOrError(Uri.parse(uriString))
+}
+
+export function serverUriEquals(a: ServerUri, b: ServerUri): boolean {
+    if (a.scheme === 'untitled' && b.scheme === 'untitled') {
+        return a.equals(b)
+    }
+    if (a.scheme === 'file' && b.scheme === 'file') {
+        return a.equals(b)
+    }
+    return false
+}
+
+export function serverUriToCwdUri(uri: ServerUri): FileUri | undefined {
+    if (uri.scheme !== 'file') {
+        return undefined
+    }
+    return uri
+}
+
 /** Uris supported by this extension. */
-export type ExtUri = FileUri | UntitledUri
+export type ExtUri = FileUri | UntitledUri | LiveShareUri
 
 export function isExtUri(uri: Uri): boolean {
-    return uri.scheme === 'untitled' || uri.scheme === 'file'
+    return uri.scheme === 'untitled' || uri.scheme === 'file' || uri.scheme === 'vsls'
 }
 
 export function toExtUri(uri: Uri): ExtUri | undefined {
@@ -135,6 +233,9 @@ export function toExtUri(uri: Uri): ExtUri | undefined {
     }
     if (uri.scheme === 'file') {
         return new FileUri(uri.fsPath)
+    }
+    if (uri.scheme === 'vsls') {
+        return new LiveShareUri(uri.path)
     }
     return undefined
 }
@@ -162,11 +263,14 @@ export function extUriEquals(a: ExtUri, b: ExtUri): boolean {
     if (a.scheme === 'file' && b.scheme === 'file') {
         return a.equals(b)
     }
+    if (a.scheme === 'vsls' && b.scheme === 'vsls') {
+        return a.equals(b)
+    }
     return false
 }
 
 export function extUriToCwdUri(uri: ExtUri): FileUri | undefined {
-    if (uri.scheme === 'untitled') {
+    if (uri.scheme !== 'file') {
         return undefined
     }
     return uri
