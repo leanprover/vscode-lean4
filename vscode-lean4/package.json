@@ -1009,6 +1009,10 @@
             }
         ],
         "configurationDefaults": {
+            "files.readonlyInclude": {
+                "**/.lake/**/*.lean": true,
+                "**/.elan/**/*.lean": true
+            },
             "[lean4]": {
                 "editor.unicodeHighlight.ambiguousCharacters": false,
                 "editor.tabSize": 2,
