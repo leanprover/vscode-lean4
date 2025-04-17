@@ -1,16 +1,15 @@
 import { LeanFileProgressProcessingInfo, ServerStoppedReason } from '@leanprover/infoview-api'
-import path from 'path'
 import { Disposable, EventEmitter, OutputChannel, commands } from 'vscode'
 import { SetupDiagnostics, checkAll } from '../diagnostics/setupDiagnostics'
 import { PreconditionCheckResult, SetupNotificationOptions } from '../diagnostics/setupNotifs'
 import { LeanClient } from '../leanclient'
 import { LeanPublishDiagnosticsParams } from './converters'
-import { ExtUri, FileUri, UntitledUri } from './exturi'
+import { ExtUri, FileUri } from './exturi'
 import { lean } from './leanEditorProvider'
 import { LeanInstaller } from './leanInstaller'
 import { logger } from './logger'
 import { displayNotification } from './notifs'
-import { findLeanProjectRoot, willUseLakeServer } from './projectInfo'
+import { findLeanProjectRootInfo, willUseLakeServer } from './projectInfo'
 
 async function checkLean4ProjectPreconditions(
     channel: OutputChannel,
@@ -113,11 +112,6 @@ export class LeanClientProvider implements Disposable {
                 break
             }
             try {
-                const projectUri = await findLeanProjectRoot(uri)
-                if (projectUri === 'FileNotFound') {
-                    continue
-                }
-
                 const [cached, client] = await this.ensureClient(uri)
                 if (cached && client) {
                     await client.restart()
@@ -130,7 +124,7 @@ export class LeanClientProvider implements Disposable {
     }
 
     restartFile(uri: ExtUri) {
-        const fileName = uri.scheme === 'file' ? path.basename(uri.fsPath) : 'untitled file'
+        const fileName = uri.scheme === 'file' ? uri.baseName() : 'untitled file'
 
         const client: LeanClient | undefined = this.findClient(uri)
         if (!client || !client.isRunning()) {
@@ -243,10 +237,18 @@ export class LeanClientProvider implements Disposable {
     }
 
     async ensureClient(uri: ExtUri): Promise<[boolean, LeanClient | undefined]> {
-        const folderUri = uri.scheme === 'file' ? await findLeanProjectRoot(uri) : new UntitledUri()
-        if (folderUri === 'FileNotFound') {
+        const projectInfo = await findLeanProjectRootInfo(uri)
+        if (projectInfo.kind === 'FileNotFound') {
             return [false, undefined]
         }
+        if (projectInfo.kind === 'LakefileWithoutToolchain') {
+            displayNotification(
+                'Error',
+                `Project at ${projectInfo.projectRootUri} has a Lakefile, but lacks a 'lean-toolchain' file. Please create one with the Lean version that you would like the project to use.`,
+            )
+            return [false, undefined]
+        }
+        const folderUri = projectInfo.projectRootUri
         let client = this.getClientForFolder(folderUri)
         if (client) {
             this.activeClient = client

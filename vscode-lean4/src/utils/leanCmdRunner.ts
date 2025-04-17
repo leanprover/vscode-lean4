@@ -43,7 +43,7 @@ function overrideReason(activeOverride: ElanOverrideReason | undefined): string 
         case 'Environment':
             return undefined
         case 'Manual':
-            return `set by \`elan override\` in folder '${path.basename(activeOverride.directoryPath.fsPath)}'`
+            return `set by \`elan override\` in folder '${activeOverride.directoryPath.baseName()}'`
         case 'ToolchainFile':
             return `of Lean project '${path.dirname(activeOverride.toolchainPath.fsPath)}'`
         case 'LeanpkgFile':

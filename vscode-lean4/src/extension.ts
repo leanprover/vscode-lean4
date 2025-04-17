@@ -21,10 +21,10 @@ import { LeanConfigWatchService } from './utils/configwatchservice'
 import { ElanCommandProvider } from './utils/elanCommands'
 import { PATH, setProcessEnvPATH } from './utils/envPath'
 import { onEventWhile, withoutReentrancy } from './utils/events'
-import { FileUri } from './utils/exturi'
+import { ExtUri, extUriToCwdUri, FileUri } from './utils/exturi'
 import { displayInternalErrorsIn } from './utils/internalErrors'
 import { registerLeanCommandRunner } from './utils/leanCmdRunner'
-import { lean, LeanEditor, registerLeanEditorProvider } from './utils/leanEditorProvider'
+import { lean, registerLeanEditorProvider } from './utils/leanEditorProvider'
 import { LeanInstaller } from './utils/leanInstaller'
 import {
     displayActiveStickyNotification,
@@ -33,37 +33,28 @@ import {
     setStickyNotificationActiveButHidden,
 } from './utils/notifs'
 import { PathExtensionProvider } from './utils/pathExtensionProvider'
-import { findLeanProjectRoot } from './utils/projectInfo'
+import { findLeanProjectRootInfo } from './utils/projectInfo'
 import { UriHandlerService } from './utils/uriHandlerService'
 
 async function setLeanFeatureSetActive(isActive: boolean) {
     await commands.executeCommand('setContext', 'lean4.isLeanFeatureSetActive', isActive)
 }
 
-async function findLeanEditorProjectUri(editor: LeanEditor): Promise<FileUri | undefined | 'InvalidProject'> {
-    const docUri = editor.documentExtUri
-    const projectUri = docUri.scheme === 'file' ? await findLeanProjectRoot(docUri) : undefined
-    if (projectUri === 'FileNotFound') {
-        return 'InvalidProject'
-    }
-    return projectUri
-}
-
-async function findOpenLeanProjectUri(): Promise<FileUri | undefined | 'NoValidDocument'> {
+async function findOpenLeanProjectUri(): Promise<ExtUri | 'NoValidDocument'> {
     const activeEditor = lean.activeLeanEditor
     if (activeEditor !== undefined) {
-        const projectUri = await findLeanEditorProjectUri(activeEditor)
-        if (projectUri !== 'InvalidProject') {
-            return projectUri
+        const info = await findLeanProjectRootInfo(activeEditor.documentExtUri)
+        if (info.kind !== 'FileNotFound') {
+            return info.projectRootUri
         }
     }
 
     // This happens if vscode starts with a lean file open
     // but the "Getting Started" page is active.
     for (const editor of lean.visibleLeanEditors) {
-        const projectUri = await findLeanEditorProjectUri(editor)
-        if (projectUri !== 'InvalidProject') {
-            return projectUri
+        const info = await findLeanProjectRootInfo(editor.documentExtUri)
+        if (info.kind !== 'FileNotFound') {
+            return info.projectRootUri
         }
     }
 
@@ -220,12 +211,12 @@ async function tryActivatingLean4FeaturesInProject(
     elanCommandProvider: ElanCommandProvider,
     resolve: (value: Lean4EnabledFeatures) => void,
     d: SetupDiagnostics,
-    projectUri: FileUri | undefined,
+    projectUri: ExtUri,
 ) {
     const preconditionCheckResult = await checkLean4FeaturePreconditions(
         installer,
         'Activate Lean 4 Extension',
-        projectUri,
+        extUriToCwdUri(projectUri),
         d,
     )
     if (preconditionCheckResult === 'Fatal') {
@@ -260,8 +251,8 @@ async function tryActivatingLean4Features(
         onEventWhile(
             lean.onDidRevealLeanEditor,
             withoutReentrancy('Continue', async editor => {
-                const projectUri = await findLeanEditorProjectUri(editor)
-                if (projectUri === 'InvalidProject') {
+                const info = await findLeanProjectRootInfo(editor.documentExtUri)
+                if (info.kind === 'FileNotFound') {
                     return 'Continue'
                 }
                 await tryActivatingLean4FeaturesInProject(
@@ -270,7 +261,7 @@ async function tryActivatingLean4Features(
                     elanCommandProvider,
                     resolve,
                     d,
-                    projectUri,
+                    info.projectRootUri,
                 )
                 return 'Stop'
             }),

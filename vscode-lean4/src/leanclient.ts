@@ -43,7 +43,6 @@ import {
 } from './config'
 import { logger } from './utils/logger'
 // @ts-ignore
-import path from 'path'
 import { SemVer } from 'semver'
 import {
     c2pConverter,
@@ -368,7 +367,7 @@ export class LeanClient implements Disposable {
             return
         }
 
-        const fileName = fileUri.scheme === 'file' ? path.basename(fileUri.fsPath) : 'untitled'
+        const fileName = fileUri.scheme === 'file' ? fileUri.baseName() : 'untitled'
         const isImportsOutdatedError = params.diagnostics.some(
             d =>
                 d.severity === DiagnosticSeverity.Error &&
@@ -472,7 +471,7 @@ export class LeanClient implements Disposable {
 
     async restartFile(leanDoc: LeanDocument): Promise<void> {
         const extUri = leanDoc.extUri
-        const formattedFileName = extUri.scheme === 'file' ? path.basename(extUri.fsPath) : extUri.toString()
+        const formattedFileName = extUri.scheme === 'file' ? extUri.baseName() : extUri.toString()
         const formattedProjectName =
             this.folderUri.scheme === 'file' ? this.folderUri.fsPath : this.folderUri.toString()
         if (this.client === undefined || !this.running) {
@@ -592,7 +591,7 @@ export class LeanClient implements Disposable {
             documentSelector.pattern = `${escapedPath}/**/*`
             workspaceFolder = {
                 uri: this.folderUri.asUri(),
-                name: path.basename(this.folderUri.fsPath),
+                name: this.folderUri.baseName(),
                 index: 0, // the language client library does not actually need this index
             }
         }

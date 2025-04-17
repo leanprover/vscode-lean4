@@ -1,6 +1,6 @@
 import * as fs from 'fs'
 import path from 'path'
-import { ExtUri, FileUri, isWorkspaceFolder } from './exturi'
+import { ExtUri, FileUri, isWorkspaceFolder, UntitledUri } from './exturi'
 import { dirExists, fileExists } from './fsHelper'
 
 // Detect lean4 root directory (works for both lean4 repo and nightly distribution)
@@ -30,17 +30,20 @@ export async function isCoreLean4Directory(path: FileUri): Promise<boolean> {
 }
 
 type ProjectRootInfo =
-    | { kind: 'Success'; projectRootUri: FileUri; toolchainUri: FileUri | undefined }
+    | { kind: 'Success'; projectRootUri: ExtUri; toolchainUri: FileUri | undefined }
     | { kind: 'FileNotFound' }
+    | { kind: 'LakefileWithoutToolchain'; projectRootUri: FileUri; lakefileUri: FileUri }
 type ToolchainInfo = { uri: FileUri; toolchain: string | undefined }
 type ProjectInfo =
-    | { kind: 'Success'; projectRootUri: FileUri; toolchainInfo: ToolchainInfo | undefined }
+    | { kind: 'Success'; projectRootUri: ExtUri; toolchainInfo: ToolchainInfo | undefined }
     | { kind: 'FileNotFound' }
+    | { kind: 'LakefileWithoutToolchain'; projectRootUri: FileUri; lakefileUri: FileUri }
 
 // Find the root of a Lean project and the Uri for the 'lean-toolchain' file found there.
-export async function findLeanProjectRootInfo(uri: FileUri): Promise<ProjectRootInfo> {
-    const toolchainFileName = 'lean-toolchain'
-
+export async function findLeanProjectRootInfo(uri: ExtUri): Promise<ProjectRootInfo> {
+    if (uri.scheme === 'untitled') {
+        return { kind: 'Success', projectRootUri: new UntitledUri(), toolchainUri: undefined }
+    }
     let path = uri
     try {
         if ((await fs.promises.stat(path.fsPath)).isFile()) {
@@ -53,7 +56,9 @@ export async function findLeanProjectRootInfo(uri: FileUri): Promise<ProjectRoot
     let bestFolder = path
     let bestLeanToolchain: FileUri | undefined
     while (true) {
-        const leanToolchain = path.join(toolchainFileName)
+        const leanToolchain = path.join('lean-toolchain')
+        const lakefileLean = path.join('lakefile.lean')
+        const lakefileToml = path.join('lakefile.toml')
         if (await fileExists(leanToolchain.fsPath)) {
             bestFolder = path
             bestLeanToolchain = leanToolchain
@@ -62,6 +67,10 @@ export async function findLeanProjectRootInfo(uri: FileUri): Promise<ProjectRoot
             bestLeanToolchain = undefined
             // Stop searching in case users accidentally created a lean-toolchain file above the core directory
             break
+        } else if (await fileExists(lakefileLean.fsPath)) {
+            return { kind: 'LakefileWithoutToolchain', projectRootUri: path, lakefileUri: lakefileLean }
+        } else if (await fileExists(lakefileToml.fsPath)) {
+            return { kind: 'LakefileWithoutToolchain', projectRootUri: path, lakefileUri: lakefileToml }
         }
         if (isWorkspaceFolder(path)) {
             if (bestLeanToolchain === undefined) {
@@ -85,16 +94,6 @@ export async function findLeanProjectRootInfo(uri: FileUri): Promise<ProjectRoot
     return { kind: 'Success', projectRootUri: bestFolder, toolchainUri: bestLeanToolchain }
 }
 
-export async function findLeanProjectRoot(uri: FileUri): Promise<FileUri | 'FileNotFound'> {
-    const info = await findLeanProjectRootInfo(uri)
-    switch (info.kind) {
-        case 'Success':
-            return info.projectRootUri
-        case 'FileNotFound':
-            return 'FileNotFound'
-    }
-}
-
 export async function findLeanProjectInfo(uri: FileUri): Promise<ProjectInfo> {
     const info = await findLeanProjectRootInfo(uri)
     switch (info.kind) {
@@ -105,7 +104,9 @@ export async function findLeanProjectInfo(uri: FileUri): Promise<ProjectInfo> {
             }
             return { kind: 'Success', projectRootUri: info.projectRootUri, toolchainInfo }
         case 'FileNotFound':
-            return { kind: 'FileNotFound' }
+            return info
+        case 'LakefileWithoutToolchain':
+            return info
     }
 }
 

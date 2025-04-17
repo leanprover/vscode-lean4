@@ -14,7 +14,6 @@ import { lake } from './utils/lake'
 import { LeanInstaller } from './utils/leanInstaller'
 import { displayNotification, displayNotificationWithInput } from './utils/notifs'
 import { checkParentFoldersForLeanProject, isValidLeanProject } from './utils/projectInfo'
-import path from 'path'
 
 const projectInitNotificationOptions: SetupNotificationOptions = {
     errorMode: { mode: 'NonModal' },
@@ -192,7 +191,7 @@ export class ProjectInitializationProvider implements Disposable {
             return 'DidNotComplete'
         }
 
-        const projectName: string = path.basename(projectFolder.fsPath)
+        const projectName: string = projectFolder.baseName()
         const result: ExecutionResult = await lake({
             channel: this.channel,
             cwdUri: projectFolder,
@@ -431,7 +430,7 @@ Open this project instead?`
     }
 
     private static async openNewFolder(projectFolder: FileUri) {
-        const message = `Project initialized. Open new project folder '${path.basename(projectFolder.fsPath)}'?`
+        const message = `Project initialized. Open new project folder '${projectFolder.baseName()}'?`
         const input = 'Open project folder'
         const choice: string | undefined = await displayNotificationWithInput('Information', message, [input])
         if (choice === input) {
