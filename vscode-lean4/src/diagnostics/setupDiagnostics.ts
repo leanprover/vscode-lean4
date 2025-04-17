@@ -1,4 +1,3 @@
-import path from 'path'
 import { SemVer } from 'semver'
 import { OutputChannel, commands } from 'vscode'
 import { ExtUri, FileUri, extUriToCwdUri } from '../utils/exturi'
@@ -39,7 +38,7 @@ const oldServerFolderContainsNewServerFolderErrorMessage = (
     fileUri: FileUri,
     clientFolderUri: FileUri,
 ) =>
-    `Error while starting language server: The project at '${folderUri.fsPath}' of the file '${path.basename(fileUri.fsPath)}' is contained inside of another project at '${clientFolderUri.fsPath}', for which a language server is already running.
+    `Error while starting language server: The project at '${folderUri.fsPath}' of the file '${fileUri.baseName()}' is contained inside of another project at '${clientFolderUri.fsPath}', for which a language server is already running.
 The Lean 4 VS Code extension does not support nested Lean projects.`
 
 const newServerFolderContainsOldServerFolderErrorMessage = (
@@ -47,7 +46,7 @@ const newServerFolderContainsOldServerFolderErrorMessage = (
     fileUri: FileUri,
     clientFolderUri: FileUri,
 ) =>
-    `Error while starting language server: The project at '${folderUri.fsPath}' of the file '${path.basename(fileUri.fsPath)}' contains another project at '${clientFolderUri.fsPath}', for which a language server is already running.
+    `Error while starting language server: The project at '${folderUri.fsPath}' of the file '${fileUri.baseName()}' contains another project at '${clientFolderUri.fsPath}', for which a language server is already running.
 The Lean 4 VS Code extension does not support nested Lean projects.`
 
 export class SetupDiagnostics {

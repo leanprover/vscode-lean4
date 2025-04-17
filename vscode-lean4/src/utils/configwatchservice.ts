@@ -1,7 +1,7 @@
 import * as path from 'path'
 import { Disposable, EventEmitter, Uri, window, workspace } from 'vscode'
 import { FileUri } from './exturi'
-import { findLeanProjectInfo, findLeanProjectRoot } from './projectInfo'
+import { findLeanProjectInfo, findLeanProjectRootInfo } from './projectInfo'
 
 // This service monitors the Lean package root folders for changes to any
 // lean-toolchail, lakefile.lean or lakefile.toml files found there.
@@ -78,8 +78,12 @@ export class LeanConfigWatchService implements Disposable {
         // Note: just opening the file fires this event sometimes which is annoying, so
         // we compare the contents just to be sure and normalize whitespace so that
         // just adding a new line doesn't trigger the prompt.
-        const projectUri = await findLeanProjectRoot(fileUri)
-        if (projectUri === 'FileNotFound') {
+        const info = await findLeanProjectRootInfo(fileUri)
+        if (
+            info.kind === 'FileNotFound' ||
+            info.kind === 'LakefileWithoutToolchain' ||
+            info.projectRootUri.scheme === 'untitled'
+        ) {
             return
         }
 
@@ -96,7 +100,7 @@ export class LeanConfigWatchService implements Disposable {
         this.normalizedLakeFileContents.set(key, contents)
         if (raiseEvent) {
             // raise an event so the extension triggers handleLakeFileChanged.
-            this.lakeFileChangedEmitter.fire(projectUri)
+            this.lakeFileChangedEmitter.fire(info.projectRootUri)
         }
     }
 
@@ -111,6 +115,8 @@ export class LeanConfigWatchService implements Disposable {
         const projectInfo = await findLeanProjectInfo(fileUri)
         if (
             projectInfo.kind === 'FileNotFound' ||
+            projectInfo.kind === 'LakefileWithoutToolchain' ||
+            projectInfo.projectRootUri.scheme === 'untitled' ||
             projectInfo.toolchainInfo === undefined ||
             projectInfo.toolchainInfo.toolchain === undefined
         ) {

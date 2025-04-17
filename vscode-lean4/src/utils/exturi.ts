@@ -1,3 +1,4 @@
+import path from 'path'
 import { Uri, workspace } from 'vscode'
 import { isFileInFolder, relativeFilePathInFolder } from './fsHelper'
 
@@ -47,6 +48,10 @@ export class FileUri {
 
     toString(): string {
         return this.asUri().toString()
+    }
+
+    baseName(): string {
+        return path.basename(this.fsPath)
     }
 
     join(...pathSegments: string[]): FileUri {

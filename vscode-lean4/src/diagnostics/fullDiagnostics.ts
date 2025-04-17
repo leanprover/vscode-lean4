@@ -1,11 +1,11 @@
 import { SemVer } from 'semver'
-import { Disposable, OutputChannel, commands, env } from 'vscode'
+import { commands, Disposable, env, OutputChannel } from 'vscode'
 import { ExecutionExitCode, ExecutionResult } from '../utils/batch'
 import { ElanInstalledToolchain, ElanToolchains, ElanUnresolvedToolchain } from '../utils/elan'
-import { FileUri } from '../utils/exturi'
+import { extUriToCwdUri, FileUri } from '../utils/exturi'
 import { lean } from '../utils/leanEditorProvider'
 import { displayNotification, displayNotificationWithInput } from '../utils/notifs'
-import { findLeanProjectRoot } from '../utils/projectInfo'
+import { findLeanProjectRootInfo } from '../utils/projectInfo'
 import {
     ElanDumpStateWithoutNetQueryResult,
     ElanVersionDiagnosis,
@@ -228,17 +228,25 @@ export class FullDiagnosticsProvider implements Disposable {
         // in which case we still want to provide adequate diagnostics. Hence, we use the last active Lean document,
         // regardless of whether there is an actual `LeanClient` managing it.
         const lastActiveLeanDocumentUri = lean.lastActiveLeanDocument?.extUri
-        const projectUri =
-            lastActiveLeanDocumentUri !== undefined && lastActiveLeanDocumentUri.scheme === 'file'
-                ? await findLeanProjectRoot(lastActiveLeanDocumentUri)
+        const projectInfo =
+            lastActiveLeanDocumentUri !== undefined
+                ? await findLeanProjectRootInfo(lastActiveLeanDocumentUri)
                 : undefined
-        if (projectUri === 'FileNotFound') {
+        if (projectInfo?.kind === 'FileNotFound') {
             displayNotification(
                 'Error',
                 `Cannot display setup information for file that does not exist in the file system: ${lastActiveLeanDocumentUri}. Please choose a different file to display the setup information for.`,
             )
             return
         }
+        if (projectInfo?.kind === 'LakefileWithoutToolchain') {
+            displayNotification(
+                'Error',
+                `Cannot display setup information for file in invalid project: Project at ${projectInfo.projectRootUri} has a Lakefile, but no 'lean-toolchain' file. Please create one with the Lean version that you would like the project to use.`,
+            )
+            return
+        }
+        const projectUri = projectInfo !== undefined ? extUriToCwdUri(projectInfo.projectRootUri) : undefined
         const fullDiagnostics = await performFullDiagnosis(this.outputChannel, projectUri)
         const formattedFullDiagnostics = formatFullDiagnostics(fullDiagnostics)
         const copyToClipboardInput = 'Copy to Clipboard'

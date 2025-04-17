@@ -1,4 +1,3 @@
-import path from 'path'
 import { OutputChannel } from 'vscode'
 import { ExecutionExitCode, ExecutionResult } from './batch'
 import { FileUri } from './exturi'
@@ -50,7 +49,7 @@ export class LakeRunner {
     }
 
     async fetchMathlibCacheForFile(projectRelativeFileUri: FileUri): Promise<ExecutionResult> {
-        const prompt = `Fetching Mathlib build artifact cache for ${path.basename(projectRelativeFileUri.fsPath)}`
+        const prompt = `Fetching Mathlib build artifact cache for ${projectRelativeFileUri.baseName()}`
         return this.runLakeCommandWithProgress('exe', ['cache', 'get', projectRelativeFileUri.fsPath], prompt)
     }
 
