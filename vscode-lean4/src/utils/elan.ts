@@ -4,6 +4,7 @@ import { z, ZodTypeAny } from 'zod'
 import { batchExecute, batchExecuteWithProgress, ExecutionExitCode, ExecutionResult } from './batch'
 import { FileUri } from './exturi'
 import { groupByUniqueKey } from './groupBy'
+import { semVerRegex } from './semverRegex'
 
 export const elanStableChannel = 'leanprover/lean4:stable'
 export const elanNightlyChannel = 'leanprover/lean4:nightly'
@@ -13,11 +14,6 @@ export const elanEagerResolutionMajorVersion = 4
 export function isElanEagerResolutionVersion(version: SemVer) {
     return version.major >= elanEagerResolutionMajorVersion
 }
-
-// Suggested at https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string
-
-const semVerRegex =
-    /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/
 
 const elanVersionRegex =
     /^elan ((0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)/

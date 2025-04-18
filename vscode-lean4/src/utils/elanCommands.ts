@@ -1,4 +1,6 @@
+import assert from 'assert'
 import { promises } from 'fs'
+import { SemVer, valid } from 'semver'
 import { commands, Disposable, OutputChannel, QuickPickItem, QuickPickItemKind, window } from 'vscode'
 import { ExecutionExitCode } from './batch'
 import { LeanClientProvider } from './clientProvider'
@@ -25,6 +27,89 @@ import { LeanReleaseChannel, queryLeanReleases } from './releaseQuery'
 
 function displayElanNotInstalledError() {
     displayNotification('Error', 'Elan is not installed.')
+}
+
+type LeanToolchain =
+    | { kind: 'Unknown'; fullName: string }
+    | { kind: 'Release'; fullName: string; version: SemVer }
+    | { kind: 'Nightly'; fullName: string; date: Date }
+    | { kind: 'PRRelease'; fullName: string; pr: number }
+
+function parseToolchain(toolchain: string): LeanToolchain {
+    const releaseMatch = toolchain.match(/leanprover\/lean4:(.+)/)
+    if (releaseMatch) {
+        let version = releaseMatch[1]
+        if (version[0] === 'v') {
+            version = version.substring(1)
+        }
+        if (valid(version)) {
+            return { kind: 'Release', fullName: toolchain, version: new SemVer(version) }
+        }
+    }
+
+    const nightlyMatch = toolchain.match(/leanprover\/lean4-nightly:nightly-(.+)/)
+    if (nightlyMatch) {
+        const date = new Date(nightlyMatch[1])
+        if (!isNaN(date.valueOf())) {
+            return { kind: 'Nightly', fullName: toolchain, date }
+        }
+    }
+
+    const prReleaseMatch = toolchain.match(/leanprover\/lean4-pr-releases:pr-release-(\d+)/)
+    if (prReleaseMatch) {
+        const pr = Number.parseInt(prReleaseMatch[1])
+        return { kind: 'PRRelease', fullName: toolchain, pr }
+    }
+
+    return { kind: 'Unknown', fullName: toolchain }
+}
+
+function toolchainKindPrio(k: 'Unknown' | 'Release' | 'Nightly' | 'PRRelease'): number {
+    switch (k) {
+        case 'Unknown':
+            return 3
+        case 'Release':
+            return 2
+        case 'Nightly':
+            return 1
+        case 'PRRelease':
+            return 0
+    }
+}
+
+function compareToolchainKinds(
+    k1: 'Unknown' | 'Release' | 'Nightly' | 'PRRelease',
+    k2: 'Unknown' | 'Release' | 'Nightly' | 'PRRelease',
+): number {
+    return toolchainKindPrio(k1) - toolchainKindPrio(k2)
+}
+
+function compareToolchains(t1: LeanToolchain, t2: LeanToolchain): number {
+    const kindComparison = compareToolchainKinds(t1.kind, t2.kind)
+    if (kindComparison !== 0) {
+        return kindComparison
+    }
+    switch (t1.kind) {
+        case 'Unknown':
+            assert(t2.kind === 'Unknown')
+            return -1 * t1.fullName.localeCompare(t2.fullName)
+        case 'Release':
+            assert(t2.kind === 'Release')
+            return t1.version.compare(t2.version)
+        case 'Nightly':
+            assert(t2.kind === 'Nightly')
+            return t1.date.valueOf() - t2.date.valueOf()
+        case 'PRRelease':
+            assert(t2.kind === 'PRRelease')
+            return t1.pr - t2.pr
+    }
+}
+
+function sortToolchains(ts: string[]): string[] {
+    return ts
+        .map(t => parseToolchain(t))
+        .sort((t1, t2) => -1 * compareToolchains(t1, t2))
+        .map(t => t.fullName)
 }
 
 export class ElanCommandProvider implements Disposable {
@@ -212,7 +297,7 @@ export class ElanCommandProvider implements Disposable {
         if (toolchainInfo === undefined) {
             return
         }
-        const installedToolchains = toolchainInfo.toolchains
+        const installedToolchains = sortToolchains(toolchainInfo.toolchains)
         if (installedToolchains.length === 0) {
             displayNotification('Information', 'No Lean versions installed.')
             return
@@ -375,7 +460,7 @@ export class ElanCommandProvider implements Disposable {
         if (toolchainInfo === undefined) {
             return undefined
         }
-        const installedToolchains = toolchainInfo.toolchains
+        const installedToolchains = sortToolchains(toolchainInfo.toolchains)
         const installedToolchainIndex = new Set(installedToolchains)
 
         let stableToolchains: string[] = []
