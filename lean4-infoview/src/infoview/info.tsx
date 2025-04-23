@@ -80,7 +80,7 @@ const InfoStatusBar = React.memo((props: InfoStatusBarProps) => {
             {isPinned && !isPaused && ' (pinned)'}
             {!isPinned && isPaused && ' (paused)'}
             {isPinned && isPaused && ' (pinned and paused)'}
-            <span style={spinnerStyle} className="mh2 codicon codicon-loading" title="updating">
+            <span style={spinnerStyle} className="mh2 codicon codicon-loading" title="Updating ...">
                 <style>
                     {`
                         @keyframes spin {
@@ -103,7 +103,17 @@ const InfoStatusBar = React.memo((props: InfoStatusBarProps) => {
                         onClick={_ => {
                             void ec.revealPosition(pos)
                         }}
-                        title="reveal file location"
+                        title="Go to pinned location in file"
+                    />
+                )}
+                {isPaused && (
+                    <a
+                        className="link pointer mh2 dim codicon codicon-refresh"
+                        data-id="update"
+                        onClick={_ => {
+                            void triggerUpdate()
+                        }}
+                        title="Refresh paused state"
                     />
                 )}
                 <a
@@ -112,7 +122,7 @@ const InfoStatusBar = React.memo((props: InfoStatusBarProps) => {
                     onClick={_ => {
                         onPin(pos)
                     }}
-                    title={isPinned ? 'unpin' : 'pin'}
+                    title={isPinned ? 'Unpin state' : 'Pin state to top'}
                 />
                 <a
                     className={
@@ -123,15 +133,7 @@ const InfoStatusBar = React.memo((props: InfoStatusBarProps) => {
                     onClick={_ => {
                         setPaused(!isPaused)
                     }}
-                    title={isPaused ? 'continue updating' : 'pause updating'}
-                />
-                <a
-                    className="link pointer mh2 dim codicon codicon-refresh"
-                    data-id="update"
-                    onClick={_ => {
-                        void triggerUpdate()
-                    }}
-                    title="update"
+                    title={isPaused ? 'Unpause state' : 'Pause state'}
                 />
             </span>
         </summary>
@@ -190,18 +192,20 @@ function GoalInfoDisplay(props: GoalInfoDisplayProps) {
     return (
         <>
             <LocationsContext.Provider value={locs}>
-                <span data-vscode-context={JSON.stringify({ selectedLocationsId })}>
+                <span data-vscode-context={JSON.stringify(selectedLocs.length === 0 ? {} : { selectedLocationsId })}>
                     <FilteredGoals key="goals" headerChildren="Tactic state" initiallyOpen goals={goals} displayCount />
                 </span>
             </LocationsContext.Provider>
-            <FilteredGoals
-                key="term-goal"
-                headerChildren="Expected type"
-                goals={termGoal !== undefined ? { goals: [termGoal] } : undefined}
-                initiallyOpen={config.showExpectedType}
-                displayCount={false}
-                togglingAction="toggleExpectedType"
-            />
+            {config.expectedTypeVisibility !== 'Hidden' && (
+                <FilteredGoals
+                    key="term-goal"
+                    headerChildren="Expected type"
+                    goals={termGoal !== undefined ? { goals: [termGoal] } : undefined}
+                    initiallyOpen={config.expectedTypeVisibility === 'Expanded by default'}
+                    displayCount={false}
+                    togglingAction="toggleExpectedType"
+                />
+            )}
             {userWidgets.map(widget => {
                 const inner = (
                     <PanelWidgetDisplay
@@ -327,7 +331,7 @@ function InfoDisplay(props0: InfoDisplayProps & InfoPinnable) {
         setShouldRefresh(true)
     }
 
-    const { kind, goals, rpcSess } = props
+    const { kind, pos, onPin, goals, rpcSess } = props
 
     const ec = React.useContext(EditorContext)
 
@@ -353,10 +357,70 @@ function InfoDisplay(props0: InfoDisplayProps & InfoPinnable) {
         'togglePaused',
     )
 
+    const id = React.useId()
+    useEvent(
+        ec.events.clickedContextMenu,
+        _ => {
+            setPaused(true)
+        },
+        [setPaused],
+        `pause:${id}`,
+    )
+    useEvent(
+        ec.events.clickedContextMenu,
+        _ => {
+            setPaused(false)
+        },
+        [setPaused],
+        `unpause:${id}`,
+    )
+    useEvent(
+        ec.events.clickedContextMenu,
+        _ => {
+            if (isCursor) {
+                onPin(pos)
+            }
+        },
+        [isCursor, onPin, pos],
+        `pin:${id}`,
+    )
+    useEvent(
+        ec.events.clickedContextMenu,
+        _ => {
+            if (!isCursor) {
+                onPin(pos)
+            }
+        },
+        [isCursor, onPin, pos],
+        `unpin:${id}`,
+    )
+    useEvent(
+        ec.events.clickedContextMenu,
+        _ => {
+            void triggerDisplayUpdate()
+        },
+        [isCursor, onPin, pos],
+        `refresh:${id}`,
+    )
+    useEvent(ec.events.clickedContextMenu, async _ => void ec.revealPosition(pos), [pos], `goToPinnedLocation:${id}`)
+
+    const pauseContext = isPaused ? { unpauseId: id } : { pauseId: id }
+    const pinContext = isCursor ? { pinId: id } : { unpinId: id }
+    const refreshContext = isPaused ? { refreshId: id } : {}
+    const goToPinnedLocationContext = !isCursor ? { goToPinnedLocationId: id } : {}
+
     return (
         <RpcContext.Provider value={rpcSess}>
-            <EnvPosContext.Provider value={props.pos}>
-                <details open>
+            <EnvPosContext.Provider value={pos}>
+                <details
+                    data-vscode-context={JSON.stringify({
+                        ...pauseContext,
+                        ...pinContext,
+                        ...refreshContext,
+                        ...goToPinnedLocationContext,
+                    })}
+                    open
+                >
                     <InfoStatusBar
                         {...props}
                         triggerUpdate={triggerDisplayUpdate}

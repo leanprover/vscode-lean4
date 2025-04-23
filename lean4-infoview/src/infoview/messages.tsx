@@ -45,8 +45,17 @@ const MessageView = React.memo(({ uri, diag }: MessageViewProps) => {
         () => ({ uri, ...(diag.fullRange?.start || diag.range.start) }),
         [uri, diag.fullRange, diag.range],
     )
+
+    const goToMessageLocationId = React.useId()
+    useEvent(
+        ec.events.clickedContextMenu,
+        async _ => void ec.revealLocation(loc),
+        [loc],
+        `goToMessageLocation:${goToMessageLocationId}`,
+    )
+
     return (
-        <Details initiallyOpen>
+        <Details initiallyOpen data-vscode-context={JSON.stringify({ goToMessageLocationId })}>
             <span className={severityClass}>
                 {title}
                 <span className="fr" onClick={e => e.preventDefault()}>
@@ -55,22 +64,7 @@ const MessageView = React.memo(({ uri, diag }: MessageViewProps) => {
                         onClick={_ => {
                             void ec.revealLocation(loc)
                         }}
-                        title="reveal file location"
-                    ></a>
-                    <a
-                        className="link pointer mh2 dim codicon codicon-quote"
-                        data-id="copy-to-comment"
-                        onClick={_ => {
-                            if (node.current) void ec.copyToComment(node.current.innerText)
-                        }}
-                        title="copy message to comment"
-                    ></a>
-                    <a
-                        className="link pointer mh2 dim codicon codicon-clippy"
-                        onClick={_ => {
-                            if (node.current) void ec.api.copyToClipboard(node.current.innerText)
-                        }}
-                        title="copy message to clipboard"
+                        title="Go to source location of message"
                     ></a>
                 </span>
             </span>
@@ -186,9 +180,19 @@ export function AllMessages({ uri: uri0 }: { uri: DocumentUri }) {
     // When `undefined`, we can approximate it by `diags.length`.
     const [numDiags, setNumDiags] = React.useState<number | undefined>(undefined)
 
+    const id = React.useId()
+    useEvent(ec.events.clickedContextMenu, _ => setPaused(true), [], `pauseAllMessages:${id}`)
+    useEvent(ec.events.clickedContextMenu, _ => setPaused(false), [], `unpauseAllMessages:${id}`)
+
+    const context = isPaused ? { unpauseAllMessagesId: id } : { pauseAllMessagesId: id }
+
     return (
         <RpcContext.Provider value={rs}>
-            <Details setOpenRef={r => (setOpenRef.current = r)} initiallyOpen={!config.autoOpenShowsGoal}>
+            <Details
+                setOpenRef={r => (setOpenRef.current = r)}
+                initiallyOpen={!config.autoOpenShowsGoal}
+                data-vscode-context={JSON.stringify(context)}
+            >
                 <>
                     All Messages ({numDiags ?? diags.length})
                     <span
@@ -205,7 +209,7 @@ export function AllMessages({ uri: uri0 }: { uri: DocumentUri }) {
                             onClick={_ => {
                                 setPaused(p => !p)
                             }}
-                            title={isPaused ? 'continue updating' : 'pause updating'}
+                            title={isPaused ? "Unpause 'All Messages'" : "Pause 'All Messages'"}
                         ></a>
                     </span>
                 </>

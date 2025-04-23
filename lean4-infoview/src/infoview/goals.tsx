@@ -1,5 +1,6 @@
 import {
     InfoviewActionKind,
+    InfoviewConfig,
     InteractiveGoal,
     InteractiveGoals,
     InteractiveHypothesisBundle,
@@ -46,9 +47,13 @@ export function goalsToString(goals: InteractiveGoals): string {
     return goals.goals.map(goalToString).join('\n\n')
 }
 
-interface GoalFilterState {
+interface GoalSettingsState {
     /** If true reverse the list of hypotheses, if false present the order received from LSP. */
     reverse: boolean
+    /** If true hide the names of goals, otherwise show them. */
+    hideGoalNames: boolean
+    /** If true emphasize the first goal, otherwise don't emphasize it. */
+    emphasizeFirstGoal: boolean
     /** If true show hypotheses that have isType=True, otherwise hide them. */
     showType: boolean
     /** If true show hypotheses that have isInstance=True, otherwise hide them. */
@@ -59,15 +64,27 @@ interface GoalFilterState {
     showLetValue: boolean
 }
 
+function goalSettingsStateOfConfig(config: InfoviewConfig): GoalSettingsState {
+    return {
+        reverse: config.reverseTacticState,
+        hideGoalNames: !config.showGoalNames,
+        emphasizeFirstGoal: config.emphasizeFirstGoal,
+        showType: !config.hideTypeAssumptions,
+        showInstance: !config.hideInstanceAssumptions,
+        showHiddenAssumption: !config.hideInaccessibleAssumptions,
+        showLetValue: !config.hideLetValues,
+    }
+}
+
 function getFilteredHypotheses(
     hyps: InteractiveHypothesisBundle[],
-    filter: GoalFilterState,
+    settings: GoalSettingsState,
 ): InteractiveHypothesisBundle[] {
     return hyps.reduce((acc: InteractiveHypothesisBundle[], h) => {
-        if (h.isInstance && !filter.showInstance) return acc
-        if (h.isType && !filter.showType) return acc
-        const names = filter.showHiddenAssumption ? h.names : h.names.filter(n => !isInaccessibleName(n))
-        const hNew: InteractiveHypothesisBundle = filter.showLetValue
+        if (h.isInstance && !settings.showInstance) return acc
+        if (h.isType && !settings.showType) return acc
+        const names = settings.showHiddenAssumption ? h.names : h.names.filter(n => !isInaccessibleName(n))
+        const hNew: InteractiveHypothesisBundle = settings.showLetValue
             ? { ...h, names }
             : { ...h, names, val: undefined }
         if (names.length !== 0) acc.push(hNew)
@@ -181,7 +198,7 @@ function Hyp({ hyp: h, mvarId }: HypProps) {
 
 interface GoalProps {
     goal: InteractiveGoal
-    filter: GoalFilterState
+    settings: GoalSettingsState
     additionalClassNames: string
 }
 
@@ -189,12 +206,12 @@ interface GoalProps {
  * Displays the hypotheses, target type and optional case label of a goal according to the
  * provided `filter`. */
 export const Goal = React.memo((props: GoalProps) => {
-    const { goal, filter, additionalClassNames } = props
+    const { goal, settings, additionalClassNames } = props
     const config = React.useContext(ConfigContext)
 
     const prefix = goal.goalPrefix ?? '⊢ '
-    const filteredList = getFilteredHypotheses(goal.hyps, filter)
-    const hyps = filter.reverse ? filteredList.slice().reverse() : filteredList
+    const filteredList = getFilteredHypotheses(goal.hyps, settings)
+    const hyps = settings.reverse ? filteredList.slice().reverse() : filteredList
     const locs = React.useContext(LocationsContext)
     const goalLocs = React.useMemo(
         () =>
@@ -217,12 +234,12 @@ export const Goal = React.memo((props: GoalProps) => {
     if (props.goal.isRemoved) cn += ' b--removed '
 
     const children: React.ReactNode[] = [
-        filter.reverse && goalLi,
+        settings.reverse && goalLi,
         hyps.map((h, i) => <Hyp hyp={h} mvarId={goal.mvarId} key={i} />),
-        !filter.reverse && goalLi,
+        !settings.reverse && goalLi,
     ]
 
-    if (goal.userName && config.showGoalNames) {
+    if (goal.userName && !settings.hideGoalNames) {
         return (
             <details open className={cn}>
                 <summary className="mv1 pointer">
@@ -237,12 +254,12 @@ export const Goal = React.memo((props: GoalProps) => {
 
 interface GoalsProps {
     goals: InteractiveGoals
-    filter: GoalFilterState
+    settings: GoalSettingsState
     /** Whether or not to display the number of goals. */
     displayCount: boolean
 }
 
-function Goals({ goals, filter, displayCount }: GoalsProps) {
+function Goals({ goals, settings, displayCount }: GoalsProps) {
     const nGoals = goals.goals.length
     const config = React.useContext(ConfigContext)
     if (nGoals === 0) {
@@ -260,8 +277,8 @@ function Goals({ goals, filter, displayCount }: GoalsProps) {
                     <Goal
                         key={i}
                         goal={g}
-                        filter={filter}
-                        additionalClassNames={i !== 0 && config.emphasizeFirstGoal ? unemphasizeCn : ''}
+                        settings={settings}
+                        additionalClassNames={i !== 0 && settings.emphasizeFirstGoal ? unemphasizeCn : ''}
                     />
                 ))}
             </>
@@ -295,50 +312,41 @@ export const FilteredGoals = React.memo(
         const ec = React.useContext(EditorContext)
         const config = React.useContext(ConfigContext)
 
-        const copyToCommentButton = (
-            <a
-                className="link pointer mh2 dim codicon codicon-quote"
-                data-id="copy-goal-to-comment"
-                onClick={_ => {
-                    if (goals) void ec.copyToComment(goalsToString(goals))
-                }}
-                title="copy state to comment"
-            />
-        )
+        const [goalSettings, setGoalSettings] = React.useState<GoalSettingsState>(goalSettingsStateOfConfig(config))
 
-        const [goalFilters, setGoalFilters] = React.useState<GoalFilterState>({
-            reverse: config.reverseTacticState,
-            showType: true,
-            showInstance: true,
-            showHiddenAssumption: true,
-            showLetValue: true,
-        })
-        const sortClasses =
-            'link pointer mh2 dim codicon ' + (goalFilters.reverse ? 'codicon-arrow-up ' : 'codicon-arrow-down ')
-        const sortButton = (
-            <a
-                className={sortClasses}
-                title="reverse list"
-                onClick={_ => {
-                    setGoalFilters(s => ({ ...s, reverse: !s.reverse }))
-                }}
-            />
-        )
+        const goalSettingsDifferFromDefaultConfig =
+            JSON.stringify(goalSettings) !== JSON.stringify(goalSettingsStateOfConfig(config))
+        const disabledSaveStyle: React.CSSProperties = goalSettingsDifferFromDefaultConfig
+            ? {}
+            : { color: 'var(--vscode-disabledForeground)', pointerEvents: 'none' }
 
-        const mkFilterButton = (
-            filterFn: React.SetStateAction<GoalFilterState>,
-            filledFn: (_: GoalFilterState) => boolean,
+        const saveConfig = React.useCallback(async () => {
+            await ec.api.saveConfig({
+                ...config,
+                reverseTacticState: goalSettings.reverse,
+                showGoalNames: !goalSettings.hideGoalNames,
+                emphasizeFirstGoal: goalSettings.emphasizeFirstGoal,
+                hideTypeAssumptions: !goalSettings.showType,
+                hideInstanceAssumptions: !goalSettings.showInstance,
+                hideInaccessibleAssumptions: !goalSettings.showHiddenAssumption,
+                hideLetValues: !goalSettings.showLetValue,
+            })
+        }, [config, ec.api, goalSettings])
+
+        const mkSettingButton = (
+            settingFn: React.SetStateAction<GoalSettingsState>,
+            filledFn: (_: GoalSettingsState) => boolean,
             name: string,
         ) => (
             <a
                 className="link pointer tooltip-menu-content"
                 onClick={_ => {
-                    setGoalFilters(filterFn)
+                    setGoalSettings(settingFn)
                 }}
             >
                 <span
                     className={
-                        'tooltip-menu-icon codicon ' + (filledFn(goalFilters) ? 'codicon-check ' : 'codicon-blank ')
+                        'tooltip-menu-icon codicon ' + (filledFn(goalSettings) ? 'codicon-check ' : 'codicon-blank ')
                     }
                 >
                     &nbsp;
@@ -348,46 +356,112 @@ export const FilteredGoals = React.memo(
         )
         const filterMenu = (
             <span>
-                {mkFilterButton(
+                {mkSettingButton(
+                    s => ({ ...s, reverse: !s.reverse }),
+                    gs => gs.reverse,
+                    'Display target before assumptions',
+                )}
+                <br />
+                {mkSettingButton(
                     s => ({ ...s, showType: !s.showType }),
-                    gf => gf.showType,
-                    'types',
+                    gs => !gs.showType,
+                    'Hide type assumptions',
                 )}
                 <br />
-                {mkFilterButton(
+                {mkSettingButton(
                     s => ({ ...s, showInstance: !s.showInstance }),
-                    gf => gf.showInstance,
-                    'instances',
+                    gs => !gs.showInstance,
+                    'Hide instance assumptions',
                 )}
                 <br />
-                {mkFilterButton(
+                {mkSettingButton(
                     s => ({ ...s, showHiddenAssumption: !s.showHiddenAssumption }),
-                    gf => gf.showHiddenAssumption,
-                    'hidden assumptions',
+                    gs => !gs.showHiddenAssumption,
+                    'Hide inaccessible assumptions',
                 )}
                 <br />
-                {mkFilterButton(
+                {mkSettingButton(
                     s => ({ ...s, showLetValue: !s.showLetValue }),
-                    gf => gf.showLetValue,
-                    'let-values',
+                    gs => !gs.showLetValue,
+                    'Hide let-values',
                 )}
+                <br />
+                {mkSettingButton(
+                    s => ({ ...s, hideGoalNames: !s.hideGoalNames }),
+                    gs => gs.hideGoalNames,
+                    'Hide goal names',
+                )}
+                <br />
+                {mkSettingButton(
+                    s => ({ ...s, emphasizeFirstGoal: !s.emphasizeFirstGoal }),
+                    gs => gs.emphasizeFirstGoal,
+                    'Emphasize first goal',
+                )}
+                <br className="saveConfigLineBreak" style={disabledSaveStyle} />
+                <a
+                    className="link pointer tooltip-menu-content saveConfigButton"
+                    style={disabledSaveStyle}
+                    onClick={_ => saveConfig()}
+                >
+                    <span className="tooltip-menu-icon codicon codicon-save">&nbsp;</span>
+                    <span className="tooltip-menu-text">Save current settings to default settings</span>
+                </a>
             </span>
         )
 
-        const isFiltered =
-            !goalFilters.showInstance ||
-            !goalFilters.showType ||
-            !goalFilters.showHiddenAssumption ||
-            !goalFilters.showLetValue
-        const filterButton = (
+        const settingsButton = (
             <WithTooltipOnHover tooltipChildren={filterMenu} className="dim ">
-                <a
-                    className={
-                        'link pointer mh2 codicon ' + (isFiltered ? 'codicon-filter-filled ' : 'codicon-filter ')
-                    }
-                />
+                <a className={'link pointer mh2 codicon codicon-settings-gear'} />
             </WithTooltipOnHover>
         )
+
+        const context: { [k: string]: any } = {}
+        const id = React.useId()
+        const useContextMenuEvent = (
+            name: string,
+            action: () => void,
+            isEnabled: boolean,
+            dependencies?: React.DependencyList,
+        ) => {
+            if (isEnabled) {
+                context[name + 'Id'] = id
+            }
+            useEvent(ec.events.clickedContextMenu, _ => action(), dependencies, `${name}:${id}`)
+        }
+        const useSettingsContextMenuEvent = (name: string, setting: any, isEnabled: boolean) =>
+            useContextMenuEvent(name, () => setGoalSettings(s => ({ ...s, ...setting })), isEnabled)
+
+        useSettingsContextMenuEvent('displayTargetBeforeAssumptions', { reverse: true }, !goalSettings.reverse)
+        useSettingsContextMenuEvent('displayAssumptionsBeforeTarget', { reverse: false }, goalSettings.reverse)
+        useSettingsContextMenuEvent('hideTypeAssumptions', { showType: false }, goalSettings.showType)
+        useSettingsContextMenuEvent('showTypeAssumptions', { showType: true }, !goalSettings.showType)
+        useSettingsContextMenuEvent('hideInstanceAssumptions', { showInstance: false }, goalSettings.showInstance)
+        useSettingsContextMenuEvent('showInstanceAssumptions', { showInstance: true }, !goalSettings.showInstance)
+        useSettingsContextMenuEvent(
+            'hideInaccessibleAssumptions',
+            { showHiddenAssumption: false },
+            goalSettings.showHiddenAssumption,
+        )
+        useSettingsContextMenuEvent(
+            'showInaccessibleAssumptions',
+            { showHiddenAssumption: true },
+            !goalSettings.showHiddenAssumption,
+        )
+        useSettingsContextMenuEvent('hideLetValues', { showLetValues: false }, goalSettings.showLetValue)
+        useSettingsContextMenuEvent('showLetValues', { showLetValues: true }, !goalSettings.showLetValue)
+        useSettingsContextMenuEvent('hideGoalNames', { hideGoalNames: true }, !goalSettings.hideGoalNames)
+        useSettingsContextMenuEvent('showGoalNames', { hideGoalNames: false }, goalSettings.hideGoalNames)
+        useSettingsContextMenuEvent(
+            'emphasizeFirstGoal',
+            { emphasizeFirstGoal: true },
+            !goalSettings.emphasizeFirstGoal,
+        )
+        useSettingsContextMenuEvent(
+            'deemphasizeFirstGoal',
+            { emphasizeFirstGoal: false },
+            goalSettings.emphasizeFirstGoal,
+        )
+        useContextMenuEvent('saveSettings', () => saveConfig(), goalSettingsDifferFromDefaultConfig, [saveConfig])
 
         const setOpenRef = React.useRef<React.Dispatch<React.SetStateAction<boolean>>>()
         useEvent(
@@ -402,7 +476,10 @@ export const FilteredGoals = React.memo(
         )
 
         return (
-            <div style={{ display: goals !== undefined ? 'block' : 'none' }}>
+            <div
+                style={{ display: goals !== undefined ? 'block' : 'none' }}
+                data-vscode-context={JSON.stringify(context)}
+            >
                 <Details setOpenRef={r => (setOpenRef.current = r)} initiallyOpen={initiallyOpen}>
                     <>
                         {headerChildren}
@@ -412,13 +489,11 @@ export const FilteredGoals = React.memo(
                                 e.preventDefault()
                             }}
                         >
-                            {copyToCommentButton}
-                            {sortButton}
-                            {filterButton}
+                            {settingsButton}
                         </span>
                     </>
                     <div className="ml1">
-                        {goals && <Goals goals={goals} filter={goalFilters} displayCount={displayCount}></Goals>}
+                        {goals && <Goals goals={goals} settings={goalSettings} displayCount={displayCount}></Goals>}
                     </div>
                 </Details>
             </div>

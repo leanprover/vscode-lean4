@@ -7,6 +7,23 @@ import type {
     WorkspaceEdit,
 } from 'vscode-languageserver-protocol'
 
+export type ExpectedTypeVisibility = 'Expanded by default' | 'Collapsed by default' | 'Hidden'
+
+export interface InfoviewConfig {
+    allErrorsOnLine: boolean
+    autoOpenShowsGoal: boolean
+    debounceTime: number
+    expectedTypeVisibility: ExpectedTypeVisibility
+    showGoalNames: boolean
+    emphasizeFirstGoal: boolean
+    reverseTacticState: boolean
+    hideTypeAssumptions: boolean
+    hideInstanceAssumptions: boolean
+    hideInaccessibleAssumptions: boolean
+    hideLetValues: boolean
+    showTooltipOnHover: boolean
+}
+
 /**
  * An insert `here` should be written exactly at the specified position,
  * while one `above` should go on the preceding line.
@@ -15,6 +32,8 @@ export type TextInsertKind = 'here' | 'above'
 
 /** Interface that the InfoView WebView uses to talk to the hosting editor. */
 export interface EditorApi {
+    saveConfig(config: InfoviewConfig): Promise<any>
+
     /** Make a request to the LSP server. */
     sendClientRequest(uri: string, method: string, params: any): Promise<any>
     /** Send a notification to the LSP server. */
@@ -77,25 +96,18 @@ export interface InfoviewTacticStateFilter {
     flags: string
 }
 
-export interface InfoviewConfig {
-    allErrorsOnLine: boolean
-    autoOpenShowsGoal: boolean
-    debounceTime: number
-    showExpectedType: boolean
-    showGoalNames: boolean
-    emphasizeFirstGoal: boolean
-    reverseTacticState: boolean
-    showTooltipOnHover: boolean
-}
-
 export const defaultInfoviewConfig: InfoviewConfig = {
     allErrorsOnLine: true,
     autoOpenShowsGoal: true,
     debounceTime: 50,
-    showExpectedType: true,
+    expectedTypeVisibility: 'Expanded by default',
     showGoalNames: true,
     emphasizeFirstGoal: false,
     reverseTacticState: false,
+    hideTypeAssumptions: false,
+    hideInstanceAssumptions: false,
+    hideInaccessibleAssumptions: false,
+    hideLetValues: false,
     showTooltipOnHover: true,
 }
 
@@ -108,7 +120,35 @@ export type InfoviewActionKind =
 
 export type InfoviewAction = { kind: InfoviewActionKind }
 
-export type ContextMenuEntry = 'goToDefinition' | 'select' | 'unselect' | 'unselectAll'
+export type ContextMenuEntry =
+    | 'goToDefinition'
+    | 'select'
+    | 'unselect'
+    | 'unselectAll'
+    | 'pause'
+    | 'unpause'
+    | 'pin'
+    | 'unpin'
+    | 'refresh'
+    | 'pauseAllMessages'
+    | 'unpauseAllMessages'
+    | 'goToPinnedLocation'
+    | 'goToMessageLocation'
+    | 'displayTargetBeforeAssumptions'
+    | 'displayAssumptionsBeforeTarget'
+    | 'hideTypeAssumptions'
+    | 'showTypeAssumptions'
+    | 'hideInstanceAssumptions'
+    | 'showInstanceAssumptions'
+    | 'hideInaccessibleAssumptions'
+    | 'showInaccessibleAssumptions'
+    | 'hideLetValues'
+    | 'showLetValues'
+    | 'hideGoalNames'
+    | 'showGoalNames'
+    | 'emphasizeFirstGoal'
+    | 'deemphasizeFirstGoal'
+    | 'saveSettings'
 
 export interface ContextMenuAction {
     entry: ContextMenuEntry
