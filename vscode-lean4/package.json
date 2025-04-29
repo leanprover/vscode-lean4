@@ -1540,7 +1540,7 @@
         "test": "node ./out/test/suite/runTest.js"
     },
     "dependencies": {
-        "@leanprover/infoview": "~0.8.4",
+        "@leanprover/infoview": "~0.8.5",
         "@leanprover/infoview-api": "~0.7.0",
         "@leanprover/unicode-input": "~0.1.4",
         "@leanprover/unicode-input-component": "~0.1.4",
