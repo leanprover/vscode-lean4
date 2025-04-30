@@ -280,7 +280,9 @@ export function useHoverTooltip(
     }
 
     const onPointerOver = (e: React.PointerEvent<HTMLSpanElement>) => {
-        if (!isModifierHeld(e)) {
+        // eslint-disable-next-line no-bitwise
+        const isSelectionHover = (e.buttons & 1) !== 0
+        if (!isModifierHeld(e) && !isSelectionHover) {
             guardMouseEvent(_ => startShowTimeout(), e)
         }
     }
