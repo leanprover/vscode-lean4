@@ -19,15 +19,15 @@ export class LoogleView implements Disposable {
         private extensionPath: FileUri,
         private extensionVersion: string,
     ) {
-        this.subscriptions.push(
-            commands.registerCommand('lean4.loogle.search', async () => {
-                let initialQuery: string | undefined
-                if (window.activeTextEditor !== undefined && window.activeTextEditor.selection !== undefined) {
-                    initialQuery = window.activeTextEditor.document.getText(window.activeTextEditor.selection)
-                }
-                await this.display(initialQuery)
-            }),
-        )
+        this.subscriptions.push(commands.registerCommand('lean4.loogle.search', async () => this.search()))
+    }
+
+    async search() {
+        let initialQuery: string | undefined
+        if (window.activeTextEditor !== undefined && window.activeTextEditor.selection !== undefined) {
+            initialQuery = window.activeTextEditor.document.getText(window.activeTextEditor.selection)
+        }
+        await this.display(initialQuery)
     }
 
     async display(initialQuery?: string | undefined) {

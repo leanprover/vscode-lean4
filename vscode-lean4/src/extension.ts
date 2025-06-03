@@ -26,6 +26,7 @@ import { displayInternalErrorsIn } from './utils/internalErrors'
 import { registerLeanCommandRunner } from './utils/leanCmdRunner'
 import { lean, registerLeanEditorProvider } from './utils/leanEditorProvider'
 import { LeanInstaller } from './utils/leanInstaller'
+import { ModuleTreeViewProvider } from './utils/moduleTreeViewProvider'
 import {
     displayActiveStickyNotification,
     displayModalNotification,
@@ -206,6 +207,8 @@ async function activateLean4Features(
         installer.getOutputChannel(),
         clientProvider,
     )
+
+    context.subscriptions.push(await ModuleTreeViewProvider.init(clientProvider))
 
     await setLeanFeatureSetActive(true)
 

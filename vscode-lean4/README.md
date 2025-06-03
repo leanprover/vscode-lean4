@@ -10,7 +10,7 @@ After installing this extension, a 'Welcome' page with a setup guide should open
 - Setting up a Lean 4 project
 - Troubleshooting issues
 
-If the setup guide does not open automatically, you can still open it manually by opening an empty file, clicking on the ∀-symbol in the top right and selecting 'Documentation…' > 'Docs: Show Setup Guide'.
+If the setup guide does not open automatically, you can still open it manually by opening an empty file, clicking on the ∀-symbol in the top right and selecting 'Documentation…' > 'Show Setup Guide'.
 
   ![Setup guide with instructions for how to re-open the setup guide manually](https://github.com/leanprover/vscode-lean4/raw/HEAD/vscode-lean4/images/setup_guide.png)
 
