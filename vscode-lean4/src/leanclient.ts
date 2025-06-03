@@ -23,6 +23,7 @@ import {
     LanguageClient,
     LanguageClientOptions,
     RevealOutputChannelOn,
+    ServerCapabilities,
     State,
     StaticFeature,
 } from 'vscode-languageclient/node'
@@ -47,7 +48,13 @@ import { SemVer } from 'semver'
 import { formatCommandExecutionOutput } from './utils/batch'
 import {
     c2pConverter,
+    LeanImport,
+    LeanModule,
+    LeanModuleHierarchyImportedByParams,
+    LeanModuleHierarchyImportsParams,
+    LeanPrepareModuleHierarchyParams,
     LeanPublishDiagnosticsParams,
+    LeanServerCapabilities,
     p2cConverter,
     patchConverters,
     setDependencyBuildMode,
@@ -70,6 +77,19 @@ interface LeanClientCapabilties {
 const leanClientCapabilities: LeanClientCapabilties = {
     silentDiagnosticSupport: true,
 }
+
+export type PrepareModuleHierarchyResult =
+    | { kind: 'Success'; module: LeanModule | undefined }
+    | { kind: 'StoppedClient' }
+    | { kind: 'Unsupported' }
+export type ModuleHierarchyImportsResult =
+    | { kind: 'Success'; imports: LeanImport[] }
+    | { kind: 'StoppedClient' }
+    | { kind: 'Unsupported' }
+export type ModuleHierarchyImportedByResult =
+    | { kind: 'Success'; imports: LeanImport[] }
+    | { kind: 'StoppedClient' }
+    | { kind: 'Unsupported' }
 
 const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
@@ -136,6 +156,14 @@ export class LeanClient implements Disposable {
         if (this.isStarted()) void this.stop()
     }
 
+    serverCapabilities(): ServerCapabilities<LeanServerCapabilities> | undefined {
+        return this.client?.initializeResult?.capabilities
+    }
+
+    leanServerCapabilities(): LeanServerCapabilities | undefined {
+        return this.serverCapabilities()?.experimental
+    }
+
     showRestartMessage(restartFile: boolean = false, uri?: ExtUri | undefined) {
         if (this.showingRestartMessage) {
             return
@@ -173,6 +201,47 @@ export class LeanClient implements Disposable {
             ],
             finalizer,
         )
+    }
+
+    async sendPrepareModuleHierarchy(uri: ExtUri): Promise<PrepareModuleHierarchyResult> {
+        const client = this.client
+        if (client === undefined || !client.isRunning) {
+            return { kind: 'StoppedClient' }
+        }
+        if (this.leanServerCapabilities()?.moduleHierarchyProvider === undefined) {
+            return { kind: 'Unsupported' }
+        }
+        const param: LeanPrepareModuleHierarchyParams = {
+            textDocument: { uri: client.code2ProtocolConverter.asUri(uri.asUri()) },
+        }
+        const response: LeanModule | undefined = await client.sendRequest('$/lean/prepareModuleHierarchy', param)
+        return { kind: 'Success', module: response }
+    }
+
+    async sendModuleHierarchyImports(module: LeanModule): Promise<ModuleHierarchyImportsResult> {
+        const client = this.client
+        if (client === undefined || !client.isRunning) {
+            return { kind: 'StoppedClient' }
+        }
+        if (this.leanServerCapabilities()?.moduleHierarchyProvider === undefined) {
+            return { kind: 'Unsupported' }
+        }
+        const param: LeanModuleHierarchyImportsParams = { module }
+        const response: LeanImport[] = await client.sendRequest('$/lean/moduleHierarchy/imports', param)
+        return { kind: 'Success', imports: response }
+    }
+
+    async sendModuleHierarchyImportedBy(module: LeanModule): Promise<ModuleHierarchyImportedByResult> {
+        const client = this.client
+        if (client === undefined || !client.isRunning) {
+            return { kind: 'StoppedClient' }
+        }
+        if (this.leanServerCapabilities()?.moduleHierarchyProvider === undefined) {
+            return { kind: 'Unsupported' }
+        }
+        const param: LeanModuleHierarchyImportedByParams = { module }
+        const response: LeanImport[] = await client.sendRequest('$/lean/moduleHierarchy/importedBy', param)
+        return { kind: 'Success', imports: response }
     }
 
     async restart(): Promise<void> {
