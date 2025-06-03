@@ -27,6 +27,11 @@ export type VersionQueryResult =
     | { kind: 'Cancelled' }
     | { kind: 'InvalidVersion'; versionResult: string }
 
+export type LakeAvailabilityResult =
+    | { kind: 'Available' }
+    | { kind: 'NotAvailable' }
+    | { kind: 'Error'; message: string }
+    | { kind: 'Cancelled' }
 export type ElanDumpStateWithoutNetQueryResult = ElanDumpStateWithoutNetResult | { kind: 'PreEagerResolutionVersion' }
 export type ElanDumpStateWithNetQueryResult = ElanDumpStateWithNetResult | { kind: 'PreEagerResolutionVersion' }
 
@@ -176,14 +181,18 @@ export class SetupDiagnoser {
         return gitVersionResult.exitCode === ExecutionExitCode.Success
     }
 
-    async queryLakeVersion(): Promise<VersionQueryResult> {
+    async checkLakeAvailable(): Promise<LakeAvailabilityResult> {
         const lakeVersionResult = await this.runLeanCommand('lake', ['--version'], 'Checking Lake version')
-        return versionQueryResult(lakeVersionResult, /version (\d+\.\d+\.\d+(\w|-)*)/)
-    }
-
-    async checkLakeAvailable(): Promise<boolean> {
-        const lakeVersionResult = await this.queryLakeVersion()
-        return lakeVersionResult.kind === 'Success'
+        switch (lakeVersionResult.exitCode) {
+            case ExecutionExitCode.Success:
+                return { kind: 'Available' }
+            case ExecutionExitCode.CannotLaunch:
+                return { kind: 'NotAvailable' }
+            case ExecutionExitCode.ExecutionError:
+                return { kind: 'Error', message: lakeVersionResult.combined }
+            case ExecutionExitCode.Cancelled:
+                return { kind: 'Cancelled' }
+        }
     }
 
     querySystemInformation(): SystemQueryResult {
