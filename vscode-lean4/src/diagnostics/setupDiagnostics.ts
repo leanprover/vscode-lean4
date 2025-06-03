@@ -284,33 +284,30 @@ export class SetupDiagnostics {
         folderUri: ExtUri,
         options: { toolchainOverride?: string | undefined; toolchainUpdateMode: ToolchainUpdateMode },
     ): Promise<PreconditionCheckResult> {
-        const lakeVersionResult = await diagnose({
+        const lakeAvailabilityResult = await diagnose({
             channel,
             cwdUri: extUriToCwdUri(folderUri),
             toolchain: options.toolchainOverride,
             context,
             toolchainUpdateMode: options.toolchainUpdateMode,
-        }).queryLakeVersion()
-        switch (lakeVersionResult.kind) {
-            case 'CommandNotFound':
+        }).checkLakeAvailable()
+        switch (lakeAvailabilityResult.kind) {
+            case 'NotAvailable':
                 return this.n.displaySetupErrorWithOutput(
-                    "Error while checking Lake version: 'lake' command was not found.",
+                    "Error while checking Lake availability: 'lake' command was not found.",
                 )
 
-            case 'CommandError':
+            case 'Error':
                 return this.n.displaySetupErrorWithOutput(
-                    `Error while checking Lake version: ${lakeVersionResult.message}`,
+                    `Error while checking Lake availability: ${lakeAvailabilityResult.message}`,
                 )
 
             case 'Cancelled':
-                return this.n.displaySetupErrorWithOutput('Error while checking Lake version: Operation cancelled.')
-
-            case 'InvalidVersion':
                 return this.n.displaySetupErrorWithOutput(
-                    `Error while checking Lake version: Invalid Lake version format: '${lakeVersionResult.versionResult}'`,
+                    'Error while checking Lake availability: Operation cancelled.',
                 )
 
-            case 'Success':
+            case 'Available':
                 return 'Fulfilled'
         }
     }
