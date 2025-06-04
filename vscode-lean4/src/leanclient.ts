@@ -18,11 +18,11 @@ import {
     DidChangeTextDocumentParams,
     DidCloseTextDocumentParams,
     DocumentFilter,
+    Executable,
     InitializeResult,
     LanguageClient,
     LanguageClientOptions,
     RevealOutputChannelOn,
-    ServerOptions,
     State,
     StaticFeature,
 } from 'vscode-languageclient/node'
@@ -44,6 +44,7 @@ import {
 import { logger } from './utils/logger'
 // @ts-ignore
 import { SemVer } from 'semver'
+import { formatCommandExecutionOutput } from './utils/batch'
 import {
     c2pConverter,
     LeanPublishDiagnosticsParams,
@@ -214,7 +215,7 @@ export class LeanClient implements Disposable {
 
             const progressOptions: ProgressOptions = {
                 location: ProgressLocation.Notification,
-                title: '[Server Startup] Starting Lean language client',
+                title: '[Server Startup] Starting Lean language server and cloning missing packages [(Click for details)](command:lean4.troubleshooting.showOutput)',
                 cancellable: false,
             }
             await window.withProgress(
@@ -542,7 +543,7 @@ export class LeanClient implements Disposable {
         return this.running ? this.client?.initializeResult : undefined
     }
 
-    private async determineServerOptions(toolchainOverride: string | undefined): Promise<ServerOptions> {
+    private async determineServerOptions(toolchainOverride: string | undefined): Promise<Executable> {
         const env = Object.assign({}, process.env)
         if (serverLoggingEnabled()) {
             env.LEAN_SERVER_LOG_DIR = serverLoggingPath()
@@ -711,9 +712,12 @@ export class LeanClient implements Disposable {
     }
 
     private async setupClient(toolchainOverride: string | undefined): Promise<LanguageClient> {
-        const serverOptions: ServerOptions = await this.determineServerOptions(toolchainOverride)
+        const serverOptions: Executable = await this.determineServerOptions(toolchainOverride)
         const clientOptions: LanguageClientOptions = this.obtainClientOptions()
 
+        this.outputChannel.appendLine(
+            formatCommandExecutionOutput(serverOptions.options?.cwd, serverOptions.command, serverOptions.args ?? []),
+        )
         const client = new LanguageClient('lean4', 'Lean 4', serverOptions, clientOptions)
         const leanCapabilityFeature: StaticFeature = {
             initialize(_1, _2) {},

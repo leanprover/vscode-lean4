@@ -32,6 +32,16 @@ function createCannotLaunchExecutionResult(message: string): ExecutionResult {
     }
 }
 
+export function formatCommandExecutionOutput(
+    workingDirectory: string | undefined,
+    executablePath: string,
+    args: string[],
+) {
+    const formattedCwd = workingDirectory ? `${workingDirectory}` : ''
+    const formattedArgs = args.map(arg => (arg.includes(' ') ? `"${arg}"` : arg)).join(' ')
+    return `${formattedCwd}> ${executablePath} ${formattedArgs}`
+}
+
 export function batchExecuteWithProc(
     executablePath: string,
     args: string[],
@@ -54,9 +64,7 @@ export function batchExecuteWithProc(
         options = { ...options, env }
     }
     if (channel?.combined) {
-        const formattedCwd = workingDirectory ? `${workingDirectory}` : ''
-        const formattedArgs = args.map(arg => (arg.includes(' ') ? `"${arg}"` : arg)).join(' ')
-        channel.combined.appendLine(`${formattedCwd}> ${executablePath} ${formattedArgs}`)
+        channel.combined.appendLine(formatCommandExecutionOutput(workingDirectory, executablePath, args))
     }
 
     let proc: ChildProcessWithoutNullStreams
