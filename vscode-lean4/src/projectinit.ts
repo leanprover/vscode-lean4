@@ -10,7 +10,7 @@ import {
 } from './utils/batch'
 import { elanStableChannel } from './utils/elan'
 import { ExtUri, extUriToCwdUri, FileUri } from './utils/exturi'
-import { lake } from './utils/lake'
+import { FetchMathlibCacheResult, lake } from './utils/lake'
 import { LeanInstaller } from './utils/leanInstaller'
 import { displayNotification, displayNotificationWithInput } from './utils/notifs'
 import { checkParentFoldersForLeanProject, isValidLeanProject } from './utils/projectInfo'
@@ -127,18 +127,25 @@ export class ProjectInitializationProvider implements Disposable {
             return
         }
 
-        const cacheGetResult: ExecutionResult = await lake({
+        const cacheGetResult: FetchMathlibCacheResult = await lake({
             channel: this.channel,
             cwdUri: projectFolder,
             context: createMathlibProjectContext,
             toolchain: mathlibToolchain,
             toolchainUpdateMode: 'UpdateAutomatically',
         }).fetchMathlibCache()
-        if (cacheGetResult.exitCode === ExecutionExitCode.Cancelled) {
+        if (cacheGetResult.kind === 'Cancelled') {
             return
         }
-        if (cacheGetResult.exitCode !== ExecutionExitCode.Success) {
-            displayResultError(cacheGetResult, 'Cannot fetch Mathlib build artifact cache.')
+        if (cacheGetResult.kind === 'CacheUnavailable') {
+            displayNotification(
+                'Error',
+                'Cannot fetch Mathlib build artifact cache: `lake exe cache` is not available.',
+            )
+            return
+        }
+        if (cacheGetResult.result.exitCode !== ExecutionExitCode.Success) {
+            displayResultError(cacheGetResult.result, 'Cannot fetch Mathlib build artifact cache.')
             return
         }
 
@@ -395,14 +402,13 @@ Open this project instead?`
                 return
             }
 
-            // Try it. If this is not a mathlib project, it will fail silently. Otherwise, it will grab the cache.
-            const fetchResult: ExecutionResult = await lake({
+            const fetchResult: 'Success' | 'Failure' = await lake({
                 channel: this.channel,
                 cwdUri: projectFolder,
                 context: downloadProjectContext,
                 toolchainUpdateMode: 'UpdateAutomatically',
-            }).fetchMathlibCache(true)
-            if (fetchResult.exitCode === ExecutionExitCode.Cancelled) {
+            }).tryFetchMathlibCacheWithError()
+            if (fetchResult !== 'Success') {
                 return
             }
 

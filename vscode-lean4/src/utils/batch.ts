@@ -273,13 +273,17 @@ export function displayResultError(result: ExecutionResult, message: string) {
     if (result.exitCode === ExecutionExitCode.Success) {
         throw Error()
     }
-    const errorMessage: string = formatErrorMessage(result, message)
+    displayOutputError(result.combined, message)
+}
+
+export function displayOutputError(output: string, message: string) {
+    const errorMessage: string = formatErrorMessage(output, message)
     displayNotificationWithOutput('Error', errorMessage)
 }
 
-function formatErrorMessage(error: ExecutionResult, message: string): string {
-    if (error.combined === '') {
+function formatErrorMessage(output: string, message: string): string {
+    if (output === '') {
         return `${message}`
     }
-    return `${message} Command output: ${error.combined}`
+    return `${message} Command output: ${output}`
 }

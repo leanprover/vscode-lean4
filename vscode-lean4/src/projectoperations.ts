@@ -4,7 +4,7 @@ import { commands, Disposable, OutputChannel, QuickPickItem, window } from 'vsco
 import { LeanClient } from './leanclient'
 import { batchExecute, displayResultError, ExecutionExitCode, ExecutionResult } from './utils/batch'
 import { LeanClientProvider } from './utils/clientProvider'
-import { cacheNotFoundError, lake, LakeRunner } from './utils/lake'
+import { FetchMathlibCacheResult, lake, LakeRunner } from './utils/lake'
 import { lean } from './utils/leanEditorProvider'
 import { DirectGitDependency, Manifest, ManifestReadError, parseManifestInFolder } from './utils/manifest'
 import { displayNotification, displayNotificationWithInput, displayNotificationWithOptionalInput } from './utils/notifs'
@@ -33,8 +33,8 @@ export class ProjectOperationProvider implements Disposable {
 
     private async buildProject() {
         await this.runOperation('Build Project', async lakeRunner => {
-            const fetchResult: 'Success' | 'CacheNotAvailable' | 'Cancelled' = await this.tryFetchingCache(lakeRunner)
-            if (fetchResult === 'Cancelled') {
+            const fetchResult: 'Success' | 'Failure' = await lakeRunner.tryFetchMathlibCacheWithError()
+            if (fetchResult !== 'Success') {
                 return
             }
 
@@ -73,11 +73,11 @@ export class ProjectOperationProvider implements Disposable {
                 return
             }
 
-            const checkResult: 'Yes' | 'No' | 'Cancelled' = await lakeRunner.isMathlibCacheGetAvailable()
+            const checkResult: 'Available' | 'Unavailable' | 'Cancelled' = await lakeRunner.isMathlibCacheGetAvailable()
             if (checkResult === 'Cancelled') {
                 return
             }
-            if (checkResult === 'No') {
+            if (checkResult === 'Unavailable') {
                 displayNotification('Information', 'Project cleaned successfully.')
                 return
             }
@@ -94,12 +94,8 @@ export class ProjectOperationProvider implements Disposable {
                 return
             }
 
-            const fetchResult: ExecutionResult = await lakeRunner.fetchMathlibCache()
-            if (fetchResult.exitCode === ExecutionExitCode.Cancelled) {
-                return
-            }
-            if (fetchResult.exitCode !== ExecutionExitCode.Success) {
-                void displayResultError(fetchResult, 'Cannot fetch Mathlib build artifact cache.')
+            const fetchResult: 'Success' | 'Failure' = await lakeRunner.tryFetchMathlibCacheWithError()
+            if (fetchResult !== 'Success') {
                 return
             }
             displayNotification('Information', 'Mathlib build artifact cache fetched successfully.')
@@ -108,16 +104,19 @@ export class ProjectOperationProvider implements Disposable {
 
     private async fetchMathlibCache() {
         await this.runOperation('Fetch Mathlib Build Cache', async lakeRunner => {
-            const result: ExecutionResult = await lakeRunner.fetchMathlibCache()
-            if (result.exitCode === ExecutionExitCode.Cancelled) {
+            const fetchResult: FetchMathlibCacheResult = await lakeRunner.fetchMathlibCache()
+            if (fetchResult.kind === 'Cancelled') {
                 return
             }
-            if (result.exitCode !== ExecutionExitCode.Success) {
-                if (result.stderr.includes(cacheNotFoundError)) {
-                    displayNotification('Error', 'This command cannot be used in non-Mathlib projects.')
-                    return
-                }
-                displayResultError(result, 'Cannot fetch Mathlib build artifact cache.')
+            if (fetchResult.kind === 'CacheUnavailable') {
+                displayNotification('Error', 'This command cannot be used in non-Mathlib projects.')
+                return
+            }
+            if (fetchResult.result.exitCode === ExecutionExitCode.Cancelled) {
+                return
+            }
+            if (fetchResult.result.exitCode !== ExecutionExitCode.Success) {
+                displayResultError(fetchResult.result, 'Cannot fetch Mathlib build artifact cache.')
                 return
             }
 
@@ -175,12 +174,22 @@ export class ProjectOperationProvider implements Disposable {
                 return
             }
 
-            const result: ExecutionResult = await lakeRunner.fetchMathlibCacheForFile(relativeDocUri)
-            if (result.exitCode === ExecutionExitCode.Cancelled) {
+            const fetchResult: FetchMathlibCacheResult = await lakeRunner.fetchMathlibCacheForFile(relativeDocUri)
+            if (fetchResult.kind === 'Cancelled') {
                 return
             }
-            if (result.exitCode !== ExecutionExitCode.Success) {
-                displayResultError(result, `Cannot fetch Mathlib build artifact cache for '${relativeDocUri.fsPath}'.`)
+            if (fetchResult.kind === 'CacheUnavailable') {
+                displayNotification('Error', 'This command cannot be used in non-Mathlib projects.')
+                return
+            }
+            if (fetchResult.result.exitCode === ExecutionExitCode.Cancelled) {
+                return
+            }
+            if (fetchResult.result.exitCode !== ExecutionExitCode.Success) {
+                displayResultError(
+                    fetchResult.result,
+                    `Cannot fetch Mathlib build artifact cache for '${relativeDocUri.fsPath}'.`,
+                )
                 return
             }
 
@@ -260,7 +269,10 @@ export class ProjectOperationProvider implements Disposable {
                 return
             }
 
-            await this.tryFetchingCache(lakeRunner)
+            const fetchResult: 'Success' | 'Failure' = await lakeRunner.tryFetchMathlibCacheWithError()
+            if (fetchResult !== 'Success') {
+                return
+            }
 
             const localToolchainPath: string = join(activeFolderUri.fsPath, 'lean-toolchain')
             const dependencyToolchainPath: string = join(
@@ -376,18 +388,6 @@ export class ProjectOperationProvider implements Disposable {
         }
 
         return [localToolchain, dependencyToolchain]
-    }
-
-    private async tryFetchingCache(lakeRunner: LakeRunner): Promise<'Success' | 'CacheNotAvailable' | 'Cancelled'> {
-        const fetchResult: ExecutionResult = await lakeRunner.fetchMathlibCache(true)
-        switch (fetchResult.exitCode) {
-            case ExecutionExitCode.Success:
-                return 'Success'
-            case ExecutionExitCode.Cancelled:
-                return 'Cancelled'
-            default:
-                return 'CacheNotAvailable'
-        }
     }
 
     private async runOperation(context: string, command: (lakeRunner: LakeRunner) => Promise<void>) {
