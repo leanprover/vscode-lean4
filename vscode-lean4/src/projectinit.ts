@@ -10,7 +10,7 @@ import {
 } from './utils/batch'
 import { elanStableChannel } from './utils/elan'
 import { ExtUri, extUriToCwdUri, FileUri } from './utils/exturi'
-import { FetchMathlibCacheResult, lake } from './utils/lake'
+import { displayLakeRunnerError, FetchMathlibCacheResult, lake, LakeRunnerResult } from './utils/lake'
 import { LeanInstaller } from './utils/leanInstaller'
 import { displayNotification, displayNotificationWithInput } from './utils/notifs'
 import { checkParentFoldersForLeanProject, isValidLeanProject } from './utils/projectInfo'
@@ -91,18 +91,18 @@ export class ProjectInitializationProvider implements Disposable {
             return
         }
 
-        const buildResult: ExecutionResult = await lake({
+        const buildResult: LakeRunnerResult = await lake({
             channel: this.channel,
             cwdUri: projectFolder,
             context: createStandaloneProjectContext,
             toolchain,
             toolchainUpdateMode: 'UpdateAutomatically',
         }).build()
-        if (buildResult.exitCode === ExecutionExitCode.Cancelled) {
+        if (buildResult.kind === 'Cancelled') {
             return
         }
-        if (buildResult.exitCode !== ExecutionExitCode.Success) {
-            displayResultError(buildResult, 'Cannot build Lean project.')
+        if (buildResult.kind !== 'Success') {
+            displayLakeRunnerError(buildResult, 'Cannot build Lean project.')
             return
         }
 
@@ -144,23 +144,23 @@ export class ProjectInitializationProvider implements Disposable {
             )
             return
         }
-        if (cacheGetResult.result.exitCode !== ExecutionExitCode.Success) {
-            displayResultError(cacheGetResult.result, 'Cannot fetch Mathlib build artifact cache.')
+        if (cacheGetResult.kind !== 'Success') {
+            displayLakeRunnerError(cacheGetResult, 'Cannot fetch Mathlib build artifact cache.')
             return
         }
 
-        const buildResult: ExecutionResult = await lake({
+        const buildResult: LakeRunnerResult = await lake({
             channel: this.channel,
             cwdUri: projectFolder,
             context: createMathlibProjectContext,
             toolchain: mathlibToolchain,
             toolchainUpdateMode: 'UpdateAutomatically',
         }).build()
-        if (buildResult.exitCode === ExecutionExitCode.Cancelled) {
+        if (buildResult.kind === 'Cancelled') {
             return
         }
-        if (buildResult.exitCode !== ExecutionExitCode.Success) {
-            displayResultError(buildResult, 'Cannot build Lean project.')
+        if (buildResult.kind !== 'Success') {
+            displayLakeRunnerError(buildResult, 'Cannot build Lean project.')
             return
         }
 
@@ -199,30 +199,33 @@ export class ProjectInitializationProvider implements Disposable {
         }
 
         const projectName: string = projectFolder.baseName()
-        const result: ExecutionResult = await lake({
+        const result: LakeRunnerResult = await lake({
             channel: this.channel,
             cwdUri: projectFolder,
             context,
             toolchain,
             toolchainUpdateMode: 'UpdateAutomatically',
         }).initProject(projectName, kind)
-        if (result.exitCode !== ExecutionExitCode.Success) {
-            displayResultError(result, 'Cannot initialize project.')
+        if (result.kind === 'Cancelled') {
+            return 'DidNotComplete'
+        }
+        if (result.kind !== 'Success') {
+            displayLakeRunnerError(result, 'Cannot initialize project.')
             return 'DidNotComplete'
         }
 
-        const updateResult: ExecutionResult = await lake({
+        const updateResult: LakeRunnerResult = await lake({
             channel: this.channel,
             cwdUri: projectFolder,
             context,
             toolchain,
             toolchainUpdateMode: 'UpdateAutomatically',
         }).updateDependencies()
-        if (updateResult.exitCode === ExecutionExitCode.Cancelled) {
+        if (updateResult.kind === 'Cancelled') {
             return 'DidNotComplete'
         }
-        if (updateResult.exitCode !== ExecutionExitCode.Success) {
-            displayResultError(updateResult, 'Cannot update dependencies.')
+        if (updateResult.kind !== 'Success') {
+            displayLakeRunnerError(updateResult, 'Cannot update dependencies.')
             return 'DidNotComplete'
         }
 

@@ -1,5 +1,6 @@
+import * as os from 'os'
 import { OutputChannel } from 'vscode'
-import { displayOutputError, ExecutionExitCode, ExecutionResult } from './batch'
+import { displayOutputError, ExecutionExitCode } from './batch'
 import { FileUri } from './exturi'
 import { leanRunner, ToolchainUpdateMode } from './leanCmdRunner'
 
@@ -11,74 +12,77 @@ export type LakeRunnerOptions = {
     toolchainUpdateMode: ToolchainUpdateMode
 }
 
-export type TryFetchMathlibCacheResult = { kind: 'Success' } | { kind: 'Error'; output: string } | { kind: 'Cancelled' }
+export type LakeRunnerErrorDiagnosis =
+    | { kind: 'WindowsFetchError'; details: string }
+    | { kind: 'CommandNotFound'; details: string }
+export type LakeRunnerError = { kind: 'Error'; diagnosis: LakeRunnerErrorDiagnosis | undefined; output: string }
+export type LakeRunnerResult = { kind: 'Success' } | { kind: 'Cancelled' } | LakeRunnerError
+
+export function displayLakeRunnerError(error: LakeRunnerError, message: string) {
+    if (error.diagnosis === undefined) {
+        displayOutputError(error.output, message)
+        return
+    }
+    displayOutputError(error.output, `${message} ${error.diagnosis.details}`)
+}
 
 export type FetchMathlibCacheResult =
-    // Invariant: `result.exitCode !== ExecutionExitCode.Cancelled`
-    // since this exit code always gets mapped to `{ kind: 'Cancelled' }`.
-    { kind: 'CacheAvailable'; result: ExecutionResult } | { kind: 'CacheUnavailable' } | { kind: 'Cancelled' }
+    | { kind: 'Success' }
+    | { kind: 'CacheUnavailable' }
+    | { kind: 'Cancelled' }
+    | LakeRunnerError
+
+export type CacheGetAvailabilityResult =
+    | { kind: 'CacheAvailable' }
+    | { kind: 'CacheUnavailable' }
+    | { kind: 'Cancelled' }
+    | LakeRunnerError
 
 export class LakeRunner {
     constructor(readonly options: LakeRunnerOptions) {}
 
-    async initProject(name: string, kind?: string | undefined): Promise<ExecutionResult> {
+    async initProject(name: string, kind?: string | undefined): Promise<LakeRunnerResult> {
         const args = kind ? [name, kind] : [name]
         return this.runLakeCommandWithProgress('init', args, 'Initializing project')
     }
 
-    async updateDependencies(): Promise<ExecutionResult> {
+    async updateDependencies(): Promise<LakeRunnerResult> {
         return this.runLakeCommandWithProgress('update', [], 'Updating dependencies')
     }
 
-    async updateDependency(dependencyName: string): Promise<ExecutionResult> {
+    async updateDependency(dependencyName: string): Promise<LakeRunnerResult> {
         return this.runLakeCommandWithProgress('update', [dependencyName], `Updating '${dependencyName}' dependency`)
     }
 
-    async build(): Promise<ExecutionResult> {
+    async build(): Promise<LakeRunnerResult> {
         return this.runLakeCommandWithProgress('build', [], 'Building Lean project')
     }
 
-    async clean(): Promise<ExecutionResult> {
+    async clean(): Promise<LakeRunnerResult> {
         return this.runLakeCommandWithProgress('clean', [], 'Cleaning Lean project')
     }
 
     private async runFetchMathlibCacheCommand(args: string[], prompt: string): Promise<FetchMathlibCacheResult> {
-        const availability = await this.isMathlibCacheGetAvailable()
-        if (availability === 'Cancelled') {
-            return { kind: 'Cancelled' }
+        const availabilityResult = await this.isMathlibCacheGetAvailable()
+        if (availabilityResult.kind !== 'CacheAvailable') {
+            return availabilityResult
         }
-        if (availability === 'Unavailable') {
-            return { kind: 'CacheUnavailable' }
-        }
-        const result = await this.runLakeCommandWithProgress('exe', ['cache', 'get'].concat(args), prompt)
-        if (result.exitCode === ExecutionExitCode.Cancelled) {
-            return { kind: 'Cancelled' }
-        }
-        return { kind: 'CacheAvailable', result }
+        return await this.runLakeCommandWithProgress('exe', ['cache', 'get'].concat(args), prompt)
     }
 
-    private async tryRunFetchMathlibCacheCommand(args: string[], prompt: string): Promise<TryFetchMathlibCacheResult> {
+    private async tryRunFetchMathlibCacheCommand(args: string[], prompt: string): Promise<LakeRunnerResult> {
         const fetchResult = await this.runFetchMathlibCacheCommand(args, prompt)
-        if (fetchResult.kind === 'Cancelled') {
-            return { kind: 'Cancelled' }
-        }
         if (fetchResult.kind === 'CacheUnavailable') {
             return { kind: 'Success' }
         }
-        if (fetchResult.result.exitCode === ExecutionExitCode.Cancelled) {
-            return { kind: 'Cancelled' }
-        }
-        if (fetchResult.result.exitCode !== ExecutionExitCode.Success) {
-            return { kind: 'Error', output: fetchResult.result.combined }
-        }
-        return { kind: 'Success' }
+        return fetchResult
     }
 
     async fetchMathlibCache(): Promise<FetchMathlibCacheResult> {
         return this.runFetchMathlibCacheCommand([], 'Fetching Mathlib build artifact cache')
     }
 
-    async tryFetchMathlibCache(): Promise<TryFetchMathlibCacheResult> {
+    async tryFetchMathlibCache(): Promise<LakeRunnerResult> {
         return this.tryRunFetchMathlibCacheCommand([], 'Fetching Mathlib build artifact cache')
     }
 
@@ -88,7 +92,7 @@ export class LakeRunner {
             return 'Failure'
         }
         if (fetchResult.kind !== 'Success') {
-            displayOutputError(fetchResult.output, 'Cannot fetch Mathlib build artifact cache.')
+            displayLakeRunnerError(fetchResult, 'Cannot fetch Mathlib build artifact cache.')
             return 'Failure'
         }
         return 'Success'
@@ -101,21 +105,25 @@ export class LakeRunner {
         )
     }
 
-    async isMathlibCacheGetAvailable(): Promise<'Available' | 'Unavailable' | 'Cancelled'> {
-        const result: ExecutionResult = await this.runLakeCommandWithProgress(
+    async isMathlibCacheGetAvailable(): Promise<CacheGetAvailabilityResult> {
+        const result: LakeRunnerResult = await this.runLakeCommandWithProgress(
             'exe',
             ['cache'],
             'Checking whether this is a Mathlib project',
             // Filter the `lake exe cache` help string.
             _line => undefined,
         )
-        if (result.exitCode === ExecutionExitCode.Cancelled) {
-            return 'Cancelled'
+        switch (result.kind) {
+            case 'Success':
+                return { kind: 'CacheAvailable' }
+            case 'Cancelled':
+                return { kind: 'Cancelled' }
+            case 'Error':
+                if (result.diagnosis !== undefined) {
+                    return result
+                }
+                return { kind: 'CacheUnavailable' }
         }
-        if (result.exitCode === ExecutionExitCode.Success) {
-            return 'Available'
-        }
-        return 'Unavailable'
     }
 
     private async runLakeCommandWithProgress(
@@ -123,8 +131,8 @@ export class LakeRunner {
         args: string[],
         waitingPrompt: string,
         translator?: ((line: string) => string | undefined) | undefined,
-    ): Promise<ExecutionResult> {
-        return await leanRunner.runLeanCommand('lake', [subCommand, ...args], {
+    ): Promise<LakeRunnerResult> {
+        const r = await leanRunner.runLeanCommand('lake', [subCommand, ...args], {
             channel: this.options.channel,
             context: this.options.context,
             cwdUri: this.options.cwdUri,
@@ -133,6 +141,38 @@ export class LakeRunner {
             toolchainUpdateMode: this.options.toolchainUpdateMode,
             translator,
         })
+        switch (r.exitCode) {
+            case ExecutionExitCode.Success:
+                return { kind: 'Success' }
+            case ExecutionExitCode.CannotLaunch:
+                return {
+                    kind: 'Error',
+                    diagnosis: { kind: 'CommandNotFound', details: "'lake' command was not found." },
+                    output: r.combined,
+                }
+            case ExecutionExitCode.ExecutionError:
+                let diagnosis: LakeRunnerErrorDiagnosis | undefined
+                if (
+                    os.platform() === 'win32' &&
+                    (r.combined.includes('failed to fetch GitHub release') ||
+                        r.combined.includes('failed to fetch Reservoir build'))
+                ) {
+                    diagnosis = {
+                        kind: 'WindowsFetchError',
+                        details:
+                            'Lake could not fetch a build cache artifact. On Windows, this can sometimes occur when third-party antiviruses interfere with the secure connection through which Lake downloads build artifacts. Click [here](command:lean4.troubleshooting.showTroubleshootingGuide) for more details.',
+                    }
+                }
+                return {
+                    kind: 'Error',
+                    diagnosis,
+                    output: r.combined,
+                }
+            case ExecutionExitCode.Cancelled:
+                return {
+                    kind: 'Cancelled',
+                }
+        }
     }
 }
 

@@ -84,6 +84,13 @@ function activateAlwaysEnabledFeatures(context: ExtensionContext): AlwaysEnabled
         commands.registerCommand('lean4.docs.showSetupGuide', () =>
             commands.executeCommand('workbench.action.openWalkthrough', 'leanprover.lean4#lean4.welcome', false),
         ),
+        commands.registerCommand('lean4.troubleshooting.showTroubleshootingGuide', () =>
+            commands.executeCommand(
+                'workbench.action.openWalkthrough',
+                { category: 'leanprover.lean4#lean4.welcome', step: 'lean4.welcome.help' },
+                false,
+            ),
+        ),
         commands.registerCommand('lean4.docs.showDocResources', () =>
             commands.executeCommand('simpleBrowser.show', 'https://lean-lang.org/documentation/'),
         ),
