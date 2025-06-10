@@ -667,6 +667,10 @@
                 ]
             },
             {
+                "id": "lean",
+                "configuration": "./language-configuration.json"
+            },
+            {
                 "id": "lean4markdown",
                 "aliases": [],
                 "extensions": [
@@ -695,6 +699,11 @@
                 "embeddedLanguages": {
                     "meta.embedded.block.lean4": "lean4"
                 }
+            },
+            {
+                "language": "lean",
+                "scopeName": "source.lean4",
+                "path": "./syntaxes/lean4.json"
             }
         ],
         "keybindings": [
