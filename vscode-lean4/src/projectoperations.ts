@@ -2,9 +2,16 @@ import * as fs from 'fs'
 import { join } from 'path'
 import { commands, Disposable, OutputChannel, QuickPickItem, window } from 'vscode'
 import { LeanClient } from './leanclient'
-import { batchExecute, displayResultError, ExecutionExitCode, ExecutionResult } from './utils/batch'
+import { batchExecute, ExecutionExitCode, ExecutionResult } from './utils/batch'
 import { LeanClientProvider } from './utils/clientProvider'
-import { FetchMathlibCacheResult, lake, LakeRunner } from './utils/lake'
+import {
+    CacheGetAvailabilityResult,
+    displayLakeRunnerError,
+    FetchMathlibCacheResult,
+    lake,
+    LakeRunner,
+    LakeRunnerResult,
+} from './utils/lake'
 import { lean } from './utils/leanEditorProvider'
 import { DirectGitDependency, Manifest, ManifestReadError, parseManifestInFolder } from './utils/manifest'
 import { displayNotification, displayNotificationWithInput, displayNotificationWithOptionalInput } from './utils/notifs'
@@ -38,12 +45,12 @@ export class ProjectOperationProvider implements Disposable {
                 return
             }
 
-            const result: ExecutionResult = await lakeRunner.build()
-            if (result.exitCode === ExecutionExitCode.Cancelled) {
+            const result: LakeRunnerResult = await lakeRunner.build()
+            if (result.kind === 'Cancelled') {
                 return
             }
-            if (result.exitCode !== ExecutionExitCode.Success) {
-                displayResultError(result, 'Cannot build project.')
+            if (result.kind !== 'Success') {
+                displayLakeRunnerError(result, 'Cannot build project.')
                 return
             }
 
@@ -64,21 +71,25 @@ export class ProjectOperationProvider implements Disposable {
         }
 
         await this.runOperation('Clean Project', async lakeRunner => {
-            const cleanResult: ExecutionResult = await lakeRunner.clean()
-            if (cleanResult.exitCode === ExecutionExitCode.Cancelled) {
+            const cleanResult: LakeRunnerResult = await lakeRunner.clean()
+            if (cleanResult.kind === 'Cancelled') {
                 return
             }
-            if (cleanResult.exitCode !== ExecutionExitCode.Success) {
-                displayResultError(cleanResult, 'Cannot delete build artifacts.')
+            if (cleanResult.kind !== 'Success') {
+                displayLakeRunnerError(cleanResult, 'Cannot delete build artifacts.')
                 return
             }
 
-            const checkResult: 'Available' | 'Unavailable' | 'Cancelled' = await lakeRunner.isMathlibCacheGetAvailable()
-            if (checkResult === 'Cancelled') {
+            const checkResult: CacheGetAvailabilityResult = await lakeRunner.isMathlibCacheGetAvailable()
+            if (checkResult.kind === 'Cancelled') {
                 return
             }
-            if (checkResult === 'Unavailable') {
+            if (checkResult.kind === 'CacheUnavailable') {
                 displayNotification('Information', 'Project cleaned successfully.')
+                return
+            }
+            if (checkResult.kind !== 'CacheAvailable') {
+                displayLakeRunnerError(checkResult, 'Cannot check availability of Mathlib cache.')
                 return
             }
 
@@ -112,11 +123,8 @@ export class ProjectOperationProvider implements Disposable {
                 displayNotification('Error', 'This command cannot be used in non-Mathlib projects.')
                 return
             }
-            if (fetchResult.result.exitCode === ExecutionExitCode.Cancelled) {
-                return
-            }
-            if (fetchResult.result.exitCode !== ExecutionExitCode.Success) {
-                displayResultError(fetchResult.result, 'Cannot fetch Mathlib build artifact cache.')
+            if (fetchResult.kind !== 'Success') {
+                displayLakeRunnerError(fetchResult, 'Cannot fetch Mathlib build artifact cache.')
                 return
             }
 
@@ -182,12 +190,9 @@ export class ProjectOperationProvider implements Disposable {
                 displayNotification('Error', 'This command cannot be used in non-Mathlib projects.')
                 return
             }
-            if (fetchResult.result.exitCode === ExecutionExitCode.Cancelled) {
-                return
-            }
-            if (fetchResult.result.exitCode !== ExecutionExitCode.Success) {
-                displayResultError(
-                    fetchResult.result,
+            if (fetchResult.kind !== 'Success') {
+                displayLakeRunnerError(
+                    fetchResult,
                     `Cannot fetch Mathlib build artifact cache for '${relativeDocUri.fsPath}'.`,
                 )
                 return
@@ -260,12 +265,12 @@ export class ProjectOperationProvider implements Disposable {
         }
 
         await this.runOperation('Update Dependency', async lakeRunner => {
-            const result: ExecutionResult = await lakeRunner.updateDependency(dependencyChoice.name)
-            if (result.exitCode === ExecutionExitCode.Cancelled) {
+            const result: LakeRunnerResult = await lakeRunner.updateDependency(dependencyChoice.name)
+            if (result.kind === 'Cancelled') {
                 return
             }
-            if (result.exitCode !== ExecutionExitCode.Success) {
-                void displayResultError(result, 'Cannot update dependency.')
+            if (result.kind !== 'Success') {
+                displayLakeRunnerError(result, 'Cannot update dependency.')
                 return
             }
 

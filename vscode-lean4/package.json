@@ -526,6 +526,12 @@
                 "description": "Show MoogleView"
             },
             {
+                "command": "lean4.troubleshooting.showTroubleshootingGuide",
+                "category": "Lean 4: Troubleshooting",
+                "title": "Show Troubleshooting Guide",
+                "description": "Show 'Troubleshooting' page in setup guide"
+            },
+            {
                 "command": "lean4.troubleshooting.showOutput",
                 "category": "Lean 4",
                 "title": "Troubleshooting: Show Output",
@@ -963,6 +969,9 @@
                     "command": "lean4.moogle.search"
                 },
                 {
+                    "command": "lean4.troubleshooting.showTroubleshootingGuide"
+                },
+                {
                     "command": "lean4.troubleshooting.showOutput"
                 },
                 {
@@ -1079,14 +1088,19 @@
                     "group": "4_search@2"
                 },
                 {
-                    "command": "lean4.troubleshooting.showOutput",
+                    "command": "lean4.troubleshooting.showTroubleshootingGuide",
                     "when": "config.lean4.alwaysShowTitleBarMenu || lean4.isLeanFeatureSetActive",
                     "group": "5_troubleshooting@1"
                 },
                 {
-                    "command": "lean4.troubleshooting.showSetupInformation",
+                    "command": "lean4.troubleshooting.showOutput",
                     "when": "config.lean4.alwaysShowTitleBarMenu || lean4.isLeanFeatureSetActive",
                     "group": "5_troubleshooting@2"
+                },
+                {
+                    "command": "lean4.troubleshooting.showSetupInformation",
+                    "when": "config.lean4.alwaysShowTitleBarMenu || lean4.isLeanFeatureSetActive",
+                    "group": "5_troubleshooting@3"
                 },
                 {
                     "submenu": "lean4.titlebar.versions",
@@ -1533,7 +1547,6 @@
         "workspace"
     ],
     "activationEvents": [
-        "onLanguage:lean",
         "onLanguage:markdown",
         "onStartupFinished"
     ],
