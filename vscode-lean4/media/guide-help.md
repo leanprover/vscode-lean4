@@ -7,7 +7,7 @@ If you encounter this issue, you can try disabling your antivirus, re-run the co
 
 ## Collecting VS Code Output
 If you are encountering an issue with Lean or this VS Code extension, copying the output from the 'Troubleshooting: Show Setup Information' and 'Troubleshooting: Show Output' commands can be helpful for others who are trying to help you. 
-You can run these commands by clicking on the ∀-symbol in the top right and selecting 'Troubleshooting: Show Setup Information' and 'Troubleshooting: Show Output'.
+You can run these commands by clicking on the ∀-symbol in the top right and selecting 'Show Setup Information' and 'Show Output'.
 
   ![Troubleshooting](troubleshooting.png)
 

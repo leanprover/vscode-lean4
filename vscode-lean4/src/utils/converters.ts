@@ -18,6 +18,12 @@ import * as async from 'vscode-languageclient/lib/common/utils/async'
 import * as ls from 'vscode-languageserver-protocol'
 import { automaticallyBuildDependencies } from '../config'
 
+export type ModuleHierarchyOptions = {}
+
+export interface LeanServerCapabilities {
+    moduleHierarchyProvider?: ModuleHierarchyOptions | undefined
+}
+
 export enum LeanTag {
     UnsolvedGoals = 1,
     GoalsAccomplished = 2,
@@ -33,6 +39,37 @@ export interface LeanPublishDiagnosticsParams {
     uri: ls.DocumentUri
     version?: ls.integer
     diagnostics: LeanDiagnostic[]
+}
+
+export interface LeanPrepareModuleHierarchyParams {
+    textDocument: ls.TextDocumentIdentifier
+}
+
+export interface LeanModule {
+    name: string
+    uri: ls.DocumentUri
+    data?: any
+}
+
+export type LeanImportMetaKind = 'nonMeta' | 'meta' | 'full'
+
+export interface LeanImportKind {
+    isPrivate: boolean
+    isAll: boolean
+    metaKind: LeanImportMetaKind
+}
+
+export interface LeanImport {
+    module: LeanModule
+    kind: LeanImportKind
+}
+
+export interface LeanModuleHierarchyImportsParams {
+    module: LeanModule
+}
+
+export interface LeanModuleHierarchyImportedByParams {
+    module: LeanModule
 }
 
 interface SnippetTextEdit extends ls.TextEdit {

@@ -261,26 +261,26 @@
         "commands": [
             {
                 "command": "lean4.restartServer",
-                "category": "Lean 4",
-                "title": "Server: Restart Server",
+                "category": "Lean 4: Server",
+                "title": "Restart Server",
                 "description": "Restarts the Lean server (for all files)."
             },
             {
                 "command": "lean4.stopServer",
-                "category": "Lean 4",
-                "title": "Server: Stop Server",
+                "category": "Lean 4: Server",
+                "title": "Stop Server",
                 "description": "Stops the Lean server (for all files)."
             },
             {
                 "command": "lean4.restartFile",
-                "category": "Lean 4",
-                "title": "Server: Restart File",
+                "category": "Lean 4: Server",
+                "title": "Restart File",
                 "description": "Restarts the Lean server for the file that is currently focused, refreshing the dependencies."
             },
             {
                 "command": "lean4.refreshFileDependencies",
-                "category": "Lean 4",
-                "title": "Server: Refresh File Dependencies",
+                "category": "Lean 4: Server",
+                "title": "Refresh File Dependencies",
                 "description": "Restarts the Lean server for the file that is currently focused to refresh the dependencies."
             },
             {
@@ -291,14 +291,14 @@
             },
             {
                 "command": "lean4.input.convert",
-                "category": "Lean 4",
-                "title": "Input: Convert Current Abbreviation",
+                "category": "Lean 4: Input",
+                "title": "Convert Current Abbreviation",
                 "description": "Converts the current abbreviation (e.g. \\lam)."
             },
             {
                 "command": "lean4.displayGoal",
-                "category": "Lean 4",
-                "title": "Infoview: Display Goal",
+                "category": "Lean 4: InfoView",
+                "title": "Display Goal",
                 "description": "Display the goal and any messages at the current position in the infoview.",
                 "icon": {
                     "dark": "./media/display-goal-dark.svg",
@@ -307,20 +307,20 @@
             },
             {
                 "command": "lean4.toggleInfoview",
-                "category": "Lean 4",
-                "title": "Infoview: Toggle Infoview",
+                "category": "Lean 4: InfoView",
+                "title": "Toggle InfoView",
                 "description": "Toggle whether the infoview is displayed."
             },
             {
                 "command": "lean4.displayList",
-                "category": "Lean 4",
-                "title": "Infoview: Toggle \"All Messages\"",
+                "category": "Lean 4: InfoView",
+                "title": "Toggle \"All Messages\"",
                 "description": "Toggles the \"All Messages\" panel in the infoview."
             },
             {
                 "command": "lean4.infoView.copyToComment",
-                "category": "Lean 4",
-                "title": "Infoview: Copy Contents to Comment",
+                "category": "Lean 4: InfoView",
+                "title": "Copy Contents to Comment",
                 "description": "Copy the contents of the currently active tactic state panel to a new comment on the previous line.",
                 "icon": {
                     "dark": "./media/copy-to-comment-dark.svg",
@@ -329,200 +329,200 @@
             },
             {
                 "command": "lean4.infoView.toggleStickyPosition",
-                "category": "Lean 4",
-                "title": "Infoview: Toggle Pin",
+                "category": "Lean 4: InfoView",
+                "title": "Toggle Pin",
                 "description": "Create or remove a tactic state panel pinned to show the goal at the current position."
             },
             {
                 "command": "lean4.infoView.toggleUpdating",
-                "category": "Lean 4",
-                "title": "Infoview: Toggle Updating",
+                "category": "Lean 4: InfoView",
+                "title": "Toggle Updating",
                 "description": "Pause / Continue live updating of the main tactic state widget."
             },
             {
                 "command": "lean4.infoView.toggleExpectedType",
-                "category": "Lean 4",
-                "title": "Infoview: Toggle Expected Type",
+                "category": "Lean 4: InfoView",
+                "title": "Toggle Expected Type",
                 "description": "Toggle the display of expected type."
             },
             {
                 "command": "lean4.infoview.goToDefinition",
-                "category": "Lean 4",
+                "category": "Lean 4: InfoView",
                 "title": "Go to Definition",
                 "description": "This command is an implementation detail of the 'Go to Definition' context menu option in the infoview."
             },
             {
                 "command": "lean4.infoview.select",
-                "category": "Lean 4",
+                "category": "Lean 4: InfoView",
                 "title": "Select",
                 "description": "This command is an implementation detail of the 'Select' context menu option in the infoview."
             },
             {
                 "command": "lean4.infoview.unselect",
-                "category": "Lean 4",
+                "category": "Lean 4: InfoView",
                 "title": "Unselect",
                 "description": "This command is an implementation detail of the 'Unselect' context menu option in the infoview."
             },
             {
                 "command": "lean4.infoview.unselectAll",
-                "category": "Lean 4",
+                "category": "Lean 4: InfoView",
                 "title": "Unselect All",
                 "description": "This command is an implementation detail of the 'Unselect All' context menu option in the infoview."
             },
             {
                 "command": "lean4.infoview.pause",
-                "category": "Lean 4",
+                "category": "Lean 4: InfoView",
                 "title": "Pause State",
                 "description": "This command is an implementation detail of the 'Pause State' context menu option in the infoview."
             },
             {
                 "command": "lean4.infoview.unpause",
-                "category": "Lean 4",
+                "category": "Lean 4: InfoView",
                 "title": "Unpause State",
                 "description": "This command is an implementation detail of the 'Unpause State' context menu option in the infoview."
             },
             {
                 "command": "lean4.infoview.pin",
-                "category": "Lean 4",
+                "category": "Lean 4: InfoView",
                 "title": "Pin State to Top",
                 "description": "This command is an implementation detail of the 'Pin State to Top' context menu option in the infoview."
             },
             {
                 "command": "lean4.infoview.unpin",
-                "category": "Lean 4",
+                "category": "Lean 4: InfoView",
                 "title": "Unpin State",
                 "description": "This command is an implementation detail of the 'Unpin State' context menu option in the infoview."
             },
             {
                 "command": "lean4.infoview.refresh",
-                "category": "Lean 4",
+                "category": "Lean 4: InfoView",
                 "title": "Refresh Paused State",
                 "description": "This command is an implementation detail of the 'Refresh Paused State' context menu option in the infoview."
             },
             {
                 "command": "lean4.infoview.pauseAllMessages",
-                "category": "Lean 4",
+                "category": "Lean 4: InfoView",
                 "title": "Pause 'All Messages'",
                 "description": "This command is an implementation detail of the 'Pause 'All Messages'' context menu option in the infoview."
             },
             {
                 "command": "lean4.infoview.unpauseAllMessages",
-                "category": "Lean 4",
+                "category": "Lean 4: InfoView",
                 "title": "Unpause 'All Messages'",
                 "description": "This command is an implementation detail of the 'Unpause 'All Messages'' context menu option in the infoview."
             },
             {
                 "command": "lean4.infoview.goToPinnedLocation",
-                "category": "Lean 4",
+                "category": "Lean 4: InfoView",
                 "title": "Go to Pinned Location",
                 "description": "This command is an implementation detail of the 'Go to Pinned Location' context menu option in the infoview."
             },
             {
                 "command": "lean4.infoview.goToMessageLocation",
-                "category": "Lean 4",
+                "category": "Lean 4: InfoView",
                 "title": "Go to Source Location of Message",
                 "description": "This command is an implementation detail of the 'Go to Source Location of Message' context menu option in the infoview."
             },
             {
                 "command": "lean4.infoview.displayTargetBeforeAssumptions",
-                "category": "Lean 4",
+                "category": "Lean 4: InfoView",
                 "title": "Display Target Before Assumptions",
                 "description": "This command is an implementation detail of the 'Display Target Before Assumptions' context menu option in the infoview."
             },
             {
                 "command": "lean4.infoview.displayAssumptionsBeforeTarget",
-                "category": "Lean 4",
+                "category": "Lean 4: InfoView",
                 "title": "Display Assumptions Before Target",
                 "description": "This command is an implementation detail of the 'Display Assumptions Before Target' context menu option in the infoview."
             },
             {
                 "command": "lean4.infoview.hideTypeAssumptions",
-                "category": "Lean 4",
+                "category": "Lean 4: InfoView",
                 "title": "Hide Type Assumptions",
                 "description": "This command is an implementation detail of the 'Hide Type Assumptions' context menu option in the infoview."
             },
             {
                 "command": "lean4.infoview.showTypeAssumptions",
-                "category": "Lean 4",
+                "category": "Lean 4: InfoView",
                 "title": "Show Type Assumptions",
                 "description": "This command is an implementation detail of the 'Show Type Assumptions' context menu option in the infoview."
             },
             {
                 "command": "lean4.infoview.hideInstanceAssumptions",
-                "category": "Lean 4",
+                "category": "Lean 4: InfoView",
                 "title": "Hide Instance Assumptions",
                 "description": "This command is an implementation detail of the 'Hide Instance Assumptions' context menu option in the infoview."
             },
             {
                 "command": "lean4.infoview.showInstanceAssumptions",
-                "category": "Lean 4",
+                "category": "Lean 4: InfoView",
                 "title": "Show Instance Assumptions",
                 "description": "This command is an implementation detail of the 'Show Instance Assumptions' context menu option in the infoview."
             },
             {
                 "command": "lean4.infoview.hideInaccessibleAssumptions",
-                "category": "Lean 4",
+                "category": "Lean 4: InfoView",
                 "title": "Hide Inaccessible Assumptions",
                 "description": "This command is an implementation detail of the 'Hide Inaccessible Assumptions' context menu option in the infoview."
             },
             {
                 "command": "lean4.infoview.showInaccessibleAssumptions",
-                "category": "Lean 4",
+                "category": "Lean 4: InfoView",
                 "title": "Show Inaccessible Assumptions",
                 "description": "This command is an implementation detail of the 'Show Inaccessible Assumptions' context menu option in the infoview."
             },
             {
                 "command": "lean4.infoview.hideLetValues",
-                "category": "Lean 4",
+                "category": "Lean 4: InfoView",
                 "title": "Hide Let-Values",
                 "description": "This command is an implementation detail of the 'Hide Let-Values' context menu option in the infoview."
             },
             {
                 "command": "lean4.infoview.showLetValues",
-                "category": "Lean 4",
+                "category": "Lean 4: InfoView",
                 "title": "Show Let-Values",
                 "description": "This command is an implementation detail of the 'Show Let-Values' context menu option in the infoview."
             },
             {
                 "command": "lean4.infoview.hideGoalNames",
-                "category": "Lean 4",
+                "category": "Lean 4: InfoView",
                 "title": "Hide Goal Names",
                 "description": "This command is an implementation detail of the 'Hide Goal Names' context menu option in the infoview."
             },
             {
                 "command": "lean4.infoview.showGoalNames",
-                "category": "Lean 4",
+                "category": "Lean 4: InfoView",
                 "title": "Show Goal Names",
                 "description": "This command is an implementation detail of the 'Show Goal Names' context menu option in the infoview."
             },
             {
                 "command": "lean4.infoview.emphasizeFirstGoal",
-                "category": "Lean 4",
+                "category": "Lean 4: InfoView",
                 "title": "Emphasize First Goal",
                 "description": "This command is an implementation detail of the 'Emphasize First Goal' context menu option in the infoview."
             },
             {
                 "command": "lean4.infoview.deemphasizeFirstGoal",
-                "category": "Lean 4",
+                "category": "Lean 4: InfoView",
                 "title": "De-Emphasize First Goal",
                 "description": "This command is an implementation detail of the 'De-Emphasize First Goal' context menu option in the infoview."
             },
             {
                 "command": "lean4.infoview.saveSettings",
-                "category": "Lean 4",
+                "category": "Lean 4: InfoView",
                 "title": "Save Current Settings to Default Settings",
                 "description": "This command is an implementation detail of the 'Save Current Settings to Default Settings' context menu option in the infoview."
             },
             {
                 "command": "lean4.loogle.search",
-                "category": "Lean 4",
-                "title": "Loogle: Search",
+                "category": "Lean 4: Loogle",
+                "title": "Search With Loogle…",
                 "description": "Show LoogleView"
             },
             {
                 "command": "lean4.moogle.search",
-                "category": "Lean 4",
-                "title": "Moogle: Search",
+                "category": "Lean 4: Moogle",
+                "title": "Search With Moogle…",
                 "description": "Show MoogleView"
             },
             {
@@ -533,135 +533,168 @@
             },
             {
                 "command": "lean4.troubleshooting.showOutput",
-                "category": "Lean 4",
-                "title": "Troubleshooting: Show Output",
+                "category": "Lean 4: Troubleshooting",
+                "title": "Show Troubleshooting Output",
                 "description": "Show output channel containing all progress updates and errors of commands"
             },
             {
                 "command": "lean4.troubleshooting.showSetupInformation",
-                "category": "Lean 4",
-                "title": "Troubleshooting: Show Setup Information",
+                "category": "Lean 4: Troubleshooting",
+                "title": "Show Setup Information",
                 "description": "Show setup information for the environment that the VS Code extension is running in"
             },
             {
                 "command": "lean4.docs.showSetupGuide",
-                "category": "Lean 4",
-                "title": "Docs: Show Setup Guide",
+                "category": "Lean 4: Docs",
+                "title": "Show Setup Guide",
                 "description": "Show 'Welcome' page containing a checklist of steps to install Lean 4"
             },
             {
                 "command": "lean4.docs.showExtensionManual",
-                "category": "Lean 4",
-                "title": "Docs: Show Manual",
+                "category": "Lean 4: Docs",
+                "title": "Show Manual",
                 "description": "Show manual for the Lean 4 VS Code extension"
             },
             {
                 "command": "lean4.docs.showDocResources",
-                "category": "Lean 4",
-                "title": "Docs: Show Documentation Resources",
+                "category": "Lean 4: Docs",
+                "title": "Show Documentation Resources",
                 "description": "Show available online documentation resources"
             },
             {
                 "command": "lean4.docs.showAbbreviations",
-                "category": "Lean 4",
-                "title": "Docs: Show Unicode Input Abbreviations",
+                "category": "Lean 4: Docs",
+                "title": "Show Unicode Input Abbreviations",
                 "description": "Shows all abbreviations for the unicode input mechanism"
             },
             {
                 "command": "lean4.setup.installElan",
-                "category": "Lean 4",
-                "title": "Setup: Install Elan",
+                "category": "Lean 4: Setup",
+                "title": "Install Elan",
                 "description": "Install Lean's version manager 'Elan'"
             },
             {
                 "command": "lean4.setup.updateElan",
-                "category": "Lean 4",
-                "title": "Setup: Update Elan",
+                "category": "Lean 4: Setup",
+                "title": "Update Elan",
                 "description": "Update Lean's version manager 'Elan' to the most recent version"
             },
             {
                 "command": "lean4.setup.uninstallElan",
-                "category": "Lean 4",
-                "title": "Setup: Uninstall Elan",
+                "category": "Lean 4: Setup",
+                "title": "Uninstall Elan",
                 "description": "Uninstall Lean's version manager 'Elan' and all installed Lean versions"
             },
             {
                 "command": "lean4.setup.selectDefaultToolchain",
-                "category": "Lean 4",
-                "title": "Setup: Select Default Lean Version…",
+                "category": "Lean 4: Setup",
+                "title": "Select Default Lean Version…",
                 "description": "Sets a given Lean version to be the default for non-project files and command-line operations outside of projects"
             },
             {
                 "command": "lean4.setup.updateReleaseChannel",
-                "category": "Lean 4",
-                "title": "Setup: Update Release Channel Lean Version…",
+                "category": "Lean 4: Setup",
+                "title": "Update Release Channel Lean Version…",
                 "description": "Updates the Lean version for a given release channel"
             },
             {
                 "command": "lean4.setup.uninstallToolchains",
-                "category": "Lean 4",
-                "title": "Setup: Uninstall Lean Versions…",
+                "category": "Lean 4: Setup",
+                "title": "Uninstall Lean Versions…",
                 "description": "Uninstalls given Lean versions"
             },
             {
                 "command": "lean4.project.createStandaloneProject",
-                "category": "Lean 4",
-                "title": "Project: Create Standalone Project…",
+                "category": "Lean 4: Project",
+                "title": "Create Standalone Project…",
                 "description": "Create a new Lean project that does not depend on any other projects"
             },
             {
                 "command": "lean4.project.createMathlibProject",
-                "category": "Lean 4",
-                "title": "Project: Create Project Using Mathlib…",
+                "category": "Lean 4: Project",
+                "title": "Create Project Using Mathlib…",
                 "description": "Create a new Lean math formalization project using Mathlib"
             },
             {
                 "command": "lean4.project.open",
-                "category": "Lean 4",
-                "title": "Project: Open Local Project…",
+                "category": "Lean 4: Project",
+                "title": "Open Local Project…",
                 "description": "Opens a local Lean project"
             },
             {
                 "command": "lean4.project.clone",
-                "category": "Lean 4",
-                "title": "Project: Download Project…",
+                "category": "Lean 4: Project",
+                "title": "Download Project…",
                 "description": "Download an existing Lean project using `git clone`"
             },
             {
                 "command": "lean4.project.build",
-                "category": "Lean 4",
-                "title": "Project: Build Project",
+                "category": "Lean 4: Project",
+                "title": "Build Project",
                 "description": "Build the current project"
             },
             {
                 "command": "lean4.project.clean",
-                "category": "Lean 4",
-                "title": "Project: Clean Project",
+                "category": "Lean 4: Project",
+                "title": "Clean Project",
                 "description": "Clean the current project, removing all build artifacts"
             },
             {
                 "command": "lean4.project.updateDependency",
-                "category": "Lean 4",
-                "title": "Project: Update Dependency…",
+                "category": "Lean 4: Project",
+                "title": "Update Dependency…",
                 "description": "Updates a dependency of the current project to the most recent version available for the branch pinned in 'lakefile.lean'."
             },
             {
                 "command": "lean4.project.fetchCache",
-                "category": "Lean 4",
-                "title": "Project: Fetch Mathlib Build Cache",
+                "category": "Lean 4: Project",
+                "title": "Fetch Mathlib Build Cache",
                 "description": "Downloads cached Mathlib build artifacts to avoid full elaboration"
             },
             {
                 "command": "lean4.project.fetchFileCache",
-                "category": "Lean 4",
-                "title": "Project: Fetch Mathlib Build Cache For Current Imports",
+                "category": "Lean 4: Project",
+                "title": "Fetch Mathlib Build Cache For Current Imports",
                 "description": "Downloads cached Mathlib build artifacts of the focused file and all of its imports to avoid full elaboration"
             },
             {
                 "command": "lean4.project.selectProjectToolchain",
-                "category": "Lean 4",
-                "title": "Project: Select Project Lean Version…",
+                "category": "Lean 4: Project",
+                "title": "Select Project Lean Version…",
                 "description": "Updates the 'lean-toolchain' file of the currently focused project with a given Lean version"
+            },
+            {
+                "command": "lean4.leanModuleHierarchy.showModuleHierarchy",
+                "category": "Lean 4: Module Hierarchy",
+                "title": "Show Module Hierarchy",
+                "description": "Updates the 'lean-toolchain' file of the currently focused project with a given Lean version"
+            },
+            {
+                "command": "lean4.leanModuleHierarchy.showInverseModuleHierarchy",
+                "category": "Lean 4: Module Hierarchy",
+                "title": "Show Inverse Module Hierarchy",
+                "description": "Updates the 'lean-toolchain' file of the currently focused project with a given Lean version"
+            },
+            {
+                "command": "lean4.leanModuleHierarchy.refresh",
+                "category": "Lean 4: Module Hierarchy",
+                "title": "Refresh",
+                "description": "Updates the module hierarchy to display the hierarchy for the current module",
+                "icon": "$(refresh)"
+            },
+            {
+                "command": "lean4.leanModuleHierarchy.showImports",
+                "category": "Lean 4: Module Hierarchy",
+                "title": "Show Imports",
+                "description": "Changes the mode of the module hierarchy to display the imports of a module",
+                "icon": "$(call-outgoing)"
+            },
+            {
+                "command": "lean4.leanModuleHierarchy.showImportedBy",
+                "category": "Lean 4: Module Hierarchy",
+                "title": "Show Imported By",
+                "description": "Changes the mode of the module hierarchy to display the modules that a module is imported by",
+                "icon": "$(call-incoming)"
             }
         ],
         "languages": [
@@ -738,9 +771,15 @@
                 "when": "lean4.isLeanFeatureSetActive"
             },
             {
-                "command": "lean4.loogle.search",
-                "key": "ctrl+k ctrl+s",
-                "mac": "cmd+k cmd+s",
+                "command": "lean4.leanModuleHierarchy.showModuleHierarchy",
+                "key": "shift+alt+m",
+                "mac": "shift+alt+m",
+                "when": "lean4.isLeanFeatureSetActive"
+            },
+            {
+                "command": "lean4.leanModuleHierarchy.showInverseModuleHierarchy",
+                "key": "shift+alt+n",
+                "mac": "shift+alt+n",
                 "when": "lean4.isLeanFeatureSetActive"
             }
         ],
@@ -1042,6 +1081,26 @@
                 {
                     "command": "lean4.project.selectProjectToolchain",
                     "when": "lean4.isLeanFeatureSetActive"
+                },
+                {
+                    "command": "lean4.leanModuleHierarchy.showModuleHierarchy",
+                    "when": "lean4.isLeanFeatureSetActive"
+                },
+                {
+                    "command": "lean4.leanModuleHierarchy.showInverseModuleHierarchy",
+                    "when": "lean4.isLeanFeatureSetActive"
+                },
+                {
+                    "command": "lean4.leanModuleHierarchy.refresh",
+                    "when": "lean4.isLeanFeatureSetActive"
+                },
+                {
+                    "command": "lean4.leanModuleHierarchy.showImports",
+                    "when": "lean4.isLeanFeatureSetActive"
+                },
+                {
+                    "command": "lean4.leanModuleHierarchy.showImportedBy",
+                    "when": "lean4.isLeanFeatureSetActive"
                 }
             ],
             "editor/title": [
@@ -1235,14 +1294,24 @@
             ],
             "editor/context": [
                 {
+                    "command": "lean4.leanModuleHierarchy.showModuleHierarchy",
+                    "when": "editorLangId == lean4",
+                    "group": "0_navigation@5"
+                },
+                {
+                    "command": "lean4.leanModuleHierarchy.showInverseModuleHierarchy",
+                    "when": "editorLangId == lean4",
+                    "group": "0_navigation@6"
+                },
+                {
                     "command": "lean4.restartFile",
                     "when": "editorLangId == lean4",
-                    "group": "z_commands"
+                    "group": "z_commands@0"
                 },
                 {
                     "command": "lean4.loogle.search",
                     "when": "editorLangId == lean4",
-                    "group": "z_commands"
+                    "group": "z_commands@0"
                 }
             ],
             "webview/context": [
@@ -1393,6 +1462,23 @@
                     "when": "webviewId == 'lean4_infoview' && saveSettingsId",
                     "group": "1_save@1"
                 }
+            ],
+            "view/title": [
+                {
+                    "command": "lean4.leanModuleHierarchy.showImports",
+                    "when": "view == leanModuleHierarchy && lean4.leanModuleHierarchy.mode == 'ImportedBy'",
+                    "group": "navigation@0"
+                },
+                {
+                    "command": "lean4.leanModuleHierarchy.showImportedBy",
+                    "when": "view == leanModuleHierarchy && lean4.leanModuleHierarchy.mode == 'Imports'",
+                    "group": "navigation@1"
+                },
+                {
+                    "command": "lean4.leanModuleHierarchy.refresh",
+                    "when": "view == leanModuleHierarchy",
+                    "group": "navigation@2"
+                }
             ]
         },
         "submenus": [
@@ -1429,6 +1515,17 @@
                 "label": "Settings…"
             }
         ],
+        "views": {
+            "explorer": [
+                {
+                    "id": "leanModuleHierarchy",
+                    "name": "Module Hierarchy",
+                    "type": "tree",
+                    "when": "lean4.isLeanFeatureSetActive && lean4.leanModuleHierarchy.visible",
+                    "icon": "$(type-hierarchy-sub)"
+                }
+            ]
+        },
         "semanticTokenScopes": [
             {
                 "scopes": {
@@ -1464,10 +1561,10 @@
                     {
                         "id": "lean4.welcome.openSetupGuide",
                         "title": "Re-Open Setup Guide",
-                        "description": "This guide can always be re-opened by opening an empty file, clicking on the ∀-symbol in the top right and selecting 'Documentation…' > 'Docs: Show Setup Guide'.",
+                        "description": "This guide can always be re-opened by opening an empty file, clicking on the ∀-symbol in the top right and selecting 'Documentation…' > 'Show Setup Guide'.",
                         "media": {
                             "image": "media/open-setup-guide.png",
-                            "altText": "Click on the ∀-symbol in the top right and select 'Documentation…' > 'Docs: Show Setup Guide'."
+                            "altText": "Click on the ∀-symbol in the top right and select 'Documentation…' > 'Show Setup Guide'."
                         }
                     },
                     {
