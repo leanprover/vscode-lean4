@@ -87,6 +87,9 @@ function Main() {
                 {curUri && (
                     <VscodeButton
                         className="restart-file-button"
+                        style={{
+                            display: "none"
+                        }}
                         onClick={_ => ec.api.restartFile(curUri)}
                         title="Restarts this file, rebuilding all of its outdated dependencies."
                     >
