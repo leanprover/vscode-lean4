@@ -37,7 +37,7 @@ export function Tooltip(props_: TooltipProps) {
 
     const adjustedFloatingStyles = {
         ...floatingStyles,
-        left: `calc(${floatingStyles.left || 0}px - 16rem)`,
+        zIndex: 10,
     }
 
     const logicalDom = React.useContext(LogicalDomContext)
