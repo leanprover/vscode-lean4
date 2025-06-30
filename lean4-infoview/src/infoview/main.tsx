@@ -179,6 +179,14 @@ export function renderInfoview(editorApi: EditorApi, uiElement: HTMLElement): In
     return infoviewApi
 }
 
+declare module '@leanprover/infoview-api' {
+    interface InfoviewApi {
+        goToDefinition?: (line: number, character: number) => void;
+    }
+}
+
+
+
 export const InfoviewFc: React.FC<
     {
         mkEditorApi: (infoviewApi: InfoviewApi) => EditorApi;
@@ -204,6 +212,7 @@ export const InfoviewFc: React.FC<
                     changedInfoviewConfig: new EventEmitter(),
                     runTestScript: new EventEmitter(),
                     requestedAction: new EventEmitter(),
+                    clickedContextMenu: new EventEmitter(),
                     goToDefinition: new EventEmitter(),
                 }
 
@@ -223,11 +232,19 @@ export const InfoviewFc: React.FC<
                     changedCursorLocation: async loc => editorEvents.changedCursorLocation.fire(loc),
                     changedInfoviewConfig: async conf => editorEvents.changedInfoviewConfig.fire(conf),
                     requestedAction: async action => editorEvents.requestedAction.fire(action, action.kind),
-                    goToDefinition: async id => editorEvents.goToDefinition.fire(id, id),
+                    goToDefinition: async id => editorEvents?.goToDefinition.fire(id, id),
                     // See https://rollupjs.org/guide/en/#avoiding-eval
                     // eslint-disable-next-line @typescript-eslint/no-implied-eval
                     runTestScript: async script => new Function(script)(),
                     getInfoviewHtml: async () => document.body.innerHTML,
+                    clickedContextMenu: async action => {
+                        editorEvents.clickedContextMenu.fire(action, `${action.entry}:${action.id}`)
+                        // See comments on `InteractiveCodeTag`.
+                        const sel = window.getSelection()
+                        if (sel && 0 < sel.rangeCount && '_InteractiveCodeTagAutoSelection' in sel.getRangeAt(0))
+                            sel.removeAllRanges()
+                    },
+
                 }
 
                 const editorApi = mkEditorApi(infoviewApi)
@@ -246,9 +263,9 @@ export const InfoviewFc: React.FC<
             return <></>
         }
 
-    return (
+        return (
             <EditorContext.Provider value={ec}>
                 <Main />
             </EditorContext.Provider>
-    )
-}
+        )
+    }

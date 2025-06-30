@@ -21,6 +21,7 @@ export type EditorEvents = Omit<Eventify<InfoviewApi>, 'requestedAction' | 'clic
      * Keys for this event are of the form `` `${action.entry}:${action.id}` ``.
      */
     clickedContextMenu: EventEmitter<ContextMenuAction, string>
+    goToDefinition?: EventEmitter<number, number>
 }
 
 /** Provides higher-level wrappers around functionality provided by the editor,
