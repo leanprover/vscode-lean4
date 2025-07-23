@@ -1,4 +1,4 @@
-import { Disposable, Event } from 'vscode'
+import { Disposable, Event, EventEmitter } from 'vscode'
 
 export function onNextEvent<T>(ev: Event<T>, listener: (e: T) => any): Disposable {
     const d = ev(e => {
@@ -47,5 +47,28 @@ export function actionWithoutReentrancy<T>(f: (v: T) => Promise<void>): (v: T) =
         } finally {
             isRunning = false
         }
+    }
+}
+
+export function combine<T>(
+    ev1: Event<T>,
+    filter1: (e1: T) => boolean,
+    ev2: Event<T>,
+    filter2: (e2: T) => boolean,
+): { disposable: Disposable; event: Event<T> } {
+    const emitter = new EventEmitter<T>()
+    const d1 = ev1(e1 => {
+        if (filter1(e1)) {
+            emitter.fire(e1)
+        }
+    })
+    const d2 = ev2(e2 => {
+        if (filter2(e2)) {
+            emitter.fire(e2)
+        }
+    })
+    return {
+        disposable: Disposable.from(d1, d2),
+        event: emitter.event,
     }
 }

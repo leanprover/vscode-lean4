@@ -1,6 +1,6 @@
 import * as os from 'os'
 import * as path from 'path'
-import { commands, ExtensionContext, extensions, TextDocument, window, workspace } from 'vscode'
+import { commands, ExtensionContext, extensions, TextDocument, TextEditor, window, workspace } from 'vscode'
 import { AbbreviationFeature } from './abbreviation/AbbreviationFeature'
 import { AbbreviationView } from './abbreviationview'
 import { getDefaultLeanVersion } from './config'
@@ -20,11 +20,11 @@ import { LeanClientProvider } from './utils/clientProvider'
 import { LeanConfigWatchService } from './utils/configwatchservice'
 import { ElanCommandProvider } from './utils/elanCommands'
 import { PATH, setProcessEnvPATH } from './utils/envPath'
-import { onEventWhile, withoutReentrancy } from './utils/events'
-import { ExtUri, extUriToCwdUri, FileUri } from './utils/exturi'
+import { combine, onEventWhile, withoutReentrancy } from './utils/events'
+import { ExtUri, extUriToCwdUri, FileUri, toExtUri } from './utils/exturi'
 import { displayInternalErrorsIn } from './utils/internalErrors'
 import { registerLeanCommandRunner } from './utils/leanCmdRunner'
-import { lean, registerLeanEditorProvider } from './utils/leanEditorProvider'
+import { lean, registerLeanEditorProviders, text } from './utils/leanEditorProvider'
 import { LeanInstaller } from './utils/leanInstaller'
 import { ModuleTreeViewProvider } from './utils/moduleTreeViewProvider'
 import {
@@ -41,24 +41,51 @@ async function setLeanFeatureSetActive(isActive: boolean) {
     await commands.executeCommand('setContext', 'lean4.isLeanFeatureSetActive', isActive)
 }
 
-async function findOpenLeanProjectUri(): Promise<ExtUri | 'NoValidDocument'> {
-    const activeEditor = lean.activeLeanEditor
-    if (activeEditor !== undefined) {
-        const info = await findLeanProjectRootInfo(activeEditor.documentExtUri)
-        if (info.kind !== 'FileNotFound') {
-            return info.projectRootUri
-        }
+async function findInitialLeanProjectUri(editor: TextEditor): Promise<ExtUri | undefined> {
+    const uri = toExtUri(editor.document.uri)
+    if (uri === undefined) {
+        return undefined
     }
+    const info = await findLeanProjectRootInfo(uri)
+    if (info.kind === 'FileNotFound') {
+        return undefined
+    }
+    if (editor.document.languageId !== 'lean4' && info.kind === 'Success' && info.toolchainUri === undefined) {
+        return undefined
+    }
+    return info.projectRootUri
+}
 
+async function findActiveLeanProjectUri(): Promise<ExtUri | undefined> {
+    const activeEditor = window.activeTextEditor
+    if (activeEditor === undefined) {
+        return undefined
+    }
+    return await findInitialLeanProjectUri(activeEditor)
+}
+
+async function findVisibleLeanProjectUri(): Promise<ExtUri | undefined> {
     // This happens if vscode starts with a lean file open
     // but the "Getting Started" page is active.
-    for (const editor of lean.visibleLeanEditors) {
-        const info = await findLeanProjectRootInfo(editor.documentExtUri)
-        if (info.kind !== 'FileNotFound') {
-            return info.projectRootUri
+    for (const editor of window.visibleTextEditors) {
+        const projectUri = await findInitialLeanProjectUri(editor)
+        if (projectUri === undefined) {
+            continue
         }
+        return projectUri
     }
+    return undefined
+}
 
+async function findOpenLeanProjectUri(): Promise<ExtUri | 'NoValidDocument'> {
+    const activeProjectUri = await findActiveLeanProjectUri()
+    if (activeProjectUri !== undefined) {
+        return activeProjectUri
+    }
+    const visibleProjectUri = await findVisibleLeanProjectUri()
+    if (visibleProjectUri !== undefined) {
+        return visibleProjectUri
+    }
     return 'NoValidDocument'
 }
 
@@ -257,12 +284,23 @@ async function tryActivatingLean4Features(
             'No visible Lean document - cannot retry activating the extension. Please select a Lean document.',
         )
     }
+    // We try activating the Lean features in two cases:
+    // 1. When revealing a new editor with the `lean4` language ID (e.g.: switching tabs, opening a new Lean document, changing the language ID to `lean4`)
+    // 2. When revealing a new editor in a Lean project that doesn't have the `lean4` language ID (e.g.: switching tabs, opening a new document)
+    // These two events are disjoint, so combining them won't cause duplicate triggers.
+    const combinedEvent = combine(
+        lean.onDidRevealLeanEditor,
+        _ => true,
+        text.onDidRevealLeanEditor,
+        editor => editor.editor.document.languageId !== 'lean4',
+    )
+    context.subscriptions.push(combinedEvent.disposable)
     context.subscriptions.push(
         onEventWhile(
-            lean.onDidRevealLeanEditor,
-            withoutReentrancy('Continue', async editor => {
-                const info = await findLeanProjectRootInfo(editor.documentExtUri)
-                if (info.kind === 'FileNotFound') {
+            combinedEvent.event,
+            withoutReentrancy('Continue', async leanEditor => {
+                const projectUri = await findInitialLeanProjectUri(leanEditor.editor)
+                if (projectUri === undefined) {
                     return 'Continue'
                 }
                 await tryActivatingLean4FeaturesInProject(
@@ -271,7 +309,7 @@ async function tryActivatingLean4Features(
                     elanCommandProvider,
                     resolve,
                     d,
-                    info.projectRootUri,
+                    projectUri,
                 )
                 return 'Stop'
             }),
@@ -281,7 +319,7 @@ async function tryActivatingLean4Features(
 
 export async function activate(context: ExtensionContext): Promise<Exports> {
     await setLeanFeatureSetActive(false)
-    registerLeanEditorProvider(context)
+    registerLeanEditorProviders(context)
     await setStickyNotificationActiveButHidden(false)
     context.subscriptions.push(
         commands.registerCommand('lean4.redisplaySetupError', async () => displayActiveStickyNotification()),
