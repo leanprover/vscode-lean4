@@ -2,7 +2,6 @@ import * as fs from 'fs'
 import { join } from 'path'
 import { commands, Disposable, OutputChannel, QuickPickItem, window } from 'vscode'
 import { LeanClient } from './leanclient'
-import { batchExecute, ExecutionExitCode, ExecutionResult } from './utils/batch'
 import { LeanClientProvider } from './utils/clientProvider'
 import {
     CacheGetAvailabilityResult,
@@ -226,28 +225,11 @@ export class ProjectOperationProvider implements Disposable {
             return
         }
 
-        const dependencies: (DirectGitDependency & { remoteRevision?: string | undefined })[] =
-            await this.findUpdateableDependencies(manifestResult.directGitDependencies)
-        if (dependencies.length === 0) {
-            displayNotification('Information', 'Nothing to update - all dependencies are up-to-date.')
-            return
-        }
-
-        const items: GitDependencyQuickPickItem[] = dependencies.map(gitDep => {
-            const shortLocalRevision: string = gitDep.revision.substring(0, 7)
-            const shortRemoteRevision: string | undefined = gitDep.remoteRevision?.substring(0, 7)
-
-            const detail: string = shortRemoteRevision
-                ? `Current: ${shortLocalRevision} ⟹ New: ${shortRemoteRevision}`
-                : `Current: ${shortLocalRevision}`
-
-            return {
-                label: `${gitDep.name} @ ${gitDep.inputRevision}`,
-                description: gitDep.uri.toString(),
-                detail,
-                ...gitDep,
-            }
-        })
+        const items: GitDependencyQuickPickItem[] = manifestResult.directGitDependencies.map(gitDep => ({
+            label: gitDep.name,
+            description: gitDep.uri.toString(),
+            ...gitDep,
+        }))
 
         const dependencyChoice: GitDependencyQuickPickItem | undefined = await window.showQuickPick(items, {
             title: 'Choose a dependency to update',
@@ -304,38 +286,6 @@ export class ProjectOperationProvider implements Disposable {
                 }
             }
         })
-    }
-
-    private async findUpdateableDependencies(dependencies: DirectGitDependency[]) {
-        const augmented: (DirectGitDependency & { remoteRevision?: string | undefined })[] = []
-
-        for (const dependency of dependencies) {
-            const result: ExecutionResult = await batchExecute('git', [
-                'ls-remote',
-                dependency.uri.toString(),
-                dependency.inputRevision,
-            ])
-            if (result.exitCode !== ExecutionExitCode.Success) {
-                augmented.push(dependency)
-                continue
-            }
-
-            const matches: RegExpMatchArray | null = result.stdout.match(/^[a-z0-9]+/)
-            if (!matches) {
-                augmented.push(dependency)
-                continue
-            }
-
-            const remoteRevision: string = matches[0]
-            if (dependency.revision === remoteRevision) {
-                // Cannot be updated - filter it
-                continue
-            }
-
-            augmented.push({ remoteRevision, ...dependency })
-        }
-
-        return augmented
     }
 
     private async determineDependencyToolchain(
