@@ -35,7 +35,7 @@ export type LakeAvailabilityResult =
 export type ElanDumpStateWithoutNetQueryResult = ElanDumpStateWithoutNetResult | { kind: 'PreEagerResolutionVersion' }
 export type ElanDumpStateWithNetQueryResult = ElanDumpStateWithNetResult | { kind: 'PreEagerResolutionVersion' }
 
-const recommendedElanVersion = new SemVer('3.1.1')
+const recommendedElanVersion = new SemVer('4.0.0')
 // Should be bumped in a release *before* we bump the version requirement of the VS Code extension so that
 // users know that they need to update and do not get stuck on an old VS Code version.
 const recommendedVSCodeVersion = new SemVer('1.75.0')
