@@ -63,7 +63,7 @@ suite('Lean4 Basics Test Suite', () => {
         const expectedVersion = '5040' // the factorial function works.
         const html = await waitForInfoviewHtmlAt('#eval factorial 7', info, expectedVersion)
 
-        const installer = features.installer
+        const installer = features.leanInstaller
         assert(installer, 'No LeanInstaller export')
         const defaultToolchainResult = await elanInstalledToolchains()
         if (defaultToolchainResult.kind === 'Success' && defaultToolchainResult.defaultToolchain !== undefined) {

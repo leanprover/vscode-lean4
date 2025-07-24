@@ -4,13 +4,15 @@ import { InfoProvider } from './infoview'
 import { ProjectInitializationProvider } from './projectinit'
 import { ProjectOperationProvider } from './projectoperations'
 import { LeanClientProvider } from './utils/clientProvider'
+import { DepInstaller } from './utils/depInstaller'
 import { ElanCommandProvider } from './utils/elanCommands'
 import { LeanInstaller } from './utils/leanInstaller'
 
 export interface AlwaysEnabledFeatures {
     projectInitializationProvider: ProjectInitializationProvider
     outputChannel: OutputChannel
-    installer: LeanInstaller
+    leanInstaller: LeanInstaller
+    depInstaller: DepInstaller
     fullDiagnosticsProvider: FullDiagnosticsProvider
     elanCommandProvider: ElanCommandProvider
 }

@@ -401,8 +401,9 @@ export async function elanDumpStateWithNet(
     cwdUri: FileUri | undefined,
     context: string | undefined,
     toolchain?: string | undefined,
+    prompt: string = 'Fetching Lean version information',
 ): Promise<ElanDumpStateWithNetResult> {
-    const r = await batchExecuteWithProgress('elan', ['dump-state'], context, 'Fetching Lean version information', {
+    const r = await batchExecuteWithProgress('elan', ['dump-state'], context, prompt, {
         cwd: cwdUri?.fsPath,
         allowCancellation: true,
         envExtensions: toolchainEnvExtensions(toolchain),
