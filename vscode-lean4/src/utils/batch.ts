@@ -48,13 +48,14 @@ export function batchExecuteWithProc(
     workingDirectory?: string | undefined,
     channel?: ExecutionChannel | undefined,
     envExtensions?: { [key: string]: string } | undefined,
+    shell?: 'Unix' | 'Windows' | undefined,
 ): [ChildProcessWithoutNullStreams | 'CannotLaunch', Promise<ExecutionResult>] {
     let stdout: string = ''
     let stderr: string = ''
     let combined: string = ''
     let options = {}
     if (workingDirectory !== undefined) {
-        options = { cwd: workingDirectory }
+        options = { cwd: workingDirectory, windowsHide: true }
     }
     if (envExtensions !== undefined) {
         const env = Object.assign({}, process.env)
@@ -62,6 +63,11 @@ export function batchExecuteWithProc(
             env[key] = value
         }
         options = { ...options, env }
+    }
+    if (shell === 'Unix') {
+        options = { ...options, shell: '/bin/bash' }
+    } else if (shell === 'Windows') {
+        options = { ...options, shell: 'powershell.exe' }
     }
     if (channel?.combined) {
         channel.combined.appendLine(formatCommandExecutionOutput(workingDirectory, executablePath, args))
@@ -149,8 +155,9 @@ export async function batchExecute(
     workingDirectory?: string | undefined,
     channel?: ExecutionChannel | undefined,
     envExtensions?: { [key: string]: string } | undefined,
+    shell?: 'Unix' | 'Windows' | undefined,
 ): Promise<ExecutionResult> {
-    const [_, execPromise] = batchExecuteWithProc(executablePath, args, workingDirectory, channel, envExtensions)
+    const [_, execPromise] = batchExecuteWithProc(executablePath, args, workingDirectory, channel, envExtensions, shell)
     return execPromise
 }
 
@@ -159,6 +166,7 @@ export interface ProgressExecutionOptions {
     channel?: OutputChannel | undefined
     translator?: ((line: string) => string | undefined) | undefined
     envExtensions?: { [key: string]: string } | undefined
+    shell?: 'Unix' | 'Windows' | undefined
     allowCancellation?: boolean
 }
 
@@ -231,6 +239,7 @@ export async function batchExecuteWithProgress(
             combined: progressChannel,
         },
         options.envExtensions,
+        options.shell,
     )
     if (proc === 'CannotLaunch') {
         return executionPromise // resolves to a 'CannotLaunch' ExecutionResult

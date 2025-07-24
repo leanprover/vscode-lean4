@@ -1,7 +1,7 @@
 import { SemVer } from 'semver'
-import { Disposable, EventEmitter, OutputChannel, TerminalOptions, window } from 'vscode'
-import { getPowerShellPath, isRunningTest, setAlwaysAskBeforeInstallingLeanVersions } from '../config'
-import { ExecutionExitCode, displayResultError } from './batch'
+import { Disposable, EventEmitter, OutputChannel } from 'vscode'
+import { isRunningTest, setAlwaysAskBeforeInstallingLeanVersions } from '../config'
+import { ExecutionExitCode, ExecutionResult, batchExecuteWithProgress, displayResultError } from './batch'
 import { elanSelfUninstall, elanSelfUpdate, elanVersion, isElanEagerResolutionVersion } from './elan'
 import { FileUri } from './exturi'
 import { logger } from './logger'
@@ -14,6 +14,16 @@ import {
     displayNotificationWithOptionalInput,
     displayStickyNotificationWithOptionalInput,
 } from './notifs'
+
+const windowsInstallationScript = (freshInstallDefaultToolchain: string) =>
+    `Invoke-WebRequest -Uri "https://elan.lean-lang.org/elan-init.ps1" -OutFile "elan-init.ps1"
+Set-ExecutionPolicy -ExecutionPolicy Unrestricted -Scope Process
+$rc = .\\elan-init.ps1 -NoPrompt 1 -DefaultToolchain ${freshInstallDefaultToolchain}
+del .\\elan-init.ps1
+exit $rc`
+
+const unixInstallationScript = (freshInstallDefaultToolchain: string) =>
+    `curl "https://elan.lean-lang.org/elan-init.sh" -sSf | sh -s -- -y --default-toolchain ${freshInstallDefaultToolchain}`
 
 export class LeanVersion {
     version: string
@@ -332,55 +342,46 @@ export class LeanInstaller {
 
     private async installElan(): Promise<'Success' | 'InstallationFailed' | 'PendingOperation'> {
         return await this.performOperation('Install', async () => {
-            const terminalName = 'Lean installation via elan'
-
-            let terminalOptions: TerminalOptions = { name: terminalName }
+            let result: ExecutionResult
             if (process.platform === 'win32') {
-                terminalOptions = { name: terminalName, shellPath: getPowerShellPath() }
-            }
-            const terminal = window.createTerminal(terminalOptions)
-            terminal.show()
-
-            // We register a listener, to restart the Lean extension once elan has finished.
-            const resultPromise = new Promise<boolean>(function (resolve, reject) {
-                window.onDidCloseTerminal(async t => {
-                    if (t === terminal) {
-                        resolve(true)
-                    } else {
-                        logger.log(
-                            '[LeanInstaller] ignoring terminal closed: ' + t.name + ', waiting for: ' + terminalName,
-                        )
-                    }
-                })
-            })
-
-            if (process.platform === 'win32') {
-                terminal.sendText(
-                    `Start-BitsTransfer -Source "${this.leanInstallerWindows}" -Destination "elan-init.ps1"\r\n` +
-                        'Set-ExecutionPolicy -ExecutionPolicy Unrestricted -Scope Process\r\n' +
-                        `$rc = .\\elan-init.ps1 -NoPrompt 1 -DefaultToolchain ${this.freshInstallDefaultToolchain}\r\n` +
-                        'Write-Host "elan-init returned [$rc]"\r\n' +
-                        'del .\\elan-init.ps1\r\n' +
-                        'if ($rc -ne 0) {\r\n' +
-                        '    Read-Host -Prompt "Press ENTER to continue"\r\n' +
-                        '}\r\n' +
-                        'exit\r\n',
+                result = await batchExecuteWithProgress(
+                    windowsInstallationScript(this.freshInstallDefaultToolchain),
+                    [],
+                    'Lean Installation',
+                    "Installing Lean's version manager Elan",
+                    {
+                        channel: this.outputChannel,
+                        allowCancellation: true,
+                        shell: 'Windows',
+                    },
                 )
             } else {
-                const elanArgs = `-y --default-toolchain ${this.freshInstallDefaultToolchain}`
-                const prompt = '(echo && read -n 1 -s -r -p "Install failed, press ENTER to continue...")'
-
-                terminal.sendText(
-                    `bash -c 'curl ${this.leanInstallerLinux} -sSf | sh -s -- ${elanArgs} || ${prompt}' && exit `,
+                result = await batchExecuteWithProgress(
+                    unixInstallationScript(this.freshInstallDefaultToolchain),
+                    [],
+                    'Lean Installation',
+                    "Installing Lean's version manager Elan",
+                    {
+                        channel: this.outputChannel,
+                        allowCancellation: true,
+                        shell: 'Unix',
+                    },
                 )
             }
 
-            const result = await resultPromise
-            if (!result) {
-                displayNotification('Error', 'Elan installation failed. Check the terminal output for details.')
-                return 'InstallationFailed'
+            switch (result.exitCode) {
+                case ExecutionExitCode.Success:
+                    displayNotification('Information', 'Installation successful!')
+                    return 'Success'
+                case ExecutionExitCode.CannotLaunch:
+                    displayNotification('Error', 'Installation failed: installation script could not be launched.')
+                    return 'InstallationFailed'
+                case ExecutionExitCode.ExecutionError:
+                    displayResultError(result, 'Installation failed.')
+                    return 'InstallationFailed'
+                case ExecutionExitCode.Cancelled:
+                    return 'InstallationFailed'
             }
-            return 'Success'
         })
     }
 
