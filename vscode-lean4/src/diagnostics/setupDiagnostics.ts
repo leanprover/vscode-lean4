@@ -1,5 +1,6 @@
 import { SemVer } from 'semver'
 import { OutputChannel, commands } from 'vscode'
+import { DepInstaller } from '../utils/depInstaller'
 import { ExtUri, FileUri, extUriToCwdUri } from '../utils/exturi'
 import { displayInternalError } from '../utils/internalErrors'
 import { ToolchainUpdateMode } from '../utils/leanCmdRunner'
@@ -57,6 +58,7 @@ export class SetupDiagnostics {
     }
 
     async checkAreDependenciesInstalled(
+        installer: DepInstaller,
         channel: OutputChannel,
         cwdUri: FileUri | undefined,
     ): Promise<PreconditionCheckResult> {
@@ -72,13 +74,11 @@ export class SetupDiagnostics {
         }
         let missingDepMessage: string
         if (missingDeps.length === 1) {
-            missingDepMessage = `One of Lean's dependencies ('${missingDeps.at(0)}') is missing`
+            missingDepMessage = `One of Lean's dependencies (\`${missingDeps.at(0)}\`) is missing.`
         } else {
-            missingDepMessage = `Multiple of Lean's dependencies (${missingDeps.map(dep => `'${dep}'`).join(', ')}) are missing`
+            missingDepMessage = `Multiple of Lean's dependencies (${missingDeps.map(dep => `\`${dep}\``).join(', ')}) are missing.`
         }
-
-        const errorMessage = `${missingDepMessage}. Please read the Setup Guide on how to install missing dependencies and set up Lean 4.`
-        return await this.n.displaySetupErrorWithSetupGuide(errorMessage)
+        return await this.n.displayDependencySetupError(installer, missingDepMessage)
     }
 
     async checkIsLean4Installed(

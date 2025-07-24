@@ -8,6 +8,7 @@ import {
     ExecutionExitCode,
     ExecutionResult,
 } from './utils/batch'
+import { DepInstaller } from './utils/depInstaller'
 import { elanStableChannel } from './utils/elan'
 import { ExtUri, extUriToCwdUri, FileUri } from './utils/exturi'
 import { displayLakeRunnerError, FetchMathlibCacheResult, lake, LakeRunnerResult } from './utils/lake'
@@ -21,17 +22,18 @@ const projectInitNotificationOptions: SetupNotificationOptions = {
 }
 
 async function checkCreateLean4ProjectPreconditions(
-    installer: LeanInstaller,
+    leanInstaller: LeanInstaller,
+    depInstaller: DepInstaller,
     context: string,
     folderUri: ExtUri,
     projectToolchain: string,
 ): Promise<PreconditionCheckResult> {
-    const channel = installer.getOutputChannel()
+    const channel = leanInstaller.getOutputChannel()
     const cwdUri = extUriToCwdUri(folderUri)
     const d = new SetupDiagnostics(projectInitNotificationOptions)
     return await checkAll(
-        () => d.checkAreDependenciesInstalled(channel, cwdUri),
-        () => d.checkIsElanUpToDate(installer, cwdUri, { elanMustBeInstalled: true }),
+        () => d.checkAreDependenciesInstalled(depInstaller, channel, cwdUri),
+        () => d.checkIsElanUpToDate(leanInstaller, cwdUri, { elanMustBeInstalled: true }),
         () =>
             d.checkIsLeanVersionUpToDate(channel, context, folderUri, {
                 toolchainUpdateMode: 'UpdateAutomatically',
@@ -45,9 +47,13 @@ async function checkCreateLean4ProjectPreconditions(
     )
 }
 
-async function checkPreCloneLean4ProjectPreconditions(channel: OutputChannel, cwdUri: FileUri | undefined) {
+async function checkPreCloneLean4ProjectPreconditions(
+    depInstaller: DepInstaller,
+    channel: OutputChannel,
+    cwdUri: FileUri | undefined,
+) {
     const d = new SetupDiagnostics(projectInitNotificationOptions)
-    return await checkAll(() => d.checkAreDependenciesInstalled(channel, cwdUri))
+    return await checkAll(() => d.checkAreDependenciesInstalled(depInstaller, channel, cwdUri))
 }
 
 async function checkPostCloneLean4ProjectPreconditions(installer: LeanInstaller, context: string, folderUri: ExtUri) {
@@ -69,7 +75,8 @@ export class ProjectInitializationProvider implements Disposable {
 
     constructor(
         private channel: OutputChannel,
-        private installer: LeanInstaller,
+        private leanInstaller: LeanInstaller,
+        private depInstaller: DepInstaller,
     ) {
         this.subscriptions.push(
             commands.registerCommand('lean4.project.createStandaloneProject', () => this.createStandaloneProject()),
@@ -189,7 +196,8 @@ export class ProjectInitializationProvider implements Disposable {
         await workspace.fs.createDirectory(projectFolder.asUri())
 
         const preconditionCheckResult = await checkCreateLean4ProjectPreconditions(
-            this.installer,
+            this.leanInstaller,
+            this.depInstaller,
             context,
             projectFolder,
             toolchain,
@@ -374,7 +382,8 @@ Open this project instead?`
             await workspace.fs.createDirectory(projectFolder.asUri())
 
             const preCloneCheckResult = await checkPreCloneLean4ProjectPreconditions(
-                this.installer.getOutputChannel(),
+                this.depInstaller,
+                this.leanInstaller.getOutputChannel(),
                 projectFolder,
             )
             if (preCloneCheckResult === 'Fatal') {
@@ -397,7 +406,7 @@ Open this project instead?`
             }
 
             const postCloneCheckResult = await checkPostCloneLean4ProjectPreconditions(
-                this.installer,
+                this.leanInstaller,
                 downloadProjectContext,
                 projectFolder,
             )

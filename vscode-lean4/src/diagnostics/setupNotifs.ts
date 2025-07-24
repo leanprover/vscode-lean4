@@ -1,6 +1,7 @@
 import { SemVer } from 'semver'
 import { Disposable } from 'vscode'
 import { shouldShowSetupWarnings } from '../config'
+import { DepInstaller } from '../utils/depInstaller'
 import { LeanInstaller, UpdateElanMode } from '../utils/leanInstaller'
 import {
     displayModalNotification,
@@ -265,6 +266,17 @@ export class SetupNotifier {
                 displayNotificationWithSetupGuide('Warning', message)
                 return 'Warning'
             },
+        })
+    }
+
+    async displayDependencySetupError(installer: DepInstaller, reason: string): Promise<PreconditionCheckResult> {
+        return await this.error({
+            modal: async () => {
+                const result = await installer.displayInstallDependenciesPrompt('Error', reason)
+                return result === 'Success' ? 'Fulfilled' : 'Fatal'
+            },
+            sticky: async options =>
+                await installer.displayStickyInstallDependenciesPrompt('Error', reason, options, [retryItem]),
         })
     }
 
