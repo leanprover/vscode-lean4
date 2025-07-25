@@ -1,5 +1,6 @@
 import * as os from 'os'
 import { OutputChannel } from 'vscode'
+import { z } from 'zod'
 import { displayOutputError, ExecutionExitCode } from './batch'
 import { FileUri } from './exturi'
 import { leanRunner, ToolchainUpdateMode } from './leanCmdRunner'
@@ -15,8 +16,9 @@ export type LakeRunnerOptions = {
 export type LakeRunnerErrorDiagnosis =
     | { kind: 'WindowsFetchError'; details: string }
     | { kind: 'CommandNotFound'; details: string }
+    | { kind: 'SubCommandNotFound'; details: string }
 export type LakeRunnerError = { kind: 'Error'; diagnosis: LakeRunnerErrorDiagnosis | undefined; output: string }
-export type LakeRunnerResult = { kind: 'Success' } | { kind: 'Cancelled' } | LakeRunnerError
+export type LakeRunnerResult = { kind: 'Success'; output: string } | { kind: 'Cancelled' } | LakeRunnerError
 
 export function displayLakeRunnerError(error: LakeRunnerError, message: string) {
     if (error.diagnosis === undefined) {
@@ -27,7 +29,7 @@ export function displayLakeRunnerError(error: LakeRunnerError, message: string) 
 }
 
 export type FetchMathlibCacheResult =
-    | { kind: 'Success' }
+    | { kind: 'Success'; output: string }
     | { kind: 'CacheUnavailable' }
     | { kind: 'Cancelled' }
     | LakeRunnerError
@@ -35,6 +37,13 @@ export type FetchMathlibCacheResult =
 export type CacheGetAvailabilityResult =
     | { kind: 'CacheAvailable' }
     | { kind: 'CacheUnavailable' }
+    | { kind: 'Cancelled' }
+    | LakeRunnerError
+
+export type QueryDepsResult =
+    | { kind: 'Success'; deps: string[] }
+    | { kind: 'InvalidOutput'; output: string }
+    | { kind: 'QueryUnavailable' }
     | { kind: 'Cancelled' }
     | LakeRunnerError
 
@@ -62,6 +71,35 @@ export class LakeRunner {
         return this.runLakeCommandWithProgress('clean', [], 'Cleaning Lean project')
     }
 
+    async queryDeps(): Promise<QueryDepsResult> {
+        const queryResult = await this.runLakeCommandWithProgress(
+            'query',
+            [':deps', '--json'],
+            'Querying project dependencies',
+        )
+        switch (queryResult.kind) {
+            case 'Success':
+                let parsedJson: any
+                try {
+                    parsedJson = JSON.parse(queryResult.output)
+                } catch (e) {
+                    return { kind: 'InvalidOutput', output: queryResult.output }
+                }
+                const r = z.array(z.string()).safeParse(parsedJson)
+                if (!r.success) {
+                    return { kind: 'InvalidOutput', output: queryResult.output }
+                }
+                return { kind: 'Success', deps: r.data }
+            case 'Cancelled':
+                return { kind: 'Cancelled' }
+            case 'Error':
+                if (queryResult.diagnosis?.kind === 'SubCommandNotFound') {
+                    return { kind: 'QueryUnavailable' }
+                }
+                return queryResult
+        }
+    }
+
     private async runFetchMathlibCacheCommand(args: string[], prompt: string): Promise<FetchMathlibCacheResult> {
         const availabilityResult = await this.isMathlibCacheGetAvailable()
         if (availabilityResult.kind !== 'CacheAvailable') {
@@ -73,7 +111,7 @@ export class LakeRunner {
     private async tryRunFetchMathlibCacheCommand(args: string[], prompt: string): Promise<LakeRunnerResult> {
         const fetchResult = await this.runFetchMathlibCacheCommand(args, prompt)
         if (fetchResult.kind === 'CacheUnavailable') {
-            return { kind: 'Success' }
+            return { kind: 'Success', output: '' }
         }
         return fetchResult
     }
@@ -143,7 +181,7 @@ export class LakeRunner {
         })
         switch (r.exitCode) {
             case ExecutionExitCode.Success:
-                return { kind: 'Success' }
+                return { kind: 'Success', output: r.stdout }
             case ExecutionExitCode.CannotLaunch:
                 return {
                     kind: 'Error',
@@ -152,6 +190,12 @@ export class LakeRunner {
                 }
             case ExecutionExitCode.ExecutionError:
                 let diagnosis: LakeRunnerErrorDiagnosis | undefined
+                if (r.combined.includes(`error: unknown command '${subCommand}'`)) {
+                    diagnosis = {
+                        kind: 'SubCommandNotFound',
+                        details: `Lake sub-command '${subCommand}' is not available.`,
+                    }
+                }
                 if (
                     os.platform() === 'win32' &&
                     (r.combined.includes('failed to fetch GitHub release') ||
