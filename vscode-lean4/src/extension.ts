@@ -9,7 +9,6 @@ import { checkAll, SetupDiagnostics } from './diagnostics/setupDiagnostics'
 import { PreconditionCheckResult, SetupNotificationOptions } from './diagnostics/setupNotifs'
 import { AlwaysEnabledFeatures, Exports, Lean4EnabledFeatures } from './exports'
 import { InfoProvider } from './infoview'
-import { LeanClient } from './leanclient'
 import { LoogleView } from './loogleview'
 import { ManualView } from './manualview'
 import { MoogleView } from './moogleview'
@@ -17,7 +16,6 @@ import { ProjectInitializationProvider } from './projectinit'
 import { ProjectOperationProvider } from './projectoperations'
 import { LeanTaskGutter } from './taskgutter'
 import { LeanClientProvider } from './utils/clientProvider'
-import { LeanConfigWatchService } from './utils/configwatchservice'
 import { ElanCommandProvider } from './utils/elanCommands'
 import { PATH, setProcessEnvPATH } from './utils/envPath'
 import { combine, onEventWhile, withoutReentrancy } from './utils/events'
@@ -207,23 +205,9 @@ async function activateLean4Features(
     installer: LeanInstaller,
     elanCommandProvider: ElanCommandProvider,
 ): Promise<Lean4EnabledFeatures> {
-    const clientProvider = new LeanClientProvider(installer, installer.getOutputChannel())
+    const clientProvider = new LeanClientProvider(installer.getOutputChannel())
     elanCommandProvider.setClientProvider(clientProvider)
     context.subscriptions.push(clientProvider)
-
-    const watchService = new LeanConfigWatchService()
-    watchService.versionChanged(packageUri => {
-        const client: LeanClient | undefined = clientProvider.getClientForFolder(packageUri)
-        if (client && !client.isRunning()) {
-            // This can naturally happen when we update the Lean version using the "Update Dependency" command
-            // because the Lean server is stopped while doing so. We want to avoid triggering the "Version changed"
-            // message in this case.
-            return
-        }
-        installer.handleVersionChanged(packageUri)
-    })
-    watchService.lakeFileChanged(packageUri => installer.handleLakeFileChanged(packageUri))
-    context.subscriptions.push(watchService)
 
     const infoProvider = new InfoProvider(clientProvider, context)
     context.subscriptions.push(infoProvider)

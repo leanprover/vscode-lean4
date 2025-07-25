@@ -1,17 +1,14 @@
 import { SemVer } from 'semver'
-import { Disposable, EventEmitter, OutputChannel } from 'vscode'
-import { isRunningTest, setAlwaysAskBeforeInstallingLeanVersions } from '../config'
+import { Disposable, OutputChannel } from 'vscode'
+import { setAlwaysAskBeforeInstallingLeanVersions } from '../config'
 import { ExecutionExitCode, ExecutionResult, batchExecuteWithProgress, displayResultError } from './batch'
 import { elanSelfUninstall, elanSelfUpdate, elanVersion, isElanEagerResolutionVersion } from './elan'
-import { FileUri } from './exturi'
-import { logger } from './logger'
 import {
     NotificationSeverity,
     StickyInput,
     StickyNotificationOptions,
     displayNotification,
     displayNotificationWithInput,
-    displayNotificationWithOptionalInput,
     displayStickyNotificationWithOptionalInput,
 } from './notifs'
 
@@ -41,70 +38,17 @@ export type UpdateElanMode =
       }
 
 export class LeanInstaller {
-    private leanInstallerLinux = 'https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh'
-    private leanInstallerWindows = 'https://raw.githubusercontent.com/leanprover/elan/master/elan-init.ps1'
     private outputChannel: OutputChannel
-    private prompting: boolean = false
     private pendingOperation: 'Install' | 'Update' | 'Uninstall' | undefined
     private freshInstallDefaultToolchain: string
-    private promptUser: boolean = true
-
-    // This event is raised whenever a version change happens.
-    // The event provides the workspace Uri where the change happened.
-    private installChangedEmitter = new EventEmitter<FileUri>()
-    installChanged = this.installChangedEmitter.event
 
     constructor(outputChannel: OutputChannel, freshInstallDefaultToolchain: string) {
         this.outputChannel = outputChannel
         this.freshInstallDefaultToolchain = freshInstallDefaultToolchain
-        if (isRunningTest()) {
-            this.promptUser = false
-            if (process.env.LEAN4_PROMPT_USER === 'true') {
-                this.promptUser = true
-            }
-        }
-    }
-
-    getPromptUser(): boolean {
-        return this.promptUser
     }
 
     getOutputChannel(): OutputChannel {
         return this.outputChannel
-    }
-
-    handleVersionChanged(packageUri: FileUri) {
-        void this.showRestartPromptAndRestart('Lean version changed', packageUri)
-    }
-
-    isPromptVisible() {
-        return this.prompting
-    }
-
-    private async showRestartPromptAndRestart(message: string, packageUri: FileUri) {
-        if (!this.promptUser) {
-            this.installChangedEmitter.fire(packageUri)
-            return
-        }
-
-        if (this.prompting) {
-            return
-        }
-
-        this.prompting = true
-        const finalizer = () => {
-            this.prompting = false
-        }
-        displayNotificationWithOptionalInput(
-            'Error',
-            message,
-            [{ input: 'Restart Lean', action: () => this.installChangedEmitter.fire(packageUri) }],
-            finalizer,
-        )
-    }
-
-    handleLakeFileChanged(packageUri: FileUri) {
-        void this.showRestartPromptAndRestart('Lake file configuration changed', packageUri)
     }
 
     private installElanPrompt(reason: string | undefined): { message: string; item: 'Install Elan' } {
@@ -124,12 +68,6 @@ export class LeanInstaller {
         otherItems: string[] = [],
         defaultItem?: string | undefined,
     ): Promise<{ kind: 'InstallElan'; success: boolean } | { kind: 'OtherItem'; choice: string } | undefined> {
-        if (!this.getPromptUser()) {
-            // Used in tests
-            await this.autoInstall()
-            return { kind: 'InstallElan', success: true }
-        }
-
         const p = this.installElanPrompt(reason)
         const choice = await displayNotificationWithInput(severity, p.message, [p.item, ...otherItems], defaultItem)
         if (choice === undefined) {
@@ -304,12 +242,6 @@ export class LeanInstaller {
                 displayNotification('Error', `Error while determining current Elan version: ${versionResult.message}`)
                 break
         }
-    }
-
-    private async autoInstall(): Promise<void> {
-        logger.log('[LeanInstaller] Installing Elan ...')
-        await this.installElan()
-        logger.log('[LeanInstaller] Elan installed')
     }
 
     private async installElanAndDisplaySettingPrompt(): Promise<'Success' | 'InstallationFailed' | 'PendingOperation'> {

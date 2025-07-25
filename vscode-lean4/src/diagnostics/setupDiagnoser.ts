@@ -177,8 +177,28 @@ export class SetupDiagnoser {
     }
 
     async checkGitAvailable(): Promise<boolean> {
+        if (os.type() === 'Darwin') {
+            // On macOS, running `git --version` will display a prompt if `git` is not installed, so we check it using `command -v` instead.
+            const gitAvailabilityResult = await this.runSilently('command', ['-v', 'git'])
+            return gitAvailabilityResult.exitCode === ExecutionExitCode.Success
+        }
         const gitVersionResult = await this.runSilently('git', ['--version'])
         return gitVersionResult.exitCode === ExecutionExitCode.Success
+    }
+
+    async checkDnfAvailable(): Promise<boolean> {
+        const dnfResult = await this.runSilently('dnf', [])
+        return dnfResult.exitCode === ExecutionExitCode.Success
+    }
+
+    async checkAptAvailable(): Promise<boolean> {
+        const aptResult = await this.runSilently('apt', [])
+        return aptResult.exitCode === ExecutionExitCode.Success
+    }
+
+    async checkPkExecAvailable(): Promise<boolean> {
+        const pkExecVersionResult = await this.runSilently('pkexec', ['--version'])
+        return pkExecVersionResult.exitCode === ExecutionExitCode.Success
     }
 
     async checkLakeAvailable(): Promise<LakeAvailabilityResult> {
