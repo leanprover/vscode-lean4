@@ -26,7 +26,7 @@ suite('Toolchain Test Suite', () => {
         // turn off the user prompts so restart of lean server happens automatically.
         const info = features.infoProvider
         assert(info, 'No InfoProvider export')
-        const installer = features.installer
+        const installer = features.leanInstaller
         assert(installer, 'No LeanInstaller export')
 
         // wait for info view to show up.

@@ -177,8 +177,33 @@ export class SetupDiagnoser {
     }
 
     async checkGitAvailable(): Promise<boolean> {
+        if (os.type() === 'Darwin') {
+            // On macOS, running `git --version` will display a prompt if `git` is not installed, so we check it using `command -v` instead.
+            const gitAvailabilityResult = await this.runSilently('command', ['-v', 'git'])
+            return gitAvailabilityResult.exitCode === ExecutionExitCode.Success
+        }
         const gitVersionResult = await this.runSilently('git', ['--version'])
         return gitVersionResult.exitCode === ExecutionExitCode.Success
+    }
+
+    async checkDnfAvailable(): Promise<boolean> {
+        const dnfResult = await this.runSilently('dnf', ['--version'])
+        return dnfResult.exitCode === ExecutionExitCode.Success
+    }
+
+    async checkAptGetAvailable(): Promise<boolean> {
+        const aptResult = await this.runSilently('apt-get', ['--version'])
+        return aptResult.exitCode === ExecutionExitCode.Success
+    }
+
+    async checkPkExecAvailable(): Promise<boolean> {
+        const pkExecVersionResult = await this.runSilently('pkexec', ['--version'])
+        return pkExecVersionResult.exitCode === ExecutionExitCode.Success
+    }
+
+    async checkWinGetAvailable(): Promise<boolean> {
+        const winGetVersionResult = await this.runSilently('winget', ['--version'])
+        return winGetVersionResult.exitCode === ExecutionExitCode.Success
     }
 
     async checkLakeAvailable(): Promise<LakeAvailabilityResult> {

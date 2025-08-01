@@ -9,7 +9,6 @@ import { checkAll, SetupDiagnostics } from './diagnostics/setupDiagnostics'
 import { PreconditionCheckResult, SetupNotificationOptions } from './diagnostics/setupNotifs'
 import { AlwaysEnabledFeatures, Exports, Lean4EnabledFeatures } from './exports'
 import { InfoProvider } from './infoview'
-import { LeanClient } from './leanclient'
 import { LoogleView } from './loogleview'
 import { ManualView } from './manualview'
 import { MoogleView } from './moogleview'
@@ -17,11 +16,12 @@ import { ProjectInitializationProvider } from './projectinit'
 import { ProjectOperationProvider } from './projectoperations'
 import { LeanTaskGutter } from './taskgutter'
 import { LeanClientProvider } from './utils/clientProvider'
-import { LeanConfigWatchService } from './utils/configwatchservice'
+import { DepInstaller } from './utils/depInstaller'
 import { ElanCommandProvider } from './utils/elanCommands'
-import { PATH, setProcessEnvPATH } from './utils/envPath'
+import { addToProcessEnvPATH } from './utils/envPath'
 import { combine, onEventWhile, withoutReentrancy } from './utils/events'
 import { ExtUri, extUriToCwdUri, FileUri, toExtUri } from './utils/exturi'
+import { FullInstaller } from './utils/fullInstaller'
 import { displayInternalErrorsIn } from './utils/internalErrors'
 import { registerLeanCommandRunner } from './utils/leanCmdRunner'
 import { lean, registerLeanEditorProviders, text } from './utils/leanEditorProvider'
@@ -89,16 +89,8 @@ async function findOpenLeanProjectUri(): Promise<ExtUri | 'NoValidDocument'> {
     return 'NoValidDocument'
 }
 
-function getElanPath(): string {
-    return path.join(os.homedir(), '.elan', 'bin')
-}
-
 function addElanPathToPATH() {
-    const path = PATH.ofProcessEnv()
-    const elanPath = getElanPath()
-    if (!path.includes(elanPath)) {
-        setProcessEnvPATH(path.prepend(elanPath))
-    }
+    addToProcessEnvPATH(path.join(os.homedir(), '.elan', 'bin'))
 }
 
 /**
@@ -139,18 +131,17 @@ function activateAlwaysEnabledFeatures(context: ExtensionContext): AlwaysEnabled
         commands.registerCommand('lean4.troubleshooting.showOutput', () => outputChannel.show(true)),
     )
 
-    const defaultToolchain = getDefaultLeanVersion()
-    const installer = new LeanInstaller(outputChannel, defaultToolchain)
-    context.subscriptions.push(
-        commands.registerCommand(
-            'lean4.setup.installElan',
-            async () => await installer.displayInstallElanPrompt('Information', undefined),
-        ),
-        commands.registerCommand('lean4.setup.updateElan', async () => await installer.displayManualUpdateElanPrompt()),
-        commands.registerCommand('lean4.setup.uninstallElan', async () => await installer.uninstallElan()),
-    )
+    const depInstaller = new DepInstaller(outputChannel)
+    context.subscriptions.push(depInstaller)
 
-    const projectInitializationProvider = new ProjectInitializationProvider(outputChannel, installer)
+    const defaultToolchain = getDefaultLeanVersion()
+    const leanInstaller = new LeanInstaller(outputChannel, defaultToolchain)
+    context.subscriptions.push(leanInstaller)
+
+    const fullInstaller = new FullInstaller(outputChannel, depInstaller, leanInstaller)
+    context.subscriptions.push(fullInstaller)
+
+    const projectInitializationProvider = new ProjectInitializationProvider(outputChannel, leanInstaller, depInstaller)
     context.subscriptions.push(projectInitializationProvider)
 
     const checkForExtensionConflict = (doc: TextDocument) => {
@@ -182,20 +173,28 @@ function activateAlwaysEnabledFeatures(context: ExtensionContext): AlwaysEnabled
     const uriHandlerService = new UriHandlerService()
     context.subscriptions.push(uriHandlerService)
 
-    return { projectInitializationProvider, outputChannel, installer, fullDiagnosticsProvider, elanCommandProvider }
+    return {
+        projectInitializationProvider,
+        outputChannel,
+        leanInstaller,
+        depInstaller,
+        fullDiagnosticsProvider,
+        elanCommandProvider,
+    }
 }
 
 async function checkLean4FeaturePreconditions(
-    installer: LeanInstaller,
+    leanInstaller: LeanInstaller,
+    depInstaller: DepInstaller,
     context: string,
     cwdUri: FileUri | undefined,
     d: SetupDiagnostics,
 ): Promise<PreconditionCheckResult> {
     return await checkAll(
-        () => d.checkAreDependenciesInstalled(installer.getOutputChannel(), cwdUri),
-        () => d.checkIsLean4Installed(installer, context, cwdUri, 'PromptAboutUpdate'),
+        () => d.checkAreDependenciesInstalled(depInstaller, leanInstaller.getOutputChannel(), cwdUri),
+        () => d.checkIsLean4Installed(leanInstaller, context, cwdUri, 'PromptAboutUpdate'),
         () =>
-            d.checkIsElanUpToDate(installer, cwdUri, {
+            d.checkIsElanUpToDate(leanInstaller, cwdUri, {
                 elanMustBeInstalled: false,
             }),
         () => d.checkIsVSCodeUpToDate(),
@@ -207,23 +206,9 @@ async function activateLean4Features(
     installer: LeanInstaller,
     elanCommandProvider: ElanCommandProvider,
 ): Promise<Lean4EnabledFeatures> {
-    const clientProvider = new LeanClientProvider(installer, installer.getOutputChannel())
+    const clientProvider = new LeanClientProvider(installer.getOutputChannel())
     elanCommandProvider.setClientProvider(clientProvider)
     context.subscriptions.push(clientProvider)
-
-    const watchService = new LeanConfigWatchService()
-    watchService.versionChanged(packageUri => {
-        const client: LeanClient | undefined = clientProvider.getClientForFolder(packageUri)
-        if (client && !client.isRunning()) {
-            // This can naturally happen when we update the Lean version using the "Update Dependency" command
-            // because the Lean server is stopped while doing so. We want to avoid triggering the "Version changed"
-            // message in this case.
-            return
-        }
-        installer.handleVersionChanged(packageUri)
-    })
-    watchService.lakeFileChanged(packageUri => installer.handleLakeFileChanged(packageUri))
-    context.subscriptions.push(watchService)
 
     const infoProvider = new InfoProvider(clientProvider, context)
     context.subscriptions.push(infoProvider)
@@ -244,14 +229,16 @@ async function activateLean4Features(
 
 async function tryActivatingLean4FeaturesInProject(
     context: ExtensionContext,
-    installer: LeanInstaller,
+    leanInstaller: LeanInstaller,
+    depInstaller: DepInstaller,
     elanCommandProvider: ElanCommandProvider,
     resolve: (value: Lean4EnabledFeatures) => void,
     d: SetupDiagnostics,
     projectUri: ExtUri,
 ) {
     const preconditionCheckResult = await checkLean4FeaturePreconditions(
-        installer,
+        leanInstaller,
+        depInstaller,
         'Activate Lean 4 Extension',
         extUriToCwdUri(projectUri),
         d,
@@ -260,14 +247,15 @@ async function tryActivatingLean4FeaturesInProject(
         return
     }
     const lean4EnabledFeatures: Lean4EnabledFeatures = await displayInternalErrorsIn('activating Lean 4 features', () =>
-        activateLean4Features(context, installer, elanCommandProvider),
+        activateLean4Features(context, leanInstaller, elanCommandProvider),
     )
     resolve(lean4EnabledFeatures)
 }
 
 async function tryActivatingLean4Features(
     context: ExtensionContext,
-    installer: LeanInstaller,
+    leanInstaller: LeanInstaller,
+    depInstaller: DepInstaller,
     elanCommandProvider: ElanCommandProvider,
     resolve: (value: Lean4EnabledFeatures) => void,
     d: SetupDiagnostics,
@@ -275,7 +263,15 @@ async function tryActivatingLean4Features(
 ) {
     const projectUri = await findOpenLeanProjectUri()
     if (projectUri !== 'NoValidDocument') {
-        await tryActivatingLean4FeaturesInProject(context, installer, elanCommandProvider, resolve, d, projectUri)
+        await tryActivatingLean4FeaturesInProject(
+            context,
+            leanInstaller,
+            depInstaller,
+            elanCommandProvider,
+            resolve,
+            d,
+            projectUri,
+        )
         return
     }
     if (warnAboutNoValidDocument) {
@@ -305,7 +301,8 @@ async function tryActivatingLean4Features(
                 }
                 await tryActivatingLean4FeaturesInProject(
                     context,
-                    installer,
+                    leanInstaller,
+                    depInstaller,
                     elanCommandProvider,
                     resolve,
                     d,
@@ -340,7 +337,8 @@ export async function activate(context: ExtensionContext): Promise<Exports> {
                 retry: async () =>
                     tryActivatingLean4Features(
                         context,
-                        alwaysEnabledFeatures.installer,
+                        alwaysEnabledFeatures.leanInstaller,
+                        alwaysEnabledFeatures.depInstaller,
                         alwaysEnabledFeatures.elanCommandProvider,
                         resolve,
                         d,
@@ -352,7 +350,8 @@ export async function activate(context: ExtensionContext): Promise<Exports> {
         d = new SetupDiagnostics(options)
         await tryActivatingLean4Features(
             context,
-            alwaysEnabledFeatures.installer,
+            alwaysEnabledFeatures.leanInstaller,
+            alwaysEnabledFeatures.depInstaller,
             alwaysEnabledFeatures.elanCommandProvider,
             resolve,
             d,

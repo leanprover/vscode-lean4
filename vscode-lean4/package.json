@@ -568,6 +568,18 @@
                 "description": "Shows all abbreviations for the unicode input mechanism"
             },
             {
+                "command": "lean4.setup.installLean",
+                "category": "Lean 4: Setup",
+                "title": "Install Lean",
+                "description": "Install Lean's version manager 'Elan' and dependencies of Lean"
+            },
+            {
+                "command": "lean4.setup.installDeps",
+                "category": "Lean 4: Setup",
+                "title": "Install Dependencies",
+                "description": "Install dependencies of Lean"
+            },
+            {
                 "command": "lean4.setup.installElan",
                 "category": "Lean 4: Setup",
                 "title": "Install Elan",
@@ -1027,6 +1039,12 @@
                 },
                 {
                     "command": "lean4.docs.showAbbreviations"
+                },
+                {
+                    "command": "lean4.setup.installLean"
+                },
+                {
+                    "command": "lean4.setup.installDeps"
                 },
                 {
                     "command": "lean4.setup.installElan"
@@ -1576,47 +1594,29 @@
                         }
                     },
                     {
-                        "id": "lean4.welcome.installDeps.linux",
-                        "title": "Install Required Dependencies",
-                        "description": "Install Git and curl using your package manager.",
+                        "id": "lean4.welcome.installLean.linux",
+                        "title": "Install Lean",
+                        "description": "Install Lean's version manager Elan, Git and curl.\n[Click to install](command:lean4.setup.installLean)",
                         "media": {
-                            "markdown": "./media/guide-installDeps-linux.md"
+                            "markdown": "./media/guide-installLean-linux.md"
                         },
                         "when": "isLinux"
                     },
                     {
-                        "id": "lean4.welcome.installDeps.mac",
-                        "title": "Install Required Dependencies",
-                        "description": "Install Homebrew, Git and curl.",
+                        "id": "lean4.welcome.installLean.mac",
+                        "title": "Install Lean",
+                        "description": "Install Lean's version manager Elan and Apple Command Line Tools.\n[Click to install](command:lean4.setup.installLean)",
                         "media": {
-                            "markdown": "./media/guide-installDeps-mac.md"
+                            "markdown": "./media/guide-installLean-mac.md"
                         },
                         "when": "isMac"
                     },
                     {
-                        "id": "lean4.welcome.installDeps.windows",
-                        "title": "Install Required Dependencies",
-                        "description": "Install Git.",
+                        "id": "lean4.welcome.installLean.windows",
+                        "title": "Install Lean",
+                        "description": "Install Lean's version manager Elan and Git.\n[Click to install](command:lean4.setup.installLean)",
                         "media": {
-                            "markdown": "./media/guide-installDeps-windows.md"
-                        },
-                        "when": "isWindows"
-                    },
-                    {
-                        "id": "lean4.welcome.installElan.unix",
-                        "title": "Install Lean Version Manager",
-                        "description": "Install Lean's version manager Elan.\n[Click to install](command:lean4.setup.installElan)",
-                        "media": {
-                            "markdown": "./media/guide-installElan-unix.md"
-                        },
-                        "when": "isLinux || isMac"
-                    },
-                    {
-                        "id": "lean4.welcome.installElan.windows",
-                        "title": "Install Lean Version Manager",
-                        "description": "Install Lean's version manager Elan.\n[Click to install](command:lean4.setup.installElan)",
-                        "media": {
-                            "markdown": "./media/guide-installElan-windows.md"
+                            "markdown": "./media/guide-installLean-windows.md"
                         },
                         "when": "isWindows"
                     },

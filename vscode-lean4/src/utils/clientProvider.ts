@@ -6,7 +6,6 @@ import { LeanClient } from '../leanclient'
 import { LeanPublishDiagnosticsParams } from './converters'
 import { ExtUri, FileUri } from './exturi'
 import { lean } from './leanEditorProvider'
-import { LeanInstaller } from './leanInstaller'
 import { logger } from './logger'
 import { displayNotification } from './notifs'
 import { findLeanProjectRootInfo, willUseLakeServer } from './projectInfo'
@@ -43,7 +42,6 @@ async function checkLean4ProjectPreconditions(
 export class LeanClientProvider implements Disposable {
     private subscriptions: Disposable[] = []
     private outputChannel: OutputChannel
-    private installer: LeanInstaller
     private clients: Map<string, LeanClient> = new Map()
     private pending: Map<string, boolean> = new Map()
     private pendingInstallChanged: FileUri[] = []
@@ -65,12 +63,8 @@ export class LeanClientProvider implements Disposable {
     private clientStoppedEmitter = new EventEmitter<[LeanClient, boolean, ServerStoppedReason]>()
     clientStopped = this.clientStoppedEmitter.event
 
-    constructor(installer: LeanInstaller, outputChannel: OutputChannel) {
+    constructor(outputChannel: OutputChannel) {
         this.outputChannel = outputChannel
-        this.installer = installer
-
-        // we must setup the installChanged event handler first before any didOpenEditor calls.
-        this.subscriptions.push(installer.installChanged(async (uri: FileUri) => await this.onInstallChanged(uri)))
 
         lean.visibleLeanEditors.forEach(e => this.ensureClient(e.documentExtUri))
 
