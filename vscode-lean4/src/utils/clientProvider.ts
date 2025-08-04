@@ -87,7 +87,7 @@ export class LeanClientProvider implements Disposable {
             commands.registerCommand('lean4.restartFile', () => this.restartActiveFile()),
             commands.registerCommand('lean4.refreshFileDependencies', () => this.restartActiveFile()),
             commands.registerCommand('lean4.restartServer', () => this.restartActiveClient()),
-            commands.registerCommand('lean4.stopServer', () => this.stopClient(undefined)),
+            commands.registerCommand('lean4.stopServer', () => this.stopActiveClient()),
         )
 
         this.subscriptions.push(lean.onDidOpenLeanDocument(document => this.ensureClient(document.extUri)))
@@ -153,32 +153,33 @@ export class LeanClientProvider implements Disposable {
         this.restartFile(doc.extUri)
     }
 
-    private async stopClient(folderUri: ExtUri | undefined) {
-        let clientToStop: LeanClient
-        if (folderUri === undefined) {
-            if (this.activeClient === undefined) {
-                displayNotification('Error', 'Cannot stop language server: No active client.')
-                return
-            }
-            clientToStop = this.activeClient
-        } else {
-            const foundClient = this.getClientForFolder(folderUri)
-            if (foundClient === undefined) {
-                displayNotification(
-                    'Error',
-                    `Cannot stop language server: No client for project at '${folderUri.toString()}'.`,
-                )
-                return
-            }
-            clientToStop = foundClient
+    private async stopActiveClient() {
+        const client = this.activeClient
+        if (client === undefined) {
+            displayNotification('Error', 'Cannot stop language server: No active client.')
+            return
         }
-        if (clientToStop.isStarted()) {
-            await clientToStop.stop()
+        if (client.isStarted()) {
+            await client.stop()
         }
-        const key = clientToStop.folderUri.toString()
+    }
+
+    private async eraseClient(folderUri: ExtUri) {
+        const client = this.getClientForFolder(folderUri)
+        if (client === undefined) {
+            displayNotification(
+                'Error',
+                `Cannot stop language server: No client for project at '${folderUri.toString()}'.`,
+            )
+            return
+        }
+        if (client.isStarted()) {
+            await client.stop()
+        }
+        const key = client.folderUri.toString()
         this.clients.delete(key)
         this.pending.delete(key)
-        if (clientToStop === this.activeClient) {
+        if (client === this.activeClient) {
             this.activeClient = undefined
         }
     }
@@ -268,7 +269,7 @@ export class LeanClientProvider implements Disposable {
             folderUri,
             uri,
             async (folderUriToStop: FileUri) => {
-                await this.stopClient(folderUriToStop)
+                await this.eraseClient(folderUriToStop)
                 await this.ensureClient(uri)
             },
         )
