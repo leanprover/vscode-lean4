@@ -6,7 +6,6 @@ import { LeanClient } from '../leanclient'
 import { LeanPublishDiagnosticsParams } from './converters'
 import { ExtUri, FileUri } from './exturi'
 import { lean } from './leanEditorProvider'
-import { LeanInstaller } from './leanInstaller'
 import { logger } from './logger'
 import { displayNotification } from './notifs'
 import { findLeanProjectRootInfo, willUseLakeServer } from './projectInfo'
@@ -43,7 +42,6 @@ async function checkLean4ProjectPreconditions(
 export class LeanClientProvider implements Disposable {
     private subscriptions: Disposable[] = []
     private outputChannel: OutputChannel
-    private installer: LeanInstaller
     private clients: Map<string, LeanClient> = new Map()
     private pending: Map<string, boolean> = new Map()
     private pendingInstallChanged: FileUri[] = []
@@ -65,12 +63,8 @@ export class LeanClientProvider implements Disposable {
     private clientStoppedEmitter = new EventEmitter<[LeanClient, boolean, ServerStoppedReason]>()
     clientStopped = this.clientStoppedEmitter.event
 
-    constructor(installer: LeanInstaller, outputChannel: OutputChannel) {
+    constructor(outputChannel: OutputChannel) {
         this.outputChannel = outputChannel
-        this.installer = installer
-
-        // we must setup the installChanged event handler first before any didOpenEditor calls.
-        this.subscriptions.push(installer.installChanged(async (uri: FileUri) => await this.onInstallChanged(uri)))
 
         lean.visibleLeanEditors.forEach(e => this.ensureClient(e.documentExtUri))
 
@@ -146,7 +140,7 @@ export class LeanClientProvider implements Disposable {
         if (doc === undefined) {
             displayNotification(
                 'Error',
-                'No active Lean editor tab. Make sure to focus the Lean editor tab for which you want to issue a restart.',
+                'No active Lean editor tab. Make sure to focus the Lean editor tab for which you wish to issue a restart.',
             )
             return
         }
@@ -189,7 +183,7 @@ export class LeanClientProvider implements Disposable {
             if (activeUri === undefined) {
                 displayNotification(
                     'Error',
-                    'Cannot restart server: No focused Lean tab. Please focus the Lean tab for which you want to restart the server.',
+                    'Cannot restart server: No focused Lean tab. Please focus the Lean tab for which you wish to restart the server.',
                 )
                 return
             }
@@ -279,7 +273,7 @@ export class LeanClientProvider implements Disposable {
         }
 
         logger.log('[ClientProvider] Creating LeanClient for ' + folderUri.toString())
-        client = new LeanClient(folderUri, this.outputChannel)
+        client = await LeanClient.init(folderUri, this.outputChannel)
         this.subscriptions.push(client)
         this.clients.set(key, client)
 

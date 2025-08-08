@@ -23,15 +23,12 @@ function shouldUpdateToolchainAutomatically(mode: ToolchainUpdateMode) {
     return !alwaysAskBeforeInstallingLeanVersions() && mode === 'UpdateAutomatically'
 }
 
-export type ToolchainDecisionOptions = {
+export type LeanCommandOptions = {
     channel: OutputChannel | undefined
     cwdUri: FileUri | undefined
     context: string | undefined
     toolchainUpdateMode: ToolchainUpdateMode
     toolchain?: string | undefined
-}
-
-export type LeanCommandOptions = ToolchainDecisionOptions & {
     waitingPrompt: string
     translator?: ((line: string) => string | undefined) | undefined
 }
@@ -327,7 +324,7 @@ export class LeanCommandRunner {
     }
 
     async decideToolchain(
-        options: ToolchainDecisionOptions,
+        options: LeanCommandOptions,
     ): Promise<
         | { kind: 'RunWithActiveToolchain' }
         | { kind: 'RunWithSpecificToolchain'; toolchain: string }
@@ -357,6 +354,7 @@ export class LeanCommandRunner {
             options.cwdUri,
             options.context,
             options.toolchain,
+            options.waitingPrompt,
         )
         const withNetAnalysisResult = await this.analyzeElanDumpStateWithNetResult(
             options.channel,

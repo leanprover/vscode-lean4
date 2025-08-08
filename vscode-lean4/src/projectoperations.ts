@@ -139,7 +139,7 @@ export class ProjectOperationProvider implements Disposable {
             if (doc === undefined) {
                 displayNotification(
                     'Error',
-                    'No active Lean editor tab. Make sure to focus the Lean editor tab for which you want to fetch the cache.',
+                    'No active Lean editor tab. Make sure to focus the Lean editor tab for which you wish to fetch the cache.',
                 )
                 return
             }

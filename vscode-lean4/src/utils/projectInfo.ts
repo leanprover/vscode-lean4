@@ -39,6 +39,18 @@ type ProjectInfo =
     | { kind: 'FileNotFound' }
     | { kind: 'LakefileWithoutToolchain'; projectRootUri: FileUri; lakefileUri: FileUri }
 
+export function leanToolchainUri(projectUri: FileUri) {
+    return projectUri.join('lean-toolchain')
+}
+
+export function lakefileTomlUri(projectUri: FileUri) {
+    return projectUri.join('lakefile.toml')
+}
+
+export function lakefileLeanUri(projectUri: FileUri) {
+    return projectUri.join('lakefile.lean')
+}
+
 // Find the root of a Lean project and the Uri for the 'lean-toolchain' file found there.
 export async function findLeanProjectRootInfo(uri: ExtUri): Promise<ProjectRootInfo> {
     if (uri.scheme === 'untitled') {
@@ -56,9 +68,9 @@ export async function findLeanProjectRootInfo(uri: ExtUri): Promise<ProjectRootI
     let bestFolder = path
     let bestLeanToolchain: FileUri | undefined
     while (true) {
-        const leanToolchain = path.join('lean-toolchain')
-        const lakefileLean = path.join('lakefile.lean')
-        const lakefileToml = path.join('lakefile.toml')
+        const leanToolchain = leanToolchainUri(path)
+        const lakefileLean = lakefileLeanUri(path)
+        const lakefileToml = lakefileTomlUri(path)
         if (await fileExists(leanToolchain.fsPath)) {
             bestFolder = path
             bestLeanToolchain = leanToolchain
@@ -120,7 +132,7 @@ async function readLeanToolchainFile(toolchainFileUri: FileUri): Promise<string 
 
 export async function isValidLeanProject(projectFolder: FileUri): Promise<boolean> {
     try {
-        const leanToolchainPath = projectFolder.join('lean-toolchain').fsPath
+        const leanToolchainPath = leanToolchainUri(projectFolder).fsPath
 
         const isLeanProject: boolean = await fileExists(leanToolchainPath)
         const isLeanItself: boolean = await isCoreLean4Directory(projectFolder)
@@ -147,7 +159,7 @@ export async function willUseLakeServer(folder: ExtUri): Promise<boolean> {
         return false
     }
 
-    const lakefileLean = folder.join('lakefile.lean')
-    const lakefileToml = folder.join('lakefile.toml')
+    const lakefileLean = lakefileLeanUri(folder)
+    const lakefileToml = lakefileTomlUri(folder)
     return (await fileExists(lakefileLean.fsPath)) || (await fileExists(lakefileToml.fsPath))
 }

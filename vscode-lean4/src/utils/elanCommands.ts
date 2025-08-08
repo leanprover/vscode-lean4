@@ -23,6 +23,7 @@ import { FileUri, UntitledUri } from './exturi'
 import { fileExists } from './fsHelper'
 import { groupByKey } from './groupBy'
 import { displayNotification, displayNotificationWithInput } from './notifs'
+import { leanToolchainUri } from './projectInfo'
 import { LeanReleaseChannel, queryLeanReleases } from './releaseQuery'
 
 function displayElanNotInstalledError() {
@@ -395,17 +396,17 @@ export class ElanCommandProvider implements Disposable {
         if (activeClient === undefined) {
             displayNotification(
                 'Error',
-                'No active client. Please focus a Lean file of the project for which you want to select a Lean version.',
+                'No active client. Please focus a Lean file of the project for which you wish to select a Lean version.',
             )
             return
         }
         const activeClientUri = activeClient.getClientFolder()
-        const leanToolchainPath = (clientUri: FileUri) => clientUri.join('lean-toolchain').fsPath
+        const leanToolchainPath = (clientUri: FileUri) => leanToolchainUri(clientUri).fsPath
 
         if (activeClientUri.scheme === 'untitled' || !(await fileExists(leanToolchainPath(activeClientUri)))) {
             displayNotification(
                 'Error',
-                'Focused file is not contained in a Lean project. Please focus a Lean file of the project for which you want to select a Lean version.',
+                'Focused file is not contained in a Lean project. Please focus a Lean file of the project for which you wish to select a Lean version.',
             )
             return
         }
@@ -425,7 +426,7 @@ export class ElanCommandProvider implements Disposable {
             '- The Lean code in this project\n' +
             "- The 'lakefile.toml' or 'lakefile.lean' configuring this project\n" +
             '- Lake dependencies of this project\n\n' +
-            "If you simply want to update a Lake dependency of this project and use its Lean version to ensure that the Lean version of the dependency is compatible with the Lean version of this project, it is preferable to use the 'Project: Update Dependency' command instead of this one.\n\n" +
+            "If you simply wish to update a Lake dependency of this project and use its Lean version to ensure that the Lean version of the dependency is compatible with the Lean version of this project, it is preferable to use the 'Project: Update Dependency' command instead of this one.\n\n" +
             'Do you wish to proceed?'
         const choice = await displayNotificationWithInput('Information', prompt, ['Proceed'])
         if (choice !== 'Proceed') {

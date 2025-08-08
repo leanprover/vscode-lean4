@@ -4,12 +4,15 @@ import {
     DocumentHighlight,
     DocumentHighlightKind,
     EventEmitter,
+    FileSystemWatcher,
     OutputChannel,
     Progress,
     ProgressLocation,
     ProgressOptions,
     Range,
+    RelativePattern,
     window,
+    workspace,
     WorkspaceFolder,
 } from 'vscode'
 import {
@@ -61,6 +64,7 @@ import {
 } from './utils/converters'
 import { elanInstalledToolchains } from './utils/elan'
 import { ExtUri, parseExtUri, toExtUri } from './utils/exturi'
+import { fileExists } from './utils/fsHelper'
 import { leanRunner } from './utils/leanCmdRunner'
 import { lean, LeanDocument } from './utils/leanEditorProvider'
 import {
@@ -68,7 +72,7 @@ import {
     displayNotificationWithOptionalInput,
     displayNotificationWithOutput,
 } from './utils/notifs'
-import { willUseLakeServer } from './utils/projectInfo'
+import { lakefileLeanUri, lakefileTomlUri, leanToolchainUri, willUseLakeServer } from './utils/projectInfo'
 
 interface LeanClientCapabilties {
     silentDiagnosticSupport?: boolean | undefined
@@ -145,10 +149,74 @@ export class LeanClient implements Disposable {
     private serverFailedEmitter = new EventEmitter<string>()
     serverFailed = this.serverFailedEmitter.event
 
-    constructor(folderUri: ExtUri, outputChannel: OutputChannel) {
-        this.outputChannel = outputChannel
-        this.folderUri = folderUri
-        this.subscriptions.push(new Disposable(() => this.staleDepNotifier?.dispose()))
+    static async init(folderUri: ExtUri, outputChannel: OutputChannel): Promise<LeanClient> {
+        const c = new LeanClient()
+        c.outputChannel = outputChannel
+        c.folderUri = folderUri
+        c.subscriptions.push(new Disposable(() => c.staleDepNotifier?.dispose()))
+        await c.registerRestartServerNotificationWatchers()
+        return c
+    }
+
+    private async registerRestartServerNotificationWatchers() {
+        const folderUri = this.folderUri
+        if (folderUri.scheme === 'untitled') {
+            return
+        }
+        const watchers: { name: string; watcher: FileSystemWatcher }[] = []
+        if (await fileExists(leanToolchainUri(folderUri).fsPath)) {
+            watchers.push({
+                name: 'Project Lean version (`lean-toolchain`)',
+                watcher: workspace.createFileSystemWatcher(
+                    // Hack: We want to avoid having to escape globs and an empty glob doesn't match the file,
+                    // so we instead watch for `*` relative to `leanToolchainUri(folderUri)`
+                    // (accepting some unlikely false-positives).
+                    new RelativePattern(leanToolchainUri(folderUri).asUri(), '*'),
+                    true,
+                    false,
+                    true,
+                ),
+            })
+        }
+        if (await fileExists(lakefileLeanUri(folderUri).fsPath)) {
+            watchers.push({
+                name: 'Project configuration (`lakefile.lean`)',
+                watcher: workspace.createFileSystemWatcher(
+                    new RelativePattern(lakefileLeanUri(folderUri).asUri(), '*'),
+                    true,
+                    false,
+                    true,
+                ),
+            })
+        }
+        if (await fileExists(lakefileTomlUri(folderUri).fsPath)) {
+            watchers.push({
+                name: 'Project configuration (`lakefile.toml`)',
+                watcher: workspace.createFileSystemWatcher(
+                    new RelativePattern(lakefileTomlUri(folderUri).asUri(), '*'),
+                    true,
+                    false,
+                    true,
+                ),
+            })
+        }
+        this.subscriptions.push(...watchers.map(w => w.watcher))
+        for (const w of watchers) {
+            this.subscriptions.push(
+                w.watcher.onDidChange(_ => {
+                    displayNotificationWithOptionalInput(
+                        'Information',
+                        `${w.name} of '${folderUri.baseName()}' has changed. Do you wish to restart the Lean server?`,
+                        [
+                            {
+                                input: 'Restart Server',
+                                action: async () => await this.restart(),
+                            },
+                        ],
+                    )
+                }),
+            )
+        }
     }
 
     dispose(): void {
@@ -305,6 +373,7 @@ export class LeanClient implements Disposable {
             context: 'Server Startup',
             cwdUri,
             toolchainUpdateMode: 'PromptAboutUpdate',
+            waitingPrompt: 'Fetching Lean version information',
         })
 
         if (toolchainDecision.kind === 'Error') {
