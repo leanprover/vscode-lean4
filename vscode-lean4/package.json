@@ -412,6 +412,18 @@
                 "description": "This command is an implementation detail of the 'Unpause 'All Messages'' context menu option in the infoview."
             },
             {
+                "command": "lean4.infoview.copyState",
+                "category": "Lean 4: InfoView",
+                "title": "Copy State",
+                "description": "This command is an implementation detail of the 'Copy State' context menu option in the infoview."
+            },
+            {
+                "command": "lean4.infoview.copyMessage",
+                "category": "Lean 4: InfoView",
+                "title": "Copy Message",
+                "description": "This command is an implementation detail of the 'Copy Message' context menu option in the infoview."
+            },
+            {
                 "command": "lean4.infoview.goToPinnedLocation",
                 "category": "Lean 4: InfoView",
                 "title": "Go to Pinned Location",
@@ -934,6 +946,14 @@
                     "when": "false"
                 },
                 {
+                    "command": "lean4.infoview.copyState",
+                    "when": "false"
+                },
+                {
+                    "command": "lean4.infoview.copyMessage",
+                    "when": "false"
+                },
+                {
                     "command": "lean4.infoview.goToPinnedLocation",
                     "when": "false"
                 },
@@ -1379,6 +1399,16 @@
                     "command": "lean4.infoview.unpauseAllMessages",
                     "when": "webviewId == 'lean4_infoview' && unpauseAllMessagesId",
                     "group": "1_info@7"
+                },
+                {
+                    "command": "lean4.infoview.copyState",
+                    "when": "webviewId == 'lean4_infoview' && copyStateId",
+                    "group": "1_info@8"
+                },
+                {
+                    "command": "lean4.infoview.copyMessage",
+                    "when": "webviewId == 'lean4_infoview' && copyMessageId",
+                    "group": "1_info@9"
                 },
                 {
                     "submenu": "lean4.infoview.contextMenuSettings",

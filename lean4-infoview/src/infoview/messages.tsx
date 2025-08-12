@@ -46,16 +46,29 @@ const MessageView = React.memo(({ uri, diag }: MessageViewProps) => {
         [uri, diag.fullRange, diag.range],
     )
 
-    const goToMessageLocationId = React.useId()
+    const messageId = React.useId()
     useEvent(
         ec.events.clickedContextMenu,
         async _ => void ec.revealLocation(loc),
         [loc],
-        `goToMessageLocation:${goToMessageLocationId}`,
+        `goToMessageLocation:${messageId}`,
+    )
+    useEvent(
+        ec.events.clickedContextMenu,
+        async _ => {
+            if (node.current) {
+                void ec.api.copyToClipboard(node.current.innerText)
+            }
+        },
+        [loc],
+        `copyMessage:${messageId}`,
     )
 
     return (
-        <Details initiallyOpen data-vscode-context={JSON.stringify({ goToMessageLocationId })}>
+        <Details
+            initiallyOpen
+            data-vscode-context={JSON.stringify({ goToMessageLocationId: messageId, copyMessageId: messageId })}
+        >
             <span className={severityClass}>
                 {title}
                 <span className="fr" onClick={e => e.preventDefault()}>

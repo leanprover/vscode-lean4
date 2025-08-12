@@ -446,6 +446,18 @@ export class InfoProvider implements Disposable {
                     id: args.unpauseAllMessagesId,
                 }),
             ),
+            commands.registerCommand('lean4.infoview.copyState', args =>
+                this.webviewPanel?.api.clickedContextMenu({
+                    entry: 'copyState',
+                    id: args.copyStateId,
+                }),
+            ),
+            commands.registerCommand('lean4.infoview.copyMessage', args =>
+                this.webviewPanel?.api.clickedContextMenu({
+                    entry: 'copyMessage',
+                    id: args.copyMessageId,
+                }),
+            ),
             commands.registerCommand('lean4.infoview.goToPinnedLocation', args =>
                 this.webviewPanel?.api.clickedContextMenu({
                     entry: 'goToPinnedLocation',

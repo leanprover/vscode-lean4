@@ -462,6 +462,15 @@ export const FilteredGoals = React.memo(
             goalSettings.emphasizeFirstGoal,
         )
         useContextMenuEvent('saveSettings', () => saveConfig(), goalSettingsDifferFromDefaultConfig, [saveConfig])
+        useContextMenuEvent(
+            'copyState',
+            () => {
+                if (goals !== undefined) {
+                    void ec.api.copyToClipboard(goalsToString(goals))
+                }
+            },
+            goals !== undefined,
+        )
 
         const setOpenRef = React.useRef<React.Dispatch<React.SetStateAction<boolean>>>()
         useEvent(
