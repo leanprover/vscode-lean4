@@ -41,6 +41,7 @@ import {
     getInfoViewHideInstanceAssumptions,
     getInfoViewHideLetValues,
     getInfoViewHideTypeAssumptions,
+    getInfoViewMessageOrder,
     getInfoViewReverseTacticState,
     getInfoViewShowGoalNames,
     getInfoViewShowTooltipOnHover,
@@ -181,6 +182,9 @@ export class InfoProvider implements Disposable {
             await workspace
                 .getConfiguration('lean4.infoview')
                 .update('showTooltipOnHover', config.showTooltipOnHover, ConfigurationTarget.Global)
+            await workspace
+                .getConfiguration('lean4.infoview')
+                .update('messageOrder', config.messageOrder, ConfigurationTarget.Global)
         },
         sendClientRequest: async (uri: string, method: string, params: any): Promise<any> => {
             const extUri = parseExtUri(uri)
@@ -842,6 +846,7 @@ export class InfoProvider implements Disposable {
             hideInaccessibleAssumptions: getInfoViewHideInaccessibleAssumptions(),
             hideLetValues: getInfoViewHideLetValues(),
             showTooltipOnHover: getInfoViewShowTooltipOnHover(),
+            messageOrder: getInfoViewMessageOrder(),
         })
     }
 
