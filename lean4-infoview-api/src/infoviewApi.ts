@@ -132,6 +132,8 @@ export type ContextMenuEntry =
     | 'refresh'
     | 'pauseAllMessages'
     | 'unpauseAllMessages'
+    | 'copyState'
+    | 'copyMessage'
     | 'goToPinnedLocation'
     | 'goToMessageLocation'
     | 'displayTargetBeforeAssumptions'
