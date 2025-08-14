@@ -8,6 +8,7 @@ import type {
 } from 'vscode-languageserver-protocol'
 
 export type ExpectedTypeVisibility = 'Expanded by default' | 'Collapsed by default' | 'Hidden'
+export type MessageOrder = 'Sort by proximity to text cursor' | 'Sort by message location'
 
 export interface InfoviewConfig {
     allErrorsOnLine: boolean
@@ -22,6 +23,7 @@ export interface InfoviewConfig {
     hideInaccessibleAssumptions: boolean
     hideLetValues: boolean
     showTooltipOnHover: boolean
+    messageOrder: MessageOrder
 }
 
 /**
@@ -109,6 +111,7 @@ export const defaultInfoviewConfig: InfoviewConfig = {
     hideInaccessibleAssumptions: false,
     hideLetValues: false,
     showTooltipOnHover: true,
+    messageOrder: 'Sort by proximity to text cursor',
 }
 
 export type InfoviewActionKind =

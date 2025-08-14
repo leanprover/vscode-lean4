@@ -204,6 +204,15 @@
                     "default": true,
                     "markdownDescription": "Show the tooltip for an interactive element (e.g. a subexpression) when the pointer hovers over that element. When disabled, the element must be clicked for the tooltip to show up."
                 },
+                "lean4.infoview.messageOrder": {
+                    "type": "string",
+                    "enum": [
+                        "Sort by proximity to text cursor",
+                        "Sort by message location"
+                    ],
+                    "default": "Sort by proximity to text cursor",
+                    "markdownDescription": "Set the sort order of 'All Messages' in the InfoView."
+                },
                 "lean4.elaborationDelay": {
                     "type": "number",
                     "default": 200,

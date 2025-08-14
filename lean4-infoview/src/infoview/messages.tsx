@@ -1,8 +1,8 @@
 import * as React from 'react'
 import fastIsEqual from 'react-fast-compare'
-import { Diagnostic, DiagnosticSeverity, DocumentUri, Location } from 'vscode-languageserver-protocol'
+import { Diagnostic, DiagnosticSeverity, DocumentUri, Location, Position, Range } from 'vscode-languageserver-protocol'
 
-import { LeanDiagnostic, LeanPublishDiagnosticsParams, RpcErrorCode } from '@leanprover/infoview-api'
+import { LeanDiagnostic, LeanPublishDiagnosticsParams, MessageOrder, RpcErrorCode } from '@leanprover/infoview-api'
 
 import { getInteractiveDiagnostics, InteractiveDiagnostic } from '@leanprover/infoview-api'
 import { Details } from './collapsing'
@@ -15,7 +15,9 @@ import {
     DocumentPosition,
     escapeHtml,
     Keyed,
+    PositionHelpers,
     useEvent,
+    useEventResult,
     usePausableState,
     useServerNotificationState,
 } from './util'
@@ -92,35 +94,130 @@ const MessageView = React.memo(({ uri, diag }: MessageViewProps) => {
     )
 }, fastIsEqual)
 
-function mkMessageViewProps(uri: DocumentUri, messages: InteractiveDiagnostic[]): Keyed<MessageViewProps>[] {
-    const views: MessageViewProps[] = messages
-        .sort((msga, msgb) => {
-            const a = msga.fullRange?.end || msga.range.end
-            const b = msgb.fullRange?.end || msgb.range.end
-            return a.line === b.line ? a.character - b.character : a.line - b.line
-        })
-        .map(m => {
-            return { uri, diag: m }
-        })
+function comparePosition(p1: Position, p2: Position): number {
+    const l = p1.line - p2.line
+    if (l !== 0) {
+        return l
+    }
+    return p1.character - p2.character
+}
+
+function compareRange(r1: Range, r2: Range): number {
+    const s = comparePosition(r1.start, r2.start)
+    if (s !== 0) {
+        return s
+    }
+    return comparePosition(r1.end, r2.end)
+}
+
+type Proximity = { relation: 'Before' | 'After' | 'Inside'; lineDistance: number; characterOffset: number }
+
+function computeProximity(r: Range, p: Position): Proximity {
+    if (PositionHelpers.isLessThanOrEqual(r.end, p)) {
+        return {
+            relation: 'Before',
+            lineDistance: p.line - r.end.line,
+            characterOffset: r.end.character,
+        }
+    }
+    if (PositionHelpers.isLessThan(p, r.start)) {
+        return {
+            relation: 'After',
+            lineDistance: r.start.line - p.line,
+            characterOffset: r.start.character,
+        }
+    }
+    return {
+        relation: 'Inside',
+        lineDistance: p.line - r.start.line,
+        characterOffset: r.start.character,
+    }
+}
+
+function relationPriority(r: 'Before' | 'After' | 'Inside'): number {
+    switch (r) {
+        case 'Inside':
+            return 0
+        case 'Before':
+            return 1
+        case 'After':
+            return 2
+    }
+}
+
+function compareProximity(p1: Proximity, p2: Proximity): number {
+    const ld = p1.lineDistance - p2.lineDistance
+    if (ld !== 0) {
+        return ld
+    }
+    const r = relationPriority(p1.relation) - relationPriority(p2.relation)
+    if (r !== 0) {
+        return r
+    }
+    const rel = p1.relation
+    if (rel === 'Before' || rel === 'Inside') {
+        return p2.characterOffset - p1.characterOffset
+    }
+    rel satisfies 'After'
+    return p1.characterOffset - p2.characterOffset
+}
+
+function sortDiags(
+    idiags: InteractiveDiagnostic[],
+    sortOrder: MessageOrder,
+    p: DocumentPosition | undefined,
+): InteractiveDiagnostic[] {
+    if (p === undefined || sortOrder === 'Sort by message location') {
+        return idiags.toSorted((d1, d2) => compareRange(d1.fullRange ?? d1.range, d2.fullRange ?? d2.range))
+    }
+    sortOrder satisfies 'Sort by proximity to text cursor'
+    return idiags.toSorted((d1, d2) => {
+        const p1 = computeProximity(d1.range, p)
+        const p2 = computeProximity(d2.range, p)
+        return compareProximity(p1, p2)
+    })
+}
+
+function mkMessageViewProps(
+    uri: DocumentUri,
+    messages: InteractiveDiagnostic[],
+    sortOrder: MessageOrder,
+    pos: DocumentPosition | undefined,
+): Keyed<MessageViewProps>[] {
+    const views: MessageViewProps[] = sortDiags(messages, sortOrder, pos).map(m => {
+        return { uri, diag: m }
+    })
 
     return addUniqueKeys(views, v => DocumentPosition.toString({ uri: v.uri, ...v.diag.range.start }))
 }
 
 /** Shows the given messages assuming they are for the given file. */
-export const MessagesList = React.memo(({ uri, messages }: { uri: DocumentUri; messages: InteractiveDiagnostic[] }) => {
-    const should_hide = messages.length === 0
-    if (should_hide) {
-        return <>No messages.</>
-    }
+export const MessagesList = React.memo(
+    ({
+        uri,
+        messages,
+        sortOrder,
+        pos,
+    }: {
+        uri: DocumentUri
+        messages: InteractiveDiagnostic[]
+        sortOrder: MessageOrder
+        pos: DocumentPosition | undefined
+    }) => {
+        const should_hide = messages.length === 0
+        if (should_hide) {
+            return <>No messages.</>
+        }
 
-    return (
-        <div className="ml1">
-            {mkMessageViewProps(uri, messages).map(m => (
-                <MessageView {...m} key={m.key} />
-            ))}
-        </div>
-    )
-})
+        return (
+            <div className="ml1">
+                {mkMessageViewProps(uri, messages, sortOrder, pos).map(m => (
+                    <MessageView {...m} key={m.key} />
+                ))}
+            </div>
+        )
+    },
+)
 
 function lazy<T>(f: () => T): () => T {
     let state: { t: T } | undefined
@@ -139,6 +236,12 @@ export function AllMessages({ uri: uri0 }: { uri: DocumentUri }) {
     const diags0 = React.useMemo(() => dc.get(uri0) || [], [dc, uri0]).filter(
         diag => diag.isSilent === undefined || !diag.isSilent,
     )
+
+    const curPos: DocumentPosition | undefined = useEventResult(ec.events.changedCursorLocation, loc =>
+        loc ? { uri: loc.uri, ...loc.range.start } : undefined,
+    )
+
+    const [sortOrder, setSortOrder] = React.useState<MessageOrder>(config.messageOrder)
 
     const iDiags0 = React.useMemo(
         () =>
@@ -215,6 +318,17 @@ export function AllMessages({ uri: uri0 }: { uri: DocumentUri }) {
                         }}
                     >
                         <a
+                            className={'link pointer mh2 dim codicon codicon-sort-precedence'}
+                            onClick={_ => {
+                                setSortOrder(o =>
+                                    o === 'Sort by message location'
+                                        ? 'Sort by proximity to text cursor'
+                                        : 'Sort by message location',
+                                )
+                            }}
+                            title={sortOrder}
+                        ></a>
+                        <a
                             className={
                                 'link pointer mh2 dim codicon ' +
                                 (isPaused ? 'codicon-debug-continue' : 'codicon-debug-pause')
@@ -226,7 +340,13 @@ export function AllMessages({ uri: uri0 }: { uri: DocumentUri }) {
                         ></a>
                     </span>
                 </>
-                <AllMessagesBody uri={uri} messages={iDiags} setNumDiags={setNumDiags} />
+                <AllMessagesBody
+                    uri={uri}
+                    messages={iDiags}
+                    setNumDiags={setNumDiags}
+                    sortOrder={sortOrder}
+                    pos={curPos}
+                />
             </Details>
         </RpcContext.Provider>
     )
@@ -236,10 +356,12 @@ interface AllMessagesBodyProps {
     uri: DocumentUri
     messages: () => Promise<InteractiveDiagnostic[]>
     setNumDiags: React.Dispatch<React.SetStateAction<number | undefined>>
+    sortOrder: MessageOrder
+    pos: DocumentPosition | undefined
 }
 
 /** We factor out the body of {@link AllMessages} which lazily fetches its contents only when expanded. */
-function AllMessagesBody({ uri, messages, setNumDiags }: AllMessagesBodyProps) {
+function AllMessagesBody({ uri, messages, setNumDiags, sortOrder, pos }: AllMessagesBodyProps) {
     const [msgs, setMsgs] = React.useState<InteractiveDiagnostic[] | undefined>(undefined)
     React.useEffect(() => {
         const fn = async () => {
@@ -251,7 +373,7 @@ function AllMessagesBody({ uri, messages, setNumDiags }: AllMessagesBodyProps) {
     }, [messages, setNumDiags])
     React.useEffect(() => () => /* Called on unmount. */ setNumDiags(undefined), [setNumDiags])
     if (msgs === undefined) return <>Loading messages...</>
-    else return <MessagesList uri={uri} messages={msgs} />
+    else return <MessagesList uri={uri} messages={msgs} sortOrder={sortOrder} pos={pos} />
 }
 
 /**

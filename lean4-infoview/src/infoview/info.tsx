@@ -267,7 +267,12 @@ const InfoDisplayContent = React.memo((props: InfoDisplayContentProps) => {
                 <Details initiallyOpen key="messages">
                     <>Messages ({messages.length})</>
                     <div className="ml1">
-                        <MessagesList uri={pos.uri} messages={messages} />
+                        <MessagesList
+                            uri={pos.uri}
+                            messages={messages}
+                            pos={pos}
+                            sortOrder={'Sort by proximity to text cursor'}
+                        />
                     </div>
                 </Details>
             </div>
