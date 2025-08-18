@@ -35,6 +35,7 @@ export async function initLean4(fileName: string): Promise<EnabledFeatures> {
     const lean = await waitForActiveExtension('leanprover.lean4', 60)
     assertAndLog(lean, 'Lean extension not loaded')
     assertAndLog(lean.isActive, 'Lean extension is not active')
+    assertAndLog(lean.exports !== undefined, 'Lean extension exports not active')
     logger.log(`Found lean package version: ${lean.packageJSON.version}`)
 
     const doc = await vscode.workspace.openTextDocument(fileName)
@@ -124,6 +125,8 @@ export async function initLean4Untitled(contents: string): Promise<EnabledFeatur
 
     const lean = await waitForActiveExtension('leanprover.lean4', 60)
     assertAndLog(lean, 'Lean extension not loaded')
+    assertAndLog(lean.isActive, 'Lean extension is not active')
+    assertAndLog(lean.exports !== undefined, 'Lean extension exports not active')
     logger.log(`Found lean package version: ${lean.packageJSON.version}`)
     const features = await waitForLean4FeatureActivation(lean.exports)
     const info = features.infoProvider
