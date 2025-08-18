@@ -1,6 +1,7 @@
+import * as p from 'child_process'
 import * as path from 'path'
 
-import { downloadAndUnzipVSCode, runTests } from '@vscode/test-electron'
+import { downloadAndUnzipVSCode, resolveCliArgsFromVSCodeExecutablePath, runTests } from '@vscode/test-electron'
 import * as fs from 'fs'
 import { logger } from '../../src/utils/logger'
 
@@ -40,6 +41,20 @@ async function main() {
             })
         } else {
             vscodeExecutablePath = await downloadAndUnzipVSCode()
+        }
+
+        const [cliPath, ...cliCommonArguments] = resolveCliArgsFromVSCodeExecutablePath(vscodeExecutablePath)
+        const result = p.spawnSync(
+            cliPath,
+            [...cliCommonArguments, '--install-extension', 'tamasfe.even-better-toml', '--force'],
+            {
+                encoding: 'utf-8',
+                stdio: 'inherit',
+                shell: process.platform === 'win32',
+            },
+        )
+        if (result.error !== undefined) {
+            throw new Error('Got error while installing dependency: ${result.error}')
         }
 
         clearUserWorkspaceData(vscodeTestPath)

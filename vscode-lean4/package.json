@@ -7,6 +7,9 @@
     "engines": {
         "vscode": "^1.75.0"
     },
+    "extensionDependencies": [
+        "tamasfe.even-better-toml"
+    ],
     "categories": [
         "Programming Languages"
     ],
@@ -1676,6 +1679,12 @@
                         }
                     }
                 ]
+            }
+        ],
+        "tomlValidation": [
+            {
+                "fileMatch": "lakefile.toml",
+                "url": "https://raw.githubusercontent.com/leanprover/lean4/refs/heads/master/src/lake/schemas/lakefile-toml-schema.json"
             }
         ]
     },
