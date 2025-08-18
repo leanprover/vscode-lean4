@@ -326,7 +326,11 @@ export function AllMessages({ uri: uri0 }: { uri: DocumentUri }) {
                                         : 'Sort by message location',
                                 )
                             }}
-                            title={sortOrder}
+                            title={
+                                sortOrder === 'Sort by message location'
+                                    ? 'Sort by proximity to text cursor'
+                                    : 'Sort by message location'
+                            }
                         ></a>
                         <a
                             className={
