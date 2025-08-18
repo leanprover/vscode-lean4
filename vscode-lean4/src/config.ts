@@ -125,6 +125,10 @@ export function getInfoViewShowTooltipOnHover(): boolean {
     return workspace.getConfiguration('lean4.infoview').get('showTooltipOnHover', true)
 }
 
+export function getInfoViewMessageOrder(): 'Sort by proximity to text cursor' | 'Sort by message location' {
+    return workspace.getConfiguration('lean4.infoview').get('messageOrder', 'Sort by proximity to text cursor')
+}
+
 export function getElaborationDelay(): number {
     return workspace.getConfiguration('lean4').get('elaborationDelay', 200)
 }
