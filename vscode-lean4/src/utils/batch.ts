@@ -1,7 +1,7 @@
 import { ChildProcessWithoutNullStreams, spawn } from 'child_process'
 import { OutputChannel, Progress, ProgressLocation, ProgressOptions, window } from 'vscode'
 import { logger } from './logger'
-import { displayNotificationWithOutput } from './notifs'
+import { displayModalNotificationWithOutput, displayNotificationWithOutput } from './notifs'
 
 export interface ExecutionChannel {
     combined?: OutputChannel | undefined
@@ -48,13 +48,14 @@ export function batchExecuteWithProc(
     workingDirectory?: string | undefined,
     channel?: ExecutionChannel | undefined,
     envExtensions?: { [key: string]: string } | undefined,
+    shell?: 'Unix' | 'Windows' | undefined,
 ): [ChildProcessWithoutNullStreams | 'CannotLaunch', Promise<ExecutionResult>] {
     let stdout: string = ''
     let stderr: string = ''
     let combined: string = ''
     let options = {}
     if (workingDirectory !== undefined) {
-        options = { cwd: workingDirectory }
+        options = { cwd: workingDirectory, windowsHide: true }
     }
     if (envExtensions !== undefined) {
         const env = Object.assign({}, process.env)
@@ -62,6 +63,11 @@ export function batchExecuteWithProc(
             env[key] = value
         }
         options = { ...options, env }
+    }
+    if (shell === 'Unix') {
+        options = { ...options, shell: '/bin/bash' }
+    } else if (shell === 'Windows') {
+        options = { ...options, shell: 'powershell.exe' }
     }
     if (channel?.combined) {
         channel.combined.appendLine(formatCommandExecutionOutput(workingDirectory, executablePath, args))
@@ -149,8 +155,9 @@ export async function batchExecute(
     workingDirectory?: string | undefined,
     channel?: ExecutionChannel | undefined,
     envExtensions?: { [key: string]: string } | undefined,
+    shell?: 'Unix' | 'Windows' | undefined,
 ): Promise<ExecutionResult> {
-    const [_, execPromise] = batchExecuteWithProc(executablePath, args, workingDirectory, channel, envExtensions)
+    const [_, execPromise] = batchExecuteWithProc(executablePath, args, workingDirectory, channel, envExtensions, shell)
     return execPromise
 }
 
@@ -159,6 +166,7 @@ export interface ProgressExecutionOptions {
     channel?: OutputChannel | undefined
     translator?: ((line: string) => string | undefined) | undefined
     envExtensions?: { [key: string]: string } | undefined
+    shell?: 'Unix' | 'Windows' | undefined
     allowCancellation?: boolean
 }
 
@@ -221,7 +229,7 @@ export async function batchExecuteWithProgress(
     }
 
     const expensiveExecutionTimeoutPromise: Promise<ExecutionResult | undefined> = new Promise((resolve, _) =>
-        setTimeout(() => resolve(undefined), 250),
+        setTimeout(() => resolve(undefined), 500),
     )
     const [proc, executionPromise] = batchExecuteWithProc(
         executablePath,
@@ -231,6 +239,7 @@ export async function batchExecuteWithProgress(
             combined: progressChannel,
         },
         options.envExtensions,
+        options.shell,
     )
     if (proc === 'CannotLaunch') {
         return executionPromise // resolves to a 'CannotLaunch' ExecutionResult
@@ -241,7 +250,7 @@ export async function batchExecuteWithProgress(
         return preliminaryResult
     }
 
-    // Execution already took longer than 250ms, let's start displaying a progress bar now
+    // Execution already took longer than 500ms, let's start displaying a progress bar now
     const result: ExecutionResult = await window.withProgress(progressOptions, (p, token) => {
         progress = p
         token.onCancellationRequested(() => proc.kill())
@@ -276,9 +285,21 @@ export function displayResultError(result: ExecutionResult, message: string) {
     displayOutputError(result.combined, message)
 }
 
+export async function displayModalResultError(result: ExecutionResult, message: string) {
+    if (result.exitCode === ExecutionExitCode.Success) {
+        throw Error()
+    }
+    await displayModalOutputError(result.combined, message)
+}
+
 export function displayOutputError(output: string, message: string) {
     const errorMessage: string = formatErrorMessage(output, message)
     displayNotificationWithOutput('Error', errorMessage)
+}
+
+export async function displayModalOutputError(output: string, message: string) {
+    const errorMessage: string = formatModalErrorMessage(output, message)
+    await displayModalNotificationWithOutput('Error', errorMessage)
 }
 
 function formatErrorMessage(output: string, message: string): string {
@@ -286,4 +307,11 @@ function formatErrorMessage(output: string, message: string): string {
         return `${message}`
     }
     return `${message} Command output: ${output}`
+}
+
+function formatModalErrorMessage(output: string, message: string): string {
+    if (output === '') {
+        return `${message}`
+    }
+    return `${message}\n\n---\n\nOutput of command that failed: ${output}`
 }

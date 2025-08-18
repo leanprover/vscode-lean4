@@ -1,5 +1,4 @@
 import { ConfigurationTarget, ThemeColor, workspace } from 'vscode'
-import { elanStableChannel } from './utils/elan'
 import { PATH } from './utils/envPath'
 
 function processConfigColor(c: string): ThemeColor | string {
@@ -172,12 +171,6 @@ export function isRunningTest(): boolean {
 
 export function getTestFolder(): string {
     return typeof process.env.LEAN4_TEST_FOLDER === 'string' ? process.env.LEAN4_TEST_FOLDER : ''
-}
-
-export function getDefaultLeanVersion(): string {
-    return typeof process.env.DEFAULT_LEAN_TOOLCHAIN === 'string'
-        ? process.env.DEFAULT_LEAN_TOOLCHAIN
-        : elanStableChannel
 }
 
 /** The editor line height, in pixels. */

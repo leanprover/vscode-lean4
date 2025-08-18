@@ -584,15 +584,9 @@ export function copyFolder(source: string, target: string) {
 }
 
 export function getTestLeanVersion() {
-    const testsRoot = path.join(__dirname, '..', '..', '..', '..', 'test')
-    const multiFoo = path.join(testsRoot, 'test-fixtures', 'simple')
-    const toolchain = fs.readFileSync(path.join(multiFoo, 'lean-toolchain'), 'utf8').toString()
-    return toolchain.trim().split(':')[1]
+    return 'nightly-2022-10-26'
 }
 
 export function getAltBuildVersion() {
-    const testsRoot = path.join(__dirname, '..', '..', '..', '..', 'test')
-    const multiFoo = path.join(testsRoot, 'test-fixtures', 'multi', 'foo')
-    const toolchain = fs.readFileSync(path.join(multiFoo, 'lean-toolchain'), 'utf8').toString()
-    return toolchain.trim().split(':')[1]
+    return 'nightly-2022-10-20'
 }

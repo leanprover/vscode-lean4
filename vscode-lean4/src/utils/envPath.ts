@@ -68,3 +68,14 @@ export function setPATH(env: NodeJS.ProcessEnv, path: PATH) {
 export function setProcessEnvPATH(path: PATH) {
     setPATH(process.env, path)
 }
+
+export function addToPATH(env: NodeJS.ProcessEnv, path: PATH, pathToAdd: string) {
+    if (path.includes(pathToAdd)) {
+        return
+    }
+    setPATH(env, path.prepend(pathToAdd))
+}
+
+export function addToProcessEnvPATH(pathToAdd: string) {
+    addToPATH(process.env, PATH.ofProcessEnv(), pathToAdd)
+}

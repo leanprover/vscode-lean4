@@ -757,7 +757,7 @@ export class InfoProvider implements Disposable {
         } else {
             displayNotification(
                 'Error',
-                'No active Lean editor tab. Make sure to focus the Lean editor tab for which you want to open the infoview.',
+                'No active Lean editor tab. Make sure to focus the Lean editor tab for which you wish to open the infoview.',
             )
         }
     }
