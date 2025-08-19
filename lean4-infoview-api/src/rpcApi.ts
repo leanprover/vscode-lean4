@@ -114,7 +114,6 @@ export type MsgEmbed =
     | { goal: InteractiveGoal }
     | { widget: { wi: UserWidgetInstance; alt: TaggedText<MsgEmbed> } }
     | { trace: TraceEmbed }
-    | { lazyTrace: [number, Name, MessageData] } // old collapsible trace support
 
 export type InteractiveDiagnostic = Omit<LeanDiagnostic, 'message'> & { message: TaggedText<MsgEmbed> }
 
