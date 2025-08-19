@@ -51,6 +51,23 @@ export type DependencyInstallationResult =
     | { kind: 'Cancelled' }
     | { kind: 'PendingInstall' }
 
+const gitInstallDir = path.join('c:', 'Program Files', 'Git', 'cmd')
+
+export function depInstallationLocations(): string[] {
+    switch (os.type()) {
+        case 'Linux':
+            // Installation locations of Git and curl should already be in PATH on most Linux systems
+            return []
+        case 'Darwin':
+            // MacOS ships with a dummy executable for Git that is already in the PATH, which is replaced
+            // with the real executable when Apple Command Line Tools is installed.
+            return []
+        case 'Windows_NT':
+            return [gitInstallDir]
+    }
+    return []
+}
+
 const windowsRawGitInstallScript = `$gitInstallerUrl = "https://github.com/git-for-windows/git/releases/download/v2.50.1.windows.1/Git-2.50.1-64-bit.exe"
 $installDir = "%TEMP%\\lean4-vscode-extension"
 $gitInstallerLoc = "$installDir\\GitInstaller.exe"
@@ -336,14 +353,13 @@ function dependencyInstallationMethod(p: MissingDependencyInstallationProcedure)
                 pathExtensions: [],
             }
         case 'Windows':
-            const gitPathExtension = path.join('c:', 'Program Files', 'Git', 'cmd')
             if (!p.isWinGetAvailable) {
                 return {
                     kind: 'Automatic',
                     shell: 'Windows',
                     script: windowsRawGitInstallScript,
                     manualBackupScript: undefined,
-                    pathExtensions: [gitPathExtension],
+                    pathExtensions: [gitInstallDir],
                 }
             }
             const windowsWingetGitInstallScript =
@@ -353,7 +369,7 @@ function dependencyInstallationMethod(p: MissingDependencyInstallationProcedure)
                 shell: 'Windows',
                 script: windowsWingetGitInstallScript,
                 manualBackupScript: windowsWingetGitInstallScript,
-                pathExtensions: [gitPathExtension],
+                pathExtensions: [gitInstallDir],
             }
 
         case 'Other':
