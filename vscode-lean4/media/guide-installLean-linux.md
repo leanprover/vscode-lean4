@@ -26,7 +26,7 @@ curl "https://elan.lean-lang.org/elan-init.sh" -sSf | sh -s -- -y --default-tool
 ```
 
 On Linux systems that do not support either of the package managers `apt` and `dnf`, Git and curl cannot be installed automatically. 
-If you do not have them installed yet, please open a new [terminal](command:workbench.action.terminal.new), install Git and curl using your system's package manager, restart VS Code and re-try this step - once Git and curl are installed, Lean's version manager Elan can be installed using the automatic installation script.
+If you do not have them installed yet, please install Git and curl using your system's package manager, restart VS Code and re-try this step - once Git and curl are installed, Lean's version manager Elan can be installed using the automatic installation script.
 
 ## Restricted Environments
 If you are in a restricted environment where you cannot install Git or curl and they are not already installed, for example a restricted university computer, then the installation script above may fail. In this case, there is currently no way to try Lean 4 with a local installation. If you want to try out Lean 4 regardless, you can read [Mathematics in Lean](https://leanprover-community.github.io/mathematics_in_lean/) and do the exercises with [an online instance of Lean 4 hosted using Gitpod](https://gitpod.io/#/https://github.com/leanprover-community/mathematics_in_lean). Doing so requires creating a GitHub account. Alternatively, you can also [play the Natural Number Game](https://adam.math.hhu.de/#/g/hhu-adam/NNG4) or [try a single-file version of Lean 4 in your web browser](https://live.lean-lang.org/).

@@ -15,7 +15,7 @@ import { ProjectInitializationProvider } from './projectinit'
 import { ProjectOperationProvider } from './projectoperations'
 import { LeanTaskGutter } from './taskgutter'
 import { LeanClientProvider } from './utils/clientProvider'
-import { DepInstaller } from './utils/depInstaller'
+import { depInstallationLocations, DepInstaller } from './utils/depInstaller'
 import { ElanCommandProvider } from './utils/elanCommands'
 import { addToProcessEnvPATH } from './utils/envPath'
 import { combine, onEventWhile, withoutReentrancy } from './utils/events'
@@ -97,6 +97,12 @@ function addElanPathToPATH() {
  */
 function activateAlwaysEnabledFeatures(context: ExtensionContext): AlwaysEnabledFeatures {
     addElanPathToPATH()
+    // Add all dependency installation locations to the PATH.
+    // This is especially useful on Windows, where apparently (?) users sometimes need to
+    // restart their system for changes in the PATH to be reflected in newly launched applications.
+    for (const loc of depInstallationLocations()) {
+        addToProcessEnvPATH(loc)
+    }
     context.subscriptions.push(PathExtensionProvider.withAddedEnvPathExtensions())
 
     context.subscriptions.push(
@@ -237,7 +243,7 @@ async function tryActivatingLean4FeaturesInProject(
     const preconditionCheckResult = await checkLean4FeaturePreconditions(
         leanInstaller,
         depInstaller,
-        'Activate Lean 4 Extension',
+        'Lean 4 Extension Startup',
         extUriToCwdUri(projectUri),
         d,
     )
