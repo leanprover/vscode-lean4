@@ -47,6 +47,7 @@ import {
 } from './config'
 import { logger } from './utils/logger'
 // @ts-ignore
+import * as fs from 'fs'
 import { SemVer } from 'semver'
 import { formatCommandExecutionOutput } from './utils/batch'
 import {
@@ -63,7 +64,7 @@ import {
     setDependencyBuildMode,
 } from './utils/converters'
 import { elanInstalledToolchains } from './utils/elan'
-import { ExtUri, parseExtUri, toExtUri } from './utils/exturi'
+import { ExtUri, FileUri, parseExtUri, toExtUri } from './utils/exturi'
 import { fileExists } from './utils/fsHelper'
 import { leanRunner } from './utils/leanCmdRunner'
 import { lean, LeanDocument } from './utils/leanEditorProvider'
@@ -109,6 +110,7 @@ export class LeanClient implements Disposable {
     private showingRestartMessage: boolean = false
     private isRestarting: boolean = false
     private staleDepNotifier: Disposable | undefined
+    private configFileContents: Map<string, string> = new Map()
 
     private openServerDocuments: Set<string> = new Set<string>()
 
@@ -158,6 +160,21 @@ export class LeanClient implements Disposable {
         return c
     }
 
+    private async updateConfigFileContents(uri: FileUri): Promise<boolean> {
+        let contents: string
+        try {
+            contents = (await fs.promises.readFile(uri.fsPath, { encoding: 'utf8' })).trim()
+        } catch {
+            return false
+        }
+        const oldContents = this.configFileContents.get(uri.toString())
+        if (oldContents === undefined || oldContents !== contents) {
+            this.configFileContents.set(uri.toString(), contents)
+            return true
+        }
+        return false
+    }
+
     private async registerRestartServerNotificationWatchers() {
         const folderUri = this.folderUri
         if (folderUri.scheme === 'untitled') {
@@ -177,6 +194,7 @@ export class LeanClient implements Disposable {
                     true,
                 ),
             })
+            await this.updateConfigFileContents(leanToolchainUri(folderUri))
         }
         if (await fileExists(lakefileLeanUri(folderUri).fsPath)) {
             watchers.push({
@@ -188,6 +206,7 @@ export class LeanClient implements Disposable {
                     true,
                 ),
             })
+            await this.updateConfigFileContents(lakefileLeanUri(folderUri))
         }
         if (await fileExists(lakefileTomlUri(folderUri).fsPath)) {
             watchers.push({
@@ -199,11 +218,24 @@ export class LeanClient implements Disposable {
                     true,
                 ),
             })
+            await this.updateConfigFileContents(lakefileTomlUri(folderUri))
         }
         this.subscriptions.push(...watchers.map(w => w.watcher))
         for (const w of watchers) {
             this.subscriptions.push(
-                w.watcher.onDidChange(_ => {
+                w.watcher.onDidChange(async uri => {
+                    const fileUri = FileUri.fromUri(uri)
+                    if (fileUri === undefined) {
+                        return
+                    }
+                    const didReallyChange = await this.updateConfigFileContents(fileUri)
+                    if (!didReallyChange) {
+                        // In core on ext4, building touches the metadata of the file, which causes
+                        // the change event to trigger.
+                        // VS Code file watchers can't distinguish between "modify" and "change",
+                        // so we use the file contents to distinguish the two post-hoc.
+                        return
+                    }
                     displayNotificationWithOptionalInput(
                         'Information',
                         `${w.name} of '${folderUri.baseName()}' has changed. Do you wish to restart the Lean server?`,
