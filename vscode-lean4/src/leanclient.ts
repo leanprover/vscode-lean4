@@ -168,9 +168,10 @@ export class LeanClient implements Disposable {
             return false
         }
         const oldContents = this.configFileContents.get(uri.toString())
-        if (oldContents === undefined || oldContents !== contents) {
+        const isFirstUpdate = oldContents === undefined
+        if (isFirstUpdate || oldContents !== contents) {
             this.configFileContents.set(uri.toString(), contents)
-            return true
+            return !isFirstUpdate
         }
         return false
     }
@@ -221,6 +222,7 @@ export class LeanClient implements Disposable {
             await this.updateConfigFileContents(lakefileTomlUri(folderUri))
         }
         this.subscriptions.push(...watchers.map(w => w.watcher))
+        let isWatcherNotificationDisplayed = false
         for (const w of watchers) {
             this.subscriptions.push(
                 w.watcher.onDidChange(async uri => {
@@ -236,6 +238,10 @@ export class LeanClient implements Disposable {
                         // so we use the file contents to distinguish the two post-hoc.
                         return
                     }
+                    if (isWatcherNotificationDisplayed) {
+                        return
+                    }
+                    isWatcherNotificationDisplayed = true
                     displayNotificationWithOptionalInput(
                         'Information',
                         `${w.name} of '${folderUri.baseName()}' has changed. Do you wish to restart the Lean server?`,
@@ -245,6 +251,9 @@ export class LeanClient implements Disposable {
                                 action: async () => await this.restart(),
                             },
                         ],
+                        () => {
+                            isWatcherNotificationDisplayed = false
+                        },
                     )
                 }),
             )
