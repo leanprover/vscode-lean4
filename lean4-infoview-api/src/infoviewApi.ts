@@ -7,6 +7,19 @@ import type {
     WorkspaceEdit,
 } from 'vscode-languageserver-protocol'
 
+export type ModuleHierarchyOptions = {}
+
+export type HighlightMatchesOptions = {}
+
+export interface RpcOptions {
+    highlightMatchesProvider?: HighlightMatchesOptions | undefined
+}
+
+export interface LeanServerCapabilities {
+    moduleHierarchyProvider?: ModuleHierarchyOptions | undefined
+    rpcProvider?: RpcOptions | undefined
+}
+
 export type ExpectedTypeVisibility = 'Expanded by default' | 'Collapsed by default' | 'Hidden'
 export type MessageOrder = 'Sort by proximity to text cursor' | 'Sort by message location'
 
@@ -180,7 +193,7 @@ export interface InfoviewApi {
     sentClientNotification(method: string, params: any): Promise<void>
 
     /** Must fire with the server's initialization message when the server is started or restarted. */
-    serverRestarted(serverInitializeResult: InitializeResult): Promise<void>
+    serverRestarted(serverInitializeResult: InitializeResult<LeanServerCapabilities>): Promise<void>
     /** Must fire with the server's message when the server is stopped. */
     serverStopped(serverStoppedReason: ServerStoppedReason | undefined): Promise<void>
 

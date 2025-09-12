@@ -35,6 +35,7 @@ import {
     LeanDiagnostic,
     LeanFileProgressParams,
     LeanFileProgressProcessingInfo,
+    LeanServerCapabilities,
     ServerStoppedReason,
 } from '@leanprover/infoview-api'
 import {
@@ -57,7 +58,6 @@ import {
     LeanModuleHierarchyImportsParams,
     LeanPrepareModuleHierarchyParams,
     LeanPublishDiagnosticsParams,
-    LeanServerCapabilities,
     p2cConverter,
     patchConverters,
     setDependencyBuildMode,
@@ -228,6 +228,7 @@ export class LeanClient implements Disposable {
         return this.client?.initializeResult?.capabilities
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
     leanServerCapabilities(): LeanServerCapabilities | undefined {
         return this.serverCapabilities()?.experimental
     }

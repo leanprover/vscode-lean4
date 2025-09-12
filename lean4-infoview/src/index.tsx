@@ -11,7 +11,7 @@ export { InteractiveCode, InteractiveCodeProps, Markdown } from './infoview/inte
 export { renderInfoview } from './infoview/main'
 export { RpcContext, useRpcSession } from './infoview/rpcSessions'
 export { ServerVersion } from './infoview/serverVersion'
-export { DynamicComponent, DynamicComponentProps, PanelWidgetProps, importWidgetModule } from './infoview/userWidget'
+export { DynamicComponent, DynamicComponentProps, importWidgetModule, PanelWidgetProps } from './infoview/userWidget'
 export {
     DocumentPosition,
     mapRpcError,

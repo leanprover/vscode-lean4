@@ -1,6 +1,6 @@
 {
     "name": "@leanprover/infoview-api",
-    "version": "0.8.0",
+    "version": "0.9.0",
     "description": "Types and API for @leanprover/infoview.",
     "scripts": {
         "watch": "tsc --watch",

@@ -209,6 +209,11 @@ select {
     margin-bottom: 0;
 }
 
+.trace-search {
+    width: 100%;
+    margin-bottom: 1em;
+}
+
 /* MarkupContent Layout */
 .tooltip-code-content ul {
     padding-left: 20px;
@@ -247,6 +252,10 @@ select {
 .removed-text {
     background-color: var(--vscode-diffEditor-removedTextBackground);
     border-radius: 2pt;
+}
+
+.highlighted-text {
+    background-color: var(--vscode-editor-findMatchBackground);
 }
 
 .b--inserted {
