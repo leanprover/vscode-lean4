@@ -117,7 +117,7 @@ function activateAlwaysEnabledFeatures(context: ExtensionContext): AlwaysEnabled
             ),
         ),
         commands.registerCommand('lean4.docs.showDocResources', () =>
-            commands.executeCommand('simpleBrowser.show', 'https://lean-lang.org/documentation/'),
+            commands.executeCommand('simpleBrowser.show', 'https://lean-lang.org/learn/'),
         ),
     )
 
