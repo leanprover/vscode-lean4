@@ -18,7 +18,7 @@ import {
 } from './interactiveCode'
 import { useRpcSession } from './rpcSessions'
 import { DynamicComponent } from './userWidget'
-import { mapRpcError, useAsyncWithTrigger } from './util'
+import { isAnyTextSelected, mapRpcError, preventDoubleClickTextSelection, useAsyncWithTrigger } from './util'
 
 const TraceClassContext = React.createContext<string>('')
 
@@ -35,7 +35,7 @@ function TraceLine({ indent, cls, msg, icon }: HighlightedTraceEmbed & { icon: s
     const spaces = ' '.repeat(indent)
     const abbrCls = abbreviateCommonPrefix(React.useContext(TraceClassContext), cls)
     return (
-        <div className="trace-line">
+        <div className="trace-line pointer">
             {spaces}
             <span className="trace-class" title={cls}>
                 [{abbrCls}]
@@ -73,6 +73,9 @@ function CollapsibleTraceNode(traceEmbed: HighlightedTraceEmbed) {
             if (!ev.currentTarget.contains(ev.target)) return
             ev.stopPropagation()
             ev.preventDefault()
+            if (isAnyTextSelected()) {
+                return
+            }
             if (!open) void fetchChildren()
             setOpen(o => !o)
         },
@@ -80,11 +83,11 @@ function CollapsibleTraceNode(traceEmbed: HighlightedTraceEmbed) {
     )
 
     return (
-        <div>
-            <div className="pointer" onClick={onClick}>
+        <div className="pointer">
+            <div onClick={onClick} onMouseDown={e => preventDoubleClickTextSelection(e)}>
                 <TraceLine {...traceEmbed} icon={icon} />
             </div>
-            <div style={{ display: open ? 'block' : 'none' }}>
+            <div style={open ? {} : { display: 'none' }}>
                 <TraceClassContext.Provider value={cls}>
                     {children.state === 'resolved' ? (
                         children.value.map((tt, i) => <InteractiveMessage fmt={tt} key={i} />)

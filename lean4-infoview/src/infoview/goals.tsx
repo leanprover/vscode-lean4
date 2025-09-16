@@ -15,7 +15,7 @@ import { Locations, LocationsContext, SelectableLocationSettings, useSelectableL
 import { useHoverHighlight } from './hoverHighlight'
 import { InteractiveCode } from './interactiveCode'
 import { WithTooltipOnHover } from './tooltips'
-import { useEvent } from './util'
+import { preventClickOnTextSelection, preventDoubleClickTextSelection, useEvent } from './util'
 
 /** Returns true if `h` is inaccessible according to Lean's default name rendering. */
 function isInaccessibleName(h: string): boolean {
@@ -242,7 +242,11 @@ export const Goal = React.memo((props: GoalProps) => {
     if (goal.userName && !settings.hideGoalNames) {
         return (
             <details open className={cn}>
-                <summary className="mv1 pointer">
+                <summary
+                    className="mv1 pointer"
+                    onClick={e => preventClickOnTextSelection(e)}
+                    onMouseDown={e => preventDoubleClickTextSelection(e)}
+                >
                     <strong className="goal-case">case </strong>
                     {goal.userName}
                 </summary>
@@ -339,7 +343,7 @@ export const FilteredGoals = React.memo(
             name: string,
         ) => (
             <a
-                className="link pointer tooltip-menu-content"
+                className="link pointer tooltip-menu-content non-selectable"
                 onClick={_ => {
                     setGoalSettings(settingFn)
                 }}
@@ -399,7 +403,7 @@ export const FilteredGoals = React.memo(
                 )}
                 <br className="saveConfigLineBreak" style={disabledSaveStyle} />
                 <a
-                    className="link pointer tooltip-menu-content saveConfigButton"
+                    className="link pointer tooltip-menu-content saveConfigButton non-selectable"
                     style={disabledSaveStyle}
                     onClick={_ => saveConfig()}
                 >
@@ -485,10 +489,7 @@ export const FilteredGoals = React.memo(
         )
 
         return (
-            <div
-                style={{ display: goals !== undefined ? 'block' : 'none' }}
-                data-vscode-context={JSON.stringify(context)}
-            >
+            <div style={goals !== undefined ? {} : { display: 'none' }} data-vscode-context={JSON.stringify(context)}>
                 <Details setOpenRef={r => (setOpenRef.current = r)} initiallyOpen={initiallyOpen}>
                     <>
                         {headerChildren}
