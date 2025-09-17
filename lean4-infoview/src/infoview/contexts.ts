@@ -1,11 +1,12 @@
 import * as React from 'react'
-import type { DocumentUri } from 'vscode-languageserver-protocol'
+import { ServerCapabilities, type DocumentUri } from 'vscode-languageserver-protocol'
 
 import {
     defaultInfoviewConfig,
     InfoviewConfig,
     LeanDiagnostic,
     LeanFileProgressProcessingInfo,
+    LeanServerCapabilities,
 } from '@leanprover/infoview-api'
 
 import { EditorConnection } from './editorConnection'
@@ -15,6 +16,7 @@ import { DocumentPosition } from './util'
 // Type-unsafe initializers for contexts which we immediately set up at the top-level.
 // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
 export const EditorContext = React.createContext<EditorConnection>(null as any)
+export const CapabilityContext = React.createContext<ServerCapabilities<LeanServerCapabilities> | undefined>(undefined)
 export const VersionContext = React.createContext<ServerVersion | undefined>(undefined)
 
 export const ConfigContext = React.createContext<InfoviewConfig>(defaultInfoviewConfig)

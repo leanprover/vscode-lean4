@@ -18,12 +18,6 @@ import * as async from 'vscode-languageclient/lib/common/utils/async'
 import * as ls from 'vscode-languageserver-protocol'
 import { automaticallyBuildDependencies } from '../config'
 
-export type ModuleHierarchyOptions = {}
-
-export interface LeanServerCapabilities {
-    moduleHierarchyProvider?: ModuleHierarchyOptions | undefined
-}
-
 export enum LeanTag {
     UnsolvedGoals = 1,
     GoalsAccomplished = 2,

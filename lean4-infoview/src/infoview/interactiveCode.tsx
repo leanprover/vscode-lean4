@@ -4,6 +4,7 @@ import {
     CodeWithInfos,
     DiffTag,
     getGoToLocation,
+    HighlightedSubexprInfo,
     InteractiveDiagnostics_infoToInteractive,
     SubexprInfo,
     TaggedText,
@@ -29,16 +30,16 @@ export interface InteractiveTextComponentProps<T> {
     fmt: TaggedText<T>
 }
 
-export interface InteractiveTagProps<T> extends InteractiveTextComponentProps<T> {
+export interface InteractiveTagProps<T, U> extends InteractiveTextComponentProps<U> {
     tag: T
 }
 
-export interface InteractiveTaggedTextProps<T> extends InteractiveTextComponentProps<T> {
-    InnerTagUi: (_: InteractiveTagProps<T>) => JSX.Element
+export interface InteractiveTaggedTextProps<T, U> extends InteractiveTextComponentProps<U> {
+    InnerTagUi: (_: InteractiveTagProps<T, U>) => JSX.Element
 }
 
 // See https://github.com/leanprover/vscode-lean4/pull/500#discussion_r1681001815 for why `any` is used.
-function InteractiveTaggedText__({ fmt, InnerTagUi }: InteractiveTaggedTextProps<any>) {
+function InteractiveTaggedText__({ fmt, InnerTagUi }: InteractiveTaggedTextProps<any, any>) {
     if ('text' in fmt) return <>{fmt.text}</>
     else if ('append' in fmt)
         return (
@@ -58,7 +59,7 @@ const InteractiveTaggedText_ = React.memo(InteractiveTaggedText__)
  * Core loop to display {@link TaggedText} objects. Invokes `InnerTagUi` on `tag` nodes in order to support
  * various embedded information, for example subexpression information stored in {@link CodeWithInfos}.
  */
-export function InteractiveTaggedText<T>({ fmt, InnerTagUi }: InteractiveTaggedTextProps<T>) {
+export function InteractiveTaggedText<T, U>({ fmt, InnerTagUi }: InteractiveTaggedTextProps<T, U>) {
     return <InteractiveTaggedText_ fmt={fmt} InnerTagUi={InnerTagUi} />
 }
 
@@ -176,7 +177,7 @@ const DIFF_TAG_TO_EXPLANATION: { [K in DiffTag]: string } = {
  * Moreover if this component is rendered in a context where locations can be selected, the span
  * can be shift-clicked to select it.
  */
-function InteractiveCodeTag({ tag: ct, fmt }: InteractiveTagProps<SubexprInfo>) {
+function InteractiveCodeTag({ tag: ct, fmt }: InteractiveTagProps<SubexprInfo, HighlightedSubexprInfo>) {
     const rs = useRpcSession()
     const ec = React.useContext(EditorContext)
     const ref = React.useRef<HTMLSpanElement>(null)
@@ -339,19 +340,34 @@ function InteractiveCodeTag({ tag: ct, fmt }: InteractiveTagProps<SubexprInfo>) 
             >
                 {tt.tooltip}
                 {ht.tooltip}
-                <InteractiveTaggedText fmt={fmt} InnerTagUi={InteractiveCodeTag} />
+                <InteractiveTaggedText fmt={fmt} InnerTagUi={InteractiveCodeTag_} />
             </span>
         </LogicalDomContext.Provider>
     )
 }
 
-export type InteractiveCodeProps = InteractiveTextComponentProps<SubexprInfo>
+function InteractiveCodeTag_({ tag: ct, fmt }: InteractiveTagProps<HighlightedSubexprInfo, HighlightedSubexprInfo>) {
+    if (ct === 'highlighted') {
+        return (
+            <span className="highlighted-text">
+                <InteractiveTaggedText fmt={fmt} InnerTagUi={InteractiveCodeTag} />
+            </span>
+        )
+    }
+    return <InteractiveCodeTag tag={ct} fmt={fmt} />
+}
+
+export type InteractiveCodeProps = InteractiveTextComponentProps<HighlightedSubexprInfo>
 
 /** Displays a {@link CodeWithInfos} obtained via RPC from the Lean server. */
 export function InteractiveCode(props: InteractiveCodeProps) {
+    if ('text' in props.fmt && props.fmt.text === '') {
+        // Avoid creating empty spans
+        return <></>
+    }
     return (
         <span className="font-code">
-            <InteractiveTaggedText {...props} InnerTagUi={InteractiveCodeTag} />
+            <InteractiveTaggedText {...props} InnerTagUi={InteractiveCodeTag_} />
         </span>
     )
 }

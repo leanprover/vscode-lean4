@@ -17,7 +17,7 @@ import {
     LeanFileProgressProcessingInfo,
 } from '@leanprover/infoview-api'
 
-import { ConfigContext, EditorContext, ProgressContext, VersionContext } from './contexts'
+import { CapabilityContext, ConfigContext, EditorContext, ProgressContext, VersionContext } from './contexts'
 import { EditorConnection, EditorEvents } from './editorConnection'
 import { EventEmitter } from './event'
 import { Infos } from './infos'
@@ -61,6 +61,7 @@ function Main() {
         ec.events.serverRestarted,
         result => new ServerVersion(result.serverInfo?.version ?? ''),
     )
+    const capabilities = useEventResult(ec.events.serverRestarted, result => result.capabilities)
     const serverStoppedResult = useEventResult(ec.events.serverStopped)
     // NB: the cursor may temporarily become `undefined` when a file is closed. In this case
     // it's important not to reconstruct the `WithBlah` wrappers below since they contain state
@@ -99,13 +100,15 @@ function Main() {
 
     return (
         <ConfigContext.Provider value={config}>
-            <VersionContext.Provider value={serverVersion}>
-                <WithRpcSessions>
-                    <WithLspDiagnosticsContext>
-                        <ProgressContext.Provider value={allProgress}>{ret}</ProgressContext.Provider>
-                    </WithLspDiagnosticsContext>
-                </WithRpcSessions>
-            </VersionContext.Provider>
+            <CapabilityContext.Provider value={capabilities}>
+                <VersionContext.Provider value={serverVersion}>
+                    <WithRpcSessions>
+                        <WithLspDiagnosticsContext>
+                            <ProgressContext.Provider value={allProgress}>{ret}</ProgressContext.Provider>
+                        </WithLspDiagnosticsContext>
+                    </WithRpcSessions>
+                </VersionContext.Provider>
+            </CapabilityContext.Provider>
         </ConfigContext.Provider>
     )
 }

@@ -2,11 +2,20 @@ import * as React from 'react'
 import fastIsEqual from 'react-fast-compare'
 import { Diagnostic, DiagnosticSeverity, DocumentUri, Location, Position, Range } from 'vscode-languageserver-protocol'
 
-import { LeanDiagnostic, LeanPublishDiagnosticsParams, MessageOrder, RpcErrorCode } from '@leanprover/infoview-api'
+import {
+    HighlightedMsgEmbed,
+    highlightMatches,
+    LeanDiagnostic,
+    LeanPublishDiagnosticsParams,
+    MessageOrder,
+    RpcErrorCode,
+    TaggedText,
+} from '@leanprover/infoview-api'
 
 import { getInteractiveDiagnostics, InteractiveDiagnostic } from '@leanprover/infoview-api'
+import { VscodeTextfield } from '@vscode-elements/react-elements'
 import { Details } from './collapsing'
-import { ConfigContext, EditorContext, EnvPosContext, LspDiagnosticsContext } from './contexts'
+import { CapabilityContext, ConfigContext, EditorContext, EnvPosContext, LspDiagnosticsContext } from './contexts'
 import { RpcContext, useRpcSessionAtPos } from './rpcSessions'
 import { InteractiveMessage } from './traceExplorer'
 import {
@@ -25,6 +34,20 @@ import {
 interface MessageViewProps {
     uri: DocumentUri
     diag: InteractiveDiagnostic
+}
+
+function isTraceMessage(message: TaggedText<HighlightedMsgEmbed>): boolean {
+    if ('text' in message) {
+        return false
+    }
+    if ('append' in message) {
+        return message.append.some(m => isTraceMessage(m))
+    }
+    const embed = message.tag[0]
+    if (embed === 'highlighted' || !('trace' in embed)) {
+        return false
+    }
+    return true
 }
 
 const MessageView = React.memo(({ uri, diag }: MessageViewProps) => {
@@ -66,6 +89,22 @@ const MessageView = React.memo(({ uri, diag }: MessageViewProps) => {
         `copyMessage:${messageId}`,
     )
 
+    const cc = React.useContext(CapabilityContext)
+    const serverSupportsTraceSearch = cc?.experimental?.rpcProvider?.highlightMatchesProvider !== undefined
+    const [msg, setMsg] = React.useState<TaggedText<HighlightedMsgEmbed>>(diag.message)
+    const [isSearchWidgetDisplayed, setSearchWidgetDisplayed] = React.useState(false)
+    const [traceSearchMessage, setTraceSearchMessage] = React.useState('')
+
+    const rs = useRpcSessionAtPos(startPos)
+
+    const search = React.useCallback(async () => {
+        if (traceSearchMessage === '') {
+            setMsg(diag.message)
+        }
+        const r = await highlightMatches(rs, traceSearchMessage, diag.message)
+        setMsg(r)
+    }, [rs, traceSearchMessage, diag.message])
+
     return (
         <Details
             initiallyOpen
@@ -81,12 +120,62 @@ const MessageView = React.memo(({ uri, diag }: MessageViewProps) => {
                         }}
                         title="Go to source location of message"
                     ></a>
+                    {serverSupportsTraceSearch && isTraceMessage(msg) && (
+                        <a
+                            className={
+                                'link pointer mh2 dim codicon ' +
+                                (isSearchWidgetDisplayed ? 'codicon-search-stop' : 'codicon-go-to-search')
+                            }
+                            onClick={_ => {
+                                if (isSearchWidgetDisplayed) {
+                                    setSearchWidgetDisplayed(false)
+                                    setTraceSearchMessage('')
+                                    setMsg(diag.message)
+                                } else {
+                                    setSearchWidgetDisplayed(true)
+                                }
+                            }}
+                            title={isSearchWidgetDisplayed ? 'Hide search' : 'Show search'}
+                        ></a>
+                    )}
                 </span>
             </span>
             <div className="ml1" ref={node}>
                 <pre className="font-code pre-wrap">
                     <EnvPosContext.Provider value={startPos}>
-                        <InteractiveMessage fmt={diag.message} />
+                        {isSearchWidgetDisplayed && (
+                            <form
+                                onSubmit={e => {
+                                    e.preventDefault()
+                                    void search()
+                                }}
+                            >
+                                <VscodeTextfield
+                                    className="trace-search"
+                                    value={traceSearchMessage}
+                                    onInput={e => setTraceSearchMessage((e.target as HTMLInputElement).value)}
+                                    placeholder="Search"
+                                >
+                                    <a
+                                        className="link pointer mh2 dim codicon codicon-collapse-all"
+                                        title="Collapse all"
+                                        slot="content-after"
+                                        onClick={_ => {
+                                            setTraceSearchMessage('')
+                                            setMsg(diag.message)
+                                        }}
+                                    ></a>
+                                    <a
+                                        className="link pointer mh2 dim codicon codicon-search"
+                                        type="submit"
+                                        title="Search"
+                                        slot="content-after"
+                                        onClick={_ => void search()}
+                                    ></a>
+                                </VscodeTextfield>
+                            </form>
+                        )}
+                        <InteractiveMessage fmt={msg} />
                     </EnvPosContext.Provider>
                 </pre>
             </div>
