@@ -301,6 +301,7 @@ function InteractiveCodeTag({ tag: ct, fmt }: InteractiveTagProps<SubexprInfo, H
                     ht.onClick(e)
                     tt.onClick()
                 }}
+                onMouseDown={e => ht.onMouseDown(e)}
                 onPointerDown={e => {
                     sl.onPointerDown(e)
                     ht.onPointerDown(e)

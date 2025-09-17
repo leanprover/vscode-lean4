@@ -8,6 +8,7 @@ body {
 .font-code {
     color: var(--vscode-editor-foreground);
     font-family: var(--vscode-editor-font-family);
+    font-feature-settings: var(--vscode-editor-font-feature-settings);
     font-weight: var(--vscode-editor-font-weight);
     font-size: var(--vscode-editor-font-size);
     line-height: var(--vscode-editor-line-height);
@@ -174,7 +175,7 @@ select {
     line-height: var(--vscode-editor-line-height);
 }
 
-.tooltip-code-content a:hover {
+*[data-has-tooltip-on-hover] {
     cursor: pointer;
 }
 
@@ -272,4 +273,8 @@ select {
 
 .b--transparent {
     border-color: transparent;
+}
+
+.non-selectable {
+    user-select: none;
 }

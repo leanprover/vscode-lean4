@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { withPreventedClickOnTextSelection } from './util'
 
 /** Error boundary as described in https://reactjs.org/docs/error-boundaries.html */
 export class ErrorBoundary extends React.Component<{ children?: React.ReactNode }, { error: string | undefined }> {
@@ -26,7 +27,10 @@ export class ErrorBoundary extends React.Component<{ children?: React.ReactNode 
                     {this.state.error}
                     <br />
                     <br />
-                    <a className="link pointer dim " onClick={() => this.setState({ error: undefined })}>
+                    <a
+                        className="link pointer dim "
+                        onClick={withPreventedClickOnTextSelection(() => this.setState({ error: undefined }))}
+                    >
                         Click to reload.
                     </a>
                 </div>

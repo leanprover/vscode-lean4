@@ -4,7 +4,13 @@ import * as ReactDOM from 'react-dom'
 import { arrow, autoPlacement, autoUpdate, FloatingArrow, offset, shift, size, useFloating } from '@floating-ui/react'
 
 import { ConfigContext } from './contexts'
-import { LogicalDomContext, useLogicalDomObserver, useOnClickOutside } from './util'
+import {
+    isAnyTextSelected,
+    LogicalDomContext,
+    preventDoubleClickTextSelection,
+    useLogicalDomObserver,
+    useOnClickOutside,
+} from './util'
 
 export type TooltipProps = React.PropsWithChildren<React.HTMLProps<HTMLDivElement>> & { reference: HTMLElement | null }
 
@@ -143,6 +149,7 @@ export interface HoverTooltip {
     state: TooltipState
     onClick: (e: React.MouseEvent<HTMLSpanElement>) => void
     onClickOutside: () => void
+    onMouseDown: (e: React.MouseEvent<HTMLSpanElement>) => void
     onPointerDown: (e: React.PointerEvent<HTMLSpanElement>) => void
     onPointerOver: (e: React.PointerEvent<HTMLSpanElement>) => void
     onPointerOut: (e: React.PointerEvent<HTMLSpanElement>) => void
@@ -212,7 +219,9 @@ export function useHoverTooltip(
         clearTimeout()
         if (!config.showTooltipOnHover) return
         timeout.current = window.setTimeout(() => {
-            setState(state === 'hide' ? 'show' : state)
+            if (!isAnyTextSelected()) {
+                setState(state === 'hide' ? 'show' : state)
+            }
             timeout.current = undefined
         }, showDelay)
     }
@@ -249,7 +258,9 @@ export function useHoverTooltip(
 
     const pinClick = (e: React.MouseEvent<HTMLSpanElement>) => {
         clearTimeout()
-        setState(state === 'pin' ? 'hide' : 'pin')
+        if (!isAnyTextSelected()) {
+            setState(state === 'pin' ? 'hide' : 'pin')
+        }
         e.stopPropagation()
         e.preventDefault()
     }
@@ -269,6 +280,8 @@ export function useHoverTooltip(
         setState('hide')
     }
 
+    const onMouseDown = (e: React.MouseEvent<HTMLSpanElement>) => preventDoubleClickTextSelection(e)
+
     const isModifierHeld = (e: React.MouseEvent) => e.altKey || e.ctrlKey || e.shiftKey || e.metaKey
 
     const onPointerDown = (e: React.PointerEvent<HTMLSpanElement>) => {
@@ -280,9 +293,7 @@ export function useHoverTooltip(
     }
 
     const onPointerOver = (e: React.PointerEvent<HTMLSpanElement>) => {
-        // eslint-disable-next-line no-bitwise
-        const isSelectionHover = (e.buttons & 1) !== 0
-        if (!isModifierHeld(e) && !isSelectionHover) {
+        if (!isModifierHeld(e)) {
             guardMouseEvent(_ => startShowTimeout(), e)
         }
     }
@@ -307,6 +318,7 @@ export function useHoverTooltip(
         state,
         onClick,
         onClickOutside,
+        onMouseDown,
         onPointerDown,
         onPointerOver,
         onPointerOut,
@@ -338,6 +350,7 @@ export function WithTooltipOnHover(props_: WithTooltipOnHoverProps) {
                 {...props}
                 ref={ref}
                 onClick={e => ht.onClick(e)}
+                onMouseDown={e => ht.onMouseDown(e)}
                 onPointerDown={e => ht.onPointerDown(e)}
                 onPointerOver={e => ht.onPointerOver(e)}
                 onPointerOut={e => ht.onPointerOut(e)}

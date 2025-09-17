@@ -430,3 +430,36 @@ export function useAsyncPersistent<T>(fn: () => Promise<T>, deps: React.Dependen
     }
     return state
 }
+
+export function isAnyTextSelected(): boolean {
+    const s = window.getSelection()
+    return s !== null && !s.isCollapsed
+}
+
+export function preventClickOnTextSelection(e: React.MouseEvent<HTMLElement, MouseEvent>) {
+    if (isAnyTextSelected()) {
+        e.preventDefault()
+        return true
+    }
+    return false
+}
+
+export function withPreventedClickOnTextSelection(
+    f: React.MouseEventHandler<HTMLElement>,
+): React.MouseEventHandler<HTMLElement> {
+    return e => {
+        const isPrevented = preventClickOnTextSelection(e)
+        if (isPrevented) {
+            return
+        }
+        f(e)
+    }
+}
+
+export function preventDoubleClickTextSelection(e: React.MouseEvent<HTMLElement, MouseEvent>): boolean {
+    if (e.detail > 1) {
+        e.preventDefault()
+        return true
+    }
+    return false
+}

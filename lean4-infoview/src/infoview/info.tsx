@@ -32,6 +32,7 @@ import {
     useAsyncWithTrigger,
     useEvent,
     usePausableState,
+    withPreventedClickOnTextSelection,
 } from './util'
 
 type InfoStatus = 'updating' | 'error' | 'ready'
@@ -75,7 +76,7 @@ const InfoStatusBar = React.memo((props: InfoStatusBarProps) => {
     }
 
     return (
-        <summary style={{ transition: 'color 0.5s ease' }} className={'mv2 pointer ' + statusColor}>
+        <summary style={{ transition: 'color 0.5s ease' }} className={'mv2 pointer non-selectable' + statusColor}>
             {locationString}
             {isPinned && !isPaused && ' (pinned)'}
             {!isPinned && isPaused && ' (paused)'}
@@ -220,7 +221,7 @@ function GoalInfoDisplay(props: GoalInfoDisplayProps) {
                 if (widget.name)
                     return (
                         <details key={`widget::${widget.id}::${widget.range?.toString()}`} open>
-                            <summary className="mv2 pointer">{widget.name}</summary>
+                            <summary className="mv2 pointer non-selectable">{widget.name}</summary>
                             {inner}
                         </details>
                     )
@@ -252,10 +253,7 @@ const InfoDisplayContent = React.memo((props: InfoDisplayContentProps) => {
                     Error updating: {error}.
                     <a
                         className="link pointer dim"
-                        onClick={e => {
-                            e.preventDefault()
-                            void triggerUpdate()
-                        }}
+                        onClick={withPreventedClickOnTextSelection(_ => void triggerUpdate())}
                     >
                         {' '}
                         Try again.
@@ -263,7 +261,7 @@ const InfoDisplayContent = React.memo((props: InfoDisplayContentProps) => {
                 </div>
             )}
             <GoalInfoDisplay pos={pos} goals={goals} termGoal={termGoal} userWidgets={userWidgets} />
-            <div style={{ display: hasMessages ? 'block' : 'none' }} key="messages">
+            <div style={hasMessages ? {} : { display: 'none' }} key="messages">
                 <Details initiallyOpen key="messages">
                     <>Messages ({messages.length})</>
                     <div className="ml1">
@@ -283,20 +281,14 @@ const InfoDisplayContent = React.memo((props: InfoDisplayContentProps) => {
                         Updating is paused.{' '}
                         <a
                             className="link pointer dim"
-                            onClick={e => {
-                                e.preventDefault()
-                                void triggerUpdate()
-                            }}
+                            onClick={withPreventedClickOnTextSelection(_ => void triggerUpdate())}
                         >
                             Refresh
                         </a>{' '}
                         or{' '}
                         <a
                             className="link pointer dim"
-                            onClick={e => {
-                                e.preventDefault()
-                                setPaused(false)
-                            }}
+                            onClick={withPreventedClickOnTextSelection(_ => setPaused(false))}
                         >
                             resume updating
                         </a>{' '}

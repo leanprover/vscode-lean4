@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { preventDoubleClickTextSelection, withPreventedClickOnTextSelection } from './util'
 
 /** Returns `[node, isVisible]`. Attach `node` to the dom element you care about as `<div ref={node}>...</div>` and
  * `isVisible` will change depending on whether the node is visible in the viewport or not. */
@@ -30,6 +31,7 @@ interface DetailsProps extends React.PropsWithoutRef<React.HTMLProps<HTMLDetails
     initiallyOpen?: boolean
     children: [React.ReactNode, ...React.ReactNode[]]
     setOpenRef?: (_: React.Dispatch<React.SetStateAction<boolean>>) => void
+    selectable?: boolean | undefined
 }
 
 /** Like `<details>` but can be programatically revealed using `setOpenRef`.
@@ -38,6 +40,7 @@ export function Details({
     initiallyOpen,
     children: [summary, ...children],
     setOpenRef,
+    selectable,
     ...props
 }: DetailsProps): JSX.Element {
     const [isOpen, setOpen] = React.useState<boolean>(initiallyOpen === undefined ? false : initiallyOpen)
@@ -45,12 +48,17 @@ export function Details({
     return (
         <details open={isOpen} {...props}>
             <summary
-                className="mv2 pointer "
-                onClick={e => {
-                    if (!e.defaultPrevented) setOpen(!isOpen)
+                className={'mv2 pointer ' + (!selectable ? 'non-selectable ' : '')}
+                onClick={withPreventedClickOnTextSelection(e => {
+                    if (e.defaultPrevented) {
+                        e.preventDefault()
+                        return
+                    }
+                    setOpen(!isOpen)
                     // See https://github.com/facebook/react/issues/15486#issuecomment-873516817
                     e.preventDefault()
-                }}
+                })}
+                onMouseDown={e => preventDoubleClickTextSelection(e)}
             >
                 {summary}
             </summary>
