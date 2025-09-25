@@ -544,12 +544,6 @@
                 "description": "Show LoogleView"
             },
             {
-                "command": "lean4.moogle.search",
-                "category": "Lean 4: Moogle",
-                "title": "Search With Moogle…",
-                "description": "Show MoogleView"
-            },
-            {
                 "command": "lean4.troubleshooting.showTroubleshootingGuide",
                 "category": "Lean 4: Troubleshooting",
                 "title": "Show Troubleshooting Guide",
@@ -1049,9 +1043,6 @@
                     "command": "lean4.loogle.search"
                 },
                 {
-                    "command": "lean4.moogle.search"
-                },
-                {
                     "command": "lean4.troubleshooting.showTroubleshootingGuide"
                 },
                 {
@@ -1190,11 +1181,6 @@
                     "command": "lean4.loogle.search",
                     "when": "config.lean4.alwaysShowTitleBarMenu || lean4.isLeanFeatureSetActive",
                     "group": "4_search@1"
-                },
-                {
-                    "command": "lean4.moogle.search",
-                    "when": "config.lean4.alwaysShowTitleBarMenu || lean4.isLeanFeatureSetActive",
-                    "group": "4_search@2"
                 },
                 {
                     "command": "lean4.troubleshooting.showTroubleshootingGuide",
