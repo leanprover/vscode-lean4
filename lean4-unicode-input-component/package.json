@@ -1,6 +1,6 @@
 {
     "name": "@leanprover/unicode-input-component",
-    "version": "0.1.6",
+    "version": "0.1.7",
     "description": "Typescript support for contenteditable divs with the Unicode input support of the Lean 4 theorem prover",
     "scripts": {
         "watch": "tsc --watch",
@@ -14,7 +14,7 @@
     ],
     "license": "Apache-2.0",
     "dependencies": {
-        "@leanprover/unicode-input": "^0.1.6"
+        "@leanprover/unicode-input": "^0.1.7"
     },
     "devDependencies": {
         "typescript": "^5.4.5"
