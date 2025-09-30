@@ -8,6 +8,16 @@ import { isRpcError, RpcErrorCode } from '@leanprover/infoview-api'
 import { EditorContext } from './contexts'
 import { EventEmitter } from './event'
 
+export function count<T>(xs: T[], p: (v: T) => boolean): number {
+    let n = 0
+    for (const x of xs) {
+        if (p(x)) {
+            n++
+        }
+    }
+    return n
+}
+
 /** A document URI and a position in that document. */
 export interface DocumentPosition extends Position {
     uri: DocumentUri

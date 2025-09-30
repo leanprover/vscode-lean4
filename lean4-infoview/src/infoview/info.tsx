@@ -19,7 +19,7 @@ import { Details } from './collapsing'
 import { ConfigContext, EditorContext, EnvPosContext, LspDiagnosticsContext, ProgressContext } from './contexts'
 import { GoalsLocation, Locations, LocationsContext } from './goalLocation'
 import { FilteredGoals, goalsToString } from './goals'
-import { lspDiagToInteractive, MessagesList } from './messages'
+import { lspDiagToInteractive, MessagesList, TallyDisplay, tallyOfDiags } from './messages'
 import { RpcContext, useRpcSessionAtPos } from './rpcSessions'
 import { PanelWidgetDisplay } from './userWidget'
 import {
@@ -263,7 +263,9 @@ const InfoDisplayContent = React.memo((props: InfoDisplayContentProps) => {
             <GoalInfoDisplay pos={pos} goals={goals} termGoal={termGoal} userWidgets={userWidgets} />
             <div style={hasMessages ? {} : { display: 'none' }} key="messages">
                 <Details initiallyOpen key="messages">
-                    <>Messages ({messages.length})</>
+                    <>
+                        Messages <TallyDisplay t={tallyOfDiags(messages)}></TallyDisplay>
+                    </>
                     <div className="ml1">
                         <MessagesList
                             uri={pos.uri}

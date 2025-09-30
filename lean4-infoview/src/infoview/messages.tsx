@@ -21,6 +21,7 @@ import { InteractiveMessage } from './traceExplorer'
 import {
     addUniqueKeys,
     basename,
+    count,
     DocumentPosition,
     escapeHtml,
     Keyed,
@@ -383,7 +384,7 @@ export function AllMessages({ uri: uri0 }: { uri: DocumentUri }) {
 
     // The number of actually displayed messages, or `undefined` if the panel is collapsed.
     // When `undefined`, we can approximate it by `diags.length`.
-    const [numDiags, setNumDiags] = React.useState<number | undefined>(undefined)
+    const [tally, setTally] = React.useState<DiagnosticTally | undefined>(undefined)
 
     const id = React.useId()
     useEvent(ec.events.clickedContextMenu, _ => setPaused(true), [], `pauseAllMessages:${id}`)
@@ -399,7 +400,7 @@ export function AllMessages({ uri: uri0 }: { uri: DocumentUri }) {
                 data-vscode-context={JSON.stringify(context)}
             >
                 <>
-                    All Messages ({numDiags ?? diags.length})
+                    All Messages <TallyDisplay t={tally ?? tallyOfDiags(diags)}></TallyDisplay>
                     <span
                         className="fr"
                         onClick={e => {
@@ -433,38 +434,79 @@ export function AllMessages({ uri: uri0 }: { uri: DocumentUri }) {
                         ></a>
                     </span>
                 </>
-                <AllMessagesBody
-                    uri={uri}
-                    messages={iDiags}
-                    setNumDiags={setNumDiags}
-                    sortOrder={sortOrder}
-                    pos={curPos}
-                />
+                <AllMessagesBody uri={uri} messages={iDiags} setTally={setTally} sortOrder={sortOrder} pos={curPos} />
             </Details>
         </RpcContext.Provider>
+    )
+}
+
+export interface DiagnosticTally {
+    errors: number
+    warnings: number
+    infos: number
+    total: number
+}
+
+export function tallyOfDiags(msgs: { severity?: DiagnosticSeverity }[]): DiagnosticTally {
+    return {
+        errors: count(msgs, m => m.severity === DiagnosticSeverity.Error),
+        warnings: count(msgs, m => m.severity === DiagnosticSeverity.Warning),
+        infos: count(msgs, m => m.severity === DiagnosticSeverity.Information),
+        total: msgs.length,
+    }
+}
+
+export function TallyDisplay({ t }: { t: DiagnosticTally }) {
+    if (t.errors === 0 && t.warnings === 0 && t.infos === 0) {
+        return <></>
+    }
+    const warningSpace = t.errors > 0 ? <> </> : <></>
+    const infoSpace = t.warnings > 0 || t.errors > 0 ? <> </> : <></>
+    return (
+        <>
+            (
+            {t.errors > 0 && (
+                <>
+                    <span className={'font-codicon codicon codicon-error'}></span> {t.errors}
+                </>
+            )}
+            {t.warnings > 0 && (
+                <>
+                    {warningSpace}
+                    <span className={'font-codicon codicon codicon-warning'}></span> {t.warnings}
+                </>
+            )}
+            {t.infos > 0 && (
+                <>
+                    {infoSpace}
+                    <span className={'font-codicon codicon codicon-info'}></span> {t.infos}
+                </>
+            )}
+            )
+        </>
     )
 }
 
 interface AllMessagesBodyProps {
     uri: DocumentUri
     messages: () => Promise<InteractiveDiagnostic[]>
-    setNumDiags: React.Dispatch<React.SetStateAction<number | undefined>>
+    setTally: React.Dispatch<React.SetStateAction<DiagnosticTally | undefined>>
     sortOrder: MessageOrder
     pos: DocumentPosition | undefined
 }
 
 /** We factor out the body of {@link AllMessages} which lazily fetches its contents only when expanded. */
-function AllMessagesBody({ uri, messages, setNumDiags, sortOrder, pos }: AllMessagesBodyProps) {
+function AllMessagesBody({ uri, messages, setTally, sortOrder, pos }: AllMessagesBodyProps) {
     const [msgs, setMsgs] = React.useState<InteractiveDiagnostic[] | undefined>(undefined)
     React.useEffect(() => {
         const fn = async () => {
             const msgs = await messages()
             setMsgs(msgs)
-            setNumDiags(msgs.length)
+            setTally(tallyOfDiags(msgs))
         }
         void fn()
-    }, [messages, setNumDiags])
-    React.useEffect(() => () => /* Called on unmount. */ setNumDiags(undefined), [setNumDiags])
+    }, [messages, setTally])
+    React.useEffect(() => () => /* Called on unmount. */ setTally(undefined), [setTally])
     if (msgs === undefined) return <>Loading messages...</>
     else return <MessagesList uri={uri} messages={msgs} sortOrder={sortOrder} pos={pos} />
 }
