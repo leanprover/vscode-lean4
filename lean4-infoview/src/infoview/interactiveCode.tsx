@@ -325,7 +325,7 @@ function InteractiveCodeTag({ tag: ct, fmt }: InteractiveTagProps<SubexprInfo, H
 
                     // Select the pretty-printed code (see issue #311).
                     const sel = window.getSelection()
-                    if (!sel) return
+                    if (!sel || !sel.isCollapsed) return
                     sel.selectAllChildren(e.currentTarget)
 
                     // If a context menu action other than cut/copy is chosen,
