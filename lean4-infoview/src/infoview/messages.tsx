@@ -277,7 +277,7 @@ function mkMessageViewProps(
         return { uri, diag: m }
     })
 
-    return addUniqueKeys(views, v => DocumentPosition.toString({ uri: v.uri, ...v.diag.range.start }))
+    return addUniqueKeys(views, v => JSON.stringify(v))
 }
 
 /** Shows the given messages assuming they are for the given file. */
