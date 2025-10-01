@@ -70,6 +70,7 @@ import { leanRunner } from './utils/leanCmdRunner'
 import { lean, LeanDocument } from './utils/leanEditorProvider'
 import {
     displayNotification,
+    displayNotificationWithInput,
     displayNotificationWithOptionalInput,
     displayNotificationWithOutput,
 } from './utils/notifs'
@@ -886,6 +887,28 @@ export class LeanClient implements Disposable {
                     }
 
                     return highlights
+                },
+
+                provideRenameEdits: async (document, position, newName, token, next) => {
+                    const edit = await next(document, position, newName, token)
+                    if (!edit) {
+                        return edit
+                    }
+                    const entries = edit.entries()
+                    const amountFiles = entries.length
+                    if (amountFiles <= 1) {
+                        return edit
+                    }
+                    const amountEdits = entries.map(([_, edits]) => edits.length).reduce((acc, n) => acc + n, 0)
+                    const choice = await displayNotificationWithInput(
+                        'Warning',
+                        `This rename operation will rename ${amountEdits} occurrences in ${amountFiles} files. Do you wish to proceed?`,
+                        ['Proceed'],
+                    )
+                    if (choice === undefined) {
+                        return undefined
+                    }
+                    return edit
                 },
             },
         }
