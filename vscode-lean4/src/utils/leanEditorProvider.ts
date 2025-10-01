@@ -141,6 +141,8 @@ export class LeanEditorProvider implements Disposable {
         this.subscriptions.push(window.onDidChangeVisibleTextEditors(editors => this.updateVisibleTextEditors(editors)))
 
         this._activeLeanEditor = this.filterLeanEditor(window.activeTextEditor)
+        this._lastActiveLeanEditor = this.filterLeanEditor(window.activeTextEditor)
+        this._lastActiveLeanDocument = this.filterLeanDocument(window.activeTextEditor?.document)
         this.subscriptions.push(window.onDidChangeActiveTextEditor(editor => this.updateActiveTextEditor(editor)))
 
         this._leanDocuments = this.filterLeanDocuments(workspace.textDocuments)
