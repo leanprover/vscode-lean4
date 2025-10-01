@@ -30,6 +30,13 @@ body {
     height: 16px;
 }
 
+.font-codicon {
+    font-weight: var(--vscode-editor-font-weight) !important;
+    font-size: var(--vscode-editor-font-size) !important;
+    line-height: var(--vscode-editor-line-height) !important;
+    vertical-align: middle;
+}
+
 /* These are syntax highlights for the string goal view. */
 .goal-goals {
     color: var(--vscode-lean4-infoView\.goalCount);
