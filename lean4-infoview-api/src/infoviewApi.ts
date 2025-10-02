@@ -152,6 +152,8 @@ export type ContextMenuEntry =
     | 'copyMessage'
     | 'goToPinnedLocation'
     | 'goToMessageLocation'
+    | 'hideTraceSearch'
+    | 'showTraceSearch'
     | 'displayTargetBeforeAssumptions'
     | 'displayAssumptionsBeforeTarget'
     | 'hideTypeAssumptions'
