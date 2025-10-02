@@ -72,29 +72,49 @@ const MessageView = React.memo(({ uri, diag }: MessageViewProps) => {
         [uri, diag.fullRange, diag.range],
     )
 
+    const cc = React.useContext(CapabilityContext)
+    const serverSupportsTraceSearch = cc?.experimental?.rpcProvider?.highlightMatchesProvider !== undefined
+    const [msg, setMsg] = React.useState<TaggedText<HighlightedMsgEmbed>>(diag.message)
+    const isMessageWithTraceSearch = serverSupportsTraceSearch && isTraceMessage(msg)
+    const [isSearchWidgetDisplayed, setSearchWidgetDisplayed] = React.useState(false)
+    const [traceSearchMessage, setTraceSearchMessage] = React.useState('')
+
     const messageId = React.useId()
-    useEvent(
-        ec.events.clickedContextMenu,
-        async _ => void ec.revealLocation(loc),
-        [loc],
-        `goToMessageLocation:${messageId}`,
-    )
-    useEvent(
-        ec.events.clickedContextMenu,
-        async _ => {
+    const context: { [k: string]: any } = {}
+    const useContextMenuEvent = (
+        name: string,
+        action: () => void,
+        isEnabled: boolean,
+        dependencies?: React.DependencyList,
+    ) => {
+        if (isEnabled) {
+            context[name + 'Id'] = messageId
+        }
+        useEvent(ec.events.clickedContextMenu, _ => action(), dependencies, `${name}:${messageId}`)
+    }
+    useContextMenuEvent('goToMessageLocation', () => void ec.revealLocation(loc), true, [loc])
+    useContextMenuEvent(
+        'copyMessage',
+        () => {
             if (node.current) {
                 void ec.api.copyToClipboard(node.current.innerText)
             }
         },
+        true,
         [loc],
-        `copyMessage:${messageId}`,
     )
-
-    const cc = React.useContext(CapabilityContext)
-    const serverSupportsTraceSearch = cc?.experimental?.rpcProvider?.highlightMatchesProvider !== undefined
-    const [msg, setMsg] = React.useState<TaggedText<HighlightedMsgEmbed>>(diag.message)
-    const [isSearchWidgetDisplayed, setSearchWidgetDisplayed] = React.useState(false)
-    const [traceSearchMessage, setTraceSearchMessage] = React.useState('')
+    useContextMenuEvent(
+        'hideTraceSearch',
+        () => setSearchWidgetDisplayed(false),
+        isMessageWithTraceSearch && isSearchWidgetDisplayed,
+        [],
+    )
+    useContextMenuEvent(
+        'showTraceSearch',
+        () => setSearchWidgetDisplayed(true),
+        isMessageWithTraceSearch && !isSearchWidgetDisplayed,
+        [],
+    )
 
     const rs = useRpcSessionAtPos(startPos)
 
@@ -107,10 +127,7 @@ const MessageView = React.memo(({ uri, diag }: MessageViewProps) => {
     }, [rs, traceSearchMessage, diag.message])
 
     return (
-        <Details
-            initiallyOpen
-            data-vscode-context={JSON.stringify({ goToMessageLocationId: messageId, copyMessageId: messageId })}
-        >
+        <Details initiallyOpen data-vscode-context={JSON.stringify(context)}>
             <span className={severityClass}>
                 {title}
                 <span className="fr" onClick={e => e.preventDefault()}>
@@ -121,7 +138,7 @@ const MessageView = React.memo(({ uri, diag }: MessageViewProps) => {
                         }}
                         title="Go to source location of message"
                     ></a>
-                    {serverSupportsTraceSearch && isTraceMessage(msg) && (
+                    {isMessageWithTraceSearch && (
                         <a
                             className={
                                 'link pointer mh2 dim codicon ' +

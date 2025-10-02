@@ -448,6 +448,18 @@
                 "description": "This command is an implementation detail of the 'Go to Source Location of Message' context menu option in the infoview."
             },
             {
+                "command": "lean4.infoview.hideTraceSearch",
+                "category": "Lean 4: InfoView",
+                "title": "Hide Search",
+                "description": "This command is an implementation detail of the 'Hide Search' context menu option in the infoview."
+            },
+            {
+                "command": "lean4.infoview.showTraceSearch",
+                "category": "Lean 4: InfoView",
+                "title": "Show Search",
+                "description": "This command is an implementation detail of the 'Show Search' context menu option in the infoview."
+            },
+            {
                 "command": "lean4.infoview.displayTargetBeforeAssumptions",
                 "category": "Lean 4: InfoView",
                 "title": "Display Target Before Assumptions",
@@ -980,6 +992,14 @@
                     "when": "false"
                 },
                 {
+                    "command": "lean4.infoview.hideTraceSearch",
+                    "when": "false"
+                },
+                {
+                    "command": "lean4.infoview.showTraceSearch",
+                    "when": "false"
+                },
+                {
                     "command": "lean4.infoview.displayTargetBeforeAssumptions",
                     "when": "false"
                 },
@@ -1367,19 +1387,29 @@
                     "group": "0_term@3"
                 },
                 {
+                    "command": "lean4.infoview.hideTraceSearch",
+                    "when": "webviewId == 'lean4_infoview' && hideTraceSearchId",
+                    "group": "0_term@4"
+                },
+                {
+                    "command": "lean4.infoview.showTraceSearch",
+                    "when": "webviewId == 'lean4_infoview' && showTraceSearchId",
+                    "group": "0_term@5"
+                },
+                {
                     "command": "lean4.infoview.select",
                     "when": "webviewId == 'lean4_infoview' && selectableLocationId",
-                    "group": "0_term@4"
+                    "group": "0_term@6"
                 },
                 {
                     "command": "lean4.infoview.unselect",
                     "when": "webviewId == 'lean4_infoview' && unselectableLocationId",
-                    "group": "0_term@5"
+                    "group": "0_term@7"
                 },
                 {
                     "command": "lean4.infoview.unselectAll",
                     "when": "webviewId == 'lean4_infoview' && selectedLocationsId",
-                    "group": "0_term@6"
+                    "group": "0_term@8"
                 },
                 {
                     "command": "lean4.infoview.pin",

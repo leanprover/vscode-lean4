@@ -474,6 +474,18 @@ export class InfoProvider implements Disposable {
                     id: args.goToMessageLocationId,
                 }),
             ),
+            commands.registerCommand('lean4.infoview.hideTraceSearch', args =>
+                this.webviewPanel?.api.clickedContextMenu({
+                    entry: 'hideTraceSearch',
+                    id: args.hideTraceSearchId,
+                }),
+            ),
+            commands.registerCommand('lean4.infoview.showTraceSearch', args =>
+                this.webviewPanel?.api.clickedContextMenu({
+                    entry: 'showTraceSearch',
+                    id: args.showTraceSearchId,
+                }),
+            ),
             commands.registerCommand('lean4.infoview.displayTargetBeforeAssumptions', args =>
                 this.webviewPanel?.api.clickedContextMenu({
                     entry: 'displayTargetBeforeAssumptions',
