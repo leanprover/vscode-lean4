@@ -584,23 +584,24 @@ export class LeanClient implements Disposable {
         ])
     }
 
-    async withStoppedClient(action: () => Promise<void>): Promise<'Success' | 'IsRestarting'> {
+    async withStoppedClient<T>(
+        action: () => Promise<T>,
+    ): Promise<{ kind: 'Success'; result: T } | { kind: 'IsRestarting' }> {
         if (this.isRestarting) {
-            return 'IsRestarting'
+            return { kind: 'IsRestarting' }
         }
         this.isRestarting = true // Ensure that client cannot be restarted in the mean-time
+        let result: T
         try {
             if (this.isStarted()) {
                 await this.stop()
             }
-
-            await action()
+            result = await action()
         } finally {
             this.isRestarting = false
         }
-
         await this.restart()
-        return 'Success'
+        return { kind: 'Success', result }
     }
 
     isInFolderManagedByThisClient(uri: ExtUri): boolean {

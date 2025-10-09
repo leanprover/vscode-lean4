@@ -227,6 +227,26 @@ export class LeanClientProvider implements Disposable {
         return Array.from(this.clients.values())
     }
 
+    withStoppedClients<T>(
+        action: () => Promise<T>,
+    ): Promise<{ kind: 'Success'; result: T } | { kind: 'IsRestarting' }> {
+        let combinedAction: () => Promise<{ kind: 'Success'; result: T } | { kind: 'IsRestarting' }> = async () => ({
+            kind: 'Success',
+            result: await action(),
+        })
+        for (const c of this.clients.values()) {
+            const previousCombinedAction = combinedAction
+            combinedAction = async () => {
+                const r = await c.withStoppedClient(previousCombinedAction)
+                if (r.kind === 'IsRestarting' || r.result.kind === 'IsRestarting') {
+                    return { kind: 'IsRestarting' }
+                }
+                return { kind: 'Success', result: r.result.result }
+            }
+        }
+        return combinedAction()
+    }
+
     getClientForFolder(folder: ExtUri): LeanClient | undefined {
         return this.clients.get(folder.toString())
     }
