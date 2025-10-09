@@ -8,6 +8,7 @@ import {
     displayModalResultError,
     displayResultError,
 } from './batch'
+import { LeanClientProvider } from './clientProvider'
 import { elanSelfUninstall, elanSelfUpdate, elanStableChannel, elanVersion, isElanEagerResolutionVersion } from './elan'
 import {
     NotificationSeverity,
@@ -64,6 +65,7 @@ export type ElanInstallationResult =
 
 export class LeanInstaller implements Disposable {
     private outputChannel: OutputChannel
+    private clientProvider: LeanClientProvider | undefined
     private pendingOperation: 'Install' | 'Update' | 'Uninstall' | undefined
 
     private subscriptions: Disposable[] = []
@@ -78,6 +80,10 @@ export class LeanInstaller implements Disposable {
             commands.registerCommand('lean4.setup.updateElan', async () => await this.displayManualUpdateElanPrompt()),
             commands.registerCommand('lean4.setup.uninstallElan', async () => await this.displayUninstallElanPrompt()),
         )
+    }
+
+    setClientProvider(clientProvider: LeanClientProvider) {
+        this.clientProvider = clientProvider
     }
 
     // Installation
@@ -406,7 +412,15 @@ export class LeanInstaller implements Disposable {
             case undefined:
                 this.pendingOperation = kind
                 try {
-                    return await op()
+                    if (this.clientProvider === undefined) {
+                        return await op()
+                    }
+                    const r = await this.clientProvider.withStoppedClients(op)
+                    if (r.kind === 'IsRestarting') {
+                        displayNotification('Error', 'Cannot re-install Elan while a server is being restarted.')
+                        return 'PendingOperation'
+                    }
+                    return r.result
                 } finally {
                     this.pendingOperation = undefined
                 }

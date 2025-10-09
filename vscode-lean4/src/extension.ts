@@ -208,6 +208,7 @@ async function activateLean4Features(
 ): Promise<Lean4EnabledFeatures> {
     const clientProvider = new LeanClientProvider(installer.getOutputChannel())
     elanCommandProvider.setClientProvider(clientProvider)
+    installer.setClientProvider(clientProvider)
     context.subscriptions.push(clientProvider)
 
     const infoProvider = new InfoProvider(clientProvider, context)

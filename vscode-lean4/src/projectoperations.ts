@@ -378,8 +378,8 @@ export class ProjectOperationProvider implements Disposable {
                 toolchainUpdateMode: 'DoNotUpdate',
             })
 
-            const result: 'Success' | 'IsRestarting' = await activeClient.withStoppedClient(() => command(lakeRunner))
-            if (result === 'IsRestarting') {
+            const result = await activeClient.withStoppedClient(() => command(lakeRunner))
+            if (result.kind === 'IsRestarting') {
                 displayNotification('Error', 'Cannot run project action while restarting the server.')
             }
         } finally {
