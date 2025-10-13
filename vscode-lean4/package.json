@@ -1724,8 +1724,8 @@
         "test": "node ./out/test/suite/runTest.js"
     },
     "dependencies": {
-        "@leanprover/infoview": "~0.9.0",
-        "@leanprover/infoview-api": "~0.9.0",
+        "@leanprover/infoview": "~0.10.0",
+        "@leanprover/infoview-api": "~0.10.0",
         "@leanprover/unicode-input": "~0.1.8",
         "@leanprover/unicode-input-component": "~0.1.8",
         "@vscode/codicons": "^0.0.36",
