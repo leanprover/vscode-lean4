@@ -347,7 +347,7 @@ export function discardMethodNotFound(e: unknown): undefined {
     if (isRpcError(e) && e.code === RpcErrorCode.MethodNotFound) {
         return undefined
     } else {
-        throw mapRpcError(e)
+        throw e
     }
 }
 

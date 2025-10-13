@@ -564,6 +564,7 @@ function InfoAux(props: InfoProps) {
                             // to the RPC sessions. Try again.
                             setUpdaterTick(t => t + 1)
                             reject('retry')
+                            return
                         }
 
                         let errorString = ''
