@@ -39,11 +39,12 @@ import {
     ServerStoppedReason,
 } from '@leanprover/infoview-api'
 import {
-    getElaborationDelay,
+    allowedLoggingMethods,
+    disallowedLoggingMethods,
     getFallBackToStringOccurrenceHighlighting,
+    isLoggingEnabled,
+    loggingDir,
     serverArgs,
-    serverLoggingEnabled,
-    serverLoggingPath,
     shouldAutofocusOutput,
 } from './config'
 import { logger } from './utils/logger'
@@ -75,6 +76,25 @@ import {
     displayNotificationWithOutput,
 } from './utils/notifs'
 import { lakefileLeanUri, lakefileTomlUri, leanToolchainUri, willUseLakeServer } from './utils/projectInfo'
+
+interface LogConfig {
+    logDir?: string | undefined
+    allowedMethods?: string[] | undefined
+    disallowedMethods?: string[] | undefined
+}
+
+function logConfig(): LogConfig | undefined {
+    if (!isLoggingEnabled()) {
+        return undefined
+    }
+    const allowedMethods = allowedLoggingMethods()
+    const disallowedMethods = disallowedLoggingMethods()
+    return {
+        logDir: loggingDir(),
+        allowedMethods: allowedMethods.length > 0 ? allowedMethods : undefined,
+        disallowedMethods: disallowedMethods.length > 0 ? disallowedMethods : undefined,
+    }
+}
 
 interface LeanClientCapabilties {
     silentDiagnosticSupport?: boolean | undefined
@@ -726,10 +746,6 @@ export class LeanClient implements Disposable {
 
     private async determineServerOptions(toolchainOverride: string | undefined): Promise<Executable> {
         const env = Object.assign({}, process.env)
-        if (serverLoggingEnabled()) {
-            env.LEAN_SERVER_LOG_DIR = serverLoggingPath()
-        }
-
         const [serverExecutable, options] = await this.determineExecutable()
         if (toolchainOverride) {
             options.unshift('+' + toolchainOverride)
@@ -784,8 +800,8 @@ export class LeanClient implements Disposable {
             documentSelector: [documentSelector],
             workspaceFolder,
             initializationOptions: {
-                editDelay: getElaborationDelay(),
                 hasWidgets: true,
+                logCfg: logConfig(),
             },
             connectionOptions: {
                 maxRestartCount: 0,

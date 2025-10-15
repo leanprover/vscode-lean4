@@ -109,17 +109,6 @@
                     ],
                     "markdownDescription": "Whether to enable client-side logging for language server messages."
                 },
-                "lean4.serverLogging.enabled": {
-                    "type": "boolean",
-                    "default": false,
-                    "description": "Enable Lean 4 server logging."
-                },
-                "lean4.serverLogging.path": {
-                    "type": "string",
-                    "default": ".",
-                    "description": "Path to the directory where Lean 4 server log files are stored.",
-                    "scope": "machine-overridable"
-                },
                 "lean4.autofocusOutput": {
                     "type": "boolean",
                     "default": false,
@@ -216,11 +205,6 @@
                     "default": "Sort by proximity to text cursor",
                     "markdownDescription": "Set the sort order of 'All Messages' in the InfoView."
                 },
-                "lean4.elaborationDelay": {
-                    "type": "number",
-                    "default": 200,
-                    "description": "Time (in milliseconds) which must pass since latest edit until elaboration begins. Lower values may make editing feel faster at the cost of higher CPU usage."
-                },
                 "lean4.showSetupWarnings": {
                     "type": "boolean",
                     "default": true,
@@ -267,6 +251,64 @@
                     "type": "number",
                     "default": 750,
                     "markdownDescription": "Delay after an edit in milliseconds until certain editor decorations (like the 'unsolved goals' decoration) update."
+                },
+                "lean4.logging.enabled": {
+                    "type": "boolean",
+                    "default": "false",
+                    "markdownDescription": "Whether to log Lean language server messages."
+                },
+                "lean4.logging.dir": {
+                    "type": "string",
+                    "default": ".",
+                    "markdownDescription": "Path to the directory to log Lean language server messages in. `.` refers to the project root directory that Lean is running in."
+                },
+                "lean4.logging.allowedMethods": {
+                    "type": "array",
+                    "default": [
+                        "textDocument/didOpen",
+                        "textDocument/didChange",
+                        "textDocument/didClose",
+                        "textDocument/didSave",
+                        "textDocument/hover",
+                        "textDocument/documentHighlight",
+                        "completionItem/resolve",
+                        "codeAction/resolve",
+                        "textDocument/definition",
+                        "textDocument/declaration",
+                        "textDocument/typeDefinition",
+                        "textDocument/references",
+                        "textDocument/prepareCallHierarchy",
+                        "callHierarchy/incomingCalls",
+                        "callHierarchy/outgoingCalls",
+                        "$/lean/prepareModuleHierarchy",
+                        "$/lean/moduleHierarchy/imports",
+                        "$/lean/moduleHierarchy/importedBy",
+                        "textDocument/prepareRename",
+                        "textDocument/rename",
+                        "workspace/symbol",
+                        "$/lean/rpc/call",
+                        "Lean.Widget.getInteractiveDiagnostics",
+                        "Lean.Widget.getInteractiveGoals",
+                        "Lean.Widget.getInteractiveTermGoal",
+                        "Lean.Widget.InteractiveDiagnostics.infoToInteractive",
+                        "Lean.Widget.getGoToLocation",
+                        "Lean.Widget.lazyTraceChildrenToInteractive",
+                        "Lean.Widget.highlightMatches"
+                    ],
+                    "markdownDescription": "LSP methods (and LSP RPC methods) for which requests and responses should be logged. Leave empty to log all methods.",
+                    "items": {
+                        "type": "string",
+                        "description": "LSP method (or LSP RPC method) for which requests and responses should be logged."
+                    }
+                },
+                "lean4.logging.disallowedMethods": {
+                    "type": "array",
+                    "default": [],
+                    "markdownDescription": "LSP methods (and LSP RPC methods) for which no requests and responses should be logged. Leave empty to disallow no methods.",
+                    "items": {
+                        "type": "string",
+                        "description": "LSP method (or LSP RPC method) for which requests and responses should not be logged."
+                    }
                 }
             }
         },
