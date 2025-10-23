@@ -10,6 +10,7 @@ import {
     ElanDumpStateWithoutNetQueryResult,
     ElanVersionDiagnosis,
     LeanVersionDiagnosis,
+    OSVersionDiagnosis,
     ProjectSetupDiagnosis,
     SetupDiagnoser,
     SystemQueryResult,
@@ -31,6 +32,13 @@ export type FullDiagnostics = {
 
 function formatCommandOutput(cmdOutput: string): string {
     return '\n```\n' + cmdOutput + '\n```'
+}
+
+function formatOperatingSystem(os: string, versionDiagnosis: OSVersionDiagnosis): string {
+    if (versionDiagnosis.kind === 'Unsupported') {
+        return `${os} (Unsupported; recommended version: ${versionDiagnosis.recommendedVersion})`
+    }
+    return os
 }
 
 function formatVSCodeVersionDiagnosis(d: VSCodeVersionDiagnosis): string {
@@ -167,7 +175,7 @@ function formatElanInfo(d: FullDiagnostics): string {
 
 export function formatFullDiagnostics(d: FullDiagnostics): string {
     return [
-        `**Operating system**: ${d.systemInfo.operatingSystem}`,
+        `**Operating system**: ${formatOperatingSystem(d.systemInfo.operatingSystem, d.systemInfo.osVersionDiagnosis)}`,
         `**CPU architecture**: ${d.systemInfo.cpuArchitecture}`,
         `**CPU model**: ${d.systemInfo.cpuModels}`,
         `**Available RAM**: ${d.systemInfo.totalMemory}`,
