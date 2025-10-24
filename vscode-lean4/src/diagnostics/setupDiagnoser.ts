@@ -1,4 +1,5 @@
 import * as os from 'os'
+import * as s from 'semver'
 import { SemVer } from 'semver'
 import { OutputChannel, extensions, version } from 'vscode'
 import { ExecutionExitCode, ExecutionResult, batchExecute } from '../utils/batch'
@@ -13,8 +14,40 @@ import { FileUri } from '../utils/exturi'
 import { ToolchainUpdateMode, leanRunner } from '../utils/leanCmdRunner'
 import { checkParentFoldersForLeanProject, isValidLeanProject } from '../utils/projectInfo'
 
+const minimumSupportedMacOSVersion = new SemVer('23.0.0')
+const minimumSupportedWindowsVersion = new SemVer('10.0.18362')
+
+export type OSVersionDiagnosis =
+    | { kind: 'NotUnsupported' }
+    | { kind: 'Unsupported'; currentVersion: SemVer; recommendedVersion: SemVer }
+
+function diagnoseOSVersion(): OSVersionDiagnosis {
+    // When in doubt, we consider an OS version as not being unsupported.
+    const release = os.release()
+    if (!s.valid(release)) {
+        return { kind: 'NotUnsupported' }
+    }
+    const currentVersion = new SemVer(release)
+    switch (os.type()) {
+        case 'Darwin':
+            if (currentVersion.compare(minimumSupportedMacOSVersion) >= 0) {
+                return { kind: 'NotUnsupported' }
+            }
+            return { kind: 'Unsupported', currentVersion, recommendedVersion: minimumSupportedMacOSVersion }
+        case 'Windows_NT':
+            if (currentVersion.compare(minimumSupportedWindowsVersion) >= 0) {
+                return { kind: 'NotUnsupported' }
+            }
+            return { kind: 'Unsupported', currentVersion, recommendedVersion: minimumSupportedMacOSVersion }
+    }
+    return { kind: 'NotUnsupported' }
+}
+
 export type SystemQueryResult = {
     operatingSystem: string
+    osType: string
+    osRelease: string
+    osVersionDiagnosis: OSVersionDiagnosis
     cpuArchitecture: string
     cpuModels: string
     totalMemory: string
@@ -253,6 +286,9 @@ export class SetupDiagnoser {
 
         return {
             operatingSystem: `${os.type()} (release: ${os.release()})`,
+            osType: os.type(),
+            osRelease: os.release(),
+            osVersionDiagnosis: diagnoseOSVersion(),
             cpuArchitecture: os.arch(),
             cpuModels: formattedCpuModels,
             totalMemory: `${totalMemory} GB`,
