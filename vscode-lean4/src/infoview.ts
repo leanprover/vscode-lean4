@@ -390,9 +390,7 @@ export class InfoProvider implements Disposable {
                 this.updateStylesheet()
                 await this.sendConfig()
             }),
-            workspace.onDidChangeTextDocument(async () => {
-                await this.sendPosition()
-            }),
+            lean.onDidChangeLeanDocument(() => this.sendPosition()),
             lean.registerLeanEditorCommand('lean4.displayGoal', leanEditor => this.openPreview(leanEditor)),
             commands.registerCommand('lean4.toggleInfoview', () => this.toggleInfoview()),
             lean.registerLeanEditorCommand('lean4.displayList', async leanEditor => {

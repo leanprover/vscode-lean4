@@ -4,6 +4,7 @@ import {
     EventEmitter,
     ExtensionContext,
     TextDocument,
+    TextDocumentChangeEvent,
     TextEditor,
     TextEditorEdit,
     TextEditorSelectionChangeEvent,
@@ -130,6 +131,9 @@ export class LeanEditorProvider implements Disposable {
     private readonly onDidConcealLeanEditorEmitter = new EventEmitter<LeanEditor>()
     readonly onDidConcealLeanEditor = this.onDidConcealLeanEditorEmitter.event
 
+    private readonly onDidChangeLeanDocumentEmitter = new EventEmitter<TextDocumentChangeEvent>()
+    readonly onDidChangeLeanDocument = this.onDidChangeLeanDocumentsEmitter.event
+
     private readonly onDidChangeLeanEditorSelectionEmitter = new EventEmitter<TextEditorSelectionChangeEvent>()
     readonly onDidChangeLeanEditorSelection = this.onDidChangeLeanEditorSelectionEmitter.event
 
@@ -168,6 +172,7 @@ export class LeanEditorProvider implements Disposable {
                 this.invalidateClosedLastActiveLeanDocument(doc)
             }),
         )
+        this.subscriptions.push(workspace.onDidChangeTextDocument(event => this.updateDocument(event)))
         this.subscriptions.push(window.onDidChangeTextEditorSelection(event => this.updateTextEditorSelection(event)))
     }
 
@@ -305,6 +310,13 @@ export class LeanEditorProvider implements Disposable {
         }
         this._lastActiveLeanDocument = newLastActiveLeanDocument
         this.onDidChangeLastActiveLeanDocumentEmitter.fire(newLastActiveLeanDocument)
+    }
+
+    private updateDocument(event: TextDocumentChangeEvent) {
+        if (!this.isLeanDocument(event.document)) {
+            return
+        }
+        this.onDidChangeLeanDocumentEmitter.fire(event)
     }
 
     private updateTextEditorSelection(event: TextEditorSelectionChangeEvent) {

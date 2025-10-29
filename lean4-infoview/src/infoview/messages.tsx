@@ -334,6 +334,11 @@ function lazy<T>(f: () => T): () => T {
     }
 }
 
+interface InteractiveDiagBundle {
+    diags: InteractiveDiagnostic[]
+    tally: DiagnosticTally
+}
+
 /** Displays all messages for the specified file. Can be paused. */
 export function AllMessages({ uri: uri0 }: { uri: DocumentUri }) {
     const ec = React.useContext(EditorContext)
@@ -361,7 +366,7 @@ export function AllMessages({ uri: uri0 }: { uri: DocumentUri }) {
                     let diags = await getInteractiveDiagnostics(rs0, { start: 0, end: maxLine })
                     diags = diags.filter(d => d.isSilent === undefined || !d.isSilent)
                     if (diags.length > 0) {
-                        return diags
+                        return { diags, tally: tallyOfDiags(diags) }
                     }
                 } catch (err: any) {
                     if (err?.code === RpcErrorCode.ContentModified) {
@@ -373,7 +378,8 @@ export function AllMessages({ uri: uri0 }: { uri: DocumentUri }) {
                         console.log('getInteractiveDiagnostics error ', err)
                     }
                 }
-                return diags0.map(d => ({ ...d, message: { text: d.message } }))
+                const diags = diags0.map(d => ({ ...d, message: { text: d.message } }))
+                return { diags, tally: tallyOfDiags(diags) }
             }),
         [rs0, diags0],
     )
@@ -451,7 +457,7 @@ export function AllMessages({ uri: uri0 }: { uri: DocumentUri }) {
                         ></a>
                     </span>
                 </>
-                <AllMessagesBody uri={uri} messages={iDiags} setTally={setTally} sortOrder={sortOrder} pos={curPos} />
+                <AllMessagesBody uri={uri} messages={iDiags} tally={tally} setTally={setTally} sortOrder={sortOrder} pos={curPos} />
             </Details>
         </RpcContext.Provider>
     )
@@ -506,23 +512,27 @@ export function TallyDisplay({ t }: { t: DiagnosticTally }) {
 
 interface AllMessagesBodyProps {
     uri: DocumentUri
-    messages: () => Promise<InteractiveDiagnostic[]>
+    messages: () => Promise<InteractiveDiagBundle>
+    tally: DiagnosticTally | undefined
     setTally: React.Dispatch<React.SetStateAction<DiagnosticTally | undefined>>
     sortOrder: MessageOrder
     pos: DocumentPosition | undefined
 }
 
 /** We factor out the body of {@link AllMessages} which lazily fetches its contents only when expanded. */
-function AllMessagesBody({ uri, messages, setTally, sortOrder, pos }: AllMessagesBodyProps) {
+function AllMessagesBody({ uri, messages, tally, setTally, sortOrder, pos }: AllMessagesBodyProps) {
     const [msgs, setMsgs] = React.useState<InteractiveDiagnostic[] | undefined>(undefined)
     React.useEffect(() => {
         const fn = async () => {
-            const msgs = await messages()
-            setMsgs(msgs)
-            setTally(tallyOfDiags(msgs))
+            const { diags, tally: newTally } = await messages()
+            setMsgs(diags)
+            // Avoid re-render loop with `AllMessages`
+            if (JSON.stringify(tally) !== JSON.stringify(newTally)) {
+                setTally(newTally)
+            }
         }
         void fn()
-    }, [messages, setTally])
+    }, [messages, tally, setTally])
     React.useEffect(() => () => /* Called on unmount. */ setTally(undefined), [setTally])
     if (msgs === undefined) return <>Loading messages...</>
     else return <MessagesList uri={uri} messages={msgs} sortOrder={sortOrder} pos={pos} />
