@@ -191,6 +191,7 @@ async function checkLean4FeaturePreconditions(
     d: SetupDiagnostics,
 ): Promise<PreconditionCheckResult> {
     return await checkAll(
+        () => d.checkIsOperatingSystemSupported(),
         () => d.checkAreDependenciesInstalled(depInstaller, leanInstaller.getOutputChannel(), cwdUri),
         () => d.checkIsLean4Installed(leanInstaller, context, cwdUri, 'PromptAboutUpdate'),
         () =>
