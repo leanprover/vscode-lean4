@@ -254,7 +254,7 @@
                 },
                 "lean4.logging.enabled": {
                     "type": "boolean",
-                    "default": "false",
+                    "default": false,
                     "markdownDescription": "Whether to log Lean language server messages."
                 },
                 "lean4.logging.dir": {
