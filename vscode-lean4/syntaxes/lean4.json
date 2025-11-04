@@ -88,7 +88,7 @@
         { "name": "string.quoted.single.lean4", "match": "(?<!\\]|\\w)'[^\\\\']'" },
         {
             "name": "string.quoted.single.lean4",
-            "match": "\\b(?<!\\]|\\w)'(\\\\(x[0-9A-Fa-f][0-9A-Fa-f]|u[0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f]|.))'\\b",
+            "match": "(?<!\\]|\\w)'(\\\\(x[0-9A-Fa-f][0-9A-Fa-f]|u[0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f]|.))'",
             "captures": { "1": { "name": "constant.character.escape.lean4" } }
         },
         { "match": "`+[^\\[(]\\S+", "name": "entity.name.lean4" },
