@@ -13,10 +13,10 @@ On newer Windows systems that support the package manager [winget](https://learn
 # Install Git using `winget`.
 winget install -e --id Git.Git --silent --accept-package-agreements --accept-source-agreements --disable-interactivity
 # Download the Elan installation script at https://github.com/leanprover/elan/blob/master/elan-init.ps1 and run it. Elan will be installed to `%USERPROFILE%\.elan`.
-Invoke-WebRequest -Uri "https://elan.lean-lang.org/elan-init.ps1" -OutFile "elan-init.ps1"
+$installCode = (Invoke-WebRequest -Uri "https://elan.lean-lang.org/elan-init.ps1" -UseBasicParsing -ErrorAction Stop).Content
+$installer = [ScriptBlock]::Create([System.Text.Encoding]::UTF8.GetString($installCode))
 Set-ExecutionPolicy -ExecutionPolicy Unrestricted -Scope Process
-.\elan-init.ps1 -NoPrompt 1 -DefaultToolchain leanprover/lean4:stable
-del .\elan-init.ps1
+& $installer -NoPrompt 1 -DefaultToolchain ${elanStableChannel}
 ```
 
 On older Windows systems that do not support the package manager [winget](https://learn.microsoft.com/en-us/windows/package-manager/winget/), the following script will be executed instead:
@@ -29,10 +29,10 @@ New-Item -ItemType Directory -Path $installDir -Force
 Invoke-WebRequest -Uri $gitInstallerUrl -OutFile $gitInstallerLoc
 & $gitInstallerLoc /VERYSILENT /NORESTART /SP-
 # Download the Elan installation script at https://github.com/leanprover/elan/blob/master/elan-init.ps1 and run it. Elan will be installed to `%USERPROFILE%\.elan`.
-Invoke-WebRequest -Uri "https://elan.lean-lang.org/elan-init.ps1" -OutFile "elan-init.ps1"
+$installCode = (Invoke-WebRequest -Uri "https://elan.lean-lang.org/elan-init.ps1" -UseBasicParsing -ErrorAction Stop).Content
+$installer = [ScriptBlock]::Create([System.Text.Encoding]::UTF8.GetString($installCode))
 Set-ExecutionPolicy -ExecutionPolicy Unrestricted -Scope Process
-.\elan-init.ps1 -NoPrompt 1 -DefaultToolchain leanprover/lean4:stable
-del .\elan-init.ps1
+& $installer -NoPrompt 1 -DefaultToolchain ${elanStableChannel}
 ```
 
 ## Restricted Environments
