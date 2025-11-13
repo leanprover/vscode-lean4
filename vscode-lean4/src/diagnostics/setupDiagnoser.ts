@@ -14,7 +14,7 @@ import { FileUri } from '../utils/exturi'
 import { ToolchainUpdateMode, leanRunner } from '../utils/leanCmdRunner'
 import { checkParentFoldersForLeanProject, isValidLeanProject } from '../utils/projectInfo'
 
-const minimumSupportedMacOSVersion = new SemVer('23.0.0')
+const minimumSupportedMacOSVersion = new SemVer('19.0.0')
 const minimumSupportedWindowsVersion = new SemVer('10.0.18362')
 
 export type OSVersionDiagnosis =
