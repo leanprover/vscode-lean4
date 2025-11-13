@@ -324,6 +324,16 @@ export class SetupDiagnostics {
                 return 'Fulfilled'
         }
     }
+
+    async checkIsOperatingSystemSupported(): Promise<PreconditionCheckResult> {
+        const systemInfo = diagnose({ channel: undefined, cwdUri: undefined }).querySystemInformation()
+        if (systemInfo.osVersionDiagnosis.kind === 'Unsupported') {
+            return await this.n.displaySetupWarning(
+                `Operating system version is unsupported. The current OS version is ${systemInfo.osType} (${systemInfo.osVersionDiagnosis.currentVersion}), but a version of at least ${systemInfo.osType} (${systemInfo.osVersionDiagnosis.recommendedVersion}) is recommended to run new Lean versions.`,
+            )
+        }
+        return 'Fulfilled'
+    }
 }
 
 export async function checkAll(
