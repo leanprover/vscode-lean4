@@ -156,6 +156,7 @@ async function main() {
             extensionTestsEnv: { LEAN4_TEST_FOLDER: 'lakefileTomlSchema', DEFAULT_LEAN_TOOLCHAIN: test_version },
             launchArgs: ['--new-window', '--disable-gpu', lakeFileTempTestDir],
         })
+        fs.rmSync(lakeFileTempTestDir, { recursive: true })
     } catch (err) {
         console.error('Failed to run tests')
         console.error(err.message)
