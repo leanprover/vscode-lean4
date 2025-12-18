@@ -145,7 +145,6 @@ async function main() {
         // ensures the following test does not re-open the previous folder
         clearUserWorkspaceData(vscodeTestPath)
 
-        // run the lean4 restart tests, also reusing the 'simple' project.
         await runTests({
             vscodeExecutablePath,
             extensionDevelopmentPath,
