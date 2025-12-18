@@ -140,6 +140,19 @@ async function main() {
             extensionTestsEnv: { LEAN4_TEST_FOLDER: 'multi', DEFAULT_LEAN_TOOLCHAIN: test_version },
             launchArgs: ['--new-window', '--disable-gpu', workspacePath],
         })
+
+        // The '--new-window' doesn't see to be working, so this hack
+        // ensures the following test does not re-open the previous folder
+        clearUserWorkspaceData(vscodeTestPath)
+
+        // run the lean4 restart tests, also reusing the 'simple' project.
+        await runTests({
+            vscodeExecutablePath,
+            extensionDevelopmentPath,
+            extensionTestsPath: path.resolve(__dirname, 'index'),
+            extensionTestsEnv: { LEAN4_TEST_FOLDER: 'lakefileTomlSchema', DEFAULT_LEAN_TOOLCHAIN: test_version },
+            launchArgs: ['--new-window', '--disable-gpu'],
+        })
     } catch (err) {
         console.error('Failed to run tests')
         console.error(err.message)
