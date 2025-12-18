@@ -3,8 +3,6 @@ version = "0.1.0"
 defaultTargets = ["foo"]
 
 [[require]]
-name = "dependency"
-git = {}
 rev = "main"
 
 [[lean_lib]]
