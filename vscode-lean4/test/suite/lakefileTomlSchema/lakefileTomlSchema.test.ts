@@ -18,7 +18,7 @@ suite('Tests', () => {
             logger.log(`=================== Ensure ${testFileName} is rejected ===================`)
             assert(vscode.workspace.workspaceFolders !== undefined, 'No workspace folder is opened')
             assert(vscode.workspace.workspaceFolders.length === 1, 'Exactly one workspace folder should be opened ')
-            const workspaceFolder = vscode.workspace.workspaceFolders[0].uri.path
+            const workspaceFolder = vscode.workspace.workspaceFolders[0].uri.fsPath
             logger.log(`Found workspace folder at ${workspaceFolder}`)
             const lakefilePath = path.join(workspaceFolder, 'lakefile.toml')
 
@@ -49,7 +49,7 @@ suite('Tests', () => {
             logger.log(`=================== Ensure ${testFileName} is accepted ===================`)
             assert(vscode.workspace.workspaceFolders !== undefined, 'No workspace folder is opened')
             assert(vscode.workspace.workspaceFolders.length === 1, 'Exactly one workspace folder should be opened ')
-            const workspaceFolder = vscode.workspace.workspaceFolders[0].uri.path
+            const workspaceFolder = vscode.workspace.workspaceFolders[0].uri.fsPath
             logger.log(`Found workspace folder at ${workspaceFolder}`)
             const lakefilePath = path.join(workspaceFolder, 'lakefile.toml')
 
