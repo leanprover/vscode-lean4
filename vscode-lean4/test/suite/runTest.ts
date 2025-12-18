@@ -7,7 +7,7 @@ import { logger } from '../../src/utils/logger'
 
 function clearUserWorkspaceData(vscodeTest: string) {
     const workspaceData = path.join(vscodeTest, 'user-data', 'Workspaces')
-    fs.rmdir(workspaceData, { recursive: true }, err => {
+    fs.rm(workspaceData, { recursive: true }, err => {
         logger.log(`deleted user workspace data ${workspaceData} is deleted!`)
     })
 }

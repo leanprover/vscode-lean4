@@ -325,7 +325,7 @@ function nullHandler() {
 export function cleanTempFolder(name: string) {
     const path = join(os.tmpdir(), name)
     if (fs.existsSync(path)) {
-        fs.rmdirSync(path, { recursive: true })
+        fs.rmSync(path, { recursive: true })
     }
 }
 
