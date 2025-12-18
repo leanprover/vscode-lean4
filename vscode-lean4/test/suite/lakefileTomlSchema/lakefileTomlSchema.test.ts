@@ -4,7 +4,7 @@ import { suite } from 'mocha'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import { logger } from '../../../src/utils/logger'
-import { sleep } from '../utils/helpers'
+import { sleep, waitForActiveExtension } from '../utils/helpers'
 
 suite('Tests', () => {
     const extensionDevelopmentPath = path.resolve(__dirname, '..', '..', '..', '..')
@@ -15,7 +15,7 @@ suite('Tests', () => {
     for (const testFileName of fs.readdirSync(invalidLakefilesDirectory)) {
         const testFileLocation = path.join(invalidLakefilesDirectory, testFileName)
         test(testFileName, async () => {
-            logger.log('=================== Ensure ${testFileName} is rejected ===================')
+            logger.log(`=================== Ensure ${testFileName} is rejected ===================`)
             assert(vscode.workspace.workspaceFolders !== undefined, 'No workspace folder is opened')
             assert(vscode.workspace.workspaceFolders.length === 1, 'Exactly one workspace folder should be opened ')
             const workspaceFolder = vscode.workspace.workspaceFolders[0].uri.path
@@ -28,7 +28,17 @@ suite('Tests', () => {
             const document = await vscode.workspace.openTextDocument(lakefilePath)
             await vscode.window.showTextDocument(document)
 
-            await sleep(10 * 1000)
+            await waitForActiveExtension('tamasfe.even-better-toml')
+
+            // Wait for 5 seconds for diagnostics to appear
+            await sleep(5 * 1000)
+
+            const diagnostics = vscode.languages.getDiagnostics().flatMap(([, diagnostic]) => diagnostic)
+            const errorDiagnostics = diagnostics.filter(
+                diagnostic =>
+                    diagnostic.severity === vscode.DiagnosticSeverity.Error && diagnostic.source === 'Even Better TOML',
+            )
+            assert(errorDiagnostics.length > 0, 'Expected at least one error diagnostic for invalid lakefile.toml')
         })
     }
 
@@ -48,7 +58,17 @@ suite('Tests', () => {
             const document = await vscode.workspace.openTextDocument(lakefilePath)
             await vscode.window.showTextDocument(document)
 
-            await sleep(10 * 1000)
+            await waitForActiveExtension('tamasfe.even-better-toml')
+
+            // Wait for 5 seconds for diagnostics to appear
+            await sleep(5 * 1000)
+
+            const diagnostics = vscode.languages.getDiagnostics().flatMap(([, diagnostic]) => diagnostic)
+            const errorDiagnostics = diagnostics.filter(
+                diagnostic =>
+                    diagnostic.severity === vscode.DiagnosticSeverity.Error && diagnostic.source === 'Even Better TOML',
+            )
+            assert(errorDiagnostics.length === 0, 'Expected no error diagnostics for valid lakefile.toml')
         })
     }
 })
