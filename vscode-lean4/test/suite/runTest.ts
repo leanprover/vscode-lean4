@@ -58,89 +58,89 @@ async function main() {
             throw new Error('Got error while installing dependency: ${result.error}')
         }
 
-        // clearUserWorkspaceData(vscodeTestPath)
+        clearUserWorkspaceData(vscodeTestPath)
 
-        // // run bootstrap tests
-        // await runTests({
-        //     vscodeExecutablePath,
-        //     extensionDevelopmentPath,
-        //     extensionTestsPath: path.resolve(__dirname, 'index'),
-        //     extensionTestsEnv: { LEAN4_TEST_FOLDER: 'bootstrap', DEFAULT_LEAN_TOOLCHAIN: test_version },
-        //     launchArgs: ['--new-window', '--disable-gpu'],
-        // })
+        // run bootstrap tests
+        await runTests({
+            vscodeExecutablePath,
+            extensionDevelopmentPath,
+            extensionTestsPath: path.resolve(__dirname, 'index'),
+            extensionTestsEnv: { LEAN4_TEST_FOLDER: 'bootstrap', DEFAULT_LEAN_TOOLCHAIN: test_version },
+            launchArgs: ['--new-window', '--disable-gpu'],
+        })
 
-        // clearUserWorkspaceData(vscodeTestPath)
+        clearUserWorkspaceData(vscodeTestPath)
 
-        // // run the infoView tests
-        // await runTests({
-        //     vscodeExecutablePath,
-        //     extensionDevelopmentPath,
-        //     extensionTestsPath: path.resolve(__dirname, 'index'),
-        //     extensionTestsEnv: { LEAN4_TEST_FOLDER: 'info', DEFAULT_LEAN_TOOLCHAIN: test_version },
-        //     launchArgs: ['--new-window', '--disable-gpu'],
-        // })
+        // run the infoView tests
+        await runTests({
+            vscodeExecutablePath,
+            extensionDevelopmentPath,
+            extensionTestsPath: path.resolve(__dirname, 'index'),
+            extensionTestsEnv: { LEAN4_TEST_FOLDER: 'info', DEFAULT_LEAN_TOOLCHAIN: test_version },
+            launchArgs: ['--new-window', '--disable-gpu'],
+        })
 
-        // // The '--new-window' doesn't see to be working, so this hack
-        // // ensures the following test does not re-open the previous folder
-        // clearUserWorkspaceData(vscodeTestPath)
+        // The '--new-window' doesn't see to be working, so this hack
+        // ensures the following test does not re-open the previous folder
+        clearUserWorkspaceData(vscodeTestPath)
 
-        // // run the lean4 tests in adhoc file configuration (no folder open)
-        // await runTests({
-        //     vscodeExecutablePath,
-        //     extensionDevelopmentPath,
-        //     extensionTestsPath: path.resolve(__dirname, 'index'),
-        //     extensionTestsEnv: { LEAN4_TEST_FOLDER: 'simple', DEFAULT_LEAN_TOOLCHAIN: test_version },
-        //     launchArgs: ['--new-window', '--disable-gpu'],
-        // })
+        // run the lean4 tests in adhoc file configuration (no folder open)
+        await runTests({
+            vscodeExecutablePath,
+            extensionDevelopmentPath,
+            extensionTestsPath: path.resolve(__dirname, 'index'),
+            extensionTestsEnv: { LEAN4_TEST_FOLDER: 'simple', DEFAULT_LEAN_TOOLCHAIN: test_version },
+            launchArgs: ['--new-window', '--disable-gpu'],
+        })
 
         const lean4TestFolder = path.join(extensionDevelopmentPath, 'test', 'test-fixtures', 'simple')
 
-        // // The '--new-window' doesn't see to be working, so this hack
-        // // ensures the following test does not re-open the previous folder
-        // clearUserWorkspaceData(vscodeTestPath)
+        // The '--new-window' doesn't see to be working, so this hack
+        // ensures the following test does not re-open the previous folder
+        clearUserWorkspaceData(vscodeTestPath)
 
-        // // run the lean4 simple tests again, this time with an "open folder" configuration
-        // await runTests({
-        //     vscodeExecutablePath,
-        //     extensionDevelopmentPath,
-        //     extensionTestsPath: path.resolve(__dirname, 'index'),
-        //     extensionTestsEnv: { LEAN4_TEST_FOLDER: 'simple', DEFAULT_LEAN_TOOLCHAIN: test_version },
-        //     launchArgs: ['--new-window', '--disable-gpu', lean4TestFolder],
-        // })
+        // run the lean4 simple tests again, this time with an "open folder" configuration
+        await runTests({
+            vscodeExecutablePath,
+            extensionDevelopmentPath,
+            extensionTestsPath: path.resolve(__dirname, 'index'),
+            extensionTestsEnv: { LEAN4_TEST_FOLDER: 'simple', DEFAULT_LEAN_TOOLCHAIN: test_version },
+            launchArgs: ['--new-window', '--disable-gpu', lean4TestFolder],
+        })
 
-        // // The '--new-window' doesn't see to be working, so this hack
-        // // ensures the following test does not re-open the previous folder
-        // clearUserWorkspaceData(vscodeTestPath)
+        // The '--new-window' doesn't see to be working, so this hack
+        // ensures the following test does not re-open the previous folder
+        clearUserWorkspaceData(vscodeTestPath)
 
-        // // run the lean4 restart tests, also reusing the 'simple' project.
-        // await runTests({
-        //     vscodeExecutablePath,
-        //     extensionDevelopmentPath,
-        //     extensionTestsPath: path.resolve(__dirname, 'index'),
-        //     extensionTestsEnv: { LEAN4_TEST_FOLDER: 'restarts', DEFAULT_LEAN_TOOLCHAIN: test_version },
-        //     launchArgs: ['--new-window', '--disable-gpu', lean4TestFolder],
-        // })
+        // run the lean4 restart tests, also reusing the 'simple' project.
+        await runTests({
+            vscodeExecutablePath,
+            extensionDevelopmentPath,
+            extensionTestsPath: path.resolve(__dirname, 'index'),
+            extensionTestsEnv: { LEAN4_TEST_FOLDER: 'restarts', DEFAULT_LEAN_TOOLCHAIN: test_version },
+            launchArgs: ['--new-window', '--disable-gpu', lean4TestFolder],
+        })
 
-        // // The '--new-window' doesn't see to be working, so this hack
-        // // ensures the following test does not re-open the previous folder
-        // clearUserWorkspaceData(vscodeTestPath)
+        // The '--new-window' doesn't see to be working, so this hack
+        // ensures the following test does not re-open the previous folder
+        clearUserWorkspaceData(vscodeTestPath)
 
-        // const workspacePath = path.join(
-        //     extensionDevelopmentPath,
-        //     'test',
-        //     'test-fixtures',
-        //     'multi',
-        //     'multi.code-workspace',
-        // )
+        const workspacePath = path.join(
+            extensionDevelopmentPath,
+            'test',
+            'test-fixtures',
+            'multi',
+            'multi.code-workspace',
+        )
 
-        // // Test a multi-folder workspace.
-        // await runTests({
-        //     vscodeExecutablePath,
-        //     extensionDevelopmentPath,
-        //     extensionTestsPath: path.resolve(__dirname, 'index'),
-        //     extensionTestsEnv: { LEAN4_TEST_FOLDER: 'multi', DEFAULT_LEAN_TOOLCHAIN: test_version },
-        //     launchArgs: ['--new-window', '--disable-gpu', workspacePath],
-        // })
+        // Test a multi-folder workspace.
+        await runTests({
+            vscodeExecutablePath,
+            extensionDevelopmentPath,
+            extensionTestsPath: path.resolve(__dirname, 'index'),
+            extensionTestsEnv: { LEAN4_TEST_FOLDER: 'multi', DEFAULT_LEAN_TOOLCHAIN: test_version },
+            launchArgs: ['--new-window', '--disable-gpu', workspacePath],
+        })
 
         const lakeFileTempTestDir = fs.mkdtempSync(path.join(os.tmpdir(), 'lakefileTomlSchema'))
         fs.cpSync(lean4TestFolder, lakeFileTempTestDir, { recursive: true })
