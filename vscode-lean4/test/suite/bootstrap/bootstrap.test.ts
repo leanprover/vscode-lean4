@@ -17,11 +17,11 @@ suite('Lean4 Bootstrap Test Suite', () => {
         const result = await batchExecute(method.script, [], undefined, undefined, undefined, method.shell)
         assert(result.exitCode === ExecutionExitCode.Success)
         const result2 = await batchExecute('elan', ['toolchain', 'install', 'leanprover/lean4:' + getTestLeanVersion()])
-        assert(result2.exitCode === ExecutionExitCode.Success)
+        assert(result2.exitCode === ExecutionExitCode.Success || result2.stderr.includes('is already installed'))
         const result3 = await batchExecute('elan', ['default', 'leanprover/lean4:' + getTestLeanVersion()])
         assert(result3.exitCode === ExecutionExitCode.Success)
         const result4 = await batchExecute('elan', ['toolchain', 'install', 'leanprover/lean4:' + getAltBuildVersion()])
-        assert(result4.exitCode === ExecutionExitCode.Success)
+        assert(result4.exitCode === ExecutionExitCode.Success || result4.stderr.includes('is already installed'))
 
         logger.log('Lean installation is complete.')
 
