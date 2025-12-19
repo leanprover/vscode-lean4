@@ -392,7 +392,7 @@ Open this project instead?`
 
             const result: ExecutionResult = await batchExecuteWithProgress(
                 'git',
-                ['clone', projectUri, projectFolder.fsPath],
+                ['clone', '--depth=1', projectUri, projectFolder.fsPath],
                 downloadProjectContext,
                 'Cloning project',
                 { channel: this.channel, allowCancellation: true },
