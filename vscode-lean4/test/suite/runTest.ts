@@ -3,6 +3,7 @@ import * as path from 'path'
 
 import { downloadAndUnzipVSCode, resolveCliArgsFromVSCodeExecutablePath, runTests } from '@vscode/test-electron'
 import * as fs from 'fs'
+import * as os from 'os'
 import { logger } from '../../src/utils/logger'
 
 function clearUserWorkspaceData(vscodeTest: string) {
@@ -140,6 +141,22 @@ async function main() {
             extensionTestsEnv: { LEAN4_TEST_FOLDER: 'multi', DEFAULT_LEAN_TOOLCHAIN: test_version },
             launchArgs: ['--new-window', '--disable-gpu', workspacePath],
         })
+
+        const lakeFileTempTestDir = fs.mkdtempSync(path.join(os.tmpdir(), 'lakefileTomlSchema'))
+        fs.cpSync(lean4TestFolder, lakeFileTempTestDir, { recursive: true })
+
+        // The '--new-window' doesn't see to be working, so this hack
+        // ensures the following test does not re-open the previous folder
+        clearUserWorkspaceData(vscodeTestPath)
+
+        await runTests({
+            vscodeExecutablePath,
+            extensionDevelopmentPath,
+            extensionTestsPath: path.resolve(__dirname, 'index'),
+            extensionTestsEnv: { LEAN4_TEST_FOLDER: 'lakefileTomlSchema', DEFAULT_LEAN_TOOLCHAIN: test_version },
+            launchArgs: ['--new-window', '--disable-gpu', lakeFileTempTestDir],
+        })
+        fs.rmSync(lakeFileTempTestDir, { recursive: true })
     } catch (err) {
         console.error('Failed to run tests')
         console.error(err.message)
