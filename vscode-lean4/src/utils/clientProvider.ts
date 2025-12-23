@@ -34,7 +34,6 @@ async function checkLean4ProjectPreconditions(
                 toolchainUpdateMode: 'PromptAboutUpdate',
             })
         },
-        () => d.checkIsNestedProjectFolder(existingFolderUris, folderUri, fileUri, stopOtherServer),
     )
 }
 
@@ -200,10 +199,10 @@ export class LeanClientProvider implements Disposable {
     }
 
     // Find the client for a given document.
-    findClient(path: ExtUri) {
+    findClient(path: ExtUri): LeanClient | undefined {
         const candidates = this.getClients().filter(client => client.isInFolderManagedByThisClient(path))
         // All candidate folders are a prefix of `path`, so they must necessarily be prefixes of one another
-        // => the best candidate (the most top-level client folder) is just the one with the shortest path
+        // => the best candidate (the innermost client folder) is just the one with the longest path
         let bestCandidate: LeanClient | undefined
         for (const candidate of candidates) {
             if (!bestCandidate) {
@@ -215,7 +214,7 @@ export class LeanClientProvider implements Disposable {
             if (
                 folder.scheme === 'file' &&
                 bestFolder.scheme === 'file' &&
-                folder.fsPath.length < bestFolder.fsPath.length
+                folder.fsPath.length > bestFolder.fsPath.length
             ) {
                 bestCandidate = candidate
             }

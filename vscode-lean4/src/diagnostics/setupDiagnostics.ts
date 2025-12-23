@@ -34,22 +34,6 @@ const ancientLean4ProjectWarningMessage = (origin: string, projectVersion: SemVe
     `${origin} is using a Lean 4 version (${projectVersion.toString()}) from before the first Lean 4 stable release (4.0.0).
 Pre-stable Lean 4 versions are increasingly less supported, so please consider updating to a newer Lean 4 version.`
 
-const oldServerFolderContainsNewServerFolderErrorMessage = (
-    folderUri: FileUri,
-    fileUri: FileUri,
-    clientFolderUri: FileUri,
-) =>
-    `Error while starting language server: The project at '${folderUri.fsPath}' of the file '${fileUri.baseName()}' is contained inside of another project at '${clientFolderUri.fsPath}', for which a language server is already running.
-The Lean 4 VS Code extension does not support nested Lean projects.`
-
-const newServerFolderContainsOldServerFolderErrorMessage = (
-    folderUri: FileUri,
-    fileUri: FileUri,
-    clientFolderUri: FileUri,
-) =>
-    `Error while starting language server: The project at '${folderUri.fsPath}' of the file '${fileUri.baseName()}' contains another project at '${clientFolderUri.fsPath}', for which a language server is already running.
-The Lean 4 VS Code extension does not support nested Lean projects.`
-
 export class SetupDiagnostics {
     private n: SetupNotifier
 
@@ -178,56 +162,6 @@ export class SetupDiagnostics {
             case 'ValidProjectSetup':
                 return 'Fulfilled'
         }
-    }
-
-    async checkIsNestedProjectFolder(
-        existingFolderUris: ExtUri[],
-        folderUri: ExtUri,
-        fileUri: ExtUri,
-        stopOtherServer: (folderUri: FileUri) => Promise<void>,
-    ): Promise<PreconditionCheckResult> {
-        if (folderUri.scheme === 'untitled' || fileUri.scheme === 'untitled') {
-            if (existingFolderUris.some(existingFolderUri => existingFolderUri.scheme === 'untitled')) {
-                await displayInternalError(
-                    'starting language server',
-                    'Attempting to start new untitled language server while one already exists.',
-                )
-                return 'Fatal'
-            }
-            return 'Fulfilled'
-        }
-
-        for (const existingFolderUri of existingFolderUris) {
-            if (existingFolderUri.scheme !== 'file') {
-                continue
-            }
-            if (existingFolderUri.isInFolder(folderUri)) {
-                return await this.n.displaySetupErrorWithInput(
-                    newServerFolderContainsOldServerFolderErrorMessage(folderUri, fileUri, existingFolderUri),
-                    [
-                        {
-                            input: 'Stop Other Server',
-                            continueDisplaying: false,
-                            action: () => stopOtherServer(existingFolderUri),
-                        },
-                    ],
-                )
-            }
-            if (folderUri.isInFolder(existingFolderUri)) {
-                return await this.n.displaySetupErrorWithInput(
-                    oldServerFolderContainsNewServerFolderErrorMessage(folderUri, fileUri, existingFolderUri),
-                    [
-                        {
-                            input: 'Stop Other Server',
-                            continueDisplaying: false,
-                            action: () => stopOtherServer(existingFolderUri),
-                        },
-                    ],
-                )
-            }
-        }
-
-        return 'Fulfilled'
     }
 
     async checkIsLeanVersionUpToDate(
