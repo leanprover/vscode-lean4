@@ -65,11 +65,6 @@
                     "default": true,
                     "markdownDescription": "Enable eager replacement of abbreviations that uniquely identify a symbol."
                 },
-                "lean4.fallBackToStringOccurrenceHighlighting": {
-                    "type": "boolean",
-                    "description": "Fall back to string-based occurrence highlighting when there are no semantic symbol occurrences from the Lean language server to highlight.",
-                    "default": false
-                },
                 "lean4.automaticallyBuildDependencies": {
                     "type": "boolean",
                     "default": false,
@@ -1775,7 +1770,7 @@
         "markdown-it": "^14.1.0",
         "markdown-it-anchor": "^9.0.1",
         "semver": "^7.6.0",
-        "vscode-languageclient": "^8.0.2",
+        "vscode-languageclient": "^9.0.1",
         "zod": "^3.22.4"
     },
     "devDependencies": {

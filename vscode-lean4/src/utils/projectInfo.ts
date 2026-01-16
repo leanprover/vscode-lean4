@@ -1,6 +1,6 @@
 import * as fs from 'fs'
 import path from 'path'
-import { ExtUri, FileUri, isWorkspaceFolder, UntitledUri } from './exturi'
+import { ExtUri, FileUri, getWorkspaceFolderUri, UntitledUri } from './exturi'
 import { dirExists, fileExists } from './fsHelper'
 
 // Detect lean4 root directory (works for both lean4 repo and nightly distribution)
@@ -51,59 +51,84 @@ export function lakefileLeanUri(projectUri: FileUri) {
     return projectUri.join('lakefile.lean')
 }
 
+function parentDirOf(uri: FileUri, subpath: string): FileUri | undefined {
+    const numComponents = subpath.split(path.sep).length
+    let p = uri.normalize().fsPath
+    const i = p.indexOf(subpath)
+    if (i === -1) {
+        return undefined
+    }
+    p = p.slice(0, i + subpath.length)
+    // Ensures that there is no trailing `/`.
+    for (let n = 0; n < numComponents; n++) {
+        p = path.dirname(p)
+    }
+    return new FileUri(p)
+}
+
+function routePackagesDir(uri: FileUri): FileUri {
+    // `lean-toolchain` files in `.lake/packages` are ignored because
+    // the appropriate project scope for dependencies of a project is the root directory of the project.
+    // Technically, Lake allows configuring the location of the packages directory, so the extension may not be able to figure out
+    // the correct project scope for a dependency when this setting is set.
+    // In the future, Lake may maintain a back-link from the directory of dependencies back to the project root,
+    // but for now, this heuristic must suffice.
+    return parentDirOf(uri, path.join('.lake', 'packages')) ?? uri
+}
+
 // Find the root of a Lean project and the Uri for the 'lean-toolchain' file found there.
 export async function findLeanProjectRootInfo(uri: ExtUri): Promise<ProjectRootInfo> {
     if (uri.scheme === 'untitled') {
         return { kind: 'Success', projectRootUri: new UntitledUri(), toolchainUri: undefined }
     }
-    let path = uri
+
+    let uriDir: FileUri
     try {
-        if ((await fs.promises.stat(path.fsPath)).isFile()) {
-            path = uri.join('..')
+        if ((await fs.promises.stat(uri.fsPath)).isFile()) {
+            uriDir = uri.join('..')
+        } else {
+            uriDir = uri
         }
     } catch (e) {
         return { kind: 'FileNotFound' }
     }
 
-    let bestFolder = path
-    let bestLeanToolchain: FileUri | undefined
+    let currentDir = routePackagesDir(uriDir)
+
     while (true) {
-        const leanToolchain = leanToolchainUri(path)
-        const lakefileLean = lakefileLeanUri(path)
-        const lakefileToml = lakefileTomlUri(path)
+        const leanToolchain = leanToolchainUri(currentDir)
+        const lakefileLean = lakefileLeanUri(currentDir)
+        const lakefileToml = lakefileTomlUri(currentDir)
         if (await fileExists(leanToolchain.fsPath)) {
-            bestFolder = path
-            bestLeanToolchain = leanToolchain
-        } else if (await isCoreLean4Directory(path)) {
-            bestFolder = path
-            bestLeanToolchain = undefined
-            // Stop searching in case users accidentally created a lean-toolchain file above the core directory
-            break
-        } else if (await fileExists(lakefileLean.fsPath)) {
-            return { kind: 'LakefileWithoutToolchain', projectRootUri: path, lakefileUri: lakefileLean }
-        } else if (await fileExists(lakefileToml.fsPath)) {
-            return { kind: 'LakefileWithoutToolchain', projectRootUri: path, lakefileUri: lakefileToml }
+            return { kind: 'Success', projectRootUri: currentDir, toolchainUri: leanToolchain }
         }
-        if (isWorkspaceFolder(path)) {
-            if (bestLeanToolchain === undefined) {
-                // If we haven't found a toolchain yet, prefer the workspace folder as the project scope for the file,
-                // but keep looking in case there is a lean-toolchain above the workspace folder
-                // (New users sometimes accidentally open sub-folders of projects)
-                bestFolder = path
-            } else {
-                // Stop looking above the barrier if we have a toolchain. This is necessary for the nested lean-toolchain setup of core.
-                break
-            }
+        if (await isCoreLean4Directory(currentDir)) {
+            return { kind: 'Success', projectRootUri: currentDir, toolchainUri: undefined }
         }
-        const parent = path.join('..')
-        if (parent.equals(path)) {
-            // no project file found.
+        if (await fileExists(lakefileLean.fsPath)) {
+            return { kind: 'LakefileWithoutToolchain', projectRootUri: currentDir, lakefileUri: lakefileLean }
+        }
+        if (await fileExists(lakefileToml.fsPath)) {
+            return { kind: 'LakefileWithoutToolchain', projectRootUri: currentDir, lakefileUri: lakefileToml }
+        }
+
+        const parentDir = currentDir.join('..')
+        if (parentDir.equals(currentDir)) {
             break
         }
-        path = parent
+        currentDir = parentDir
     }
 
-    return { kind: 'Success', projectRootUri: bestFolder, toolchainUri: bestLeanToolchain }
+    // No `lean-toolchain` or core directory found.
+    // If the file is in a workspace folder, we use the workspace folder,
+    // and otherwise we use the immediate directory that the file is contained in.
+    // In nested workspace folders, VS Code yields the innermost one.
+    const workspaceDir = getWorkspaceFolderUri(uri)
+    if (workspaceDir !== undefined) {
+        return { kind: 'Success', projectRootUri: workspaceDir, toolchainUri: undefined }
+    }
+
+    return { kind: 'Success', projectRootUri: uriDir, toolchainUri: undefined }
 }
 
 export async function findLeanProjectInfo(uri: FileUri): Promise<ProjectInfo> {
