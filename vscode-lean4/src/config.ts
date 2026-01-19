@@ -173,10 +173,6 @@ export function shouldShowSetupWarnings(): boolean {
     return workspace.getConfiguration('lean4').get('showSetupWarnings', true)
 }
 
-export function getFallBackToStringOccurrenceHighlighting(): boolean {
-    return workspace.getConfiguration('lean4').get('fallBackToStringOccurrenceHighlighting', false)
-}
-
 export function showDiagnosticGutterDecorations(): boolean {
     return workspace.getConfiguration('lean4').get('showDiagnosticGutterDecorations', true)
 }

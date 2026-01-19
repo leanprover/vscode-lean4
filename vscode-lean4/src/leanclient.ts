@@ -25,6 +25,8 @@ import {
     InitializeResult,
     LanguageClient,
     LanguageClientOptions,
+    LSPErrorCodes,
+    ResponseError,
     RevealOutputChannelOn,
     ServerCapabilities,
     State,
@@ -41,7 +43,6 @@ import {
 import {
     allowedLoggingMethods,
     disallowedLoggingMethods,
-    getFallBackToStringOccurrenceHighlighting,
     isLoggingEnabled,
     loggingDir,
     serverArgs,
@@ -50,6 +51,7 @@ import {
 import { logger } from './utils/logger'
 // @ts-ignore
 import * as fs from 'fs'
+import { glob } from 'glob'
 import { SemVer } from 'semver'
 import { formatCommandExecutionOutput } from './utils/batch'
 import {
@@ -126,6 +128,7 @@ export class LeanClient implements Disposable {
     private client: LanguageClient | undefined
     private outputChannel: OutputChannel
     folderUri: ExtUri
+    private subFolderExclusions: FileUri[] | undefined
     private subscriptions: Disposable[] = []
     private noPrompt: boolean = false
     private showingRestartMessage: boolean = false
@@ -178,7 +181,47 @@ export class LeanClient implements Disposable {
         c.folderUri = folderUri
         c.subscriptions.push(new Disposable(() => c.staleDepNotifier?.dispose()))
         await c.registerRestartServerNotificationWatchers()
+        if (folderUri.scheme === 'file') {
+            // All nested inner projects are excluded from this project so that we do not
+            // get duplicate language server output for files in a nested inner project.
+            const excludedToolchainPaths = await glob('**/lean-toolchain', {
+                cwd: folderUri.fsPath,
+                // TODO for configurable `.lake/packages`: Run `lake update` if no manifest exists, parse the manifest, grab the packages directory from it
+                ignore: ['lean-toolchain', '.lake/packages/**'],
+                dot: true,
+                absolute: true,
+            })
+            const excludedFolderUris = excludedToolchainPaths
+                .map(t => new FileUri(t).join('..'))
+            c.subFolderExclusions = excludedFolderUris
+        }
         return c
+    }
+
+    private isExcluded(uri: FileUri): boolean {
+        if (this.subFolderExclusions === undefined) {
+            return false
+        }
+        return this.subFolderExclusions.some(excludedFolderUri => uri.isInFolder(excludedFolderUri))
+    }
+
+    private isParamExcluded<P>(param: P | undefined): boolean {
+        if (typeof param !== 'object' || param === null) {
+            return false
+        }
+        let docUri: ExtUri | undefined
+        if ('uri' in param) {
+            docUri = parseExtUri(param.uri as string)
+        } else if ('textDocument' in param) {
+            const doc = param.textDocument as any
+            if ('uri' in doc) {
+                docUri = parseExtUri(doc.uri as string)
+            }
+        }
+        if (docUri === undefined || docUri.scheme !== 'file') {
+            return false
+        }
+        return this.isExcluded(docUri)
     }
 
     private async updateConfigFileContents(uri: FileUri): Promise<boolean> {
@@ -779,6 +822,8 @@ export class LeanClient implements Disposable {
     }
 
     private obtainClientOptions(): LanguageClientOptions {
+        // TODO for configurable `.lake/packages`:
+        // Run `lake update` if no manifest exists, parse the manifest, grab the packages directory from it and add a selector for it
         const documentSelector: DocumentFilter = {
             language: 'lean4',
         }
@@ -809,6 +854,27 @@ export class LeanClient implements Disposable {
                 cancellationStrategy: undefined as any,
             },
             middleware: {
+                sendRequest: async (type, param, token, next) => {
+                    if (this.isParamExcluded(param)) {
+                        // Major HACK:
+                        // We can't return a value here to make the language client library reject the request,
+                        // but throwing a `ContentModified` exception achieves the same thing:
+                        // the language client library ensures that a default value is returned when this exception occurs and for all request handlers,
+                        // VS Code ignores the handler that returned the default value and tries other ones.
+                        throw new ResponseError(LSPErrorCodes.ContentModified, '')
+                    }
+                    return next(type, param, token)
+                },
+                sendNotification: async (type, next, param) => {
+                    // We also have to repeat this check in all other notification middlewares
+                    // so that these middlewares don't produce any side-effects when this
+                    // check here ends up filtering the notification
+                    // (which we can't tell in the other notification middlewares above this one)
+                    if (this.isParamExcluded(param)) {
+                        return
+                    }
+                    return next(type, param)
+                },
                 handleDiagnostics: (uri, diagnostics, next) => {
                     const diagnosticsInVsCode = diagnostics.filter(d => !('isSilent' in d && d.isSilent))
                     next(uri, diagnosticsInVsCode)
@@ -824,6 +890,10 @@ export class LeanClient implements Disposable {
                 },
 
                 didOpen: async (doc, next) => {
+                    const params = c2pConverter.asOpenTextDocumentParams(doc)
+                    if (this.isParamExcluded(params)) {
+                        return
+                    }
                     const docUri = toExtUri(doc.uri)
                     if (!docUri) {
                         return // This should never happen since the glob we launch the client for ensures that all uris are ext uris
@@ -847,16 +917,23 @@ export class LeanClient implements Disposable {
                 },
 
                 didChange: async (data, next) => {
-                    await next(data)
                     const params = c2pConverter.asChangeTextDocumentParams(
                         data,
                         data.document.uri,
                         data.document.version,
                     )
+                    if (this.isParamExcluded(params)) {
+                        return
+                    }
+                    await next(data)
                     this.didChangeEmitter.fire(params)
                 },
 
                 didClose: async (doc, next) => {
+                    const params = c2pConverter.asCloseTextDocumentParams(doc)
+                    if (this.isParamExcluded(params)) {
+                        return
+                    }
                     const docUri = toExtUri(doc.uri)
                     if (!docUri) {
                         return // This should never happen since the glob we launch the client for ensures that all uris are ext uris
@@ -870,40 +947,7 @@ export class LeanClient implements Disposable {
 
                     await next(doc)
 
-                    const params = c2pConverter.asCloseTextDocumentParams(doc)
                     this.didCloseEmitter.fire(params)
-                },
-
-                provideDocumentHighlights: async (doc, pos, ctok, next) => {
-                    const leanHighlights = await next(doc, pos, ctok)
-                    if (leanHighlights?.length) return leanHighlights
-
-                    // vscode doesn't fall back to textual highlights, so we
-                    // need to do that manually if the user asked for it
-                    if (!getFallBackToStringOccurrenceHighlighting()) {
-                        return []
-                    }
-
-                    await new Promise(res => setTimeout(res, 250))
-                    if (ctok.isCancellationRequested) return
-
-                    const wordRange = doc.getWordRangeAtPosition(pos)
-                    if (!wordRange) return
-                    const word = doc.getText(wordRange)
-
-                    const highlights: DocumentHighlight[] = []
-                    const text = doc.getText()
-                    const nonWordPattern = '[`~@$%^&*()-=+\\[{\\]}⟨⟩⦃⦄⟦⟧⟮⟯‹›\\\\|;:",./\\s]|^|$'
-                    const regexp = new RegExp(`(?<=${nonWordPattern})${escapeRegExp(word)}(?=${nonWordPattern})`, 'g')
-                    for (const match of text.matchAll(regexp)) {
-                        const start = doc.positionAt(match.index ?? 0)
-                        highlights.push({
-                            range: new Range(start, start.translate(0, match[0].length)),
-                            kind: DocumentHighlightKind.Text,
-                        })
-                    }
-
-                    return highlights
                 },
 
                 provideRenameEdits: async (document, position, newName, token, next) => {
@@ -947,7 +991,7 @@ export class LeanClient implements Disposable {
             fillClientCapabilities(capabilities: ClientCapabilities & { lean?: LeanClientCapabilties | undefined }) {
                 capabilities.lean = leanClientCapabilities
             },
-            dispose() {},
+            clear() {},
         }
         client.registerFeature(leanCapabilityFeature)
 

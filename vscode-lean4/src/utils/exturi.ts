@@ -58,6 +58,10 @@ export class FileUri {
         return FileUri.fromUriOrError(Uri.joinPath(this.asUri(), ...pathSegments))
     }
 
+    normalize(): FileUri {
+        return this.join()
+    }
+
     isInFolder(folderUri: FileUri): boolean {
         return isFileInFolder(this.fsPath, folderUri.fsPath)
     }
@@ -80,6 +84,14 @@ export function isWorkspaceFolder(uri: FileUri): boolean {
         return false
     }
     return workspace.workspaceFolders.some(folder => uri.equalsUri(folder.uri))
+}
+
+export function getWorkspaceFolderUri(uri: FileUri): FileUri | undefined {
+    const workspaceFolder = workspace.getWorkspaceFolder(uri.asUri())
+    if (workspaceFolder === undefined) {
+        return undefined
+    }
+    return FileUri.fromUri(workspaceFolder.uri)
 }
 
 export class UntitledUri {
