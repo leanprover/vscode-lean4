@@ -1,5 +1,4 @@
 import {
-    EditorApi,
     InfoviewApi,
     InfoviewConfig,
     LeanFileProgressParams,
@@ -12,6 +11,7 @@ import {
 } from '@leanprover/infoview-api'
 import { join } from 'path'
 import {
+    CancellationTokenSource,
     commands,
     ConfigurationTarget,
     Diagnostic,
@@ -50,7 +50,7 @@ import {
     prodOrDev,
 } from './config'
 import { LeanClient } from './leanclient'
-import { Rpc } from './rpc'
+import { ClientRequestRpcOptions, EditorRpcApi, Rpc } from './rpc'
 import { LeanClientProvider } from './utils/clientProvider'
 import { c2pConverter, LeanPublishDiagnosticsParams, p2cConverter } from './utils/converters'
 import { ExtUri, parseExtUri, toExtUri } from './utils/exturi'
@@ -115,6 +115,9 @@ export class InfoProvider implements Disposable {
     // the key is the uri of the file who's worker has failed.
     private workersFailed: Map<string, ServerStoppedReason> = new Map()
 
+    private freshClientRequestId: number = 0
+    private clientRequests: Map<number, [Promise<any>, CancellationTokenSource]> = new Map()
+
     private subscribeDidChangeNotification(client: LeanClient, method: string) {
         const h = client.didChange(params => {
             void this.webviewPanel?.api.sentClientNotification(method, params)
@@ -144,7 +147,7 @@ export class InfoProvider implements Disposable {
         return h
     }
 
-    private editorApi: EditorApi = {
+    private editorApi: EditorRpcApi = {
         saveConfig: async (config: InfoviewConfig) => {
             await workspace
                 .getConfiguration('lean4.infoview')
@@ -186,7 +189,12 @@ export class InfoProvider implements Disposable {
                 .getConfiguration('lean4.infoview')
                 .update('messageOrder', config.messageOrder, ConfigurationTarget.Global)
         },
-        sendClientRequest: async (uri: string, method: string, params: any): Promise<any> => {
+        startClientRequest: async (
+            uri: string,
+            method: string,
+            params: any,
+            options?: ClientRequestRpcOptions,
+        ): Promise<number> => {
             const extUri = parseExtUri(uri)
             if (extUri === undefined) {
                 throw Error(`Unexpected URI scheme: ${Uri.parse(uri).scheme}`)
@@ -194,10 +202,17 @@ export class InfoProvider implements Disposable {
 
             const client = this.clientProvider.findClient(extUri)
             if (client) {
-                try {
-                    const result = await client.sendRequest(method, params)
-                    return result
-                } catch (ex) {
+                const tk = new CancellationTokenSource()
+                // TODO
+                // if (options?.autoCancel)
+                // this.disposables.push({
+                //     dispose: () => {
+                //        console.log(`bai bai ${method}`); tk.cancel()
+                //     },
+                // })
+                const id = this.freshClientRequestId
+                this.freshClientRequestId += 1
+                const promise = client.sendRequest(method, params, tk.token).catch(async ex => {
                     if (ex.code === RpcErrorCode.WorkerCrashed) {
                         // ex codes related with worker exited or crashed
                         logger.log(`[InfoProvider]The Lean Server has stopped processing this file: ${ex.message}`)
@@ -207,9 +222,33 @@ export class InfoProvider implements Disposable {
                         })
                     }
                     throw ex
-                }
+                })
+                this.clientRequests.set(id, [promise, tk])
+                return id
             }
             throw Error('No active Lean client.')
+        },
+        awaitClientRequest: async (id: number): Promise<any> => {
+            const p = this.clientRequests.get(id)
+            if (p) {
+                // NOTE: `await` finishes first (or throws),
+                // then the entry is deleted,
+                // and then the function returns.
+                try {
+                    return await p[0]
+                } finally {
+                    this.clientRequests.delete(id)
+                }
+            }
+            // NOTE: we rely on details of `editorApiOfRpc` for correctness:
+            // we assume that `awaitClientRequest` is called exactly once
+            // regardless of whether cancellation occurs,
+            // so this error should never be thrown.
+            throw Error(`Internal error: invalid client request ID '${id}'`)
+        },
+        cancelClientRequest: async (id: number): Promise<void> => {
+            const p = this.clientRequests.get(id)
+            if (p) p[1].cancel()
         },
         sendClientNotification: async (uri: string, method: string, params: any): Promise<void> => {
             const extUri = parseExtUri(uri)

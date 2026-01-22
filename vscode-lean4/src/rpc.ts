@@ -1,3 +1,5 @@
+import { ClientRequestOptions, EditorApi } from '@leanprover/infoview-api'
+
 export class Rpc {
     private seqNum = 0
     private methods: { [name: string]: (...args: any[]) => Promise<any> } = {}
@@ -100,5 +102,73 @@ function prepareExceptionForSerialization(ex: any): any {
         return exOut
     } else {
         return ex
+    }
+}
+
+export type ClientRequestRpcOptions = Omit<ClientRequestOptions, 'abortSignal'>
+
+/**
+ * A version of {@link EditorApi} in which all values are serializable.
+ * It is used to pass messages between the editor and the infoview.
+ */
+export type EditorRpcApi = Omit<EditorApi, 'sendClientRequest'> & {
+    startClientRequest(uri: string, method: string, params: any, options?: ClientRequestRpcOptions): Promise<number>
+    awaitClientRequest(id: number): Promise<any>
+    cancelClientRequest(id: number): Promise<void>
+}
+
+interface CancellationData {
+    id: number | undefined
+    shouldCancel: boolean
+    cancelled: boolean
+}
+
+/**
+ * Wrap {@link EditorRpcApi} in the more convenient {@link EditorApi}.
+ * Called during infoview initialization.
+ */
+export function editorApiOfRpc(api: EditorRpcApi): EditorApi {
+    function cancel(d: CancellationData) {
+        d.shouldCancel = true
+        if (d.id !== undefined && !d.cancelled) {
+            void api.cancelClientRequest(d.id)
+            d.cancelled = true
+        }
+    }
+    const finalizers = new FinalizationRegistry<CancellationData>(cancel)
+    return {
+        sendClientRequest(uri, method, params, options) {
+            const d: CancellationData = {
+                id: undefined,
+                shouldCancel: false,
+                cancelled: false,
+            }
+            const promise = (async () => {
+                const id = await api.startClientRequest(uri, method, params, { autoCancel: options?.autoCancel })
+                d.id = id
+                if (d.shouldCancel) cancel(d)
+                return api.awaitClientRequest(id)
+            })()
+            if (options?.abortSignal)
+                options.abortSignal.onabort = () => {
+                    cancel(d)
+                }
+            if (options?.autoCancel) finalizers.register(promise, d)
+            return promise
+        },
+        /** NOTE: a spread (`...`) doesn't work due to the use of {@link Proxy} in {@link Rpc}. */
+        saveConfig: api.saveConfig,
+        sendClientNotification: api.sendClientNotification,
+        subscribeServerNotifications: api.subscribeServerNotifications,
+        unsubscribeServerNotifications: api.unsubscribeServerNotifications,
+        subscribeClientNotifications: api.subscribeClientNotifications,
+        unsubscribeClientNotifications: api.unsubscribeClientNotifications,
+        copyToClipboard: api.copyToClipboard,
+        insertText: api.insertText,
+        applyEdit: api.applyEdit,
+        showDocument: api.showDocument,
+        restartFile: api.restartFile,
+        createRpcSession: api.createRpcSession,
+        closeRpcSession: api.closeRpcSession,
     }
 }
