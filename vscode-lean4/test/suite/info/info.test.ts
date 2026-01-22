@@ -167,7 +167,7 @@ suite('InfoView Test Suite', () => {
             .find(el => el.innerHTML === 'issue461')
             .click()
         `)
-        await waitForInfoviewHtml(info, 'tooltip-content', 30, 1000, false)
+        await waitForInfoviewHtml(info, 'Type 4', 30, 1000, false)
 
         logger.log('Opening tooltip in tooltip')
         await info.runTestScript(`
