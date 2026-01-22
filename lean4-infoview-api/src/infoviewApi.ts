@@ -45,12 +45,31 @@ export interface InfoviewConfig {
  */
 export type TextInsertKind = 'here' | 'above'
 
+export interface ClientRequestOptions {
+    /**
+     * Can be used to cancel the request.
+     *
+     * This does not immediately reject the promise;
+     * instead, an LSP `$/cancelRequest` notification is sent to the Lean server
+     * The request handler can choose to ignore it,
+     * to return a partial result,
+     * or to produce a `RequestCancelled` error.
+     *
+     * Does nothing if the promise has already been resolved or rejected.
+     */
+    abortSignal?: AbortSignal
+    /**
+     * If `true`, the request will be automatically cancelled when the infoview is closed.
+     */
+    autoCancel?: boolean
+}
+
 /** Interface that the InfoView WebView uses to talk to the hosting editor. */
 export interface EditorApi {
     saveConfig(config: InfoviewConfig): Promise<any>
 
     /** Make a request to the LSP server. */
-    sendClientRequest(uri: string, method: string, params: any): Promise<any>
+    sendClientRequest(uri: string, method: string, params: any, options?: ClientRequestOptions): Promise<any>
     /** Send a notification to the LSP server. */
     sendClientNotification(uri: string, method: string, params: any): Promise<void>
 

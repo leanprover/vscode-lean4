@@ -1,15 +1,13 @@
 import {
+    CancellationToken,
     DiagnosticCollection,
     Disposable,
-    DocumentHighlight,
-    DocumentHighlightKind,
     EventEmitter,
     FileSystemWatcher,
     OutputChannel,
     Progress,
     ProgressLocation,
     ProgressOptions,
-    Range,
     RelativePattern,
     window,
     workspace,
@@ -191,8 +189,7 @@ export class LeanClient implements Disposable {
                 dot: true,
                 absolute: true,
             })
-            const excludedFolderUris = excludedToolchainPaths
-                .map(t => new FileUri(t).join('..'))
+            const excludedFolderUris = excludedToolchainPaths.map(t => new FileUri(t).join('..'))
             c.subFolderExclusions = excludedFolderUris
         }
         return c
@@ -767,9 +764,9 @@ export class LeanClient implements Disposable {
     }
 
     // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-    sendRequest(method: string, params: any): Promise<any> {
+    sendRequest(method: string, params: any, token?: CancellationToken): Promise<any> {
         return this.running && this.client
-            ? this.client.sendRequest(method, params)
+            ? this.client.sendRequest(method, params, token)
             : new Promise<any>((_, reject) => {
                   reject('No connection to Lean')
               })

@@ -1,7 +1,7 @@
 import type { EditorApi, InfoviewApi, InfoviewConfig, LeanPublishDiagnosticsParams } from '@leanprover/infoview'
 import { loadRenderInfoview } from '@leanprover/infoview/loader'
 import type { InitializeResult, Location } from 'vscode-languageserver-protocol'
-import { Rpc } from '../src/rpc'
+import { EditorRpcApi, Rpc, editorApiOfRpc } from '../src/rpc'
 
 // Even when the Infoview is loaded in a webview panel with the `retainContextWhenHidden` set,
 // when the Infoview is detached, it will be reset to its initial state.
@@ -23,7 +23,8 @@ function modifyState(f: (previousState: PersistentInfoviewState) => PersistentIn
 
 const rpc = new Rpc((m: any) => vscodeApi.postMessage(m))
 window.addEventListener('message', e => rpc.messageReceived(e.data))
-const editorApi: EditorApi = rpc.getApi()
+const editorApi_: EditorRpcApi = rpc.getApi()
+const editorApi: EditorApi = editorApiOfRpc(editorApi_)
 
 const div: HTMLElement | null = document.querySelector('#react_root')
 const script: HTMLOrSVGScriptElement | null = document.currentScript

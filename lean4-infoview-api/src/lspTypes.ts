@@ -129,5 +129,5 @@ export interface RpcError {
 }
 
 export function isRpcError(x: any): x is RpcError {
-    return !!(x?.code && x?.message)
+    return !!(x?.code && (x?.message || x?.message === ''))
 }
