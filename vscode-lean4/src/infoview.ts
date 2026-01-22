@@ -97,8 +97,10 @@ class RpcSessionAtPos implements Disposable {
 export class InfoProvider implements Disposable {
     /** Instance of the panel, if it is open. Otherwise `undefined`. */
     private webviewPanel?: WebviewPanel & { rpc: Rpc; api: InfoviewApi }
+    /** The InfoProvider's subscriptions, to be cleaned up when it is disposed. */
     private subscriptions: Disposable[] = []
-    private clientSubscriptions: Disposable[] = []
+    /** The infoview's subscriptions, to be cleaned up when it is closed. */
+    private infoviewSubscriptions: Disposable[] = []
 
     private stylesheet: string = ''
     private autoOpened: boolean = false
@@ -203,13 +205,12 @@ export class InfoProvider implements Disposable {
             const client = this.clientProvider.findClient(extUri)
             if (client) {
                 const tk = new CancellationTokenSource()
-                // TODO
-                // if (options?.autoCancel)
-                // this.disposables.push({
-                //     dispose: () => {
-                //        console.log(`bai bai ${method}`); tk.cancel()
-                //     },
-                // })
+                if (options?.autoCancel)
+                    this.infoviewSubscriptions.push({
+                        dispose: () => {
+                            tk.cancel()
+                        },
+                    })
                 const id = this.freshClientRequestId
                 this.freshClientRequestId += 1
                 const promise = client.sendRequest(method, params, tk.token).catch(async ex => {
@@ -409,19 +410,16 @@ export class InfoProvider implements Disposable {
     ) {
         this.updateStylesheet()
 
-        clientProvider.clientAdded(client => {
-            void this.onClientAdded(client)
-        })
-
-        clientProvider.clientRemoved(client => {
-            void this.onClientRemoved(client)
-        })
-
-        clientProvider.clientStopped(([client, activeClient, reason]) => {
-            void this.onActiveClientStopped(client, activeClient, reason)
-        })
-
         this.subscriptions.push(
+            clientProvider.clientAdded(client => {
+                void this.onClientAdded(client)
+            }),
+            clientProvider.clientRemoved(client => {
+                void this.onClientRemoved(client)
+            }),
+            clientProvider.clientStopped(([client, activeClient, reason]) => {
+                void this.onActiveClientStopped(client, activeClient, reason)
+            }),
             lean.onDidChangeActiveLeanEditor(() => this.sendPosition()),
             lean.onDidChangeLeanEditorSelection(() => this.sendPosition()),
             workspace.onDidChangeConfiguration(async _e => {
@@ -644,7 +642,7 @@ export class InfoProvider implements Disposable {
     private async onClientAdded(client: LeanClient) {
         logger.log(`[InfoProvider] Adding client for workspace: ${client.getClientFolder()}`)
 
-        this.clientSubscriptions.push(
+        this.subscriptions.push(
             client.restarted(async () => {
                 logger.log('[InfoProvider] got client restarted event')
                 // This event is triggered both the first time the server starts
@@ -693,7 +691,7 @@ export class InfoProvider implements Disposable {
     }
 
     onClientRemoved(client: LeanClient) {
-        // todo: remove subscriptions for this client...
+        // NOTE: we could index subscriptions made in `onClientAdded` by the client, and remove here
     }
 
     async onActiveClientStopped(client: LeanClient, activeClient: boolean, reason: ServerStoppedReason) {
@@ -716,17 +714,11 @@ export class InfoProvider implements Disposable {
         client.showRestartMessage()
     }
 
+    // Called when the extension is deactivated.
     dispose(): void {
-        // active client is changing.
-        this.clearNotificationHandlers()
-        this.clearRpcSessions(null)
+        // Calls `webviewPanel.onDidDispose` to cleanup the infoview's subscriptions.
         this.webviewPanel?.dispose()
-        for (const s of this.clientSubscriptions) {
-            s.dispose()
-        }
-        for (const s of this.subscriptions) {
-            s.dispose()
-        }
+        for (const s of this.subscriptions) s.dispose()
     }
 
     isOpen(): boolean {
@@ -858,6 +850,8 @@ export class InfoProvider implements Disposable {
                 this.webviewPanel = undefined
                 this.clearNotificationHandlers()
                 this.clearRpcSessions(null) // should be after `webviewPanel = undefined`
+                for (const s of this.infoviewSubscriptions) s.dispose()
+                this.infoviewSubscriptions = []
             })
             this.webviewPanel = webviewPanel
             webviewPanel.webview.html = this.initialHtml()
