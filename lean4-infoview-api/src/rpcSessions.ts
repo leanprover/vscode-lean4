@@ -1,4 +1,5 @@
 import type { DocumentUri, Position, TextDocumentPositionParams } from 'vscode-languageserver-protocol'
+import { ClientRequestOptions } from './infoviewApi'
 import { RpcCallParams, RpcErrorCode, RpcPtr, RpcReleaseParams } from './lspTypes'
 
 /**
@@ -23,7 +24,7 @@ export interface RpcServerIface {
     /** Closes an RPC session created with {@link createRpcSession}. */
     closeRpcSession(sessionId: string): void
     /** Sends an RPC call to the Lean server. */
-    call(request: RpcCallParams): Promise<any>
+    call(request: RpcCallParams, options?: ClientRequestOptions): Promise<any>
     /** Sends an RPC reference release notification to the server. */
     release(request: RpcReleaseParams): void
 }
@@ -47,7 +48,7 @@ export interface RpcSessionAtPos {
      * @param params arguments to the invoked method.
      * @returns a promise that resolves to the returned value, or an error in case the call fails.
      */
-    call<T, S>(method: string, params: T): Promise<S>
+    call<T, S>(method: string, params: T, options?: ClientRequestOptions): Promise<S>
 }
 
 /**
@@ -183,12 +184,12 @@ class RpcSessionForFile {
      * @param params arguments to the invoked method.
      * @returns a promise that resolves to the returned value, or to an error in case the call fails.
      */
-    async call(position: Position, method: string, params: any): Promise<any> {
+    async call(position: Position, method: string, params: any, options?: ClientRequestOptions): Promise<any> {
         const sessionId = await this.sessionId
         if (this.failed) throw this.failed
         const tdpp: TextDocumentPositionParams = { position, textDocument: { uri: this.uri } }
         try {
-            const result = await this.sessions.iface.call({ method, params, sessionId, ...tdpp })
+            const result = await this.sessions.iface.call({ method, params, sessionId, ...tdpp }, options)
             this.registerRefs(result)
             // HACK: most of our types are `T | undefined` so try to return something matching that interface
             if (result === null) return undefined
@@ -216,7 +217,9 @@ class RpcSessionForFile {
         // As JS tradition dictates, we use stringification for deep comparison of `Position`s in a `Map`.
         const posStr = `${position.line}:${position.character}`
         if (this.sessionsAtPos.has(posStr)) return this.sessionsAtPos.get(posStr) as RpcSessionAtPos
-        const atPos: RpcSessionAtPos = { call: (method, params) => this.call(position, method, params) }
+        const atPos: RpcSessionAtPos = {
+            call: (method, params, options) => this.call(position, method, params, options),
+        }
         this.sessionsAtPos.set(posStr, atPos)
         return atPos
     }
