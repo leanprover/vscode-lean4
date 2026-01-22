@@ -159,31 +159,31 @@ suite('InfoView Test Suite', () => {
         assert(info, 'No InfoProvider export')
 
         gotoPosition('by')
-        await assertStringInInfoview(info, 'issue461')
+        await assertStringInInfoview(info, 'Type 4')
 
         logger.log('Opening tooltip for goal type')
         await info.runTestScript(`
-          Array.from(document.querySelectorAll('[data-is-goal] *'))
-            .find(el => el.innerHTML === 'issue461')
-            .click()
-        `)
-        await waitForInfoviewHtml(info, 'Type 4', 30, 1000, false)
-
-        logger.log('Opening tooltip in tooltip')
-        await info.runTestScript(`
-          Array.from(document.querySelectorAll('.tooltip-content *[data-has-tooltip-on-hover]'))
+          Array.from(document.querySelectorAll('[data-has-tooltip-on-hover]'))
             .find(el => el.innerHTML === 'Type 4')
             .click()
         `)
-        await assertStringInInfoview(info, 'Type 5')
+        await waitForInfoviewHtml(info, 'Type 5', 30, 1000, false)
 
-        logger.log('Opening tooltip in tooltip in tooltip')
+        logger.log('Opening tooltip in tooltip')
         await info.runTestScript(`
           Array.from(document.querySelectorAll('.tooltip-content *[data-has-tooltip-on-hover]'))
             .find(el => el.innerHTML === 'Type 5')
             .click()
         `)
         await assertStringInInfoview(info, 'Type 6')
+
+        logger.log('Opening tooltip in tooltip in tooltip')
+        await info.runTestScript(`
+          Array.from(document.querySelectorAll('.tooltip-content *[data-has-tooltip-on-hover]'))
+            .find(el => el.innerHTML === 'Type 6')
+            .click()
+        `)
+        await assertStringInInfoview(info, 'Type 7')
 
         await closeAllEditors()
     }).timeout(60000)
