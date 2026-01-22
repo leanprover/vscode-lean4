@@ -149,9 +149,9 @@ export function editorApiOfRpc(api: EditorRpcApi): EditorApi {
                 return api.awaitClientRequest(id)
             })()
             if (options?.abortSignal)
-                options.abortSignal.onabort = () => {
+                options.abortSignal.addEventListener('abort', () => {
                     cancel(d)
-                }
+                })
             return promise
         },
         /** NOTE: a spread (`...`) doesn't work due to the use of {@link Proxy} in {@link Rpc}. */
