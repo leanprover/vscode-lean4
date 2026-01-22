@@ -135,7 +135,6 @@ export function editorApiOfRpc(api: EditorRpcApi): EditorApi {
             d.cancelled = true
         }
     }
-    const finalizers = new FinalizationRegistry<CancellationData>(cancel)
     return {
         sendClientRequest(uri, method, params, options) {
             const d: CancellationData = {
@@ -153,7 +152,6 @@ export function editorApiOfRpc(api: EditorRpcApi): EditorApi {
                 options.abortSignal.onabort = () => {
                     cancel(d)
                 }
-            if (options?.autoCancel) finalizers.register(promise, d)
             return promise
         },
         /** NOTE: a spread (`...`) doesn't work due to the use of {@link Proxy} in {@link Rpc}. */

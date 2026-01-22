@@ -59,9 +59,7 @@ export interface ClientRequestOptions {
      */
     abortSignal?: AbortSignal
     /**
-     * If `true`, the request will be automatically cancelled whenever
-     * a) the returned promise is garbage-collected; or
-     * b) the infoview is closed.
+     * If `true`, the request will be automatically cancelled when the infoview is closed.
      */
     autoCancel?: boolean
 }

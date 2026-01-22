@@ -99,8 +99,6 @@ export class InfoProvider implements Disposable {
     private webviewPanel?: WebviewPanel & { rpc: Rpc; api: InfoviewApi }
     /** The InfoProvider's subscriptions, to be cleaned up when it is disposed. */
     private subscriptions: Disposable[] = []
-    /** The infoview's subscriptions, to be cleaned up when it is closed. */
-    private infoviewSubscriptions: Disposable[] = []
 
     private stylesheet: string = ''
     private autoOpened: boolean = false
@@ -118,7 +116,8 @@ export class InfoProvider implements Disposable {
     private workersFailed: Map<string, ServerStoppedReason> = new Map()
 
     private freshClientRequestId: number = 0
-    private clientRequests: Map<number, [Promise<any>, CancellationTokenSource]> = new Map()
+    /** In-flight request ID ↦ [Response, Infoview subscription to call when infoview closes, Cancellation token] */
+    private clientRequests: Map<number, [Promise<any>, Disposable, CancellationTokenSource]> = new Map()
 
     private subscribeDidChangeNotification(client: LeanClient, method: string) {
         const h = client.didChange(params => {
@@ -205,12 +204,11 @@ export class InfoProvider implements Disposable {
             const client = this.clientProvider.findClient(extUri)
             if (client) {
                 const tk = new CancellationTokenSource()
-                if (options?.autoCancel)
-                    this.infoviewSubscriptions.push({
-                        dispose: () => {
-                            tk.cancel()
-                        },
-                    })
+                const sub: Disposable = {
+                    dispose() {
+                        if (options?.autoCancel) tk.cancel()
+                    },
+                }
                 const id = this.freshClientRequestId
                 this.freshClientRequestId += 1
                 const promise = client.sendRequest(method, params, tk.token).catch(async ex => {
@@ -224,7 +222,7 @@ export class InfoProvider implements Disposable {
                     }
                     throw ex
                 })
-                this.clientRequests.set(id, [promise, tk])
+                this.clientRequests.set(id, [promise, sub, tk])
                 return id
             }
             throw Error('No active Lean client.')
@@ -249,7 +247,7 @@ export class InfoProvider implements Disposable {
         },
         cancelClientRequest: async (id: number): Promise<void> => {
             const p = this.clientRequests.get(id)
-            if (p) p[1].cancel()
+            if (p) p[2].cancel()
         },
         sendClientNotification: async (uri: string, method: string, params: any): Promise<void> => {
             const extUri = parseExtUri(uri)
@@ -850,8 +848,8 @@ export class InfoProvider implements Disposable {
                 this.webviewPanel = undefined
                 this.clearNotificationHandlers()
                 this.clearRpcSessions(null) // should be after `webviewPanel = undefined`
-                for (const s of this.infoviewSubscriptions) s.dispose()
-                this.infoviewSubscriptions = []
+                for (const [_1, d, _2] of this.clientRequests.values()) d.dispose()
+                this.clientRequests = new Map()
             })
             this.webviewPanel = webviewPanel
             webviewPanel.webview.html = this.initialHtml()
