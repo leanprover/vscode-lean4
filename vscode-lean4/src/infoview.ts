@@ -115,8 +115,14 @@ export class InfoProvider implements Disposable {
     // the key is the uri of the file who's worker has failed.
     private workersFailed: Map<string, ServerStoppedReason> = new Map()
 
+    /**
+     * The ID to assign to the next client request made by the infoview
+     * (see {@link editorApi.startClientRequest}).
+     * Only used for cancellation. Unrelated to LSP request IDs. */
     private freshClientRequestId: number = 0
-    /** In-flight request ID ↦ [Response, Infoview subscription to call when infoview closes, Cancellation token] */
+    /**
+     * Maps in-flight client request IDs (as in {@link freshClientRequestId})
+     * to tuples [Response, Infoview subscription (should be disposed when infoview closes), Cancellation token]. */
     private clientRequests: Map<number, [Promise<any>, Disposable, CancellationTokenSource]> = new Map()
 
     private subscribeDidChangeNotification(client: LeanClient, method: string) {

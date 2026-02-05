@@ -46,6 +46,7 @@ export interface RpcSessionAtPos {
      *
      * @param method fully qualified name of the method to call.
      * @param params arguments to the invoked method.
+     * @param options additional configuration for the request.
      * @returns a promise that resolves to the returned value, or an error in case the call fails.
      */
     call<T, S>(method: string, params: T, options?: ClientRequestOptions): Promise<S>
@@ -182,6 +183,7 @@ class RpcSessionForFile {
      * @param position within the file identified by {@link uri}, used to resolve the set of available RPC methods.
      * @param method fully qualified name of the method to call.
      * @param params arguments to the invoked method.
+     * @param options additional configuration for the request.
      * @returns a promise that resolves to the returned value, or to an error in case the call fails.
      */
     async call(position: Position, method: string, params: any, options?: ClientRequestOptions): Promise<any> {

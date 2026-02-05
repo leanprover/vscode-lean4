@@ -117,9 +117,18 @@ export type EditorRpcApi = Omit<EditorApi, 'sendClientRequest'> & {
     cancelClientRequest(id: number): Promise<void>
 }
 
+/** Because `startClientRequest` is async,
+ * cancellation may be requested (via the abort signal) before the request ID is known.
+ * Fields here handle this race. */
 interface CancellationData {
+    /** The request ID, set once `startClientRequest` resolves, and `undefined` until then. */
     id: number | undefined
+    /** Set to `true` when the abort signal is triggered.
+     * If `id` is not yet available,
+     * this flag ensures that the request will be cancelled as soon as `id` arrives. */
     shouldCancel: boolean
+    /** Set to `true` once `cancelClientRequest` has actually been called,
+     * preventing duplicate calls. */
     cancelled: boolean
 }
 
