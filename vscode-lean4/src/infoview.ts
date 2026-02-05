@@ -319,6 +319,22 @@ export class InfoProvider implements Disposable {
         },
         applyEdit: async (e: ls.WorkspaceEdit) => {
             const we = await p2cConverter.asWorkspaceEdit(e)
+
+            const edits = we.entries()
+            if (edits.length !== 1) {
+                return
+            }
+            const [uri, _] = edits[0]
+            const extUri = toExtUri(uri)
+            if (extUri === undefined) {
+                return
+            }
+            const leanEditor = lean.getVisibleLeanEditorsByUri(extUri).at(0)
+            if (leanEditor === undefined) {
+                return
+            }
+            await window.showTextDocument(leanEditor.editor.document, leanEditor.editor.viewColumn, false)
+
             await workspace.applyEdit(we)
         },
         showDocument: async show => {
