@@ -1,3 +1,30 @@
+import { ClientRequestOptions, EditorApi } from '@leanprover/infoview-api'
+
+/**
+ * Allows two endpoints communicating via JSON-serializable messages
+ * to invoke methods on each other.
+ * We use this for infoview<->editor communication.
+ * The infoview calls the editor via an {@link EditorRpcApi},
+ * whereas the other direction uses an {@link InfoviewApi}.
+ *
+ * #### Call flow
+ *
+ * Both endpoints own an instance of this class;
+ * call these `rpcA` and `rpcB`.
+ * When endpoint A wants to invoke method `name` on endpoint B,
+ * it calls `rpcA.invoke(name, args)`
+ * (via the typed interface returned by `rpcA.getApi`).
+ * This sends a message to endpoint B containing the call parameters in a serialized form.
+ * Upon receiving the message,
+ * endpoint B looks up `name` in its registered methods
+ * (set via `rpcB.register`)
+ * and invokes the found entry with deserialized call parameters.
+ * The registered method is necessarily `async`,
+ * and the resulting `Promise` is awaited by B.
+ * When it resolves, a response message is sent back to endpoint A.
+ * Upon receiving the response,
+ * endpoint A resolves the `Promise` produced by `rpcA.invoke`.
+ */
 export class Rpc {
     private seqNum = 0
     private methods: { [name: string]: (...args: any[]) => Promise<any> } = {}
@@ -73,6 +100,9 @@ export class Rpc {
         })
     }
 
+    /** Wrap a set of methods callable on the other endpoint as a typed interface.
+     * Each method is expected to have type `(...args: any[]) => Promise<any>`,
+     * with each argument as well as the return value JSON-serializable. */
     getApi<T>(): T {
         return new Proxy(
             {},
@@ -100,5 +130,80 @@ function prepareExceptionForSerialization(ex: any): any {
         return exOut
     } else {
         return ex
+    }
+}
+
+export type ClientRequestRpcOptions = Omit<ClientRequestOptions, 'abortSignal'>
+
+/**
+ * A version of {@link EditorApi} in which all values are serializable.
+ * It is used to pass messages between the editor and the infoview.
+ */
+export type EditorRpcApi = Omit<EditorApi, 'sendClientRequest'> & {
+    startClientRequest(uri: string, method: string, params: any, options?: ClientRequestRpcOptions): Promise<number>
+    awaitClientRequest(id: number): Promise<any>
+    cancelClientRequest(id: number): Promise<void>
+}
+
+/** Because `startClientRequest` is async,
+ * cancellation may be requested (via the abort signal) before the request ID is known.
+ * Fields here handle this race. */
+interface CancellationData {
+    /** The request ID, set once `startClientRequest` resolves, and `undefined` until then. */
+    id: number | undefined
+    /** Set to `true` when the abort signal is triggered.
+     * If `id` is not yet available,
+     * this flag ensures that the request will be cancelled as soon as `id` arrives. */
+    shouldCancel: boolean
+    /** Set to `true` once `cancelClientRequest` has actually been called,
+     * preventing duplicate calls. */
+    cancelled: boolean
+}
+
+/**
+ * Wrap {@link EditorRpcApi} in the more convenient {@link EditorApi}.
+ * Called during infoview initialization.
+ */
+export function editorApiOfRpc(api: EditorRpcApi): EditorApi {
+    function cancel(d: CancellationData) {
+        d.shouldCancel = true
+        if (d.id !== undefined && !d.cancelled) {
+            void api.cancelClientRequest(d.id)
+            d.cancelled = true
+        }
+    }
+    return {
+        sendClientRequest(uri, method, params, options) {
+            const d: CancellationData = {
+                id: undefined,
+                shouldCancel: false,
+                cancelled: false,
+            }
+            const promise = (async () => {
+                const id = await api.startClientRequest(uri, method, params, { autoCancel: options?.autoCancel })
+                d.id = id
+                if (d.shouldCancel) cancel(d)
+                return api.awaitClientRequest(id)
+            })()
+            if (options?.abortSignal)
+                options.abortSignal.addEventListener('abort', () => {
+                    cancel(d)
+                })
+            return promise
+        },
+        /** NOTE: a spread (`...`) doesn't work due to the use of {@link Proxy} in {@link Rpc}. */
+        saveConfig: api.saveConfig,
+        sendClientNotification: api.sendClientNotification,
+        subscribeServerNotifications: api.subscribeServerNotifications,
+        unsubscribeServerNotifications: api.unsubscribeServerNotifications,
+        subscribeClientNotifications: api.subscribeClientNotifications,
+        unsubscribeClientNotifications: api.unsubscribeClientNotifications,
+        copyToClipboard: api.copyToClipboard,
+        insertText: api.insertText,
+        applyEdit: api.applyEdit,
+        showDocument: api.showDocument,
+        restartFile: api.restartFile,
+        createRpcSession: api.createRpcSession,
+        closeRpcSession: api.closeRpcSession,
     }
 }

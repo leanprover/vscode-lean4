@@ -1,5 +1,4 @@
 import {
-    EditorApi,
     InfoviewApi,
     InfoviewConfig,
     LeanFileProgressParams,
@@ -12,6 +11,7 @@ import {
 } from '@leanprover/infoview-api'
 import { join } from 'path'
 import {
+    CancellationTokenSource,
     commands,
     ConfigurationTarget,
     Diagnostic,
@@ -50,7 +50,7 @@ import {
     prodOrDev,
 } from './config'
 import { LeanClient } from './leanclient'
-import { Rpc } from './rpc'
+import { ClientRequestRpcOptions, EditorRpcApi, Rpc } from './rpc'
 import { LeanClientProvider } from './utils/clientProvider'
 import { c2pConverter, LeanPublishDiagnosticsParams, p2cConverter } from './utils/converters'
 import { ExtUri, parseExtUri, toExtUri } from './utils/exturi'
@@ -97,8 +97,8 @@ class RpcSessionAtPos implements Disposable {
 export class InfoProvider implements Disposable {
     /** Instance of the panel, if it is open. Otherwise `undefined`. */
     private webviewPanel?: WebviewPanel & { rpc: Rpc; api: InfoviewApi }
+    /** The InfoProvider's subscriptions, to be cleaned up when it is disposed. */
     private subscriptions: Disposable[] = []
-    private clientSubscriptions: Disposable[] = []
 
     private stylesheet: string = ''
     private autoOpened: boolean = false
@@ -114,6 +114,16 @@ export class InfoProvider implements Disposable {
 
     // the key is the uri of the file who's worker has failed.
     private workersFailed: Map<string, ServerStoppedReason> = new Map()
+
+    /**
+     * The ID to assign to the next client request made by the infoview
+     * (see {@link editorApi.startClientRequest}).
+     * Only used for cancellation. Unrelated to LSP request IDs. */
+    private freshClientRequestId: number = 0
+    /**
+     * Maps in-flight client request IDs (as in {@link freshClientRequestId})
+     * to tuples [Response, Infoview subscription (should be disposed when infoview closes), Cancellation token]. */
+    private clientRequests: Map<number, [Promise<any>, Disposable, CancellationTokenSource]> = new Map()
 
     private subscribeDidChangeNotification(client: LeanClient, method: string) {
         const h = client.didChange(params => {
@@ -144,7 +154,7 @@ export class InfoProvider implements Disposable {
         return h
     }
 
-    private editorApi: EditorApi = {
+    private editorApi: EditorRpcApi = {
         saveConfig: async (config: InfoviewConfig) => {
             await workspace
                 .getConfiguration('lean4.infoview')
@@ -186,7 +196,12 @@ export class InfoProvider implements Disposable {
                 .getConfiguration('lean4.infoview')
                 .update('messageOrder', config.messageOrder, ConfigurationTarget.Global)
         },
-        sendClientRequest: async (uri: string, method: string, params: any): Promise<any> => {
+        startClientRequest: async (
+            uri: string,
+            method: string,
+            params: any,
+            options?: ClientRequestRpcOptions,
+        ): Promise<number> => {
             const extUri = parseExtUri(uri)
             if (extUri === undefined) {
                 throw Error(`Unexpected URI scheme: ${Uri.parse(uri).scheme}`)
@@ -194,10 +209,15 @@ export class InfoProvider implements Disposable {
 
             const client = this.clientProvider.findClient(extUri)
             if (client) {
-                try {
-                    const result = await client.sendRequest(method, params)
-                    return result
-                } catch (ex) {
+                const tk = new CancellationTokenSource()
+                const sub: Disposable = {
+                    dispose() {
+                        if (options?.autoCancel) tk.cancel()
+                    },
+                }
+                const id = this.freshClientRequestId
+                this.freshClientRequestId += 1
+                const promise = client.sendRequest(method, params, tk.token).catch(async ex => {
                     if (ex.code === RpcErrorCode.WorkerCrashed) {
                         // ex codes related with worker exited or crashed
                         logger.log(`[InfoProvider]The Lean Server has stopped processing this file: ${ex.message}`)
@@ -207,9 +227,33 @@ export class InfoProvider implements Disposable {
                         })
                     }
                     throw ex
-                }
+                })
+                this.clientRequests.set(id, [promise, sub, tk])
+                return id
             }
             throw Error('No active Lean client.')
+        },
+        awaitClientRequest: async (id: number): Promise<any> => {
+            const p = this.clientRequests.get(id)
+            if (p) {
+                // NOTE: `await` finishes first (or throws),
+                // then the entry is deleted,
+                // and then the function returns.
+                try {
+                    return await p[0]
+                } finally {
+                    this.clientRequests.delete(id)
+                }
+            }
+            // NOTE: we rely on details of `editorApiOfRpc` for correctness:
+            // we assume that `awaitClientRequest` is called exactly once
+            // regardless of whether cancellation occurs,
+            // so this error should never be thrown.
+            throw Error(`Internal error: invalid client request ID '${id}'`)
+        },
+        cancelClientRequest: async (id: number): Promise<void> => {
+            const p = this.clientRequests.get(id)
+            if (p) p[2].cancel()
         },
         sendClientNotification: async (uri: string, method: string, params: any): Promise<void> => {
             const extUri = parseExtUri(uri)
@@ -386,19 +430,16 @@ export class InfoProvider implements Disposable {
     ) {
         this.updateStylesheet()
 
-        clientProvider.clientAdded(client => {
-            void this.onClientAdded(client)
-        })
-
-        clientProvider.clientRemoved(client => {
-            void this.onClientRemoved(client)
-        })
-
-        clientProvider.clientStopped(([client, activeClient, reason]) => {
-            void this.onActiveClientStopped(client, activeClient, reason)
-        })
-
         this.subscriptions.push(
+            clientProvider.clientAdded(client => {
+                void this.onClientAdded(client)
+            }),
+            clientProvider.clientRemoved(client => {
+                void this.onClientRemoved(client)
+            }),
+            clientProvider.clientStopped(([client, activeClient, reason]) => {
+                void this.onActiveClientStopped(client, activeClient, reason)
+            }),
             lean.onDidChangeActiveLeanEditor(() => this.sendPosition()),
             lean.onDidChangeLeanEditorSelection(() => this.sendPosition()),
             workspace.onDidChangeConfiguration(async _e => {
@@ -621,7 +662,7 @@ export class InfoProvider implements Disposable {
     private async onClientAdded(client: LeanClient) {
         logger.log(`[InfoProvider] Adding client for workspace: ${client.getClientFolder()}`)
 
-        this.clientSubscriptions.push(
+        this.subscriptions.push(
             client.restarted(async () => {
                 logger.log('[InfoProvider] got client restarted event')
                 // This event is triggered both the first time the server starts
@@ -670,7 +711,7 @@ export class InfoProvider implements Disposable {
     }
 
     onClientRemoved(client: LeanClient) {
-        // todo: remove subscriptions for this client...
+        // NOTE: we could index subscriptions made in `onClientAdded` by the client, and remove here
     }
 
     async onActiveClientStopped(client: LeanClient, activeClient: boolean, reason: ServerStoppedReason) {
@@ -693,17 +734,11 @@ export class InfoProvider implements Disposable {
         client.showRestartMessage()
     }
 
+    // Called when the extension is deactivated.
     dispose(): void {
-        // active client is changing.
-        this.clearNotificationHandlers()
-        this.clearRpcSessions(null)
+        // Calls `webviewPanel.onDidDispose` to cleanup the infoview's subscriptions.
         this.webviewPanel?.dispose()
-        for (const s of this.clientSubscriptions) {
-            s.dispose()
-        }
-        for (const s of this.subscriptions) {
-            s.dispose()
-        }
+        for (const s of this.subscriptions) s.dispose()
     }
 
     isOpen(): boolean {
@@ -835,6 +870,8 @@ export class InfoProvider implements Disposable {
                 this.webviewPanel = undefined
                 this.clearNotificationHandlers()
                 this.clearRpcSessions(null) // should be after `webviewPanel = undefined`
+                for (const [_1, d, _2] of this.clientRequests.values()) d.dispose()
+                this.clientRequests = new Map()
             })
             this.webviewPanel = webviewPanel
             webviewPanel.webview.html = this.initialHtml()

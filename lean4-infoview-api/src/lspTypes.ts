@@ -128,6 +128,8 @@ export interface RpcError {
     message: string
 }
 
-export function isRpcError(x: any): x is RpcError {
-    return !!(x?.code && x?.message)
+export function isRpcError(x: unknown): x is RpcError {
+    if (x == null || typeof x !== 'object') return false
+    const obj = x as Record<string, unknown>
+    return typeof obj.code === 'number' && typeof obj.message === 'string'
 }

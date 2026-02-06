@@ -21,8 +21,8 @@ export function WithRpcSessions({ children }: { children: React.ReactNode }) {
             new RpcSessions({
                 createRpcSession: (uri: DocumentUri) => ec.api.createRpcSession(uri),
                 closeRpcSession: (uri: DocumentUri) => ec.api.closeRpcSession(uri),
-                call: (params: RpcCallParams) =>
-                    ec.api.sendClientRequest(params.textDocument.uri, '$/lean/rpc/call', params),
+                call: (params: RpcCallParams, options) =>
+                    ec.api.sendClientRequest(params.textDocument.uri, '$/lean/rpc/call', params, options),
                 release: (params: RpcReleaseParams) =>
                     void ec.api.sendClientNotification(params.uri, '$/lean/rpc/release', params),
             }),
