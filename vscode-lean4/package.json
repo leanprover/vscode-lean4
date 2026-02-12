@@ -782,7 +782,11 @@
                 "configuration": "./language-configuration.json",
                 "extensions": [
                     ".lean"
-                ]
+                ],
+                "icon": {
+                    "dark": "./media/lean-file-icon-blue.png",
+                    "light": "./media/lean-file-icon-blue.png"
+                }
             },
             {
                 "id": "lean",
