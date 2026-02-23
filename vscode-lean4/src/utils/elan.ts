@@ -68,8 +68,9 @@ export type ElanRemoteUnresolvedToolchain = {
     release: string
     fromChannel: ElanOption<string>
 }
+export type ElanPathUnresolvedToolchain = { kind: 'Path'; path: string }
 
-export type ElanUnresolvedToolchain = ElanLocalUnresolvedToolchain | ElanRemoteUnresolvedToolchain
+export type ElanUnresolvedToolchain = ElanLocalUnresolvedToolchain | ElanRemoteUnresolvedToolchain | ElanPathUnresolvedToolchain
 
 export namespace ElanUnresolvedToolchain {
     export function toolchainName(unresolved: ElanUnresolvedToolchain): string {
@@ -78,6 +79,8 @@ export namespace ElanUnresolvedToolchain {
                 return unresolved.toolchain
             case 'Remote':
                 return unresolved.githubRepoOrigin + ':' + unresolved.release
+            case 'Path':
+                return unresolved.path
         }
     }
 }
@@ -155,6 +158,11 @@ function zodElanUnresolvedToolchain() {
                 from_channel: z.nullable(z.string()),
             }),
         }),
+        z.object({
+            Path: z.object({
+                path: z.string()
+            })
+        })
     ])
 }
 
@@ -204,10 +212,18 @@ function convertElanUnresolvedToolchain(
                   release: string
                   from_channel: string | null
               }
+          }
+        | {
+              Path: {
+                  path: string
+              }
           },
 ): ElanUnresolvedToolchain {
     if ('Local' in zodElanUnresolvedToolchain) {
         return { kind: 'Local', toolchain: zodElanUnresolvedToolchain.Local.name }
+    }
+    if ('Path' in zodElanUnresolvedToolchain) {
+        return { kind: 'Path', path: zodElanUnresolvedToolchain.Path.path }
     }
     zodElanUnresolvedToolchain satisfies {
         Remote: {

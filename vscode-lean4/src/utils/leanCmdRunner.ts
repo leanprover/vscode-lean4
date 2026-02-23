@@ -147,7 +147,7 @@ export class LeanCommandRunner {
             return runWithActiveToolchain
         }
 
-        if (unresolvedToolchain.kind === 'Local') {
+        if (unresolvedToolchain.kind === 'Local' || unresolvedToolchain.kind === 'Path') {
             return runWithActiveToolchain
         }
 
@@ -253,7 +253,7 @@ export class LeanCommandRunner {
             return runWithActiveToolchain
         }
 
-        if (unresolvedToolchain.kind === 'Local' || unresolvedToolchain.fromChannel === undefined) {
+        if (unresolvedToolchain.kind === 'Local' || unresolvedToolchain.kind === 'Path' || unresolvedToolchain.fromChannel === undefined) {
             return runWithActiveToolchain
         }
 
