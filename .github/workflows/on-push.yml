@@ -38,7 +38,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'
           registry-url: 'https://registry.npmjs.org'
 
       - name: Build
@@ -138,6 +138,3 @@ jobs:
         uses: GabrielBB/xvfb-action@v1.0
         with:
           run: npm run test
-
-    env:
-      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
