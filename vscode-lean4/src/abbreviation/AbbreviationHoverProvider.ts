@@ -25,15 +25,24 @@ export class AbbreviationHoverProvider implements HoverProvider {
 
         const leader = this.config.abbreviationCharacter
 
+        const toMarkdownCode = (content: string): string => {
+            if (!content.includes('`')) {
+                return `\`${content}\``
+            }
+            const prefix = content.startsWith('`') ? ' ' : ''
+            const suffix = content.endsWith('`') ? ' ' : ''
+            return `\`\`${prefix}${content}${suffix}\`\``
+        }
+
         const hoverMarkdown = allAbbrevs
             .map(({ symbol, abbrevs }) => {
-                const abbrevInfo = `Type ${symbol} using ${abbrevs.map(a => '`' + leader + a + '`').join(' or ')}`
+                const abbrevInfo = `Type ${symbol} using ${abbrevs.map(a => toMarkdownCode(leader + a)).join(' or ')}`
                 const autoClosingAbbrevs = this.abbreviations.findAutoClosingAbbreviations(symbol)
                 const autoClosingInfo =
                     autoClosingAbbrevs.length === 0
                         ? ''
                         : `. ${symbol} can be auto-closed with ${autoClosingAbbrevs
-                              .map(([a, closingSym]) => `${closingSym} using \`${leader}${a}\``)
+                              .map(([a, closingSym]) => `${closingSym} using ${toMarkdownCode(leader + a)}`)
                               .join(' or ')}.`
                 return abbrevInfo + autoClosingInfo
             })
