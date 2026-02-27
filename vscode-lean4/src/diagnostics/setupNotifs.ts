@@ -60,7 +60,6 @@ export type SetupNotificationOptions = {
 }
 
 const closeItem: string = 'Close'
-const proceedItem: string = 'Proceed'
 const proceedRegardlessItem: string = 'Proceed Regardless'
 const retryItem: StickyInput<string> = {
     input: 'Retry',
@@ -185,7 +184,7 @@ export class SetupNotifier {
                     'Warning',
                     message,
                     inputs.map(i => i.input),
-                    proceedItem,
+                    proceedRegardlessItem,
                 )
                 const chosenInput = inputs.find(i => i.input === choice)
                 chosenInput?.action()
@@ -224,7 +223,7 @@ export class SetupNotifier {
     async displaySetupWarningWithOutput(message: string): Promise<PreconditionCheckResult> {
         return await this.warning({
             modalProceedByDefault: async () => {
-                await displayModalNotificationWithOutput('Warning', message, [], proceedItem)
+                await displayModalNotificationWithOutput('Warning', message, [], proceedRegardlessItem)
                 return 'Warning'
             },
             modalAskBeforeProceeding: async () => {
@@ -255,7 +254,7 @@ export class SetupNotifier {
     async displaySetupWarningWithSetupGuide(message: string): Promise<PreconditionCheckResult> {
         return await this.warning({
             modalProceedByDefault: async () => {
-                await displayModalNotificationWithSetupGuide('Warning', message, [], proceedItem)
+                await displayModalNotificationWithSetupGuide('Warning', message, [], proceedRegardlessItem)
                 return 'Warning'
             },
             modalAskBeforeProceeding: async () => {
@@ -293,7 +292,12 @@ export class SetupNotifier {
     async displayElanSetupWarning(installer: LeanInstaller, reason: string): Promise<PreconditionCheckResult> {
         return await this.warning({
             modalProceedByDefault: async () => {
-                const r = await installer.displayInstallElanPromptWithItems('Warning', reason, [], proceedItem)
+                const r = await installer.displayInstallElanPromptWithItems(
+                    'Warning',
+                    reason,
+                    [],
+                    proceedRegardlessItem,
+                )
                 const success = r !== undefined && r.kind === 'InstallElan' && r.success
                 return success ? 'Fulfilled' : 'Warning'
             },
@@ -339,7 +343,7 @@ export class SetupNotifier {
         }
         return await this.warning({
             modalProceedByDefault: async () => {
-                const r = await installer.displayUpdateElanPromptWithItems('Warning', mode, [], proceedItem)
+                const r = await installer.displayUpdateElanPromptWithItems('Warning', mode, [], proceedRegardlessItem)
                 const success = r !== undefined && r.kind === 'UpdateElan' && r.success
                 return success ? 'Fulfilled' : 'Warning'
             },
