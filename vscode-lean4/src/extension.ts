@@ -1,6 +1,6 @@
 import * as os from 'os'
 import * as path from 'path'
-import { commands, ExtensionContext, extensions, TextDocument, TextEditor, window, workspace } from 'vscode'
+import { commands, env, ExtensionContext, extensions, TextDocument, TextEditor, Uri, window, workspace } from 'vscode'
 import { AbbreviationFeature } from './abbreviation/AbbreviationFeature'
 import { AbbreviationView } from './abbreviationview'
 import { FullDiagnosticsProvider } from './diagnostics/fullDiagnostics'
@@ -87,6 +87,35 @@ async function findOpenLeanProjectUri(): Promise<ExtUri | 'NoValidDocument'> {
     return 'NoValidDocument'
 }
 
+async function copyModuleName(uri: Uri | undefined) {
+    const targetUri = uri !== undefined ? toExtUri(uri) : lean.lastActiveLeanDocument?.extUri
+    if (targetUri === undefined) {
+        return
+    }
+    if (targetUri.scheme !== 'file') {
+        return
+    }
+    const info = await findLeanProjectRootInfo(targetUri)
+    if (info.kind !== 'Success') {
+        return
+    }
+    const projectRootUri = info.projectRootUri
+    if (projectRootUri.scheme !== 'file') {
+        return
+    }
+    const relativePath = targetUri.relativeTo(projectRootUri)
+    if (relativePath === undefined) {
+        return
+    }
+    const parts = relativePath.fsPath.split(path.sep)
+    const lastPart = parts[parts.length - 1]
+    if (lastPart.endsWith('.lean')) {
+        parts[parts.length - 1] = lastPart.slice(0, -'.lean'.length)
+    }
+    const moduleName = parts.join('.')
+    await env.clipboard.writeText(moduleName)
+}
+
 function addElanPathToPATH() {
     addToProcessEnvPATH(path.join(os.homedir(), '.elan', 'bin'))
 }
@@ -103,6 +132,10 @@ function activateAlwaysEnabledFeatures(context: ExtensionContext): AlwaysEnabled
         addToProcessEnvPATH(loc)
     }
     context.subscriptions.push(PathExtensionProvider.withAddedEnvPathExtensions())
+
+    context.subscriptions.push(
+        commands.registerCommand('lean4.copyModuleName', async (uri?: Uri | undefined) => await copyModuleName(uri)),
+    )
 
     context.subscriptions.push(
         commands.registerCommand('lean4.docs.showSetupGuide', () =>

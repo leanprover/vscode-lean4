@@ -774,6 +774,12 @@
                 "title": "Show Imported By",
                 "description": "Changes the mode of the module hierarchy to display the modules that a module is imported by",
                 "icon": "$(call-incoming)"
+            },
+            {
+                "command": "lean4.copyModuleName",
+                "category": "Lean 4",
+                "title": "Copy Module Name",
+                "description": "Copies the Lean module name of the current file to the clipboard."
             }
         ],
         "languages": [
@@ -930,6 +936,10 @@
                 },
                 {
                     "command": "lean4.refreshFileDependencies",
+                    "when": "lean4.isLeanFeatureSetActive"
+                },
+                {
+                    "command": "lean4.copyModuleName",
                     "when": "lean4.isLeanFeatureSetActive"
                 },
                 {
@@ -1405,6 +1415,13 @@
                     "command": "lean4.loogle.search",
                     "when": "editorLangId == lean4",
                     "group": "z_commands@0"
+                }
+            ],
+            "editor/title/context": [
+                {
+                    "command": "lean4.copyModuleName",
+                    "when": "resourceLangId == lean4 && resourceScheme == file",
+                    "group": "1_cutcopypaste@0"
                 }
             ],
             "webview/context": [
