@@ -2062,7 +2062,7 @@
                                     "include": "text.html.derivative"
                                 }
                             ],
-                            "while": "(?i)^(?!.*</(script|style|pre)>)"
+                            "while": "(?i)^(?!.*</(script|style|pre)>|\\s*-/)"
                         }
                     ]
                 },
@@ -2073,7 +2073,7 @@
                             "include": "text.html.derivative"
                         }
                     ],
-                    "while": "^(?!\\s*$)"
+                    "while": "^(?!\\s*$|\\s*-/)"
                 },
                 {
                     "begin": "(^|\\G)\\s*(?=(<[a-zA-Z0-9\\-](/?>|\\s.*?>)|</[a-zA-Z0-9\\-]>)\\s*$)",
@@ -2082,7 +2082,7 @@
                             "include": "text.html.derivative"
                         }
                     ],
-                    "while": "^(?!\\s*$)"
+                    "while": "^(?!\\s*$|\\s*-/)"
                 }
             ]
         },
@@ -2284,7 +2284,7 @@
                     "name": "punctuation.definition.bold.markdown"
                 }
             },
-            "end": "(?<=\\S)(\\1)",
+            "end": "(?<=\\S)(\\1)|(?=$)",
             "name": "markup.bold.markdown",
             "patterns": [
                 {
@@ -2429,7 +2429,7 @@
                     "name": "punctuation.definition.italic.markdown"
                 }
             },
-            "end": "(?<=\\S)(\\1)((?!\\1)|(?=\\1\\1))",
+            "end": "(?<=\\S)(\\1)((?!\\1)|(?=\\1\\1))|(?=$)",
             "name": "markup.italic.markdown",
             "patterns": [
                 {
