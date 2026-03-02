@@ -239,6 +239,12 @@ export class InputAbbreviationRewriter implements AbbreviationTextSource {
             update: _ => c.newText,
         }))
         this.setInputHTML(replaceAt(this.getInput(), updates))
+        // Unlike in VS Code, directly setting innerHTML does not fire any document-change events,
+        // so remaining tracked abbreviations are never notified of the text length change caused by
+        // the replacement. Call changeInput explicitly so their positions stay in sync.
+        // Note: AbbreviationRewriter.doNotTrackNewAbbr is true at this point (set by AbbreviationRewriter.forceReplace),
+        // so changeInput will not create new tracked abbreviations for any '\' in the replacement text.
+        this.rewriter.changeInput(changes)
         return true
     }
 
