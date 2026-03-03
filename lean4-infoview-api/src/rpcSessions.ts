@@ -146,7 +146,7 @@ class RpcSessionForFile {
      */
     registerRefs(o: any) {
         if (o instanceof Object) {
-            if (Object.keys(o as {}).length === 1 && 'p' in o && typeof o.p !== 'object') {
+            if (Object.keys(o as {}).length === 1 && 'p' in o && typeof o.p === 'string') {
                 this.finalizers.register(o as {}, RpcPtr.copy(o as RpcPtr<any>))
             } else {
                 for (const v of Object.values(o as {})) this.registerRefs(v)
