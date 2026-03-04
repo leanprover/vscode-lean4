@@ -35,6 +35,6 @@ export class ServerVersion {
 
     /** Is `this` version either strictly below or equal to `other`? */
     le(other: ServerVersion): boolean {
-        return this.lt(other) || this.le(other)
+        return this.lt(other) || this.eq(other)
     }
 }
