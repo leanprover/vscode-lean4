@@ -148,10 +148,13 @@ class RpcSessionForFile {
      */
     registerRefs(o: any) {
         if (o instanceof Object) {
-            if (Object.keys(o as {}).length === 1 && 'p' in o && typeof o.p === 'string') {
-                this.finalizers.register(o as {}, RpcPtr.copy(o as RpcPtr<any>))
+            if (this.serverVersion.le(new ServerVersion(0, 3, 0))) {
+                if (Object.keys(o as {}).length === 1 && 'p' in o && typeof o.p === 'string') {
+                    this.finalizers.register(o as {}, RpcPtr.copy(o as RpcPtr<any>))
+                }
             } else {
-                for (const v of Object.values(o as {})) this.registerRefs(v)
+                if (Object.keys(o as {}).length === 1 && '__rpcref' in o && typeof o.__rpcref === 'string')
+                    this.finalizers.register(o as {}, RpcPtr.copy(o as RpcPtr<any>))
             }
         } else if (o instanceof Array) {
             for (const e of o) this.registerRefs(e)
