@@ -7,10 +7,10 @@ import {
     LeanDiagnostic,
     LeanFileProgressProcessingInfo,
     LeanServerCapabilities,
+    ServerVersion,
 } from '@leanprover/infoview-api'
 
 import { EditorConnection } from './editorConnection'
-import { ServerVersion } from './serverVersion'
 import { DocumentPosition } from './util'
 
 // Type-unsafe initializers for contexts which we immediately set up at the top-level.

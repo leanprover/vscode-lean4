@@ -10,7 +10,6 @@ export { GoalLocation, GoalsLocation, LocationsContext } from './infoview/goalLo
 export { InteractiveCode, InteractiveCodeProps, Markdown } from './infoview/interactiveCode'
 export { renderInfoview } from './infoview/main'
 export { RpcContext, useRpcSession } from './infoview/rpcSessions'
-export { ServerVersion } from './infoview/serverVersion'
 export { DynamicComponent, DynamicComponentProps, importWidgetModule, PanelWidgetProps } from './infoview/userWidget'
 export {
     DocumentPosition,

@@ -1,6 +1,7 @@
 import type { DocumentUri, Position, TextDocumentPositionParams } from 'vscode-languageserver-protocol'
 import { ClientRequestOptions } from './infoviewApi'
 import { RpcCallParams, RpcErrorCode, RpcPtr, RpcReleaseParams } from './lspTypes'
+import { ServerVersion } from './serverVersion'
 
 /**
  * Abstraction of the functionality needed
@@ -83,6 +84,7 @@ class RpcSessionForFile {
     constructor(
         public uri: DocumentUri,
         public sessions: RpcSessions,
+        private serverVersion: ServerVersion,
     ) {
         this.sessionId = (async () => {
             try {
@@ -240,9 +242,9 @@ export class RpcSessions {
 
     constructor(public iface: RpcServerIface) {}
 
-    private connectCore(uri: DocumentUri): RpcSessionForFile {
+    private connectCore(uri: DocumentUri, serverVersion: ServerVersion): RpcSessionForFile {
         if (this.sessions.has(uri)) return this.sessions.get(uri) as RpcSessionForFile
-        const sess = new RpcSessionForFile(uri, this)
+        const sess = new RpcSessionForFile(uri, this, serverVersion)
         this.sessions.set(uri, sess)
         return sess
     }
@@ -254,8 +256,8 @@ export class RpcSessions {
      * A new session is only created if a fatal error occurs (the worker crashes)
      * or the session is closed manually (the file is closed).
      */
-    connect(pos: TextDocumentPositionParams): RpcSessionAtPos {
-        return this.connectCore(pos.textDocument.uri).at(pos.position)
+    connect(pos: TextDocumentPositionParams, serverVersion: ServerVersion): RpcSessionAtPos {
+        return this.connectCore(pos.textDocument.uri, serverVersion).at(pos.position)
     }
 
     /** Closes the session for the given URI. */
