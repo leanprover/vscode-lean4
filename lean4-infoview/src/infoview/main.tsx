@@ -15,7 +15,6 @@ import {
     InfoviewApi,
     LeanFileProgressParams,
     LeanFileProgressProcessingInfo,
-    ServerVersion,
 } from '@leanprover/infoview-api'
 
 import { CapabilityContext, ConfigContext, EditorContext, ProgressContext, VersionContext } from './contexts'
@@ -24,6 +23,7 @@ import { EventEmitter } from './event'
 import { Infos } from './infos'
 import { AllMessages, WithLspDiagnosticsContext } from './messages'
 import { WithRpcSessions } from './rpcSessions'
+import { ServerVersion } from './serverVersion'
 import { useClientNotificationEffect, useEventResult, useServerNotificationState } from './util'
 
 function Main() {

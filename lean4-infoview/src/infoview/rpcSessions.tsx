@@ -5,7 +5,7 @@ import type {
     DocumentUri,
     TextDocumentPositionParams,
 } from 'vscode-languageserver-protocol'
-import { EditorContext, EnvPosContext, VersionContext } from './contexts'
+import { CapabilityContext, EditorContext, EnvPosContext } from './contexts'
 import { DocumentPosition, useClientNotificationEffect, useEvent } from './util'
 
 const RpcSessionsContext = React.createContext<RpcSessions | undefined>(undefined)
@@ -56,10 +56,10 @@ function errorRpcSession(err: string): RpcSessionAtPos {
 
 export function useRpcSessionAtTdpp(pos: TextDocumentPositionParams): RpcSessionAtPos {
     const rsc = React.useContext(RpcSessionsContext)
-    const ver = React.useContext(VersionContext)
+    const cap = React.useContext(CapabilityContext)
     if (!rsc) return errorRpcSession('no RPC context set')
-    if (!ver) return errorRpcSession('no server version context set')
-    return rsc.connect(pos, ver)
+    if (!cap) return errorRpcSession('no capability context set')
+    return rsc.connect(pos, cap)
 }
 
 export function useRpcSessionAtPos(pos: DocumentPosition): RpcSessionAtPos {
@@ -86,9 +86,9 @@ export function useRpcSession(): RpcSessionAtPos {
     // because we'd only call it when `pos !== undefined`
     // but hooks must be called unconditionally.
     const rsc = React.useContext(RpcSessionsContext)
-    const ver = React.useContext(VersionContext)
+    const cap = React.useContext(CapabilityContext)
     if (!pos) return errorRpcSession('no position context set')
     if (!rsc) return errorRpcSession('no RPC context set')
-    if (!ver) return errorRpcSession('no server version context set')
-    return rsc.connect(DocumentPosition.toTdpp(pos), ver)
+    if (!cap) return errorRpcSession('no capability context set')
+    return rsc.connect(DocumentPosition.toTdpp(pos), cap)
 }

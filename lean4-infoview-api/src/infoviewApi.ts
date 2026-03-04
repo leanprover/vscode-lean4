@@ -11,13 +11,16 @@ export type ModuleHierarchyOptions = {}
 
 export type HighlightMatchesOptions = {}
 
+export type RpcWireFormat = 'v0' | 'v1'
+
 export interface RpcOptions {
-    highlightMatchesProvider?: HighlightMatchesOptions | undefined
+    highlightMatchesProvider?: HighlightMatchesOptions
+    rpcWireFormat?: RpcWireFormat
 }
 
 export interface LeanServerCapabilities {
-    moduleHierarchyProvider?: ModuleHierarchyOptions | undefined
-    rpcProvider?: RpcOptions | undefined
+    moduleHierarchyProvider?: ModuleHierarchyOptions
+    rpcProvider?: RpcOptions
 }
 
 export type ExpectedTypeVisibility = 'Expanded by default' | 'Collapsed by default' | 'Hidden'

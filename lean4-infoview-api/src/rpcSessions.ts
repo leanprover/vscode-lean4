@@ -1,7 +1,6 @@
-import type { DocumentUri, Position, TextDocumentPositionParams } from 'vscode-languageserver-protocol'
-import { ClientRequestOptions } from './infoviewApi'
+import type { DocumentUri, Position, ServerCapabilities, TextDocumentPositionParams } from 'vscode-languageserver-protocol'
+import { ClientRequestOptions, LeanServerCapabilities } from './infoviewApi'
 import { RpcCallParams, RpcErrorCode, RpcPtr, RpcReleaseParams } from './lspTypes'
-import { ServerVersion } from './serverVersion'
 
 /**
  * Abstraction of the functionality needed
@@ -84,7 +83,7 @@ class RpcSessionForFile {
     constructor(
         public uri: DocumentUri,
         public sessions: RpcSessions,
-        private serverVersion: ServerVersion,
+        private serverCapabilities: ServerCapabilities<LeanServerCapabilities>,
     ) {
         this.sessionId = (async () => {
             try {
@@ -148,13 +147,20 @@ class RpcSessionForFile {
      */
     registerRefs(o: any) {
         if (o instanceof Object) {
-            if (this.serverVersion.le(new ServerVersion(0, 3, 0))) {
-                if (Object.keys(o as {}).length === 1 && 'p' in o && typeof o.p === 'string') {
+            let isRef = false
+            if (this.serverCapabilities.experimental?.rpcProvider?.rpcWireFormat === 'v1') {
+                if (Object.keys(o as {}).length === 1 && '__rpcref' in o && typeof o.__rpcref === 'string') {
                     this.finalizers.register(o as {}, RpcPtr.copy(o as RpcPtr<any>))
+                    isRef = true
                 }
             } else {
-                if (Object.keys(o as {}).length === 1 && '__rpcref' in o && typeof o.__rpcref === 'string')
+                if (Object.keys(o as {}).length === 1 && 'p' in o && typeof o.p === 'string') {
                     this.finalizers.register(o as {}, RpcPtr.copy(o as RpcPtr<any>))
+                    isRef = true
+                }
+            }
+            if (!isRef) {
+                for (const v of Object.values(o)) this.registerRefs(v)
             }
         } else if (o instanceof Array) {
             for (const e of o) this.registerRefs(e)
@@ -245,9 +251,9 @@ export class RpcSessions {
 
     constructor(public iface: RpcServerIface) {}
 
-    private connectCore(uri: DocumentUri, serverVersion: ServerVersion): RpcSessionForFile {
+    private connectCore(uri: DocumentUri, serverCapabilities: ServerCapabilities<LeanServerCapabilities>): RpcSessionForFile {
         if (this.sessions.has(uri)) return this.sessions.get(uri) as RpcSessionForFile
-        const sess = new RpcSessionForFile(uri, this, serverVersion)
+        const sess = new RpcSessionForFile(uri, this, serverCapabilities)
         this.sessions.set(uri, sess)
         return sess
     }
@@ -259,8 +265,8 @@ export class RpcSessions {
      * A new session is only created if a fatal error occurs (the worker crashes)
      * or the session is closed manually (the file is closed).
      */
-    connect(pos: TextDocumentPositionParams, serverVersion: ServerVersion): RpcSessionAtPos {
-        return this.connectCore(pos.textDocument.uri, serverVersion).at(pos.position)
+    connect(pos: TextDocumentPositionParams, serverCapabilities: ServerCapabilities<LeanServerCapabilities>): RpcSessionAtPos {
+        return this.connectCore(pos.textDocument.uri, serverCapabilities).at(pos.position)
     }
 
     /** Closes the session for the given URI. */
