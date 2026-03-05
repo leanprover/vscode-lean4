@@ -78,7 +78,7 @@ function Main() {
         )
     } else {
         ret = (
-            <div className="ma1">
+            <div className="pa1">
                 <Infos />
                 {curUri && (
                     <div className="mv2">
