@@ -2,6 +2,7 @@
     "name": "@leanprover/unicode-input",
     "version": "0.1.8",
     "description": "Unicode input mechanism for the Lean 4 theorem prover",
+    "repository": "github:leanprover/vscode-lean4",
     "scripts": {
         "watch": "tsc --watch",
         "watchTest": "tsc --watch",
