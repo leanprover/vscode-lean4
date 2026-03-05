@@ -2,6 +2,7 @@
     "name": "@leanprover/infoview",
     "version": "0.11.1",
     "description": "An interactive display for the Lean 4 theorem prover.",
+    "repository": "github:leanprover/vscode-lean4",
     "scripts": {
         "watch": "rollup --config --environment NODE_ENV:development --watch",
         "build": "rollup --config --environment NODE_ENV:production",
