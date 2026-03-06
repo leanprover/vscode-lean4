@@ -9,52 +9,65 @@ fi
 
 package_name="$1"
 new_version="$2"
+dir="lean4-$package_name"
+npm_name="@leanprover/$package_name"
 
-case "$package_name" in
-  infoview-api)
-    dir="lean4-infoview-api"
-    npm_name="@leanprover/infoview-api"
-    ;;
-  infoview)
-    dir="lean4-infoview"
-    npm_name="@leanprover/infoview"
-    ;;
-  unicode-input)
-    dir="lean4-unicode-input"
-    npm_name="@leanprover/unicode-input"
-    ;;
-  unicode-input-component)
-    dir="lean4-unicode-input-component"
-    npm_name="@leanprover/unicode-input-component"
-    ;;
-  *)
-    echo "Unknown package: $package_name"
-    echo "Valid names: infoview-api, infoview, unicode-input, unicode-input-component"
-    exit 1
-    ;;
-esac
+if [ ! -d "$dir" ]; then
+  echo "Unknown package: $package_name"
+  echo "Valid names: infoview-api, infoview, unicode-input, unicode-input-component"
+  exit 1
+fi
 
-# Update version in the package's own package.json
-echo "Updating $dir/package.json version to $new_version"
-sed -i 's/"version": ".*"/"version": "'$new_version'"/' "$dir/package.json"
+# Maps directory names to npm package names
+npm_name_of() {
+  echo "@leanprover/$(echo "$1" | sed 's/^lean4-//')"
+}
 
-# Update dependency version in all other package.json files, preserving range prefix.
-# Also patch-bump dependent NPM packages (excluding vscode-lean4 which has its own release cycle).
-echo "Updating dependents of $npm_name"
-for pkg_json in */package.json; do
-  if grep -q "\"$npm_name\"" "$pkg_json"; then
-    echo "  Updating dependency in $pkg_json"
-    sed -i 's|"'"$npm_name"'": "\([~^]*\)[^"]*"|"'"$npm_name"'": "\1'"$new_version"'"|' "$pkg_json"
+# Process version bumps transitively using a queue.
+# Each entry is "dir:version" — the package whose version was bumped and needs its
+# dependents updated. Dependents (excluding vscode-lean4) get patch-bumped and are
+# added to the queue so their own dependents are updated in turn.
+bumped="" # Track already-bumped packages to handle diamonds in the dependency graph
+queue="$dir:$new_version"
+while [ -n "$queue" ]; do
+  entry="${queue%%
+*}"
+  queue="${queue#"$entry"}"
+  queue="${queue#
+}"
 
+  bump_dir="${entry%%:*}"
+  bump_version="${entry#*:}"
+  bump_npm_name="$(npm_name_of "$bump_dir")"
+  bumped="$bumped $bump_dir"
+
+  echo "Updating $bump_dir/package.json version to $bump_version"
+  sed -i 's/"version": ".*"/"version": "'$bump_version'"/' "$bump_dir/package.json"
+
+  echo "Updating dependents of $bump_npm_name"
+  for pkg_json in */package.json; do
     dep_dir="$(dirname "$pkg_json")"
-    if [ "$dep_dir" != "vscode-lean4" ] && [ "$dep_dir" != "$dir" ]; then
-      old_ver="$(node -p "require('./$pkg_json').version")"
-      # Patch bump: increment the last numeric component
-      new_dep_ver="$(echo "$old_ver" | awk -F. '{$NF=$NF+1; print}' OFS=.)"
-      echo "  Bumping $dep_dir version: $old_ver -> $new_dep_ver"
-      sed -i 's/"version": ".*"/"version": "'$new_dep_ver'"/' "$pkg_json"
+    [ "$dep_dir" = "$bump_dir" ] && continue
+    if grep -q "\"$bump_npm_name\"" "$pkg_json"; then
+      echo "  Updating dependency in $pkg_json"
+      sed -i 's|"'"$bump_npm_name"'": "\([~^]*\)[^"]*"|"'"$bump_npm_name"'": "\1'"$bump_version"'"|' "$pkg_json"
+
+      # Patch-bump the dependent (excluding vscode-lean4 and already-bumped packages)
+      case " $bumped " in *" $dep_dir "*) continue ;; esac
+      if [ "$dep_dir" != "vscode-lean4" ]; then
+        old_ver="$(node -p "require('./$pkg_json').version")"
+        dep_new_ver="$(echo "$old_ver" | awk -F. '{$NF=$NF+1; print}' OFS=.)"
+        echo "  Patch-bumping $dep_dir: $old_ver -> $dep_new_ver"
+        # Add to queue so its dependents are updated too
+        if [ -n "$queue" ]; then
+          queue="$queue
+$dep_dir:$dep_new_ver"
+        else
+          queue="$dep_dir:$dep_new_ver"
+        fi
+      fi
     fi
-  fi
+  done
 done
 
 # Update package-lock.json
