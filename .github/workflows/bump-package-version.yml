@@ -1,0 +1,39 @@
+name: Bump package version
+
+on:
+  workflow_dispatch:
+    inputs:
+      package:
+        description: 'Package to bump'
+        required: true
+        type: choice
+        options:
+          - infoview-api
+          - infoview
+          - unicode-input
+          - unicode-input-component
+      version:
+        description: 'New version (e.g. 0.12.0)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Bump version
+        run: ./bump-package-version.sh "${{ inputs.package }}" "${{ inputs.version }}"
+
+      - name: Push
+        run: git push
