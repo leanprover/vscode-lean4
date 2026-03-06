@@ -19,6 +19,7 @@ on:
 
 permissions:
   contents: write
+  pull-requests: write
 
 jobs:
   bump:
@@ -35,5 +36,13 @@ jobs:
       - name: Bump version
         run: ./bump-package-version.sh "${{ inputs.package }}" "${{ inputs.version }}"
 
-      - name: Push
-        run: git push
+      - name: Create pull request
+        run: |
+          branch="bump/${{ inputs.package }}-${{ inputs.version }}"
+          git checkout -b "$branch"
+          git push -u origin "$branch"
+          gh pr create \
+            --title "chore: bump @leanprover/${{ inputs.package }} to ${{ inputs.version }}" \
+            --body "Automated version bump of \`@leanprover/${{ inputs.package }}\` to \`${{ inputs.version }}\`."
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
