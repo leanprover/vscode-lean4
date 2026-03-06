@@ -33,6 +33,11 @@ jobs:
         with:
           node-version: '24'
 
+      - name: Configure git identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
       - name: Bump version
         run: ./bump-package-version.sh "${{ inputs.package }}" "${{ inputs.version }}"
 
