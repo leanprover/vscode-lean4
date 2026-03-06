@@ -132,7 +132,7 @@ jobs:
             git log "$prev_tag".."$current_tag"^ --pretty=format:"%H %s" | while read -r hash msg; do
               # Skip release commits
               case "$msg" in
-                "Release "* | "Bump @leanprover/"*) continue ;;
+                "Release "* | "chore: bump @leanprover/"*) continue ;;
               esac
 
               # Look up the GitHub author

@@ -62,5 +62,5 @@ echo "Updating package-lock.json"
 npm install --package-lock-only
 
 # Commit
-git commit -am "Bump $npm_name to $new_version"
+git commit -am "chore: bump $npm_name to $new_version"
 echo "Done. Committed version bump for $npm_name to $new_version."
