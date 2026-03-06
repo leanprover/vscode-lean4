@@ -1,0 +1,42 @@
+name: Publish NPM packages
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Build
+        run: |
+          npm ci
+          npm run build
+
+      - name: Try publishing infoview-api
+        continue-on-error: true
+        run: npm publish --workspace=lean4-infoview-api --access=public
+
+      - name: Try publishing infoview
+        continue-on-error: true
+        run: npm publish --workspace=lean4-infoview --access=public
+
+      - name: Try publishing unicode-input
+        continue-on-error: true
+        run: npm publish --workspace=lean4-unicode-input --access=public
+
+      - name: Try publishing unicode-input-component
+        continue-on-error: true
+        run: npm publish --workspace=lean4-unicode-input-component --access=public

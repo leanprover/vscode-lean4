@@ -35,6 +35,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -106,6 +108,53 @@ jobs:
           OVSX_PAT: ${{ secrets.OVSX_PAT }}
           VSCE_PAT: ${{ secrets.VSCE_PAT }}
 
+      - name: Generate release notes
+        if: startsWith(github.ref, 'refs/tags/v') && matrix.os == 'ubuntu-latest'
+        run: |
+          current_tag="${GITHUB_REF#refs/tags/}"
+          is_pre="${{ endsWith(github.ref, '-pre') }}"
+
+          if [ "$is_pre" = "true" ]; then
+            # Pre-release: commits since last tag of any kind
+            prev_tag="$(git tag --sort=-v:refname --list 'v*' --no-contains | head -1)"
+          else
+            # Full release: commits since last full release (skip pre-release tags)
+            prev_tag="$(git tag --sort=-v:refname --list 'v*' --no-contains | grep -v -- '-pre$' | head -1)"
+          fi
+
+          echo "Previous tag: $prev_tag"
+          echo "Current tag: $current_tag"
+
+          # Fetch collaborators with write access (once, to avoid per-commit API calls)
+          write_users="$(gh api "/repos/${{ github.repository }}/collaborators" --paginate --jq '.[] | select(.permissions.push) | .login' 2>/dev/null || true)"
+
+          {
+            git log "$prev_tag".."$current_tag"^ --pretty=format:"%H %s" | while read -r hash msg; do
+              # Skip release commits
+              case "$msg" in
+                "Release "* | "chore: bump @leanprover/"*) continue ;;
+              esac
+
+              # Look up the GitHub author
+              gh_user="$(gh api "/repos/${{ github.repository }}/commits/$hash" --jq '.author.login // empty' 2>/dev/null || true)"
+
+              if [ -n "$gh_user" ] && ! echo "$write_users" | grep -qx "$gh_user"; then
+                # Append "author: user" inside existing trailing parentheses, or add new ones
+                if echo "$msg" | grep -q ')\s*$'; then
+                  msg="$(echo "$msg" | sed 's/)\s*$/, author: '"$gh_user"')/')"
+                else
+                  msg="$msg (author: $gh_user)"
+                fi
+              fi
+              echo "- $msg"
+            done
+          } > release_notes.md
+
+          echo "Release notes:"
+          cat release_notes.md
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Upload extension as release
         if: startsWith(github.ref, 'refs/tags/v') && matrix.os == 'ubuntu-latest'
         uses: softprops/action-gh-release@v1
@@ -113,6 +162,7 @@ jobs:
           files: 'vscode-lean4/lean4-*.vsix'
           fail_on_unmatched_files: true
           prerelease: ${{ endsWith(github.ref, '-pre') }}
+          body_path: release_notes.md
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
