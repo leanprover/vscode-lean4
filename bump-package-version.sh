@@ -59,7 +59,7 @@ done
 
 # Update package-lock.json
 echo "Updating package-lock.json"
-npm install --package-lock-only
+npm install --package-lock-only --ignore-scripts
 
 # Commit
 git commit -am "chore: bump $npm_name to $new_version"
