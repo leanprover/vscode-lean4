@@ -1,6 +1,16 @@
 name: vscode-lean4 build
 
 on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Action to perform'
+        required: true
+        type: choice
+        options:
+          - publish-packages
+          - release
+          - pre-release
   pull_request:
     branches:
     - '*'
@@ -16,6 +26,7 @@ permissions:
 
 jobs:
   build-and-test:
+    if: github.event_name != 'workflow_dispatch'
     strategy:
       fail-fast: false
       matrix:
@@ -189,3 +200,105 @@ jobs:
         uses: GabrielBB/xvfb-action@v1.0
         with:
           run: npm run test
+
+  publish-packages:
+    if: github.event_name == 'workflow_dispatch' && inputs.action == 'publish-packages'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Build
+        run: |
+          npm ci
+          npm run build
+
+      - name: Try publishing infoview-api
+        continue-on-error: true
+        run: npm publish --workspace=lean4-infoview-api --access=public
+
+      - name: Try publishing infoview
+        continue-on-error: true
+        run: npm publish --workspace=lean4-infoview --access=public
+
+      - name: Try publishing unicode-input
+        continue-on-error: true
+        run: npm publish --workspace=lean4-unicode-input --access=public
+
+      - name: Try publishing unicode-input-component
+        continue-on-error: true
+        run: npm publish --workspace=lean4-unicode-input-component --access=public
+
+  release:
+    if: github.event_name == 'workflow_dispatch' && inputs.action == 'release'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Compute next version
+        id: version
+        run: |
+          last_tag="$(git tag --sort=-v:refname --list 'v*' --no-contains | head -1)"
+          echo "Last tag: $last_tag"
+          last_version="${last_tag#v}"
+          last_version="${last_version%-pre}"
+          new_version="$(echo "$last_version" | awk -F. '{$NF=$NF+1; print}' OFS=.)"
+          echo "New version: $new_version"
+          echo "new_version=$new_version" >> "$GITHUB_OUTPUT"
+
+      - name: Update version and create tag
+        run: |
+          new_version="${{ steps.version.outputs.new_version }}"
+          sed -i 's/"version": ".*"/"version": "'$new_version'"/' vscode-lean4/package.json
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git commit -am "Release $new_version"
+          git tag -a "v$new_version" -m "vscode-lean4 $new_version"
+
+      - name: Push
+        run: |
+          git push
+          git push --tags
+
+  pre-release:
+    if: github.event_name == 'workflow_dispatch' && inputs.action == 'pre-release'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Compute next version
+        id: version
+        run: |
+          last_tag="$(git tag --sort=-v:refname --list 'v*' --no-contains | head -1)"
+          echo "Last tag: $last_tag"
+          last_version="${last_tag#v}"
+          last_version="${last_version%-pre}"
+          new_version="$(echo "$last_version" | awk -F. '{$NF=$NF+1; print}' OFS=.)"
+          echo "New version: $new_version"
+          echo "new_version=$new_version" >> "$GITHUB_OUTPUT"
+
+      - name: Update version and create tag
+        run: |
+          new_version="${{ steps.version.outputs.new_version }}"
+          sed -i 's/"version": ".*"/"version": "'$new_version'"/' vscode-lean4/package.json
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git commit -am "Release $new_version (pre-release)"
+          git tag -a "v$new_version-pre" -m "vscode-lean4 $new_version (pre-release)"
+
+      - name: Push
+        run: |
+          git push
+          git push --tags
