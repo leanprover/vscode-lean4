@@ -2,7 +2,10 @@
     "name": "@leanprover/unicode-input-component",
     "version": "0.1.9",
     "description": "Typescript support for contenteditable divs with the Unicode input support of the Lean 4 theorem prover",
-    "repository": "github:leanprover/vscode-lean4",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/leanprover/vscode-lean4.git"
+    },
     "scripts": {
         "watch": "tsc --watch",
         "watchTest": "tsc --watch",
