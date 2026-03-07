@@ -1,3 +1,4 @@
+import path from 'path'
 import commonjs from '@rollup/plugin-commonjs'
 import json from '@rollup/plugin-json'
 import nodeResolve from '@rollup/plugin-node-resolve'
@@ -7,17 +8,22 @@ import typescript from '@rollup/plugin-typescript'
 import url from '@rollup/plugin-url'
 import css from 'rollup-plugin-css-only'
 
+/** @param {string} relativeSourcePath @param {string} sourcemapPath */
+const sourcemapPathTransform = (relativeSourcePath, sourcemapPath) =>
+    path.resolve(path.dirname(sourcemapPath), relativeSourcePath)
+
 /** @type {import('rollup').OutputOptions} */
 const output =
     process.env.NODE_ENV && process.env.NODE_ENV === 'production'
         ? {
               dir: 'dist',
-              sourcemap: false,
+              sourcemap: true,
               format: 'esm',
               compact: true,
               entryFileNames: '[name].production.min.js',
               chunkFileNames: '[name]-[hash].production.min.js',
               plugins: [terser()],
+              sourcemapPathTransform,
           }
         : {
               dir: 'dist',
@@ -25,6 +31,7 @@ const output =
               format: 'esm',
               entryFileNames: '[name].development.js',
               chunkFileNames: '[name]-[hash].development.js',
+              sourcemapPathTransform,
           }
 
 /** @type {import('rollup').InputPluginOption} */

@@ -50,6 +50,9 @@ const getWebviewConfig = env => ({
                     // See https://github.com/webpack-contrib/copy-webpack-plugin/tree/e2274daad21baae3020819aa29ab903bd9992cce#yarn-workspaces-and-monorepos
                     from: `${path.dirname(require.resolve('@leanprover/infoview/package.json'))}/dist`,
                     to: path.resolve(__dirname, 'dist', 'lean4-infoview'),
+                    // Prevent TerserPlugin from re-processing these already-minified
+                    // files, which would strip inline source maps.
+                    info: { minimized: true },
                 },
             ],
         }),
