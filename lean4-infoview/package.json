@@ -14,12 +14,14 @@
     },
     "exports": {
         ".": {
-            "default": "./dist/index.production.min.js",
-            "types": "./dist/index.d.ts"
+            "types": "./dist/index.d.ts",
+            "development": "./dist/index.development.js",
+            "default": "./dist/index.production.min.js"
         },
         "./loader": {
-            "default": "./dist/loader.production.min.js",
-            "types": "./dist/loader.d.ts"
+            "types": "./dist/loader.d.ts",
+            "development": "./dist/loader.development.js",
+            "default": "./dist/loader.production.min.js"
         },
         "./package.json": "./package.json"
     },

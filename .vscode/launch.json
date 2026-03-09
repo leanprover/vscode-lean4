@@ -11,7 +11,7 @@
             "stopOnEntry": false,
             "sourceMaps": true,
             "outFiles": ["${workspaceRoot}/vscode-lean4/dist/**/*.js"],
-            "preLaunchTask": "build",
+            "preLaunchTask": "watch",
             "debugWebviews": true,
             "rendererDebugOptions": {
                 "webRoot": "${workspaceRoot}/vscode-lean4/media"
