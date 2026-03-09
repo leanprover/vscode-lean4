@@ -29,6 +29,23 @@ const getWebviewConfig = env => ({
                 enforce: 'pre',
                 use: ['source-map-loader'],
             },
+            {
+                /* HACK:
+                 * es-module-shims (bundled into @infoview/loader by Rollup) uses native `import()`s.
+                 * By default,
+                 * Webpack replaces those `import()` calls with `__webpack_require__`,
+                 * consequently breaking es-module-shims.
+                 * We prevent this by adding ignore directives at an early stage,
+                 * before Webpack bundles @infoview/loader. */
+                test: /lean4-infoview[\\/]dist[\\/]loader/,
+                enforce: 'pre',
+                loader: 'string-replace-loader',
+                options: {
+                    search: '\\bimport\\(',
+                    replace: 'import(/* webpackIgnore: true */',
+                    flags: 'g',
+                },
+            },
         ],
     },
     resolve: {
