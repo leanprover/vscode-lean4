@@ -29,6 +29,23 @@ const getWebviewConfig = env => ({
                 enforce: 'pre',
                 use: ['source-map-loader'],
             },
+            {
+                /* HACK:
+                 * es-module-shims (bundled into @infoview/loader by Rollup) uses native `import()`s.
+                 * By default,
+                 * Webpack replaces those `import()` calls with `__webpack_require__`,
+                 * consequently breaking es-module-shims.
+                 * We prevent this by adding ignore directives at an early stage,
+                 * before Webpack bundles @infoview/loader. */
+                test: /lean4-infoview[\\/]dist[\\/]loader/,
+                enforce: 'pre',
+                loader: 'string-replace-loader',
+                options: {
+                    search: '\\bimport\\(',
+                    replace: 'import(/* webpackIgnore: true */',
+                    flags: 'g',
+                },
+            },
         ],
     },
     resolve: {
@@ -50,6 +67,9 @@ const getWebviewConfig = env => ({
                     // See https://github.com/webpack-contrib/copy-webpack-plugin/tree/e2274daad21baae3020819aa29ab903bd9992cce#yarn-workspaces-and-monorepos
                     from: `${path.dirname(require.resolve('@leanprover/infoview/package.json'))}/dist`,
                     to: path.resolve(__dirname, 'dist', 'lean4-infoview'),
+                    // Prevent TerserPlugin from re-processing these already-minified files.
+                    // Webpack enables TerserPlugin by default in prod builds.
+                    info: { minimized: true },
                 },
             ],
         }),

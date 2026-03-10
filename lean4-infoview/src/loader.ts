@@ -27,5 +27,5 @@ export function loadRenderInfoview(
     importShim.addImportMap({ imports })
     importShim('@leanprover/infoview')
         .then((mod: any) => next(mod.renderInfoview(...args)))
-        .catch(ex => console.error(`Error importing '@leanprover/infoview': ${JSON.stringify(ex)}`))
+        .catch(ex => console.error(`Error importing '@leanprover/infoview': ${ex}`))
 }

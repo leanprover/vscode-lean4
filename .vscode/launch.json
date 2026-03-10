@@ -10,7 +10,7 @@
             "args": ["--extensionDevelopmentPath=${workspaceRoot}/vscode-lean4"],
             "stopOnEntry": false,
             "sourceMaps": true,
-            "outFiles": ["${workspaceRoot}/vscode-lean4/dist/**/*.js"],
+            "outFiles": ["${workspaceRoot}/*/dist/**/*.js"],
             "preLaunchTask": "watch",
             "debugWebviews": true,
             "rendererDebugOptions": {

@@ -76,7 +76,7 @@
         {
             "label": "build",
             "type": "npm",
-            "script": "build",
+            "script": "build:dev",
             "problemMatcher": {
                 "owner": "typescript",
                 "source": "ts",

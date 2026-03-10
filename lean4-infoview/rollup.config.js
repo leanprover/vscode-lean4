@@ -5,7 +5,33 @@ import replace from '@rollup/plugin-replace'
 import terser from '@rollup/plugin-terser'
 import typescript from '@rollup/plugin-typescript'
 import url from '@rollup/plugin-url'
+import fs from 'fs'
+import path from 'path'
 import css from 'rollup-plugin-css-only'
+
+/**
+ * A minimal Rollup plugin that loads existing source maps for `.js` files.
+ * When Rollup imports an already-compiled `.js` file (e.g. from `lean4-infoview-api/dist`),
+ * it does not read the accompanying `.js.map` by default.
+ * This plugin checks for a sibling `.map` file and, if found,
+ * returns its contents from the `load` hook so that Rollup chains the maps together.
+ * This allows the final bundle's source map to point to the original `.ts` sources
+ * rather than the intermediate `.js` files.
+ *
+ * @returns {import('rollup').Plugin} */
+const inputSourcemaps = () => ({
+    name: 'input-sourcemaps',
+    async load(id) {
+        if (!id.endsWith('.js')) return null
+        try {
+            const code = await fs.promises.readFile(id, 'utf8')
+            const mapJson = await fs.promises.readFile(id + '.map', 'utf8')
+            return { code, map: JSON.parse(mapJson) }
+        } catch {
+            return null
+        }
+    },
+})
 
 /** @type {import('rollup').OutputOptions} */
 const output =
@@ -21,7 +47,22 @@ const output =
           }
         : {
               dir: 'dist',
-              sourcemap: 'inline',
+              sourcemap: true,
+              /* By default, `sourceMappingURL` in the infoview bundle (`dist/index.development.js`)
+               * points to the source map as a relative path.
+               * When we debug the webview,
+               * the infoview bundle is fetched from VSCode's builtin `vscode-resource` server,
+               * and Chrome DevTools tries to fetch the source map that way as well.
+               * This fails,
+               * despite `WebviewOptions.localResourceRoots` supposedly including the entire workspace by default.
+               * Using a `file://` URI instead allows DevTools to fetch the source map,
+               * as well as all the source files it refers to. */
+              sourcemapBaseUrl: 'file://' + path.resolve('dist'),
+              /* Source maps refer to relative paths by default,
+               * but these paths get broken when lean4-infoview/dist is copied into vscode-lean4/dist.
+               * Make them absolute instead. */
+              sourcemapPathTransform: (relativeSourcePath, sourcemapPath) =>
+                  path.resolve(path.dirname(sourcemapPath), relativeSourcePath),
               format: 'esm',
               entryFileNames: '[name].development.js',
               chunkFileNames: '[name]-[hash].development.js',
@@ -29,6 +70,7 @@ const output =
 
 /** @type {import('rollup').InputPluginOption} */
 const plugins = [
+    inputSourcemaps(),
     url({
         include: ['**/*.ttf'],
         fileName: '[name][extname]',
@@ -36,27 +78,30 @@ const plugins = [
     typescript({
         tsconfig: './tsconfig.json',
         outputToFilesystem: false,
-        // https://stackoverflow.com/a/63235210
-        sourceMap: false,
     }),
     nodeResolve({
         browser: true,
     }),
     replace({
         'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV),
-        preventAssignment: true, // TODO delete when `true` becomes the default
+        preventAssignment: true,
     }),
     commonjs(),
     json(),
 ]
 
 /**
- * Note that besides building the infoview single-page application, we build a loader and a bunch
- * of esm-shims. This is a way of compiling our dependencies into single-file ES modules which can
- * be shared as imports between the infoview app and dynamically loaded widget modules. Although
- * projects such * as jspm.io do exist, they tend to chunk modules into a bunch of files which are
- * not easy to * bundle, and requiring them dynamically would make the infoview depend on an internet
- * connection. See also `README.md`.
+ * Besides building the infoview single-page application,
+ * we build a loader and a bunch of esm-shims.
+ * This is a way of compiling our runtime dependencies into single-file ES modules
+ * which can be shared as imports between the infoview app and dynamically loaded widget modules.
+ * Due to limitations in Rollup,
+ * we must use an array of configs rather than a single config to do this.
+ * Although projects do exist (e.g. jspm.io)
+ * that could in principle produce the esm-shims for us,
+ * they tend to chunk modules into many files rather than producing a single file.
+ * Requiring them dynamically would make the infoview depend on an internet connection.
+ * See also `README.md`.
  *
  * @type {import('rollup').RollupOptions[]}
  */

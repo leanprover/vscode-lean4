@@ -1770,6 +1770,7 @@
     "scripts": {
         "vscode:prepublish": "webpack --env production",
         "build": "webpack --env production",
+        "build:dev": "webpack --env development",
         "watch": "webpack --env development --watch",
         "watchTest": "concurrently \"tsc -p . -w --outDir out\" \"npm run watch\"",
         "package": "vsce package",
@@ -1804,6 +1805,7 @@
         "mocha": "^10.3.0",
         "ovsx": "^0.9.1",
         "source-map-loader": "^5.0.0",
+        "string-replace-loader": "^3.3.0",
         "ts-loader": "^9.5.1",
         "typescript": "^5.4.5",
         "webpack": "^5.90.3",
