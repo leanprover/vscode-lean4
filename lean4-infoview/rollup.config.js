@@ -5,8 +5,33 @@ import replace from '@rollup/plugin-replace'
 import terser from '@rollup/plugin-terser'
 import typescript from '@rollup/plugin-typescript'
 import url from '@rollup/plugin-url'
+import fs from 'fs'
 import path from 'path'
 import css from 'rollup-plugin-css-only'
+
+/**
+ * A minimal Rollup plugin that loads existing source maps for `.js` files.
+ * When Rollup imports an already-compiled `.js` file (e.g. from `lean4-infoview-api/dist`),
+ * it does not read the accompanying `.js.map` by default.
+ * This plugin checks for a sibling `.map` file and, if found,
+ * returns its contents from the `load` hook so that Rollup chains the maps together.
+ * This allows the final bundle's source map to point to the original `.ts` sources
+ * rather than the intermediate `.js` files.
+ *
+ * @returns {import('rollup').Plugin} */
+const inputSourcemaps = () => ({
+    name: 'input-sourcemaps',
+    async load(id) {
+        if (!id.endsWith('.js')) return null
+        try {
+            const code = await fs.promises.readFile(id, 'utf8')
+            const mapJson = await fs.promises.readFile(id + '.map', 'utf8')
+            return { code, map: JSON.parse(mapJson) }
+        } catch {
+            return null
+        }
+    },
+})
 
 /** @type {import('rollup').OutputOptions} */
 const output =
@@ -23,6 +48,16 @@ const output =
         : {
               dir: 'dist',
               sourcemap: true,
+              /* By default, `sourceMappingURL` in the infoview bundle (`dist/index.development.js`)
+               * points to the source map as a relative path.
+               * When we debug the webview,
+               * the infoview bundle is fetched from VSCode's builtin `vscode-resource` server,
+               * and Chrome DevTools tries to fetch the source map that way as well.
+               * This fails,
+               * despite `WebviewOptions.localResourceRoots` supposedly including the entire workspace by default.
+               * Using a `file://` URI instead allows DevTools to fetch the source map,
+               * as well as all the source files it refers to. */
+              sourcemapBaseUrl: 'file://' + path.resolve('dist'),
               /* Source maps refer to relative paths by default,
                * but these paths get broken when lean4-infoview/dist is copied into vscode-lean4/dist.
                * Make them absolute instead. */
@@ -35,6 +70,7 @@ const output =
 
 /** @type {import('rollup').InputPluginOption} */
 const plugins = [
+    inputSourcemaps(),
     url({
         include: ['**/*.ttf'],
         fileName: '[name][extname]',
