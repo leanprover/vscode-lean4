@@ -1770,6 +1770,7 @@
     "scripts": {
         "vscode:prepublish": "webpack --env production",
         "build": "webpack --env production",
+        "build:dev": "webpack --env development",
         "watch": "webpack --env development --watch",
         "watchTest": "concurrently \"tsc -p . -w --outDir out\" \"npm run watch\"",
         "package": "vsce package",
