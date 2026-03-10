@@ -3,6 +3,7 @@
     "private": true,
     "scripts": {
         "build": "lerna run --stream build",
+        "build:dev": "lerna run --stream build:dev",
         "test": "lerna run --stream test",
         "watch": "lerna run --stream --ignore lean4 build:dev && lerna run --parallel --stream watch",
         "watchTest": "lerna run --stream --ignore lean4 build:dev && lerna run --parallel --stream watchTest",
