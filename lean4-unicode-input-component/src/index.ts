@@ -122,16 +122,25 @@ function setTextCursorSelection(searchNode: Node, offset: number) {
     sel.addRange(range)
 }
 
+function escapeHtml(s: string): string {
+    return s
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;')
+}
+
 function replaceAt(str: string, updates: { range: Range; update: (old: string) => string }[]): string {
     updates.sort((u1, u2) => u1.range.offset - u2.range.offset)
     let newStr = ''
     let lastUntouchedPos = 0
     for (const u of updates) {
-        newStr += str.slice(lastUntouchedPos, u.range.offset)
+        newStr += escapeHtml(str.slice(lastUntouchedPos, u.range.offset))
         newStr += u.update(str.slice(u.range.offset, u.range.offsetEnd + 1))
         lastUntouchedPos = u.range.offset + u.range.length
     }
-    newStr += str.slice(lastUntouchedPos)
+    newStr += escapeHtml(str.slice(lastUntouchedPos))
     return newStr
 }
 
@@ -220,7 +229,7 @@ export class InputAbbreviationRewriter implements AbbreviationTextSource {
         const queryHtml = this.textInput.innerHTML
         const updates = Array.from(this.rewriter.getTrackedAbbreviations()).map(a => ({
             range: a.range,
-            update: (old: string) => `<u>${old}</u>`,
+            update: (old: string) => `<u>${escapeHtml(old)}</u>`,
         }))
         const newQueryHtml = replaceAt(query, updates)
         if (queryHtml === newQueryHtml) {
@@ -236,7 +245,7 @@ export class InputAbbreviationRewriter implements AbbreviationTextSource {
     async replaceAbbreviations(changes: Change[]): Promise<boolean> {
         const updates: { range: Range; update: (old: string) => string }[] = changes.map(c => ({
             range: c.range,
-            update: _ => c.newText,
+            update: _ => escapeHtml(c.newText),
         }))
         this.setInputHTML(replaceAt(this.getInput(), updates))
         // Unlike in VS Code, directly setting innerHTML does not fire any document-change events,
