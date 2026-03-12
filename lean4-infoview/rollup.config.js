@@ -23,13 +23,32 @@ const inputSourcemaps = () => ({
     name: 'input-sourcemaps',
     async load(id) {
         if (!id.endsWith('.js')) return null
+
+        let code = ''
+        let map = {}
         try {
-            const code = await fs.promises.readFile(id, 'utf8')
+            code = await fs.promises.readFile(id, 'utf8')
             const mapJson = await fs.promises.readFile(id + '.map', 'utf8')
-            return { code, map: JSON.parse(mapJson) }
+            map = JSON.parse(mapJson)
         } catch {
             return null
         }
+
+        // Skip this sourcemap if any source is inaccessible.
+        if (!map.sources) return null
+        const srcDir = path.dirname(id)
+        for (const s of map.sources) {
+            try {
+                const pathAbs = path.resolve(srcDir, s)
+                await fs.promises.access(pathAbs)
+            } catch {
+                return null
+            }
+        }
+
+        // React to changes to the source file in watch mode.
+        this.addWatchFile(id)
+        return { code, map }
     },
 })
 
