@@ -57,9 +57,8 @@ function Main() {
         [],
     )
 
-    const serverVersion = useEventResult(
-        ec.events.serverRestarted,
-        result => new ServerVersion(result.serverInfo?.version ?? ''),
+    const serverVersion = useEventResult(ec.events.serverRestarted, result =>
+        ServerVersion.ofString(result.serverInfo?.version ?? ''),
     )
     const capabilities = useEventResult(ec.events.serverRestarted, result => result.capabilities)
     const serverStoppedResult = useEventResult(ec.events.serverStopped)

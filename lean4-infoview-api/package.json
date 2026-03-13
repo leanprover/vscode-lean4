@@ -1,6 +1,6 @@
 {
     "name": "@leanprover/infoview-api",
-    "version": "0.11.0",
+    "version": "0.12.0",
     "description": "Types and API for @leanprover/infoview.",
     "repository": {
         "type": "git",
@@ -9,7 +9,7 @@
     "scripts": {
         "watch": "tsc --watch",
         "watchTest": "tsc --watch",
-        "build": "tsc",
+        "build": "tsc --sourceMap false",
         "build:dev": "tsc"
     },
     "main": "dist/index",

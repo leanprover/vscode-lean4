@@ -36,6 +36,7 @@ import {
     LeanFileProgressParams,
     LeanFileProgressProcessingInfo,
     LeanServerCapabilities,
+    RpcWireFormat,
     ServerStoppedReason,
 } from '@leanprover/infoview-api'
 import {
@@ -97,11 +98,13 @@ function logConfig(): LogConfig | undefined {
 }
 
 interface LeanClientCapabilties {
-    silentDiagnosticSupport?: boolean | undefined
+    silentDiagnosticSupport?: boolean
+    rpcWireFormat?: RpcWireFormat
 }
 
 const leanClientCapabilities: LeanClientCapabilties = {
     silentDiagnosticSupport: true,
+    rpcWireFormat: 'v1'
 }
 
 export type PrepareModuleHierarchyResult =
@@ -116,8 +119,6 @@ export type ModuleHierarchyImportedByResult =
     | { kind: 'Success'; imports: LeanImport[] }
     | { kind: 'StoppedClient' }
     | { kind: 'Unsupported' }
-
-const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
 export type ServerProgress = Map<ExtUri, LeanFileProgressProcessingInfo[]>
 

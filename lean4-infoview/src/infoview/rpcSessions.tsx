@@ -5,7 +5,7 @@ import type {
     DocumentUri,
     TextDocumentPositionParams,
 } from 'vscode-languageserver-protocol'
-import { EditorContext, EnvPosContext } from './contexts'
+import { CapabilityContext, EditorContext, EnvPosContext } from './contexts'
 import { DocumentPosition, useClientNotificationEffect, useEvent } from './util'
 
 const RpcSessionsContext = React.createContext<RpcSessions | undefined>(undefined)
@@ -46,20 +46,20 @@ export function WithRpcSessions({ children }: { children: React.ReactNode }) {
     return <RpcSessionsContext.Provider value={sessions}>{children}</RpcSessionsContext.Provider>
 }
 
-const noCtxRpcSession: RpcSessionAtPos = {
-    call: async () => {
-        throw new Error('no RPC context set')
-    },
-}
-
-const noPosRpcSession: RpcSessionAtPos = {
-    call: async () => {
-        throw new Error('no position context set')
-    },
+function errorRpcSession(err: string): RpcSessionAtPos {
+    return {
+        call: async () => {
+            throw new Error(err)
+        },
+    }
 }
 
 export function useRpcSessionAtTdpp(pos: TextDocumentPositionParams): RpcSessionAtPos {
-    return React.useContext(RpcSessionsContext)?.connect(pos) || noCtxRpcSession
+    const rsc = React.useContext(RpcSessionsContext)
+    const cap = React.useContext(CapabilityContext)
+    if (!rsc) return errorRpcSession('no RPC context set')
+    if (!cap) return errorRpcSession('no capability context set')
+    return rsc.connect(pos, cap)
 }
 
 export function useRpcSessionAtPos(pos: DocumentPosition): RpcSessionAtPos {
@@ -73,7 +73,7 @@ export function useRpcSessionAtPos(pos: DocumentPosition): RpcSessionAtPos {
  * A future major release of @leanprover/infoview could remove this context
  * after it has been deprecated for a sufficiently long time.
  */
-export const RpcContext = React.createContext<RpcSessionAtPos>(noCtxRpcSession)
+export const RpcContext = React.createContext<RpcSessionAtPos>(errorRpcSession('no RPC context set'))
 
 /**
  * Retrieve an RPC session at {@link EnvPosContext},
@@ -82,8 +82,13 @@ export const RpcContext = React.createContext<RpcSessionAtPos>(noCtxRpcSession)
  */
 export function useRpcSession(): RpcSessionAtPos {
     const pos = React.useContext(EnvPosContext)
+    // Cannot deduplicate with `useRpcSessionAtTdpp`
+    // because we'd only call it when `pos !== undefined`
+    // but hooks must be called unconditionally.
     const rsc = React.useContext(RpcSessionsContext)
-    if (!pos) return noPosRpcSession
-    if (!rsc) return noCtxRpcSession
-    return rsc.connect(DocumentPosition.toTdpp(pos))
+    const cap = React.useContext(CapabilityContext)
+    if (!pos) return errorRpcSession('no position context set')
+    if (!rsc) return errorRpcSession('no RPC context set')
+    if (!cap) return errorRpcSession('no capability context set')
+    return rsc.connect(DocumentPosition.toTdpp(pos), cap)
 }
