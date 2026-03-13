@@ -9,7 +9,7 @@
     "scripts": {
         "watch": "tsc --watch",
         "watchTest": "tsc --watch",
-        "build": "tsc",
+        "build": "tsc --sourceMap false",
         "build:dev": "tsc"
     },
     "main": "dist/index",
