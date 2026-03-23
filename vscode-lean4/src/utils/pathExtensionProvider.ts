@@ -1,3 +1,4 @@
+import * as nodePath from 'path'
 import { Disposable, workspace } from 'vscode'
 import { envPathExtensions } from '../config'
 import { PATH, setProcessEnvPATH } from './envPath'
@@ -14,6 +15,9 @@ export class PathExtensionProvider implements Disposable {
                     this.replaceEnvPathExtensionsInPATH()
                 }
             }),
+            workspace.onDidChangeWorkspaceFolders(_ => {
+                this.replaceEnvPathExtensionsInPATH()
+            }),
         )
     }
 
@@ -23,7 +27,18 @@ export class PathExtensionProvider implements Disposable {
 
     replaceEnvPathExtensionsInPATH() {
         const previousPathExtensions = this.currentPathExtensions
-        this.currentPathExtensions = envPathExtensions()
+        const exts = envPathExtensions()
+        const resolvedPaths: string[] = []
+        for (const p of exts.paths) {
+            if (nodePath.isAbsolute(p)) {
+                resolvedPaths.push(p)
+                continue
+            }
+            for (const folder of workspace.workspaceFolders ?? []) {
+                resolvedPaths.push(nodePath.resolve(folder.uri.fsPath, p))
+            }
+        }
+        this.currentPathExtensions = new PATH(resolvedPaths)
         const path = PATH.ofProcessEnv()
         const originalPath = path.filter(path => !previousPathExtensions.includes(path))
         setProcessEnvPATH(this.currentPathExtensions.join(originalPath))
