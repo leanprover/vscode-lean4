@@ -73,7 +73,7 @@
                 "lean4.envPathExtensions": {
                     "type": "array",
                     "default": [],
-                    "markdownDescription": "Additional entries to add to the PATH variable of the Lean 4 VS Code extension process and any of its child processes.",
+                    "markdownDescription": "Additional entries to add to the PATH variable of the Lean 4 VS Code extension process and any of its child processes. Relative paths are resolved against each workspace folder.",
                     "items": {
                         "type": "string",
                         "description": "Entry to add to the PATH variable"
