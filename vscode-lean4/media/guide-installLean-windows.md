@@ -11,7 +11,7 @@ The automatic installation will run a script to install Elan and Git.
 On newer Windows systems that support the package manager [winget](https://learn.microsoft.com/en-us/windows/package-manager/winget/), the following script will be executed:
 ```powershell
 # Install Git using `winget`.
-winget install -e --id Git.Git --silent --accept-package-agreements --accept-source-agreements --disable-interactivity
+winget install -e --id Git.Git --source winget --silent --accept-package-agreements --accept-source-agreements --disable-interactivity
 # Download the Elan installation script at https://github.com/leanprover/elan/blob/master/elan-init.ps1 and run it. Elan will be installed to `%USERPROFILE%\.elan`.
 $installCode = (Invoke-WebRequest -Uri "https://elan.lean-lang.org/elan-init.ps1" -UseBasicParsing -ErrorAction Stop).Content
 $installer = [ScriptBlock]::Create([System.Text.Encoding]::UTF8.GetString($installCode))
