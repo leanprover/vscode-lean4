@@ -363,7 +363,7 @@ function dependencyInstallationMethod(p: MissingDependencyInstallationProcedure)
                 }
             }
             const windowsWingetGitInstallScript =
-                'winget install -e --id Git.Git --silent --accept-package-agreements --accept-source-agreements --disable-interactivity'
+                'winget install -e --id Git.Git --source winget --silent --accept-package-agreements --accept-source-agreements --disable-interactivity'
             return {
                 kind: 'Automatic',
                 shell: 'Windows',
