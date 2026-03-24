@@ -508,33 +508,20 @@ function InfoAux(props: InfoProps) {
     // that the displayed state cannot ever get out of sync by showing an old reply together
     // with e.g. a new `pos`.
     type InfoRequestResult = Omit<InfoDisplayProps, 'triggerUpdate'>
-    const cancelFn = React.useRef<() => void>(() => {})
     const [state, triggerUpdateCore] = useAsyncWithTrigger(
-        () =>
+        abortSignal =>
             new Promise<InfoRequestResult>((resolve, reject) => {
-                // Cancel the previous request in case it's still in-flight.
-                cancelFn.current()
-                const ac = new AbortController()
-                const goalsReq = getInteractiveGoals(rpcSess, DocumentPosition.toTdpp(pos), {
-                    autoCancel: true,
-                    abortSignal: ac.signal,
-                })
-                const termGoalReq = getInteractiveTermGoal(rpcSess, DocumentPosition.toTdpp(pos), {
-                    autoCancel: true,
-                    abortSignal: ac.signal,
-                })
-                const widgetsReq = Widget_getWidgets(rpcSess, pos, { autoCancel: true, abortSignal: ac.signal }).catch(
-                    discardMethodNotFound,
-                )
+                const goalsReq = getInteractiveGoals(rpcSess, DocumentPosition.toTdpp(pos), { abortSignal })
+                const termGoalReq = getInteractiveTermGoal(rpcSess, DocumentPosition.toTdpp(pos), { abortSignal })
+                const widgetsReq = Widget_getWidgets(rpcSess, pos, { abortSignal }).catch(discardMethodNotFound)
                 const messagesReq = getInteractiveDiagnostics(
                     rpcSess,
                     { start: pos.line, end: pos.line + 1 },
-                    { autoCancel: true, abortSignal: ac.signal },
+                    { abortSignal },
                 )
                     // fall back to non-interactive diagnostics when lake fails
                     // (see https://github.com/leanprover/vscode-lean4/issues/90)
                     .then(diags => (diags.length === 0 ? lspDiagsHere.map(lspDiagToInteractive) : diags))
-                cancelFn.current = () => ac.abort()
 
                 // While `lake print-paths` is running, the output of Lake is shown as
                 // info diagnostics on line 1.  However, all RPC requests block until

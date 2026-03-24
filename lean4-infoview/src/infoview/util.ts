@@ -355,52 +355,81 @@ export type AsyncState<T> = { state: 'loading' } | { state: 'resolved'; value: T
 
 export type AsyncWithTriggerState<T> = { state: 'notStarted' } | AsyncState<T>
 
+/** Return `true` if `deps` have changed since the last render,
+ * and `false` otherwise.
+ *
+ * Must be used at the top-level like other React hooks. */
+function useDepsChanged(deps: React.DependencyList): boolean {
+    const prev = React.useRef(deps)
+    if (prev.current.length === deps.length && prev.current.every((d, i) => Object.is(d, deps[i]))) {
+        return false
+    }
+    prev.current = deps
+    return true
+}
+
 export function useAsyncWithTrigger<T>(
-    fn: () => Promise<T>,
+    fn: (_: AbortSignal) => Promise<T>,
     deps: React.DependencyList = [],
 ): [AsyncWithTriggerState<T>, () => Promise<void>] {
     const asyncState = React.useRef<AsyncWithTriggerState<T>>({ state: 'notStarted' })
-    const asyncStateDeps = React.useRef<React.DependencyList>([])
     // A monotonically increasing counter.
-    const tick = React.useRef(0)
-    // This is bumped up to the current `tick` whenever `asyncState.current` is assigned,
-    // in order to trigger a React update.
-    const [_, setUpdate] = React.useState(0)
+    const requestId = React.useRef(0)
+    // Called whenever the current request, if still in-flight, has become redundant.
+    const abortFn = React.useRef(() => {})
+    // Invoked whenever `asyncState.current` is assigned outside of the render function.
+    // Triggers a React update.
+    const [, forceUpdate] = React.useReducer(x => x + 1, 0)
+
+    // Abort ongoing requests on unmount.
+    React.useEffect(() => {
+        return () => {
+            abortFn.current()
+        }
+    }, [])
 
     const trigger = React.useCallback(async () => {
         if (asyncState.current.state === 'loading' || asyncState.current.state === 'resolved') return
 
-        tick.current += 1
         asyncState.current = { state: 'loading' }
-        setUpdate(tick.current)
+        forceUpdate()
 
-        tick.current += 1
-        const startTick = tick.current
-        const set = (state: AsyncWithTriggerState<T>) => {
-            if (tick.current === startTick) {
+        const ac = new AbortController()
+        abortFn.current = () => {
+            ac.abort()
+        }
+
+        const thisId = requestId.current
+        const onResponse = (state: AsyncWithTriggerState<T>) => {
+            if (requestId.current === thisId) {
                 asyncState.current = state
-                setUpdate(tick.current)
+                forceUpdate()
             }
         }
-        return fn().then(
-            value => set({ state: 'resolved', value }),
-            error => set({ state: 'rejected', error }),
+
+        return fn(ac.signal).then(
+            value => onResponse({ state: 'resolved', value }),
+            error => onResponse({ state: 'rejected', error }),
         )
     }, deps)
 
-    const depsTheSame =
-        asyncStateDeps.current.length === deps.length && asyncStateDeps.current.every((d, i) => Object.is(d, deps[i]))
-    if (!depsTheSame) {
-        tick.current += 1
+    // Checking deps and setting `asyncState` during rendering
+    // means that we return the `notStarted` state on the current render.
+    // With `useEffect`, it would be returned on the next render.
+    const depsChanged = useDepsChanged(deps)
+    if (depsChanged) {
         asyncState.current = { state: 'notStarted' }
-        asyncStateDeps.current = deps
-        setUpdate(tick.current)
+        requestId.current += 1
+        abortFn.current()
     }
     return [asyncState.current, trigger]
 }
 
 /** This React hook will run the given promise function `fn` whenever the deps change
  * and use it to update the status and result when the promise resolves.
+ *
+ * `fn` receives an `AbortSignal` that is triggered
+ * whenever the output of `fn` is no longer needed.
  *
  * This function prevents race conditions if the requests resolve in a
  * different order to that which they were requested in:
@@ -414,7 +443,7 @@ export function useAsyncWithTrigger<T>(
  *
  * When the deps change, the function immediately returns `{ state: 'loading' }`.
  */
-export function useAsync<T>(fn: () => Promise<T>, deps: React.DependencyList = []): AsyncState<T> {
+export function useAsync<T>(fn: (_: AbortSignal) => Promise<T>, deps: React.DependencyList = []): AsyncState<T> {
     const [state, trigger] = useAsyncWithTrigger(fn, deps)
     if (state.state === 'notStarted') {
         void trigger()
@@ -428,10 +457,13 @@ export function useAsync<T>(fn: () => Promise<T>, deps: React.DependencyList = [
  * the latest `resolved` state and continuing to return it while an update is in flight. The lower
  * amount of re-renders tends to be less visually jarring.
  */
-export function useAsyncPersistent<T>(fn: () => Promise<T>, deps: React.DependencyList = []): AsyncState<T> {
+export function useAsyncPersistent<T>(
+    fn: (_: AbortSignal) => Promise<T>,
+    deps: React.DependencyList = [],
+): AsyncState<T> {
     const [latestState, setLatestState] = React.useState<T | undefined>(undefined)
-    const state = useAsync(async () => {
-        const newState = await fn()
+    const state = useAsync(async signal => {
+        const newState = await fn(signal)
         setLatestState(newState)
         return newState
     }, deps)

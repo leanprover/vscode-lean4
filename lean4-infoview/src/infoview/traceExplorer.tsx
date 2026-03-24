@@ -52,13 +52,16 @@ function ChildlessTraceNode(traceEmbed: HighlightedTraceEmbed) {
 function CollapsibleTraceNode(traceEmbed: HighlightedTraceEmbed) {
     const { cls, collapsed: collapsedByDefault, children: lazyKids } = traceEmbed
     const rs = useRpcSession()
-    const [children, fetchChildren] = useAsyncWithTrigger(async () => {
-        if ('strict' in lazyKids) {
-            return lazyKids.strict
-        } else {
-            return lazyTraceChildrenToInteractive(rs, lazyKids.lazy)
-        }
-    }, [rs, lazyKids])
+    const [children, fetchChildren] = useAsyncWithTrigger(
+        async abortSignal => {
+            if ('strict' in lazyKids) {
+                return lazyKids.strict
+            } else {
+                return lazyTraceChildrenToInteractive(rs, lazyKids.lazy, { abortSignal })
+            }
+        },
+        [rs, lazyKids],
+    )
 
     const [open, setOpen] = React.useState(!collapsedByDefault)
     if (open && children.state === 'notStarted') void fetchChildren()
