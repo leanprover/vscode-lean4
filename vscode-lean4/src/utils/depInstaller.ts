@@ -51,7 +51,15 @@ export type DependencyInstallationResult =
     | { kind: 'Cancelled' }
     | { kind: 'PendingInstall' }
 
-const gitInstallDir = path.join('c:', 'Program Files', 'Git', 'cmd')
+function windowsGitInstallDirs(): string[] {
+    const dirs = []
+    const localAppDataDir = process.env.LOCALAPPDATA
+    if (localAppDataDir !== undefined) {
+        dirs.push(path.join(localAppDataDir, 'Programs', 'Git', 'cmd'))
+    }
+    dirs.push(path.join('c:', 'Program Files', 'Git', 'cmd'))
+    return dirs
+}
 
 export function depInstallationLocations(): string[] {
     switch (os.type()) {
@@ -63,7 +71,7 @@ export function depInstallationLocations(): string[] {
             // with the real executable when Apple Command Line Tools is installed.
             return []
         case 'Windows_NT':
-            return [gitInstallDir]
+            return windowsGitInstallDirs()
     }
     return []
 }
@@ -359,7 +367,7 @@ function dependencyInstallationMethod(p: MissingDependencyInstallationProcedure)
                     shell: 'Windows',
                     script: windowsRawGitInstallScript,
                     manualBackupScript: undefined,
-                    pathExtensions: [gitInstallDir],
+                    pathExtensions: windowsGitInstallDirs(),
                 }
             }
             const windowsWingetGitInstallScript =
@@ -369,7 +377,7 @@ function dependencyInstallationMethod(p: MissingDependencyInstallationProcedure)
                 shell: 'Windows',
                 script: windowsWingetGitInstallScript,
                 manualBackupScript: windowsWingetGitInstallScript,
-                pathExtensions: [gitInstallDir],
+                pathExtensions: windowsGitInstallDirs(),
             }
 
         case 'Other':
