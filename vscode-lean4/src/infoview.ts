@@ -212,7 +212,7 @@ export class InfoProvider implements Disposable {
                 const tk = new CancellationTokenSource()
                 const sub: Disposable = {
                     dispose() {
-                        if (options?.autoCancel) tk.cancel()
+                        tk.cancel()
                     },
                 }
                 const id = this.freshClientRequestId
