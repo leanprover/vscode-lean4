@@ -140,7 +140,7 @@ jobs:
           write_users="$(gh api "/repos/${{ github.repository }}/collaborators" --paginate --jq '.[] | select(.permissions.push) | .login' 2>/dev/null || true)"
 
           {
-            git log "$prev_tag".."$current_tag"^ --pretty=format:"%H %s" | while read -r hash msg; do
+            git log "$prev_tag".."$current_tag"^ --pretty=tformat:"%H %s" | while read -r hash msg; do
               # Skip release commits
               case "$msg" in
                 "Release "* | "chore: bump @leanprover/"*) continue ;;
