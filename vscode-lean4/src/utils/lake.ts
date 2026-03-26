@@ -143,6 +143,10 @@ export class LakeRunner {
         )
     }
 
+    async resolveDeps(): Promise<LakeRunnerResult> {
+        return this.runLakeCommandWithProgress('resolve-deps', [], 'Cloning missing project dependencies')
+    }
+
     async isMathlibCacheGetAvailable(): Promise<CacheGetAvailabilityResult> {
         const result: LakeRunnerResult = await this.runLakeCommandWithProgress(
             'exe',

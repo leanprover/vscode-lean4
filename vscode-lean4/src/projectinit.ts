@@ -414,12 +414,23 @@ Open this project instead?`
                 return
             }
 
-            const fetchResult: 'Success' | 'Failure' = await lake({
+            const lakeRunner = lake({
                 channel: this.channel,
                 cwdUri: projectFolder,
                 context: downloadProjectContext,
                 toolchainUpdateMode: 'UpdateAutomatically',
-            }).tryFetchMathlibCacheWithError()
+            })
+
+            const resolveResult: LakeRunnerResult = await lakeRunner.resolveDeps()
+            if (resolveResult.kind === 'Cancelled') {
+                return
+            }
+            if (resolveResult.kind !== 'Success') {
+                displayLakeRunnerError(resolveResult, 'Cannot clone missing project dependencies.')
+                return
+            }
+
+            const fetchResult: 'Success' | 'Failure' = await lakeRunner.tryFetchMathlibCacheWithError()
             if (fetchResult !== 'Success') {
                 return
             }

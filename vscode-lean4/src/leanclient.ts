@@ -456,7 +456,7 @@ export class LeanClient implements Disposable {
 
             const progressOptions: ProgressOptions = {
                 location: ProgressLocation.Notification,
-                title: '[Server Startup] Starting Lean language server and cloning missing packages [(Click for details)](command:lean4.troubleshooting.showOutput)',
+                title: '[Server Startup] Starting Lean language server and cloning missing project dependencies [(Click for details)](command:lean4.troubleshooting.showOutput)',
                 cancellable: false,
             }
             await window.withProgress(
