@@ -563,10 +563,6 @@ function InfoAux(props: InfoProps) {
                             rpcSess,
                         }),
                     ex => {
-                        if (ex?.code === RpcErrorCode.RequestCancelled) {
-                            // Request got cancelled in favor of a more recent one.
-                            return
-                        }
                         if (ex?.code === RpcErrorCode.ContentModified || ex?.code === RpcErrorCode.RpcNeedsReconnect) {
                             // Document has been changed since we made the request, or we need to reconnect
                             // to the RPC sessions. Try again.
@@ -574,6 +570,12 @@ function InfoAux(props: InfoProps) {
                             reject('retry')
                             return
                         }
+                        // When `ex?.code === RpcErrorCode.RequestCancelled`,
+                        // we fall through to resolving with an error below.
+                        // - In case we were cancelled by `useAsyncWithTrigger`,
+                        //   `resolve` will do nothing.
+                        // - We should not be cancelled otherwise,
+                        //   and if that happens it is an error that should be displayed.
 
                         let errorString = ''
                         if (typeof ex === 'string') {
