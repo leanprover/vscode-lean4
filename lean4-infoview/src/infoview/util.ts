@@ -356,7 +356,7 @@ export type AsyncState<T> = { state: 'loading' } | { state: 'resolved'; value: T
 export type AsyncWithTriggerState<T> = { state: 'notStarted' } | AsyncState<T>
 
 /** Return `true` if `deps` have changed since the last render,
- * and `false` otherwise.
+ * and `false` otherwise, in particular during the first render.
  *
  * Must be used at the top-level like other React hooks. */
 function useDepsChanged(deps: React.DependencyList): boolean {
@@ -368,6 +368,36 @@ function useDepsChanged(deps: React.DependencyList): boolean {
     return true
 }
 
+/** On first render, as well as whenever the deps have changed,
+ * this React hook returns `{ state: 'notStarted' }`
+ * as well as a *trigger* function with a fresh object identity.
+ * The trigger function maintains its object identity
+ * when the deps remain unchanged.
+ *
+ * The trigger function can then be called in order to run `fn`,
+ * updating the state with `fn`'s outputs when the promise resolves.
+ * Such an update ensures a fresh render (by updating the React state).
+ * The trigger is a no-op if the state is already `loading` or `resolved`,
+ * but does launch `fn` again if the state is `rejected`.
+ *
+ * `fn` receives an `AbortSignal` that is aborted
+ * whenever the output of `fn` is no longer needed
+ * because the deps have changed.
+ *
+ * `useAsyncWithTrigger` prevents race conditions
+ * when requests resolve in a different order
+ * to that which they were triggered in:
+ *
+ * - Initial deps are, say, line=42.
+ * - Trigger called, Request 1 is sent.
+ * - Deps change to line=90, new trigger called, Request 2 is sent.
+ * - Request 2 returns with diags=[].
+ * - Request 1 returns with diags=['error'].
+ *
+ * Without `useAsyncWithTrigger` we would now return the diagnostics for line 42
+ * even though we're at line 90.
+ *
+ * Must be used at the top-level like other React hooks. */
 export function useAsyncWithTrigger<T>(
     fn: (_: AbortSignal) => Promise<T>,
     deps: React.DependencyList = [],
@@ -425,24 +455,10 @@ export function useAsyncWithTrigger<T>(
     return [asyncState.current, trigger]
 }
 
-/** This React hook will run the given promise function `fn` whenever the deps change
- * and use it to update the status and result when the promise resolves.
- *
- * `fn` receives an `AbortSignal` that is triggered
- * whenever the output of `fn` is no longer needed.
- *
- * This function prevents race conditions if the requests resolve in a
- * different order to that which they were requested in:
- *
- * - Request 1 is sent with, say, line=42.
- * - Request 2 is sent with line=90.
- * - Request 2 returns with diags=[].
- * - Request 1 returns with diags=['error'].
- *
- * Without `useAsync` we would now return the diagnostics for line 42 even though we're at line 90.
- *
- * When the deps change, the function immediately returns `{ state: 'loading' }`.
- */
+/** Like {@link useAsyncWithTrigger},
+ * but instead of returning a callable trigger
+ * it automatically triggers an update and returns `{ state: 'loading' }`
+ * whenever the deps change. */
 export function useAsync<T>(fn: (_: AbortSignal) => Promise<T>, deps: React.DependencyList = []): AsyncState<T> {
     const [state, trigger] = useAsyncWithTrigger(fn, deps)
     if (state.state === 'notStarted') {
