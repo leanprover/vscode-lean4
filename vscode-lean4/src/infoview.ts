@@ -50,7 +50,7 @@ import {
     prodOrDev,
 } from './config'
 import { LeanClient } from './leanclient'
-import { ClientRequestRpcOptions, EditorRpcApi, Rpc } from './rpc'
+import { EditorRpcApi, Rpc } from './rpc'
 import { LeanClientProvider } from './utils/clientProvider'
 import { c2pConverter, LeanPublishDiagnosticsParams, p2cConverter } from './utils/converters'
 import { ExtUri, parseExtUri, toExtUri } from './utils/exturi'
@@ -196,12 +196,7 @@ export class InfoProvider implements Disposable {
                 .getConfiguration('lean4.infoview')
                 .update('messageOrder', config.messageOrder, ConfigurationTarget.Global)
         },
-        startClientRequest: async (
-            uri: string,
-            method: string,
-            params: any,
-            options?: ClientRequestRpcOptions,
-        ): Promise<number> => {
+        startClientRequest: async (uri: string, method: string, params: any): Promise<number> => {
             const extUri = parseExtUri(uri)
             if (extUri === undefined) {
                 throw Error(`Unexpected URI scheme: ${Uri.parse(uri).scheme}`)
@@ -212,7 +207,7 @@ export class InfoProvider implements Disposable {
                 const tk = new CancellationTokenSource()
                 const sub: Disposable = {
                     dispose() {
-                        if (options?.autoCancel) tk.cancel()
+                        tk.cancel()
                     },
                 }
                 const id = this.freshClientRequestId

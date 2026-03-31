@@ -61,10 +61,6 @@ export interface ClientRequestOptions {
      * Does nothing if the promise has already been resolved or rejected.
      */
     abortSignal?: AbortSignal
-    /**
-     * If `true`, the request will be automatically cancelled when the infoview is closed.
-     */
-    autoCancel?: boolean
 }
 
 /** Interface that the InfoView WebView uses to talk to the hosting editor. */

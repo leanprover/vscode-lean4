@@ -114,7 +114,10 @@ function TypePopupContents({ info }: TypePopupContentsProps) {
     // When `err` is defined we show the error,
     // otherwise if `ip` is defined we show its contents,
     // otherwise a 'loading' message.
-    const interactive = useAsync(() => InteractiveDiagnostics_infoToInteractive(rs, info.info), [rs, info.info])
+    const interactive = useAsync(
+        abortSignal => InteractiveDiagnostics_infoToInteractive(rs, info.info, { abortSignal }),
+        [rs, info.info],
+    )
 
     // Even when subexpressions are selectable in our parent component, it doesn't make sense
     // to select things inside the *type* of the parent, so we clear the context.

@@ -6,6 +6,7 @@
  */
 
 import type { LocationLink, Position, Range, TextDocumentPositionParams } from 'vscode-languageserver-protocol'
+import { ClientRequestOptions } from './infoviewApi'
 import { LeanDiagnostic, RpcPtr } from './lspTypes'
 import { RpcSessionAtPos } from './rpcSessions'
 
@@ -85,15 +86,17 @@ export interface InteractiveGoals {
 export function getInteractiveGoals(
     rs: RpcSessionAtPos,
     pos: TextDocumentPositionParams,
+    options?: ClientRequestOptions,
 ): Promise<InteractiveGoals | undefined> {
-    return rs.call('Lean.Widget.getInteractiveGoals', pos)
+    return rs.call('Lean.Widget.getInteractiveGoals', pos, options)
 }
 
 export function getInteractiveTermGoal(
     rs: RpcSessionAtPos,
     pos: TextDocumentPositionParams,
+    options?: ClientRequestOptions,
 ): Promise<InteractiveTermGoal | undefined> {
-    return rs.call('Lean.Widget.getInteractiveTermGoal', pos)
+    return rs.call('Lean.Widget.getInteractiveTermGoal', pos, options)
 }
 
 export type Name = string
@@ -125,43 +128,59 @@ export interface LineRange {
 export function getInteractiveDiagnostics(
     rs: RpcSessionAtPos,
     lineRange?: LineRange,
+    options?: ClientRequestOptions,
 ): Promise<InteractiveDiagnostic[]> {
-    return rs.call('Lean.Widget.getInteractiveDiagnostics', { lineRange })
+    return rs.call('Lean.Widget.getInteractiveDiagnostics', { lineRange }, options)
 }
 
 export function InteractiveDiagnostics_msgToInteractive(
     rs: RpcSessionAtPos,
     msg: MessageData,
     indent: number,
+    options?: ClientRequestOptions,
 ): Promise<TaggedText<MsgEmbed>> {
     interface MessageToInteractive {
         msg: MessageData
         indent: number
     }
-    return rs.call<MessageToInteractive, TaggedText<MsgEmbed>>('Lean.Widget.InteractiveDiagnostics.msgToInteractive', {
-        msg,
-        indent,
-    })
+    return rs.call<MessageToInteractive, TaggedText<MsgEmbed>>(
+        'Lean.Widget.InteractiveDiagnostics.msgToInteractive',
+        {
+            msg,
+            indent,
+        },
+        options,
+    )
 }
 
 export function lazyTraceChildrenToInteractive(
     rs: RpcSessionAtPos,
     children: LazyTraceChildren,
+    options?: ClientRequestOptions,
 ): Promise<TaggedText<MsgEmbed>[]> {
-    return rs.call('Lean.Widget.lazyTraceChildrenToInteractive', children)
+    return rs.call('Lean.Widget.lazyTraceChildrenToInteractive', children, options)
 }
 
-export function InteractiveDiagnostics_infoToInteractive(rs: RpcSessionAtPos, info: InfoWithCtx): Promise<InfoPopup> {
-    return rs.call('Lean.Widget.InteractiveDiagnostics.infoToInteractive', info)
+export function InteractiveDiagnostics_infoToInteractive(
+    rs: RpcSessionAtPos,
+    info: InfoWithCtx,
+    options?: ClientRequestOptions,
+): Promise<InfoPopup> {
+    return rs.call('Lean.Widget.InteractiveDiagnostics.infoToInteractive', info, options)
 }
 
 export type GoToKind = 'declaration' | 'definition' | 'type'
-export function getGoToLocation(rs: RpcSessionAtPos, kind: GoToKind, info: InfoWithCtx): Promise<LocationLink[]> {
+export function getGoToLocation(
+    rs: RpcSessionAtPos,
+    kind: GoToKind,
+    info: InfoWithCtx,
+    options?: ClientRequestOptions,
+): Promise<LocationLink[]> {
     interface GetGoToLocationParams {
         kind: GoToKind
         info: InfoWithCtx
     }
-    return rs.call<GetGoToLocationParams, LocationLink[]>('Lean.Widget.getGoToLocation', { kind, info })
+    return rs.call<GetGoToLocationParams, LocationLink[]>('Lean.Widget.getGoToLocation', { kind, info }, options)
 }
 
 export interface UserWidget {
@@ -192,8 +211,12 @@ export interface UserWidgets {
 }
 
 /** Given a position, returns all of the user-widgets on the infotree at this position. */
-export function Widget_getWidgets(rs: RpcSessionAtPos, pos: Position): Promise<UserWidgets> {
-    return rs.call<Position, UserWidgets>('Lean.Widget.getWidgets', pos)
+export function Widget_getWidgets(
+    rs: RpcSessionAtPos,
+    pos: Position,
+    options?: ClientRequestOptions,
+): Promise<UserWidgets> {
+    return rs.call<Position, UserWidgets>('Lean.Widget.getWidgets', pos, options)
 }
 
 /** Code that should be dynamically loaded by the UserWidget component. */
@@ -208,12 +231,17 @@ export interface WidgetSource {
  *
  * We make the assumption that either the code doesn't exist, or it exists and does not change for the lifetime of the widget.
  */
-export function Widget_getWidgetSource(rs: RpcSessionAtPos, pos: Position, hash: string): Promise<WidgetSource> {
+export function Widget_getWidgetSource(
+    rs: RpcSessionAtPos,
+    pos: Position,
+    hash: string,
+    options?: ClientRequestOptions,
+): Promise<WidgetSource> {
     interface GetWidgetSourceParams {
         hash: string
         pos: Position
     }
-    return rs.call<GetWidgetSourceParams, WidgetSource>('Lean.Widget.getWidgetSource', { pos, hash })
+    return rs.call<GetWidgetSourceParams, WidgetSource>('Lean.Widget.getWidgetSource', { pos, hash }, options)
 }
 
 export type HighlightedSubexprInfo = SubexprInfo | 'highlighted'
@@ -244,9 +272,14 @@ export function highlightMatches(
     rs: RpcSessionAtPos,
     query: string,
     msg: TaggedText<MsgEmbed>,
+    options?: ClientRequestOptions,
 ): Promise<TaggedText<HighlightedMsgEmbed>> {
-    return rs.call<HighlightMatchesParams, TaggedText<HighlightedMsgEmbed>>('Lean.Widget.highlightMatches', {
-        query,
-        msg,
-    })
+    return rs.call<HighlightMatchesParams, TaggedText<HighlightedMsgEmbed>>(
+        'Lean.Widget.highlightMatches',
+        {
+            query,
+            msg,
+        },
+        options,
+    )
 }

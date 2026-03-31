@@ -509,12 +509,16 @@ function InfoAux(props: InfoProps) {
     // with e.g. a new `pos`.
     type InfoRequestResult = Omit<InfoDisplayProps, 'triggerUpdate'>
     const [state, triggerUpdateCore] = useAsyncWithTrigger(
-        () =>
+        abortSignal =>
             new Promise<InfoRequestResult>((resolve, reject) => {
-                const goalsReq = getInteractiveGoals(rpcSess, DocumentPosition.toTdpp(pos))
-                const termGoalReq = getInteractiveTermGoal(rpcSess, DocumentPosition.toTdpp(pos))
-                const widgetsReq = Widget_getWidgets(rpcSess, pos).catch(discardMethodNotFound)
-                const messagesReq = getInteractiveDiagnostics(rpcSess, { start: pos.line, end: pos.line + 1 })
+                const goalsReq = getInteractiveGoals(rpcSess, DocumentPosition.toTdpp(pos), { abortSignal })
+                const termGoalReq = getInteractiveTermGoal(rpcSess, DocumentPosition.toTdpp(pos), { abortSignal })
+                const widgetsReq = Widget_getWidgets(rpcSess, pos, { abortSignal }).catch(discardMethodNotFound)
+                const messagesReq = getInteractiveDiagnostics(
+                    rpcSess,
+                    { start: pos.line, end: pos.line + 1 },
+                    { abortSignal },
+                )
                     // fall back to non-interactive diagnostics when lake fails
                     // (see https://github.com/leanprover/vscode-lean4/issues/90)
                     .then(diags => (diags.length === 0 ? lspDiagsHere.map(lspDiagToInteractive) : diags))
@@ -566,6 +570,12 @@ function InfoAux(props: InfoProps) {
                             reject('retry')
                             return
                         }
+                        // When `ex?.code === RpcErrorCode.RequestCancelled`,
+                        // we fall through to resolving with an error below.
+                        // - In case we were cancelled by `useAsyncWithTrigger`,
+                        //   `resolve` will do nothing.
+                        // - We should not be cancelled otherwise,
+                        //   and if that happens it is an error that should be displayed.
 
                         let errorString = ''
                         if (typeof ex === 'string') {

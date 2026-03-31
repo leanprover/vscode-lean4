@@ -1,4 +1,4 @@
-import { ClientRequestOptions, EditorApi } from '@leanprover/infoview-api'
+import { EditorApi } from '@leanprover/infoview-api'
 
 /**
  * Allows two endpoints communicating via JSON-serializable messages
@@ -133,14 +133,12 @@ function prepareExceptionForSerialization(ex: any): any {
     }
 }
 
-export type ClientRequestRpcOptions = Omit<ClientRequestOptions, 'abortSignal'>
-
 /**
  * A version of {@link EditorApi} in which all values are serializable.
  * It is used to pass messages between the editor and the infoview.
  */
 export type EditorRpcApi = Omit<EditorApi, 'sendClientRequest'> & {
-    startClientRequest(uri: string, method: string, params: any, options?: ClientRequestRpcOptions): Promise<number>
+    startClientRequest(uri: string, method: string, params: any): Promise<number>
     awaitClientRequest(id: number): Promise<any>
     cancelClientRequest(id: number): Promise<void>
 }
@@ -180,7 +178,7 @@ export function editorApiOfRpc(api: EditorRpcApi): EditorApi {
                 cancelled: false,
             }
             const promise = (async () => {
-                const id = await api.startClientRequest(uri, method, params, { autoCancel: options?.autoCancel })
+                const id = await api.startClientRequest(uri, method, params)
                 d.id = id
                 if (d.shouldCancel) cancel(d)
                 return api.awaitClientRequest(id)

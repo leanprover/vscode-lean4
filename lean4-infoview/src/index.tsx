@@ -30,7 +30,10 @@ export { MessageData }
 /** Display the given message data as interactive, pretty-printed text. */
 export function InteractiveMessageData({ msg }: { msg: MessageData }) {
     const rs = useRpcSession()
-    const interactive = useAsync(() => InteractiveDiagnostics_msgToInteractive(rs, msg, 0), [rs, msg])
+    const interactive = useAsync(
+        abortSignal => InteractiveDiagnostics_msgToInteractive(rs, msg, 0, { abortSignal }),
+        [rs, msg],
+    )
 
     if (interactive.state === 'resolved') {
         return <InteractiveMessage fmt={interactive.value} />
