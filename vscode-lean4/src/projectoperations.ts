@@ -4,7 +4,6 @@ import { commands, Disposable, OutputChannel, QuickPickItem, window } from 'vsco
 import { LeanClient } from './leanclient'
 import { LeanClientProvider } from './utils/clientProvider'
 import {
-    CacheGetAvailabilityResult,
     displayLakeRunnerError,
     FetchMathlibCacheResult,
     lake,
@@ -39,6 +38,15 @@ export class ProjectOperationProvider implements Disposable {
 
     private async buildProject() {
         await this.runOperation('Build Project', async lakeRunner => {
+            const resolveResult: LakeRunnerResult = await lakeRunner.resolveDeps()
+            if (resolveResult.kind === 'Cancelled') {
+                return
+            }
+            if (resolveResult.kind !== 'Success') {
+                displayLakeRunnerError(resolveResult, 'Cannot clone missing project dependencies.')
+                return
+            }
+
             const fetchResult: 'Success' | 'Failure' = await lakeRunner.tryFetchMathlibCacheWithError()
             if (fetchResult !== 'Success') {
                 return
@@ -79,28 +87,15 @@ export class ProjectOperationProvider implements Disposable {
                 return
             }
 
-            const checkResult: CacheGetAvailabilityResult = await lakeRunner.isMathlibCacheGetAvailable()
-            if (checkResult.kind === 'Cancelled') {
-                return
-            }
-            if (checkResult.kind === 'CacheUnavailable') {
-                displayNotification('Information', 'Project cleaned successfully.')
-                return
-            }
-            if (checkResult.kind !== 'CacheAvailable') {
-                displayLakeRunnerError(checkResult, 'Cannot check availability of Mathlib cache.')
-                return
-            }
-
-            const fetchMessage = "Project cleaned successfully. Do you wish to fetch Mathlib's build artifact cache?"
-            const fetchInput = 'Fetch Cache'
-            const fetchChoice: string | undefined = await displayNotificationWithInput(
+            const rebuildMessage = 'Project cleaned successfully. Do you wish to rebuild the project?'
+            const rebuildInput = 'Rebuild Project'
+            const rebuildChoice: string | undefined = await displayNotificationWithInput(
                 'Information',
-                fetchMessage,
-                [fetchInput],
-                'Do Not Fetch Cache',
+                rebuildMessage,
+                [rebuildInput],
+                'Do Not Rebuild',
             )
-            if (fetchChoice !== fetchInput) {
+            if (rebuildChoice !== rebuildInput) {
                 return
             }
 
@@ -108,7 +103,17 @@ export class ProjectOperationProvider implements Disposable {
             if (fetchResult !== 'Success') {
                 return
             }
-            displayNotification('Information', 'Mathlib build artifact cache fetched successfully.')
+
+            const buildResult: LakeRunnerResult = await lakeRunner.build()
+            if (buildResult.kind === 'Cancelled') {
+                return
+            }
+            if (buildResult.kind !== 'Success') {
+                displayLakeRunnerError(buildResult, 'Cannot build project.')
+                return
+            }
+
+            displayNotification('Information', 'Project rebuilt successfully.')
         })
     }
 
