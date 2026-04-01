@@ -32,6 +32,7 @@ export interface LeanDiagnostic extends ls.Diagnostic {
 export interface LeanPublishDiagnosticsParams {
     uri: ls.DocumentUri
     version?: ls.integer
+    isIncremental?: boolean
     diagnostics: LeanDiagnostic[]
 }
 
