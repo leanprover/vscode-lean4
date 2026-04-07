@@ -951,7 +951,7 @@ export class InfoProvider implements Disposable {
                 },
                 processing,
             }
-            await this.webviewPanel.api.gotServerNotification('$/lean/fileProgress', params)
+            await this.webviewPanel?.api.gotServerNotification('$/lean/fileProgress', params)
         }
     }
 
