@@ -40,18 +40,9 @@ export class LeanClientDiagnosticCollection implements Disposable {
     private static determineChangeKind(
         prev: LeanPublishDiagnosticsParams | undefined,
         next: LeanPublishDiagnosticsParams,
-    ): DiagnosticChangeKind | 'drop' {
+    ): DiagnosticChangeKind {
         if (prev === undefined) {
             return 'replace'
-        }
-        if (next.version === undefined || prev.version === undefined) {
-            return 'replace'
-        }
-        if (next.version > prev.version) {
-            return 'replace'
-        }
-        if (next.version < prev.version) {
-            return 'drop'
         }
         if (!next.isIncremental) {
             return 'replace'
@@ -62,9 +53,6 @@ export class LeanClientDiagnosticCollection implements Disposable {
     publishDiagnostics(params: LeanPublishDiagnosticsParams): void {
         const prev = this.diags.get(params.uri)
         const kind = LeanClientDiagnosticCollection.determineChangeKind(prev, params)
-        if (kind === 'drop') {
-            return
-        }
 
         let accumulated: LeanDiagnostic[]
         if (kind === 'append') {
