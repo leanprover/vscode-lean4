@@ -54,6 +54,10 @@ export class FileUri {
         return path.basename(this.fsPath)
     }
 
+    extName(): string {
+        return path.extname(this.fsPath)
+    }
+
     join(...pathSegments: string[]): FileUri {
         return FileUri.fromUriOrError(Uri.joinPath(this.asUri(), ...pathSegments))
     }

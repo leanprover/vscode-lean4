@@ -732,10 +732,22 @@
                 "description": "Downloads cached Mathlib build artifacts to avoid full elaboration"
             },
             {
+                "command": "lean4.project.fetchOpenFileCaches",
+                "category": "Lean 4: Project",
+                "title": "Fetch Mathlib Build Cache For Open Files",
+                "description": "Downloads cached Mathlib build artifacts for selected open files and all of their imports to avoid full elaboration"
+            },
+            {
+                "command": "lean4.project.fetchAllOpenFileCaches",
+                "category": "Lean 4: Project",
+                "title": "Fetch Mathlib Build Cache For All Open Files",
+                "description": "Downloads cached Mathlib build artifacts for all open files and all of their imports to avoid full elaboration"
+            },
+            {
                 "command": "lean4.project.fetchFileCache",
                 "category": "Lean 4: Project",
-                "title": "Fetch Mathlib Build Cache For Current Imports",
-                "description": "Downloads cached Mathlib build artifacts of the focused file and all of its imports to avoid full elaboration"
+                "title": "Fetch Mathlib Build Cache For Current File",
+                "description": "Downloads cached Mathlib build artifacts for the current file and all of its imports to avoid full elaboration"
             },
             {
                 "command": "lean4.project.selectProjectToolchain",
@@ -1188,6 +1200,14 @@
                     "when": "lean4.isLeanFeatureSetActive"
                 },
                 {
+                    "command": "lean4.project.fetchOpenFileCaches",
+                    "when": "lean4.isLeanFeatureSetActive"
+                },
+                {
+                    "command": "lean4.project.fetchAllOpenFileCaches",
+                    "when": "lean4.isLeanFeatureSetActive"
+                },
+                {
                     "command": "lean4.project.fetchFileCache",
                     "when": "lean4.isLeanFeatureSetActive"
                 },
@@ -1368,7 +1388,7 @@
                     "group": "2_mathlibActions@1"
                 },
                 {
-                    "command": "lean4.project.fetchFileCache",
+                    "command": "lean4.project.fetchOpenFileCaches",
                     "when": "lean4.isLeanFeatureSetActive",
                     "group": "2_mathlibActions@2"
                 },

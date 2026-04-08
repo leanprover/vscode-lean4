@@ -1,6 +1,6 @@
 import * as fs from 'fs'
 import { join } from 'path'
-import { commands, Disposable, OutputChannel, QuickPickItem, window } from 'vscode'
+import { commands, Disposable, OutputChannel, QuickPickItem, QuickPickItemKind, window } from 'vscode'
 import { LeanClient } from './leanclient'
 import { LeanClientProvider } from './utils/clientProvider'
 import {
@@ -10,6 +10,7 @@ import {
     LakeRunner,
     LakeRunnerResult,
 } from './utils/lake'
+import { FileUri } from './utils/exturi'
 import { lean } from './utils/leanEditorProvider'
 import { DirectGitDependency, Manifest, ManifestReadError, parseManifestInFolder } from './utils/manifest'
 import { displayNotification, displayNotificationWithInput, displayNotificationWithOptionalInput } from './utils/notifs'
@@ -32,7 +33,9 @@ export class ProjectOperationProvider implements Disposable {
             commands.registerCommand('lean4.project.clean', () => this.cleanProject()),
             commands.registerCommand('lean4.project.updateDependency', () => this.updateDependency()),
             commands.registerCommand('lean4.project.fetchCache', () => this.fetchMathlibCache()),
-            commands.registerCommand('lean4.project.fetchFileCache', () => this.fetchMathlibCacheForCurrentImports()),
+            commands.registerCommand('lean4.project.fetchOpenFileCaches', () => this.fetchMathlibCacheForOpenFiles(undefined)),
+            commands.registerCommand('lean4.project.fetchAllOpenFileCaches', () => this.fetchMathlibCacheForOpenFiles('all')),
+            commands.registerCommand('lean4.project.fetchFileCache', () => this.fetchMathlibCacheForOpenFiles('current')),
         )
     }
 
@@ -136,57 +139,28 @@ export class ProjectOperationProvider implements Disposable {
         })
     }
 
-    private async fetchMathlibCacheForCurrentImports() {
-        await this.runOperation('Fetch Mathlib Build Cache For Current Imports', async lakeRunner => {
+    private static readonly fileCacheOperationNames = {
+        all: 'Fetch Mathlib Build Cache For All Open Files',
+        current: 'Fetch Mathlib Build Cache For Current File',
+        undefined: 'Fetch Mathlib Build Cache For Open Files',
+    } as const
+
+    private async fetchMathlibCacheForOpenFiles(kind: 'all' | 'current' | undefined) {
+        await this.runOperation(ProjectOperationProvider.fileCacheOperationNames[`${kind}`], async lakeRunner => {
             const projectUri = lakeRunner.options.cwdUri!
-
-            const doc = lean.lastActiveLeanDocument
-            if (doc === undefined) {
+            const fileUris = await this.determineFiles(kind, projectUri)
+            if (fileUris === undefined) {
                 displayNotification(
                     'Error',
-                    'No active Lean editor tab. Make sure to focus the Lean editor tab for which you wish to fetch the cache.',
+                    'No open Lean files in the current project. Make sure to open a Lean file for which you wish to fetch the cache.',
                 )
                 return
             }
-            const docUri = doc.extUri
-
-            if (docUri.scheme === 'untitled') {
-                displayNotification('Error', 'Cannot fetch cache of untitled files.')
+            if (fileUris.length === 0) {
                 return
             }
 
-            const manifestResult: Manifest | ManifestReadError = await parseManifestInFolder(projectUri)
-            if (typeof manifestResult === 'string') {
-                displayNotification('Error', manifestResult)
-                return
-            }
-
-            const projectName = manifestResult.name
-            if (projectName === undefined) {
-                displayNotification(
-                    'Error',
-                    `Cannot determine project name from manifest. This is likely caused by the fact that the manifest version (${manifestResult.version}) is too outdated to contain the name of the project.`,
-                )
-                return
-            }
-            if (projectName !== 'mathlib') {
-                displayNotification(
-                    'Error',
-                    "Cache for current imports can only be fetched in Mathlib itself. Use the 'Project: Fetch Mathlib Build Cache' command for fetching the full Mathlib build cache in projects depending on Mathlib.",
-                )
-                return
-            }
-
-            const relativeDocUri = docUri.relativeTo(projectUri)
-            if (relativeDocUri === undefined) {
-                displayNotification(
-                    'Error',
-                    `Cannot fetch cache for current imports: active file (${docUri.fsPath}) is not contained in active project folder (${projectUri.fsPath}).`,
-                )
-                return
-            }
-
-            const fetchResult: FetchMathlibCacheResult = await lakeRunner.fetchMathlibCacheForFile(relativeDocUri)
+            const fetchResult: FetchMathlibCacheResult = await lakeRunner.fetchMathlibCacheForFiles(fileUris)
             if (fetchResult.kind === 'Cancelled') {
                 return
             }
@@ -195,19 +169,79 @@ export class ProjectOperationProvider implements Disposable {
                 return
             }
             if (fetchResult.kind !== 'Success') {
-                displayLakeRunnerError(
-                    fetchResult,
-                    `Cannot fetch Mathlib build artifact cache for '${relativeDocUri.fsPath}'.`,
-                )
+                displayLakeRunnerError(fetchResult, 'Cannot fetch Mathlib build artifact cache.')
                 return
             }
 
-            displayNotificationWithOptionalInput(
+            displayNotification(
                 'Information',
-                `Mathlib build artifact cache for '${relativeDocUri.fsPath}' fetched successfully.`,
-                [{ input: 'Restart File', action: () => this.clientProvider.restartFile(relativeDocUri) }],
+                'Mathlib build artifact cache for open file(s) fetched successfully.'
             )
         })
+    }
+
+    private async determineFiles(kind: 'all' | 'current' | undefined, projectUri: FileUri): Promise<FileUri[] | undefined> {
+        if (kind === 'current') {
+            const doc = lean.lastActiveLeanDocument
+            if (doc === undefined) {
+                return undefined
+            }
+            const uri = doc.extUri
+            if (uri.scheme !== 'file') {
+                return undefined
+            }
+            const relativeUri = uri.relativeTo(projectUri)
+            if (relativeUri === undefined) {
+                return undefined
+            }
+            return [relativeUri]
+        }
+        if (kind === 'all') {
+            return lean.collectOpenLeanFileUris().map(uri => uri.relativeTo(projectUri)).filter(uri => uri !== undefined)
+        }
+        const visibleDocUris: FileUri[] = []
+        const openDocUris: FileUri[] = []
+        for (const docUri of lean.collectOpenLeanFileUris()) {
+            const relativeUri = docUri.relativeTo(projectUri)
+            if (relativeUri === undefined) {
+                continue
+            }
+            if (lean.getVisibleLeanEditorsByUri(docUri).length > 0) {
+                visibleDocUris.push(relativeUri)
+            } else {
+                openDocUris.push(relativeUri)
+            }
+        }
+
+        if (visibleDocUris.length === 0 && openDocUris.length === 0) {
+            return undefined
+        }
+
+        visibleDocUris.sort((a, b) => a.fsPath.localeCompare(b.fsPath))
+        openDocUris.sort((a, b) => a.fsPath.localeCompare(b.fsPath))
+
+        const items: FileQuickPickItem[] = []
+        for (const relativeUri of visibleDocUris) {
+            items.push({ label: relativeUri.fsPath, picked: true, relativeUri })
+        }
+        if (visibleDocUris.length > 0 && openDocUris.length > 0) {
+            items.push({ label: '', kind: QuickPickItemKind.Separator })
+        }
+        for (const relativeUri of openDocUris) {
+            items.push({ label: relativeUri.fsPath, picked: true, relativeUri })
+        }
+
+        const selected = await window.showQuickPick(items, {
+            title: 'Select files to fetch the Mathlib build cache for',
+            canPickMany: true,
+        })
+        if (selected === undefined || selected.length === 0) {
+            return []
+        }
+
+        return selected
+            .filter(item => item.kind !== QuickPickItemKind.Separator)
+            .map(item => item.relativeUri)
     }
 
     private async updateDependency() {
@@ -400,3 +434,7 @@ export class ProjectOperationProvider implements Disposable {
 }
 
 interface GitDependencyQuickPickItem extends QuickPickItem, DirectGitDependency {}
+
+type FileQuickPickItem =
+    | (QuickPickItem & { kind: QuickPickItemKind.Separator; relativeUri?: undefined })
+    | (QuickPickItem & { kind?: QuickPickItemKind.Default; relativeUri: FileUri })

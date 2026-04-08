@@ -136,10 +136,10 @@ export class LakeRunner {
         return 'Success'
     }
 
-    async fetchMathlibCacheForFile(projectRelativeFileUri: FileUri): Promise<FetchMathlibCacheResult> {
+    async fetchMathlibCacheForFiles(projectRelativeFileUris: FileUri[]): Promise<FetchMathlibCacheResult> {
         return this.runFetchMathlibCacheCommand(
-            [projectRelativeFileUri.fsPath],
-            `Fetching Mathlib build artifact cache for ${projectRelativeFileUri.baseName()}`,
+            projectRelativeFileUris.map(uri => uri.fsPath),
+            `Fetching Mathlib build artifact cache for ${projectRelativeFileUris.length} file(s)`,
         )
     }
 
