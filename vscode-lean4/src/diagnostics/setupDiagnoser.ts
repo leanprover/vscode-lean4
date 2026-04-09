@@ -1,5 +1,5 @@
 import * as os from 'os'
-import * as s from 'semver'
+import * as semver from 'semver'
 import { SemVer } from 'semver'
 import { OutputChannel, extensions, version } from 'vscode'
 import { ExecutionExitCode, ExecutionResult, batchExecute } from '../utils/batch'
@@ -8,10 +8,11 @@ import {
     ElanDumpStateWithoutNetResult,
     elanDumpStateWithNet,
     elanDumpStateWithoutNet,
+    elanVersionRegex,
     isElanEagerResolutionVersion,
 } from '../utils/elan'
 import { FileUri } from '../utils/exturi'
-import { ToolchainUpdateMode, leanRunner } from '../utils/leanCmdRunner'
+import { ToolchainUpdateMode, leanRunner, leanVersionRegex } from '../utils/leanCmdRunner'
 import { checkParentFoldersForLeanProject, isValidLeanProject } from '../utils/projectInfo'
 
 const minimumSupportedMacOSVersion = new SemVer('19.0.0')
@@ -23,11 +24,10 @@ export type OSVersionDiagnosis =
 
 function diagnoseOSVersion(): OSVersionDiagnosis {
     // When in doubt, we consider an OS version as not being unsupported.
-    const release = os.release()
-    if (!s.valid(release)) {
+    const currentVersion = semver.parse(os.release())
+    if (currentVersion === null) {
         return { kind: 'NotUnsupported' }
     }
-    const currentVersion = new SemVer(release)
     switch (os.type()) {
         case 'Darwin':
             if (currentVersion.compare(minimumSupportedMacOSVersion) >= 0) {
@@ -114,7 +114,12 @@ export function versionQueryResult(executionResult: ExecutionResult, versionRege
         return { kind: 'InvalidVersion', versionResult: executionResult.stdout }
     }
 
-    return { kind: 'Success', version: new SemVer(match[1]) }
+    const parsed = semver.parse(match[1])
+    if (parsed === null) {
+        return { kind: 'InvalidVersion', versionResult: executionResult.stdout }
+    }
+
+    return { kind: 'Success', version: parsed }
 }
 
 export function checkElanVersion(elanVersionResult: VersionQueryResult): ElanVersionDiagnosis {
@@ -313,12 +318,12 @@ export class SetupDiagnoser {
 
     async queryLeanVersion(): Promise<VersionQueryResult> {
         const leanVersionResult = await this.runLeanCommand('lean', ['--version'], 'Checking Lean version')
-        return versionQueryResult(leanVersionResult, /version (\d+\.\d+\.\d+(\w|-)*)/)
+        return versionQueryResult(leanVersionResult, leanVersionRegex)
     }
 
     async queryElanVersion(): Promise<VersionQueryResult> {
         const elanVersionResult = await this.runSilently('elan', ['--version'])
-        return versionQueryResult(elanVersionResult, /elan (\d+\.\d+\.\d+)/)
+        return versionQueryResult(elanVersionResult, elanVersionRegex)
     }
 
     async queryElanShow(): Promise<ExecutionResult> {

@@ -3,7 +3,7 @@ import { SemVer } from 'semver'
 import { Uri } from 'vscode'
 import { z } from 'zod'
 import { FileUri } from './exturi'
-import { semVerRegex } from './semverRegex'
+import { semVerSchema } from './zod'
 
 export interface DirectGitDependency {
     name: string
@@ -23,17 +23,15 @@ type ManifestVersion =
     | { kind: 'LegacyNumberVersion'; version: number; versionAsSemVer: SemVer }
     | { kind: 'SemVer'; version: SemVer }
 
-function asManifestVersion(versionField: number | string): ManifestVersion {
-    switch (typeof versionField) {
-        case 'string':
-            return { kind: 'SemVer', version: new SemVer(versionField) }
-        case 'number':
-            return {
-                kind: 'LegacyNumberVersion',
-                version: versionField,
-                versionAsSemVer: new SemVer(`0.${versionField}.0`),
-            }
+function asManifestVersion(versionField: number | SemVer): ManifestVersion {
+    if (typeof versionField === 'number') {
+        return {
+            kind: 'LegacyNumberVersion',
+            version: versionField,
+            versionAsSemVer: new SemVer(`0.${versionField}.0`),
+        }
     }
+    return { kind: 'SemVer', version: versionField }
 }
 
 function parseVersion1To6Manifest(version: SemVer, parsedJson: any) {
@@ -150,7 +148,10 @@ export function parseAsManifest(jsonString: string): Manifest | undefined {
     }
 
     const versionSchema = z.object({
-        version: z.union([z.number().int().nonnegative(), z.string().regex(semVerRegex)]),
+        version: z.union([
+            z.number().int().nonnegative(),
+            semVerSchema,
+        ]),
     })
     const versionResult = versionSchema.safeParse(parsedJson)
     if (!versionResult.success) {

@@ -1,6 +1,7 @@
 import assert from 'assert'
 import { promises } from 'fs'
-import { SemVer, valid } from 'semver'
+import * as semver from 'semver'
+import { SemVer } from 'semver'
 import { commands, Disposable, OutputChannel, QuickPickItem, QuickPickItemKind, window } from 'vscode'
 import { ExecutionExitCode } from './batch'
 import { LeanClientProvider } from './clientProvider'
@@ -43,8 +44,9 @@ function parseToolchain(toolchain: string): LeanToolchain {
         if (version[0] === 'v') {
             version = version.substring(1)
         }
-        if (valid(version)) {
-            return { kind: 'Release', fullName: toolchain, version: new SemVer(version) }
+        const parsed = semver.parse(version)
+        if (parsed !== null) {
+            return { kind: 'Release', fullName: toolchain, version: parsed }
         }
     }
 

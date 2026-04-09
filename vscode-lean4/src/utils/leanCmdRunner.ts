@@ -17,6 +17,8 @@ import {
 import { FileUri } from './exturi'
 import { displayNotification, displayNotificationWithInput } from './notifs'
 
+export const leanVersionRegex = /version ([^,\s]+)/
+
 export type ToolchainUpdateMode = 'UpdateAutomatically' | 'PromptAboutUpdate' | 'DoNotUpdate'
 
 function shouldUpdateToolchainAutomatically(mode: ToolchainUpdateMode) {

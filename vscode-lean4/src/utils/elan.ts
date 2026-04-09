@@ -1,10 +1,11 @@
+import * as semver from 'semver'
 import { SemVer } from 'semver'
 import { OutputChannel } from 'vscode'
 import { z, ZodTypeAny } from 'zod'
 import { batchExecute, batchExecuteWithProgress, ExecutionExitCode, ExecutionResult } from './batch'
 import { FileUri } from './exturi'
 import { groupByUniqueKey } from './groupBy'
-import { semVerRegex } from './semverRegex'
+import { semVerSchema } from './zod'
 
 export const elanStableChannel = 'leanprover/lean4:stable'
 export const elanNightlyChannel = 'leanprover/lean4:nightly'
@@ -15,8 +16,7 @@ export function isElanEagerResolutionVersion(version: SemVer) {
     return version.major >= elanEagerResolutionMajorVersion
 }
 
-const elanVersionRegex =
-    /^elan ((0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)/
+export const elanVersionRegex = /^elan (\S+)/
 
 export type ElanVersionResult =
     | { kind: 'Success'; version: SemVer }
@@ -31,7 +31,11 @@ export async function elanVersion(): Promise<ElanVersionResult> {
             if (match === null) {
                 return { kind: 'ExecutionError', message: 'Cannot parse output of `elan --version`: ' + r.stdout }
             }
-            return { kind: 'Success', version: new SemVer(match[1]) }
+            const version = semver.parse(match[1])
+            if (version === null) {
+                return { kind: 'ExecutionError', message: 'Cannot parse output of `elan --version`: ' + r.stdout }
+            }
+            return { kind: 'Success', version }
         case ExecutionExitCode.CannotLaunch:
             return { kind: 'ElanNotInstalled' }
         case ExecutionExitCode.ExecutionError:
@@ -305,8 +309,8 @@ function parseElanStateDump(elanDumpStateOutput: string): ElanStateDump | undefi
 
     const stateDumpSchema = z.object({
         elan_version: z.object({
-            current: z.string().regex(semVerRegex),
-            newest: zodElanResult(z.string().regex(semVerRegex)),
+            current: semVerSchema,
+            newest: zodElanResult(semVerSchema),
         }),
         toolchains: z.object({
             installed: z.array(
@@ -349,8 +353,8 @@ function parseElanStateDump(elanDumpStateOutput: string): ElanStateDump | undefi
 
     const stateDump: ElanStateDump = {
         elanVersion: {
-            current: new SemVer(s.elan_version.current),
-            newest: convertElanResult(s.elan_version.newest, version => new SemVer(version)),
+            current: s.elan_version.current,
+            newest: convertElanResult(s.elan_version.newest, v => v),
         },
         toolchains: {
             installed,
