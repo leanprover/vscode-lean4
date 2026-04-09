@@ -3,6 +3,7 @@ import {
     Disposable,
     EventEmitter,
     ExtensionContext,
+    TabInputText,
     TextDocument,
     TextDocumentChangeEvent,
     TextEditor,
@@ -11,7 +12,7 @@ import {
     window,
     workspace,
 } from 'vscode'
-import { ExtUri, isExtUri, toExtUriOrError } from './exturi'
+import { ExtUri, FileUri, isExtUri, toExtUri, toExtUriOrError } from './exturi'
 import { groupByKey, groupByUniqueKey } from './groupBy'
 
 export function isLeanDocument(doc: TextDocument): boolean {
@@ -405,6 +406,34 @@ export class LeanEditorProvider implements Disposable {
 
     getLeanDocumentByUri(uri: ExtUri): LeanDocument | undefined {
         return this.leanDocumentsByUri.get(uri)
+    }
+
+    collectOpenLeanFileUris(): FileUri[] {
+        const openLeanFileUris: FileUri[] = []
+        // `workspace.textDocuments` (and thus `leanDocuments`) has the following quirks:
+        // - It may contain documents that are invisible to the user, i.e. not open as tabs (e.g. when another extension opens a text document)
+        // - It may not contain documents that are visible to the user, i.e. open as tab (e.g. when starting VS Code for the first time, documents for tabs are opened lazily)
+        // This means that `leanDocuments` may be more incomplete than users might expect, and also contain some entries that users may not expect.
+        openLeanFileUris.push(...this.leanDocuments.map(doc => doc.extUri).filter(extUri => extUri.scheme === 'file'))
+        // `window.tabGroups` does not allow accessing the language ID of a tab, so we can only approximate it through the file extension of the URI of the tab. This has the following quirks:
+        // - It may contain tabs with a `.lean` file extension that do not have a `lean4` language ID (e.g. if the user selected the language ID in the UI)
+        // - It may contain tabs with a `lean4` language ID that do not have a `.lean` file extension (e.g. if the user selected the language ID in the UI)
+        openLeanFileUris.push(
+            ...window.tabGroups.all
+                .flatMap(g => g.tabs)
+                .map(t => t.input)
+                .filter(i => i instanceof TabInputText)
+                .map(i => toExtUri(i.uri))
+                .filter(extUri => extUri !== undefined && extUri.scheme === 'file')
+                .filter(fileUri => fileUri.extName() === '.lean'),
+        )
+        const deduplicated = [...new Map(openLeanFileUris.map(uri => [uri.toString(), uri])).values()]
+        // Approximation for the set of open Lean file URIs (due to the aforementioned VS Code API limitations).
+        // - May contain Lean file URIs that are invisible to the user and Lean file URIs with a `.lean` file extension that do not have a `lean4` language ID
+        // - May not contain Lean file URIs that do not have a `.lean` file extension but are visible to the user
+        // In most cases, this is an acceptable compromise, since invisible Lean files,
+        // `.lean` files without a `lean4` language ID and files with a `lean4` language ID but without a `.lean` extension are rare.
+        return deduplicated
     }
 
     registerLeanEditorCommand(
