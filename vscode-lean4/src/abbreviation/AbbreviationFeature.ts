@@ -2,6 +2,7 @@ import { AbbreviationProvider } from '@leanprover/unicode-input'
 import { Disposable, OutputChannel, languages } from 'vscode'
 import { AbbreviationHoverProvider } from './AbbreviationHoverProvider'
 import { AbbreviationRewriterFeature } from './AbbreviationRewriterFeature'
+import { SymbolPickerFeature } from './SymbolPickerFeature'
 import { VSCodeAbbreviationConfig } from './VSCodeAbbreviationConfig'
 
 export class AbbreviationFeature {
@@ -19,6 +20,7 @@ export class AbbreviationFeature {
                 new AbbreviationHoverProvider(config, this.abbreviations),
             ),
             new AbbreviationRewriterFeature(config, this.abbreviations, outputChannel),
+            new SymbolPickerFeature(config, this.abbreviations),
         )
     }
 

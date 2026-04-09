@@ -346,6 +346,24 @@
                 "description": "Converts the current abbreviation (e.g. \\lam)."
             },
             {
+                "command": "lean4.input.findSymbol",
+                "category": "Lean 4: Input",
+                "title": "Find Unicode Symbol…",
+                "description": "Opens a dialog to search Unicode abbreviations and lets the user choose to copy or insert the chosen symbol."
+            },
+            {
+                "command": "lean4.input.insertSymbol",
+                "category": "Lean 4: Input",
+                "title": "Insert Unicode Symbol…",
+                "description": "Opens a dialog to search Unicode abbreviations and inserts the chosen symbol into the active editor."
+            },
+            {
+                "command": "lean4.input.copySymbol",
+                "category": "Lean 4: Input",
+                "title": "Copy Unicode Symbol…",
+                "description": "Opens a dialog to search Unicode abbreviations and copies the chosen symbol to the clipboard."
+            },
+            {
                 "command": "lean4.displayGoal",
                 "category": "Lean 4: InfoView",
                 "title": "Display Goal",
@@ -855,6 +873,18 @@
                 "when": "editorTextFocus && lean4.input.isActive"
             },
             {
+                "command": "lean4.input.insertSymbol",
+                "key": "ctrl+alt+\\",
+                "mac": "cmd+alt+\\",
+                "when": "editorTextFocus"
+            },
+            {
+                "command": "lean4.input.copySymbol",
+                "key": "ctrl+alt+\\",
+                "mac": "cmd+alt+\\",
+                "when": "!editorTextFocus"
+            },
+            {
                 "command": "lean4.restartFile",
                 "key": "ctrl+shift+x",
                 "mac": "cmd+shift+x",
@@ -966,6 +996,16 @@
                 {
                     "command": "lean4.input.convert",
                     "when": "lean4.isLeanFeatureSetActive && lean4.input.isActive"
+                },
+                {
+                    "command": "lean4.input.findSymbol"
+                },
+                {
+                    "command": "lean4.input.insertSymbol",
+                    "when": "lean4.input.isTextEditorActive"
+                },
+                {
+                    "command": "lean4.input.copySymbol"
                 },
                 {
                     "command": "lean4.displayGoal",
@@ -1270,9 +1310,14 @@
                     "group": "3_infoview@1"
                 },
                 {
-                    "command": "lean4.loogle.search",
+                    "command": "lean4.input.findSymbol",
                     "when": "config.lean4.alwaysShowTitleBarMenu || lean4.isLeanFeatureSetActive",
                     "group": "4_search@1"
+                },
+                {
+                    "command": "lean4.loogle.search",
+                    "when": "config.lean4.alwaysShowTitleBarMenu || lean4.isLeanFeatureSetActive",
+                    "group": "4_search@2"
                 },
                 {
                     "command": "lean4.troubleshooting.showTroubleshootingGuide",
