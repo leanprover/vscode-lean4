@@ -25,6 +25,64 @@ permissions:
   id-token: write
 
 jobs:
+  package:
+    if: github.event_name != 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Build
+        run: |
+          npm ci
+          npm run build
+
+      - name: Try publishing infoview-api
+        if: ${{ startsWith(github.ref, 'refs/tags/v') && !endsWith(github.ref, '-pre') }}
+        continue-on-error: true
+        run: |
+          npm publish --workspace=lean4-infoview-api --access=public
+
+      - name: Try publishing infoview
+        if: ${{ startsWith(github.ref, 'refs/tags/v') && !endsWith(github.ref, '-pre') }}
+        continue-on-error: true
+        run: |
+          npm publish --workspace=lean4-infoview --access=public
+
+      - name: Try publishing unicode-input
+        if: ${{ startsWith(github.ref, 'refs/tags/v') && !endsWith(github.ref, '-pre') }}
+        continue-on-error: true
+        run: |
+          npm publish --workspace=lean4-unicode-input --access=public
+
+      - name: Try publishing unicode-input-component
+        if: ${{ startsWith(github.ref, 'refs/tags/v') && !endsWith(github.ref, '-pre') }}
+        continue-on-error: true
+        run: |
+          npm publish --workspace=lean4-unicode-input-component --access=public
+
+      - name: Package
+        run: npm run package --workspace=lean4
+        if: ${{ !startsWith(github.ref, 'refs/tags/v') || !endsWith(github.ref, '-pre') }}
+
+      - name: Package pre-release
+        run: npm run packagePreRelease --workspace=lean4
+        if: ${{ startsWith(github.ref, 'refs/tags/v') && endsWith(github.ref, '-pre') }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: vscode-lean4
+          path: 'vscode-lean4/lean4-*.vsix'
+
   build-and-test:
     if: github.event_name != 'workflow_dispatch'
     strategy:
@@ -60,67 +118,102 @@ jobs:
           npm ci
           npm run build
 
-      - name: Try publishing infoview-api
-        if: ${{ startsWith(github.ref, 'refs/tags/v') && !endsWith(github.ref, '-pre') && matrix.os == 'ubuntu-latest' }}
-        continue-on-error: true
+      - name: Lint
+        run: npm run lint
+
+      - name: Install Brew Packages
         run: |
-          npm publish --workspace=lean4-infoview-api --access=public
+          brew install ccache tree zstd coreutils
+        if: matrix.os == 'macos-latest'
 
-      - name: Try publishing infoview
-        if: ${{ startsWith(github.ref, 'refs/tags/v') && !endsWith(github.ref, '-pre') && matrix.os == 'ubuntu-latest' }}
-        continue-on-error: true
+      - name: Set path to elan on Linux or macOS
+        if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest'
         run: |
-          npm publish --workspace=lean4-infoview --access=public
+          echo "$HOME/.elan/bin" >> $GITHUB_PATH
 
-      - name: Try publishing unicode-input
-        if: ${{ startsWith(github.ref, 'refs/tags/v') && !endsWith(github.ref, '-pre') && matrix.os == 'ubuntu-latest' }}
-        continue-on-error: true
+      - name: Set path to elan on Windows
+        shell: pwsh
+        if: matrix.os == 'windows-latest'
         run: |
-          npm publish --workspace=lean4-unicode-input --access=public
+          echo "$HOME\.elan\bin" >> $env:GITHUB_PATH
 
-      - name: Try publishing unicode-input-component
-        if: ${{ startsWith(github.ref, 'refs/tags/v') && !endsWith(github.ref, '-pre') && matrix.os == 'ubuntu-latest' }}
-        continue-on-error: true
-        run: |
-          npm publish --workspace=lean4-unicode-input-component --access=public
+      - name: Run tests
+        uses: GabrielBB/xvfb-action@v1.0
+        with:
+          run: npm run test
 
-      - name: Package
-        run: npm run package --workspace=lean4
-        if: ${{ !startsWith(github.ref, 'refs/tags/v') || !endsWith(github.ref, '-pre') }}
+  publish-vsce:
+    needs: package
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
 
-      - name: Package pre-release
-        run: npm run packagePreRelease --workspace=lean4
-        if: ${{ startsWith(github.ref, 'refs/tags/v') && endsWith(github.ref, '-pre') }}
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        if: matrix.os == 'ubuntu-latest'
+      - name: Download packaged extension
+        uses: actions/download-artifact@v4
         with:
           name: vscode-lean4
-          path: 'vscode-lean4/lean4-*.vsix'
+          path: vscode-lean4
 
-      - name: Publish packaged extension
-        if: ${{ startsWith(github.ref, 'refs/tags/v') && !endsWith(github.ref, '-pre') && matrix.os == 'ubuntu-latest' }}
+      - name: Publish to VS Code Marketplace
         run: |
           cd vscode-lean4
-          npx @vscode/vsce publish -i lean4-*.vsix
-          npx ovsx publish lean4-*.vsix
+          npx @vscode/vsce publish $PRE_RELEASE_FLAG -i lean4-*.vsix
         env:
-          OVSX_PAT: ${{ secrets.OVSX_PAT }}
           VSCE_PAT: ${{ secrets.VSCE_PAT }}
+          PRE_RELEASE_FLAG: ${{ endsWith(github.ref, '-pre') && '--pre-release' || '' }}
 
-      - name: Publish packaged pre-release extension
-        if: ${{ startsWith(github.ref, 'refs/tags/v') && endsWith(github.ref, '-pre') && matrix.os == 'ubuntu-latest' }}
+  publish-ovsx:
+    needs: package
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Download packaged extension
+        uses: actions/download-artifact@v4
+        with:
+          name: vscode-lean4
+          path: vscode-lean4
+
+      - name: Publish to Open VSX
         run: |
           cd vscode-lean4
-          npx @vscode/vsce publish --pre-release -i lean4-*.vsix
-          npx ovsx publish --pre-release lean4-*.vsix
+          npx ovsx publish $PRE_RELEASE_FLAG lean4-*.vsix
         env:
           OVSX_PAT: ${{ secrets.OVSX_PAT }}
-          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+          PRE_RELEASE_FLAG: ${{ endsWith(github.ref, '-pre') && '--pre-release' || '' }}
+
+  github-release:
+    needs: [package, publish-vsce, publish-ovsx]
+    # Run even if one of the publish jobs failed, so a GitHub Release with notes
+    # is always created on a tag build. Tests are intentionally not a dependency:
+    # releases ship in parallel with the build-and-test matrix, matching the
+    # previous single-job behavior where publish ran before tests.
+    if: |
+      !cancelled() &&
+      needs.package.result == 'success' &&
+      startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Download packaged extension
+        uses: actions/download-artifact@v4
+        with:
+          name: vscode-lean4
+          path: vscode-lean4
 
       - name: Generate release notes
-        if: startsWith(github.ref, 'refs/tags/v') && matrix.os == 'ubuntu-latest'
         run: |
           current_tag="${GITHUB_REF#refs/tags/}"
           is_pre="${{ endsWith(github.ref, '-pre') }}"
@@ -140,6 +233,28 @@ jobs:
           write_users="$(gh api "/repos/${{ github.repository }}/collaborators" --paginate --jq '.[] | select(.permissions.push) | .login' 2>/dev/null || true)"
 
           {
+            # If either marketplace publish failed, prepend a prominent warning so
+            # the partial failure is obvious on the Release page itself (in addition
+            # to the red CI status). Note: this banner is NOT updated automatically
+            # after a successful "Re-run failed jobs" — edit the release body by
+            # hand after a retry if you want the banner gone.
+            vsce_result="${{ needs.publish-vsce.result }}"
+            ovsx_result="${{ needs.publish-ovsx.result }}"
+            failed=()
+            if [ "$vsce_result" != "success" ]; then failed+=("VS Code Marketplace"); fi
+            if [ "$ovsx_result" != "success" ]; then failed+=("Open VSX"); fi
+            if [ ${#failed[@]} -gt 0 ]; then
+              if [ ${#failed[@]} -eq 2 ]; then
+                joined="${failed[0]} and ${failed[1]}"
+              else
+                joined="${failed[0]}"
+              fi
+              echo "> [!WARNING]"
+              echo "> This release could not be published to **$joined** from CI."
+              echo "> See [the CI run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) and use *Re-run failed jobs* once the upstream issue is resolved."
+              echo ""
+            fi
+
             git log "$prev_tag".."$current_tag"^ --pretty=tformat:"%H %s" | while read -r hash msg; do
               # Skip release commits
               case "$msg" in
@@ -167,7 +282,6 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload extension as release
-        if: startsWith(github.ref, 'refs/tags/v') && matrix.os == 'ubuntu-latest'
         uses: softprops/action-gh-release@v1
         with:
           files: 'vscode-lean4/lean4-*.vsix'
@@ -176,30 +290,6 @@ jobs:
           body_path: release_notes.md
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Lint
-        run: npm run lint
-
-      - name: Install Brew Packages
-        run: |
-          brew install ccache tree zstd coreutils
-        if: matrix.os == 'macos-latest'
-
-      - name: Set path to elan on Linux or macOS
-        if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest'
-        run: |
-          echo "$HOME/.elan/bin" >> $GITHUB_PATH
-
-      - name: Set path to elan on Windows
-        shell: pwsh
-        if: matrix.os == 'windows-latest'
-        run: |
-          echo "$HOME\.elan\bin" >> $env:GITHUB_PATH
-
-      - name: Run tests
-        uses: GabrielBB/xvfb-action@v1.0
-        with:
-          run: npm run test
 
   publish-packages:
     if: github.event_name == 'workflow_dispatch' && inputs.action == 'publish-packages'
