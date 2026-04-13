@@ -89,13 +89,13 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: Linux
+          - name: build-and-test-linux
             os: ubuntu-latest
             artifact: build-Linux release
-          # - name: macOS
+          # - name: build-and-test-macos
           #   os: macos-latest
           #   artifact: build-macOS
-          - name: Windows
+          - name: build-and-test-windows
             os: windows-latest
             artifact: build-Windows
     name: ${{ matrix.name }}
