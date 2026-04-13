@@ -51,7 +51,7 @@ import { logger } from './utils/logger'
 // @ts-ignore
 import * as fs from 'fs'
 import { glob } from 'glob'
-import { SemVer } from 'semver'
+import * as semver from 'semver'
 import { formatCommandExecutionOutput } from './utils/batch'
 import {
     c2pConverter,
@@ -541,8 +541,9 @@ export class LeanClient implements Disposable {
                 }
             })
             await this.client.start()
-            const version = this.client.initializeResult?.serverInfo?.version
-            if (version && new SemVer(version).compare('0.2.0') < 0) {
+            const rawVersion = this.client.initializeResult?.serverInfo?.version
+            const version = rawVersion !== undefined ? semver.parse(rawVersion) : null
+            if (version !== null && version.compare('0.2.0') < 0) {
                 if (this.staleDepNotifier) {
                     this.staleDepNotifier.dispose()
                 }
