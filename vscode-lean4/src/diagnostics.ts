@@ -1,6 +1,7 @@
-import { DiagnosticCollection, Disposable, EventEmitter } from 'vscode'
-import { LeanDiagnostic, LeanPublishDiagnosticsParams, p2cConverter } from './utils/converters'
+import { CancellationToken, DiagnosticCollection, Disposable, EventEmitter } from 'vscode'
 import { DocumentUri } from 'vscode-languageserver-protocol'
+import { CoalescingSyncQueue } from './utils/coalescingSyncQueue'
+import { LeanDiagnostic, LeanPublishDiagnosticsParams, p2cConverter } from './utils/converters'
 
 export type DiagnosticChangeKind = 'replace' | 'append'
 
@@ -26,6 +27,24 @@ export class DiagnosticChangeEvent {
     }
 }
 
+type SyncQueueEntry = {
+    accumulatedParams: LeanPublishDiagnosticsParams
+    pendingKind: DiagnosticChangeKind
+    pendingBatch: LeanDiagnostic[]
+}
+
+function combineEntries(existing: SyncQueueEntry, incoming: SyncQueueEntry): SyncQueueEntry {
+    if (incoming.pendingKind === 'replace') {
+        return incoming
+    }
+    incoming.pendingKind satisfies 'append'
+    return {
+        accumulatedParams: incoming.accumulatedParams,
+        pendingKind: existing.pendingKind,
+        pendingBatch: [...existing.pendingBatch, ...incoming.pendingBatch],
+    }
+}
+
 export class LeanClientDiagnosticCollection implements Disposable {
     readonly vsCodeCollection: DiagnosticCollection
     private diags: Map<DocumentUri, LeanPublishDiagnosticsParams> = new Map()
@@ -33,8 +52,14 @@ export class LeanClientDiagnosticCollection implements Disposable {
     private diagnosticsChangedEmitter = new EventEmitter<DiagnosticChangeEvent>()
     onDidChangeDiagnostics = this.diagnosticsChangedEmitter.event
 
+    private syncQueue: CoalescingSyncQueue<SyncQueueEntry>
+
     constructor(vsCodeCollection: DiagnosticCollection) {
         this.vsCodeCollection = vsCodeCollection
+        this.syncQueue = new CoalescingSyncQueue(
+            (uri: string, entry: SyncQueueEntry, token: CancellationToken) => this.syncToCollection(uri, entry, token),
+            (existing, incoming) => combineEntries(existing, incoming)
+        )
     }
 
     private static determineChangeKind(
@@ -63,20 +88,33 @@ export class LeanClientDiagnosticCollection implements Disposable {
         }
 
         const accumulatedParams = { ...params, diagnostics: accumulated }
-
         this.diags.set(accumulatedParams.uri, accumulatedParams)
-        void this.syncToCollection(accumulatedParams)
-        this.diagnosticsChangedEmitter.fire(new DiagnosticChangeEvent(kind, params, accumulated))
+
+        const entry: SyncQueueEntry = {
+            accumulatedParams,
+            pendingKind: kind,
+            pendingBatch: [...params.diagnostics],
+        }
+
+        this.syncQueue.enqueue(accumulatedParams.uri, entry)
     }
 
-    private async syncToCollection(p: LeanPublishDiagnosticsParams): Promise<void> {
-        const nonSilent = p.diagnostics.filter(d => !d.isSilent)
-        const uri = p2cConverter.asUri(p.uri)
-        const vsCodeDiags = await p2cConverter.asDiagnostics(nonSilent)
-        this.vsCodeCollection.set(uri, vsCodeDiags)
+    private async syncToCollection(_uri: string, entry: SyncQueueEntry, token: CancellationToken): Promise<void> {
+        const nonSilentDiagnostics = entry.accumulatedParams.diagnostics.filter(d => !d.isSilent)
+        const vsUri = p2cConverter.asUri(entry.accumulatedParams.uri)
+        const vsDiags = await p2cConverter.asDiagnostics(nonSilentDiagnostics, token)
+        if (token.isCancellationRequested) {
+            return
+        }
+        this.vsCodeCollection.set(vsUri, vsDiags)
+        const collapsedParams = { ...entry.accumulatedParams, diagnostics: entry.pendingBatch }
+        this.diagnosticsChangedEmitter.fire(
+            new DiagnosticChangeEvent(entry.pendingKind, collapsedParams, entry.accumulatedParams.diagnostics),
+        )
     }
 
     dispose(): void {
+        this.syncQueue.dispose()
         this.diagnosticsChangedEmitter.dispose()
     }
 }
