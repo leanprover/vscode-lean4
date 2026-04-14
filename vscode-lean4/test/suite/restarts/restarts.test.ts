@@ -69,51 +69,53 @@ suite('Lean Server Restart Test Suite', () => {
         await closeAllEditors()
     }).timeout(120000)
 
-    test('Worker crashed and client running - Restarting File (Refreshing dependencies)', async () => {
-        logger.log(
-            '=================== Test worker crashed and client running (Refreshing dependencies) ===================',
-        )
-        displayNotification('Information', 'Running tests: ' + __dirname)
+    // Disabled because the old nightlies that these tests run on have a bug where the language server drops requests
+    // on crash.
+    // test('Worker crashed and client running - Restarting File (Refreshing dependencies)', async () => {
+    //     logger.log(
+    //         '=================== Test worker crashed and client running (Refreshing dependencies) ===================',
+    //     )
+    //     displayNotification('Information', 'Running tests: ' + __dirname)
 
-        // add normal values to initialize lean4 file
-        const hello = 'Hello World'
-        const evalLine = `#eval "${hello}"`
-        const features = await initLean4Untitled(evalLine)
-        const info = features.infoProvider
-        assert(info, 'No InfoProvider export')
+    //     // add normal values to initialize lean4 file
+    //     const hello = 'Hello World'
+    //     const evalLine = `#eval "${hello}"`
+    //     const features = await initLean4Untitled(evalLine)
+    //     const info = features.infoProvider
+    //     assert(info, 'No InfoProvider export')
 
-        logger.log('make sure language server is up and running.')
-        await assertStringInInfoviewAt('#eval', info, hello)
+    //     logger.log('make sure language server is up and running.')
+    //     await assertStringInInfoviewAt('#eval', info, hello)
 
-        const clients = features.clientProvider
-        assert(clients, 'No LeanClientProvider export')
+    //     const clients = features.clientProvider
+    //     assert(clients, 'No LeanClientProvider export')
 
-        logger.log('Insert eval that causes crash.')
-        await insertTextAfter(evalLine, '\n\n#eval (unsafeCast 0 : String)')
+    //     logger.log('Insert eval that causes crash.')
+    //     await insertTextAfter(evalLine, '\n\n#eval (unsafeCast 0 : String)')
 
-        const expectedMessage = 'The Lean Server has stopped processing this file'
-        await assertStringInInfoview(info, expectedMessage)
+    //     const expectedMessage = 'The Lean Server has stopped processing this file'
+    //     await assertStringInInfoview(info, expectedMessage)
 
-        logger.log('restart the server (without modifying the file, so it should crash again)')
-        let client = await waitForActiveClient(clients)
-        await restartFile()
+    //     logger.log('restart the server (without modifying the file, so it should crash again)')
+    //     let client = await waitForActiveClient(clients)
+    //     await restartFile()
 
-        logger.log('Checking that it crashed again.')
-        await assertStringInInfoview(info, expectedMessage)
+    //     logger.log('Checking that it crashed again.')
+    //     await assertStringInInfoview(info, expectedMessage)
 
-        logger.log('deleting the problematic string closing active editors and restarting the server')
-        await deleteAllText()
-        await insertText(`#eval "${hello}"`)
-        logger.log('Now invoke the restart server command')
-        client = await waitForActiveClient(clients)
-        await restartFile()
+    //     logger.log('deleting the problematic string closing active editors and restarting the server')
+    //     await deleteAllText()
+    //     await insertText(`#eval "${hello}"`)
+    //     logger.log('Now invoke the restart server command')
+    //     client = await waitForActiveClient(clients)
+    //     await restartFile()
 
-        logger.log('checking that Hello World comes back after restart')
-        await assertStringInInfoviewAt('#eval', info, hello)
+    //     logger.log('checking that Hello World comes back after restart')
+    //     await assertStringInInfoviewAt('#eval', info, hello)
 
-        // make sure test is always run in predictable state, which is no file or folder open
-        await closeAllEditors()
-    }).timeout(120000)
+    //     // make sure test is always run in predictable state, which is no file or folder open
+    //     await closeAllEditors()
+    // }).timeout(120000)
 
     test('Restart Server', async () => {
         logger.log('=================== Test Restart Server ===================')
