@@ -135,6 +135,9 @@ export async function initLean4Untitled(contents: string): Promise<EnabledFeatur
     // If info view opens too quickly there is no LeanClient ready yet and
     // it's initialization gets messed up.
     assertAndLog(await waitForInfoViewOpen(info, 60), 'Info view did not open after 60 seconds')
+    // Reusing the Untitled-1 URI across tests can leave the InfoProvider bound to a stale
+    // client; wait until a fresh client for this document is running before returning.
+    await waitForActiveClientRunning(features.clientProvider)
     return features
 }
 
@@ -445,19 +448,18 @@ export async function findWord(
     retries = 60,
     delay = 1000,
 ): Promise<vscode.Range> {
-    let count = 0
+    const totalRetries = retries
     while (retries > 0) {
         const text = editor.document.getText()
         const pos = text.indexOf(word)
-        if (pos < 0) {
-            await sleep(delay)
-            count += 1
-        } else {
+        if (pos >= 0) {
             return new vscode.Range(editor.document.positionAt(pos), editor.document.positionAt(pos + word.length))
         }
+        await sleep(delay)
+        retries -= 1
     }
 
-    const timeout = (retries * delay) / 1000
+    const timeout = (totalRetries * delay) / 1000
     assertAndLog(false, `word ${word} not found in editor after ${timeout} seconds`)
 }
 
@@ -541,6 +543,7 @@ export async function clickInfoViewButton(info: InfoProvider, name: string): Pro
         try {
             const cmd = `document.querySelector(\'[data-id*="${name}"]\').click()`
             await info.runTestScript(cmd)
+            return
         } catch (err) {
             logger.log(`### runTestScript failed: ${err.message}`)
             if (retries === 0) {
