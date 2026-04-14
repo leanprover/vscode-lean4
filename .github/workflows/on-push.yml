@@ -325,6 +325,11 @@ jobs:
         continue-on-error: true
         run: npm publish --workspace=lean4-unicode-input-component --access=public
 
+  # `release` and `pre-release` can be dispatched from `master` for regular
+  # releases, or from a `patch-release/v<release>` branch to cut a patch on top
+  # of a previous release after master has already advanced. The version bump
+  # is the global max of all `v*` tags + 1, so patch releases automatically
+  # take the next patch number and subsequent master releases skip past it.
   release:
     if: github.event_name == 'workflow_dispatch' && inputs.action == 'release'
     runs-on: ubuntu-latest

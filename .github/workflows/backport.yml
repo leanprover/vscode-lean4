@@ -1,0 +1,62 @@
+name: Backport
+
+on:
+  pull_request_target:
+    types: [closed, labeled]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  backport:
+    name: Backport
+    runs-on: ubuntu-latest
+    # Fire on merge (for PRs already labeled) and on labels added after merge.
+    if: |
+      github.event.pull_request.merged == true && (
+        (github.event.action == 'closed' && contains(github.event.pull_request.labels.*.name, 'backport')) ||
+        (github.event.action == 'labeled' && github.event.label.name == 'backport')
+      )
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve patch-release branch from latest release tag
+        id: resolve
+        run: |
+          # Highest release tag, including pre-releases. The maintainer decides
+          # at dispatch time whether to cut a `release` or `pre-release` from
+          # the resulting `patch-release/v<version>` branch.
+          last_tag="$(git tag --sort=-v:refname --list 'v*' | head -1)"
+          if [ -z "$last_tag" ]; then
+            echo "No release tags found." >&2
+            exit 1
+          fi
+          target="patch-release/$last_tag"
+          echo "last_tag=$last_tag" >> "$GITHUB_OUTPUT"
+          echo "target=$target" >> "$GITHUB_OUTPUT"
+
+      - name: Ensure patch-release branch exists
+        run: |
+          target="${{ steps.resolve.outputs.target }}"
+          last_tag="${{ steps.resolve.outputs.last_tag }}"
+          if git ls-remote --exit-code --heads origin "$target" >/dev/null; then
+            echo "Branch $target already exists."
+          else
+            echo "Creating $target from $last_tag."
+            git push origin "refs/tags/$last_tag:refs/heads/$target"
+          fi
+
+      - name: Create backport PR
+        uses: korthout/backport-action@v3
+        with:
+          target_branches: ${{ steps.resolve.outputs.target }}
+          copy_labels_pattern: '.*'
+          cherry_picking: 'auto'
+          merge_commits: 'skip'
+          pull_description: |-
+            Backport of #${pull_number} to `${target_branch}`.
+
+            Cherry-picked from ${source_sha} (via `git cherry-pick -x`).
