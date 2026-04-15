@@ -69,6 +69,39 @@
                 "kind": "build",
                 "isDefault": true
             }
+        },
+        {
+            // Used as `preLaunchTask` for the vscode-test-cli debug config.
+            // `compile-tests` (in vscode-lean4) runs `tsc -p tsconfig.test.json`
+            // and emits to `out/test/`, where the launch's `extensionHost`
+            // attaches via `outFiles`. Depends on `build` so cross-package
+            // imports from src/ resolve to real types in workspace dist/.
+            "label": "compile-tests",
+            "type": "shell",
+            "command": "npm run compile-tests --workspace=lean4",
+            "problemMatcher": "$tsc",
+            "dependsOn": "build",
+            "dependsOrder": "sequence",
+            "presentation": {
+                "reveal": "never"
+            }
+        },
+        {
+            // Headless run of the full non-nightly suite. Set as the default
+            // test task so "Tasks: Run Test Task" picks it directly.
+            // `dependsOn: build` populates workspace dist/ before the
+            // infoview tsc step (which would otherwise fail to resolve
+            // cross-package types on a fresh checkout — same trap as in CI).
+            "label": "test",
+            "type": "npm",
+            "script": "test:headless",
+            "dependsOn": "build",
+            "dependsOrder": "sequence",
+            "group": {
+                "kind": "test",
+                "isDefault": true
+            },
+            "problemMatcher": []
         }
     ]
 }

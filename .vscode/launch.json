@@ -16,6 +16,115 @@
             "rendererDebugOptions": {
                 "webRoot": "${workspaceRoot}/vscode-lean4/media"
             }
+        },
+        {
+            // Debug a single vscode-test-cli label inside the Extension
+            // Development Host. Breakpoints work in both the test file and
+            // anything under `vscode-lean4/src/`. The label list mirrors
+            // the files under `vscode-lean4/test/vscode-test-cli/` —
+            // update the `inputs` block below if a new test file is added.
+            "name": "Debug vscode-test-cli (pick label)",
+            "type": "extensionHost",
+            "request": "launch",
+            "testConfiguration": "${workspaceFolder}/vscode-lean4/.vscode-test.mjs",
+            "testConfigurationLabel": "cli-${input:cliLabel}",
+            "outFiles": ["${workspaceFolder}/vscode-lean4/out/**/*.js"],
+            "preLaunchTask": "compile-tests"
+        },
+        {
+            // Debug the currently-open vitest test file. Vitest spawns
+            // workers by default; `autoAttachChildProcesses` follows them
+            // so breakpoints land. Pure-TS path (no VS Code, no xvfb).
+            "name": "Debug Vitest (current file)",
+            "type": "node",
+            "request": "launch",
+            "program": "${workspaceFolder}/node_modules/vitest/vitest.mjs",
+            "args": ["run", "${relativeFile}"],
+            "autoAttachChildProcesses": true,
+            "smartStep": true,
+            "console": "integratedTerminal",
+            "skipFiles": ["<node_internals>/**", "**/node_modules/**"]
+        },
+        {
+            // Run the full non-nightly suite (vitest + infoview tsc +
+            // grammar + vscode-test-cli + wdio) without a debugger.
+            // Opens real VS Code windows for the integration steps,
+            // which grab focus for the duration. `preLaunchTask: build`
+            // populates workspace dist/ so the infoview tsc step's
+            // cross-package imports resolve.
+            "name": "Run all non-nightly tests",
+            "type": "node",
+            "request": "launch",
+            "runtimeExecutable": "npm",
+            "runtimeArgs": ["test"],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "preLaunchTask": "build",
+            "skipFiles": ["<node_internals>/**"]
+        },
+        {
+            // Same as above, wrapped in `xvfb-run`. The integration steps
+            // render to a virtual X display so VS Code windows don't
+            // steal focus. Requires `xorg-x11-server-Xvfb` (Fedora) or
+            // `xvfb` (Debian/Ubuntu). The script `test:headless` is
+            // `xvfb-run -a npm test`.
+            "name": "Run all non-nightly tests (headless)",
+            "type": "node",
+            "request": "launch",
+            "runtimeExecutable": "npm",
+            "runtimeArgs": ["run", "test:headless"],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "preLaunchTask": "build",
+            "skipFiles": ["<node_internals>/**"]
+        },
+        {
+            // Run the full nightly suite — exercises the real elan
+            // install flow plus `lake new … math` (Mathlib clone +
+            // cache fetch). Slow (tens of minutes) and network-heavy.
+            // The `test:nightly` script sets `LEAN4_TEST_ELAN_INSTALL=1`
+            // via `cross-env`, which makes `setupTestHome` tolerate a
+            // missing elan binary on PATH (the suite installs it
+            // itself).
+            "name": "Run all nightly tests",
+            "type": "node",
+            "request": "launch",
+            "runtimeExecutable": "npm",
+            "runtimeArgs": ["run", "test:nightly", "--workspace=lean4"],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "preLaunchTask": "build",
+            "skipFiles": ["<node_internals>/**"]
+        },
+        {
+            // Same as above, xvfb-wrapped via `test:headless:nightly`.
+            "name": "Run all nightly tests (headless)",
+            "type": "node",
+            "request": "launch",
+            "runtimeExecutable": "npm",
+            "runtimeArgs": ["run", "test:headless:nightly", "--workspace=lean4"],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "preLaunchTask": "build",
+            "skipFiles": ["<node_internals>/**"]
+        }
+    ],
+    "inputs": [
+        {
+            "id": "cliLabel",
+            "type": "pickString",
+            "description": "vscode-test-cli label to debug",
+            "options": [
+                "abbreviation",
+                "lakefile-toml-schema",
+                "launch-modes",
+                "preconditions",
+                "project-actions",
+                "project-init",
+                "server-launch",
+                "smoke",
+                "version-management"
+            ]
         }
     ]
 }

@@ -5,7 +5,11 @@
         "build": "lerna run --stream build",
         "build:dev": "lerna run --stream build:dev",
         "watch": "lerna run --stream --ignore lean4 build:dev && lerna run --parallel --stream watch",
-        "lint": "eslint -c .eslintrc.js \"{lean4-infoview-api,lean4-infoview,lean4-unicode-input,lean4-unicode-input-component,vscode-lean4}/src/**/*.{ts,tsx}\"",
+        "lint": "eslint -c .eslintrc.js \"{lean4-infoview-api,lean4-infoview,lean4-unicode-input,lean4-unicode-input-component,vscode-lean4}/src/**/*.{ts,tsx}\" \"{lean4-infoview,vscode-lean4}/test/**/*.{ts,tsx}\" \"vscode-lean4/**/*.mjs\"",
+        "test:unit": "vitest run",
+        "test:unit:watch": "vitest",
+        "test": "npm run test:unit && npm run test --workspace=@leanprover/infoview && npm run test:all --workspace=lean4",
+        "test:headless": "xvfb-run -a npm test",
         "prepare": "husky install"
     },
     "workspaces": [
@@ -26,7 +30,8 @@
         "lint-staged": "^15.2.2",
         "prettier": "^3.2.5",
         "prettier-plugin-organize-imports": "^3.2.4",
-        "typescript": "^5.4.5"
+        "typescript": "^5.4.5",
+        "vitest": "^2.1.9"
     },
     "lint-staged": {
         "*.{ts,tsx,js}": [

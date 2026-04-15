@@ -14,11 +14,25 @@ on:
   pull_request:
     branches:
     - '*'
+  # Restrict `push` to maintainer-curated refs. Feature branches with an open
+  # PR fire `pull_request` instead, so this avoids the duplicate run while
+  # still gating direct merges to `master` / release branches and tag pushes
+  # (the publish-vsce / release jobs below only run on tag pushes anyway).
   push:
     branches:
-      - '*'
+      - master
+      - 'release/**'
     tags:
       - '*'
+
+# Cancel in-progress runs of this workflow when a newer commit lands on the
+# same ref. Rapid-fire pushes (or a `push` and `pull_request` event for the
+# same ref) coalesce — only the latest run survives. `workflow_dispatch`
+# runs get their own group via `github.run_id` so a manual publish/release
+# never cancels another in-flight publish/release.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name == 'workflow_dispatch' && github.run_id || '' }}
+  cancel-in-progress: true
 
 permissions:
   contents: write
@@ -97,6 +111,15 @@ jobs:
 
       - name: Install
         run: npm ci
+
+      # Type-aware lint rules (`no-redundant-type-constituents`,
+      # `no-unnecessary-type-assertion`) need workspace packages' `dist/`
+      # populated so cross-package imports resolve to real types instead of
+      # implicit `any`. Without this, `T | undefined` looks like
+      # `any | undefined` to typescript-eslint and the rule fires
+      # spuriously. Same rationale as the build step in `test.yml`.
+      - name: Build (for type-aware lint)
+        run: npm run build:dev
 
       - name: Lint
         run: npm run lint
