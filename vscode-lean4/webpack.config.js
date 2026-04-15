@@ -12,6 +12,18 @@ const CopyPlugin = require('copy-webpack-plugin')
 /** @type {(env: Env) => 'production' | 'development'} */
 const prodOrDev = env => (env.production ? 'production' : 'development')
 
+/** @type {import('webpack').RuleSetRule} */
+const tsLoaderRule = {
+    test: /\.tsx?$/,
+    // `tsconfig.json` sets `noEmit` (see there), but ts-loader must emit.
+    // `tsconfig.json` also includes the tests, which ts-loader must not check.
+    use: {
+        loader: 'ts-loader',
+        options: { onlyCompileBundledFiles: true, compilerOptions: { noEmit: false } },
+    },
+    exclude: /node_modules/,
+}
+
 /** @type {(env: Env) => import('webpack').Configuration} */
 const getWebviewConfig = env => ({
     name: 'webview',
@@ -19,11 +31,7 @@ const getWebviewConfig = env => ({
     entry: './webview/index.ts',
     module: {
         rules: [
-            {
-                test: /\.tsx?$/,
-                use: 'ts-loader',
-                exclude: /node_modules/,
-            },
+            tsLoaderRule,
             {
                 test: /\.js$/,
                 enforce: 'pre',
@@ -83,11 +91,7 @@ const getLoogleViewConfig = env => ({
     entry: './loogleview/index.ts',
     module: {
         rules: [
-            {
-                test: /\.tsx?$/,
-                use: 'ts-loader',
-                exclude: /node_modules/,
-            },
+            tsLoaderRule,
             {
                 test: /\.js$/,
                 enforce: 'pre',
@@ -130,11 +134,7 @@ const getAbbreviationViewConfig = env => ({
     entry: './abbreviationview/index.ts',
     module: {
         rules: [
-            {
-                test: /\.tsx?$/,
-                use: 'ts-loader',
-                exclude: /node_modules/,
-            },
+            tsLoaderRule,
             {
                 test: /\.js$/,
                 enforce: 'pre',
@@ -170,11 +170,7 @@ const getExtensionConfig = env => ({
     entry: './src/extension.ts',
     module: {
         rules: [
-            {
-                test: /\.tsx?$/,
-                use: 'ts-loader',
-                exclude: /node_modules/,
-            },
+            tsLoaderRule,
             {
                 // The elan install scripts, as strings (`src/utils/leanInstaller.ts`).
                 test: /\.(sh|ps1)$/,
