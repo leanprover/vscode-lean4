@@ -1,0 +1,38 @@
+name: Cache VS Code test binaries
+description: >
+  Resolve the current stable VS Code version and restore/save the VS Code
+  test binary cache keyed on that version. Caches both `.vscode-test`
+  (vscode-test-cli) and `.wdio-vscode-service` (wdio); jobs that don't
+  run wdio tolerate the second path being absent harmlessly.
+
+runs:
+  using: composite
+  steps:
+    # Resolve `:stable` to a concrete VS Code version so the cache key rotates
+    # automatically when stable bumps. The previous keying — bare
+    # `vscode-test-${{ runner.os }}-stable` — never changed when stable
+    # moved, so each runner kept reusing the version that was first cached.
+    - name: Resolve VS Code stable version
+      id: vscode
+      uses: actions/github-script@v7
+      with:
+        result-encoding: string
+        script: |
+          const r = await fetch('https://update.code.visualstudio.com/api/releases/stable')
+          const versions = await r.json()
+          core.setOutput('version', versions[0])
+
+    - name: Cache VS Code test binaries
+      uses: actions/cache@v4
+      with:
+        path: |
+          vscode-lean4/.vscode-test
+          vscode-lean4/.wdio-vscode-service
+        # Include the resolved version so a new stable triggers a fresh
+        # download. `restore-keys:` falls back to the most recent cache for
+        # this OS so the new run still benefits from partial reuse (the
+        # `.wdio-vscode-service/` extensions dir, etc.) while it pulls the
+        # new VS Code binary.
+        key: vscode-test-${{ runner.os }}-${{ steps.vscode.outputs.version }}
+        restore-keys: |
+          vscode-test-${{ runner.os }}-

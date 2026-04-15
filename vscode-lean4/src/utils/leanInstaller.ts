@@ -9,7 +9,7 @@ import {
     displayResultError,
 } from './batch'
 import { LeanClientProvider } from './clientProvider'
-import { elanSelfUninstall, elanSelfUpdate, elanStableChannel, elanVersion, isElanEagerResolutionVersion } from './elan'
+import { elanSelfUninstall, elanSelfUpdate, elanVersion, isElanEagerResolutionVersion } from './elan'
 import {
     NotificationSeverity,
     StickyInput,
@@ -18,20 +18,12 @@ import {
     displayNotificationWithInput,
     displayStickyNotificationWithOptionalInput,
 } from './notifs'
-
-const windowsInstallationScript = `try {
-    $installCode = (Invoke-WebRequest -Uri "https://elan.lean-lang.org/elan-init.ps1" -UseBasicParsing -ErrorAction Stop).Content
-    $installer = [ScriptBlock]::Create([System.Text.Encoding]::UTF8.GetString($installCode))
-    Set-ExecutionPolicy -ExecutionPolicy Unrestricted -Scope Process
-    $rc = & $installer -NoPrompt 1 -DefaultToolchain ${elanStableChannel}
-    exit $rc
-} catch {
-    Write-Host "Downloading and running the Elan installer failed."
-    Write-Host $_
-    exit 1
-}`
-
-const unixInstallationScript = `curl "https://elan.lean-lang.org/elan-init.sh" -sSf | sh -s -- -y --default-toolchain ${elanStableChannel}`
+// The install scripts live as standalone files under `scripts/elan-install/`
+// so the CI `setup-elan` composite can run the same bytes. Webpack's
+// `asset/source` rule (see `webpack.config.js`) inlines them as strings
+// here. Editing the .sh / .ps1 files updates both consumers.
+import unixInstallationScript from '../../scripts/elan-install/install-unix.sh'
+import windowsInstallationScript from '../../scripts/elan-install/install-windows.ps1'
 
 export function elanInstallationMethod(): ElanInstallationMethod {
     if (process.platform === 'win32') {

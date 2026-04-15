@@ -3,7 +3,13 @@ out/
 dist/
 .vs/
 .vscode-test/
+.wdio-vscode-service/
+vscode-lean4/wdio-output/
+vscode-lean4/vscode-test-cli-output/
 build/
+
+## Lake build artifacts produced by fixture-driven project-action tests
+vscode-lean4/test/fixtures/**/.lake/
 
 ## Output
 node_modules/
