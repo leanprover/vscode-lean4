@@ -21,7 +21,12 @@ const getWebviewConfig = env => ({
         rules: [
             {
                 test: /\.tsx?$/,
-                use: 'ts-loader',
+                // `tsconfig.json` sets `noEmit` (see there), but ts-loader must emit.
+                // `tsconfig.json` also includes the tests, which ts-loader must not check.
+                use: {
+                    loader: 'ts-loader',
+                    options: { onlyCompileBundledFiles: true, compilerOptions: { noEmit: false } },
+                },
                 exclude: /node_modules/,
             },
             {
@@ -85,7 +90,12 @@ const getLoogleViewConfig = env => ({
         rules: [
             {
                 test: /\.tsx?$/,
-                use: 'ts-loader',
+                // `tsconfig.json` sets `noEmit` (see there), but ts-loader must emit.
+                // `tsconfig.json` also includes the tests, which ts-loader must not check.
+                use: {
+                    loader: 'ts-loader',
+                    options: { onlyCompileBundledFiles: true, compilerOptions: { noEmit: false } },
+                },
                 exclude: /node_modules/,
             },
             {
@@ -132,7 +142,12 @@ const getAbbreviationViewConfig = env => ({
         rules: [
             {
                 test: /\.tsx?$/,
-                use: 'ts-loader',
+                // `tsconfig.json` sets `noEmit` (see there), but ts-loader must emit.
+                // `tsconfig.json` also includes the tests, which ts-loader must not check.
+                use: {
+                    loader: 'ts-loader',
+                    options: { onlyCompileBundledFiles: true, compilerOptions: { noEmit: false } },
+                },
                 exclude: /node_modules/,
             },
             {
@@ -172,8 +187,18 @@ const getExtensionConfig = env => ({
         rules: [
             {
                 test: /\.tsx?$/,
-                use: 'ts-loader',
+                // `tsconfig.json` sets `noEmit` (see there), but ts-loader must emit.
+                // `tsconfig.json` also includes the tests, which ts-loader must not check.
+                use: {
+                    loader: 'ts-loader',
+                    options: { onlyCompileBundledFiles: true, compilerOptions: { noEmit: false } },
+                },
                 exclude: /node_modules/,
+            },
+            {
+                // The elan install scripts, as strings (`src/utils/leanInstaller.ts`).
+                test: /\.(sh|ps1)$/,
+                type: 'asset/source',
             },
         ],
     },
