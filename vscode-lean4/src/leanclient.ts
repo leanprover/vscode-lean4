@@ -4,6 +4,7 @@ import {
     Disposable,
     EventEmitter,
     FileSystemWatcher,
+    languages,
     OutputChannel,
     Progress,
     ProgressLocation,
@@ -32,7 +33,6 @@ import {
 } from 'vscode-languageclient/node'
 
 import {
-    LeanDiagnostic,
     LeanFileProgressParams,
     LeanFileProgressProcessingInfo,
     LeanServerCapabilities,
@@ -52,6 +52,7 @@ import { logger } from './utils/logger'
 import * as fs from 'fs'
 import { glob } from 'glob'
 import * as semver from 'semver'
+import { DiagnosticChangeEvent, LeanClientDiagnosticCollection } from './diagnostics'
 import { formatCommandExecutionOutput } from './utils/batch'
 import {
     c2pConverter,
@@ -98,11 +99,13 @@ function logConfig(): LogConfig | undefined {
 }
 
 interface LeanClientCapabilties {
+    incrementalDiagnosticSupport?: boolean
     silentDiagnosticSupport?: boolean
     rpcWireFormat?: RpcWireFormat
 }
 
 const leanClientCapabilities: LeanClientCapabilties = {
+    incrementalDiagnosticSupport: true,
     silentDiagnosticSupport: true,
     rpcWireFormat: 'v1'
 }
@@ -139,6 +142,8 @@ export class LeanClient implements Disposable {
 
     private didChangeEmitter = new EventEmitter<DidChangeTextDocumentParams>()
     didChange = this.didChangeEmitter.event
+
+    private diagnosticCollection: LeanClientDiagnosticCollection | undefined
 
     private diagnosticsEmitter = new EventEmitter<LeanPublishDiagnosticsParams>()
     diagnostics = this.diagnosticsEmitter.event
@@ -540,7 +545,18 @@ export class LeanClient implements Disposable {
                     }
                 }
             })
+            this.diagnosticCollection?.dispose()
+            const vsCodeCollection = languages.createDiagnosticCollection('lean4')
+            this.diagnosticCollection = new LeanClientDiagnosticCollection(vsCodeCollection)
+            this.diagnosticCollection.onDidChangeDiagnostics((e: DiagnosticChangeEvent) => {
+                this.diagnosticsEmitter.fire(e.accumulatedParams())
+            })
+            this.client.onNotification('textDocument/publishDiagnostics', (params: LeanPublishDiagnosticsParams) => {
+                this.diagnosticCollection?.publishDiagnostics(params)
+            })
+
             await this.client.start()
+
             const rawVersion = this.client.initializeResult?.serverInfo?.version
             const version = rawVersion !== undefined ? semver.parse(rawVersion) : null
             if (version !== null && version.compare('0.2.0') < 0) {
@@ -709,6 +725,9 @@ export class LeanClient implements Disposable {
 
         this.noPrompt = false
         this.progress = new Map()
+        this.diagnosticCollection?.vsCodeCollection.dispose()
+        this.diagnosticCollection?.dispose()
+        this.diagnosticCollection = undefined
         this.client = undefined
         this.openServerDocuments = new Set()
         this.running = false
@@ -780,7 +799,7 @@ export class LeanClient implements Disposable {
     }
 
     getDiagnostics(): DiagnosticCollection | undefined {
-        return this.running ? this.client?.diagnostics : undefined
+        return this.running ? this.diagnosticCollection?.vsCodeCollection : undefined
     }
 
     get initializeResult(): InitializeResult | undefined {
@@ -874,18 +893,11 @@ export class LeanClient implements Disposable {
                     }
                     return next(type, param)
                 },
-                handleDiagnostics: (uri, diagnostics, next) => {
-                    const diagnosticsInVsCode = diagnostics.filter(d => !('isSilent' in d && d.isSilent))
-                    next(uri, diagnosticsInVsCode)
-                    const uri_ = c2pConverter.asUri(uri)
-                    const diagnostics_: LeanDiagnostic[] = []
-                    for (const d of diagnostics) {
-                        const d_: LeanDiagnostic = {
-                            ...c2pConverter.asDiagnostic(d),
-                        }
-                        diagnostics_.push(d_)
-                    }
-                    this.diagnosticsEmitter.fire({ uri: uri_, diagnostics: diagnostics_ })
+                handleDiagnostics: () => {
+                    // Suppress the default diagnostics handling by the LanguageClient.
+                    // We handle diagnostics ourselves via a custom notification handler
+                    // so that we can access the full LeanPublishDiagnosticsParams
+                    // (including version and isIncremental).
                 },
 
                 didOpen: async (doc, next) => {
