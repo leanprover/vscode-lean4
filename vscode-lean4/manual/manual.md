@@ -246,6 +246,16 @@ The Unicode input mechanism has several configuration options:
 | :--: | 
 | *Hover for Unicode symbol displaying all abbreviation identifiers* |
 
+To use Unicode symbols outside of text editors - for example in the search bar, find widget or settings - a symbol picker is available. The ['Input: Find Unicode Symbol...'](command:lean4.input.findSymbol) command can be used from the [command menu](#command-menu) or the [command palette](#command-palette). After selecting a symbol, a second dialog allows choosing between copying the symbol to the clipboard and inserting it into the active text editor.
+
+There are also two direct commands that skip the second dialog:
+- ['Input: Insert Unicode Symbol...'](command:lean4.input.insertSymbol) inserts the chosen symbol directly into the active text editor. It is bound to `Ctrl+Alt+\` (`Cmd+Alt+\`) when a text editor is focused.
+- ['Input: Copy Unicode Symbol...'](command:lean4.input.copySymbol) copies the chosen symbol directly to the clipboard. It is bound to `Ctrl+Alt+\` (`Cmd+Alt+\`) when no text editor is focused.
+
+Both direct commands display a button on each item for the other action, so that e.g. a symbol can be copied to the clipboard while using the insert command without having to reopen the dialog.
+
+The search field in the symbol picker supports the same abbreviation identifiers as the regular abbreviation mechanism: typing an abbreviation like `alpha` will find the symbol `α`. The leader character (`\`) can optionally be included. Searching is also possible in reverse by typing or pasting a Unicode symbol to find the abbreviation identifiers that produce it.
+
 ### InfoView
 
 The InfoView is the main interactive component of Lean. It can be used to inspect proof goals, expected types and [diagnostics](#errors-warnings-and-information), as well as render arbitrary user interfaces called ['widgets'](#widgets) for Lean code.
