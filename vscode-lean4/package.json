@@ -827,7 +827,11 @@
             },
             {
                 "id": "lean",
-                "configuration": "./language-configuration.json"
+                "configuration": "./language-configuration.json",
+                "icon": {
+                    "dark": "./media/lean-file-icon-dark.svg",
+                    "light": "./media/lean-file-icon-light.svg"
+                }
             },
             {
                 "id": "lean4markdown",
