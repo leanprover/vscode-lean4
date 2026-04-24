@@ -41,6 +41,7 @@ import {
 } from '@leanprover/infoview-api'
 import {
     allowedLoggingMethods,
+    automaticallyRestartFileOnDependencyChange,
     disallowedLoggingMethods,
     isLoggingEnabled,
     loggingDir,
@@ -56,6 +57,7 @@ import { DiagnosticChangeEvent, LeanClientDiagnosticCollection } from './diagnos
 import { formatCommandExecutionOutput } from './utils/batch'
 import {
     c2pConverter,
+    LeanDiagnostic,
     LeanImport,
     LeanModule,
     LeanModuleHierarchyImportedByParams,
@@ -107,7 +109,7 @@ interface LeanClientCapabilties {
 const leanClientCapabilities: LeanClientCapabilties = {
     incrementalDiagnosticSupport: true,
     silentDiagnosticSupport: true,
-    rpcWireFormat: 'v1'
+    rpcWireFormat: 'v1',
 }
 
 export type PrepareModuleHierarchyResult =
@@ -136,6 +138,8 @@ export class LeanClient implements Disposable {
     private showingRestartMessage: boolean = false
     private isRestarting: boolean = false
     private staleDepNotifier: Disposable | undefined
+    // Prevent repeatedly restarting a file while the same stale-dependency diagnostic remains active.
+    private autoRestartedStaleDependencyUris: Set<string> = new Set()
     private configFileContents: Map<string, string> = new Map()
 
     private openServerDocuments: Set<string> = new Set<string>()
@@ -549,7 +553,9 @@ export class LeanClient implements Disposable {
             const vsCodeCollection = languages.createDiagnosticCollection('lean4')
             this.diagnosticCollection = new LeanClientDiagnosticCollection(vsCodeCollection)
             this.diagnosticCollection.onDidChangeDiagnostics((e: DiagnosticChangeEvent) => {
-                this.diagnosticsEmitter.fire(e.accumulatedParams())
+                const params = e.accumulatedParams()
+                this.diagnosticsEmitter.fire(params)
+                void this.maybeAutoRestartFileWithStaleDependencies(params)
             })
             this.client.onNotification('textDocument/publishDiagnostics', (params: LeanPublishDiagnosticsParams) => {
                 this.diagnosticCollection?.publishDiagnostics(params)
@@ -621,7 +627,46 @@ export class LeanClient implements Disposable {
         insideRestart = false
     }
 
+    private isStaleDependencyDiagnostic(diagnostic: LeanDiagnostic): boolean {
+        const message = diagnostic.message.toLowerCase()
+        const mentionsRestartFile = message.includes('restart file')
+        const isImportsOutdated = message.includes('imports are out of date')
+        const isDependencyModified = message.includes('dependenc') && message.includes('modified')
+        return mentionsRestartFile && (isImportsOutdated || isDependencyModified)
+    }
+
+    private async maybeAutoRestartFileWithStaleDependencies(params: LeanPublishDiagnosticsParams): Promise<void> {
+        const fileUri = parseExtUri(params.uri)
+        if (fileUri === undefined) {
+            return
+        }
+
+        const uri = fileUri.toString()
+        const hasStaleDependencyDiagnostic = params.diagnostics.some(d => this.isStaleDependencyDiagnostic(d))
+        if (!hasStaleDependencyDiagnostic) {
+            this.autoRestartedStaleDependencyUris.delete(uri)
+            return
+        }
+
+        if (!automaticallyRestartFileOnDependencyChange() || this.autoRestartedStaleDependencyUris.has(uri)) {
+            return
+        }
+
+        const document = lean.getLeanDocumentByUri(fileUri)
+        if (document === undefined) {
+            return
+        }
+
+        this.autoRestartedStaleDependencyUris.add(uri)
+        logger.log(`[LeanClient] Automatically restarting file with stale dependencies: ${uri}`)
+        await this.restartFile(document)
+    }
+
     private checkForImportsOutdatedError(params: LeanPublishDiagnosticsParams) {
+        if (automaticallyRestartFileOnDependencyChange()) {
+            return
+        }
+
         const fileUri = parseExtUri(params.uri)
         if (fileUri === undefined) {
             return
@@ -730,6 +775,7 @@ export class LeanClient implements Disposable {
         this.diagnosticCollection = undefined
         this.client = undefined
         this.openServerDocuments = new Set()
+        this.autoRestartedStaleDependencyUris = new Set()
         this.running = false
     }
 
