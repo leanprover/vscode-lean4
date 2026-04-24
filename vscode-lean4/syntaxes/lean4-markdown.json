@@ -2284,7 +2284,7 @@
                     "name": "punctuation.definition.bold.markdown"
                 }
             },
-            "end": "(?<=\\S)(\\1)|(?=$)",
+            "end": "(?<=\\S)(\\1)|(?=$|-/)",
             "name": "markup.bold.markdown",
             "patterns": [
                 {
@@ -2429,7 +2429,7 @@
                     "name": "punctuation.definition.italic.markdown"
                 }
             },
-            "end": "(?<=\\S)(\\1)((?!\\1)|(?=\\1\\1))|(?=$)",
+            "end": "(?<=\\S)(\\1)((?!\\1)|(?=\\1\\1))|(?=$|-/)",
             "name": "markup.italic.markdown",
             "patterns": [
                 {
