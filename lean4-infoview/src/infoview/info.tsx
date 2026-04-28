@@ -61,7 +61,7 @@ const InfoStatusBar = React.memo((props: InfoStatusBarProps) => {
         ready: '',
     }
     const statusColor = statusColTable[status]
-    const locationString = `${basename(pos.uri)}:${pos.line + 1}:${pos.character}`
+    const locationString = `${basename(decodeURIComponent(pos.uri))}:${pos.line + 1}:${pos.character}`
     const isPinned = kind === 'pin'
 
     const spinnerStyle: React.CSSProperties = {
