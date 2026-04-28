@@ -37,8 +37,8 @@ export type DependencyInstallationMethod =
 
 export type MissingDependencyInstallationProcedure =
     | { kind: 'Linux'; isGitAvailable: boolean; isCurlAvailable: boolean; packageManager: LinuxPackageManager }
-    | { kind: 'MacOS'; isGitAvailable: boolean; isCurlAvailable: true }
-    | { kind: 'Windows'; isGitAvailable: boolean; isCurlAvailable: true; isWinGetAvailable: boolean }
+    | { kind: 'MacOS'; isGitAvailable: boolean; isCurlAvailable: boolean }
+    | { kind: 'Windows'; isGitAvailable: boolean; isCurlAvailable: boolean; isWinGetAvailable: boolean }
     | { kind: 'Other'; isGitAvailable: boolean; isCurlAvailable: boolean }
 
 export type DependencyInstallationProcedure =
@@ -271,14 +271,14 @@ export class DepInstaller implements Disposable {
             case 'Darwin':
                 return {
                     kind: 'MacOS',
-                    isCurlAvailable: true,
+                    isCurlAvailable,
                     isGitAvailable,
                 }
             case 'Windows_NT':
                 const isWinGetAvailable = await this.diagnoser.checkWinGetAvailable()
                 return {
                     kind: 'Windows',
-                    isCurlAvailable: true,
+                    isCurlAvailable,
                     isGitAvailable,
                     isWinGetAvailable,
                 }
@@ -353,6 +353,12 @@ function dependencyInstallationMethod(p: MissingDependencyInstallationProcedure)
                     }
             }
         case 'MacOS':
+            if (!p.isCurlAvailable) {
+                return {
+                    kind: 'Manual',
+                    script: undefined,
+                }
+            }
             return {
                 kind: 'Automatic',
                 shell: 'Unix',
@@ -361,6 +367,12 @@ function dependencyInstallationMethod(p: MissingDependencyInstallationProcedure)
                 pathExtensions: [],
             }
         case 'Windows':
+            if (!p.isCurlAvailable) {
+                return {
+                    kind: 'Manual',
+                    script: undefined,
+                }
+            }
             if (!p.isWinGetAvailable) {
                 return {
                     kind: 'Automatic',
