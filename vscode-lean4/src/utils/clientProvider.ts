@@ -217,7 +217,6 @@ export class LeanClientProvider implements Disposable {
             return [false, undefined]
         }
 
-        logger.log('[ClientProvider] Creating LeanClient for ' + folderUri.toString())
         client = await LeanClient.init(folderUri, this.outputChannel)
         this.subscriptions.push(client)
         this.clients.set(key, client)
