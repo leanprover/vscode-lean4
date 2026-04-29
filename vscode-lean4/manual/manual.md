@@ -203,7 +203,7 @@ Instead, the state of all dependencies of `Module.lean` needs to be updated manu
 
 VS Code will display [error- or information-level diagnostics](#errors-warnings-and-information) whenever a dependency of a file is edited and saved. When initially opening a file and a dependency would need to be rebuilt to be up-to-date, it issues an error and refuses to [process](#file-processing) the rest of the file. When a dependency changes while the file is already open, it issues an information-level diagnostic, but will continue processing the file with the previous state of the dependency.
 
-In order to automatically trigger rebuilds of all changed dependencies when opening a file instead of issuing an error, the 'Lean 4: Automatically Build Dependency' setting can be enabled.
+In order to automatically trigger rebuilds of all changed dependencies when opening a file instead of issuing an error, the 'Lean 4: Automatically Build Dependencies' setting (`lean4.automaticallyBuildDependencies` in settings.json) can be enabled.
 
 <br/>
 
