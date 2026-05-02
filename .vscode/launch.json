@@ -18,145 +18,113 @@
             }
         },
         {
-            "name": "Extension Tests - bootstrap tests",
+            // Debug a single vscode-test-cli label inside the Extension
+            // Development Host. Breakpoints work in both the test file and
+            // anything under `vscode-lean4/src/`. The label list mirrors
+            // the files under `vscode-lean4/test/vscode-test-cli/` —
+            // update the `inputs` block below if a new test file is added.
+            "name": "Debug vscode-test-cli (pick label)",
             "type": "extensionHost",
             "request": "launch",
-            "runtimeExecutable": "${execPath}",
-            "args": [
-                "--extensionDevelopmentPath=${workspaceFolder}/vscode-lean4",
-                "--extensionTestsPath=${workspaceFolder}/vscode-lean4/out/test/suite/index"
-            ],
-            "env": {
-                "LEAN4_TEST_FOLDER": "bootstrap"
-            },
-            "cwd": "${workspaceFolder}/vscode-lean4/out/",
-            "outFiles": ["${workspaceFolder}/vscode-lean4/out/test/suite/**/*.js"],
-            "preLaunchTask": "watchTest"
+            "testConfiguration": "${workspaceFolder}/vscode-lean4/.vscode-test.mjs",
+            "testConfigurationLabel": "cli-${input:cliLabel}",
+            "outFiles": ["${workspaceFolder}/vscode-lean4/out/**/*.js"],
+            "preLaunchTask": "compile-tests"
         },
         {
-            "name": "Extension Tests - lean3",
-            "type": "extensionHost",
+            // Debug the currently-open vitest test file. Vitest spawns
+            // workers by default; `autoAttachChildProcesses` follows them
+            // so breakpoints land. Pure-TS path (no VS Code, no xvfb).
+            "name": "Debug Vitest (current file)",
+            "type": "node",
             "request": "launch",
-            "runtimeExecutable": "${execPath}",
-            "args": [
-                "--extensionDevelopmentPath=${workspaceFolder}/vscode-lean4",
-                "--extensionTestsPath=${workspaceFolder}/vscode-lean4/out/test/suite/index"
-            ],
-            "env": {
-                "LEAN4_TEST_FOLDER": "lean3"
-            },
-            "cwd": "${workspaceFolder}/vscode-lean4/out/",
-            "outFiles": ["${workspaceFolder}/vscode-lean4/out/test/suite/**/*.js"],
-            "preLaunchTask": "watchTest"
+            "program": "${workspaceFolder}/node_modules/vitest/vitest.mjs",
+            "args": ["run", "${relativeFile}"],
+            "autoAttachChildProcesses": true,
+            "smartStep": true,
+            "console": "integratedTerminal",
+            "skipFiles": ["<node_internals>/**", "**/node_modules/**"]
         },
         {
-            "name": "Extension Tests - infoview",
-            "type": "extensionHost",
+            // Run the full non-nightly suite (vitest + infoview tsc +
+            // grammar + vscode-test-cli + wdio) without a debugger.
+            // Opens real VS Code windows for the integration steps,
+            // which grab focus for the duration. `preLaunchTask: build`
+            // populates workspace dist/ so the infoview tsc step's
+            // cross-package imports resolve.
+            "name": "Run all non-nightly tests",
+            "type": "node",
             "request": "launch",
-            "runtimeExecutable": "${execPath}",
-            "args": [
-                "--extensionDevelopmentPath=${workspaceFolder}/vscode-lean4",
-                "--extensionTestsPath=${workspaceFolder}/vscode-lean4/out/test/suite/index"
-            ],
-            "env": {
-                "LEAN4_TEST_FOLDER": "info"
-            },
-            "cwd": "${workspaceFolder}/vscode-lean4/out/",
-            "outFiles": ["${workspaceFolder}/vscode-lean4/out/test/suite/**/*.js"],
-            "preLaunchTask": "watchTest"
+            "runtimeExecutable": "npm",
+            "runtimeArgs": ["test"],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "preLaunchTask": "build",
+            "skipFiles": ["<node_internals>/**"]
         },
         {
-            "name": "Extension Tests - adhoc",
-            "type": "extensionHost",
+            // Same as above, wrapped in `xvfb-run`. The integration steps
+            // render to a virtual X display so VS Code windows don't
+            // steal focus. Requires `xorg-x11-server-Xvfb` (Fedora) or
+            // `xvfb` (Debian/Ubuntu). The script `test:headless` is
+            // `xvfb-run -a npm test`.
+            "name": "Run all non-nightly tests (headless)",
+            "type": "node",
             "request": "launch",
-            "runtimeExecutable": "${execPath}",
-            "args": [
-                "--extensionDevelopmentPath=${workspaceFolder}/vscode-lean4",
-                "--extensionTestsPath=${workspaceFolder}/vscode-lean4/out/test/suite/index"
-            ],
-            "env": {
-                "LEAN4_TEST_FOLDER": "simple"
-            },
-            "cwd": "${workspaceFolder}/vscode-lean4/out/",
-            "outFiles": ["${workspaceFolder}/vscode-lean4/out/test/suite/**/*.js"],
-            "preLaunchTask": "watchTest"
+            "runtimeExecutable": "npm",
+            "runtimeArgs": ["run", "test:headless"],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "preLaunchTask": "build",
+            "skipFiles": ["<node_internals>/**"]
         },
         {
-            "name": "Extension Tests - simple",
-            "type": "extensionHost",
+            // Run the full nightly suite — exercises the real elan
+            // install flow plus `lake new … math` (Mathlib clone +
+            // cache fetch). Slow (tens of minutes) and network-heavy.
+            // The `test:nightly` script sets `LEAN4_TEST_ELAN_INSTALL=1`
+            // via `cross-env`, which makes `setupTestHome` tolerate a
+            // missing elan binary on PATH (the suite installs it
+            // itself).
+            "name": "Run all nightly tests",
+            "type": "node",
             "request": "launch",
-            "runtimeExecutable": "${execPath}",
-            "args": [
-                "--extensionDevelopmentPath=${workspaceFolder}/vscode-lean4",
-                "--extensionTestsPath=${workspaceFolder}/vscode-lean4/out/test/suite/index",
-                "${workspaceFolder}/vscode-lean4/test/test-fixtures/simple"
-            ],
-            "env": {
-                "LEAN4_TEST_FOLDER": "simple"
-            },
-            "cwd": "${workspaceFolder}/vscode-lean4/out/",
-            "outFiles": ["${workspaceFolder}/vscode-lean4/out/test/suite/**/*.js"],
-            "preLaunchTask": "watchTest"
+            "runtimeExecutable": "npm",
+            "runtimeArgs": ["run", "test:nightly", "--workspace=lean4"],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "preLaunchTask": "build",
+            "skipFiles": ["<node_internals>/**"]
         },
         {
-            "name": "Extension Tests - toolchains",
-            "type": "extensionHost",
+            // Same as above, xvfb-wrapped via `test:headless:nightly`.
+            "name": "Run all nightly tests (headless)",
+            "type": "node",
             "request": "launch",
-            "runtimeExecutable": "${execPath}",
-            "args": [
-                "--extensionDevelopmentPath=${workspaceFolder}/vscode-lean4",
-                "--extensionTestsPath=${workspaceFolder}/vscode-lean4/out/test/suite/index",
-                "${workspaceFolder}/vscode-lean4/test/test-fixtures/simple"
-            ],
-            "env": {
-                "LEAN4_TEST_FOLDER": "toolchains"
-            },
-            "cwd": "${workspaceFolder}/vscode-lean4/out/",
-            "outFiles": ["${workspaceFolder}/vscode-lean4/out/test/suite/**/*.js"],
-            "preLaunchTask": "watchTest"
-        },
+            "runtimeExecutable": "npm",
+            "runtimeArgs": ["run", "test:headless:nightly", "--workspace=lean4"],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "preLaunchTask": "build",
+            "skipFiles": ["<node_internals>/**"]
+        }
+    ],
+    "inputs": [
         {
-            "name": "Extension Tests - restarts",
-            "type": "extensionHost",
-            "request": "launch",
-            "runtimeExecutable": "${execPath}",
-            "args": [
-                "--extensionDevelopmentPath=${workspaceFolder}/vscode-lean4",
-                "--extensionTestsPath=${workspaceFolder}/vscode-lean4/out/test/suite/index",
-                "${workspaceFolder}/vscode-lean4/test/test-fixtures/simple"
-            ],
-            "env": {
-                "LEAN4_TEST_FOLDER": "restarts"
-            },
-            "cwd": "${workspaceFolder}/vscode-lean4/out/",
-            "outFiles": ["${workspaceFolder}/vscode-lean4/out/test/suite/**/*.js"],
-            "preLaunchTask": "watchTest"
-        },
-        {
-            "name": "Extension Tests - multi-folder",
-            "type": "extensionHost",
-            "request": "launch",
-            "runtimeExecutable": "${execPath}",
-            "args": [
-                "--extensionDevelopmentPath=${workspaceFolder}/vscode-lean4",
-                "--extensionTestsPath=${workspaceFolder}/vscode-lean4/out/test/suite/index",
-                "${workspaceFolder}/vscode-lean4/test/test-fixtures/multi/multi.code-workspace"
-            ],
-            "env": {
-                "LEAN4_TEST_FOLDER": "multi"
-            },
-            "cwd": "${workspaceFolder}/vscode-lean4/out/",
-            "outFiles": ["${workspaceFolder}/vscode-lean4/out/test/suite/**/*.js"],
-            "preLaunchTask": "watchTest"
-        },
-        {
-            "name": "Launch runTests.js",
-            "program": "${workspaceFolder}/vscode-lean4/out/test/suite/runTest.js",
-            "request": "launch",
-            "skipFiles": ["<node_internals>/**"],
-            "cwd": "${workspaceFolder}/vscode-lean4/",
-            "sourceMaps": true,
-            "type": "node"
+            "id": "cliLabel",
+            "type": "pickString",
+            "description": "vscode-test-cli label to debug",
+            "options": [
+                "abbreviation",
+                "lakefile-toml-schema",
+                "launch-modes",
+                "preconditions",
+                "project-actions",
+                "project-init",
+                "server-launch",
+                "smoke",
+                "version-management"
+            ]
         }
     ]
 }

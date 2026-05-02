@@ -1,0 +1,237 @@
+name: tests
+
+on:
+  pull_request:
+    branches: ['*']
+  # Restrict `push` to maintainer-curated refs. Feature branches with an open
+  # PR fire `pull_request` instead, so this avoids the duplicate run while
+  # still gating direct merges to `master` / release branches and giving
+  # fork PRs (which only surface as `pull_request` events upstream) full CI.
+  push:
+    branches:
+      - master
+      - 'release/**'
+  schedule:
+    # Nightly, 04:00 UTC. Only the nightly job runs on this trigger.
+    - cron: '0 4 * * *'
+  workflow_dispatch:
+
+# Cancel in-progress runs of this workflow when a newer commit lands on the
+# same ref. The group is keyed off `github.workflow` and `github.ref`, so
+# rapid-fire pushes (or a `push` and `pull_request` event for the same ref)
+# coalesce — only the latest run survives. The schedule trigger gets its own
+# group via `github.run_id` so a nightly run never cancels itself or a
+# concurrent PR run.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name == 'schedule' && github.run_id || '' }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  # Unified test job: unit → grammar → vscode-test-cli → wdio. Ordered fast-to-slow
+  # so failures surface quickly. Shares the VS Code/elan caches across stages.
+  test:
+    # Runs on regular code-change events only. Excluded from `schedule` (the
+    # nightly cron only exercises the install/network paths) and from
+    # `workflow_dispatch` so a manual run is symmetric with schedule —
+    # dispatching the workflow re-runs `nightly` + `elan-install-windows`
+    # without also triggering ~hour-long `test`. To re-run `test`, push to a
+    # branch (or open a PR) instead of using the manual button.
+    if: github.event_name == 'pull_request' || github.event_name == 'push'
+    runs-on: ubuntu-latest
+    # Outer safety net: a wedged `execFileSync` (lake / elan / git) blocks the
+    # Node event loop synchronously, so mocha's per-test timer never fires and
+    # the job sits at GitHub's default 360-minute limit. Cap well below that.
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+
+      # Resolve `:stable` to a concrete VS Code version so the cache key rotates
+      # automatically when stable bumps. The previous keying — bare
+      # `vscode-test-${{ runner.os }}-stable` — never changed when stable
+      # moved, so each runner kept reusing the version that was first cached.
+      - name: Resolve VS Code stable version
+        id: vscode
+        uses: actions/github-script@v7
+        with:
+          result-encoding: string
+          script: |
+            const r = await fetch('https://update.code.visualstudio.com/api/releases/stable')
+            const versions = await r.json()
+            core.setOutput('version', versions[0])
+
+      - name: Cache VS Code test binaries
+        uses: actions/cache@v4
+        with:
+          path: |
+            vscode-lean4/.vscode-test
+            vscode-lean4/.wdio-vscode-service
+          # Include the resolved version so a new stable triggers a fresh
+          # download. `restore-keys:` falls back to the most recent cache for
+          # this OS so the new run still benefits from partial reuse (the
+          # `.wdio-vscode-service/` extensions dir, etc.) while it pulls the
+          # new VS Code binary.
+          key: vscode-test-${{ runner.os }}-${{ steps.vscode.outputs.version }}
+          restore-keys: |
+            vscode-test-${{ runner.os }}-
+
+      # Resolve `leanprover/lean4:stable` to a concrete version so the elan
+      # cache key rotates exactly when Lean publishes a new stable release.
+      # Previous version was keyed on the calendar month (`date +%Y-%m`),
+      # which is decoupled from Lean's release cadence — every fixture's
+      # `lean-toolchain` is `leanprover/lean4:stable`, so a stable release
+      # could ship without invalidating the cache and tests would silently
+      # keep exercising the old toolchain. `release.lean-lang.org` returns
+      # `{ stable: [{ name, … }, …] }` with the most recent stable first.
+      # `restore-keys` falls back to whatever stable was previously cached
+      # so we don't pay the full toolchain re-download on each rotation —
+      # only the new stable's toolchain itself needs to download.
+      - name: Resolve Lean stable version
+        id: lean
+        uses: actions/github-script@v7
+        with:
+          result-encoding: string
+          script: |
+            const r = await fetch('https://release.lean-lang.org/')
+            if (!r.ok) throw new Error(`failed to fetch lean release index: ${r.status}`)
+            const data = await r.json()
+            const stable = data?.stable?.[0]?.name
+            if (!stable) throw new Error(`no stable release found in lean release index: ${JSON.stringify(data).slice(0, 200)}`)
+            core.setOutput('version', stable)
+
+      - name: Cache elan + toolchains
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/.lean4-test-home/.elan
+          key: elan-${{ runner.os }}-${{ steps.lean.outputs.version }}
+          restore-keys: |
+            elan-${{ runner.os }}-
+
+      - name: Install elan (if not cached)
+        # A correct elan install sets leanprover/lean4:stable as the default toolchain,
+        # which the detached / untitled tests rely on. Do not override with
+        # --default-toolchain.
+        run: |
+          HOME_OVERRIDE="$GITHUB_WORKSPACE/.lean4-test-home"
+          mkdir -p "$HOME_OVERRIDE"
+          if [ ! -x "$HOME_OVERRIDE/.elan/bin/elan" ]; then
+            curl -sSfL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh \
+              | HOME="$HOME_OVERRIDE" ELAN_HOME="$HOME_OVERRIDE/.elan" \
+                sh -s -- -y
+          fi
+          echo "$HOME_OVERRIDE/.elan/bin" >> "$GITHUB_PATH"
+
+      - run: npm ci
+
+      # Build dev variants of every workspace topologically (lerna). Two
+      # consumers force `:dev`:
+      #   - vscode-lean4's `pretest:*` chain runs `build:dev` (webpack
+      #     `--env development`), which imports `@leanprover/infoview/loader`
+      #     and resolves it to `dist/loader.development.js`. The plain
+      #     `build` only emits `*.production.min.js`.
+      #   - The infoview's tsc-based `npm test` resolves
+      #     `@leanprover/infoview-api` via its `package.json`'s
+      #     `"types": "dist/index"`; both `build` and `build:dev` produce
+      #     the .d.ts, so `:dev` covers it too.
+      # `npm ci` doesn't build workspaces, so on a fresh CI runner there is
+      # nothing in `dist/` until this step runs. (vscode-lean4 gets rebuilt
+      # later by its own `pretest:*` hook — harmless.)
+      - run: npm run build:dev
+
+      - name: Run all tests
+        env:
+          LEAN4_TEST_HOME_OVERRIDE: ${{ github.workspace }}/.lean4-test-home
+        # Go through the `test:headless` script (defined in `package.json`)
+        # rather than calling `xvfb-run` inline, so flags / wrapper changes
+        # made for local dev automatically apply to CI too.
+        run: npm run test:headless
+
+  # Exercises the real elan install flow. Gated behind the nightly schedule (or manual
+  # dispatch) because it hits the network hard and adds several minutes.
+  nightly:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    # Higher than `test`: nightly runs `lake new … math`, which clones Mathlib
+    # and fetches its build cache, plus the toolchain-update / elan-install
+    # flows. Realistic upper bound is ~45 min on a slow runner; 90 leaves
+    # margin without letting a wedged shellout sit for 6h.
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Resolve VS Code stable version
+        id: vscode
+        uses: actions/github-script@v7
+        with:
+          result-encoding: string
+          script: |
+            const r = await fetch('https://update.code.visualstudio.com/api/releases/stable')
+            const versions = await r.json()
+            core.setOutput('version', versions[0])
+
+      - name: Cache VS Code test binaries
+        uses: actions/cache@v4
+        with:
+          path: vscode-lean4/.vscode-test
+          key: vscode-test-${{ runner.os }}-${{ steps.vscode.outputs.version }}
+          restore-keys: |
+            vscode-test-${{ runner.os }}-
+
+      - run: npm ci
+      # Same rationale as in the `test` job above.
+      - run: npm run build:dev
+      - name: Run nightly tests
+        # Same rationale as the `test` job: route through the headless
+        # script so CI tracks local.
+        run: npm run test:headless:nightly --workspace=lean4
+
+  # Windows-only coverage of elan's bootstrap installer. Everything else in the
+  # test suite stays Linux-only (see vscode-lean4/test/README.md); this job
+  # exists specifically because elan's Windows installer is a different code
+  # path from the POSIX one.
+  elan-install-windows:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: windows-latest
+    # Smaller scope than `nightly` (only the elan-install subset), so the
+    # download budget is tighter.
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Resolve VS Code stable version
+        id: vscode
+        uses: actions/github-script@v7
+        with:
+          result-encoding: string
+          script: |
+            const r = await fetch('https://update.code.visualstudio.com/api/releases/stable')
+            const versions = await r.json()
+            core.setOutput('version', versions[0])
+
+      - name: Cache VS Code test binaries
+        uses: actions/cache@v4
+        with:
+          path: vscode-lean4/.vscode-test
+          key: vscode-test-${{ runner.os }}-${{ steps.vscode.outputs.version }}
+          restore-keys: |
+            vscode-test-${{ runner.os }}-
+
+      - run: npm ci
+      # Same rationale as in the `test` job above.
+      - run: npm run build:dev
+      - name: Run elan-install test
+        run: npm run test:elan-install --workspace=lean4

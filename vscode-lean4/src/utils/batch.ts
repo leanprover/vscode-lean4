@@ -110,7 +110,6 @@ export function batchExecuteWithProc(
         })
 
         proc.on('close', (code, signal) => {
-            logger.log(`child process exited with code ${code}`)
             if (signal === 'SIGTERM') {
                 if (channel?.combined) {
                     channel.combined.appendLine('=> Operation cancelled by user.')
