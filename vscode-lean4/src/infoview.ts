@@ -82,7 +82,6 @@ class RpcSessionAtPos implements Disposable {
             try {
                 await client.sendNotification('$/lean/rpc/keepAlive', params)
             } catch (e) {
-                logger.log(`[InfoProvider] failed to send keepalive for ${uri}: ${e}`)
                 if (this.keepAliveInterval) clearInterval(this.keepAliveInterval)
             }
         }, keepAlivePeriodMs)
@@ -215,7 +214,6 @@ export class InfoProvider implements Disposable {
                 const promise = client.sendRequest(method, params, tk.token).catch(async ex => {
                     if (ex.code === RpcErrorCode.WorkerCrashed) {
                         // ex codes related with worker exited or crashed
-                        logger.log(`[InfoProvider]The Lean Server has stopped processing this file: ${ex.message}`)
                         await this.onWorkerStopped(uri, client, {
                             message: 'The Lean Server has stopped processing this file: ',
                             reason: ex.message as string,
@@ -655,11 +653,9 @@ export class InfoProvider implements Disposable {
     }
 
     private async onClientAdded(client: LeanClient) {
-        logger.log(`[InfoProvider] Adding client for workspace: ${client.getClientFolder()}`)
 
         this.subscriptions.push(
             client.restarted(async () => {
-                logger.log('[InfoProvider] got client restarted event')
                 // This event is triggered both the first time the server starts
                 // as well as when the server restarts.
 
@@ -671,7 +667,6 @@ export class InfoProvider implements Disposable {
                 await this.onClientRestarted(client)
             }),
             client.restartedWorker(async uri => {
-                logger.log('[InfoProvider] got worker restarted event')
                 await this.onWorkerRestarted(uri)
             }),
             client.didSetLanguage(() => this.onLanguageChanged()),
@@ -685,7 +680,6 @@ export class InfoProvider implements Disposable {
         await this.webviewPanel?.api.serverStopped(undefined) // clear any server stopped state
         if (this.workersFailed.has(uri)) {
             this.workersFailed.delete(uri)
-            logger.log('[InfoProvider] Restarting worker for file: ' + uri)
         }
         await this.sendPosition()
     }
@@ -701,7 +695,6 @@ export class InfoProvider implements Disposable {
         if (!this.workersFailed.has(uri)) {
             this.workersFailed.set(uri, reason)
         }
-        logger.log(`[InfoProvider]client crashed: ${uri}`)
         client.showRestartMessage(true, extUri)
     }
 
@@ -717,15 +710,12 @@ export class InfoProvider implements Disposable {
             await this.webviewPanel?.api.serverStopped(reason)
         }
 
-        logger.log(`[InfoProvider] client stopped: ${client.getClientFolder()}`)
-
         // remember this client is in a stopped state
         const key = client.getClientFolder()
         await this.sendPosition()
         if (!this.clientsFailed.has(key.toString())) {
             this.clientsFailed.set(key.toString(), reason)
         }
-        logger.log(`[InfoProvider] client stopped: ${key}`)
         client.showRestartMessage()
     }
 
@@ -888,17 +878,12 @@ export class InfoProvider implements Disposable {
         // by listening to notifications.  Send these notifications when the infoview starts
         // so that it has up-to-date information.
         if (client?.initializeResult) {
-            logger.log('[InfoProvider] initInfoView!')
             await this.sendConfig()
             await this.webviewPanel?.api.serverStopped(undefined) // clear any server stopped state
             await this.webviewPanel?.api.serverRestarted(client.initializeResult)
             await this.sendDiagnostics(client)
             await this.sendProgress(client)
             await this.sendPosition()
-        } else if (client === undefined) {
-            logger.log('[InfoProvider] initInfoView got null client.')
-        } else {
-            logger.log('[InfoProvider] initInfoView got undefined client.initializeResult')
         }
     }
 
@@ -999,10 +984,6 @@ export class InfoProvider implements Disposable {
                 } else {
                     await this.updateStatus(loc)
                 }
-            } else {
-                logger.log(
-                    '[InfoProvider] ### what does it mean to have sendPosition but no LeanClient for this document???',
-                )
             }
         } else {
             await this.updateStatus(loc)
@@ -1086,7 +1067,7 @@ export class InfoProvider implements Disposable {
             <head>
                 <meta charset="UTF-8" />
                 <meta http-equiv="Content-type" content="text/html;charset=utf-8">
-                <title>Infoview</title>
+                <title>InfoView</title>
                 <style>${this.stylesheet}</style>
                 <link rel="stylesheet" href="${this.getLocalPath('dist/lean4-infoview/index.css')}">
             </head>

@@ -125,6 +125,23 @@ export type ModuleHierarchyImportedByResult =
 
 export type ServerProgress = Map<ExtUri, LeanFileProgressProcessingInfo[]>
 
+const CLEAN_EXIT_NOISE = /Server process exited with code 0\.$/
+function filterCleanServerExit(channel: OutputChannel): OutputChannel {
+    return {
+        get name() { return channel.name },
+        append: v => channel.append(v),
+        appendLine: v => {
+            if (CLEAN_EXIT_NOISE.test(v)) return
+            channel.appendLine(v)
+        },
+        replace: v => channel.replace(v),
+        clear: () => channel.clear(),
+        show: channel.show.bind(channel),
+        hide: () => channel.hide(),
+        dispose: () => channel.dispose(),
+    }
+}
+
 export class LeanClient implements Disposable {
     running: boolean
     private client: LanguageClient | undefined
@@ -452,7 +469,6 @@ export class LeanClient implements Disposable {
                 }
             }
 
-            logger.log('[LeanClient] Restarting Lean Server')
             if (this.isStarted()) {
                 await this.stop()
             }
@@ -525,18 +541,14 @@ export class LeanClient implements Disposable {
         try {
             this.client.onDidChangeState(async s => {
                 // see https://github.com/microsoft/vscode-languageserver-node/issues/825
-                if (s.newState === State.Starting) {
-                    logger.log('[LeanClient] starting')
-                } else if (s.newState === State.Running) {
+                if (s.newState === State.Running) {
                     const end = Date.now()
-                    logger.log(`[LeanClient] running, started in ${end - startTime} ms`)
                     this.running = true // may have been auto restarted after it failed.
                     if (!insideRestart) {
                         this.restartedEmitter.fire(undefined)
                     }
                 } else if (s.newState === State.Stopped) {
                     this.running = false
-                    logger.log('[LeanClient] has stopped or it failed to start')
                     if (!this.noPrompt) {
                         // only raise this event and show the message if we are not the ones
                         // who called the stop() method.
@@ -570,7 +582,6 @@ export class LeanClient implements Disposable {
             this.running = true
         } catch (error) {
             const msg = '' + error
-            logger.log(`[LeanClient] restart error ${msg}`)
             this.outputChannel.appendLine(msg)
             this.serverFailedEmitter.fire(msg)
             insideRestart = false
@@ -719,7 +730,7 @@ export class LeanClient implements Disposable {
                 // this to throw an exception which then causes those tests to fail.
                 await this.client.stop()
             } catch (e) {
-                logger.log(`[LeanClient] Error stopping language client: ${e}`)
+
             }
         }
 
@@ -762,7 +773,6 @@ export class LeanClient implements Disposable {
             )
             return
         }
-        logger.log(`[LeanClient] Restarting File: ${uri}`)
         await this.client.sendNotification(
             'textDocument/didClose',
             this.client.code2ProtocolConverter.asCloseTextDocumentParams(leanDoc.doc),
@@ -859,7 +869,7 @@ export class LeanClient implements Disposable {
         }
 
         return {
-            outputChannel: this.outputChannel,
+            outputChannel: filterCleanServerExit(this.outputChannel),
             revealOutputChannelOn: RevealOutputChannelOn.Never, // contrary to the name, this disables the message boxes
             documentSelector: [documentSelector, { ...documentSelector, language: 'lean' }],
             workspaceFolder,

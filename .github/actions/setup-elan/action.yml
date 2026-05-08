@@ -1,0 +1,94 @@
+name: Set up elan + Lean toolchain
+description: >
+  Install elan into the test-home directory (if not cached), prepend its
+  `bin/` to `$GITHUB_PATH`, and pre-install a Lean toolchain so the
+  download surfaces as a named CI step rather than blocking the first
+  test invocation. Optionally sets that toolchain as the elan default.
+  The caller is responsible for restoring/saving the elan cache around
+  this action; cache-key choice is job-specific (resolved version for
+  `:stable`, UTC date for `:nightly`).
+
+inputs:
+  channel:
+    description: Lean toolchain channel (e.g. leanprover/lean4:stable, leanprover/lean4:nightly).
+    required: true
+  default:
+    description: If `'true'`, set the channel as elan's default toolchain after install.
+    required: false
+    default: 'false'
+
+runs:
+  using: composite
+  steps:
+    # Run the same install scripts the extension itself executes (see
+    # `vscode-lean4/scripts/elan-install/install-{unix.sh,windows.ps1}`,
+    # imported by `src/utils/leanInstaller.ts` via webpack `asset/source`).
+    # Single source of truth — edit the script files and both production
+    # and CI pick up the change.
+    #
+    # The scripts default-toolchain to `leanprover/lean4:stable`; callers
+    # that need a different default (e.g. the nightly-Lean job) pass
+    # `default: true` so the pre-install step below flips it.
+    - name: Install elan (Linux/macOS, if not cached)
+      if: runner.os != 'Windows'
+      shell: bash
+      run: |
+        HOME_OVERRIDE="$GITHUB_WORKSPACE/.lean4-test-home"
+        mkdir -p "$HOME_OVERRIDE"
+        if [ ! -x "$HOME_OVERRIDE/.elan/bin/elan" ]; then
+          HOME="$HOME_OVERRIDE" ELAN_HOME="$HOME_OVERRIDE/.elan" \
+            bash vscode-lean4/scripts/elan-install/install-unix.sh
+        fi
+        echo "$HOME_OVERRIDE/.elan/bin" >> "$GITHUB_PATH"
+
+    - name: Install elan (Windows, if not cached)
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: |
+        $homeOverride = Join-Path $env:GITHUB_WORKSPACE '.lean4-test-home'
+        New-Item -ItemType Directory -Force -Path $homeOverride | Out-Null
+        $elanBin = Join-Path $homeOverride '.elan\bin\elan.exe'
+        if (-not (Test-Path $elanBin)) {
+          $env:USERPROFILE = $homeOverride
+          $env:ELAN_HOME = (Join-Path $homeOverride '.elan')
+          & "$env:GITHUB_WORKSPACE\vscode-lean4\scripts\elan-install\install-windows.ps1"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+        }
+        Add-Content -Path $env:GITHUB_PATH -Value (Join-Path $homeOverride '.elan\bin')
+
+    # `elan-init` only installs the elan binary and records `:stable` as the
+    # default toolchain — it does *not* fetch the toolchain itself. Without
+    # this step, the first test that resolves the channel eats the full
+    # toolchain download and a network blip there surfaces as a confusing
+    # test failure rather than a named CI step. `elan toolchain install`
+    # eagerly re-resolves the channel, so it also covers the cache-hit /
+    # channel-rotated case (cache restored from a previous run with an older
+    # resolution → this step downloads the new toolchain).
+    #
+    # `elan toolchain install` is *not* idempotent: it errors with
+    # `'leanprover/lean4:vX.Y.Z' is already installed` when the cache
+    # already holds the resolved version. Treat that specific message as
+    # success — we wanted the toolchain installed and it is — while
+    # propagating any other non-zero exit (network failure, bad channel,
+    # etc.).
+    #
+    # `shell: bash` works on Windows too because GitHub-hosted Windows
+    # runners ship Git Bash; `elan` is the same idempotency contract on
+    # both OSes once on PATH.
+    - name: Pre-install ${{ inputs.channel }}${{ inputs.default == 'true' && ' + set as elan default' || '' }}
+      shell: bash
+      env:
+        ELAN_HOME: ${{ github.workspace }}/.lean4-test-home/.elan
+        CHANNEL: ${{ inputs.channel }}
+        SET_DEFAULT: ${{ inputs.default }}
+      run: |
+        if out=$(elan toolchain install "$CHANNEL" 2>&1); then
+          echo "$out"
+        else
+          ec=$?
+          echo "$out"
+          echo "$out" | grep -q 'is already installed' || exit "$ec"
+        fi
+        if [ "$SET_DEFAULT" = "true" ]; then
+          elan default "$CHANNEL"
+        fi

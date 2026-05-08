@@ -1,0 +1,17 @@
+{
+    "extends": "./tsconfig.json",
+    "compilerOptions": {
+        "outDir": "out",
+        "rootDir": ".",
+        "module": "commonjs",
+        "types": ["node", "mocha"],
+        "skipLibCheck": true,
+        "allowUnreachableCode": false,
+        // Main tsconfig sets `noEmit: true` so it's type-check-only and
+        // doesn't accidentally clobber `out/` from a stray `tsc` invocation.
+        // This config is the one that *does* emit (mocha loads `out/test/**/*.test.js`).
+        "noEmit": false
+    },
+    "include": ["test/**/*", "src/**/*"],
+    "exclude": ["node_modules", "test/fixtures"]
+}

@@ -31,13 +31,16 @@ module.exports = {
             './lean4-unicode-input/tsconfig.json',
             './lean4-unicode-input-component/tsconfig.json',
             './vscode-lean4/tsconfig.json',
+            './vscode-lean4/tsconfig.test.json',
             './vscode-lean4/webview/tsconfig.json',
             './vscode-lean4/loogleview/tsconfig.json',
             './vscode-lean4/abbreviationview/tsconfig.json',
         ],
         sourceType: 'module',
     },
-    ignorePatterns: ['**/dist/**/*', '**/out/**/*', '*.js'],
+    // ESLint v8 ignores files starting with `.` by default; the negation
+    // re-includes our dotfile-prefixed configs (`.vscode-test.mjs`).
+    ignorePatterns: ['**/dist/**/*', '**/out/**/*', '*.js', '!.vscode-test.mjs'],
     plugins: ['@typescript-eslint', '@typescript-eslint/eslint-plugin'],
     rules: {
         '@typescript-eslint/adjacent-overload-signatures': 'error',
@@ -140,4 +143,16 @@ module.exports = {
         radix: 'off',
         'no-shadow': 'off',
     },
+    overrides: [
+        {
+            // .mjs config/scripts (`.vscode-test.mjs`, `wdio.conf.mjs`, `scripts/*.mjs`)
+            // are not part of any tsconfig, so the type-aware ruleset can't run on them.
+            // `disable-type-checked` turns off every rule from `recommended-requiring-type-checking`
+            // (which is extended at the top level) and `parserOptions.project: null` keeps the
+            // parser from trying to look the file up in a project.
+            files: ['*.mjs'],
+            parserOptions: { project: null },
+            extends: ['plugin:@typescript-eslint/disable-type-checked'],
+        },
+    ],
 }

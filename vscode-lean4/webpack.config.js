@@ -21,7 +21,12 @@ const getWebviewConfig = env => ({
         rules: [
             {
                 test: /\.tsx?$/,
-                use: 'ts-loader',
+                // The repo's `tsconfig.json` sets `noEmit: true` so a stray
+                // `tsc -p tsconfig.json` can't clobber the test runner's
+                // `out/` emission. ts-loader needs emission to feed webpack,
+                // so we override `noEmit` per loader-config rather than at
+                // the tsconfig level.
+                use: { loader: 'ts-loader', options: { compilerOptions: { noEmit: false } } },
                 exclude: /node_modules/,
             },
             {
@@ -85,7 +90,12 @@ const getLoogleViewConfig = env => ({
         rules: [
             {
                 test: /\.tsx?$/,
-                use: 'ts-loader',
+                // The repo's `tsconfig.json` sets `noEmit: true` so a stray
+                // `tsc -p tsconfig.json` can't clobber the test runner's
+                // `out/` emission. ts-loader needs emission to feed webpack,
+                // so we override `noEmit` per loader-config rather than at
+                // the tsconfig level.
+                use: { loader: 'ts-loader', options: { compilerOptions: { noEmit: false } } },
                 exclude: /node_modules/,
             },
             {
@@ -132,7 +142,12 @@ const getAbbreviationViewConfig = env => ({
         rules: [
             {
                 test: /\.tsx?$/,
-                use: 'ts-loader',
+                // The repo's `tsconfig.json` sets `noEmit: true` so a stray
+                // `tsc -p tsconfig.json` can't clobber the test runner's
+                // `out/` emission. ts-loader needs emission to feed webpack,
+                // so we override `noEmit` per loader-config rather than at
+                // the tsconfig level.
+                use: { loader: 'ts-loader', options: { compilerOptions: { noEmit: false } } },
                 exclude: /node_modules/,
             },
             {
@@ -172,8 +187,22 @@ const getExtensionConfig = env => ({
         rules: [
             {
                 test: /\.tsx?$/,
-                use: 'ts-loader',
+                // The repo's `tsconfig.json` sets `noEmit: true` so a stray
+                // `tsc -p tsconfig.json` can't clobber the test runner's
+                // `out/` emission. ts-loader needs emission to feed webpack,
+                // so we override `noEmit` per loader-config rather than at
+                // the tsconfig level.
+                use: { loader: 'ts-loader', options: { compilerOptions: { noEmit: false } } },
                 exclude: /node_modules/,
+            },
+            {
+                // Inline the elan install scripts (`scripts/elan-install/*.{sh,ps1}`)
+                // as raw strings so `import script from '<file>'` returns the
+                // file content. The extension passes that string to a shell
+                // (`/bin/bash` on Unix, `powershell.exe` on Windows). Same
+                // files are run directly by the CI `setup-elan` composite.
+                test: /\.(sh|ps1)$/,
+                type: 'asset/source',
             },
         ],
     },
