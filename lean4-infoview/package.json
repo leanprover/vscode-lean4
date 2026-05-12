@@ -11,7 +11,7 @@
         "build": "rollup --config --environment NODE_ENV:production",
         "build:dev": "rollup --config --environment NODE_ENV:development",
         "watchTest": "npm run watch",
-        "test": "tsc -p test/tsconfig.json"
+        "test": "test/run-tests.sh"
     },
     "exports": {
         ".": {
