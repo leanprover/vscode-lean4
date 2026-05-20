@@ -1273,11 +1273,11 @@
                 },
                 {
                     "command": "lean4.leanModuleHierarchy.showImports",
-                    "when": "lean4.isLeanFeatureSetActive"
+                    "when": "false"
                 },
                 {
                     "command": "lean4.leanModuleHierarchy.showImportedBy",
-                    "when": "lean4.isLeanFeatureSetActive"
+                    "when": "false"
                 }
             ],
             "editor/title": [
