@@ -357,6 +357,15 @@ export async function activate(context: ExtensionContext): Promise<Exports> {
         commands.registerCommand('lean4.redisplaySetupError', async () => displayActiveStickyNotification()),
     )
     registerLeanCommandRunner(context)
+    workspace.onDidOpenTextDocument(doc => {
+        console.log(`Document opened (isLeanDoc: ${isLeanDocument(doc)}): ${doc.uri.toString()} with language ${doc.languageId}`)
+    })
+    workspace.onDidCloseTextDocument(doc => {
+        console.log(`Document closed: ${doc.uri.toString()}`)
+    })
+    window.onDidChangeVisibleTextEditors(editors => {
+        console.log(`Visible editors changed. Currently visible editors: ${editors.map(ed => ed.document.uri.toString())}`)
+    })
 
     const alwaysEnabledFeatures: AlwaysEnabledFeatures = await displayInternalErrorsIn(
         'activating Lean 4 extension',
