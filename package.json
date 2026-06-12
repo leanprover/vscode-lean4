@@ -2,11 +2,11 @@
     "name": "@leanprover/vscode-lean4-repo",
     "private": true,
     "scripts": {
-        "build": "lerna run --stream build",
-        "build:dev": "lerna run --stream build:dev",
-        "test": "lerna run --stream test",
-        "watch": "lerna run --stream --ignore lean4 build:dev && lerna run --parallel --stream watch",
-        "watchTest": "lerna run --stream --ignore lean4 build:dev && lerna run --parallel --stream watchTest",
+        "build": "nx run-many -t build --output-style=stream",
+        "build:dev": "nx run-many -t build:dev --output-style=stream",
+        "test": "nx run-many -t test --output-style=stream",
+        "watch": "nx run-many -t build:dev --exclude lean4 --output-style=stream && nx run-many -t watch --output-style=stream",
+        "watchTest": "nx run-many -t build:dev --exclude lean4 --output-style=stream && nx run-many -t watchTest --output-style=stream",
         "lint": "eslint -c .eslintrc.js \"{lean4-infoview-api,lean4-infoview,lean4-unicode-input,lean4-unicode-input-component,vscode-lean4}/src/**/*.{ts,tsx}\" \"vscode-lean4/test/suite/**/*.{ts,tsx}\"",
         "prepare": "husky install"
     },
@@ -24,8 +24,8 @@
         "eslint-config-prettier": "^9.1.0",
         "eslint-plugin-react-hooks": "^4.6.0",
         "husky": "^9.0.11",
-        "lerna": "^8.1.2",
         "lint-staged": "^15.2.2",
+        "nx": "^22.7.5",
         "prettier": "^3.2.5",
         "prettier-plugin-organize-imports": "^3.2.4",
         "typescript": "^5.4.5"
