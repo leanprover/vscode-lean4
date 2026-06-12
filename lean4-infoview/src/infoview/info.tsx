@@ -1,4 +1,5 @@
 import * as React from 'react'
+import fastIsEqual from 'react-fast-compare'
 import type { Location } from 'vscode-languageserver-protocol'
 
 import {
@@ -482,14 +483,14 @@ function InfoAux(props: InfoProps) {
     React.useEffect(() => {
         // Note: the curly braces are important. https://medium.com/geekculture/react-uncaught-typeerror-destroy-is-not-a-function-192738a6e79b
         setLspDiagsHere(diags0 => {
-            const diagPred = (d: LeanDiagnostic) =>
+            const isHere = (d: LeanDiagnostic) =>
                 RangeHelpers.contains(
                     d.fullRange || d.range,
                     { line: pos.line, character: pos.character },
                     config.allErrorsOnLine,
                 )
-            const newDiags = (lspDiags.get(pos.uri) || []).filter(diagPred)
-            if (newDiags.length === diags0.length && newDiags.every((d, i) => d === diags0[i])) return diags0
+            const newDiags = (lspDiags.get(pos.uri) || []).filter(isHere)
+            if (newDiags.length === diags0.length && newDiags.every((d, i) => fastIsEqual(d, diags0[i]))) return diags0
             return newDiags
         })
     }, [lspDiags, pos.uri, pos.line, pos.character, config.allErrorsOnLine])
