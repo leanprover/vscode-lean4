@@ -9,7 +9,8 @@
 
 import { HighlightedMsgEmbed, HighlightedTraceEmbed, lazyTraceChildrenToInteractive } from '@leanprover/infoview-api'
 import * as React from 'react'
-import { Goal } from './goals'
+import { ConfigContext } from './contexts'
+import { Goal, goalSettingsStateOfConfig } from './goals'
 import {
     InteractiveCode,
     InteractiveTaggedText,
@@ -117,26 +118,13 @@ function Trace(traceEmbed: HighlightedTraceEmbed) {
 function InteractiveMessageTag({
     tag: embed,
 }: InteractiveTagProps<HighlightedMsgEmbed, HighlightedMsgEmbed>): JSX.Element {
+    const config = React.useContext(ConfigContext)
     if (embed === 'highlighted') {
         return <span className="highlighted-text"></span>
     }
     if ('expr' in embed) return <InteractiveCode fmt={embed.expr} />
     else if ('goal' in embed)
-        return (
-            <Goal
-                goal={embed.goal}
-                settings={{
-                    reverse: false,
-                    hideGoalNames: false,
-                    emphasizeFirstGoal: false,
-                    showType: true,
-                    showInstance: true,
-                    showHiddenAssumption: true,
-                    showLetValue: true,
-                }}
-                additionalClassNames=""
-            />
-        )
+        return <Goal goal={embed.goal} settings={goalSettingsStateOfConfig(config)} additionalClassNames="" />
     else if ('widget' in embed)
         return <DynamicComponent hash={embed.widget.wi.javascriptHash} props={embed.widget.wi.props} />
     else if ('trace' in embed) return <Trace {...embed.trace} />

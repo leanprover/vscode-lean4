@@ -64,7 +64,7 @@ interface GoalSettingsState {
     showLetValue: boolean
 }
 
-function goalSettingsStateOfConfig(config: InfoviewConfig): GoalSettingsState {
+export function goalSettingsStateOfConfig(config: InfoviewConfig): GoalSettingsState {
     return {
         reverse: config.reverseTacticState,
         hideGoalNames: !config.showGoalNames,
