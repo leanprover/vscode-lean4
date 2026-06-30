@@ -435,6 +435,15 @@ Open this project instead?`
                 return
             }
 
+            const buildResult = await lakeRunner.build()
+            if (buildResult.kind === 'Cancelled') {
+                return
+            }
+            if (buildResult.kind === 'Error') {
+                displayLakeRunnerError(buildResult, 'Cannot build downloaded project.')
+                return
+            }
+
             await ProjectInitializationProvider.openNewFolder(projectFolder)
         })
 
