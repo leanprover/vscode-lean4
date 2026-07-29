@@ -34,7 +34,7 @@ To run a specific test suite, set `LEAN4_TEST_FOLDER` to one of: `bootstrap`, `i
 
 ## Architecture
 
-This is a **Lerna monorepo** with npm workspaces containing five packages:
+This is an **npm-workspaces monorepo** (with Nx as the task runner) containing five packages:
 
 ### Packages
 
