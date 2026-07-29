@@ -19,17 +19,44 @@ import {
     displayStickyNotificationWithOptionalInput,
 } from './notifs'
 
-const windowsInstallationScript = `try {
-    $installCode = (Invoke-WebRequest -Uri "https://elan.lean-lang.org/elan-init.ps1" -UseBasicParsing -ErrorAction Stop).Content
-    $installer = [ScriptBlock]::Create([System.Text.Encoding]::UTF8.GetString($installCode))
-    Set-ExecutionPolicy -ExecutionPolicy Unrestricted -Scope Process
-    $rc = & $installer -NoPrompt 1 -DefaultToolchain ${elanStableChannel}
-    exit $rc
-} catch {
+const windowsInstallationScript = `$rc = 1
+try {
+    if ($ExecutionContext.SessionState.LanguageMode -eq 'FullLanguage') {
+        $installCode = (Invoke-WebRequest -Uri "https://elan.lean-lang.org/elan-init.ps1" -UseBasicParsing -ErrorAction Stop).Content
+        $installer = [ScriptBlock]::Create([System.Text.Encoding]::UTF8.GetString($installCode))
+        Set-ExecutionPolicy -ExecutionPolicy Unrestricted -Scope Process
+        $rc = & $installer -NoPrompt 1 -DefaultToolchain ${elanStableChannel}
+    }
+    else {
+        # Constrained Language Mode: can't build a script block from a downloaded
+        # string, so write the installer to disk, clear MOTW, and run the file.
+        $temp = $env:TMP
+        if (-not $temp) { $temp = $env:TEMP }
+        if (-not $temp) { $temp = $env:USERPROFILE }
+        if (-not $temp) { $temp = $env:SystemRoot }
+        if (-not $temp) { throw "Unable to resolve a temporary directory. All candidate sources (TMP/TEMP/USERPROFILE/SystemRoot) were not found." }
+
+        $elanDir  = Join-Path $temp "elan"
+        $elanFile = Join-Path $elanDir "elan-init.ps1"
+
+        New-Item -ItemType Directory -Path $elanDir -Force -ErrorAction Stop | Out-Null
+        Invoke-WebRequest -Uri "https://elan.lean-lang.org/elan-init.ps1" -UseBasicParsing -OutFile $elanFile -ErrorAction Stop
+        Unblock-File -LiteralPath $elanFile -Confirm:$false -ErrorAction Stop
+        & powershell.exe -NoProfile -ExecutionPolicy Unrestricted -Command "& '$elanFile' -NoPrompt 1 -DefaultToolchain ${elanStableChannel}"
+        $rc = $LASTEXITCODE
+    }
+}
+catch {
     Write-Host "Downloading and running the Elan installer failed."
     Write-Host $_
-    exit 1
-}`
+    $rc = 1
+}
+finally {
+    if ($elanFile -and (Test-Path -LiteralPath $elanFile)) {
+        Remove-Item -LiteralPath $elanFile -Force -ErrorAction SilentlyContinue
+    }
+}
+exit $rc`
 
 const unixInstallationScript = `curl "https://elan.lean-lang.org/elan-init.sh" -sSf | sh -s -- -y --default-toolchain ${elanStableChannel}`
 
