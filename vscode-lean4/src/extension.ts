@@ -8,6 +8,7 @@ import { checkAll, SetupDiagnostics } from './diagnostics/setupDiagnostics'
 import { PreconditionCheckResult, SetupNotificationOptions } from './diagnostics/setupNotifs'
 import { AlwaysEnabledFeatures, Exports, Lean4EnabledFeatures } from './exports'
 import { InfoProvider } from './infoview'
+import { registerLeanWaitForDiagnosticsTool } from './languageModelTools'
 import { LoogleView } from './loogleview'
 import { ManualView } from './manualview'
 import { ProjectInitializationProvider } from './projectinit'
@@ -244,6 +245,8 @@ async function activateLean4Features(
     elanCommandProvider.setClientProvider(clientProvider)
     installer.setClientProvider(clientProvider)
     context.subscriptions.push(clientProvider)
+
+    context.subscriptions.push(registerLeanWaitForDiagnosticsTool(clientProvider))
 
     const infoProvider = new InfoProvider(clientProvider, context)
     context.subscriptions.push(infoProvider)
