@@ -1,5 +1,6 @@
 import {
     CancellationToken,
+    CancellationTokenSource,
     DiagnosticCollection,
     Disposable,
     EventEmitter,
@@ -107,7 +108,7 @@ interface LeanClientCapabilties {
 const leanClientCapabilities: LeanClientCapabilties = {
     incrementalDiagnosticSupport: true,
     silentDiagnosticSupport: true,
-    rpcWireFormat: 'v1'
+    rpcWireFormat: 'v1',
 }
 
 export type PrepareModuleHierarchyResult =
@@ -586,9 +587,8 @@ export class LeanClient implements Disposable {
                 const params = params_ as LeanFileProgressParams
                 const uri = toExtUri(p2cConverter.asUri(params.textDocument.uri))
                 if (uri !== undefined) {
-                    this.progressChangedEmitter.fire([uri.toString(), params.processing])
-                    // save the latest progress on this Uri in case infoview needs it later.
                     this.progress.set(uri, params.processing)
+                    this.progressChangedEmitter.fire([uri.toString(), params.processing])
                 }
             }
 
@@ -782,6 +782,54 @@ export class LeanClient implements Disposable {
         )
 
         this.restartedWorkerEmitter.fire(uri)
+    }
+
+    /**
+     * Sends a `textDocument/waitForDiagnostics` request for `uri` at document version `version`. The
+     * Lean server delays its reply until it has finished processing (and publishing diagnostics for) a
+     * version `>= version`, so awaiting this is a reliable "diagnostics are up to date" signal. After a
+     * {@link restartFile}, the freshly opened worker re-elaborates the file (rebuilding stale imports),
+     * and this request blocks until that new elaboration completes.
+     *
+     * Resolves with `'Stopped'` if the client is not running, `'Cancelled'` if `token` is triggered, or
+     * `'TimedOut'` if `timeoutMs` elapses before the server replies.
+     */
+    async waitForDiagnostics(
+        uri: ExtUri,
+        version: number,
+        timeoutMs: number,
+        token?: CancellationToken,
+    ): Promise<'Completed' | 'TimedOut' | 'Cancelled' | 'Stopped'> {
+        if (this.client === undefined || !this.running) {
+            return 'Stopped'
+        }
+        const cts = new CancellationTokenSource()
+        let timedOut = false
+        const timeout = setTimeout(() => {
+            timedOut = true
+            cts.cancel()
+        }, timeoutMs)
+        const cancelSubscription = token?.onCancellationRequested(() => cts.cancel())
+        const params = {
+            uri: this.client.code2ProtocolConverter.asUri(uri.asUri()),
+            version,
+        }
+        try {
+            await this.client.sendRequest('textDocument/waitForDiagnostics', params, cts.token)
+            return 'Completed'
+        } catch {
+            if (token?.isCancellationRequested) {
+                return 'Cancelled'
+            }
+            if (timedOut) {
+                return 'TimedOut'
+            }
+            return 'Stopped'
+        } finally {
+            clearTimeout(timeout)
+            cancelSubscription?.dispose()
+            cts.dispose()
+        }
     }
 
     // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types

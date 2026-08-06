@@ -5,7 +5,7 @@
     "version": "0.0.239",
     "publisher": "leanprover",
     "engines": {
-        "vscode": "^1.75.0"
+        "vscode": "^1.95.0"
     },
     "extensionDependencies": [
         "tamasfe.even-better-toml"
@@ -308,6 +308,43 @@
                 }
             }
         },
+        "languageModelTools": [
+            {
+                "name": "lean4_waitForDiagnostics",
+                "displayName": "Wait for Lean Diagnostics",
+                "toolReferenceName": "leanWaitForDiagnostics",
+                "canBeReferencedInPrompt": true,
+                "icon": "$(watch)",
+                "tags": [
+                    "lean",
+                    "lean4",
+                    "diagnostics"
+                ],
+                "modelDescription": "Wait until the Lean language server has finished processing one or more .lean files. Call this before a generic diagnostics tool (such as get_errors) whenever you need up-to-date Lean errors or warnings. A generic tool may miss actual errors because compilation is asynchronous.",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "files": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            },
+                            "description": "Absolute file system paths (or 'file:'/'untitled:' URIs) of the Lean files to wait for. If omitted, all currently open Lean files are waited for."
+                        },
+                        "refreshImports": {
+                            "type": "string",
+                            "enum": [
+                                "auto",
+                                "always",
+                                "never"
+                            ],
+                            "default": "auto",
+                            "description": "Controls whether stale import caches are rebuilt before finishing. 'auto' (default) rebuilds only files whose imports the server reports as out of date. 'always' restarts every requested file to guarantee fresh imports (slower). 'never' skips rebuilding and only waits for the current elaboration to finish."
+                        }
+                    }
+                }
+            }
+        ],
         "commands": [
             {
                 "command": "lean4.restartServer",
@@ -1871,7 +1908,7 @@
         "@types/mocha": "^10.0.6",
         "@types/node": "^20.12.12",
         "@types/semver": "^7.5.7",
-        "@types/vscode": "^1.75.0",
+        "@types/vscode": "^1.95.0",
         "@types/vscode-webview": "^1.57.5",
         "@vscode/test-electron": "^2.3.9",
         "@vscode/vsce": "^2.21.1",
