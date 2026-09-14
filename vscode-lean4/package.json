@@ -1754,7 +1754,10 @@
                 "files.insertFinalNewline": true,
                 "files.trimFinalNewlines": true,
                 "files.trimTrailingWhitespace": true,
-                "editor.quickSuggestionsDelay": 200
+                "editor.quickSuggestionsDelay": 200,
+                "editor.formatOnSave": false,
+                "editor.formatOnPaste": false,
+                "editor.formatOnType": false
             }
         },
         "walkthroughs": [
