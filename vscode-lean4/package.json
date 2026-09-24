@@ -71,6 +71,11 @@
                     "default": false,
                     "markdownDescription": "Enable automatically building dependencies when opening a file. In Lean versions pre-4.2.0, dependencies are always built automatically regardless of this setting."
                 },
+                "lean4.automaticallyRestartFileOnDependencyChange": {
+                    "type": "boolean",
+                    "default": false,
+                    "markdownDescription": "Automatically restart a Lean file when the Lean server reports that its imports are out of date because a dependency changed. This can trigger expensive dependency rebuilds."
+                },
                 "lean4.envPathExtensions": {
                     "type": "array",
                     "default": [],
