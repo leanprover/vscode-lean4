@@ -47,7 +47,7 @@ async function main() {
         const [cliPath, ...cliCommonArguments] = resolveCliArgsFromVSCodeExecutablePath(vscodeExecutablePath)
         const result = p.spawnSync(
             cliPath,
-            [...cliCommonArguments, '--install-extension', 'tamasfe.even-better-toml', '--force'],
+            [...cliCommonArguments, '--install-extension', 'tombi-toml.tombi', '--force'],
             {
                 encoding: 'utf-8',
                 stdio: 'inherit',

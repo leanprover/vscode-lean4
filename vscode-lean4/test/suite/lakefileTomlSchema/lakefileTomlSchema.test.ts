@@ -29,15 +29,14 @@ suite('Tests', () => {
             const document = await vscode.workspace.openTextDocument(lakefilePath)
             await vscode.window.showTextDocument(document)
 
-            await waitForActiveExtension('tamasfe.even-better-toml')
+            await waitForActiveExtension('tombi-toml.tombi')
 
             // Wait for 5 seconds for diagnostics to appear
             await sleep(5 * 1000)
 
             const diagnostics = vscode.languages.getDiagnostics().flatMap(([, diagnostic]) => diagnostic)
             const errorDiagnostics = diagnostics.filter(
-                diagnostic =>
-                    diagnostic.severity === vscode.DiagnosticSeverity.Error && diagnostic.source === 'Even Better TOML',
+                diagnostic => diagnostic.severity === vscode.DiagnosticSeverity.Error && diagnostic.source === 'Tombi',
             )
             assert(errorDiagnostics.length > 0, 'Expected at least one error diagnostic for invalid lakefile.toml')
         })
@@ -60,15 +59,14 @@ suite('Tests', () => {
             const document = await vscode.workspace.openTextDocument(lakefilePath)
             await vscode.window.showTextDocument(document)
 
-            await waitForActiveExtension('tamasfe.even-better-toml')
+            await waitForActiveExtension('tombi-toml.tombi')
 
             // Wait for 5 seconds for diagnostics to appear
             await sleep(5 * 1000)
 
             const diagnostics = vscode.languages.getDiagnostics().flatMap(([, diagnostic]) => diagnostic)
             const errorDiagnostics = diagnostics.filter(
-                diagnostic =>
-                    diagnostic.severity === vscode.DiagnosticSeverity.Error && diagnostic.source === 'Even Better TOML',
+                diagnostic => diagnostic.severity === vscode.DiagnosticSeverity.Error && diagnostic.source === 'Tombi',
             )
             assert(errorDiagnostics.length === 0, 'Expected no error diagnostics for valid lakefile.toml')
         })

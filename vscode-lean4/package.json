@@ -7,8 +7,8 @@
     "engines": {
         "vscode": "^1.75.0"
     },
-    "extensionDependencies": [
-        "tamasfe.even-better-toml"
+    "extensionPack": [
+        "tombi-toml.tombi"
     ],
     "categories": [
         "Programming Languages"
