@@ -15,7 +15,8 @@ import { FileUri } from '../utils/exturi'
 import { ToolchainUpdateMode, leanRunner, leanVersionRegex } from '../utils/leanCmdRunner'
 import { checkParentFoldersForLeanProject, isValidLeanProject } from '../utils/projectInfo'
 
-const minimumSupportedMacOSVersion = new SemVer('19.0.0')
+// Darwin kernel version, as returned by `os.release()`. Darwin 23 is macOS 14.
+const minimumSupportedMacOSVersion = new SemVer('23.0.0')
 const minimumSupportedWindowsVersion = new SemVer('10.0.18362')
 
 export type OSVersionDiagnosis =
@@ -38,7 +39,7 @@ function diagnoseOSVersion(): OSVersionDiagnosis {
             if (currentVersion.compare(minimumSupportedWindowsVersion) >= 0) {
                 return { kind: 'NotUnsupported' }
             }
-            return { kind: 'Unsupported', currentVersion, recommendedVersion: minimumSupportedMacOSVersion }
+            return { kind: 'Unsupported', currentVersion, recommendedVersion: minimumSupportedWindowsVersion }
     }
     return { kind: 'NotUnsupported' }
 }
