@@ -1,3 +1,4 @@
+# A typical package with a library and an executable.
 name = "foo"
 version = "0.1.0"
 defaultTargets = ["foo"]

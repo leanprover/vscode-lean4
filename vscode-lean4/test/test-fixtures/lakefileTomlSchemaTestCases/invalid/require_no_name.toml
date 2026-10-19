@@ -1,3 +1,4 @@
+# A dependency without the required `name` key.
 name = "foo"
 version = "0.1.0"
 defaultTargets = ["foo"]

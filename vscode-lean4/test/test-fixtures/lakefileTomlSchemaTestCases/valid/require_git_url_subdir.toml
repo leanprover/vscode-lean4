@@ -1,3 +1,4 @@
+# A Git dependency with the URL and the subdirectory in a table.
 name = "foo"
 version = "0.1.0"
 defaultTargets = ["foo"]
