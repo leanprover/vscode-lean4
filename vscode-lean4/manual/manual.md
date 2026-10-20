@@ -714,7 +714,7 @@ The Lean 4 VS Code extension supports the following commands that can be run in 
 
 ### Lakefile editing
 
-When editing a `lakefile.toml` file, the Lean 4 VS Code extension provides schema validation, auto-completion and hover documentation for all Lake package configuration options. This is powered by the [Even Better TOML](https://marketplace.visualstudio.com/items?itemName=tamasfe.even-better-toml) extension, which is automatically installed as a dependency of the Lean 4 VS Code extension.
+When you edit a `lakefile.toml` file, the Lean 4 VS Code extension gives schema validation, auto-completion and hover documentation for all configuration options of a Lake package. These features come from the [Tombi](https://marketplace.visualstudio.com/items?itemName=tombi-toml.tombi) extension. VS Code installs Tombi together with the Lean 4 VS Code extension. You can disable or uninstall Tombi, and keep the Lean 4 VS Code extension. If you do this, these features are not available for `lakefile.toml` files.
 
 ### Terminal
 

@@ -1,0 +1,3 @@
+# A `buildType` value that is not a build type of Lake.
+name = "foo"
+buildType = "fast"

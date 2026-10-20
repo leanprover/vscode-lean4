@@ -1,0 +1,3 @@
+# A Lean option with a negative integer value. Lake only accepts natural numbers.
+name = "foo"
+leanOptions = { maxHeartbeats = -1 }
