@@ -17,6 +17,10 @@ export function automaticallyBuildDependencies(): boolean {
     return workspace.getConfiguration('lean4').get('automaticallyBuildDependencies', false)
 }
 
+export function automaticallyRestartFileOnDependencyChange(): boolean {
+    return workspace.getConfiguration('lean4').get('automaticallyRestartFileOnDependencyChange', false)
+}
+
 export function envPathExtensions(): PATH {
     return new PATH(workspace.getConfiguration('lean4').get('envPathExtensions', []))
 }
