@@ -1832,7 +1832,7 @@
         "tomlValidation": [
             {
                 "fileMatch": "lakefile.toml",
-                "url": "https://raw.githubusercontent.com/leanprover/lean4/refs/heads/master/src/lake/schemas/lakefile-toml-schema.json"
+                "url": "http://schemas.lean-lang.org/lakefile-toml-schema.json"
             }
         ]
     },
