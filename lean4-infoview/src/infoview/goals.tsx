@@ -432,7 +432,7 @@ export const FilteredGoals = React.memo(
             }
             useEvent(ec.events.clickedContextMenu, _ => action(), dependencies, `${name}:${id}`)
         }
-        const useSettingsContextMenuEvent = (name: string, setting: any, isEnabled: boolean) =>
+        const useSettingsContextMenuEvent = (name: string, setting: Partial<GoalSettingsState>, isEnabled: boolean) =>
             useContextMenuEvent(name, () => setGoalSettings(s => ({ ...s, ...setting })), isEnabled)
 
         useSettingsContextMenuEvent('displayTargetBeforeAssumptions', { reverse: true }, !goalSettings.reverse)
@@ -451,8 +451,8 @@ export const FilteredGoals = React.memo(
             { showHiddenAssumption: true },
             !goalSettings.showHiddenAssumption,
         )
-        useSettingsContextMenuEvent('hideLetValues', { showLetValues: false }, goalSettings.showLetValue)
-        useSettingsContextMenuEvent('showLetValues', { showLetValues: true }, !goalSettings.showLetValue)
+        useSettingsContextMenuEvent('hideLetValues', { showLetValue: false }, goalSettings.showLetValue)
+        useSettingsContextMenuEvent('showLetValues', { showLetValue: true }, !goalSettings.showLetValue)
         useSettingsContextMenuEvent('hideGoalNames', { hideGoalNames: true }, !goalSettings.hideGoalNames)
         useSettingsContextMenuEvent('showGoalNames', { hideGoalNames: false }, goalSettings.hideGoalNames)
         useSettingsContextMenuEvent(
