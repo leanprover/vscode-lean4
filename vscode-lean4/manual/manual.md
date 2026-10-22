@@ -521,6 +521,8 @@ When hovering over the left column of a Lean document editor that contains the l
 
 Similar to the [document outline](#document-outline) or the [breadcrumbs bar](#breadcrumbs), collapsible code blocks can be used to gain an overview over a Lean document and quickly navigate it, e.g. by using the ['Fold All'](command:editor.foldAll) command or the `Ctrl+K Ctrl+0` (`Cmd+K Cmd+0`) [chord](#chords) to collapse all code blocks and later using the ['Unfold All'](command:editor.unfoldAll) command or the `Ctrl+K Ctrl+J` chord to unfold all code blocks again.
 
+Newer Lean versions also report a collapsible code block for each proof. The ['Fold All Proofs'](command:lean4.foldAllProofs) command folds all proofs in the focused Lean document. The ['Unfold All Proofs'](command:lean4.unfoldAllProofs) command unfolds them again. When the 'Lean 4: Fold Proofs By Default' setting is enabled, VS Code folds all proofs of a Lean document when you open it.
+
 <br/>
 
 | ![](images/code-folding.png) | 

@@ -2,7 +2,7 @@ import { LeanFileProgressProcessingInfo, ServerStoppedReason } from '@leanprover
 import { Disposable, EventEmitter, OutputChannel, commands } from 'vscode'
 import { SetupDiagnostics, checkAll } from '../diagnostics/setupDiagnostics'
 import { PreconditionCheckResult, SetupNotificationOptions } from '../diagnostics/setupNotifs'
-import { LeanClient } from '../leanclient'
+import { FoldingRangesProvidedEvent, LeanClient } from '../leanclient'
 import { LeanPublishDiagnosticsParams } from './converters'
 import { ExtUri, FileUri } from './exturi'
 import { lean } from './leanEditorProvider'
@@ -45,6 +45,9 @@ export class LeanClientProvider implements Disposable {
 
     private diagnosticsChangedEmitter = new EventEmitter<LeanPublishDiagnosticsParams>()
     diagnosticsChanged = this.diagnosticsChangedEmitter.event
+
+    private didProvideFoldingRangesEmitter = new EventEmitter<FoldingRangesProvidedEvent>()
+    didProvideFoldingRanges = this.didProvideFoldingRangesEmitter.event
 
     private clientAddedEmitter = new EventEmitter<LeanClient>()
     clientAdded = this.clientAddedEmitter.event
@@ -239,6 +242,10 @@ export class LeanClientProvider implements Disposable {
 
         client.diagnostics(p => {
             this.diagnosticsChangedEmitter.fire(p)
+        })
+
+        client.didProvideFoldingRanges(e => {
+            this.didProvideFoldingRangesEmitter.fire(e)
         })
 
         // Fired before starting the client because the InfoView uses this to register
