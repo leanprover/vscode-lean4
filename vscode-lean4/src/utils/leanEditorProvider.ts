@@ -137,7 +137,7 @@ export class LeanEditorProvider implements Disposable {
     readonly onDidConcealLeanEditor = this.onDidConcealLeanEditorEmitter.event
 
     private readonly onDidChangeLeanDocumentEmitter = new EventEmitter<TextDocumentChangeEvent>()
-    readonly onDidChangeLeanDocument = this.onDidChangeLeanDocumentsEmitter.event
+    readonly onDidChangeLeanDocument = this.onDidChangeLeanDocumentEmitter.event
 
     private readonly onDidChangeLeanEditorSelectionEmitter = new EventEmitter<TextEditorSelectionChangeEvent>()
     readonly onDidChangeLeanEditorSelection = this.onDidChangeLeanEditorSelectionEmitter.event

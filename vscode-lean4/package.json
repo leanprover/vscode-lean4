@@ -248,6 +248,11 @@
                     "default": 750,
                     "markdownDescription": "Delay after an edit in milliseconds until certain editor decorations (like the 'unsolved goals' decoration) update."
                 },
+                "lean4.foldProofsByDefault": {
+                    "type": "boolean",
+                    "default": false,
+                    "markdownDescription": "Fold all proofs in a Lean file when you open the file. Proofs that contain the text cursor stay unfolded. Requires a Lean version that reports folding ranges for proofs."
+                },
                 "lean4.logging.enabled": {
                     "type": "boolean",
                     "default": false,
@@ -811,6 +816,18 @@
                 "category": "Lean 4",
                 "title": "Copy Module Name",
                 "description": "Copies the Lean module name of the current file to the clipboard."
+            },
+            {
+                "command": "lean4.foldAllProofs",
+                "category": "Lean 4",
+                "title": "Fold All Proofs",
+                "description": "Folds all proofs in the focused Lean file. Requires a Lean version that reports folding ranges for proofs."
+            },
+            {
+                "command": "lean4.unfoldAllProofs",
+                "category": "Lean 4",
+                "title": "Unfold All Proofs",
+                "description": "Unfolds all proofs in the focused Lean file. Requires a Lean version that reports folding ranges for proofs."
             }
         ],
         "languages": [
@@ -991,6 +1008,14 @@
                 },
                 {
                     "command": "lean4.copyModuleName",
+                    "when": "lean4.isLeanFeatureSetActive"
+                },
+                {
+                    "command": "lean4.foldAllProofs",
+                    "when": "lean4.isLeanFeatureSetActive"
+                },
+                {
+                    "command": "lean4.unfoldAllProofs",
                     "when": "lean4.isLeanFeatureSetActive"
                 },
                 {
