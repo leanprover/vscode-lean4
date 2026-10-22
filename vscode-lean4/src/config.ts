@@ -201,6 +201,10 @@ export function decorationEditDelay(): number {
     return workspace.getConfiguration('lean4').get('decorationEditDelay', 750)
 }
 
+export function foldProofsByDefault(): boolean {
+    return workspace.getConfiguration('lean4').get('foldProofsByDefault', false)
+}
+
 export function isRunningTest(): boolean {
     return typeof process.env.LEAN4_TEST_FOLDER === 'string'
 }

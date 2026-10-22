@@ -10,6 +10,7 @@ import {
     ProgressLocation,
     ProgressOptions,
     RelativePattern,
+    TextDocument,
     window,
     workspace,
     WorkspaceFolder,
@@ -56,6 +57,7 @@ import { DiagnosticChangeEvent, LeanClientDiagnosticCollection } from './diagnos
 import { formatCommandExecutionOutput } from './utils/batch'
 import {
     c2pConverter,
+    LeanFoldingRange,
     LeanImport,
     LeanModule,
     LeanModuleHierarchyImportedByParams,
@@ -125,6 +127,12 @@ export type ModuleHierarchyImportedByResult =
 
 export type ServerProgress = Map<ExtUri, LeanFileProgressProcessingInfo[]>
 
+export interface FoldingRangesProvidedEvent {
+    document: TextDocument
+    /** `undefined` if the folding range request failed. */
+    ranges: LeanFoldingRange[] | undefined
+}
+
 export class LeanClient implements Disposable {
     running: boolean
     private client: LanguageClient | undefined
@@ -153,6 +161,13 @@ export class LeanClient implements Disposable {
 
     private didCloseEmitter = new EventEmitter<DidCloseTextDocumentParams>()
     didClose = this.didCloseEmitter.event
+
+    private didProvideFoldingRangesEmitter = new EventEmitter<FoldingRangesProvidedEvent>()
+    /**
+     * Fires when a folding range request for the current version of a document finishes,
+     * before VS Code receives the folding ranges.
+     */
+    didProvideFoldingRanges = this.didProvideFoldingRangesEmitter.event
 
     private customNotificationEmitter = new EventEmitter<{ method: string; params: any }>()
     /** Fires whenever a custom notification (i.e. one not defined in LSP) is received. */
@@ -959,6 +974,24 @@ export class LeanClient implements Disposable {
                     await next(doc)
 
                     this.didCloseEmitter.fire(params)
+                },
+
+                provideFoldingRanges: async (document, context, token, next) => {
+                    if (this.isParamExcluded(c2pConverter.asTextDocumentIdentifier(document))) {
+                        return await next(document, context, token)
+                    }
+                    const version = document.version
+                    let ranges: LeanFoldingRange[] | null | undefined
+                    try {
+                        ranges = await next(document, context, token)
+                        return ranges
+                    } finally {
+                        // VS Code ignores the result of cancelled requests, for example when the document changes.
+                        // If the request fails, VS Code uses indentation-based folding ranges, so we report `undefined`.
+                        if (!token.isCancellationRequested && document.version === version) {
+                            this.didProvideFoldingRangesEmitter.fire({ document, ranges: ranges ?? undefined })
+                        }
+                    }
                 },
 
                 provideRenameEdits: async (document, position, newName, token, next) => {
