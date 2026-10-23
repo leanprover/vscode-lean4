@@ -39,3 +39,5 @@ jobs:
         with:
           name: infoview-docs
           path: lean4-infoview/docs
+          include-hidden-files: true
+
