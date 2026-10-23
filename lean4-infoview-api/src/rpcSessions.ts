@@ -244,6 +244,9 @@ class RpcSessionForFile {
     }
 }
 
+// Docstrings on exported types mention this type.
+export type { RpcSessionForFile }
+
 /** Manages RPC sessions for multiple files. */
 export class RpcSessions {
     /**
