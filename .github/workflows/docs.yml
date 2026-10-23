@@ -4,7 +4,20 @@ on:
   pull_request:
   push:
     branches: [master]
-    tags: ['*']
+    # No `tags` because `on-push.yml` invokes this workflow on tag pushes (via the `package` job).
+  # Other workflows can run the `deploy` job below by setting this to `true`.
+  workflow_call:
+    inputs:
+      deploy:
+        type: boolean
+        default: false
+  # The `deploy` job can also be run manually.
+  workflow_dispatch:
+    inputs:
+      deploy:
+        description: 'Deploy to GitHub Pages'
+        type: boolean
+        default: false
 
 permissions: {}
 
@@ -41,3 +54,56 @@ jobs:
           path: lean4-infoview/docs
           include-hidden-files: true
 
+  # Build and push docs for the current version of @leanprover/infoview
+  # to `infoview/<version>/` on the `gh-pages` branch.
+  deploy:
+    needs: build
+    if: inputs.deploy
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency:
+      group: gh-pages
+      cancel-in-progress: false
+    steps:
+      - name: Checkout gh-pages
+        uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+          path: site
+
+      - name: Download docs
+        uses: actions/download-artifact@v4
+        with:
+          name: infoview-docs
+          path: docs
+
+      - name: Push to gh-pages
+        working-directory: site
+        env:
+          VERSION: ${{ needs.build.outputs.version }}
+        run: |
+          if [ -e "infoview/$VERSION" ]; then
+            echo "Docs for @leanprover/infoview $VERSION have already been pushed to gh-pages."
+            exit 0
+          fi
+
+          mkdir -p "infoview/$VERSION"
+          cp -r ../docs/. "infoview/$VERSION"/
+          touch .nojekyll
+
+          # Redirect the `infoview/` URL to the latest version.
+          latest="$(cd infoview && printf '%s\n' */ | tr -d / | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1)"
+          cat > infoview/index.html <<EOF
+          <!doctype html>
+          <meta charset="utf-8">
+          <meta http-equiv="refresh" content="0; url=./$latest/">
+          <link rel="canonical" href="./$latest/">
+          <a href="./$latest/">@leanprover/infoview $latest</a>
+          EOF
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Add docs for @leanprover/infoview $VERSION"
+          git push origin gh-pages
