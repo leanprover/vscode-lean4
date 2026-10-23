@@ -12,13 +12,9 @@ on:
           - release
           - pre-release
   pull_request:
-    branches:
-    - '*'
   push:
-    branches:
-      - '*'
-    tags:
-      - '*'
+    branches: [master]
+    tags: ['*']
 
 permissions:
   contents: write
