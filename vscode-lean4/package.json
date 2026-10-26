@@ -251,7 +251,7 @@
                 "lean4.foldProofsByDefault": {
                     "type": "boolean",
                     "default": false,
-                    "markdownDescription": "Fold all proofs in a Lean file when you open the file. Proofs that contain the text cursor stay unfolded. Requires a Lean version that reports folding ranges for proofs."
+                    "markdownDescription": "Fold all proofs in a Lean file when you open the file. Proofs that contain the text cursor stay unfolded. Requires Lean 4.37.0 or newer."
                 },
                 "lean4.logging.enabled": {
                     "type": "boolean",
@@ -821,13 +821,13 @@
                 "command": "lean4.foldAllProofs",
                 "category": "Lean 4",
                 "title": "Fold All Proofs",
-                "description": "Folds all proofs in the focused Lean file. Requires a Lean version that reports folding ranges for proofs."
+                "description": "Folds all proofs in the focused Lean file. Requires Lean 4.37.0 or newer."
             },
             {
                 "command": "lean4.unfoldAllProofs",
                 "category": "Lean 4",
                 "title": "Unfold All Proofs",
-                "description": "Unfolds all proofs in the focused Lean file. Requires a Lean version that reports folding ranges for proofs."
+                "description": "Unfolds all proofs in the focused Lean file. Requires Lean 4.37.0 or newer."
             }
         ],
         "languages": [
