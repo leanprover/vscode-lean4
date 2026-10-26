@@ -7,6 +7,7 @@ import { FullDiagnosticsProvider } from './diagnostics/fullDiagnostics'
 import { checkAll, SetupDiagnostics } from './diagnostics/setupDiagnostics'
 import { PreconditionCheckResult, SetupNotificationOptions } from './diagnostics/setupNotifs'
 import { AlwaysEnabledFeatures, Exports, Lean4EnabledFeatures } from './exports'
+import { LeanFoldingRangeProvider } from './folding'
 import { InfoProvider } from './infoview'
 import { LoogleView } from './loogleview'
 import { ManualView } from './manualview'
@@ -249,6 +250,8 @@ async function activateLean4Features(
     context.subscriptions.push(infoProvider)
 
     context.subscriptions.push(new LeanTaskGutter(clientProvider, context))
+
+    context.subscriptions.push(new LeanFoldingRangeProvider(clientProvider))
 
     const projectOperationProvider: ProjectOperationProvider = new ProjectOperationProvider(
         installer.getOutputChannel(),

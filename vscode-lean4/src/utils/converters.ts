@@ -67,6 +67,14 @@ export interface LeanModuleHierarchyImportedByParams {
     module: LeanModule
 }
 
+/** Lean-specific folding range kind for the values of declarations whose types are propositions. */
+export const proofFoldingRangeKind = 'proof'
+
+export interface LeanFoldingRange extends code.FoldingRange {
+    /** Whether the language server reported this folding range with kind `proofFoldingRangeKind`. */
+    isProof?: boolean
+}
+
 interface SnippetTextEdit extends ls.TextEdit {
     leanExtSnippet: { value: string }
 }
@@ -134,6 +142,21 @@ export function patchConverters(p2cConverter: Protocol2CodeConverter, c2pConvert
     }
     c2pConverter.asDiagnostics = async (diags, token) => async.map(diags, d => c2pConverter.asDiagnostic(d), token)
     c2pConverter.asDiagnosticsSync = diags => diags.map(d => c2pConverter.asDiagnostic(d))
+
+    // `code.FoldingRangeKind` cannot represent the Lean-specific kind `proof`,
+    // so `asFoldingRange` sets the kind of proof folding ranges to `undefined`.
+    // We record the kind in `isProof` instead.
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    const oldP2cAsFoldingRange = p2cConverter.asFoldingRange
+    p2cConverter.asFoldingRange = function (protRange: ls.FoldingRange): LeanFoldingRange {
+        const range: LeanFoldingRange = oldP2cAsFoldingRange.apply(this, [protRange])
+        range.isProof = protRange.kind === proofFoldingRangeKind
+        return range
+    }
+    p2cConverter.asFoldingRanges = async function (ranges, token) {
+        if (ranges === undefined || ranges === null) return undefined
+        return (await async.map(ranges, r => p2cConverter.asFoldingRange(r), token)) as any /* tsc incompleteness */
+    }
 
     // eslint-disable-next-line @typescript-eslint/unbound-method
     const oldC2pAsOpenTextDocumentParams = c2pConverter.asOpenTextDocumentParams
