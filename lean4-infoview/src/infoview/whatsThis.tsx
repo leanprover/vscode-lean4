@@ -4,17 +4,20 @@ import { useToggleableTooltip } from './tooltips'
 import { LogicalDomContext, useLogicalDomObserver, useOnClickOutside } from './util'
 
 const whatsThisContent = (
-    <div>
+    <div className="tooltip-code-content">
         <p>
-            The Lean InfoView shows proof goals, expected types of expressions, messages, and other information about
-            the source file.
+            The Lean InfoView follows your text cursor, updating as the&nbsp;cursor moves. It shows proof goals,
+            the&nbsp;expected type, and messages at the&nbsp;current position.
         </p>
         <p>
-            You may use <a href="https://lean-lang.org/doc/reference/latest/Interacting-with-Lean/#widgets">widgets</a>{' '}
-            to extend what's shown in the InfoView with additional information and visualizations.
+            Hover over an expression to see its type and&nbsp;documentation. Ctrl/Cmd-click an expression to go to its
+            definition. Use the <span className="font-codicon codicon codicon-pin" /> and{' '}
+            <span className="font-codicon codicon codicon-debug-pause" /> icons to keep a&nbsp;position in view. Write{' '}
+            <a href="https://lean-lang.org/doc/reference/latest/Interacting-with-Lean/#widgets">widgets</a> to extend
+            what's shown in the&nbsp;InfoView with additional information and visualizations.
         </p>
         <p>
-            Learn more about the InfoView in the{' '}
+            Learn more in the&nbsp;
             <a href="https://github.com/leanprover/vscode-lean4/blob/master/vscode-lean4/manual/manual.md#infoview">
                 VS Code extension manual
             </a>
