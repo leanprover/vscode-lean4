@@ -1,0 +1,23 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Page not found</title>
+<script>
+  // GitHub Pages serves this `404.html` page on missing paths.
+  // We use it to redirect unversioned `infoview/<path>` URLs to `infoview/<latest>/<path>`,
+  // where `<latest>` is looked up below by fetching `infoview/index.html`
+  // and reading the canonical redirect link there.
+  // Versioned URLs are not redirected, so a page missing from the latest version still gives 404.
+  var m = location.pathname.match(/^(.*?\/infoview\/)(?!\d+\.\d+\.\d+\/)(.*)/);
+  if (m) {
+    var base = new URL(m[1], location.href);
+    fetch(base)
+      .then(function (r) { if (!r.ok) throw new Error(r.statusText); return r.text(); })
+      .then(function (html) {
+        var doc = new DOMParser().parseFromString(html, 'text/html');
+        var latest = new URL(doc.querySelector('link[rel=canonical]').getAttribute('href'), base);
+        location.replace(new URL(m[2], latest).href + location.search + location.hash);
+      })
+      .catch(function (e) { console.error('Failed to redirect to the latest version:', e); });
+  }
+</script>
+<p>Page not found. Are you looking for <a href="/vscode-lean4/infoview/">@leanprover/infoview documentation</a>?</p>
