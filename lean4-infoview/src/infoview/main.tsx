@@ -25,6 +25,7 @@ import { AllMessages, WithLspDiagnosticsContext } from './messages'
 import { WithRpcSessions } from './rpcSessions'
 import { ServerVersion } from './serverVersion'
 import { useClientNotificationEffect, useEventResult, useServerNotificationState } from './util'
+import { WhatsThisButton } from './whatsThis'
 
 function Main() {
     const ec = React.useContext(EditorContext)
@@ -103,7 +104,10 @@ function Main() {
                 <VersionContext.Provider value={serverVersion}>
                     <WithRpcSessions>
                         <WithLspDiagnosticsContext>
-                            <ProgressContext.Provider value={allProgress}>{ret}</ProgressContext.Provider>
+                            <ProgressContext.Provider value={allProgress}>
+                                {ret}
+                                <WhatsThisButton />
+                            </ProgressContext.Provider>
                         </WithLspDiagnosticsContext>
                     </WithRpcSessions>
                 </VersionContext.Provider>
