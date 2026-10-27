@@ -13,3 +13,4 @@ node_modules/
 doit.cmd
 .rollup.cache/
 .eslintcache
+lean4-infoview/docs/

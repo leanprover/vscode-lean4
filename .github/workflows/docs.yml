@@ -1,0 +1,43 @@
+name: Documentation for @leanprover/infoview
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+    tags: ['*']
+
+permissions: {}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Build docs
+        run: |
+          npm ci
+          npm run build --workspace=lean4-infoview-api
+          npm run docs --workspace=lean4-infoview
+
+      - name: Read @leanprover/infoview version
+        id: version
+        run: echo "version=$(node -p "require('./lean4-infoview/package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: Upload docs
+        uses: actions/upload-artifact@v4
+        with:
+          name: infoview-docs
+          path: lean4-infoview/docs
+          include-hidden-files: true
+

@@ -1,0 +1,20 @@
+{
+    "$schema": "https://typedoc.org/schema.json",
+    "entryPoints": ["src/index.tsx", "src/loader.ts"],
+    // Link web platform built-ins to MDN.
+    "plugin": ["typedoc-plugin-mdn-links"],
+    // Link important dependencies to their documentation.
+    "externalSymbolLinkMappings": {
+        "@types/react": {
+            "React.useEffect": "https://react.dev/reference/react/useEffect",
+            "React.useState": "https://react.dev/reference/react/useState",
+            "*": "https://react.dev/reference/react"
+        },
+        "vscode-languageserver-protocol": {
+            "*": "https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/"
+        },
+        "vscode-languageserver-types": {
+            "*": "https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/"
+        }
+    }
+}

@@ -28,6 +28,8 @@
         "nx": "^22.7.5",
         "prettier": "^3.2.5",
         "prettier-plugin-organize-imports": "^3.2.4",
+        "typedoc": "^0.28.20",
+        "typedoc-plugin-mdn-links": "^5.1.1",
         "typescript": "^5.4.5"
     },
     "lint-staged": {
