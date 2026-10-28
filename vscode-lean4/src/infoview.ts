@@ -935,7 +935,7 @@ export class InfoProvider implements Disposable {
         const panel = this.webviewPanel
         if (panel) {
             client.getDiagnostics()?.forEach(async (uri, diags) => {
-                const params = InfoProvider.getDiagnosticParams(uri, diags)
+                const params = await InfoProvider.getDiagnosticParams(uri, diags)
                 await panel.api.gotServerNotification('textDocument/publishDiagnostics', params)
             })
         }
