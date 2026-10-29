@@ -1755,16 +1755,127 @@
                 }
             ]
         },
+        "semanticTokenTypes": [
+            {
+                "id": "markupDocText",
+                "description": "Text in a documentation comment"
+            },
+            {
+                "id": "markupPlainText",
+                "description": "Text in a Verso document outside of headings, blockquotes and list items"
+            },
+            {
+                "id": "markupHeading",
+                "description": "Text in a Markdown or Verso heading"
+            },
+            {
+                "id": "markupQuote",
+                "description": "Text in a Markdown or Verso blockquote"
+            },
+            {
+                "id": "markupList",
+                "description": "Text in a Markdown or Verso list item"
+            },
+            {
+                "id": "markupInlineCode",
+                "description": "Inline code in Markdown or Verso"
+            },
+            {
+                "id": "markupCodeBlock",
+                "description": "The contents of a code block in Markdown or Verso"
+            },
+            {
+                "id": "markupUrl",
+                "description": "A URL in Markdown or Verso"
+            },
+            {
+                "id": "markupCrossReference",
+                "description": "A link label or cross-reference in Markdown or Verso"
+            }
+        ],
+        "semanticTokenModifiers": [
+            {
+                "id": "markupBold",
+                "description": "Markup text with strong emphasis"
+            },
+            {
+                "id": "markupItalic",
+                "description": "Markup text with emphasis"
+            },
+            {
+                "id": "markupSyntax",
+                "description": "A Markdown or Verso delimiter"
+            }
+        ],
         "semanticTokenScopes": [
             {
                 "scopes": {
                     "keyword": [
                         "keyword.other"
+                    ],
+                    "markupDocText": [
+                        "lean4.markup.reset meta.embedded text.html.markdown meta.paragraph.markdown"
+                    ],
+                    "markupPlainText": [
+                        "lean4.markup.reset meta.embedded text.html.markdown meta.paragraph.markdown"
+                    ],
+                    "markupHeading": [
+                        "lean4.markup.reset meta.embedded text.html.markdown markup.heading.markdown entity.name.section.markdown"
+                    ],
+                    "markupQuote": [
+                        "lean4.markup.reset meta.embedded text.html.markdown markup.quote.markdown meta.paragraph.markdown"
+                    ],
+                    "markupList": [
+                        "lean4.markup.reset meta.embedded text.html.markdown markup.list.markdown meta.paragraph.markdown"
+                    ],
+                    "markupInlineCode": [
+                        "lean4.markup.reset meta.embedded text.html.markdown meta.paragraph.markdown markup.inline.raw.string.markdown"
+                    ],
+                    "markupCodeBlock": [
+                        "lean4.markup.reset meta.embedded text.html.markdown markup.fenced_code.block.markdown meta.embedded.block.lean4"
+                    ],
+                    "markupUrl": [
+                        "lean4.markup.reset meta.embedded text.html.markdown meta.paragraph.markdown meta.link.inline.markdown markup.underline.link.markdown"
+                    ],
+                    "markupCrossReference": [
+                        "lean4.markup.reset meta.embedded text.html.markdown meta.paragraph.markdown meta.link.reference.markdown constant.other.reference.link.markdown"
+                    ],
+                    "keyword.markupSyntax": [
+                        "lean4.markup.reset meta.embedded text.html.markdown meta.paragraph.markdown punctuation.definition.markdown"
+                    ],
+                    "*.markupBold:lean4": [
+                        "text.html.markdown markup.bold.markdown"
+                    ],
+                    "*.markupItalic:lean4": [
+                        "text.html.markdown markup.italic.markdown"
+                    ],
+                    "*.markupBold.markupItalic:lean4": [
+                        "text.html.markdown markup.bold.markdown markup.italic.markdown"
                     ]
                 }
             }
         ],
         "configurationDefaults": {
+            "editor.tokenColorCustomizations": {
+                "textMateRules": [
+                    {
+                        "scope": "lean4.markup.reset",
+                        "settings": {
+                            "fontStyle": ""
+                        }
+                    }
+                ]
+            },
+            "editor.semanticTokenColorCustomizations": {
+                "rules": {
+                    "*.markupBold:lean4": {
+                        "bold": true
+                    },
+                    "*.markupItalic:lean4": {
+                        "italic": true
+                    }
+                }
+            },
             "files.readonlyInclude": {
                 "**/.lake/**/*.lean": true,
                 "**/.elan/**/*.lean": true
