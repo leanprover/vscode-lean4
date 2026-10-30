@@ -3,7 +3,7 @@ name: tests
 on:
   pull_request:
   push:
-    branches: [master]
+    branches: [master, ci/full-tests]
   schedule:
     - cron: '0 4 * * *'
   workflow_dispatch:
@@ -103,7 +103,7 @@ jobs:
   # The same tests with `leanprover/lean4:nightly`, to find changes in Lean
   # before a stable release. Only on schedule and dispatch: nightly often breaks.
   test-nightly:
-    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/ci/full-tests'
     strategy:
       fail-fast: false
       matrix:
@@ -169,7 +169,7 @@ jobs:
   # Installs elan, toolchains and Mathlib from the network. Only on schedule
   # and dispatch. Also on Windows: the elan installer for Windows is different.
   network:
-    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/ci/full-tests'
     strategy:
       fail-fast: false
       matrix:
