@@ -48,7 +48,9 @@ runs:
         if (-not (Test-Path $elanBin)) {
           $env:USERPROFILE = $homeOverride
           $env:ELAN_HOME = (Join-Path $homeOverride '.elan')
-          & "$env:GITHUB_WORKSPACE\vscode-lean4\scripts\elan-install\install-windows.ps1"
+          # The same options as the extension (`src/utils/batch.ts`). The script does not set an
+          # execution policy, and `Expand-Archive` in the installer loads a script module.
+          pwsh -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "$env:GITHUB_WORKSPACE\vscode-lean4\scripts\elan-install\install-windows.ps1"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
         }
         Add-Content -Path $env:GITHUB_PATH -Value (Join-Path $homeOverride '.elan\bin')
