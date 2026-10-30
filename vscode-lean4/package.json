@@ -1814,7 +1814,7 @@
                         "keyword.other"
                     ],
                     "markupDocText": [
-                        "lean4.markup.reset meta.embedded text.html.markdown meta.paragraph.markdown"
+                        "source.lean4 comment.block.documentation.lean4"
                     ],
                     "markupPlainText": [
                         "lean4.markup.reset meta.embedded text.html.markdown meta.paragraph.markdown"
