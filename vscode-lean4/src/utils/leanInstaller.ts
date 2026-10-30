@@ -9,7 +9,7 @@ import {
     displayResultError,
 } from './batch'
 import { LeanClientProvider } from './clientProvider'
-import { elanSelfUninstall, elanSelfUpdate, elanStableChannel, elanVersion, isElanEagerResolutionVersion } from './elan'
+import { elanSelfUninstall, elanSelfUpdate, elanVersion, isElanEagerResolutionVersion } from './elan'
 import {
     NotificationSeverity,
     StickyInput,
@@ -18,30 +18,25 @@ import {
     displayNotificationWithInput,
     displayStickyNotificationWithOptionalInput,
 } from './notifs'
-
-const windowsInstallationScript = `try {
-    $installCode = (Invoke-WebRequest -Uri "https://elan.lean-lang.org/elan-init.ps1" -UseBasicParsing -ErrorAction Stop).Content
-    $installer = [ScriptBlock]::Create([System.Text.Encoding]::UTF8.GetString($installCode))
-    Set-ExecutionPolicy -ExecutionPolicy Unrestricted -Scope Process
-    $rc = & $installer -NoPrompt 1 -DefaultToolchain ${elanStableChannel}
-    exit $rc
-} catch {
-    Write-Host "Downloading and running the Elan installer failed."
-    Write-Host $_
-    exit 1
-}`
-
-const unixInstallationScript = `curl "https://elan.lean-lang.org/elan-init.sh" -sSf | sh -s -- -y --default-toolchain ${elanStableChannel}`
+// The CI action `setup-elan` runs the same scripts.
+import unixInstallationScript from '../../scripts/elan-install/install-unix.sh'
+import windowsInstallationScript from '../../scripts/elan-install/install-windows.ps1'
 
 export function elanInstallationMethod(): ElanInstallationMethod {
     if (process.platform === 'win32') {
         return {
             script: windowsInstallationScript,
+            // `batchExecuteWithProc` starts PowerShell with the execution policy `Bypass`. A user who
+            // runs the script in a terminal needs this policy for the session, else Windows PowerShell
+            // cannot load the script module of `Expand-Archive`.
+            manualScript:
+                'Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process -Force\n' + windowsInstallationScript,
             shell: 'Windows',
         }
     }
     return {
         script: unixInstallationScript,
+        manualScript: unixInstallationScript,
         shell: 'Unix',
     }
 }
@@ -61,7 +56,7 @@ export type UpdateElanMode =
           versions: { currentVersion: SemVer }
       }
 
-export type ElanInstallationMethod = { script: string; shell: 'Windows' | 'Unix' }
+export type ElanInstallationMethod = { script: string; manualScript: string; shell: 'Windows' | 'Unix' }
 
 export type ElanInstallationResult =
     | { kind: 'Success' }
@@ -224,7 +219,7 @@ export class LeanInstaller implements Disposable {
         const error =
             "Installation of Lean's version manager Elan was unsuccessful.\n" +
             'If you are unable to figure out the issue from the command output below, you can also try running the following manual installation script from a terminal:\n\n' +
-            elanInstallationMethod().script
+            elanInstallationMethod().manualScript
         await displayModalResultError(result, error)
     }
 
