@@ -200,20 +200,48 @@ export class LeanClient implements Disposable {
         c.folderUri = folderUri
         c.subscriptions.push(new Disposable(() => c.staleDepNotifier?.dispose()))
         await c.registerRestartServerNotificationWatchers()
-        if (folderUri.scheme === 'file') {
-            // All nested inner projects are excluded from this project so that we do not
-            // get duplicate language server output for files in a nested inner project.
-            const excludedToolchainPaths = await glob('**/lean-toolchain', {
-                cwd: folderUri.fsPath,
-                // TODO for configurable `.lake/packages`: Run `lake update` if no manifest exists, parse the manifest, grab the packages directory from it
-                ignore: ['lean-toolchain', '.lake/packages/**'],
-                dot: true,
-                absolute: true,
-            })
-            const excludedFolderUris = excludedToolchainPaths.map(t => new FileUri(t).join('..'))
-            c.subFolderExclusions = excludedFolderUris
-        }
         return c
+    }
+
+    /**
+     * All nested inner projects are excluded from this project so that we do not
+     * get duplicate language server output for files in a nested inner project.
+     * `startClient` calls this function on every start, so that a restart finds nested projects that were created later.
+     */
+    private async updateSubFolderExclusions() {
+        if (this.folderUri.scheme !== 'file') {
+            return
+        }
+        const excludedToolchainPaths = await glob('**/lean-toolchain', {
+            cwd: this.folderUri.fsPath,
+            // TODO for configurable `.lake/packages`: Run `lake update` if no manifest exists, parse the manifest, grab the packages directory from it
+            ignore: ['lean-toolchain', '.lake/packages/**'],
+            dot: true,
+            absolute: true,
+        })
+        this.subFolderExclusions = excludedToolchainPaths.map(t => new FileUri(t).join('..'))
+    }
+
+    /**
+     * Returns `true` if `projectUri` is a nested project with a `lean-toolchain` file in the folder of this client
+     * and this client does not exclude it yet.
+     * This is the case if the nested project was created after the last start of this client.
+     * A restart of this client excludes the nested project.
+     */
+    async isNewNestedProject(projectUri: FileUri): Promise<boolean> {
+        if (this.folderUri.scheme !== 'file' || this.subFolderExclusions === undefined) {
+            return false
+        }
+        if (!projectUri.isInFolder(this.folderUri)) {
+            return false
+        }
+        const isExcluded = this.subFolderExclusions.some(
+            excludedFolderUri => projectUri.equals(excludedFolderUri) || projectUri.isInFolder(excludedFolderUri),
+        )
+        if (isExcluded) {
+            return false
+        }
+        return await fileExists(leanToolchainUri(projectUri).fsPath)
     }
 
     private isExcluded(uri: FileUri): boolean {
@@ -534,6 +562,7 @@ export class LeanClient implements Disposable {
         const toolchainOverride: string | undefined =
             toolchainOverrideResult.kind === 'Override' ? toolchainOverrideResult.toolchain : undefined
 
+        await this.updateSubFolderExclusions()
         this.client = await this.setupClient(toolchainOverride)
 
         let insideRestart = true
