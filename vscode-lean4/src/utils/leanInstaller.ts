@@ -23,15 +23,34 @@ import {
 import unixInstallationScript from '../../scripts/elan-install/install-unix.sh'
 import windowsInstallationScript from '../../scripts/elan-install/install-windows.ps1'
 
+// `batchExecuteWithProc` starts PowerShell with the execution policy `Bypass`. A user who runs the
+// script in a terminal needs this policy for the script, else Windows PowerShell cannot load the
+// script module of `Expand-Archive`. At the end, the manual script sets the old policy of the
+// process again, also after an error. Thus the session of the user keeps its policy.
+function windowsManualScript(script: string): string {
+    const body = script
+        .trimEnd()
+        .split(/\r?\n/)
+        .map(line => (line.trim() === '' ? '' : '        ' + line))
+    return [
+        '& {',
+        '    $executionPolicy = Get-ExecutionPolicy -Scope Process',
+        '    Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process -Force',
+        '    try {',
+        ...body,
+        '    } finally {',
+        '        Set-ExecutionPolicy -ExecutionPolicy $executionPolicy -Scope Process -Force',
+        '    }',
+        '}',
+        '',
+    ].join('\n')
+}
+
 export function elanInstallationMethod(): ElanInstallationMethod {
     if (process.platform === 'win32') {
         return {
             script: windowsInstallationScript,
-            // `batchExecuteWithProc` starts PowerShell with the execution policy `Bypass`. A user who
-            // runs the script in a terminal needs this policy for the session, else Windows PowerShell
-            // cannot load the script module of `Expand-Archive`.
-            manualScript:
-                'Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process -Force\n' + windowsInstallationScript,
+            manualScript: windowsManualScript(windowsInstallationScript),
             shell: 'Windows',
         }
     }
