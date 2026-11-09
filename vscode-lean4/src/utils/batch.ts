@@ -1,4 +1,4 @@
-import { ChildProcessWithoutNullStreams, spawn } from 'child_process'
+import { ChildProcessWithoutNullStreams, spawn, SpawnOptionsWithoutStdio } from 'child_process'
 import { OutputChannel, Progress, ProgressLocation, ProgressOptions, window } from 'vscode'
 import { getPowerShellPath } from '../config'
 import { withoutPSModulePath } from './envPath'
@@ -54,9 +54,12 @@ export function batchExecuteWithProc(
     let stdout: string = ''
     let stderr: string = ''
     let combined: string = ''
-    let options = {}
+    // The extension host has no console. Thus without `windowsHide`, Windows can open a console window
+    // for a console program, for example for `powershell.exe` when the extension installs Elan or Git.
+    // If the user closes this window, the program stops.
+    let options: SpawnOptionsWithoutStdio = { windowsHide: true }
     if (workingDirectory !== undefined) {
-        options = { cwd: workingDirectory, windowsHide: true }
+        options = { ...options, cwd: workingDirectory }
     }
     let env: NodeJS.ProcessEnv | undefined
     if (envExtensions !== undefined) {
