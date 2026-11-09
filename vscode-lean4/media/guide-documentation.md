@@ -13,6 +13,9 @@ If you want to learn Lean 4, choose one of the following introductory books base
 ## Hands-On Tutorial
 If you want to dive right into using Lean 4 to prove elementary theorems about natural numbers, you can play the [Natural Number Game](https://adam.math.hhu.de/#/g/leanprover-community/NNG4), which uses a simplified dialect of Lean 4. It can be played online using your browser without a local installation.
 
+## Validating Lean 4 Proofs
+If you want to use Lean for validating a Lean proof from an untrusted source, you should use Lean's [Comparator](https://lean-lang.org/doc/reference/latest/Build-Tools-and-Distribution/Lake/#lake-comparator). It is strongly recommended to carefully read the [Validating a Lean Proof](https://lean-lang.org/doc/reference/latest/ValidatingProofs/#validating-proofs) section of the Lean language reference.
+
 ## Using Lean 4 in VS Code
 The [Lean 4 VS Code extension manual](command:lean4.docs.showExtensionManual) covers all kinds of essential tools when working with Lean 4 in VS Code. Even if you are already familiar with other programming languages and VS Code in general, you may still find the first five subsections of the 'Interacting with Lean files' section in the manual to be very helpful. The manual covers several essential Lean-specific VS Code features, e.g. how to work with multiple Lean files, how to use the InfoView in VS Code and how to input Unicode characters.
 
