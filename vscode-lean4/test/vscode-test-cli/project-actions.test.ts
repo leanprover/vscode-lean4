@@ -7,6 +7,7 @@ import { openInEditor } from '../helpers/editors'
 import { elanCachedResolution } from '../helpers/elan'
 import { scaffoldFromFixture } from '../helpers/fixtures'
 import { git, gitText, initGitRepo } from '../helpers/git'
+import { withGitTrace } from '../helpers/gitTrace'
 import { lake } from '../helpers/lake'
 import { choose, dismiss, withPrompts } from '../helpers/prompts'
 import { withQuickPicks } from '../helpers/quickPicks'
@@ -231,6 +232,9 @@ describe('Project action commands', function () {
 
     // `consumer/lakefile.toml` requires `dep` with `git = "../dep"`. Both halves
     // are copied into the same folder, so the relative URL resolves.
+    // `lake update` fetches `dep` with git. On Windows, this fetch failed one
+    // time without a message from git. Thus a failure shows the logs of the git
+    // calls (`lake` and `withGitTrace`).
     describe('with a local git dependency', function () {
         let depDir: string
         let consumerDir: string
@@ -263,15 +267,17 @@ describe('Project action commands', function () {
             assert.notStrictEqual(expectedRev, beforeRev)
 
             await openAndAwaitClient(Uri.file(path.join(consumerDir, 'Consumer.lean')), CLIENT_READY_MS)
-            await withQuickPicks(['dep'], async () => {
-                await withPrompts(
-                    [choose(/^This command will update dep to its most recent version\./, 'Proceed')],
-                    async () => {
-                        await commands.executeCommand('lean4.project.updateDependency')
-                    },
-                )
+            await withGitTrace(async () => {
+                await withQuickPicks(['dep'], async () => {
+                    await withPrompts(
+                        [choose(/^This command will update dep to its most recent version\./, 'Proceed')],
+                        async () => {
+                            await commands.executeCommand('lean4.project.updateDependency')
+                        },
+                    )
+                })
+                assert.strictEqual(readDepRev(), expectedRev)
             })
-            assert.strictEqual(readDepRev(), expectedRev)
         })
 
         // Lake reads a channel such as `leanprover/lean4:stable` as a name that it
@@ -289,25 +295,27 @@ describe('Project action commands', function () {
             git(depDir, 'commit', '-am', 'Change the Lean version of dep')
 
             await openAndAwaitClient(Uri.file(path.join(consumerDir, 'Consumer.lean')), CLIENT_READY_MS)
-            await withQuickPicks(['dep'], async () => {
-                await withPrompts(
-                    [
-                        choose(/^This command will update dep to its most recent version\./, 'Proceed'),
-                        choose(
-                            /^The Lean version '.*' of the open project differs from the Lean version '.*' of dep\./,
-                            'Update Lean Version',
-                        ),
-                        // The file watcher of the client sees the new `lean-toolchain`.
-                        dismiss(/^Project Lean version \(`lean-toolchain`\) of 'consumer' has changed\./, {
-                            optional: true,
-                        }),
-                    ],
-                    async () => {
-                        await commands.executeCommand('lean4.project.updateDependency')
-                    },
-                )
+            await withGitTrace(async () => {
+                await withQuickPicks(['dep'], async () => {
+                    await withPrompts(
+                        [
+                            choose(/^This command will update dep to its most recent version\./, 'Proceed'),
+                            choose(
+                                /^The Lean version '.*' of the open project differs from the Lean version '.*' of dep\./,
+                                'Update Lean Version',
+                            ),
+                            // The file watcher of the client sees the new `lean-toolchain`.
+                            dismiss(/^Project Lean version \(`lean-toolchain`\) of 'consumer' has changed\./, {
+                                optional: true,
+                            }),
+                        ],
+                        async () => {
+                            await commands.executeCommand('lean4.project.updateDependency')
+                        },
+                    )
+                })
+                assert.strictEqual(fs.readFileSync(consumerToolchainPath, 'utf8'), depToolchain)
             })
-            assert.strictEqual(fs.readFileSync(consumerToolchainPath, 'utf8'), depToolchain)
         })
     })
 })
