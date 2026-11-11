@@ -5,7 +5,7 @@
 - `vscode-test-cli/`: integration tests that run in the VS Code extension host through `@vscode/test-cli`. Each file runs in its own VS Code instance, with the label `cli-<file name>`. Elan must be installed. VS Code opens the fixture `lean-project` as the workspace, except for `adhoc` (no folder) and `multi-root` (the multi-root workspace in `fixtures/multi-root/`). To change this, edit `workspaceOf` in `.vscode-test.mjs`.
 - `wdio/`: UI tests of the InfoView through `wdio-vscode-service`. Only these tests can read the content of a webview.
 - `network/`: tests that download elan, a Lean toolchain and Mathlib. CI runs them only on the nightly schedule and on manual dispatch. On a GitHub-hosted Windows runner, `git-install.test.ts` also uninstalls Git and installs it again (see "Test home").
-- `unit/`: pure TypeScript tests for vitest. They do not use VS Code.
+- `unit/`: pure TypeScript tests for vitest. They do not use VS Code. `elanInstallLanguageModes.test.ts` runs a script with PowerShell 7 (`pwsh`) and, on Windows, also with Windows PowerShell. If a program is not available, vitest skips its tests.
 - `grammar/`: snapshot tests for the TextMate grammars. See `grammar/README.md`.
 - `helpers/`: shared code for the tests. See the helper map at the end of this file.
 - `fixtures/`: Lean projects and files that the tests open.
