@@ -1,6 +1,7 @@
-import { ChildProcessWithoutNullStreams, spawn } from 'child_process'
+import { ChildProcessWithoutNullStreams, spawn, SpawnOptionsWithoutStdio } from 'child_process'
 import { OutputChannel, Progress, ProgressLocation, ProgressOptions, window } from 'vscode'
-import { logger } from './logger'
+import { getPowerShellPath } from '../config'
+import { withoutPSModulePath } from './envPath'
 import { displayModalNotificationWithOutput, displayNotificationWithOutput } from './notifs'
 
 export interface ExecutionChannel {
@@ -53,21 +54,43 @@ export function batchExecuteWithProc(
     let stdout: string = ''
     let stderr: string = ''
     let combined: string = ''
-    let options = {}
+    // The extension host has no console. Thus without `windowsHide`, Windows can open a console window
+    // for a console program, for example for `powershell.exe` when the extension installs Elan or Git.
+    // If the user closes this window, the program stops.
+    let options: SpawnOptionsWithoutStdio = { windowsHide: true }
     if (workingDirectory !== undefined) {
-        options = { cwd: workingDirectory, windowsHide: true }
+        options = { ...options, cwd: workingDirectory }
     }
+    let env: NodeJS.ProcessEnv | undefined
     if (envExtensions !== undefined) {
-        const env = Object.assign({}, process.env)
+        env = Object.assign({}, process.env)
         for (const [key, value] of Object.entries(envExtensions)) {
             env[key] = value
         }
         options = { ...options, env }
     }
+    let spawnFile = executablePath
+    let spawnArgs = args
     if (shell === 'Unix') {
         options = { ...options, shell: '/bin/bash' }
     } else if (shell === 'Windows') {
-        options = { ...options, shell: 'powershell.exe' }
+        // Windows PowerShell starts in a defined state, and not in the state of the process that
+        // started VS Code: without the profiles of the user, with its default module path
+        // (`withoutPSModulePath`), and with an execution policy that permits the script modules
+        // that the command loads (for example `Expand-Archive` in the Elan installer).
+        // We start it with its full path, so that it also starts when PATH does not contain its
+        // folder, and so that no other `powershell.exe` in PATH starts.
+        // Like the `shell` option of `spawn`, we join the executable and the arguments to one command.
+        spawnFile = getPowerShellPath()
+        spawnArgs = [
+            '-NoProfile',
+            '-NonInteractive',
+            '-ExecutionPolicy',
+            'Bypass',
+            '-Command',
+            [executablePath, ...args].join(' '),
+        ]
+        options = { ...options, env: withoutPSModulePath(env ?? process.env) }
     }
     if (channel?.combined) {
         channel.combined.appendLine(formatCommandExecutionOutput(workingDirectory, executablePath, args))
@@ -75,7 +98,7 @@ export function batchExecuteWithProc(
 
     let proc: ChildProcessWithoutNullStreams
     try {
-        proc = spawn(executablePath, args, options)
+        proc = spawn(spawnFile, spawnArgs, options)
     } catch (e) {
         return ['CannotLaunch', new Promise(resolve => resolve(createCannotLaunchExecutionResult('')))]
     }
@@ -110,7 +133,6 @@ export function batchExecuteWithProc(
         })
 
         proc.on('close', (code, signal) => {
-            logger.log(`child process exited with code ${code}`)
             if (signal === 'SIGTERM') {
                 if (channel?.combined) {
                     channel.combined.appendLine('=> Operation cancelled by user.')

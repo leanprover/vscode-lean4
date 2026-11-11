@@ -76,16 +76,40 @@ export function depInstallationLocations(): string[] {
     return []
 }
 
-const windowsRawGitInstallScript = `$gitInstallerUrl = "https://github.com/git-for-windows/git/releases/download/v2.50.1.windows.1/Git-2.50.1-64-bit.exe"
-$installDir = "%TEMP%\\lean4-vscode-extension"
-$gitInstallerLoc = "$installDir\\GitInstaller.exe"
-New-Item -ItemType Directory -Path $installDir -Force
-Invoke-WebRequest -Uri $gitInstallerUrl -OutFile $gitInstallerLoc
-& $gitInstallerLoc /VERYSILENT /NORESTART /SP-
-exit $LASTEXITCODE`
+// The first lines give the Windows credentials of the user to a proxy that needs a login. They are
+// the same as the first lines in the script block of `scripts/elan-install/install-windows.ps1`.
+// A change to these lines must be made in the two scripts (`scripts/installation-scripts.md`).
+// `test/unit/windowsProxyCredentials.test.ts` finds a difference.
+// The Git installer is a GUI program (also with `/VERYSILENT`). PowerShell does not wait for a GUI
+// program that it starts with `&`, and does not set `$LASTEXITCODE` for it. Thus we start the
+// installer with `Start-Process -Wait`, and exit with its exit code.
+// With a progress display, `Invoke-WebRequest` of Windows PowerShell 5.1 downloads the installer
+// (about 60 MB) much more slowly.
+const windowsRawGitInstallScript = `if ($ExecutionContext.SessionState.LanguageMode -eq 'FullLanguage') {
+    $proxy = [System.Net.WebRequest]::DefaultWebProxy
+    if ($proxy -and -not $proxy.Credentials) {
+        $proxy.Credentials = [System.Net.CredentialCache]::DefaultNetworkCredentials
+    }
+}
+$ProgressPreference = 'SilentlyContinue'
+$gitInstallerUrl = "https://github.com/git-for-windows/git/releases/download/v2.50.1.windows.1/Git-2.50.1-64-bit.exe"
+$installDir = Join-Path $env:TEMP "lean4-vscode-extension"
+$gitInstallerLoc = Join-Path $installDir "GitInstaller.exe"
+try {
+    New-Item -ItemType Directory -Path $installDir -Force -ErrorAction Stop | Out-Null
+    Invoke-WebRequest -Uri $gitInstallerUrl -OutFile $gitInstallerLoc -ErrorAction Stop
+    $installer = Start-Process -FilePath $gitInstallerLoc -ArgumentList '/VERYSILENT', '/NORESTART', '/SP-' -Wait -PassThru -ErrorAction Stop
+} catch {
+    Write-Host "Downloading or starting the Git installer failed."
+    Write-Host $_
+    exit 1
+}
+if ($installer.ExitCode -ne 0) {
+    Write-Host "The Git installer failed with exit code $($installer.ExitCode)."
+}
+exit $installer.ExitCode`
 
-const macOsInstallScript = `set -e
-touch "/tmp/.com.apple.dt.CommandLineTools.installondemand.in-progress"
+const macOsInstallScript = `touch "/tmp/.com.apple.dt.CommandLineTools.installondemand.in-progress"
 aclt_label="$(/usr/sbin/softwareupdate -l |
               grep -B 1 -E 'Command Line Tools' |
               awk -F'*' '/^ *\\*/ {print $2}' |
@@ -362,7 +386,9 @@ function dependencyInstallationMethod(p: MissingDependencyInstallationProcedure)
             return {
                 kind: 'Automatic',
                 shell: 'Unix',
-                script: macOsInstallScript,
+                // The manual script does not set `-e`. In a terminal, the option stays set after the script,
+                // and the shell exits at the next command that fails.
+                script: 'set -e\n' + macOsInstallScript,
                 manualBackupScript: macOsInstallScript,
                 pathExtensions: [],
             }

@@ -8,9 +8,9 @@
     },
     "scripts": {
         "watch": "tsc --watch",
-        "watchTest": "tsc --watch",
         "build": "tsc --sourceMap false",
-        "build:dev": "tsc"
+        "build:dev": "tsc",
+        "test": "tsc -p test/tsconfig.json"
     },
     "main": "dist/index",
     "types": "dist/index",
