@@ -138,7 +138,8 @@ The tests in `vscode-test-cli/`, `network/`, `wdio/` and `helpers/` run in VS Co
 | `stubs.trackStubs(stubs)` | Get a restore function for the stubs of a helper. `teardown.ts` restores the stubs that a test left. |
 | `fixtures.scaffoldFromFixture(name, prefix)` | Copy a fixture into the test home, for tests that change the project. |
 | `fixtures.assertNotInProject(dir)` | Make sure that no folder above `dir` has a `lean-toolchain` file or a lakefile, for tests of files outside of a project. |
-| `lake.lake(cwd, args, timeoutMs)` | Run `lake` without a block of the extension host. The error contains stdout and stderr. |
+| `lake.lake(cwd, args, timeoutMs)` | Run `lake` without a block of the extension host. The error contains the exit code, stdout, stderr and the git trace logs. |
+| `gitTrace.withGitTrace(fn)` | Run `fn` with `GIT_TRACE2` set, so that the git calls of the extension (also through Lake) write logs. If `fn` fails, the error contains the logs. Lake does not tell how a git call failed. |
 | `testHome.requireIsolatedTestHome({ requireElanHome })` | Make sure that the test home is isolated before a test changes elan state. |
 | `testHome.makeTestWorkDir(prefix)` | Make a scratch folder in the test home. |
 | `mockToolchain.withMockToolchain(name, { leanVersion }, fn)` | Link a mock toolchain whose `lean` prints the given version. If the extension starts a server from it, wait in `fn` until the server ended (see `preconditions.test.ts`). On Windows, the removal stops the programs that still run from the toolchain, and logs them. |
