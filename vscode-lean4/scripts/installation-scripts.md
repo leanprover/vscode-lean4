@@ -5,7 +5,7 @@ The extension installs Elan with these scripts:
 - `elan-install/install-windows.ps1`
 - `elan-install/install-unix.sh`
 
-The CI action `setup-elan` (`.github/actions/setup-elan/action.yml`) runs the same scripts. The script that installs Git on Windows is in `src/utils/depInstaller.ts`.
+The CI action `setup-elan` (`.github/actions/setup-elan/action.yml`) runs the same scripts. The scripts that install Git on Windows and the Apple Command Line Tools on macOS are in `src/utils/depInstaller.ts`.
 
 Users see these scripts. The output channel "Lean: Editor" shows each script that the extension runs. If the installation of Elan fails, an error shows a manual script, which the user can paste into a terminal. Thus the scripts have no comments, and this file has the notes about them. An interactive zsh also does not accept comments.
 
@@ -29,6 +29,10 @@ On computers with AppLocker or WDAC, PowerShell can run in ConstrainedLanguage m
 ## `elan-install/install-unix.sh`
 
 The script does not set `pipefail`, because the manual script must not change the shell of the user. The extension and the CI action set it (`elanInstallationMethod` in `src/utils/leanInstaller.ts`).
+
+## The script for the Apple Command Line Tools on macOS
+
+The extension runs this script with `set -e` (`dependencyInstallationMethod` in `src/utils/depInstaller.ts`). The manual script (`manualBackupScript`) does not set the option. A user pastes the manual script into a terminal. There, the option stays set after the script, and the shell exits at the next command that fails. For the same reason, the script in `media/guide-installLean-mac.md` does not contain `set -e`.
 
 ## The default toolchain
 

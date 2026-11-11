@@ -109,8 +109,7 @@ if ($installer.ExitCode -ne 0) {
 }
 exit $installer.ExitCode`
 
-const macOsInstallScript = `set -e
-touch "/tmp/.com.apple.dt.CommandLineTools.installondemand.in-progress"
+const macOsInstallScript = `touch "/tmp/.com.apple.dt.CommandLineTools.installondemand.in-progress"
 aclt_label="$(/usr/sbin/softwareupdate -l |
               grep -B 1 -E 'Command Line Tools' |
               awk -F'*' '/^ *\\*/ {print $2}' |
@@ -387,7 +386,9 @@ function dependencyInstallationMethod(p: MissingDependencyInstallationProcedure)
             return {
                 kind: 'Automatic',
                 shell: 'Unix',
-                script: macOsInstallScript,
+                // The manual script does not set `-e`. In a terminal, the option stays set after the script,
+                // and the shell exits at the next command that fails.
+                script: 'set -e\n' + macOsInstallScript,
                 manualBackupScript: macOsInstallScript,
                 pathExtensions: [],
             }

@@ -6,10 +6,8 @@ The following components are automatically installed when clicking [this link](c
 Components that are already installed will be skipped.
 
 ## Installation Procedure Details
-The automatic installation will run the following script to install Elan and Apple Command Line Tools:
+The automatic installation will run the following script to install Elan and Apple Command Line Tools. It runs the commands for Apple Command Line Tools with `set -e`, so that the installation stops at the first command that fails:
 ```bash
-# Stop at the first command that fails.
-set -e
 # Install Apple Command Line Tools using `softwareupdate`.
 touch "/tmp/.com.apple.dt.CommandLineTools.installondemand.in-progress"
 aclt_label="$(/usr/sbin/softwareupdate -l |
