@@ -181,7 +181,8 @@ jobs:
           if-no-files-found: ignore
 
   # Installs elan, toolchains and Mathlib from the network. Only on schedule
-  # and dispatch. Also on Windows: the elan installer for Windows is different.
+  # and dispatch. Also on Windows: the elan installer for Windows is different,
+  # and on Windows the job also tests the installation of Git.
   network:
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     strategy:
@@ -209,6 +210,10 @@ jobs:
         timeout-minutes: 75
         env:
           LEAN4_TEST_HOME_OVERRIDE: ${{ github.workspace }}/.lean4-test-home
+          # `git-install.test.ts` uninstalls the Git of the runner and installs it
+          # again. GitHub deletes the VM after the job. The file skips its tests
+          # on Linux.
+          LEAN4_TEST_INSTALL_SYSTEM_GIT: '1'
         run: npm run test:headless:network --workspace=lean4
 
       - name: Upload test artifacts

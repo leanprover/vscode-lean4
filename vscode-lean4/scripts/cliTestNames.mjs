@@ -20,8 +20,12 @@ export const cliTestNames = testNames('vscode-test-cli')
 // same VS Code, and some change the state of the next files:
 // - `elan-install` installs the elan that the other files use.
 // - `toolchain-updates` uninstalls toolchains, and the extension then uses the
-//   old toolchain for the rest of the session ("Use Old Version"). Thus it is last.
-export const networkTestNames = ['elan-install', 'project-init-flow', 'toolchain-updates']
+//   old toolchain for the rest of the session ("Use Old Version"). Thus it is
+//   the last file that uses Lean.
+// - `git-install` uninstalls Git on a GitHub-hosted Windows runner and installs
+//   it again. If an installation fails, Git stays missing. Thus it is last.
+//   Elsewhere, it skips its tests.
+export const networkTestNames = ['elan-install', 'project-init-flow', 'toolchain-updates', 'git-install']
 
 const unlisted = testNames('network').filter(name => !networkTestNames.includes(name))
 const missing = networkTestNames.filter(name => !testNames('network').includes(name))
