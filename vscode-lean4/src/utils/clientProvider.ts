@@ -7,7 +7,7 @@ import { LeanPublishDiagnosticsParams } from './converters'
 import { ExtUri, FileUri } from './exturi'
 import { lean } from './leanEditorProvider'
 import { logger } from './logger'
-import { displayNotification } from './notifs'
+import { displayNotification, displayNotificationWithOptionalInput } from './notifs'
 import { findLeanProjectRootInfo, willUseLakeServer } from './projectInfo'
 
 async function checkLean4ProjectPreconditions(
@@ -182,6 +182,27 @@ export class LeanClientProvider implements Disposable {
         return combinedAction()
     }
 
+    /**
+     * A client finds the nested projects in its folder only when it starts.
+     * If the user creates a nested project after that, the client of the enclosing project also handles
+     * the documents of the nested project until it restarts.
+     */
+    private async offerRestartOfEnclosingClients(projectUri: FileUri) {
+        for (const client of this.getClients()) {
+            const folderUri = client.getClientFolder()
+            if (folderUri.scheme !== 'file' || !(await client.isNewNestedProject(projectUri))) {
+                continue
+            }
+            const projectName = projectUri.baseName()
+            const folderName = folderUri.baseName()
+            displayNotificationWithOptionalInput(
+                'Information',
+                `'${projectName}' is a nested project in '${folderName}'. Restart the server of '${folderName}' to make it aware of the nested project?`,
+                [{ input: 'Restart Server', action: () => void client.restart() }],
+            )
+        }
+    }
+
     getClientForFolder(folder: ExtUri): LeanClient | undefined {
         return this.clients.get(folder.toString())
     }
@@ -224,6 +245,9 @@ export class LeanClientProvider implements Disposable {
         client = await LeanClient.init(folderUri, this.outputChannel)
         this.subscriptions.push(client)
         this.clients.set(key, client)
+        if (folderUri.scheme === 'file') {
+            void this.offerRestartOfEnclosingClients(folderUri)
+        }
 
         client.serverFailed(err => {
             this.clients.delete(key)
