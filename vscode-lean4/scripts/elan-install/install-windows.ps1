@@ -8,7 +8,12 @@
     $ProgressPreference = 'SilentlyContinue'
     try {
         $installCode = (Invoke-WebRequest -Uri "https://elan.lean-lang.org/elan-init.ps1" -UseBasicParsing -ErrorAction Stop).Content
-        $installer = [ScriptBlock]::Create([System.Text.Encoding]::UTF8.GetString($installCode))
+        if ($ExecutionContext.SessionState.LanguageMode -eq 'FullLanguage') {
+            $installer = [ScriptBlock]::Create([System.Text.Encoding]::UTF8.GetString($installCode))
+        } else {
+            $installText = [uri]::UnescapeDataString(-join ($installCode | ForEach-Object { '%{0:X2}' -f $_ }))
+            $installer = Invoke-Expression "{`n$installText`n}"
+        }
         $rc = & $installer -NoPrompt 1 -DefaultToolchain leanprover/lean4:stable | Select-Object -Last 1
     } catch {
         Write-Host "Downloading and running the Elan installer failed."
