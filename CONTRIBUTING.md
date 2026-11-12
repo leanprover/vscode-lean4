@@ -2,6 +2,14 @@
 
 These guidelines are for contributions to the Lean 4 VS Code extension from outside the Lean FRO. They help us to keep the code of the extension correct and maintainable.
 
+## Who can open pull requests
+
+The vscode-lean4 repository currently accepts pull requests only from the Lean FRO team and a small set of regular contributors. A workflow closes pull requests from all other authors automatically. Maintainers can reopen PRs where appropriate.
+
+If you found a bug or want to propose a change, [open an issue](https://github.com/leanprover/vscode-lean4/issues/new/choose) instead: a bug report, or an `RFC:` issue for a new feature as described below. The maintainers read new issues as described in [Reviews and feedback](#reviews-and-feedback).
+
+The rest of these guidelines apply to everyone who opens pull requests.
+
 ## Helpful links
 
 - [Development](docs/dev.md): build, test and debug the extension
