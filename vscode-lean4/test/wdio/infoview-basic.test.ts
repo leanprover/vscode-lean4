@@ -421,7 +421,7 @@ describe('InfoView', function () {
     })
 
     // Crash.lean, zero-indexed line 3: `#eval "worker alive"`.
-    it('reports a crashed worker and recovers after `lean4.restartFile`', async () => {
+    it('reports a crashed worker and recovers after an edit', async () => {
         await openFixtureFile('Crash.lean')
         await moveCursorTo(3, 0)
         await waitForInfoView(t => t.includes('"worker alive"'), { label: 'the `#eval` result', timeout: 2 * 60_000 })
@@ -430,22 +430,24 @@ describe('InfoView', function () {
         // than 0, 1 and 2 as a crash (`workerCrashed`). A segmentation fault is not
         // reliable here: on Linux, a core dump can delay the end of the worker for a long time.
         // The InfoView shows the crash only when a request is pending at the time
-        // of the crash. Lean keeps the requests for a crashed worker without an
-        // answer until the worker restarts. Thus the `IO.sleep` delays the crash,
-        // so that the request for the new cursor position is pending before the crash.
+        // of the crash. Older versions of Lean keep later requests for a crashed
+        // worker without an answer until the worker restarts. Thus the `IO.sleep`
+        // delays the crash, so that the request for the new cursor position is
+        // pending before the crash.
         await replaceLine(3, '#eval show IO Unit from do IO.sleep 3000; IO.Process.exit 3')
         // Move the cursor, as a user does when they type. The InfoView then asks
         // the server for the new position, and this request reports the crash.
         // Without the move, the InfoView shows the crash only if "All Messages" is open.
         await moveCursorTo(3, 1)
-        await waitForInfoView(t => t.includes('The Lean Server has stopped processing this file'), {
-            label: 'the message about the crashed worker',
+        // The crash appears in the info at the cursor, and the rest of the InfoView stays.
+        await waitForInfoView(t => t.includes('Error fetching goals') && t.includes('crashed'), {
+            label: 'the crash of the worker in the info at the cursor',
         })
 
+        // Lean starts a new worker when the file changes after a crash.
         await replaceLine(3, '#eval "worker alive"')
-        await runCommand('lean4.restartFile')
-        await waitForInfoView(t => t.includes('"worker alive"') && !t.includes('stopped processing'), {
-            label: 'the `#eval` result after the restart',
+        await waitForInfoView(t => t.includes('"worker alive"') && !t.includes('crashed'), {
+            label: 'the `#eval` result after the edit',
         })
     })
 
