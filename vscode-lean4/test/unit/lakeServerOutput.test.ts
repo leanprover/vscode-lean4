@@ -64,6 +64,36 @@ describe('Lake server startup output', () => {
         expect((await filter([input])).bytes).toEqual(input)
     })
 
+    const httpBody = JSON.stringify({ ok: true })
+    const oldRpcBody = JSON.stringify({ jsonrpc: '1.0', id: 1, result: true })
+    it.each([
+        `HTTP/1.1 200 OK\r\nContent-Length: ${Buffer.byteLength(httpBody)}\r\n\r\n${httpBody}\n`,
+        'HTTP/1.1 200 OK\r\nContent-Length: 999999\r\n\r\nshort progress\n',
+        `Content-Length: ${Buffer.byteLength(oldRpcBody)}\r\nContent-Type: application/json\r\n\r\n${oldRpcBody}\n`,
+    ])('keeps an HTTP-style hook frame out of the protocol: %j', async preamble => {
+        const input = Buffer.concat([Buffer.from(preamble), packet])
+        for (let i = 0; i <= input.length; i++) {
+            const result = await filter([input.subarray(0, i), input.subarray(i)])
+            expect(result.log).toBe(preamble)
+            expect(result.bytes).toEqual(packet)
+        }
+    })
+
+    it('waits for a complete JSON-RPC frame before forwarding startup bytes', async () => {
+        const output = new LakeServerOutput(() => {})
+        const received: Buffer[] = []
+        output.on('data', (chunk: Buffer) => received.push(chunk))
+        const finished = new Promise<void>((resolve, reject) => {
+            output.on('end', resolve)
+            output.on('error', reject)
+        })
+        output.write(packet.subarray(0, -1))
+        expect(received).toHaveLength(0)
+        output.end(packet.subarray(-1))
+        await finished
+        expect(Buffer.concat(received)).toEqual(packet)
+    })
+
     it('logs long progress lines without retaining an unbounded preamble', async () => {
         const preamble = 'λ'.repeat(100_000) + '\n'
         const bytes = Buffer.from(preamble)

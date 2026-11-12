@@ -76,7 +76,7 @@ The CI job `test-nightly` runs the same tests with `leanprover/lean4:nightly`. I
 ## Failure output
 
 `server-launch.test.ts` also creates cold local Lake projects whose dependency
-hooks print progress, including output without a final newline. It checks cold
+hooks print progress, including HTTP-style headers and output without a final newline. It checks cold
 startup and warm restart, stops a 60-second hook within 15 seconds, and forces
 cancellation during preparation before retrying. These fixtures need no Mathlib
 download. The process-tree termination helper must be executable in both `dist/`

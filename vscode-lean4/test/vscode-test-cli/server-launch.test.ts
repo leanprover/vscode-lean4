@@ -23,6 +23,7 @@ function noisyProject(pause: boolean): { dir: string; uri: Uri; marker: string }
         path.join(dep, 'lakefile.lean'),
         'import Lake\nopen Lake DSL\npackage noisy\npost_update _pkg do\n' +
             '  IO.println "Current branch: HEAD"\n  IO.print "Decompressing 8689 files"\n' +
+            '  IO.print "HTTP/1.1 200 OK\\r\\nContent-Length: 999999\\r\\n\\r\\nHook progress"\n' +
             `  IO.FS.writeFile ${JSON.stringify(marker)} "started"\n` +
             (pause ? '  IO.sleep 60000\n' : ''),
     )
