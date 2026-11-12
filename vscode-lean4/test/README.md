@@ -75,6 +75,13 @@ The CI job `test-nightly` runs the same tests with `leanprover/lean4:nightly`. I
 
 ## Failure output
 
+`server-launch.test.ts` also creates cold local Lake projects whose dependency
+hooks print progress, including output without a final newline. It checks cold
+startup and warm restart, stops a 60-second hook within 15 seconds, and forces
+cancellation during preparation before retrying. These fixtures need no Mathlib
+download. The process-tree termination helper must be executable in both `dist/`
+and the packaged VSIX for the cancellation bound to pass on Unix.
+
 The tests write their output to two folders in `vscode-lean4/`. Git ignores both folders. Each run deletes them first. If a CI job fails, CI uploads them, and also the VS Code logs of the `cli-*` labels (`<test home>/vscode-user-data/<label>/logs/`).
 
 ### `vscode-test-cli-output/`

@@ -116,9 +116,7 @@ export class LeanClientProvider implements Disposable {
             displayNotification('Error', 'Cannot stop language server: No active client.')
             return
         }
-        if (client.isStarted()) {
-            await client.stop()
-        }
+        await client.stop()
     }
 
     private async restartActiveClient() {

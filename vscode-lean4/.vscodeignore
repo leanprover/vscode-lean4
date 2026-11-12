@@ -4,6 +4,7 @@
 ../**
 
 !dist/extension.js
+!dist/terminateProcess.sh
 !dist/webview.js
 !dist/loogleview.js
 !dist/abbreviationview.js

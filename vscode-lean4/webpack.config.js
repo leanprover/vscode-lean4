@@ -1,5 +1,6 @@
 /* [note] modified from github.com/microsoft/vscode-pull-request-github MIT licenced*/
 
+const fs = require('fs')
 const path = require('path')
 const webpack = require('webpack')
 const CopyPlugin = require('copy-webpack-plugin')
@@ -193,6 +194,24 @@ const getExtensionConfig = env => ({
     externals: {
         vscode: 'commonjs vscode',
     },
+    plugins: [
+        new CopyPlugin({
+            patterns: [
+                {
+                    from: require.resolve('vscode-languageclient/lib/node/terminateProcess.sh'),
+                    to: 'terminateProcess.sh',
+                },
+            ],
+        }),
+        {
+            apply(compiler) {
+                compiler.hooks.afterEmit.tap('ExecutableTerminationScript', () => {
+                    // The language client executes this script directly on Unix.
+                    fs.chmodSync(path.resolve(__dirname, 'dist', 'terminateProcess.sh'), 0o755)
+                })
+            },
+        },
+    ],
 })
 
 /** @type {(env: any) => import('webpack').Configuration[]} */

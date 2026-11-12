@@ -1,3 +1,5 @@
+import { ChildProcessWithoutNullStreams } from 'node:child_process'
+import { pipeline } from 'node:stream'
 import {
     CancellationToken,
     DiagnosticCollection,
@@ -26,11 +28,13 @@ import {
     LanguageClient,
     LanguageClientOptions,
     LSPErrorCodes,
+    MessageTransports,
     ResponseError,
     RevealOutputChannelOn,
     ServerCapabilities,
     State,
     StaticFeature,
+    StreamMessageReader,
 } from 'vscode-languageclient/node'
 
 import {
@@ -70,6 +74,7 @@ import {
 import { elanInstalledToolchains } from './utils/elan'
 import { ExtUri, FileUri, parseExtUri, toExtUri } from './utils/exturi'
 import { fileExists } from './utils/fsHelper'
+import { LakeServerOutput } from './utils/lakeServerOutput'
 import { leanRunner } from './utils/leanCmdRunner'
 import { lean, LeanDocument } from './utils/leanEditorProvider'
 import {
@@ -108,7 +113,7 @@ interface LeanClientCapabilties {
 const leanClientCapabilities: LeanClientCapabilties = {
     incrementalDiagnosticSupport: true,
     silentDiagnosticSupport: true,
-    rpcWireFormat: 'v1'
+    rpcWireFormat: 'v1',
 }
 
 export type PrepareModuleHierarchyResult =
@@ -153,9 +158,47 @@ function filterCleanServerExit(channel: OutputChannel): OutputChannel {
     }
 }
 
+/** Keep LanguageClient's process ownership and shutdown behavior for Lake servers. */
+class StartupLanguageClient extends LanguageClient {
+    routeLakeOutput = false
+    private startupCancelled = false
+
+    cancelStartup(): void {
+        this.startupCancelled = true
+    }
+
+    protected override async createMessageTransports(encoding: string): Promise<MessageTransports> {
+        const transports = await super.createMessageTransports(encoding)
+        if (this.startupCancelled) {
+            // Stop may have run before the process was spawned. Now the base
+            // class owns it, so its stop finalizer can terminate it reliably.
+            try {
+                await this.stop()
+            } catch {
+                // Initialization has no graceful LSP shutdown yet.
+            }
+            throw new Error('Lean server startup was cancelled.')
+        }
+        if (!this.routeLakeOutput) return transports
+        // vscode-languageclient 9.0.1 does not expose the executable's stdout.
+        // The stderr observer below also uses this pinned internal process.
+        const server = (this as unknown as { _serverProcess: ChildProcessWithoutNullStreams })._serverProcess
+        transports.reader.dispose()
+        const output = new LakeServerOutput(text => this.outputChannel.append(text))
+        const reader = new StreamMessageReader(output)
+        pipeline(server.stdout, output, error => {
+            if (error) {
+                this.outputChannel.appendLine(error.message)
+                server.kill()
+            }
+        })
+        return { ...transports, reader }
+    }
+}
+
 export class LeanClient implements Disposable {
     running: boolean
-    private client: LanguageClient | undefined
+    private client: StartupLanguageClient | undefined
     private outputChannel: OutputChannel
     folderUri: ExtUri
     private subFolderExclusions: FileUri[] | undefined
@@ -163,6 +206,8 @@ export class LeanClient implements Disposable {
     private noPrompt: boolean = false
     private showingRestartMessage: boolean = false
     private restartInProgress: boolean = false
+    private restartCompletion: Promise<void> | undefined
+    private startupCancelled = false
     private staleDepNotifier: Disposable | undefined
     private configFileContents: Map<string, string> = new Map()
 
@@ -490,6 +535,13 @@ export class LeanClient implements Disposable {
             return
         }
         this.restartInProgress = true
+        this.startupCancelled = false
+        const completion = this.restartCore()
+        this.restartCompletion = completion
+        await completion
+    }
+
+    private async restartCore(): Promise<void> {
         try {
             let defaultToolchain: string | undefined
             if (this.folderUri.scheme === 'untitled') {
@@ -515,9 +567,11 @@ export class LeanClient implements Disposable {
                 }
             }
 
+            if (this.startupCancelled) return
             if (this.isStarted()) {
-                await this.stop()
+                await this.stopClient()
             }
+            if (this.startupCancelled) return
 
             this.restartingEmitter.fire(undefined)
 
@@ -573,6 +627,7 @@ export class LeanClient implements Disposable {
 
         progress.report({})
         const toolchainOverrideResult = await this.determineToolchainOverride(defaultToolchain)
+        if (this.startupCancelled) return
         if (toolchainOverrideResult.kind === 'Error') {
             this.serverFailedEmitter.fire(`Error while starting client: ${toolchainOverrideResult.message}`)
             return
@@ -581,11 +636,16 @@ export class LeanClient implements Disposable {
             toolchainOverrideResult.kind === 'Override' ? toolchainOverrideResult.toolchain : undefined
 
         await this.updateSubFolderExclusions()
-        this.client = await this.setupClient(toolchainOverride)
+        if (this.startupCancelled) return
+        const client = await this.setupClient(toolchainOverride)
+        if (this.startupCancelled) return
+        this.client = client
+        const startingClient = this.client
 
         let insideRestart = true
         try {
             this.client.onDidChangeState(async s => {
+                if (this.client !== startingClient) return
                 // see https://github.com/microsoft/vscode-languageserver-node/issues/825
                 if (s.newState === State.Running) {
                     this.running = true // may have been auto restarted after it failed.
@@ -613,6 +673,7 @@ export class LeanClient implements Disposable {
             })
 
             await this.client.start()
+            if (this.client !== startingClient) return
 
             const rawVersion = this.client.initializeResult?.serverInfo?.version
             const version = rawVersion !== undefined ? semver.parse(rawVersion) : null
@@ -626,10 +687,12 @@ export class LeanClient implements Disposable {
             // if we got this far then the client is happy so we are running!
             this.running = true
         } catch (error) {
+            if (this.client !== startingClient) return
             const msg = '' + error
             this.outputChannel.appendLine(msg)
             this.serverFailedEmitter.fire(msg)
             insideRestart = false
+            return
         }
 
         // HACK(WN): Register a default notification handler to fire on custom notifications.
@@ -773,11 +836,21 @@ export class LeanClient implements Disposable {
     }
 
     async stop(): Promise<void> {
-        if (this.client && this.running) {
+        this.startupCancelled = true
+        this.client?.cancelStartup()
+        const completion = this.restartCompletion
+        await this.stopClient()
+        // Do not report a completed Stop while Restart still rejects a retry.
+        await completion
+    }
+
+    private async stopClient(): Promise<void> {
+        if (this.client) {
             this.noPrompt = true
             try {
-                // some timing conditions can happen while running unit tests that cause
-                // this to throw an exception which then causes those tests to fail.
+                // During initialization the LSP client rejects shutdown, but its
+                // Node stop() finalizer still terminates the owned process. That
+                // closes the pending initialize request and allows another start.
                 await this.client.stop()
             } catch (e) {
                 // Ignored, see above.
@@ -1064,14 +1137,15 @@ export class LeanClient implements Disposable {
         }
     }
 
-    private async setupClient(toolchainOverride: string | undefined): Promise<LanguageClient> {
+    private async setupClient(toolchainOverride: string | undefined): Promise<StartupLanguageClient> {
         const serverOptions: Executable = await this.determineServerOptions(toolchainOverride)
         const clientOptions: LanguageClientOptions = this.obtainClientOptions()
 
         this.outputChannel.appendLine(
             formatCommandExecutionOutput(serverOptions.options?.cwd, serverOptions.command, serverOptions.args ?? []),
         )
-        const client = new LanguageClient('lean4', 'Lean 4', serverOptions, clientOptions)
+        const client = new StartupLanguageClient('lean4', 'Lean 4', serverOptions, clientOptions)
+        client.routeLakeOutput = serverOptions.command === 'lake'
         const leanCapabilityFeature: StaticFeature = {
             initialize(_1, _2) {},
             getState() {
