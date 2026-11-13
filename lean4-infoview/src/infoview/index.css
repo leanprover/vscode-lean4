@@ -125,6 +125,13 @@ body {
     z-index: 37;
 }
 
+.whats-this-button {
+    position: fixed;
+    bottom: 10px;
+    left: 10px;
+    z-index: 37;
+}
+
 select {
     background-color: var(--vscode-dropdown-background);
     color: var(--vscode-dropdown-foreground);
