@@ -108,7 +108,7 @@ interface LeanClientCapabilties {
 const leanClientCapabilities: LeanClientCapabilties = {
     incrementalDiagnosticSupport: true,
     silentDiagnosticSupport: true,
-    rpcWireFormat: 'v1'
+    rpcWireFormat: 'v1',
 }
 
 export type PrepareModuleHierarchyResult =
@@ -207,9 +207,6 @@ export class LeanClient implements Disposable {
 
     private restartingEmitter = new EventEmitter()
     restarting = this.restartingEmitter.event
-
-    private restartedWorkerEmitter = new EventEmitter<string>()
-    restartedWorker = this.restartedWorkerEmitter.event
 
     private serverFailedEmitter = new EventEmitter<string>()
     serverFailed = this.serverFailedEmitter.event
@@ -404,7 +401,7 @@ export class LeanClient implements Disposable {
         return this.serverCapabilities()?.experimental
     }
 
-    showRestartMessage(restartFile: boolean = false, uri?: ExtUri | undefined) {
+    showRestartMessage() {
         if (this.showingRestartMessage) {
             return
         }
@@ -412,30 +409,14 @@ export class LeanClient implements Disposable {
         const finalizer = () => {
             this.showingRestartMessage = false
         }
-        let restartItem: string
-        let messageTitle: string
-        if (!restartFile) {
-            restartItem = 'Restart Lean Server'
-            messageTitle = 'Lean Server has stopped unexpectedly.'
-        } else {
-            restartItem = 'Restart Lean Server on this file'
-            messageTitle = 'The Lean Server has stopped processing this file.'
-        }
         displayNotificationWithOptionalInput(
             'Error',
-            messageTitle,
+            'Lean Server has stopped unexpectedly.',
             [
                 {
-                    input: restartItem,
+                    input: 'Restart Lean Server',
                     action: () => {
-                        if (restartFile && uri !== undefined) {
-                            const document = lean.getLeanDocumentByUri(uri)
-                            if (document !== undefined) {
-                                void this.restartFile(document)
-                            }
-                        } else {
-                            void this.start()
-                        }
+                        void this.start()
                     },
                 },
             ],
@@ -840,8 +821,6 @@ export class LeanClient implements Disposable {
             'textDocument/didOpen',
             setDependencyBuildMode(this.client.code2ProtocolConverter.asOpenTextDocumentParams(leanDoc.doc), 'once'),
         )
-
-        this.restartedWorkerEmitter.fire(uri)
     }
 
     // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
