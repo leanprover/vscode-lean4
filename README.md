@@ -20,4 +20,4 @@ The [Lean 4 VS Code extension manual](https://github.com/leanprover/vscode-lean4
 
 ## Developing the Lean 4 VS Code extension
 
-See [Development](docs/dev.md).
+See [Development](docs/dev.md) and the [contribution guidelines](CONTRIBUTING.md).
