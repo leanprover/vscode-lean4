@@ -91,6 +91,10 @@ class RpcSessionAtPos implements Disposable {
     }
 }
 
+/** Key prefix used to store persistent state entries in the `'workspace'` container.
+ * See `savePersistentState` in {@link EditorRpcApi}. */
+const infoviewPersistentStateKeyPrefix = 'lean4.infoview.persistentState.'
+
 export class InfoProvider implements Disposable {
     /** Instance of the panel, if it is open. Otherwise `undefined`. */
     private webviewPanel?: WebviewPanel & { rpc: Rpc; api: InfoviewApi }
@@ -103,6 +107,11 @@ export class InfoProvider implements Disposable {
     // Subscriptions are counted and only disposed of when count becomes 0.
     private serverNotifSubscriptions: Map<string, [number, Disposable[]]> = new Map()
     private clientNotifSubscriptions: Map<string, [number, Disposable[]]> = new Map()
+
+    /** Entries stored by the infoview in the `'infoview'` container.
+     * They are removed when the infoview is closed.
+     * See `savePersistentState` in {@link EditorRpcApi}. */
+    private infoviewState: Map<string, unknown> = new Map()
 
     private rpcSessions: Map<string, RpcSessionAtPos> = new Map()
 
@@ -399,6 +408,28 @@ export class InfoProvider implements Disposable {
             if (session) {
                 this.rpcSessions.delete(sessionId)
                 session.dispose()
+            }
+        },
+
+        readPersistentState: async (container, key) => {
+            if (container === 'infoview') {
+                return this.infoviewState.has(key) ? { value: this.infoviewState.get(key) } : undefined
+            } else if (container === 'workspace') {
+                return this.context.workspaceState.get<{ value: unknown }>(infoviewPersistentStateKeyPrefix + key)
+            }
+        },
+        savePersistentState: async (container, key, value) => {
+            if (container === 'infoview') {
+                this.infoviewState.set(key, value)
+            } else if (container === 'workspace') {
+                await this.context.workspaceState.update(infoviewPersistentStateKeyPrefix + key, { value })
+            }
+        },
+        deletePersistentState: async (container, key) => {
+            if (container === 'infoview') {
+                this.infoviewState.delete(key)
+            } else if (container === 'workspace') {
+                await this.context.workspaceState.update(infoviewPersistentStateKeyPrefix + key, undefined)
             }
         },
     }
@@ -779,6 +810,7 @@ export class InfoProvider implements Disposable {
                 this.clearRpcSessions(null) // should be after `webviewPanel = undefined`
                 for (const [_1, d, _2] of this.clientRequests.values()) d.dispose()
                 this.clientRequests = new Map()
+                this.infoviewState.clear()
             })
             this.webviewPanel = webviewPanel
             webviewPanel.webview.html = this.initialHtml()

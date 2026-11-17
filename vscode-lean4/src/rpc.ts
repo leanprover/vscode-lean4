@@ -203,5 +203,8 @@ export function editorApiOfRpc(api: EditorRpcApi): EditorApi {
         restartFile: api.restartFile,
         createRpcSession: api.createRpcSession,
         closeRpcSession: api.closeRpcSession,
+        readPersistentState: api.readPersistentState,
+        savePersistentState: api.savePersistentState,
+        deletePersistentState: api.deletePersistentState,
     }
 }
