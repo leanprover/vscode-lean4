@@ -4,7 +4,6 @@ import {
     LeanFileProgressParams,
     RpcConnected,
     RpcConnectParams,
-    RpcErrorCode,
     RpcKeepAliveParams,
     ServerStoppedReason,
     TextInsertKind,
@@ -110,9 +109,6 @@ export class InfoProvider implements Disposable {
     // the key is the LeanClient.getClientFolder()
     private clientsFailed: Map<string, ServerStoppedReason> = new Map()
 
-    // the key is the uri of the file who's worker has failed.
-    private workersFailed: Map<string, ServerStoppedReason> = new Map()
-
     /**
      * The ID to assign to the next client request made by the infoview
      * (see {@link editorApi.startClientRequest}).
@@ -210,16 +206,7 @@ export class InfoProvider implements Disposable {
                 }
                 const id = this.freshClientRequestId
                 this.freshClientRequestId += 1
-                const promise = client.sendRequest(method, params, tk.token).catch(async ex => {
-                    if (ex.code === RpcErrorCode.WorkerCrashed) {
-                        // ex codes related with worker exited or crashed
-                        await this.onWorkerStopped(uri, client, {
-                            message: 'The Lean Server has stopped processing this file: ',
-                            reason: ex.message as string,
-                        })
-                    }
-                    throw ex
-                })
+                const promise = client.sendRequest(method, params, tk.token)
                 this.clientRequests.set(id, [promise, sub, tk])
                 return id
             }
@@ -638,13 +625,6 @@ export class InfoProvider implements Disposable {
 
         await this.webviewPanel?.api.serverStopped(undefined) // clear any server stopped state
         const folderUri = client.getClientFolder()
-        for (const worker of this.workersFailed.keys()) {
-            const workerUri = parseExtUri(worker)
-            if (workerUri !== undefined && client.isInFolderManagedByThisClient(workerUri)) {
-                this.workersFailed.delete(worker)
-            }
-        }
-
         if (this.clientsFailed.has(folderUri.toString())) {
             this.clientsFailed.delete(folderUri.toString())
         }
@@ -664,34 +644,11 @@ export class InfoProvider implements Disposable {
                 // infoview updates properly.
                 await this.onClientRestarted(client)
             }),
-            client.restartedWorker(async uri => {
-                await this.onWorkerRestarted(uri)
-            }),
             client.didSetLanguage(() => this.onLanguageChanged()),
         )
 
         // Note that when new client is first created it still fires client.restarted
         // event, so all onClientRestarted can happen there so we don't do it twice.
-    }
-
-    async onWorkerRestarted(uri: string): Promise<void> {
-        await this.webviewPanel?.api.serverStopped(undefined) // clear any server stopped state
-        this.workersFailed.delete(uri)
-        await this.sendPosition()
-    }
-
-    async onWorkerStopped(uri: string, client: LeanClient, reason: ServerStoppedReason) {
-        await this.webviewPanel?.api.serverStopped(reason)
-
-        const extUri = parseExtUri(uri)
-        if (extUri === undefined) {
-            return
-        }
-
-        if (!this.workersFailed.has(uri)) {
-            this.workersFailed.set(uri, reason)
-        }
-        client.showRestartMessage(true, extUri)
     }
 
     onClientRemoved(client: LeanClient) {
@@ -712,7 +669,6 @@ export class InfoProvider implements Disposable {
         if (!this.clientsFailed.has(key.toString())) {
             this.clientsFailed.set(key.toString(), reason)
         }
-        client.showRestartMessage()
     }
 
     // Called when the extension is deactivated.
@@ -933,17 +889,10 @@ export class InfoProvider implements Disposable {
         }
         const loc = this.getLocation(editor)
         const uri = editor.documentExtUri
-        if (this.clientsFailed.size > 0 || this.workersFailed.size > 0) {
+        if (this.clientsFailed.size > 0) {
             const client = this.clientProvider.findClient(uri)
-            const uriKey = uri.toString()
             if (client) {
-                const folder = client.getClientFolder().toString()
-                let reason: ServerStoppedReason | undefined
-                if (this.clientsFailed.has(folder)) {
-                    reason = this.clientsFailed.get(folder)
-                } else if (this.workersFailed.has(uriKey)) {
-                    reason = this.workersFailed.get(uriKey)
-                }
+                const reason = this.clientsFailed.get(client.getClientFolder().toString())
                 if (reason) {
                     // send stopped event
                     await this.webviewPanel?.api.serverStopped(reason)
