@@ -211,7 +211,7 @@ function GoalInfoDisplay(props: GoalInfoDisplayProps) {
             {userWidgets.map(widget => {
                 const inner = (
                     <PanelWidgetDisplay
-                        key={`widget::${widget.id}::${widget.range?.toString()}`}
+                        key={`widget::${widget.id}`}
                         pos={pos}
                         goals={goals ? goals.goals : []}
                         termGoal={termGoal}
@@ -221,7 +221,7 @@ function GoalInfoDisplay(props: GoalInfoDisplayProps) {
                 )
                 if (widget.name)
                     return (
-                        <details key={`widget::${widget.id}::${widget.range?.toString()}`} open>
+                        <details key={`widget::${widget.id}`} open>
                             <summary className="mv2 pointer non-selectable">{widget.name}</summary>
                             {inner}
                         </details>
