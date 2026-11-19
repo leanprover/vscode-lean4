@@ -2076,8 +2076,8 @@
         "test:headless:network": "node ./scripts/headless.mjs npm run test:network"
     },
     "dependencies": {
-        "@leanprover/infoview": "~0.14.0",
-        "@leanprover/infoview-api": "~0.13.0",
+        "@leanprover/infoview": "~0.15.0",
+        "@leanprover/infoview-api": "~0.14.0",
         "@leanprover/unicode-input": "~0.1.13",
         "@leanprover/unicode-input-component": "~0.2.4",
         "@vscode-elements/elements": "^1.7.1",
