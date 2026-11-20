@@ -10,7 +10,7 @@
         "watch": "rollup --config --environment NODE_ENV:development --watch",
         "build": "rollup --config --environment NODE_ENV:production",
         "build:dev": "rollup --config --environment NODE_ENV:development",
-        "test": "tsc -p test/tsconfig.json",
+        "test": "node test/breaking.ts",
         "docs": "typedoc"
     },
     "exports": {
@@ -43,7 +43,6 @@
         "@types/react": "^18.2.15",
         "@types/react-dom": "^18.2.7",
         "@types/react-syntax-highlighter": "^15.5.13",
-        "current-release": "npm:@leanprover/infoview@latest",
         "highlightjs-lean": "^1.2.0",
         "react": "^18.2.0",
         "react-dom": "^18.2.0",
