@@ -1,6 +1,6 @@
 import * as React from 'react'
 import fastIsEqual from 'react-fast-compare'
-import type { Location } from 'vscode-languageserver-protocol'
+import type { DidChangeTextDocumentParams, Location } from 'vscode-languageserver-protocol'
 
 import {
     getInteractiveDiagnostics,
@@ -26,11 +26,13 @@ import { PanelWidgetDisplay } from './userWidget'
 import {
     basename,
     discardMethodNotFound,
+    docChangeAffectsPos,
     DocumentPosition,
     mapRpcError,
     PausableProps,
     RangeHelpers,
     useAsyncWithTrigger,
+    useClientNotificationEffect,
     useEvent,
     usePausableState,
     withPreventedClickOnTextSelection,
@@ -503,6 +505,19 @@ function InfoAux(props: InfoProps) {
     // make the request. We cannot simply call `triggerUpdateCore` because `useAsyncWithTrigger`
     // does not support reentrancy like that.
     const [updaterTick, setUpdaterTick] = React.useState<number>(0)
+
+    // Re-fetch info when the document changes at or before this info's position.
+    // A programmatic edit above the cursor (e.g. applying a code action that
+    // rewrites a tactic) changes the tactic state without moving the cursor
+    // or producing new diagnostics, so none of the other deps below would
+    // trigger a refresh. See https://github.com/leanprover/vscode-lean4/issues/785
+    useClientNotificationEffect(
+        'textDocument/didChange',
+        (params: DidChangeTextDocumentParams) => {
+            if (docChangeAffectsPos(pos, params)) setUpdaterTick(t => t + 1)
+        },
+        [pos.uri, pos.line, pos.character],
+    )
 
     // For atomicity, we use a single update function that fetches all the info at `pos` at once.
     // Besides what the server replies with, we also include the inputs (deps) in this type so

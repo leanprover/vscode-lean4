@@ -1,7 +1,14 @@
 /* eslint-disable @typescript-eslint/no-namespace */
 /* eslint-disable react-hooks/exhaustive-deps */
 import * as React from 'react'
-import type { DocumentUri, Position, Range, TextDocumentPositionParams } from 'vscode-languageserver-protocol'
+import {
+    DidChangeTextDocumentParams,
+    TextDocumentContentChangeEvent,
+    type DocumentUri,
+    type Position,
+    type Range,
+    type TextDocumentPositionParams,
+} from 'vscode-languageserver-protocol'
 
 import { isRpcError, RpcErrorCode } from '@leanprover/infoview-api'
 
@@ -44,6 +51,28 @@ export namespace PositionHelpers {
     export function isLessThan(p1: Position, p2: Position): boolean {
         return p1.line < p2.line || (p1.line === p2.line && p1.character < p2.character)
     }
+}
+
+/**
+ * Whether a `textDocument/didChange` notification could change the info
+ * displayed at `pos`.
+ *
+ * The tactic state and widgets at a position only depend on the text up to
+ * that position, so an edit counts when it starts at or before `pos`:
+ * an edit on an earlier line (e.g. a code action rewriting a tactic above
+ * the cursor), or an edit starting before the cursor on the same line
+ * (e.g. incrementing a number with the Vim extension's Ctrl-A).
+ * A non-incremental (full-sync) change always counts, since it replaces
+ * the whole document. Edits in another file never count.
+ * See https://github.com/leanprover/vscode-lean4/issues/785
+ */
+export function docChangeAffectsPos(pos: DocumentPosition, params: DidChangeTextDocumentParams): boolean {
+    if (params.textDocument.uri !== pos.uri) return false
+    for (const chg of params.contentChanges) {
+        if (!TextDocumentContentChangeEvent.isIncremental(chg)) return true
+        if (PositionHelpers.isLessThanOrEqual(chg.range.start, pos)) return true
+    }
+    return false
 }
 
 export namespace RangeHelpers {
