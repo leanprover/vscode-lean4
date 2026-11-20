@@ -10,6 +10,7 @@ export default defineConfig({
         include: [
             'lean4-unicode-input/test/**/*.test.ts',
             'lean4-infoview-api/test/**/*.test.ts',
+            'lean4-infoview/test/**/*.test.ts',
             'vscode-lean4/test/unit/**/*.test.ts',
         ],
         reporters: ['default'],

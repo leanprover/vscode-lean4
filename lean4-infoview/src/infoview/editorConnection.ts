@@ -11,6 +11,7 @@ import {
 } from '@leanprover/infoview-api'
 
 import { EventEmitter, Eventify } from './event'
+import { PersistentStateConnection } from './persistentStateConnection'
 import { DocumentPosition } from './util'
 
 export type EditorEvents = Omit<Eventify<InfoviewApi>, 'requestedAction' | 'clickedContextMenu'> & {
@@ -26,10 +27,14 @@ export type EditorEvents = Omit<Eventify<InfoviewApi>, 'requestedAction' | 'clic
 /** Provides higher-level wrappers around functionality provided by the editor,
  * e.g. to insert a comment. See also {@link EditorApi}. */
 export class EditorConnection {
+    readonly persistentState: PersistentStateConnection
+
     constructor(
         readonly api: EditorApi,
         readonly events: EditorEvents,
-    ) {}
+    ) {
+        this.persistentState = new PersistentStateConnection(api)
+    }
 
     /** Highlights the given range in a document in the editor. */
     async revealLocation(loc: Location) {

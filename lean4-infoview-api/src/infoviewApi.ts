@@ -63,6 +63,16 @@ export interface ClientRequestOptions {
     abortSignal?: AbortSignal
 }
 
+/** A persistent state entry lives as long as its *container*.
+ * The container can be:
+ * - `'infoview'`: the running infoview instance.
+ *   Entry is cleared when the infoview or editor is closed.
+ *   It persists when the infoview is hidden or moved into a separate window.
+ * - `'workspace'`: the current [workspace](https://code.visualstudio.com/docs/editing/workspaces/workspaces).
+ *   Entry remains stored in the workspace indefinitely.
+ *   Switching to another workspace and back restores the entry. */
+export type StateContainer = 'infoview' | 'workspace'
+
 /** Interface that the InfoView WebView uses to talk to the hosting editor. */
 export interface EditorApi {
     saveConfig(config: InfoviewConfig): Promise<any>
@@ -120,6 +130,17 @@ export interface EditorApi {
     createRpcSession(uri: DocumentUri): Promise<string>
     /** Closes an RPC session created with `createRpcSession`. */
     closeRpcSession(sessionId: string): Promise<void>
+
+    /** Returns the value stored under `key` in the given `container`, if one exists,
+     * or `undefined` if there is none. */
+    readPersistentState(container: StateContainer, key: string): Promise<{ value: unknown } | undefined>
+    /** Stores the `value` under `key` in the given `container`.
+     * `value` must be JSON-serializable.
+     * Distinct containers provide independent mappings:
+     * the same key can map to different values in different containers. */
+    savePersistentState(container: StateContainer, key: string, value: unknown): Promise<void>
+    /** Removes the value stored under `key` from the given `container`. */
+    deletePersistentState(container: StateContainer, key: string): Promise<void>
 }
 
 export interface InfoviewTacticStateFilter {
