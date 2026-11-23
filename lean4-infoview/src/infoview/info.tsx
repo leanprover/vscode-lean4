@@ -82,7 +82,7 @@ const InfoStatusBar = React.memo((props: InfoStatusBarProps) => {
             {isPinned && !isPaused && ' (pinned)'}
             {!isPinned && isPaused && ' (paused)'}
             {isPinned && isPaused && ' (pinned and paused)'}
-            <span style={spinnerStyle} className="mh2 codicon codicon-loading" title="Updating ...">
+            <span style={spinnerStyle} className="mh2 codicon codicon-loading" data-id="info-status-spinner" title="Updating ...">
                 <style>
                     {`
                         @keyframes spin {
@@ -250,7 +250,7 @@ const InfoDisplayContent = React.memo((props: InfoDisplayContentProps) => {
     return (
         <>
             {hasError && (
-                <div className="error" key="errors">
+                <div className="error" key="errors" data-id="info-display-error">
                     Error updating: {error}.
                     <a
                         className="link pointer dim"
