@@ -250,7 +250,7 @@ const InfoDisplayContent = React.memo(function InfoDisplayContent(props: InfoDis
     return (
         <>
             {hasError && (
-                <div className="error" key="errors">
+                <div className="error" key="errors" data-id="info-display-error">
                     Error updating: {error}.
                     <a
                         className="link pointer dim"
