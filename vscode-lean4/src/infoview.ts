@@ -1009,13 +1009,13 @@ export class InfoProvider implements Disposable {
 
     private initialHtml() {
         const libPostfix = `.${prodOrDev}${minIfProd}.js`
-        let devScript = ''
+        let devScriptAttr = ''
         if (process.env.NODE_ENV !== 'production' && this.context.extensionMode === ExtensionMode.Development) {
             // In development mode, optionally load a script from a local port.
             // Defaults to 8097 — the React DevTools.
             const envPort = process.env.DEV_SCRIPT_PORT
             const port = /^\d+$/.test(envPort ?? '') ? envPort : '8097'
-            devScript = `<script src="http://localhost:${port}"></script>`
+            devScriptAttr = `data-dev-script-url="http://localhost:${port}"`
         }
         return `
             <!DOCTYPE html>
@@ -1024,7 +1024,6 @@ export class InfoProvider implements Disposable {
                 <meta charset="UTF-8" />
                 <meta http-equiv="Content-type" content="text/html;charset=utf-8">
                 <title>InfoView</title>
-                ${devScript}
                 <style>${this.stylesheet}</style>
                 <link rel="stylesheet" href="${this.getLocalPath('dist/lean4-infoview/index.css')}">
             </head>
@@ -1035,6 +1034,7 @@ export class InfoProvider implements Disposable {
                     data-importmap-react="${this.getLocalPath(`dist/lean4-infoview/react${libPostfix}`)}"
                     data-importmap-react-jsx-runtime="${this.getLocalPath(`dist/lean4-infoview/react-jsx-runtime${libPostfix}`)}"
                     data-importmap-react-dom="${this.getLocalPath(`dist/lean4-infoview/react-dom${libPostfix}`)}"
+                    ${devScriptAttr}
                     src="${this.getLocalPath('dist/webview.js')}"></script>
             </body>
             </html>`
