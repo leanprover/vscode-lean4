@@ -49,6 +49,12 @@ function locationAt(line: number, character: number, uri: DocumentUri = TEST_URI
 
 type GoalsMode = { reply: InteractiveGoals } | { error: unknown } | 'suspend'
 
+interface PendingGoalCall {
+    resolve(goals: InteractiveGoals): void
+    reject(err: unknown): void
+    abortSignal?: AbortSignal
+}
+
 interface MockEditor {
     serverSubscriptions: Map<string, number>
     clientSubscriptions: Map<string, number>
@@ -59,10 +65,10 @@ interface MockEditor {
      * This controls the response:
      * - `{ reply }`: resolves immediately with the given goals.
      * - `{ error }`: rejects immediately with `error`.
-     * - `'suspend'`: stays pending until `resolvePendingGoals` is called. */
+     * - `'suspend'`: stays pending until resolved or rejected via `pendingGoals`. */
     goalsMode: GoalsMode
-    /** Resolves all currently pending `getInteractiveGoals` requests with `goals`. */
-    resolvePendingGoals(goals: InteractiveGoals): void
+    /** Currently pending `getInteractiveGoals` requests. */
+    pendingGoals: PendingGoalCall[]
     /** Number of currently pending `getInteractiveGoals` requests. */
     numPendingGoals(): number
     /** Number of `getInteractiveGoals` requests made during the editor's lifetime. */
@@ -70,31 +76,39 @@ interface MockEditor {
 }
 
 function initMockEditor(initialGoalsMode: GoalsMode = { reply: { goals: [] } }): MockEditor {
-    const pendingGoalResolvers: ((goals: InteractiveGoals) => void)[] = []
+    const pendingGoals: PendingGoalCall[] = []
 
     const editor: MockEditor = {
         serverSubscriptions: new Map<string, number>(),
         clientSubscriptions: new Map<string, number>(),
         goalsMode: initialGoalsMode,
+        pendingGoals,
         numGoalCalls: 0,
-        numPendingGoals: () => pendingGoalResolvers.length,
-        resolvePendingGoals: goals => {
-            while (pendingGoalResolvers.length > 0) {
-                const resolve = pendingGoalResolvers.shift()
-                resolve?.(goals)
-            }
-        },
+        numPendingGoals: () => pendingGoals.length,
         api: {
             saveConfig: async () => {},
-            sendClientRequest: async (_uri, method, params) => {
+            sendClientRequest: async (_uri, method, params, options) => {
                 if (method === '$/lean/rpc/call') {
                     const call = params as RpcCallParams
                     switch (call.method) {
                         case 'Lean.Widget.getInteractiveGoals':
                             editor.numGoalCalls += 1
                             if (editor.goalsMode === 'suspend') {
-                                return await new Promise<InteractiveGoals>(resolve => {
-                                    pendingGoalResolvers.push(resolve)
+                                return await new Promise<InteractiveGoals>((resolve, reject) => {
+                                    const entry: PendingGoalCall = {
+                                        resolve: g => {
+                                            const idx = pendingGoals.indexOf(entry)
+                                            if (idx !== -1) pendingGoals.splice(idx, 1)
+                                            resolve(g)
+                                        },
+                                        reject: err => {
+                                            const idx = pendingGoals.indexOf(entry)
+                                            if (idx !== -1) pendingGoals.splice(idx, 1)
+                                            reject(err)
+                                        },
+                                        abortSignal: options?.abortSignal,
+                                    }
+                                    pendingGoals.push(entry)
                                 })
                             }
                             if ('error' in editor.goalsMode) {
@@ -166,10 +180,8 @@ interface TestData {
     cleanup(): Promise<void>
 }
 
-async function initTestData(
-    options: InitTestDataOptions = {},
-): Promise<TestData> {
-    const initialGoalsMode = options.initialGoalsMode ?? { reply: { goals: [] }}
+async function initTestData(options: InitTestDataOptions = {}): Promise<TestData> {
+    const initialGoalsMode = options.initialGoalsMode ?? { reply: { goals: [] } }
     const editor = initMockEditor(initialGoalsMode)
     const diagnostics = options.diagnostics ?? []
 
@@ -211,7 +223,9 @@ async function initTestData(
     }
 
     const cleanup = async () => {
-        editor.resolvePendingGoals({ goals: [] })
+        for (const g of editor.pendingGoals) {
+            g.resolve({ goals: [] })
+        }
         await infoviewApi.serverStopped({ message: 'stopped', reason: 'test cleanup' })
         container.remove()
     }
@@ -265,7 +279,7 @@ describe('Info Component', () => {
     /* MWE for https://github.com/leanprover/vscode-lean4/issues/785:
     a code action causes goals to change, leaving the cursor position unchanged. */
     it('updates the tactic state after an edit that does not move the cursor', async () => {
-        test = await initTestData({ initialGoalsMode: { reply: mkSimpleGoal('goal a') }})
+        test = await initTestData({ initialGoalsMode: { reply: mkSimpleGoal('goal a') } })
 
         await vi.waitFor(
             () => {
@@ -297,11 +311,13 @@ describe('Info Component', () => {
     })
 
     it('re-fetches goals when "Try again." is clicked after an RPC error', async () => {
-        test = await initTestData({ initialGoalsMode: {
-            error: Object.assign(new Error('transient server failure'), {
-                code: RpcErrorCode.InternalError,
-            })
-        }})
+        test = await initTestData({
+            initialGoalsMode: {
+                error: Object.assign(new Error('transient server failure'), {
+                    code: RpcErrorCode.InternalError,
+                }),
+            },
+        })
 
         await vi.waitFor(
             () => {
@@ -352,7 +368,8 @@ describe('Info Component', () => {
             { timeout: 1500, interval: 10 },
         )
 
-        test.editor.resolvePendingGoals(mkSimpleGoal('goal a'))
+        const pendingCall = await vi.waitUntil(() => test?.editor.pendingGoals[0], { timeout: 500, interval: 10 })
+        pendingCall.resolve(mkSimpleGoal('goal a'))
 
         await vi.waitFor(
             () => {
@@ -363,7 +380,7 @@ describe('Info Component', () => {
     })
 
     it('waits for an in-flight goals request when refreshing a paused state', async () => {
-        test = await initTestData({ initialGoalsMode: { reply: mkSimpleGoal('goal a') }})
+        test = await initTestData({ initialGoalsMode: { reply: mkSimpleGoal('goal a') } })
 
         await vi.waitFor(
             () => {
@@ -390,7 +407,10 @@ describe('Info Component', () => {
         // Click "Refresh paused state" while the request is in flight, then let the goals RPC finish.
         refreshBtn.click()
         await new Promise(resolve => setTimeout(resolve, 20))
-        test.editor.resolvePendingGoals(mkSimpleGoal('goal b'))
+
+        for (const g of test?.editor.pendingGoals) {
+            g.resolve(mkSimpleGoal('goal b'))
+        }
 
         await vi.waitFor(
             () => {
@@ -416,16 +436,65 @@ describe('Info Component', () => {
 
         test = await initTestData({
             diagnostics: [lakeDiag],
-            initialGoalsMode: { reply: { goals: [] }},
+            initialGoalsMode: { reply: { goals: [] } },
         })
 
         await vi.waitFor(
             () => {
                 expect(test?.infoviewContainer.textContent).toContain('lake failed')
-                const spinner = test?.infoviewContainer.querySelector<HTMLSpanElement>('[data-id="info-status-spinner"]')
+                const spinner = test?.infoviewContainer.querySelector<HTMLSpanElement>(
+                    '[data-id="info-status-spinner"]',
+                )
                 expect(spinner?.style.opacity).toBe('0')
             },
             { timeout: 500, interval: 10 },
         )
+    })
+
+    /* Regression test for https://github.com/leanprover/vscode-lean4/issues/679:
+    `ContentModified` errors should retry automatically without surfacing an error in the UI. */
+    it('retries automatically on ContentModified without showing an error', async () => {
+        test = await initTestData({ initialGoalsMode: 'suspend' })
+
+        const pendingCall = await vi.waitUntil(() => test?.editor.pendingGoals[0], { timeout: 500, interval: 10 })
+
+        test.editor.goalsMode = { reply: mkSimpleGoal('goal a') }
+        pendingCall.reject({ code: RpcErrorCode.ContentModified, message: 'File changed.' })
+
+        await vi.waitFor(
+            () => {
+                expect(test?.editor.numGoalCalls).toBeGreaterThanOrEqual(2)
+                expect(test?.infoviewContainer.textContent).toContain('goal a')
+                expect(test?.infoviewContainer.textContent).not.toContain('Error updating:')
+            },
+            { timeout: 500, interval: 10 },
+        )
+    })
+
+    it('aborts and discards out-of-order responses when the cursor moves', async () => {
+        test = await initTestData({ initialGoalsMode: 'suspend' })
+
+        const firstCall = await vi.waitUntil(() => test?.editor.pendingGoals[0], { timeout: 500, interval: 10 })
+
+        await test.infoviewApi.changedCursorLocation(locationAt(0, 1))
+        const secondCall = await vi.waitUntil(() => test?.editor.pendingGoals.find(c => c !== firstCall), {
+            timeout: 500,
+            interval: 10,
+        })
+        expect(firstCall.abortSignal?.aborted).toBe(true)
+
+        secondCall.resolve(mkSimpleGoal('goal b'))
+        await vi.waitFor(
+            () => {
+                expect(test?.infoviewContainer.textContent).toContain('goal b')
+            },
+            { timeout: 500, interval: 10 },
+        )
+
+        // Now resolve the older request out of order; it must not overwrite 'goal b'.
+        firstCall.resolve(mkSimpleGoal('goal a'))
+        await new Promise(resolve => setTimeout(resolve, 40))
+        expect(test.infoviewContainer.textContent).toContain('goal b')
+        expect(test.infoviewContainer.textContent).not.toContain('goal a')
     })
 })
