@@ -1,13 +1,7 @@
 import * as React from 'react'
 import { ServerCapabilities, type DocumentUri } from 'vscode-languageserver-protocol'
 
-import {
-    defaultInfoviewConfig,
-    InfoviewConfig,
-    LeanDiagnostic,
-    LeanFileProgressProcessingInfo,
-    LeanServerCapabilities,
-} from '@leanprover/infoview-api'
+import { defaultInfoviewConfig, InfoviewConfig, LeanDiagnostic, LeanServerCapabilities } from '@leanprover/infoview-api'
 
 import { EditorConnection } from './editorConnection'
 import { ServerVersion } from './serverVersion'
@@ -21,7 +15,6 @@ export const VersionContext = React.createContext<ServerVersion | undefined>(und
 
 export const ConfigContext = React.createContext<InfoviewConfig>(defaultInfoviewConfig)
 export const LspDiagnosticsContext = React.createContext<Map<DocumentUri, LeanDiagnostic[]>>(new Map())
-export const ProgressContext = React.createContext<Map<DocumentUri, LeanFileProgressProcessingInfo[]>>(new Map())
 
 /**
  * Certain infoview components and widget instances

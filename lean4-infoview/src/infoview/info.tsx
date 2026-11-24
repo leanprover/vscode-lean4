@@ -17,10 +17,11 @@ import {
     Widget_getWidgets,
 } from '@leanprover/infoview-api'
 import { Details } from './collapsing'
-import { ConfigContext, EditorContext, EnvPosContext, LspDiagnosticsContext, ProgressContext } from './contexts'
+import { ConfigContext, EditorContext, EnvPosContext, LspDiagnosticsContext } from './contexts'
 import { GoalsLocation, Locations, LocationsContext } from './goalLocation'
 import { FilteredGoals, goalsToString } from './goals'
 import { lspDiagToInteractive, MessagesList, TallyDisplay, tallyOfDiags } from './messages'
+import { ProgressContext } from './progress'
 import { RpcContext, useRpcSessionAtPos } from './rpcSessions'
 import { PanelWidgetDisplay } from './userWidget'
 import {
@@ -82,7 +83,12 @@ const InfoStatusBar = React.memo(function InfoStatusBar(props: InfoStatusBarProp
             {isPinned && !isPaused && ' (pinned)'}
             {!isPinned && isPaused && ' (paused)'}
             {isPinned && isPaused && ' (pinned and paused)'}
-            <span style={spinnerStyle} className="mh2 codicon codicon-loading" data-id="info-status-spinner" title="Updating ...">
+            <span
+                style={spinnerStyle}
+                className="mh2 codicon codicon-loading"
+                data-id="info-status-spinner"
+                title="Updating ..."
+            >
                 <style>
                     {`
                         @keyframes spin {
@@ -464,10 +470,20 @@ function InfoAtCursor(props: InfoProps) {
 }
 
 function useIsProcessingAt(p: DocumentPosition): boolean {
-    const allProgress = React.useContext(ProgressContext)
-    const processing = allProgress.get(p.uri)
-    if (!processing) return false
-    return processing.some(i => RangeHelpers.contains(i.range, p))
+    const progress = React.useContext(ProgressContext)
+    const getSnapshot = () => {
+        const processing = progress.get(p.uri)?.processing
+        if (!processing) return false
+        return processing.some(i => RangeHelpers.contains(i.range, p))
+    }
+    const subscribe = React.useCallback(
+        (onStoreChange: () => void) => {
+            const h = progress.changed.on(onStoreChange, p.uri)
+            return () => h.dispose()
+        },
+        [progress, p.uri],
+    )
+    return React.useSyncExternalStore(subscribe, getSnapshot)
 }
 
 function InfoAux(props: InfoProps) {

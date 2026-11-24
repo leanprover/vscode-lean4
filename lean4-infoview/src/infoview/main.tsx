@@ -1,7 +1,7 @@
 import { VscodeButton } from '@vscode-elements/react-elements'
 import * as React from 'react'
 import * as ReactDOM from 'react-dom/client'
-import type { DidCloseTextDocumentParams, DocumentUri, Location } from 'vscode-languageserver-protocol'
+import type { DidCloseTextDocumentParams, Location } from 'vscode-languageserver-protocol'
 
 import '@vscode/codicons/dist/codicon.css'
 import '@vscode/codicons/dist/codicon.ttf'
@@ -9,38 +9,23 @@ import 'tachyons/css/tachyons.css'
 import './highlightjs.css'
 import './index.css'
 
-import {
-    defaultInfoviewConfig,
-    EditorApi,
-    InfoviewApi,
-    LeanFileProgressParams,
-    LeanFileProgressProcessingInfo,
-} from '@leanprover/infoview-api'
+import { defaultInfoviewConfig, EditorApi, InfoviewApi } from '@leanprover/infoview-api'
 
-import { CapabilityContext, ConfigContext, EditorContext, ProgressContext, VersionContext } from './contexts'
+import { CapabilityContext, ConfigContext, EditorContext, VersionContext } from './contexts'
 import { EditorConnection, EditorEvents } from './editorConnection'
 import { EventEmitter } from './event'
 import { Infos } from './infos'
 import { AllMessages, WithLspDiagnosticsContext } from './messages'
+import { WithProgressStore } from './progress'
 import { WithRpcSessions } from './rpcSessions'
 import { ServerVersion } from './serverVersion'
-import { useClientNotificationEffect, useEventResult, useServerNotificationState } from './util'
+import { useClientNotificationEffect, useEventResult } from './util'
 
 function Main() {
     const ec = React.useContext(EditorContext)
 
     /* Set up updates to the global infoview state on editor events. */
     const config = useEventResult(ec.events.changedInfoviewConfig) ?? defaultInfoviewConfig
-
-    const [allProgress, _1] = useServerNotificationState(
-        '$/lean/fileProgress',
-        new Map<DocumentUri, LeanFileProgressProcessingInfo[]>(),
-        async (params: LeanFileProgressParams) => allProgress => {
-            const newProgress = new Map(allProgress)
-            return newProgress.set(params.textDocument.uri, params.processing)
-        },
-        [],
-    )
 
     const curUri = useEventResult(ec.events.changedCursorLocation, loc => loc?.uri)
 
@@ -101,11 +86,13 @@ function Main() {
         <ConfigContext.Provider value={config}>
             <CapabilityContext.Provider value={capabilities}>
                 <VersionContext.Provider value={serverVersion}>
-                    <WithRpcSessions>
-                        <WithLspDiagnosticsContext>
-                            <ProgressContext.Provider value={allProgress}>{ret}</ProgressContext.Provider>
-                        </WithLspDiagnosticsContext>
-                    </WithRpcSessions>
+                    {/* Placed outside `WithRpcSessions` so `WithRpcSessions`'s `didChange` effect
+                        (which discards failed sessions) runs before `WithProgressStore` notifies listeners. */}
+                    <WithProgressStore>
+                        <WithRpcSessions>
+                            <WithLspDiagnosticsContext>{ret}</WithLspDiagnosticsContext>
+                        </WithRpcSessions>
+                    </WithProgressStore>
                 </VersionContext.Provider>
             </CapabilityContext.Provider>
         </ConfigContext.Provider>
