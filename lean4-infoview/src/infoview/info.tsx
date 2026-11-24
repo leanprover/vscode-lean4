@@ -51,7 +51,7 @@ interface InfoStatusBarProps extends InfoPinnable, PausableProps {
     triggerUpdate: () => Promise<void>
 }
 
-const InfoStatusBar = React.memo((props: InfoStatusBarProps) => {
+const InfoStatusBar = React.memo(function InfoStatusBar(props: InfoStatusBarProps) {
     const { kind, onPin, status, pos, isPaused, setPaused, triggerUpdate } = props
 
     const ec = React.useContext(EditorContext)
@@ -238,7 +238,7 @@ interface InfoDisplayContentProps extends GoalInfoDisplayProps, PausableProps {
     triggerUpdate: () => Promise<void>
 }
 
-const InfoDisplayContent = React.memo((props: InfoDisplayContentProps) => {
+const InfoDisplayContent = React.memo(function InfoDisplayContent(props: InfoDisplayContentProps) {
     const { pos, messages, goals, termGoal, error, userWidgets, triggerUpdate, isPaused, setPaused } = props
 
     const hasWidget = userWidgets.length > 0

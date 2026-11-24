@@ -205,7 +205,7 @@ interface GoalProps {
 /**
  * Displays the hypotheses, target type and optional case label of a goal according to the
  * provided `filter`. */
-export const Goal = React.memo((props: GoalProps) => {
+export const Goal = React.memo(function Goal(props: GoalProps) {
     const { goal, settings, additionalClassNames } = props
     const config = React.useContext(ConfigContext)
 
@@ -311,8 +311,13 @@ interface FilteredGoalsProps {
  * Display goals together with a header containing the provided children as well as buttons
  * to control how the goals are displayed.
  */
-export const FilteredGoals = React.memo(
-    ({ headerChildren, goals, displayCount, initiallyOpen, togglingAction }: FilteredGoalsProps) => {
+export const FilteredGoals = React.memo(function FilteredGoals({
+    headerChildren,
+    goals,
+    displayCount,
+    initiallyOpen,
+    togglingAction,
+}: FilteredGoalsProps) {
         const ec = React.useContext(EditorContext)
         const config = React.useContext(ConfigContext)
 
