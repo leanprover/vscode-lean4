@@ -82,7 +82,7 @@ const InfoStatusBar = React.memo(function InfoStatusBar(props: InfoStatusBarProp
             {isPinned && !isPaused && ' (pinned)'}
             {!isPinned && isPaused && ' (paused)'}
             {isPinned && isPaused && ' (pinned and paused)'}
-            <span style={spinnerStyle} className="mh2 codicon codicon-loading" title="Updating ...">
+            <span style={spinnerStyle} className="mh2 codicon codicon-loading" data-id="info-status-spinner" title="Updating ...">
                 <style>
                     {`
                         @keyframes spin {

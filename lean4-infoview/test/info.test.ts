@@ -400,4 +400,32 @@ describe('Info Component', () => {
             { timeout: 500, interval: 10 },
         )
     })
+
+    /* Regression test for https://github.com/leanprover/vscode-lean4/issues/90:
+    when `getInteractiveDiagnostics` returns no diagnostics (e.g. because Lake failed),
+    fall back to non-interactive LSP diagnostics at the cursor position. */
+    it('falls back on non-interactive diagnostics when interactive diagnostics are empty', async () => {
+        const lakeDiag: LeanDiagnostic = {
+            range: {
+                start: { line: 0, character: 0 },
+                end: { line: 0, character: 6 },
+            },
+            severity: DiagnosticSeverity.Error,
+            message: 'lake failed',
+        }
+
+        test = await initTestData({
+            diagnostics: [lakeDiag],
+            initialGoalsMode: { reply: { goals: [] }},
+        })
+
+        await vi.waitFor(
+            () => {
+                expect(test?.infoviewContainer.textContent).toContain('lake failed')
+                const spinner = test?.infoviewContainer.querySelector<HTMLSpanElement>('[data-id="info-status-spinner"]')
+                expect(spinner?.style.opacity).toBe('0')
+            },
+            { timeout: 500, interval: 10 },
+        )
+    })
 })
