@@ -17,6 +17,7 @@ import {
     Disposable,
     env,
     ExtensionContext,
+    ExtensionMode,
     Position,
     Range,
     Selection,
@@ -1008,6 +1009,14 @@ export class InfoProvider implements Disposable {
 
     private initialHtml() {
         const libPostfix = `.${prodOrDev}${minIfProd}.js`
+        let devScriptAttr = ''
+        if (process.env.NODE_ENV !== 'production' && this.context.extensionMode === ExtensionMode.Development) {
+            // In development mode, optionally load a script from a local port.
+            // Defaults to 8097 — the React DevTools.
+            const envPort = process.env.DEV_SCRIPT_PORT
+            const port = /^\d+$/.test(envPort ?? '') ? envPort : '8097'
+            devScriptAttr = `data-dev-script-url="http://localhost:${port}"`
+        }
         return `
             <!DOCTYPE html>
             <html>
@@ -1025,6 +1034,7 @@ export class InfoProvider implements Disposable {
                     data-importmap-react="${this.getLocalPath(`dist/lean4-infoview/react${libPostfix}`)}"
                     data-importmap-react-jsx-runtime="${this.getLocalPath(`dist/lean4-infoview/react-jsx-runtime${libPostfix}`)}"
                     data-importmap-react-dom="${this.getLocalPath(`dist/lean4-infoview/react-dom${libPostfix}`)}"
+                    ${devScriptAttr}
                     src="${this.getLocalPath('dist/webview.js')}"></script>
             </body>
             </html>`

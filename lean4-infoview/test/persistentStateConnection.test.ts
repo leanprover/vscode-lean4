@@ -29,13 +29,14 @@ function fakeEditor(initial: Partial<State> = {}) {
     return { connection: new PersistentStateConnection(api as EditorApi), state, calls }
 }
 
-/** Waits until the connection has the answers of the editor to all requests so far. */
-const editorAnswered = () => new Promise(resolve => setTimeout(resolve))
+/** Waits until the microtask queue has been drained,
+ * in particular until `Promise`s scheduled by {@link PersistentStateConnection} terminate. */
+const drainMicrotasks = () => new Promise(resolve => setTimeout(resolve))
 
-/** Reads `key` and waits until the connection has the answer of the editor. */
+/** Reads `key` from `container`, waiting until `connection` has received an answer from the editor. */
 async function load(connection: PersistentStateConnection, container: StateContainer, key: string) {
     connection.get(container, key)
-    await editorAnswered()
+    await drainMicrotasks()
     return connection.get(container, key)
 }
 
@@ -47,7 +48,7 @@ describe('PersistentStateConnection', () => {
 
         expect(connection.get('infoview', 'a')).toBe('loading')
         expect(connection.get('infoview', 'a')).toBe('loading')
-        await editorAnswered()
+        await drainMicrotasks()
         expect(connection.get('infoview', 'a')).toEqual({ value: 1 })
         expect(await load(connection, 'workspace', 'b')).toEqual({ value: [2] })
         expect(await load(connection, 'workspace', 'missing')).toBeUndefined()
@@ -132,7 +133,7 @@ describe('PersistentStateConnection', () => {
         connection.subscribe('workspace', 'k', listener)
         connection.get('workspace', 'k')
         connection.set('workspace', 'k', 'new')
-        await editorAnswered()
+        await drainMicrotasks()
         expect(connection.get('workspace', 'k')).toEqual({ value: 'new' })
         expect(editor.state.workspace).toEqual({ k: 'new' })
         expect(listener).toHaveBeenCalledTimes(1)
@@ -143,7 +144,7 @@ describe('PersistentStateConnection', () => {
         const { connection } = editor
         connection.get('workspace', 'k')
         connection.delete('workspace', 'k')
-        await editorAnswered()
+        await drainMicrotasks()
         expect(connection.get('workspace', 'k')).toBeUndefined()
         expect(editor.state.workspace).toEqual({})
     })
@@ -184,7 +185,7 @@ describe('PersistentStateConnection', () => {
         connection.delete('workspace', 'k')
         expect(calls).toEqual(['delete workspace k'])
         connection.set('workspace', 'k', 1)
-        await editorAnswered()
+        await drainMicrotasks()
         expect(connection.get('workspace', 'k')).toEqual({ value: 1 })
         expect(error).toHaveBeenCalledTimes(2)
         error.mockRestore()

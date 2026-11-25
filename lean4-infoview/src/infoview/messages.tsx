@@ -51,7 +51,7 @@ function isTraceMessage(message: TaggedText<HighlightedMsgEmbed>): boolean {
     return true
 }
 
-const MessageView = React.memo(({ uri, diag }: MessageViewProps) => {
+const MessageView = React.memo(function MessageView({ uri, diag }: MessageViewProps) {
     const ec = React.useContext(EditorContext)
     const fname = escapeHtml(basename(uri))
     const { line, character } = diag.range.start
@@ -300,32 +300,30 @@ function mkMessageViewProps(
 }
 
 /** Shows the given messages assuming they are for the given file. */
-export const MessagesList = React.memo(
-    ({
-        uri,
-        messages,
-        sortOrder,
-        pos,
-    }: {
-        uri: DocumentUri
-        messages: InteractiveDiagnostic[]
-        sortOrder: MessageOrder
-        pos: DocumentPosition | undefined
-    }) => {
-        const should_hide = messages.length === 0
-        if (should_hide) {
-            return <>No messages.</>
-        }
+export const MessagesList = React.memo(function MessagesList({
+    uri,
+    messages,
+    sortOrder,
+    pos,
+}: {
+    uri: DocumentUri
+    messages: InteractiveDiagnostic[]
+    sortOrder: MessageOrder
+    pos: DocumentPosition | undefined
+}) {
+    const should_hide = messages.length === 0
+    if (should_hide) {
+        return <>No messages.</>
+    }
 
-        return (
-            <div className="ml1">
-                {mkMessageViewProps(uri, messages, sortOrder, pos).map(m => (
-                    <MessageView {...m} key={m.key} />
-                ))}
-            </div>
-        )
-    },
-)
+    return (
+        <div className="ml1">
+            {mkMessageViewProps(uri, messages, sortOrder, pos).map(m => (
+                <MessageView {...m} key={m.key} />
+            ))}
+        </div>
+    )
+})
 
 function lazy<T>(f: () => T): () => T {
     let state: { t: T } | undefined
