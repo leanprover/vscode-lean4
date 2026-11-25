@@ -3,7 +3,7 @@ import { loadRenderInfoview } from '@leanprover/infoview/loader'
 import type { InitializeResult, Location } from 'vscode-languageserver-protocol'
 import { EditorRpcApi, Rpc, editorApiOfRpc } from '../src/rpc'
 // Type declarations for VSCode APIs.
-import 'vscode-webview'
+import type {} from 'vscode-webview'
 
 /**
  * Injects the script hosted at `url` into the webview and waits for it to finish executing.
