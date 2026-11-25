@@ -442,6 +442,81 @@ function InfoDisplay(props0: InfoDisplayProps & InfoPinnable) {
     )
 }
 
+/** For consistency, we store the fetched info together with its inputs (`pos`, `rpcSess`)
+ * so that the displayed state cannot get out of sync by showing an old reply with a new `pos`. */
+type InfoRequestResult = Omit<InfoDisplayProps, 'triggerUpdate'>
+
+function formatFetchError(ex: unknown): string {
+    if (typeof ex === 'string') {
+        return ex
+    } else if (isRpcError(ex)) {
+        return mapRpcError(ex).message
+    } else if (ex instanceof Error) {
+        return ex.toString()
+    } else if (ex != null && typeof ex === 'object' && 'message' in ex && typeof ex.message === 'string') {
+        return ex.message
+    } else {
+        return `Unrecognized error: ${JSON.stringify(ex)}`
+    }
+}
+
+async function fetchInfo(
+    rpcSess: RpcSessionAtPos,
+    pos: DocumentPosition,
+    lspDiagsHere: LeanDiagnostic[],
+    abortSignal: AbortSignal,
+): Promise<InfoRequestResult | 'retry'> {
+    const goalsReq = getInteractiveGoals(rpcSess, DocumentPosition.toTdpp(pos), { abortSignal })
+    const termGoalReq = getInteractiveTermGoal(rpcSess, DocumentPosition.toTdpp(pos), { abortSignal })
+    const widgetsReq = Widget_getWidgets(rpcSess, pos, { abortSignal }).catch(discardMethodNotFound)
+    const messagesReq = getInteractiveDiagnostics(rpcSess, { start: pos.line, end: pos.line + 1 }, { abortSignal })
+        // fall back to non-interactive diagnostics when lake fails
+        // (see https://github.com/leanprover/vscode-lean4/issues/90)
+        .then(diags => (diags.length === 0 ? lspDiagsHere.map(lspDiagToInteractive) : diags))
+
+    try {
+        // NB: it is important to await all reqs at once,
+        // otherwise an exception becomes unhandled if more than one throws.
+        const [goals, termGoal, userWidgets, messages] = await Promise.all([
+            goalsReq,
+            termGoalReq,
+            widgetsReq,
+            messagesReq,
+        ])
+        return {
+            pos,
+            status: 'ready',
+            messages,
+            goals,
+            termGoal,
+            error: undefined,
+            userWidgets: userWidgets?.widgets ?? [],
+            rpcSess,
+        }
+    } catch (ex: any) {
+        if (ex?.code === RpcErrorCode.ContentModified || ex?.code === RpcErrorCode.RpcNeedsReconnect) {
+            // Document has been changed since we made the request,
+            // or we need to reconnect to the RPC session.
+            // Try again.
+            return 'retry'
+        }
+        // When `ex?.code === RpcErrorCode.RequestCancelled`,
+        // we fall through to returning an error below.
+        // - If we were cancelled by the caller, the caller ignores the result.
+        // - We should not be cancelled otherwise, and if that happens it is an error that should be displayed.
+        return {
+            pos,
+            status: 'error',
+            messages: lspDiagsHere.map(lspDiagToInteractive),
+            goals: undefined,
+            termGoal: undefined,
+            error: `Error fetching goals: ${formatFetchError(ex)}`,
+            userWidgets: [],
+            rpcSess,
+        }
+    }
+}
+
 function useIsProcessingAt(p: DocumentPosition): boolean {
     const allProgress = React.useContext(ProgressContext)
     const processing = allProgress.get(p.uri)
@@ -486,26 +561,9 @@ export function Info(props: InfoProps) {
     // does not support reentrancy like that.
     const [updaterTick, setUpdaterTick] = React.useState<number>(0)
 
-    // For atomicity, we use a single update function that fetches all the info at `pos` at once.
-    // Besides what the server replies with, we also include the inputs (deps) in this type so
-    // that the displayed state cannot ever get out of sync by showing an old reply together
-    // with e.g. a new `pos`.
-    type InfoRequestResult = Omit<InfoDisplayProps, 'triggerUpdate'>
     const [state, triggerUpdateCore] = useAsyncWithTrigger(
         abortSignal =>
             new Promise<InfoRequestResult>((resolve, reject) => {
-                const goalsReq = getInteractiveGoals(rpcSess, DocumentPosition.toTdpp(pos), { abortSignal })
-                const termGoalReq = getInteractiveTermGoal(rpcSess, DocumentPosition.toTdpp(pos), { abortSignal })
-                const widgetsReq = Widget_getWidgets(rpcSess, pos, { abortSignal }).catch(discardMethodNotFound)
-                const messagesReq = getInteractiveDiagnostics(
-                    rpcSess,
-                    { start: pos.line, end: pos.line + 1 },
-                    { abortSignal },
-                )
-                    // fall back to non-interactive diagnostics when lake fails
-                    // (see https://github.com/leanprover/vscode-lean4/issues/90)
-                    .then(diags => (diags.length === 0 ? lspDiagsHere.map(lspDiagToInteractive) : diags))
-
                 // While `lake print-paths` is running, the output of Lake is shown as
                 // info diagnostics on line 1.  However, all RPC requests block until
                 // Lake is finished, so we don't see these diagnostics while Lake is
@@ -531,60 +589,14 @@ export function Info(props: InfoProps) {
                     )
                 }
 
-                // NB: it is important to await await reqs at once, otherwise
-                // if both throw then one exception becomes unhandled.
-                Promise.all([goalsReq, termGoalReq, widgetsReq, messagesReq]).then(
-                    ([goals, termGoal, userWidgets, messages]) =>
-                        resolve({
-                            pos,
-                            status: 'ready',
-                            messages,
-                            goals,
-                            termGoal,
-                            error: undefined,
-                            userWidgets: userWidgets?.widgets ?? [],
-                            rpcSess,
-                        }),
-                    ex => {
-                        if (ex?.code === RpcErrorCode.ContentModified || ex?.code === RpcErrorCode.RpcNeedsReconnect) {
-                            // Document has been changed since we made the request, or we need to reconnect
-                            // to the RPC sessions. Try again.
-                            setUpdaterTick(t => t + 1)
-                            reject('retry')
-                            return
-                        }
-                        // When `ex?.code === RpcErrorCode.RequestCancelled`,
-                        // we fall through to resolving with an error below.
-                        // - In case we were cancelled by `useAsyncWithTrigger`,
-                        //   `resolve` will do nothing.
-                        // - We should not be cancelled otherwise,
-                        //   and if that happens it is an error that should be displayed.
-
-                        let errorString = ''
-                        if (typeof ex === 'string') {
-                            errorString = ex
-                        } else if (isRpcError(ex)) {
-                            errorString = mapRpcError(ex).message
-                        } else if (ex instanceof Error) {
-                            errorString = ex.toString()
-                        } else if ('message' in ex && typeof ex.message === 'string') {
-                            errorString = ex.message
-                        } else {
-                            errorString = `Unrecognized error: ${JSON.stringify(ex)}`
-                        }
-
-                        resolve({
-                            pos,
-                            status: 'error',
-                            messages: lspDiagsHere.map(lspDiagToInteractive),
-                            goals: undefined,
-                            termGoal: undefined,
-                            error: `Error fetching goals: ${errorString}`,
-                            userWidgets: [],
-                            rpcSess,
-                        })
-                    },
-                )
+                void fetchInfo(rpcSess, pos, lspDiagsHere, abortSignal).then(outcome => {
+                    if (outcome === 'retry') {
+                        setUpdaterTick(t => t + 1)
+                        reject('retry')
+                        return
+                    }
+                    resolve(outcome)
+                })
             }),
         [updaterTick, pos.uri, pos.line, pos.character, rpcSess, serverIsProcessing, lspDiagsHere],
     )
