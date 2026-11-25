@@ -326,10 +326,11 @@ function InfoDisplay(props0: InfoDisplayProps & InfoPinnable) {
         propsRef.current = props0
         setShouldRefresh(false)
     }
-    const triggerDisplayUpdate = async () => {
-        await props0.triggerUpdate()
+    const { triggerUpdate: triggerUpdate0 } = props0
+    const triggerDisplayUpdate = React.useCallback(async () => {
+        await triggerUpdate0()
         setShouldRefresh(true)
-    }
+    }, [triggerUpdate0])
 
     const { kind, pos, onPin, goals, rpcSess } = props
 
@@ -399,7 +400,7 @@ function InfoDisplay(props0: InfoDisplayProps & InfoPinnable) {
         _ => {
             void triggerDisplayUpdate()
         },
-        [isCursor, onPin, pos],
+        [triggerDisplayUpdate],
         `refresh:${id}`,
     )
     useEvent(ec.events.clickedContextMenu, async _ => void ec.revealPosition(pos), [pos], `goToPinnedLocation:${id}`)
