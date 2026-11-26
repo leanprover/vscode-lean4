@@ -441,28 +441,6 @@ function InfoDisplay(props0: InfoDisplayProps & InfoPinnable) {
     )
 }
 
-/**
- * Note: in the cursor view, we have to keep the cursor position as part of the component state
- * to avoid flickering when the cursor moved. Otherwise, the component is re-initialised and the
- * goal states reset to `undefined` on cursor moves.
- */
-export type InfoProps = InfoPinnable & { pos: DocumentPosition }
-
-/** Fetches info from the server and renders an {@link InfoDisplay}. */
-export function Info(props: InfoProps) {
-    if (props.kind === 'cursor') return <InfoAtCursor {...props} />
-    else return <InfoAux {...props} pos={props.pos} />
-}
-
-function InfoAtCursor(props: InfoProps) {
-    const ec = React.useContext(EditorContext)
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const [curLoc, setCurLoc] = React.useState<Location>(ec.events.changedCursorLocation.current!)
-    useEvent(ec.events.changedCursorLocation, loc => loc && setCurLoc(loc), [])
-    const pos = { uri: curLoc.uri, ...curLoc.range.start }
-    return <InfoAux {...props} pos={pos} />
-}
-
 function useIsProcessingAt(p: DocumentPosition): boolean {
     const allProgress = React.useContext(ProgressContext)
     const processing = allProgress.get(p.uri)
@@ -470,7 +448,10 @@ function useIsProcessingAt(p: DocumentPosition): boolean {
     return processing.some(i => RangeHelpers.contains(i.range, p))
 }
 
-function InfoAux(props: InfoProps) {
+export type InfoProps = InfoPinnable & { pos: DocumentPosition }
+
+/** Fetches info from the server and renders an {@link InfoDisplay}. */
+export function Info(props: InfoProps) {
     const config = React.useContext(ConfigContext)
 
     const pos = props.pos
