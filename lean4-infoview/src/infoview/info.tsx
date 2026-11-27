@@ -82,7 +82,7 @@ const InfoStatusBar = React.memo((props: InfoStatusBarProps) => {
             {isPinned && !isPaused && ' (pinned)'}
             {!isPinned && isPaused && ' (paused)'}
             {isPinned && isPaused && ' (pinned and paused)'}
-            <span style={spinnerStyle} className="mh2 codicon codicon-loading" title="Updating ...">
+            <span style={spinnerStyle} className="mh2 codicon codicon-loading" data-id="info-status-spinner" title="Updating ...">
                 <style>
                     {`
                         @keyframes spin {
@@ -250,7 +250,7 @@ const InfoDisplayContent = React.memo((props: InfoDisplayContentProps) => {
     return (
         <>
             {hasError && (
-                <div className="error" key="errors">
+                <div className="error" key="errors" data-id="info-display-error">
                     Error updating: {error}.
                     <a
                         className="link pointer dim"
@@ -326,10 +326,11 @@ function InfoDisplay(props0: InfoDisplayProps & InfoPinnable) {
         propsRef.current = props0
         setShouldRefresh(false)
     }
-    const triggerDisplayUpdate = async () => {
-        await props0.triggerUpdate()
+    const { triggerUpdate: triggerUpdate0 } = props0
+    const triggerDisplayUpdate = React.useCallback(async () => {
+        await triggerUpdate0()
         setShouldRefresh(true)
-    }
+    }, [triggerUpdate0])
 
     const { kind, pos, onPin, goals, rpcSess } = props
 
@@ -399,7 +400,7 @@ function InfoDisplay(props0: InfoDisplayProps & InfoPinnable) {
         _ => {
             void triggerDisplayUpdate()
         },
-        [isCursor, onPin, pos],
+        [triggerDisplayUpdate],
         `refresh:${id}`,
     )
     useEvent(ec.events.clickedContextMenu, async _ => void ec.revealPosition(pos), [pos], `goToPinnedLocation:${id}`)
@@ -441,26 +442,79 @@ function InfoDisplay(props0: InfoDisplayProps & InfoPinnable) {
     )
 }
 
-/**
- * Note: in the cursor view, we have to keep the cursor position as part of the component state
- * to avoid flickering when the cursor moved. Otherwise, the component is re-initialised and the
- * goal states reset to `undefined` on cursor moves.
- */
-export type InfoProps = InfoPinnable & { pos: DocumentPosition }
+/** For consistency, we store the fetched info together with its inputs (`pos`, `rpcSess`)
+ * so that the displayed state cannot get out of sync by showing an old reply with a new `pos`. */
+type InfoRequestResult = Omit<InfoDisplayProps, 'triggerUpdate'>
 
-/** Fetches info from the server and renders an {@link InfoDisplay}. */
-export function Info(props: InfoProps) {
-    if (props.kind === 'cursor') return <InfoAtCursor {...props} />
-    else return <InfoAux {...props} pos={props.pos} />
+function formatFetchError(ex: unknown): string {
+    if (typeof ex === 'string') {
+        return ex
+    } else if (isRpcError(ex)) {
+        return mapRpcError(ex).message
+    } else if (ex instanceof Error) {
+        return ex.toString()
+    } else if (ex != null && typeof ex === 'object' && 'message' in ex && typeof ex.message === 'string') {
+        return ex.message
+    } else {
+        return `Unrecognized error: ${JSON.stringify(ex)}`
+    }
 }
 
-function InfoAtCursor(props: InfoProps) {
-    const ec = React.useContext(EditorContext)
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const [curLoc, setCurLoc] = React.useState<Location>(ec.events.changedCursorLocation.current!)
-    useEvent(ec.events.changedCursorLocation, loc => loc && setCurLoc(loc), [])
-    const pos = { uri: curLoc.uri, ...curLoc.range.start }
-    return <InfoAux {...props} pos={pos} />
+async function fetchInfo(
+    rpcSess: RpcSessionAtPos,
+    pos: DocumentPosition,
+    lspDiagsHere: LeanDiagnostic[],
+    abortSignal: AbortSignal,
+): Promise<InfoRequestResult | 'retry'> {
+    const goalsReq = getInteractiveGoals(rpcSess, DocumentPosition.toTdpp(pos), { abortSignal })
+    const termGoalReq = getInteractiveTermGoal(rpcSess, DocumentPosition.toTdpp(pos), { abortSignal })
+    const widgetsReq = Widget_getWidgets(rpcSess, pos, { abortSignal }).catch(discardMethodNotFound)
+    const messagesReq = getInteractiveDiagnostics(rpcSess, { start: pos.line, end: pos.line + 1 }, { abortSignal })
+        // fall back to non-interactive diagnostics when lake fails
+        // (see https://github.com/leanprover/vscode-lean4/issues/90)
+        .then(diags => (diags.length === 0 ? lspDiagsHere.map(lspDiagToInteractive) : diags))
+
+    try {
+        // NB: it is important to await all reqs at once,
+        // otherwise an exception becomes unhandled if more than one throws.
+        const [goals, termGoal, userWidgets, messages] = await Promise.all([
+            goalsReq,
+            termGoalReq,
+            widgetsReq,
+            messagesReq,
+        ])
+        return {
+            pos,
+            status: 'ready',
+            messages,
+            goals,
+            termGoal,
+            error: undefined,
+            userWidgets: userWidgets?.widgets ?? [],
+            rpcSess,
+        }
+    } catch (ex: any) {
+        if (ex?.code === RpcErrorCode.ContentModified || ex?.code === RpcErrorCode.RpcNeedsReconnect) {
+            // Document has been changed since we made the request,
+            // or we need to reconnect to the RPC session.
+            // Try again.
+            return 'retry'
+        }
+        // When `ex?.code === RpcErrorCode.RequestCancelled`,
+        // we fall through to returning an error below.
+        // - If we were cancelled by the caller, the caller ignores the result.
+        // - We should not be cancelled otherwise, and if that happens it is an error that should be displayed.
+        return {
+            pos,
+            status: 'error',
+            messages: lspDiagsHere.map(lspDiagToInteractive),
+            goals: undefined,
+            termGoal: undefined,
+            error: `Error fetching goals: ${formatFetchError(ex)}`,
+            userWidgets: [],
+            rpcSess,
+        }
+    }
 }
 
 function useIsProcessingAt(p: DocumentPosition): boolean {
@@ -470,7 +524,10 @@ function useIsProcessingAt(p: DocumentPosition): boolean {
     return processing.some(i => RangeHelpers.contains(i.range, p))
 }
 
-function InfoAux(props: InfoProps) {
+export type InfoProps = InfoPinnable & { pos: DocumentPosition }
+
+/** Fetches info from the server and renders an {@link InfoDisplay}. */
+export function Info(props: InfoProps) {
     const config = React.useContext(ConfigContext)
 
     const pos = props.pos
@@ -504,26 +561,9 @@ function InfoAux(props: InfoProps) {
     // does not support reentrancy like that.
     const [updaterTick, setUpdaterTick] = React.useState<number>(0)
 
-    // For atomicity, we use a single update function that fetches all the info at `pos` at once.
-    // Besides what the server replies with, we also include the inputs (deps) in this type so
-    // that the displayed state cannot ever get out of sync by showing an old reply together
-    // with e.g. a new `pos`.
-    type InfoRequestResult = Omit<InfoDisplayProps, 'triggerUpdate'>
     const [state, triggerUpdateCore] = useAsyncWithTrigger(
         abortSignal =>
             new Promise<InfoRequestResult>((resolve, reject) => {
-                const goalsReq = getInteractiveGoals(rpcSess, DocumentPosition.toTdpp(pos), { abortSignal })
-                const termGoalReq = getInteractiveTermGoal(rpcSess, DocumentPosition.toTdpp(pos), { abortSignal })
-                const widgetsReq = Widget_getWidgets(rpcSess, pos, { abortSignal }).catch(discardMethodNotFound)
-                const messagesReq = getInteractiveDiagnostics(
-                    rpcSess,
-                    { start: pos.line, end: pos.line + 1 },
-                    { abortSignal },
-                )
-                    // fall back to non-interactive diagnostics when lake fails
-                    // (see https://github.com/leanprover/vscode-lean4/issues/90)
-                    .then(diags => (diags.length === 0 ? lspDiagsHere.map(lspDiagToInteractive) : diags))
-
                 // While `lake print-paths` is running, the output of Lake is shown as
                 // info diagnostics on line 1.  However, all RPC requests block until
                 // Lake is finished, so we don't see these diagnostics while Lake is
@@ -549,60 +589,14 @@ function InfoAux(props: InfoProps) {
                     )
                 }
 
-                // NB: it is important to await await reqs at once, otherwise
-                // if both throw then one exception becomes unhandled.
-                Promise.all([goalsReq, termGoalReq, widgetsReq, messagesReq]).then(
-                    ([goals, termGoal, userWidgets, messages]) =>
-                        resolve({
-                            pos,
-                            status: 'ready',
-                            messages,
-                            goals,
-                            termGoal,
-                            error: undefined,
-                            userWidgets: userWidgets?.widgets ?? [],
-                            rpcSess,
-                        }),
-                    ex => {
-                        if (ex?.code === RpcErrorCode.ContentModified || ex?.code === RpcErrorCode.RpcNeedsReconnect) {
-                            // Document has been changed since we made the request, or we need to reconnect
-                            // to the RPC sessions. Try again.
-                            setUpdaterTick(t => t + 1)
-                            reject('retry')
-                            return
-                        }
-                        // When `ex?.code === RpcErrorCode.RequestCancelled`,
-                        // we fall through to resolving with an error below.
-                        // - In case we were cancelled by `useAsyncWithTrigger`,
-                        //   `resolve` will do nothing.
-                        // - We should not be cancelled otherwise,
-                        //   and if that happens it is an error that should be displayed.
-
-                        let errorString = ''
-                        if (typeof ex === 'string') {
-                            errorString = ex
-                        } else if (isRpcError(ex)) {
-                            errorString = mapRpcError(ex).message
-                        } else if (ex instanceof Error) {
-                            errorString = ex.toString()
-                        } else if ('message' in ex && typeof ex.message === 'string') {
-                            errorString = ex.message
-                        } else {
-                            errorString = `Unrecognized error: ${JSON.stringify(ex)}`
-                        }
-
-                        resolve({
-                            pos,
-                            status: 'error',
-                            messages: lspDiagsHere.map(lspDiagToInteractive),
-                            goals: undefined,
-                            termGoal: undefined,
-                            error: `Error fetching goals: ${errorString}`,
-                            userWidgets: [],
-                            rpcSess,
-                        })
-                    },
-                )
+                void fetchInfo(rpcSess, pos, lspDiagsHere, abortSignal).then(outcome => {
+                    if (outcome === 'retry') {
+                        setUpdaterTick(t => t + 1)
+                        reject('retry')
+                        return
+                    }
+                    resolve(outcome)
+                })
             }),
         [updaterTick, pos.uri, pos.line, pos.character, rpcSess, serverIsProcessing, lspDiagsHere],
     )
